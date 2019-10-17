@@ -909,6 +909,10 @@ spec:
                           type: object
                         serviceConfiguration:
                           properties:
+                            adminPassword:
+                              type: string
+                            adminUsername:
+                              type: string
                             cassandraInstance:
                               type: string
                             clusterRole:

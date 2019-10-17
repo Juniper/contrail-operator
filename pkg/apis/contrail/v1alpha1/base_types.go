@@ -822,6 +822,12 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	return &configCluster, nil
 }
 
+// WebUIClusterConfiguration defines all configuration knobs used to write the config file.
+type WebUIClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
+}
+
 // ConfigClusterConfiguration defines all configuration knobs used to write the config file.
 type ConfigClusterConfiguration struct {
 	APIServerPort                           string

@@ -135,8 +135,8 @@ config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-
 module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
-config.staticAuth[0].username = 'admin';
-config.staticAuth[0].password = 'contrail123';
+config.staticAuth[0].username = '{{ .AdminUsername }}';
+config.staticAuth[0].password = '{{ .AdminPassword }}';
 config.staticAuth[0].roles = ['cloudAdmin'];
 `))
 
@@ -145,9 +145,9 @@ var WebuiAuthConfig = template.Must(template.New("").Parse(`/*
 * Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
 */
 var auth = {};
-auth.admin_user = 'admin';
-auth.admin_password = 'contrail123';
+auth.admin_user = '{{ .AdminUsername }}';
+auth.admin_password = '{{ .AdminPassword }}';
 auth.admin_token = '';
-auth.admin_tenant_name = 'admin';
+auth.admin_tenant_name = '{{ .AdminUsername }}';
 module.exports = auth;
 `))

@@ -59,6 +59,12 @@ var webui = &v1alpha1.Webui{
 			"contrail_cluster": "cluster1",
 		},
 	},
+	Spec: v1alpha1.WebuiSpec{
+		ServiceConfiguration: v1alpha1.WebuiConfiguration{
+			AdminUsername: "test",
+			AdminPassword: "test123",
+		},
+	},
 }
 
 var cassandra = &v1alpha1.Cassandra{
@@ -605,6 +611,11 @@ func TestWebuiConfig(t *testing.T) {
 		configDiff := diff.Diff(environment.webuiConfigMap.Data["config.global.js.1.1.7.1"], webuiConfigHa)
 		t.Fatalf("get webui config: \n%v\n", configDiff)
 	}
+
+	if environment.webuiConfigMap.Data["contrail-webui-userauth.js"] != webuiAuthConfig {
+		configDiff := diff.Diff(environment.webuiConfigMap.Data["contrail-webui-userauth.js"], webuiAuthConfig)
+		t.Fatalf("get webui auth config: \n%v\n", configDiff)
+	}
 }
 
 func TestVrouterConfig(t *testing.T) {
@@ -827,9 +838,20 @@ config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-
 module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
-config.staticAuth[0].username = 'admin';
-config.staticAuth[0].password = 'contrail123';
+config.staticAuth[0].username = 'test';
+config.staticAuth[0].password = 'test123';
 config.staticAuth[0].roles = ['cloudAdmin'];
+`
+
+var webuiAuthConfig = `/*
+* Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
+*/
+var auth = {};
+auth.admin_user = 'test';
+auth.admin_password = 'test123';
+auth.admin_token = '';
+auth.admin_tenant_name = 'test';
+module.exports = auth;
 `
 
 var configConfigHa = `[DEFAULTS]
