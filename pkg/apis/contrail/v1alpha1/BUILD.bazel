@@ -6,6 +6,7 @@ go_library(
         "base_types.go",
         "cassandra_types.go",
         "config_types.go",
+        "contrailcommand_types.go",
         "control_types.go",
         "defaults.go",
         "doc.go",

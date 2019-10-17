@@ -22,14 +22,15 @@ type ManagerSpec struct {
 // Services defines the desired state of Services.
 // +k8s:openapi-gen=true
 type Services struct {
-	Config       *Config        `json:"config,omitempty"`
-	Controls     []*Control     `json:"controls,omitempty"`
-	Kubemanagers []*Kubemanager `json:"kubemanagers,omitempty"`
-	Webui        *Webui         `json:"webui,omitempty"`
-	Vrouters     []*Vrouter     `json:"vrouters,omitempty"`
-	Cassandras   []*Cassandra   `json:"cassandras,omitempty"`
-	Zookeepers   []*Zookeeper   `json:"zookeepers,omitempty"`
-	Rabbitmq     *Rabbitmq      `json:"rabbitmq,omitempty"`
+	Config          *Config          `json:"config,omitempty"`
+	Controls        []*Control       `json:"controls,omitempty"`
+	Kubemanagers    []*Kubemanager   `json:"kubemanagers,omitempty"`
+	Webui           *Webui           `json:"webui,omitempty"`
+	Vrouters        []*Vrouter       `json:"vrouters,omitempty"`
+	Cassandras      []*Cassandra     `json:"cassandras,omitempty"`
+	Zookeepers      []*Zookeeper     `json:"zookeepers,omitempty"`
+	Rabbitmq        *Rabbitmq        `json:"rabbitmq,omitempty"`
+	ContrailCommand *ContrailCommand `json:"contrailCommand,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.

@@ -53,6 +53,7 @@ rules:
   - kubemanagers
   - webuis
   - vrouters
+  - contrailcommands
   verbs:
   - '*'
 - apiGroups:
