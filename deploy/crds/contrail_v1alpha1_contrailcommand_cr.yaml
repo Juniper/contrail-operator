@@ -1,7 +1,7 @@
 apiVersion: contrail.juniper.net/v1alpha1
 kind: ContrailCommand
 metadata:
-  name: example-contrailcommand
+  name: command-leader
 spec:
-  # Add fields here
-  size: 3
+  service:
+    activate: true
