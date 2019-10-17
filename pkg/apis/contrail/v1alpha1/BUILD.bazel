@@ -26,6 +26,7 @@ go_library(
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1/templates:go_default_library",
         "@com_github_go_openapi_spec//:go_default_library",
+        "@com_github_zalando_postgres_operator//pkg/apis/acid.zalan.do/v1:go_default_library",
         "@in_gopkg_yaml_v2//:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

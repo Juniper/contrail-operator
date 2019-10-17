@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	pg "github.com/zalando/postgres-operator/pkg/apis/acid.zalan.do/v1"
 )
 
 // ManagerSpec defines the desired state of Manager.
@@ -31,6 +32,7 @@ type Services struct {
 	Zookeepers      []*Zookeeper     `json:"zookeepers,omitempty"`
 	Rabbitmq        *Rabbitmq        `json:"rabbitmq,omitempty"`
 	ContrailCommand *ContrailCommand `json:"contrailCommand,omitempty"`
+	Postgreses	 []*pg.Postgresql `json:"postgreses,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
@@ -39,6 +41,7 @@ type ManagerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Postgreses   []*ServiceStatus `json:"postgreses,omitempty"`
 	Config       *ServiceStatus   `json:"config,omitempty"`
 	Controls     []*ServiceStatus `json:"controls,omitempty"`
 	Kubemanagers []*ServiceStatus `json:"kubemanagers,omitempty"`
