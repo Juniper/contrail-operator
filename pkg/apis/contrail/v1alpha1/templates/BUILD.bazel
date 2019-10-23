@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "cassandra_config.go",
         "config_config.go",
+        "contrailcommand_config.go",
         "control_config.go",
         "kubemanager_config.go",
         "rabbitmq_config.go",

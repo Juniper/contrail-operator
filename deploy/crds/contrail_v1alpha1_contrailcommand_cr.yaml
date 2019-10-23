@@ -1,7 +1,20 @@
 apiVersion: contrail.juniper.net/v1alpha1
 kind: ContrailCommand
 metadata:
-  name: command-leader
+  name: command
 spec:
-  service:
+  commonConfiguration:
     activate: true
+    create: true
+    hostNetwork: true
+    tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+    nodeSelector:
+      node-role.kubernetes.io/master: ""
+  serviceConfiguration:
+    adminUsername: "admin"
+    adminPassword: "contrail123"
+

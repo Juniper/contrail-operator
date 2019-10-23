@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "add_cassandra.go",
         "add_config.go",
+        "add_contrailcommand.go",
         "add_control.go",
         "add_kubemanager.go",
         "add_manager.go",
@@ -19,6 +20,7 @@ go_library(
     deps = [
         "//contrail/operator/pkg/controller/cassandra:go_default_library",
         "//contrail/operator/pkg/controller/config:go_default_library",
+        "//contrail/operator/pkg/controller/contrailcommand:go_default_library",
         "//contrail/operator/pkg/controller/control:go_default_library",
         "//contrail/operator/pkg/controller/kubemanager:go_default_library",
         "//contrail/operator/pkg/controller/manager:go_default_library",

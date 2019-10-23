@@ -828,6 +828,12 @@ type WebUIClusterConfiguration struct {
 	AdminPassword string
 }
 
+// ContrailCommandClusterConfiguration defines all configuration knobs used to write the config file.
+type ContrailCommandClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
+}
+
 // ConfigClusterConfiguration defines all configuration knobs used to write the config file.
 type ConfigClusterConfiguration struct {
 	APIServerPort                           string
