@@ -13,6 +13,7 @@ go_library(
         "exec_to_pod.go",
         "kubemanager_types.go",
         "manager_types.go",
+        "postgres_types.go",
         "rabbitmq_types.go",
         "register.go",
         "vrouter_types.go",
