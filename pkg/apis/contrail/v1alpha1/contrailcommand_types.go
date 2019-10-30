@@ -45,7 +45,7 @@ type ContrailCommandConfiguration struct {
 // ContrailCommandStatus defines the observed state of ContrailCommand
 // +k8s:openapi-gen=true
 type ContrailCommandStatus struct {
-	Active *bool `json:"active,omitempty"`
+	Active bool `json:"active,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -65,10 +65,6 @@ func (c *ContrailCommand) PrepareIntendedDeployment(
 	instanceDeployment *appsv1.Deployment, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme,
 ) (*appsv1.Deployment, error) {
 	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "contrailcommand", request, scheme, c)
-}
-
-func (c *ContrailCommand) AddVolumesToIntendedDeployments(intendedDeployment *appsv1.Deployment, volumeConfigMapMap map[string]string) {
-	AddVolumesToIntendedDeployments(intendedDeployment, volumeConfigMapMap)
 }
 
 func (c *ContrailCommand) InstanceConfiguration(request reconcile.Request,

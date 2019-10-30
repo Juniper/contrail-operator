@@ -3,10 +3,10 @@ package contrailcommand
 import (
 	"context"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -19,7 +19,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	contrailv1alpha1 "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_contrailcommand")
@@ -32,7 +32,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileContrailCommand{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileContrailCommand{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -44,21 +44,27 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource ContrailCommand
-	err = c.Watch(&source.Kind{Type: &contrailv1alpha1.ContrailCommand{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &contrail.ContrailCommand{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// Watch for changes to secondary resource Deployment and requeue the owner ContrailCommand
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &contrailv1alpha1.ContrailCommand{},
+		OwnerType:    &contrail.ContrailCommand{},
 	})
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// Watch for changes to secondary resource Postgres and requeue the owner ContrailCommand
+	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.ContrailCommand{},
+	})
+
+	return err
 }
 
 // blank assignment to verify that ReconcileContrailCommand implements reconcile.Reconciler
@@ -68,8 +74,8 @@ var _ reconcile.Reconciler = &ReconcileContrailCommand{}
 type ReconcileContrailCommand struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	Client client.Client
+	Scheme *runtime.Scheme
 }
 
 // Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read
@@ -78,9 +84,8 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	reqLogger.Info("Reconciling ContrailCommand")
 	instanceType := "contrailcommand"
 	// Fetch the ContrailCommand command
-	command := &contrailv1alpha1.ContrailCommand{}
-	err := r.client.Get(context.Background(), request.NamespacedName, command)
-	if err != nil {
+	command := &contrail.ContrailCommand{}
+	if err := r.Client.Get(context.Background(), request.NamespacedName, command); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -91,65 +96,94 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	configMap, err := contrailv1alpha1.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.client, r.scheme, request, "contrailcommand", command)
+	configMap, err := contrail.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.Client, r.Scheme, request, "contrailcommand", command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = command.InstanceConfiguration(request, r.client); err != nil {
+	if err := command.InstanceConfiguration(request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	deployment, err := command.PrepareIntendedDeployment(getDeployment(), &command.Spec.CommonConfiguration, request, r.scheme)
+	postgres, err := r.ensurePostgres(command)
 	if err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if !postgres.Status.Active {
+		return reconcile.Result{}, nil
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
-	command.AddVolumesToIntendedDeployments(deployment,
-		map[string]string{configMap.Name: configVolumeName})
+	deployment := newDeployment(
+		request.Name+"-"+instanceType+"-deployment",
+		request.Namespace,
+		configVolumeName,
+	)
 
-	volumeMountList := []corev1.VolumeMount{}
-	volumeMount := corev1.VolumeMount{
-		Name:      configVolumeName,
-		MountPath: "/etc/contrail",
-	}
-	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(volumeMountList, volumeMount)
+	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{configMap.Name: configVolumeName})
 
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func(existing runtime.Object) error {
-		// TODO Handle update
-		return nil
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, deployment, func(existing runtime.Object) error {
+		deployment := existing.(*apps.Deployment)
+		deployment, err := command.PrepareIntendedDeployment(deployment,
+			&command.Spec.CommonConfiguration, request, r.Scheme)
+		return err
 	}); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.updateStatus(command, deployment, request); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	return reconcile.Result{}, nil
+	return reconcile.Result{}, r.updateStatus(command, deployment, request)
 }
 
-func getDeployment() *appsv1.Deployment {
-	return &appsv1.Deployment{
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{},
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
+func (r *ReconcileContrailCommand) ensurePostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
+	postgres := &contrail.Postgres{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      command.Name + "-db",
+			Namespace: command.Namespace,
+		},
+	}
+
+	// Set Command instance as the owner and controller
+	if err := controllerutil.SetControllerReference(command, postgres, r.Scheme); err != nil {
+		return nil, err
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, postgres, func(existing runtime.Object) error {
+		postgres = existing.(*contrail.Postgres)
+		return nil
+	})
+
+	return postgres, err
+}
+
+func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
+	return &apps.Deployment{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: apps.DeploymentSpec{
+			Selector: &meta.LabelSelector{},
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					Containers: []core.Container{{
 						Name:            "command",
-						ImagePullPolicy: corev1.PullAlways,
+						ImagePullPolicy: core.PullAlways,
 						Image:           "localhost:5000/contrail-command",
-						ReadinessProbe: &corev1.Probe{
-							Handler: corev1.Handler{
-								HTTPGet: &corev1.HTTPGetAction{
+						ReadinessProbe: &core.Probe{
+							Handler: core.Handler{
+								HTTPGet: &core.HTTPGetAction{
 									Path: "/",
 									Port: intstr.IntOrString{IntVal: 9091},
 								},
 							},
 						},
+						VolumeMounts: []core.VolumeMount{{
+							Name:      configVolumeName,
+							MountPath: "/etc/contrail",
+						}},
 					}},
-					DNSPolicy: corev1.DNSClusterFirst,
+					DNSPolicy: core.DNSClusterFirst,
 				},
 			},
 		},
@@ -157,24 +191,23 @@ func getDeployment() *appsv1.Deployment {
 }
 
 func (r *ReconcileContrailCommand) updateStatus(
-	command *contrailv1alpha1.ContrailCommand,
-	deployment *appsv1.Deployment,
+	command *contrail.ContrailCommand,
+	deployment *apps.Deployment,
 	request reconcile.Request,
 ) error {
-	err := r.client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
+	err := r.Client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
 	if err != nil {
 		return err
 	}
-	active := false
+	command.Status.Active = false
 	intendentReplicas := int32(1)
 	if deployment.Spec.Replicas != nil {
 		intendentReplicas = *deployment.Spec.Replicas
 	}
 
 	if deployment.Status.ReadyReplicas == intendentReplicas {
-		active = true
+		command.Status.Active = true
 	}
 
-	command.Status.Active = &active
-	return r.client.Status().Update(context.Background(), command)
+	return r.Client.Status().Update(context.Background(), command)
 }

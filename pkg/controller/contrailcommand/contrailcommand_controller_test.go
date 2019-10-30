@@ -1,70 +1,81 @@
-package contrailcommand
+package contrailcommand_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	contrailv1alpha1 "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	"atom/atom/contrail/operator/pkg/controller/contrailcommand"
 )
 
-func TestConfigConfig(t *testing.T) {
-	scheme, err := contrailv1alpha1.SchemeBuilder.Build()
+func TestCommand(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
 	assert.NoError(t, err)
-	corev1.SchemeBuilder.AddToScheme(scheme)
-	appsv1.SchemeBuilder.AddToScheme(scheme)
-	trueVal := true
-	falseVal := false
+	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	tests := []struct {
 		name               string
 		initObjs           []runtime.Object
-		expectedStatus     contrailv1alpha1.ContrailCommandStatus
-		expectedDeployment *appsv1.Deployment
+		expectedStatus     contrail.ContrailCommandStatus
+		expectedDeployment *apps.Deployment
 	}{
 		{
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
-				getContrailCommand(),
+				newContrailCommand(),
+				newPostgres(true),
 			},
-			expectedStatus: contrailv1alpha1.ContrailCommandStatus{
-				Active: &falseVal,
+			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
+		},
+		{
+			name: "remove tolerations from deployment",
+			initObjs: []runtime.Object{
+				newContrailCommandWithEmptyToleration(),
+				newDeployment(apps.DeploymentStatus{
+					ReadyReplicas: 0,
+				}),
+				newPostgres(true),
 			},
-			expectedDeployment: getExpectedDeployment(appsv1.DeploymentStatus{}),
+			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 		},
 		{
 			name: "update command status to false",
 			initObjs: []runtime.Object{
-				getContrailCommand(),
-				getExpectedDeployment(appsv1.DeploymentStatus{
+				newContrailCommand(),
+				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 0,
 				}),
+				newPostgres(true),
 			},
-			expectedStatus: contrailv1alpha1.ContrailCommandStatus{
-				Active: &falseVal,
-			},
-			expectedDeployment: getExpectedDeployment(appsv1.DeploymentStatus{ReadyReplicas: 0}),
+			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 		},
 		{
 			name: "update command status to active",
 			initObjs: []runtime.Object{
-				getContrailCommand(),
-				getExpectedDeployment(appsv1.DeploymentStatus{
+				newContrailCommand(),
+				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
+				newPostgres(true),
 			},
-			expectedStatus: contrailv1alpha1.ContrailCommandStatus{
-				Active: &trueVal,
+			expectedStatus: contrail.ContrailCommandStatus{
+				Active: true,
 			},
-			expectedDeployment: getExpectedDeployment(appsv1.DeploymentStatus{ReadyReplicas: 1}),
+			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 		},
 	}
 
@@ -72,9 +83,9 @@ func TestConfigConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := ReconcileContrailCommand{
-				client: cl,
-				scheme: scheme,
+			r := contrailcommand.ReconcileContrailCommand{
+				Client: cl,
+				Scheme: scheme,
 			}
 
 			req := reconcile.Request{
@@ -89,17 +100,17 @@ func TestConfigConfig(t *testing.T) {
 			assert.False(t, res.Requeue)
 
 			// Check contrail command status
-			cc := &contrailv1alpha1.ContrailCommand{}
-			err = r.client.Get(context.Background(), types.NamespacedName{
+			cc := &contrail.ContrailCommand{}
+			err = r.Client.Get(context.Background(), types.NamespacedName{
 				Name:      "command",
 				Namespace: "default",
 			}, cc)
 			assert.Equal(t, tt.expectedStatus, cc.Status)
 
 			// Check and verify command deployment
-			dep := &appsv1.Deployment{}
+			dep := &apps.Deployment{}
 			exDep := tt.expectedDeployment
-			err = r.client.Get(context.Background(), types.NamespacedName{
+			err = r.Client.Get(context.Background(), types.NamespacedName{
 				Name:      exDep.Name,
 				Namespace: exDep.Namespace,
 			}, dep)
@@ -108,8 +119,8 @@ func TestConfigConfig(t *testing.T) {
 			assert.Equal(t, exDep, dep)
 			expConfigMap := getExpectedConfigMap()
 			// Check if config map has been created
-			configMap := &corev1.ConfigMap{}
-			err = r.client.Get(context.Background(), types.NamespacedName{
+			configMap := &core.ConfigMap{}
+			err = r.Client.Get(context.Background(), types.NamespacedName{
 				Name:      "command-contrailcommand-configmap",
 				Namespace: "default",
 			}, configMap)
@@ -119,31 +130,69 @@ func TestConfigConfig(t *testing.T) {
 	}
 }
 
-func getContrailCommand() *contrailv1alpha1.ContrailCommand {
+func TestCommandPostgres(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	assert.NoError(t, err)
+	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	t.Run("create postgres if it doesn't exist", func(t *testing.T) {
+
+		// given command cr
+		cl := fake.NewFakeClientWithScheme(scheme, newContrailCommand())
+
+		r := contrailcommand.ReconcileContrailCommand{
+			Client: cl,
+			Scheme: scheme,
+		}
+		// when it's reconciled
+		req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "command", Namespace: "default"}}
+		res, err := r.Reconcile(req)
+		assert.NoError(t, err)
+		assert.False(t, res.Requeue)
+
+		// then:
+		//   - no deployments should be created
+		deploymentList := &apps.DeploymentList{}
+		err = r.Client.List(context.Background(), &client.ListOptions{}, deploymentList)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(deploymentList.Items))
+
+		//   - a postgres cr should be created
+		postgres := &contrail.Postgres{}
+		err = r.Client.Get(context.Background(), types.NamespacedName{
+			Name:      "command-db",
+			Namespace: "default",
+		}, postgres)
+		assert.NoError(t, err)
+		assert.Equal(t, newPostgres(false), postgres)
+	})
+}
+
+func newContrailCommand() *contrail.ContrailCommand {
 	trueVal := true
-	return &contrailv1alpha1.ContrailCommand{
-		ObjectMeta: metav1.ObjectMeta{
+	return &contrail.ContrailCommand{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      "command",
 			Namespace: "default",
 		},
-		Spec: contrailv1alpha1.ContrailCommandSpec{
-			CommonConfiguration: contrailv1alpha1.CommonConfiguration{
+		Spec: contrail.ContrailCommandSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
 				Activate:    &trueVal,
 				Create:      &trueVal,
 				HostNetwork: &trueVal,
-				Tolerations: []corev1.Toleration{
+				Tolerations: []core.Toleration{
 					{
-						Effect:   corev1.TaintEffectNoSchedule,
-						Operator: corev1.TolerationOpExists,
+						Effect:   core.TaintEffectNoSchedule,
+						Operator: core.TolerationOpExists,
 					},
 					{
-						Effect:   corev1.TaintEffectNoExecute,
-						Operator: corev1.TolerationOpExists,
+						Effect:   core.TaintEffectNoExecute,
+						Operator: core.TolerationOpExists,
 					},
 				},
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
-			ServiceConfiguration: contrailv1alpha1.ContrailCommandConfiguration{
+			ServiceConfiguration: contrail.ContrailCommandConfiguration{
 				AdminUsername: "test",
 				AdminPassword: "test123",
 			},
@@ -151,59 +200,87 @@ func getContrailCommand() *contrailv1alpha1.ContrailCommand {
 	}
 }
 
-func getExpectedDeployment(s appsv1.DeploymentStatus) *appsv1.Deployment {
+func newPostgres(active bool) *contrail.Postgres {
 	trueVal := true
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "command-contrailcommand-deployment",
+	return &contrail.Postgres{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "command-db",
 			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
-			OwnerReferences: []metav1.OwnerReference{
+			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
 			},
 		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
+		Status: contrail.PostgresStatus{
+			Active: active,
+		},
+	}
+}
+
+func newContrailCommandWithEmptyToleration() *contrail.ContrailCommand {
+	cc := newContrailCommand()
+	cc.Spec.CommonConfiguration.Tolerations = []core.Toleration{{}}
+	return cc
+}
+
+func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment {
+	d := newDeployment(s)
+	d.Spec.Template.Spec.Tolerations = []core.Toleration{{}}
+	return d
+}
+
+func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
+	trueVal := true
+	return &apps.Deployment{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "command-contrailcommand-deployment",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: apps.DeploymentSpec{
+			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
 			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
+			Template: core.PodTemplateSpec{
+				ObjectMeta: meta.ObjectMeta{
 					Labels: map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
 				},
-				Spec: corev1.PodSpec{
+				Spec: core.PodSpec{
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-					DNSPolicy:    corev1.DNSClusterFirst,
-					Containers: []corev1.Container{
+					DNSPolicy:    core.DNSClusterFirst,
+					Containers: []core.Container{
 						{
 							Image:           "localhost:5000/contrail-command",
 							Name:            "command",
-							ImagePullPolicy: corev1.PullAlways,
-							ReadinessProbe: &corev1.Probe{
-								Handler: corev1.Handler{
-									HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
+							ImagePullPolicy: core.PullAlways,
+							ReadinessProbe: &core.Probe{
+								Handler: core.Handler{
+									HTTPGet: &core.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								corev1.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
 							},
 						},
 					},
-					Volumes: []corev1.Volume{
+					Volumes: []core.Volume{
 						{
 							Name: "command-contrailcommand-volume",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
 										Name: "command-contrailcommand-configmap",
 									},
 								},
 							},
 						},
 					},
-					Tolerations: []corev1.Toleration{
-						corev1.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						corev1.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+					Tolerations: []core.Toleration{
+						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 				},
 			},
@@ -212,15 +289,15 @@ func getExpectedDeployment(s appsv1.DeploymentStatus) *appsv1.Deployment {
 	}
 }
 
-func getExpectedConfigMap() *corev1.ConfigMap {
+func getExpectedConfigMap() *core.ConfigMap {
 	trueVal := true
-	return &corev1.ConfigMap{
+	return &core.ConfigMap{
 		Data: map[string]string{"contrail.yml": contrailCommandExpectedConfig},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-contrailcommand-configmap",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
-			OwnerReferences: []metav1.OwnerReference{
+			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
 			},
 		},

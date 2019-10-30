@@ -125,13 +125,10 @@ func (r *ReconcilePostgres) updateStatus(
 		return err
 	}
 
-	postgres.Status.Active = nil
-
 	if len(pod.Status.ContainerStatuses) != 0 {
-		postgres.Status.Active = &pod.Status.ContainerStatuses[0].Ready
+		postgres.Status.Active = pod.Status.ContainerStatuses[0].Ready
 	} else {
-		inActive := false
-		postgres.Status.Active = &inActive
+		postgres.Status.Active = false
 	}
 	return r.client.Status().Update(context.Background(), postgres)
 }

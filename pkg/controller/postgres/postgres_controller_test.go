@@ -97,5 +97,5 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	postgres := contrail.Postgres{}
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
-	assert.Equal(t, active, *postgres.Status.Active)
+	assert.Equal(t, active, postgres.Status.Active)
 }
