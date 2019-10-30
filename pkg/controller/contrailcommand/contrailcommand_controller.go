@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -76,9 +77,9 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ContrailCommand")
 	instanceType := "contrailcommand"
-	// Fetch the ContrailCommand instance
-	instance := &contrailv1alpha1.ContrailCommand{}
-	err := r.client.Get(context.Background(), request.NamespacedName, instance)
+	// Fetch the ContrailCommand command
+	command := &contrailv1alpha1.ContrailCommand{}
+	err := r.client.Get(context.Background(), request.NamespacedName, command)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -90,22 +91,22 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	configMap, err := contrailv1alpha1.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.client, r.scheme, request, "contrailcommand", instance)
+	configMap, err := contrailv1alpha1.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.client, r.scheme, request, "contrailcommand", command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.InstanceConfiguration(request, r.client); err != nil {
+	if err = command.InstanceConfiguration(request, r.client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	deployment, err := instance.PrepareIntendedDeployment(getDeployment(), &instance.Spec.CommonConfiguration, request, r.scheme)
+	deployment, err := command.PrepareIntendedDeployment(getDeployment(), &command.Spec.CommonConfiguration, request, r.scheme)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
-	instance.AddVolumesToIntendedDeployments(deployment,
+	command.AddVolumesToIntendedDeployments(deployment,
 		map[string]string{configMap.Name: configVolumeName})
 
 	volumeMountList := []corev1.VolumeMount{}
@@ -119,6 +120,10 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		// TODO Handle update
 		return nil
 	}); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.updateStatus(command, deployment, request); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -149,4 +154,27 @@ func getDeployment() *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func (r *ReconcileContrailCommand) updateStatus(
+	command *contrailv1alpha1.ContrailCommand,
+	deployment *appsv1.Deployment,
+	request reconcile.Request,
+) error {
+	err := r.client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
+	if err != nil {
+		return err
+	}
+	active := false
+	intendentReplicas := int32(1)
+	if deployment.Spec.Replicas != nil {
+		intendentReplicas = *deployment.Spec.Replicas
+	}
+
+	if deployment.Status.ReadyReplicas == intendentReplicas {
+		active = true
+	}
+
+	command.Status.Active = &active
+	return r.client.Status().Update(context.Background(), command)
 }
