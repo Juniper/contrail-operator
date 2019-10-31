@@ -183,6 +183,19 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 							MountPath: "/etc/contrail",
 						}},
 					}},
+					InitContainers: []core.Container{{
+						Name: "command-init",
+						ImagePullPolicy: core.PullAlways,
+						Image:           "localhost:5000/contrail-command-init",
+						Env: []core.EnvVar{{
+							Name:	"POSTGRES_USER",
+							Value: "root",
+						},{
+							Name:	"POSTGRES_DB_NAME",
+							Value: "contrail_test",
+						}},
+						Command: []string{"bash", "/etc/contrail/cc_init_db.sh"},
+					}},
 					DNSPolicy: core.DNSClusterFirst,
 				},
 			},
