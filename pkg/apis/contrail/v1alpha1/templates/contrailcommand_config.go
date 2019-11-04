@@ -106,7 +106,7 @@ client:
   project_id: admin
   domain_id: default
   schema_root: /
-  endpoint: https://localhost:9091
+  endpoint: http://localhost:9091
 
 agent:
   enabled: false
