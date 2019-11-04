@@ -1175,6 +1175,25 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 
 		}
 	}
+
+	if result, err := r.processContrailCommand(instance); err != nil {
+		return result, err
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileManager) processContrailCommand(manager *v1alpha1.Manager) (reconcile.Result, error) {
+	command := &v1alpha1.ContrailCommand{}
+	command.ObjectMeta = manager.Spec.Services.ContrailCommand.ObjectMeta
+	command.ObjectMeta.Namespace = manager.Namespace
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, command, func(existing runtime.Object) error {
+		command := existing.(*v1alpha1.ContrailCommand)
+		command.Spec = manager.Spec.Services.ContrailCommand.Spec
+		return controllerutil.SetControllerReference(manager, command, r.scheme)
+	}); err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, nil
 }
 
