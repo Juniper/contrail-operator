@@ -1,76 +1,13 @@
 # Contrail Operator
 
-## TOC
-
-[TOC]
-
 ## Prerequisites
 
 - An installed kubernetes cluster (>=1.15.0)    
-- An account on Atom gitlab (https://ssd-git.juniper.net/atom/atom)
 
-### Preparation
-
-#### Get an Access Token
-
-- go to https://ssd-git.juniper.net/profile/personal_access_tokens    
-- enter a name    
-- enter an expiration date    
-- check all scopes     
-- click on "Create personal access token"    
-- store the generated token on a save place     
-
-#### Install the Harbour container registry certificates on ALL kubernetes nodes (including masters)
+## Create CRDs, Service Account, Role, Bindings and Operator
 
 ```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \ 
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/cacerts%2FAddTrustExternalCARoot%2Ecrt/raw?ref=master \
-  -o /etc/pki/ca-trust/source/anchors/AddTrustExternalCARoot.crt
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/cacerts%2FSectigoRSADomainValidationSecureServerCA%2Ecrt/raw?ref=master \
-  -o /etc/pki/ca-trust/source/anchors/SectigoRSADomainValidationSecureServerCA.crt
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/cacerts%2FUSERTrustRSAAddTrustCA%2Ecrt/raw?ref=master \
-  -o /etc/pki/ca-trust/source/anchors/USERTrustRSAAddTrustCA.crt
-update-ca-trust
-/bin/systemctl restart docker.service
-```
-
-Again, this has to happen on ALL k8s nodes!    
-
-#### Create an image pull secret
-
-```
-kubectl create secret docker-registry atom-registry \
-  --docker-server=atom-registry-prod.juniper.net/atom \
-  --docker-username $YOUR_LDAP_USER_WITHOUT_DOMAIN \
-  --docker-password '$YOUR_LDAP_PASSWORD'
-```
-
-### Quick Start Installation
-
-#### Set branch
-
-```
-BRANCH=master
-```
-
-#### Create a Image Pull Secret for contrail/contrail-nightly registry
-
-```
-kubectl create secret docker-registry contrail-nightly \
-  --docker-server=hub.juniper.net/contrail-nightly \
-  --docker-username=$YOUR_REGISTRY_USER \
-  --docker-password=$YOUR_REGISTRY_PASSWORD
-```
-
-More configuration not needed for quick start
-
-#### Create CRDs, Service Account, Role, Bindings and Operator
-
-```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/contrail%2Foperator%2Fdeploy%2F1-create-operator%2Eyaml/raw?ref=${BRANCH} | kubectl apply -f -
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1-create-operator.yaml | kubectl apply -f -
 ```
 
 Wait for Contrail Operator deployment to run:    
@@ -81,41 +18,28 @@ NAME                                 READY   STATUS    RESTARTS   AGE
 contrail-operator-7bbb99845c-qktvf   1/1     Running   0          16m
 ```
 
-#### Apply a 1 or a 3 node manifest
+## Apply a 1 or a 3 node manifest
 
 Note: THIS WILL INSTALL CONTRAIL USING DEFAULTS!
 
-##### 1 Node
+### 1 Node
 
 ```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/contrail%2Foperator%2Fdeploy%2F2-start-operator-1node%2Eyaml/raw?ref=${BRANCH}| kubectl apply -f -
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-1node.yaml | kubectl apply -f -
 ```
 
-#### 3 Node
+### 3 Node
 
 ```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/contrail%2Foperator%2Fdeploy%2F2-start-operator-3node-minimal%2Eyaml/raw?ref=${BRANCH}| kubectl apply -f -
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-3node.yaml | kubectl apply -f -
 ```
 
-### Deploy a custom configuration
+## Deploy a custom configuration
 
-#### Get a manifest
-
-```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/contrail%2Foperator%2Fdeploy%2F2-start-operator-3node%2Eyaml/raw?ref=${BRANCH} \
-  -o 2-start-operator-3node-custom.yaml
-```
-
-### Deploy a custom configuration
-
-#### Get a manifest
+### Get a manifest
 
 ```
-curl --header "PRIVATE-TOKEN: $YOUR_ACCESS_TOKEN" \
-  https://svl-ssd-git.juniper.net/api/v4/projects/3584/repository/files/contrail%2Foperator%2Fdeploy%2F2-start-operator-3node%2Eyaml/raw?ref=${BRANCH} \
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-3node.yaml \
   -o 2-start-operator-3node-custom.yaml
 ```
 
@@ -350,7 +274,7 @@ spec:
             init: python:alpine 
 ```
 
-#### Apply custom manifest
+### Apply custom manifest
 
 ```
 kubectl apply -f 2-start-operator-3node-custom.yaml
