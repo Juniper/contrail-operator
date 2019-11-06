@@ -18,23 +18,25 @@ NAME                                 READY   STATUS    RESTARTS   AGE
 contrail-operator-7bbb99845c-qktvf   1/1     Running   0          16m
 ```
 
-## Apply a 1 or a 3 node manifest
+## Quick Install
+
+### Apply a 1 or a 3 node manifest
 
 Note: THIS WILL INSTALL CONTRAIL USING DEFAULTS!
 
-### 1 Node
+#### 1 Node
 
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-1node.yaml | kubectl apply -f -
 ```
 
-### 3 Node
+#### 3 Node
 
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-3node.yaml | kubectl apply -f -
 ```
 
-## Deploy a custom configuration
+## Custom Install
 
 ### Get a manifest
 
