@@ -5,7 +5,7 @@ ENV OPERATOR=/usr/local/bin/contrail-operator \
     USER_NAME=contrail-operator
 
 # install operator binary
-COPY build/_output/bin/operator ${OPERATOR}
+COPY build/_output/bin/contrail-operator ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup

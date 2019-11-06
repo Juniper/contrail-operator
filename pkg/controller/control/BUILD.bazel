@@ -6,7 +6,7 @@ go_library(
         "control_controller.go",
         "sts.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/controller/control",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/control",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",

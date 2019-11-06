@@ -15,8 +15,8 @@
 package e2e
 
 import (
-	"atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
-	"atom/atom/contrail/operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"fmt"
 	"strconv"
 	"testing"
@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apis "atom/atom/contrail/operator/pkg/apis"
+	apis "github.com/Juniper/contrail-operator/pkg/apis"
 
 	contrailapi "github.com/Juniper/contrail-go-api"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"

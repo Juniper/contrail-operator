@@ -2,7 +2,7 @@ package controller
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	//mgr "atom/atom/contrail/operator/pkg/controller/manager"
+	//mgr "github.com/Juniper/contrail-operator/pkg/controller/manager"
 )
 
 // AddToManagerFuncs is a list of functions to add all Controllers to the Manager

@@ -32,7 +32,7 @@ container_atom_push(
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "atom/atom/contrail/operator/cmd/manager",
+    importpath = "github.com/Juniper/contrail-operator/cmd/manager",
     visibility = ["//visibility:private"],
     deps = [
         "//contrail/operator/pkg/apis:go_default_library",

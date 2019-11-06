@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["manager_controller.go"],
-    importpath = "atom/atom/contrail/operator/pkg/controller/manager",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/manager",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",

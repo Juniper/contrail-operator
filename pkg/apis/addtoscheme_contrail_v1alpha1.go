@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 func init() {

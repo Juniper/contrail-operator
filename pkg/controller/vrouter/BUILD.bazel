@@ -6,7 +6,7 @@ go_library(
         "daemonset.go",
         "vrouter_controller.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/controller/vrouter",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/vrouter",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",

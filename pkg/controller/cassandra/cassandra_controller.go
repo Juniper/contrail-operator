@@ -1,8 +1,8 @@
 package cassandra
 
 import (
-	"atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
-	"atom/atom/contrail/operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"context"
 	"strconv"
 
@@ -36,7 +36,7 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
 			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
 			list := &v1alpha1.CassandraList{}
-			err := myclient.List(context.TODO(), listOps, list)
+			err := myclient.List(context.TODO(), list, listOps)
 			if err == nil {
 				for _, app := range list.Items {
 					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
@@ -49,7 +49,7 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
 			listOps := &client.ListOptions{Namespace: e.MetaNew.GetNamespace()}
 			list := &v1alpha1.CassandraList{}
-			err := myclient.List(context.TODO(), listOps, list)
+			err := myclient.List(context.TODO(), list, listOps)
 			if err == nil {
 				for _, app := range list.Items {
 					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
@@ -62,7 +62,7 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
 			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
 			list := &v1alpha1.CassandraList{}
-			err := myclient.List(context.TODO(), listOps, list)
+			err := myclient.List(context.TODO(), list, listOps)
 			if err == nil {
 				for _, app := range list.Items {
 					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
@@ -75,7 +75,7 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 		GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
 			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
 			list := &v1alpha1.CassandraList{}
-			err := myclient.List(context.TODO(), listOps, list)
+			err := myclient.List(context.TODO(), list, listOps)
 			if err == nil {
 				for _, app := range list.Items {
 					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
@@ -412,7 +412,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
-		err := r.Client.List(context.TODO(), listOps, pvcList)
+		err := r.Client.List(context.TODO(), pvcList, listOps)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

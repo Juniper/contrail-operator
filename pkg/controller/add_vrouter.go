@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"atom/atom/contrail/operator/pkg/controller/vrouter"
+	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 )
 
 func init() {

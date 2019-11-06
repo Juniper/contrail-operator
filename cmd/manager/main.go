@@ -1,8 +1,8 @@
 package main
 
 import (
-	"atom/atom/contrail/operator/pkg/apis"
-	"atom/atom/contrail/operator/pkg/controller"
+	"github.com/Juniper/contrail-operator/pkg/apis"
+	"github.com/Juniper/contrail-operator/pkg/controller"
 	"context"
 	"flag"
 	"fmt"

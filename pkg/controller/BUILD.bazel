@@ -14,7 +14,7 @@ go_library(
         "add_zookeeper.go",
         "controller.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/controller",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/controller/cassandra:go_default_library",

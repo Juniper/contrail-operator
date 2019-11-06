@@ -7,7 +7,7 @@ go_library(
         "enqueue_request_for_object_group_kind.go",
         "enqueue_request_for_owner_group_kind.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/controller/enqueue",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/enqueue",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_apimachinery//pkg/api/meta:go_default_library",

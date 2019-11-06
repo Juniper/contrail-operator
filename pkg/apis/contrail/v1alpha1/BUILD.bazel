@@ -20,7 +20,7 @@ go_library(
         "zz_generated.deepcopy.go",
         "zz_generated.openapi.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1",
+    importpath = "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1/templates:go_default_library",

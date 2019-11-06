@@ -2,7 +2,7 @@
 package controller
 
 import (
-	"atom/atom/contrail/operator/pkg/controller/kubemanager"
+	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 )
 
 func init() {

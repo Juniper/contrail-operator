@@ -12,6 +12,6 @@ go_library(
         "webui_config.go",
         "zookeeper_config.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1/templates",
+    importpath = "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates",
     visibility = ["//visibility:public"],
 )

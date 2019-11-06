@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	configtemplates "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1/templates"
+	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -172,7 +172,7 @@ func (c *Rabbitmq) IsActive(name string, namespace string, myclient client.Clien
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	rabbitmqList := &RabbitmqList{}
-	err := myclient.List(context.TODO(), listOps, rabbitmqList)
+	err := myclient.List(context.TODO(), rabbitmqList, listOps)
 	if err != nil {
 		return false
 	}

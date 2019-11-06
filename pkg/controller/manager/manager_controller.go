@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	cr "atom/atom/contrail/operator/pkg/controller/manager/crs"
+	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"

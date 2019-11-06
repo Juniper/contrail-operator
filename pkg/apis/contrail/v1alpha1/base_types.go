@@ -530,7 +530,7 @@ func PodIPListAndIPMapFromInstance(instanceType string,
 		instanceType: request.Name})
 	listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 	podList := &corev1.PodList{}
-	err := reconcileClient.List(context.TODO(), listOps, podList)
+	err := reconcileClient.List(context.TODO(), podList, listOps)
 	if err != nil {
 		return &corev1.PodList{}, map[string]string{}, err
 	}
@@ -656,7 +656,7 @@ func NewControlClusterConfiguration(name string, role string, namespace string, 
 		labelSelector := labels.SelectorFromSet(map[string]string{"control_role": role})
 		listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 		controlList := &ControlList{}
-		err := myclient.List(context.TODO(), listOps, controlList)
+		err := myclient.List(context.TODO(), controlList, listOps)
 		if err != nil {
 			return &controlCluster, err
 		}
@@ -738,7 +738,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	rabbitmqList := &RabbitmqList{}
-	err := myclient.List(context.TODO(), listOps, rabbitmqList)
+	err := myclient.List(context.TODO(), rabbitmqList, listOps)
 	if err != nil {
 		return &rabbitmqCluster, err
 	}
@@ -772,7 +772,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	configList := &ConfigList{}
-	err := myclient.List(context.TODO(), listOps, configList)
+	err := myclient.List(context.TODO(), configList, listOps)
 	if err != nil {
 		return &configCluster, err
 	}

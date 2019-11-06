@@ -6,7 +6,7 @@ go_library(
         "rabbitmq_controller.go",
         "sts.go",
     ],
-    importpath = "atom/atom/contrail/operator/pkg/controller/rabbitmq",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/rabbitmq",
     visibility = ["//visibility:public"],
     deps = [
         "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
