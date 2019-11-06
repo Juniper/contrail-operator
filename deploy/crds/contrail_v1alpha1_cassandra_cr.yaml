@@ -1,0 +1,6 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Cassandra
+metadata:
+  name: example-cassandra
+  labels:
+    contrail_manager: cassandra

@@ -1,0 +1,4 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Kubemanager
+metadata:
+  name: cluster-1

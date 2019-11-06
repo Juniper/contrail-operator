@@ -1,0 +1,454 @@
+package v1alpha1
+
+import (
+	"bytes"
+	"context"
+	"sort"
+
+	configtemplates "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1/templates"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Vrouter is the Schema for the vrouters API.
+// +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+type Vrouter struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   VrouterSpec   `json:"spec,omitempty"`
+	Status VrouterStatus `json:"status,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type VrouterStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Ports ConfigStatusPorts `json:"ports,omitempty"`
+	Nodes map[string]string `json:"nodes,omitempty"`
+}
+
+// VrouterSpec is the Spec for the cassandras API.
+// +k8s:openapi-gen=true
+type VrouterSpec struct {
+	CommonConfiguration  CommonConfiguration  `json:"commonConfiguration"`
+	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
+}
+
+// VrouterConfiguration is the Spec for the cassandras API.
+// +k8s:openapi-gen=true
+type VrouterConfiguration struct {
+	Images            map[string]string `json:"images"`
+	ControlInstance   string            `json:"controlInstance,omitempty"`
+	CassandraInstance string            `json:"cassandraInstance,omitempty"`
+	Gateway           string            `json:"gateway,omitempty"`
+	PhysicalInterface string            `json:"physicalInterface,omitempty"`
+	MetaDataSecret    string            `json:"metaDataSecret,omitempty"`
+	NodeManager       *bool             `json:"nodeManager,omitempty"`
+	Distribution      *Distribution     `json:"distribution,omitempty"`
+	ServiceAccount        string            `json:"serviceAccount,omitempty"`
+	ClusterRole           string            `json:"clusterRole,omitempty"`
+	ClusterRoleBinding    string            `json:"clusterRoleBinding,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VrouterList contains a list of Vrouter.
+type VrouterList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Vrouter `json:"items"`
+}
+
+type Distribution string
+
+const (
+	RHEL   Distribution = "rhel"
+	CENTOS Distribution = "centos"
+	UBUNTU Distribution = "ubuntu"
+)
+
+func init() {
+	SchemeBuilder.Register(&Vrouter{}, &VrouterList{})
+}
+
+func (c *Vrouter) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
+	managerName := c.Labels["contrail_cluster"]
+	ownerRefList := c.GetOwnerReferences()
+	for _, ownerRef := range ownerRefList {
+		if *ownerRef.Controller {
+			if ownerRef.Kind == "Manager" {
+				managerInstance := &Manager{}
+				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
+				if err != nil {
+					return nil, err
+				}
+				return managerInstance, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (c *Vrouter) CreateConfigMap(configMapName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.ConfigMap, error) {
+	return CreateConfigMap(configMapName,
+		client,
+		scheme,
+		request,
+		"vrouter",
+		c)
+}
+
+// PrepareDaemonSet prepares the intended podList.
+func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
+	commonConfiguration *CommonConfiguration,
+	request reconcile.Request,
+	scheme *runtime.Scheme,
+	client client.Client) error {
+	instanceType := "vrouter"
+	SetDSCommonConfiguration(ds, commonConfiguration)
+	ds.SetName(request.Name + "-" + instanceType + "-daemonset")
+	ds.SetNamespace(request.Namespace)
+	ds.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	ds.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name}
+	ds.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	err := controllerutil.SetControllerReference(c, ds, scheme)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetDSCommonConfiguration takes common configuration parameters
+// and applies it to the pod.
+func SetDSCommonConfiguration(ds *appsv1.DaemonSet,
+	commonConfiguration *CommonConfiguration) {
+	if len(commonConfiguration.Tolerations) > 0 {
+		ds.Spec.Template.Spec.Tolerations = commonConfiguration.Tolerations
+	}
+	if len(commonConfiguration.NodeSelector) > 0 {
+		ds.Spec.Template.Spec.NodeSelector = commonConfiguration.NodeSelector
+	}
+	if commonConfiguration.HostNetwork != nil {
+		ds.Spec.Template.Spec.HostNetwork = *commonConfiguration.HostNetwork
+	} else {
+		ds.Spec.Template.Spec.HostNetwork = false
+	}
+	if len(commonConfiguration.ImagePullSecrets) > 0 {
+		imagePullSecretList := []corev1.LocalObjectReference{}
+		for _, imagePullSecretName := range commonConfiguration.ImagePullSecrets {
+			imagePullSecret := corev1.LocalObjectReference{
+				Name: imagePullSecretName,
+			}
+			imagePullSecretList = append(imagePullSecretList, imagePullSecret)
+		}
+		ds.Spec.Template.Spec.ImagePullSecrets = imagePullSecretList
+	}
+}
+
+// AddVolumesToIntendedDS adds volumes to a deployment.
+func (c *Vrouter) AddVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeConfigMapMap map[string]string) {
+	volumeList := ds.Spec.Template.Spec.Volumes
+	for configMapName, volumeName := range volumeConfigMapMap {
+		volume := corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: configMapName,
+					},
+				},
+			},
+		}
+		volumeList = append(volumeList, volume)
+	}
+	ds.Spec.Template.Spec.Volumes = volumeList
+}
+
+// CreateDS creates the STS.
+func (c *Vrouter) CreateDS(ds *appsv1.DaemonSet,
+	commonConfiguration *CommonConfiguration,
+	instanceType string,
+	request reconcile.Request,
+	scheme *runtime.Scheme,
+	reconcileClient client.Client) error {
+	foundDS := &appsv1.DaemonSet{}
+	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-daemonset", Namespace: request.Namespace}, foundDS)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			ds.Spec.Template.ObjectMeta.Labels["version"] = "1"
+			err = reconcileClient.Create(context.TODO(), ds)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// UpdateDS updates the STS.
+func (c *Vrouter) UpdateDS(ds *appsv1.DaemonSet,
+	commonConfiguration *CommonConfiguration,
+	instanceType string,
+	request reconcile.Request,
+	scheme *runtime.Scheme,
+	reconcileClient client.Client) error {
+	currentDS := &appsv1.DaemonSet{}
+	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-daemonset", Namespace: request.Namespace}, currentDS)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	imagesChanged := false
+	for _, intendedContainer := range ds.Spec.Template.Spec.Containers {
+		for _, currentContainer := range currentDS.Spec.Template.Spec.Containers {
+			if intendedContainer.Name == currentContainer.Name {
+				if intendedContainer.Image != currentContainer.Image {
+					imagesChanged = true
+				}
+			}
+		}
+	}
+	if imagesChanged {
+
+		ds.Spec.Template.ObjectMeta.Labels["version"] = currentDS.Spec.Template.ObjectMeta.Labels["version"]
+
+		err = reconcileClient.Update(context.TODO(), ds)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
+func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client, getPhysicalInterface bool, getPhysicalInterfaceMac bool, getPrefixLength bool, getGateway bool) (*corev1.PodList, map[string]string, error) {
+	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, getPhysicalInterface, getPhysicalInterfaceMac, getPrefixLength, getGateway)
+}
+
+func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
+	podList *corev1.PodList,
+	client client.Client) error {
+	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
+	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(),
+		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
+		configMapInstanceDynamicConfig)
+	if err != nil {
+		return err
+	}
+
+	instanceConfigMapName2 := request.Name + "-" + "vrouter" + "-configmap-1"
+	configMapInstanceDynamicConfig2 := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(),
+		types.NamespacedName{Name: instanceConfigMapName2, Namespace: request.Namespace},
+		configMapInstanceDynamicConfig2)
+	if err != nil {
+		return err
+	}
+	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
+		request.Namespace, client)
+	if err != nil {
+		return err
+	}
+	controlNodesInformation, err := NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance,
+		"", request.Namespace, client)
+	if err != nil {
+		return err
+	}
+	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
+		request.Namespace, client)
+	if err != nil {
+		return err
+	}
+
+	vrouterConfigInstance := c.ConfigurationParameters()
+	vrouterConfig := vrouterConfigInstance.(VrouterConfiguration)
+
+	var podIPList []string
+	for _, pod := range podList.Items {
+		podIPList = append(podIPList, pod.Status.PodIP)
+	}
+	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
+	var data = make(map[string]string)
+	var data2 = make(map[string]string)
+	for idx := range podList.Items {
+		hostname := podList.Items[idx].Annotations["hostname"]
+		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
+		prefixLength := podList.Items[idx].Annotations["prefixLength"]
+		var physicalInterface string
+		if vrouterConfig.PhysicalInterface != "" {
+			physicalInterface = vrouterConfig.PhysicalInterface
+		} else {
+			physicalInterface = podList.Items[idx].Annotations["physicalInterface"]
+		}
+		var gateway string
+		if vrouterConfig.Gateway != "" {
+			gateway = vrouterConfig.Gateway
+		} else {
+			gateway = podList.Items[idx].Annotations["gateway"]
+		}
+		data2["PHYSICAL_INTERFACE"] = physicalInterface
+		data2["ORCHESTRATOR"] = "kubernetes"
+		var vrouterConfigBuffer bytes.Buffer
+		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
+			Hostname             string
+			ListenAddress        string
+			ControlServerList    string
+			DNSServerList        string
+			CollectorServerList  string
+			PrefixLength         string
+			PhysicalInterface    string
+			PhysicalInterfaceMac string
+			Gateway              string
+			MetaDataSecret       string
+		}{
+			Hostname:             hostname,
+			ListenAddress:        podList.Items[idx].Status.PodIP,
+			ControlServerList:    controlNodesInformation.ServerListXMPPSpaceSeparated,
+			DNSServerList:        controlNodesInformation.ServerListDNSSpaceSeparated,
+			CollectorServerList:  configNodesInformation.CollectorServerListSpaceSeparated,
+			PrefixLength:         prefixLength,
+			PhysicalInterface:    physicalInterface,
+			PhysicalInterfaceMac: physicalInterfaceMac,
+			Gateway:              gateway,
+			MetaDataSecret:       vrouterConfig.MetaDataSecret,
+		})
+		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
+
+		var vrouterNodemanagerBuffer bytes.Buffer
+		configtemplates.VrouterNodemanagerConfig.Execute(&vrouterNodemanagerBuffer, struct {
+			ListenAddress       string
+			Hostname            string
+			CollectorServerList string
+			CassandraPort       string
+			CassandraJmxPort    string
+		}{
+			ListenAddress:       podList.Items[idx].Status.PodIP,
+			Hostname:            hostname,
+			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			CassandraPort:       cassandraNodesInformation.CQLPort,
+			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+		})
+		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
+
+		var vrouterProvisionBuffer bytes.Buffer
+		configtemplates.VrouterProvisionConfig.Execute(&vrouterProvisionBuffer, struct {
+			ListenAddress string
+			APIServerList string
+			APIServerPort string
+			Hostname      string
+		}{
+			ListenAddress: podList.Items[idx].Status.PodIP,
+			APIServerList: configNodesInformation.APIServerListCommaSeparated,
+			APIServerPort: configNodesInformation.APIServerPort,
+			Hostname:      hostname,
+		})
+		data["provision.sh."+podList.Items[idx].Status.PodIP] = vrouterProvisionBuffer.String()
+
+		var vrouterDeProvisionBuffer bytes.Buffer
+		configtemplates.VrouterDeProvisionConfig.Execute(&vrouterDeProvisionBuffer, struct {
+			User          string
+			Password      string
+			Tenant        string
+			APIServerList string
+			APIServerPort string
+			Hostname      string
+		}{
+			User:          KeystoneAuthAdminUser,
+			Password:      KeystoneAuthAdminPassword,
+			Tenant:        KeystoneAuthAdminTenant,
+			APIServerList: configNodesInformation.APIServerListQuotedCommaSeparated,
+			APIServerPort: configNodesInformation.APIServerPort,
+			Hostname:      hostname,
+		})
+		data["deprovision.py."+podList.Items[idx].Status.PodIP] = vrouterDeProvisionBuffer.String()
+
+		var contrailCNIBuffer bytes.Buffer
+		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
+		}{})
+		data["10-contrail.conf"] = contrailCNIBuffer.String()
+	}
+	configMapInstanceDynamicConfig.Data = data
+	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
+	if err != nil {
+		return err
+	}
+	configMapInstanceDynamicConfig2.Data = data2
+	err = client.Update(context.TODO(), configMapInstanceDynamicConfig2)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetPodsToReady sets Kubemanager PODs to ready.
+func (c *Vrouter) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
+	return SetPodsToReady(podIPList, client)
+}
+
+func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
+	client client.Client) error {
+	c.Status.Nodes = podNameIPMap
+	err := client.Status().Update(context.TODO(), c)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Vrouter) ConfigurationParameters() interface{} {
+	vrouterConfiguration := VrouterConfiguration{}
+	var physicalInterface string
+	var gateway string
+	var metaDataSecret string
+	if c.Spec.ServiceConfiguration.PhysicalInterface != "" {
+		physicalInterface = c.Spec.ServiceConfiguration.PhysicalInterface
+	}
+
+	if c.Spec.ServiceConfiguration.Gateway != "" {
+		gateway = c.Spec.ServiceConfiguration.Gateway
+	}
+
+	if c.Spec.ServiceConfiguration.MetaDataSecret != "" {
+		metaDataSecret = c.Spec.ServiceConfiguration.MetaDataSecret
+	} else {
+		metaDataSecret = MetadataProxySecret
+	}
+
+	if c.Spec.ServiceConfiguration.NodeManager != nil {
+		vrouterConfiguration.NodeManager = c.Spec.ServiceConfiguration.NodeManager
+	} else {
+		nodeManager := true
+		vrouterConfiguration.NodeManager = &nodeManager
+	}
+
+	vrouterConfiguration.PhysicalInterface = physicalInterface
+	vrouterConfiguration.Gateway = gateway
+	vrouterConfiguration.MetaDataSecret = metaDataSecret
+
+	return vrouterConfiguration
+}

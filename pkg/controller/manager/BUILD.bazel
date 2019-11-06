@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["manager_controller.go"],
+    importpath = "atom/atom/contrail/operator/pkg/controller/manager",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
+        "//contrail/operator/pkg/controller/manager/crs:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/cache:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/controller/controllerutil:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/handler:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/runtime/log:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/source:go_default_library",
+    ],
+)

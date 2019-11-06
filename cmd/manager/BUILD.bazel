@@ -1,0 +1,53 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+
+go_binary(
+    name = "contrail_operator",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:private"],
+)
+
+container_image(
+    name = "contrail_operator_app_image",
+    base = "@my_go_image_base//image",
+)
+
+go_image(
+    name = "contrail_operator_image_base",
+    base = ":contrail_operator_app_image",
+    binary = ":contrail_operator",
+)
+
+load("//build:container.bzl", "container_atom_push")
+
+# declare where and how the image will be published
+container_atom_push(
+    component = "contrail_operator_container",
+    image = ":contrail_operator_image_base",
+    repo = "atom",
+    tag = "{SCM_VERSION_CONTRAIL}",
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "atom/atom/contrail/operator/cmd/manager",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//contrail/operator/pkg/apis:go_default_library",
+        "//contrail/operator/pkg/controller:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/k8sutil:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/leader:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/log/zap:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/metrics:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/restmapper:go_default_library",
+        "@com_github_operator_framework_operator_sdk//version:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
+        "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client/config:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/runtime/log:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/runtime/signals:go_default_library",
+    ],
+)

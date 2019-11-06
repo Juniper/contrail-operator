@@ -1,0 +1,7 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Rabbitmq
+metadata:
+  name: example-rabbitmq
+spec:
+  # Add fields here
+  size: 3

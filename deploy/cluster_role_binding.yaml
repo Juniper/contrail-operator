@@ -1,0 +1,13 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: contrail-operator
+  namespace: contrail
+subjects:
+- kind: ServiceAccount
+  name: contrail-operator
+  namespace: contrail
+roleRef:
+  kind: ClusterRole
+  name: contrail-operator
+  apiGroup: rbac.authorization.k8s.io

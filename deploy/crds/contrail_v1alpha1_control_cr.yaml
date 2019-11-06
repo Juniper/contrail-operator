@@ -1,0 +1,4 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Control
+metadata:
+  name: cluster-1

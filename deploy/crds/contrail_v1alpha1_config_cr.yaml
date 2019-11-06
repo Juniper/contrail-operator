@@ -1,0 +1,9 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Config
+metadata:
+  name: example-config
+spec:
+  # Add fields here
+  size: 3
+  service: 
+    activate: true
