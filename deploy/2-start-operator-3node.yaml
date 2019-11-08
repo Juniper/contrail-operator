@@ -178,4 +178,21 @@ spec:
             nodemanager: opencontrailnightly/contrail-nodemgr:1910-latest
             nodeinit: opencontrailnightly/contrail-node-init:1910-latest
             init: python:alpine          
-
+    contrailCommand:
+      metadata:
+        name: command
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          hostNetwork: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          adminUsername: "admin"
+          adminPassword: "contrail123"
