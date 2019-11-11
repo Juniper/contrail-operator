@@ -69,18 +69,31 @@ spec:
           nodeManager: false
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
-          images:
-            api: opencontrailnightly/contrail-controller-config-api:1910-latest
-            devicemanager: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
-            schematransformer: opencontrailnightly/contrail-controller-config-schema:1910-latest
-            servicemonitor: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
-            analyticsapi: opencontrailnightly/contrail-analytics-api:1910-latest
-            collector: opencontrailnightly/contrail-analytics-collector:1910-latest
-            redis: redis:4.0.2
-            nodemanagerconfig: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodemanageranalytics: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
-            init: python:alpine
+          containers:
+            api:
+              image: opencontrailnightly/contrail-controller-config-api:1910-latest
+            devicemanager:
+              image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+            schematransformer:
+              image: opencontrailnightly/contrail-controller-config-schema:1910-latest
+            servicemonitor:
+              image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
+            analyticsapi:
+              image: opencontrailnightly/contrail-analytics-api:1910-latest
+            collector:
+              image: opencontrailnightly/contrail-analytics-collector:1910-latest
+            redis:
+              image: redis:4.0.2
+            nodemanagerconfig:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodemanageranalytics:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            init2:
+              image: busybox
+            init:
+              image: python:alpine
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
     kubemanagers:
     - metadata:
         name: kubemanager1
@@ -152,17 +165,23 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""    
         serviceConfiguration:
-          nodeManager: false
           cassandraInstance: cassandra1
           controlInstance: control1
           images:
-            vrouteragent: opencontrailnightly/contrail-vrouter-agent:1910-latest
-            vrouterkernelinit: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
-            vrouterkernelbuildinit: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
-            vroutercni: michaelhenkel/contrailcni:v0.0.1
-            nodemanager: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
-            init: python:alpine
+            vrouteragent: 
+              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+            vrouterkernelinit:
+              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+            vrouterkernelbuildinit:
+              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+            vroutercni:
+              image: michaelhenkel/contrailcni:v0.0.1
+            nodemanager:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodeinit: 
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init: 
+              image: python:alpine  
     - metadata:
         name: vrouternodes
         labels:
@@ -173,15 +192,21 @@ spec:
           nodeSelector:
             node-role.opencontrail.org: "vrouter"  
         serviceConfiguration:
-          nodeManager: false
           cassandraInstance: cassandra1
           controlInstance: control1
-          images:
-            vrouteragent: opencontrailnightly/contrail-vrouter-agent:1910-latest
-            vrouterkernelinit: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
-            vrouterkernelbuildinit: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
-            vroutercni: michaelhenkel/contrailcni:v0.0.1
-            nodemanager: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
-            init: python:alpine          
+          containers:
+            vrouteragent: 
+              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+            vrouterkernelinit:
+              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+            vrouterkernelbuildinit:
+              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+            vroutercni:
+              image: michaelhenkel/contrailcni:v0.0.1
+            nodemanager:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodeinit: 
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init: 
+              image: python:alpine          
 

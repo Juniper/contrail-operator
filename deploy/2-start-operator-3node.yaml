@@ -66,6 +66,29 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
+          containers:
+            api:
+              image: opencontrailnightly/contrail-controller-config-api:1910-latest
+            devicemanager:
+              image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+            schematransformer:
+              image: opencontrailnightly/contrail-controller-config-schema:1910-latest
+            servicemonitor:
+              image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
+            analyticsapi:
+              image: opencontrailnightly/contrail-analytics-api:1910-latest
+            collector:
+              image: opencontrailnightly/contrail-analytics-collector:1910-latest
+            redis:
+              image: redis:4.0.2
+            nodemanagerconfig:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodemanageranalytics:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init:
+              image: python:alpine            
           images:
             api: opencontrailnightly/contrail-controller-config-api:1910-latest
             devicemanager: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest

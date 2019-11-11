@@ -20,6 +20,13 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Container defines name, image and command.
+// +k8s:openapi-gen=true
+type Container struct {
+	Image   string   `json:"image,omitempty"`
+	Command []string `json:"command,omitempty"`
+}
+
 // ServiceStatus provides information on the current status of the service.
 // +k8s:openapi-gen=true
 type ServiceStatus struct {
@@ -40,7 +47,7 @@ type Status struct {
 	Ports  map[string]string `json:"ports,omitempty"`
 }
 
-// ActiveStatus
+// ActiveStatus signals the current status
 type ActiveStatus struct {
 	Active *bool `json:"active,omitempty"`
 }

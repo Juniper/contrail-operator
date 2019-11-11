@@ -1,8 +1,9 @@
 package manager
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -556,18 +557,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *configService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-		if instance.Status.Config != nil {
-			if *configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
-				create = false
-				delete = false
-				update = true
-			}
-			if !*configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
 
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
@@ -576,6 +565,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = configService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Config"
+
+		if instance.Status.Config != nil {
+			if *configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+				if err == nil {
+					create = false
+					delete = false
+					update = true
+				}
+			}
+			if !*configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
+				create = false
+				delete = true
+				update = false
+			}
+		}
+
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -625,13 +631,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range configService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = configService.Spec.ServiceConfiguration.Images
+
+			for container := range configService.Spec.ServiceConfiguration.Containers {
+				if configService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = configService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
 			}
+
 			if imageChanged || replicasChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
@@ -1039,9 +1047,18 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *vrouterService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		cr := cr.GetVrouterCr()
+		cr.ObjectMeta = vrouterService.ObjectMeta
+		cr.Labels = vrouterService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.Spec.ServiceConfiguration = vrouterService.Spec.ServiceConfiguration
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "Vrouter"
 		for _, vrouterStatus := range instance.Status.Vrouters {
 			if vrouterService.Name == *vrouterStatus.Name {
-				if *vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+				if err == nil {
 					create = false
 					delete = false
 					update = true
@@ -1053,13 +1070,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 		}
-		cr := cr.GetVrouterCr()
-		cr.ObjectMeta = vrouterService.ObjectMeta
-		cr.Labels = vrouterService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = vrouterService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Vrouter"
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -1127,13 +1137,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range vrouterService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = vrouterService.Spec.ServiceConfiguration.Images
+
+			for container := range vrouterService.Spec.ServiceConfiguration.Containers {
+				if vrouterService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = vrouterService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
 			}
+
 			if imageChanged || replicasChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
