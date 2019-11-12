@@ -1,11 +1,12 @@
 package config
 
 import (
+	"context"
+	"fmt"
+	"reflect"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
-	"context"
-	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -239,7 +240,22 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	vncApiLibConfigMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-vnc-api-configmap", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	vncApiLibConfigMap.Data = map[string]string{"vnc_api_lib.ini": vncApiLib}
+	err = r.Client.Update(context.Background(), vncApiLibConfigMap)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("Cannot update vnc_api_lib configmap: %v", err)
+	}
+
+	instance.AddVolumesToIntendedSTS(statefulSet,
+		map[string]string{
+			configMap.Name:          request.Name + "-" + instanceType + "-volume",
+			vncApiLibConfigMap.Name: request.Name + "-" + instanceType + "-vnc-api-volume",
+		})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "api" {
@@ -482,5 +498,37 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
+	if *instance.Status.Active {
+		apiURL, err := apiURL(instance, podIPList)
+		if err != nil {
+			log.Error(err, "Config API URL cannot be created")
+			return reconcile.Result{}, err
+		}
+		apiClient := NewApiClient(apiURL)
+		configNode := ConfigNode{
+			UUID: "86f38811-a892-4877-885f-be0fa05ea164",
+			Host: "localhost",
+		}
+		if err = apiClient.EnsureConfigNodeExists(configNode); err != nil {
+			log.Error(err, "EnsureConfigNodeExists failed")
+			return reconcile.Result{}, err
+		}
+	}
 	return reconcile.Result{}, nil
+}
+
+func apiURL(config *v1alpha1.Config, configPods *corev1.PodList) (string, error) {
+	if len(configPods.Items) == 0 {
+		return "", fmt.Errorf("no config pods")
+	}
+	podIP := configPods.Items[0].Status.PodIP
+	if podIP == "" {
+		return "", fmt.Errorf("empty PodIP in config pod Status")
+	}
+	apiPort := config.Status.Ports.APIPort
+	if apiPort == "" {
+		return "", fmt.Errorf("empty API port in Config.Status.Ports.APIPort")
+	}
+	url := fmt.Sprintf("http://%s:%s", podIP, apiPort)
+	return url, nil
 }
