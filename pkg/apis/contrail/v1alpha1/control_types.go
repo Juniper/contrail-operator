@@ -43,15 +43,15 @@ type ControlSpec struct {
 // ControlConfiguration is the Spec for the controls API.
 // +k8s:openapi-gen=true
 type ControlConfiguration struct {
-	Images            map[string]string `json:"images"`
-	CassandraInstance string            `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string            `json:"zookeeperInstance,omitempty"`
-	BGPPort           *int              `json:"bgpPort,omitempty"`
-	ASNNumber         *int              `json:"asnNumber,omitempty"`
-	XMPPPort          *int              `json:"xmppPort,omitempty"`
-	DNSPort           *int              `json:"dnsPort,omitempty"`
-	DNSIntrospectPort *int              `json:"dnsIntrospectPort,omitempty"`
-	NodeManager       *bool             `json:"nodeManager,omitempty"`
+	Containers        map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
+	BGPPort           *int                  `json:"bgpPort,omitempty"`
+	ASNNumber         *int                  `json:"asnNumber,omitempty"`
+	XMPPPort          *int                  `json:"xmppPort,omitempty"`
+	DNSPort           *int                  `json:"dnsPort,omitempty"`
+	DNSIntrospectPort *int                  `json:"dnsIntrospectPort,omitempty"`
+	NodeManager       *bool                 `json:"nodeManager,omitempty"`
 }
 
 // +k8s:openapi-gen=true

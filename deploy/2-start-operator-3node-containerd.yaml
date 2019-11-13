@@ -130,13 +130,19 @@ spec:
           nodeManager: false
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
-          images:
-            control: opencontrailnightly/contrail-controller-control-control:1910-latest
-            dns: opencontrailnightly/contrail-controller-control-dns:1910-latest
-            named: opencontrailnightly/contrail-controller-control-named:1910-latest
-            nodemanager: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
-            init: python:alpine
+          containers:
+            control: 
+              image: opencontrailnightly/contrail-controller-control-control:1910-latest
+            dns:
+              image: opencontrailnightly/contrail-controller-control-dns:1910-latest
+            named: 
+              image: opencontrailnightly/contrail-controller-control-named:1910-latest
+            nodemanager:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init:
+              image: python:alpine
     webui:
       metadata:
         name: webui1

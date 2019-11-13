@@ -115,22 +115,17 @@ spec:
                   type: integer
                 cassandraInstance:
                   type: string
+                containers: {}
                 dnsIntrospectPort:
                   type: integer
                 dnsPort:
                   type: integer
-                images:
-                  additionalProperties:
-                    type: string
-                  type: object
                 nodeManager:
                   type: boolean
                 xmppPort:
                   type: integer
                 zookeeperInstance:
                   type: string
-              required:
-              - images
               type: object
           required:
           - commonConfiguration

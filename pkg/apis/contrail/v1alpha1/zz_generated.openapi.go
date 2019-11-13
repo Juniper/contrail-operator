@@ -619,15 +619,14 @@ func schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref common.Reference
 				Description: "ControlConfiguration is the Spec for the controls API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -682,9 +681,10 @@ func schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref common.Reference
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 

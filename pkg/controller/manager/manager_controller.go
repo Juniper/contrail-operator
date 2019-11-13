@@ -805,12 +805,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *controlService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		cr := cr.GetControlCr()
+		cr.ObjectMeta = controlService.ObjectMeta
+		cr.Labels = controlService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.Spec.ServiceConfiguration = controlService.Spec.ServiceConfiguration
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "Control"
 		for _, controlStatus := range instance.Status.Controls {
 			if controlService.Name == *controlStatus.Name {
 				if *controlService.Spec.CommonConfiguration.Create && *controlStatus.Created {
-					create = false
-					delete = false
-					update = true
+					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+					if err == nil {
+						create = false
+						delete = false
+						update = true
+					}
 				}
 				if !*controlService.Spec.CommonConfiguration.Create && *controlStatus.Created {
 					create = false
@@ -819,13 +830,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 		}
-		cr := cr.GetControlCr()
-		cr.ObjectMeta = controlService.ObjectMeta
-		cr.Labels = controlService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = controlService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Control"
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -881,9 +885,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range controlService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = controlService.Spec.ServiceConfiguration.Images
+			for container := range controlService.Spec.ServiceConfiguration.Containers {
+				if controlService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = controlService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
