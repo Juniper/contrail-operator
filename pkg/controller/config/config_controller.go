@@ -348,6 +348,21 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
 		}
+		if container.Name == "queryengine" {
+			volumeMountList := []corev1.VolumeMount{}
+			queryEngineContainer := &intendedDeployment.Spec.Template.Spec.Containers[idx]
+			queryEngineContainer.Command = []string{"bash", "-c",
+				"/usr/bin/contrail-query-engine --conf_file /etc/mycontrail/queryengine.${POD_IP}"}
+			if len(queryEngineContainer.VolumeMounts) > 0 {
+				volumeMountList = container.VolumeMounts
+			}
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/etc/mycontrail",
+			})
+			queryEngineContainer.VolumeMounts = volumeMountList
+			queryEngineContainer.Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+		}
 		if container.Name == "collector" {
 			command := []string{"bash", "-c",
 				"/usr/bin/contrail-collector --conf_file /etc/mycontrail/collector.${POD_IP}"}

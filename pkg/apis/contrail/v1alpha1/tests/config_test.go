@@ -471,6 +471,11 @@ func TestConfigConfig(t *testing.T) {
 		t.Fatalf("get analyticsapi config: \n%v\n", diff)
 	}
 
+	if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+		diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+		t.Fatalf("get queryengine config: \n%v\n", diff)
+	}
+
 	if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
 		diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
 		t.Fatalf("get collector config: \n%v\n", diff)
@@ -1144,6 +1149,34 @@ aaa_mode = no-auth
 introspect_ssl_enable=False
 sandesh_ssl_enable=False`
 
+var queryengineConfig = `[DEFAULT]
+analytics_data_ttl=48
+hostip=1.1.1.1
+hostname=host1
+http_server_ip=0.0.0.0
+http_server_port=8091
+log_file=/var/log/contrail/contrail-query-engine.log
+log_level=SYS_DEBUG
+log_local=1
+max_slice=100
+max_tasks=16
+start_time=0
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[CASSANDRA]
+cassandra_use_ssl=false
+cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+[REDIS]
+server_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
+password=
+redis_ssl_enable=False
+[SANDESH]
+introspect_ssl_enable=False
+sandesh_ssl_enable=False`
+
 var analyticsapiConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_port=8090
@@ -1188,6 +1221,7 @@ log_file_size=1048576
 log_level=SYS_DEBUG
 log_local=1
 # sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 zookeeper_server_list=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [CASSANDRA]
 cassandra_use_ssl=false

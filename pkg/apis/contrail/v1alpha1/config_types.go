@@ -265,6 +265,16 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
+		var configQueryEngineConfigBuffer bytes.Buffer
+		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, map[string]string{
+			"Hostname":            hostname,
+			"ListenAddress":       podList.Items[idx].Status.PodIP,
+			"CassandraServerList": cassandraNodesInformation.ServerListCQLSpaceSeparated,
+			"CollectorServerList": collectorServerList,
+			"RedisServerList":     redisServerSpaceSeparatedList,
+		})
+		data["queryengine."+podList.Items[idx].Status.PodIP] = configQueryEngineConfigBuffer.String()
+
 		var configNodemanagerconfigConfigBuffer bytes.Buffer
 		configtemplates.ConfigNodemanagerConfigConfig.Execute(&configNodemanagerconfigConfigBuffer, struct {
 			ListenAddress       string

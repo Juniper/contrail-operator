@@ -169,6 +169,7 @@ log_file_size=1048576
 log_level=SYS_DEBUG
 log_local=1
 # sandesh_send_rate_limit=
+cassandra_server_list={{ .CassandraServerList }}
 zookeeper_server_list={{ .ZookeeperServerList }}
 [CASSANDRA]
 cassandra_use_ssl=false
@@ -199,6 +200,35 @@ rabbitmq_vhost=/
 rabbitmq_user=guest
 rabbitmq_password=guest
 rabbitmq_use_ssl=False
+[SANDESH]
+introspect_ssl_enable=False
+sandesh_ssl_enable=False`))
+
+// ConfigQueryEngineConfig is the template of the Config Nodemanager service configuration.
+var ConfigQueryEngineConfig = template.Must(template.New("").Parse(`[DEFAULT]
+analytics_data_ttl=48
+hostip={{ .ListenAddress }}
+hostname={{ .Hostname }}
+http_server_ip=0.0.0.0
+http_server_port=8091
+log_file=/var/log/contrail/contrail-query-engine.log
+log_level=SYS_DEBUG
+log_local=1
+max_slice=100
+max_tasks=16
+start_time=0
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+cassandra_server_list={{ .CassandraServerList }}
+collectors={{ .CollectorServerList }}
+[CASSANDRA]
+cassandra_use_ssl=false
+cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+[REDIS]
+server_list={{ .RedisServerList }}
+password=
+redis_ssl_enable=False
 [SANDESH]
 introspect_ssl_enable=False
 sandesh_ssl_enable=False`))

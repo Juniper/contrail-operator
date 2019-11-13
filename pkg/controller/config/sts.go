@@ -86,6 +86,17 @@ spec:
         volumeMounts:
         - mountPath: /var/log/contrail
           name: config-logs
+      - image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: queryengine
+        volumeMounts:
+        - mountPath: /var/log/contrail
+          name: config-logs
       - image: docker.io/michaelhenkel/contrail-analytics-collector:5.2.0-dev1
         env:
         - name: POD_IP
