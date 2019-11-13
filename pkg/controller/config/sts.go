@@ -127,6 +127,8 @@ spec:
           name: config-logs
         - mountPath: /mnt
           name: docker-unix-socket
+        - mountPath: /var/crashes
+          name: crashes
       - env:
         - name: DOCKER_HOST
           value: unix://mnt/docker.sock
@@ -144,6 +146,8 @@ spec:
           name: config-logs
         - mountPath: /mnt
           name: docker-unix-socket
+        - mountPath: /var/crashes
+          name: crashes
       dnsPolicy: ClusterFirst
       hostNetwork: true
       initContainers:
@@ -193,6 +197,10 @@ spec:
           path: /var/log/contrail/config
           type: ""
         name: config-logs
+      - hostPath:
+          path: /var/log/contrail/control
+          type: ""
+        name: crashes
       - hostPath:
           path: /var/lib/contrail/config
           type: ""
