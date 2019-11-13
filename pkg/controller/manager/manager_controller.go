@@ -1057,11 +1057,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.TypeMeta.Kind = "Vrouter"
 		for _, vrouterStatus := range instance.Status.Vrouters {
 			if vrouterService.Name == *vrouterStatus.Name {
-				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-				if err == nil {
-					create = false
-					delete = false
-					update = true
+				if *vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
+					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+					if err == nil {
+						create = false
+						delete = false
+						update = true
+					}
 				}
 				if !*vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
 					create = false

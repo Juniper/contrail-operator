@@ -163,7 +163,7 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
-          images:
+          containers:
             vrouteragent: 
               image: opencontrailnightly/contrail-vrouter-agent:1910-latest
             vrouterkernelinit:
