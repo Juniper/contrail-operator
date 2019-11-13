@@ -106,15 +106,14 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 				Description: "CassandraConfiguration is the Spec for the cassandras API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -193,9 +192,10 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -830,15 +830,14 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref common.Refer
 				Description: "KubemanagerConfiguration is the Spec for the kubemanagers API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -953,9 +952,10 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref common.Refer
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1248,15 +1248,14 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref common.Referenc
 				Description: "RabbitmqConfiguration is the Spec for the cassandras API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -1275,9 +1274,10 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1765,15 +1765,14 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref common.ReferenceCa
 				Description: "WebuiConfiguration is the Spec for the cassandras API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -1804,9 +1803,10 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1920,15 +1920,14 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref common.Referen
 				Description: "ZookeeperConfiguration is the Spec for the zookeepers API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -1953,9 +1952,10 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref common.Referen
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 

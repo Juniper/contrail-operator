@@ -22,9 +22,11 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""   
         serviceConfiguration:
-          images:
-            cassandra: cassandra:3.11.4
-            init: python:alpine
+          containers:
+            cassandra: 
+              image: cassandra:3.11.4
+            init: 
+              image: python:alpine
             #maxHeapSize: 1024M
             #minHeapSize: 100M
     zookeepers:
@@ -38,9 +40,11 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""   
         serviceConfiguration:
-          images:
-            zookeeper: docker.io/zookeeper:3.5.5
-            init: python:alpine
+          containers:
+            zookeeper: 
+              image: docker.io/zookeeper:3.5.5
+            init: 
+              image: python:alpine
     rabbitmq:
       metadata:
         name: rabbitmq1
@@ -52,9 +56,11 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""   
         serviceConfiguration:
-          images:
-            rabbitmq: rabbitmq:3.7
-            init: python:alpine
+          containers:
+            rabbitmq: 
+              image: rabbitmq:3.7
+            init:
+              image: python:alpine
     config:
       metadata:
         name: config1
@@ -107,10 +113,13 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
-          images:
-            kubemanager: opencontrailnightly/contrail-kubernetes-kube-manager:1910-latest
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
-            init: python:alpine
+          containers:
+            kubemanager:
+              image: opencontrailnightly/contrail-kubernetes-kube-manager:1910-latest
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init: 
+              image: python:alpine
           useKubeadmConfig: true
           ipFabricForwarding: false
           ipFabricSnat: true
@@ -155,11 +164,15 @@ spec:
             node-role.kubernetes.io/master: ""   
         serviceConfiguration:
           cassandraInstance: cassandra1
-          images:
-            webuiweb: opencontrailnightly/contrail-controller-webui-web:1910-latest
-            webuijob: opencontrailnightly/contrail-controller-webui-job:1910-latest
-            redis: redis:4.0.2
-            nodeinit: opencontrailnightly/contrail-node-init:1910-latest
+          containers:
+            webuiweb: 
+              image: opencontrailnightly/contrail-controller-webui-web:1910-latest
+            webuijob:
+              image: opencontrailnightly/contrail-controller-webui-job:1910-latest
+            redis:
+              image: redis:4.0.2
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
     vrouters:
     - metadata:
         name: vroutermaster

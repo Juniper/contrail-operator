@@ -188,12 +188,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *cassandraService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		cr := cr.GetCassandraCr()
+		cr.ObjectMeta = cassandraService.ObjectMeta
+		cr.Labels = cassandraService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.Spec.ServiceConfiguration = cassandraService.Spec.ServiceConfiguration
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "Cassandra"
 		for _, cassandraStatus := range instance.Status.Cassandras {
 			if cassandraService.Name == *cassandraStatus.Name {
 				if *cassandraService.Spec.CommonConfiguration.Create && *cassandraStatus.Created {
-					create = false
-					delete = false
-					update = true
+					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+					if err == nil {
+						create = false
+						delete = false
+						update = true
+					}
 				}
 				if !*cassandraService.Spec.CommonConfiguration.Create && *cassandraStatus.Created {
 					create = false
@@ -202,13 +213,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 		}
-		cr := cr.GetCassandraCr()
-		cr.ObjectMeta = cassandraService.ObjectMeta
-		cr.Labels = cassandraService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = cassandraService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Cassandra"
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -264,9 +268,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range cassandraService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = cassandraService.Spec.ServiceConfiguration.Images
+			for container := range cassandraService.Spec.ServiceConfiguration.Containers {
+				if cassandraService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = cassandraService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
@@ -315,12 +319,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *zookeeperService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		cr := cr.GetZookeeperCr()
+		cr.ObjectMeta = zookeeperService.ObjectMeta
+		cr.Labels = zookeeperService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.Spec.ServiceConfiguration = zookeeperService.Spec.ServiceConfiguration
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "Zookeeper"
 		for _, zookeeperStatus := range instance.Status.Zookeepers {
 			if zookeeperService.Name == *zookeeperStatus.Name {
 				if *zookeeperService.Spec.CommonConfiguration.Create && *zookeeperStatus.Created {
-					create = false
-					delete = false
-					update = true
+					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+					if err == nil {
+						create = false
+						delete = false
+						update = true
+					}
 				}
 				if !*zookeeperService.Spec.CommonConfiguration.Create && *zookeeperStatus.Created {
 					create = false
@@ -329,13 +344,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 		}
-		cr := cr.GetZookeeperCr()
-		cr.ObjectMeta = zookeeperService.ObjectMeta
-		cr.Labels = zookeeperService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = zookeeperService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Zookeeper"
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -391,9 +399,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range zookeeperService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = zookeeperService.Spec.ServiceConfiguration.Images
+			for container := range zookeeperService.Spec.ServiceConfiguration.Containers {
+				if zookeeperService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = zookeeperService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
@@ -443,18 +451,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-		if instance.Status.Webui != nil {
-			if *webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
-				create = false
-				delete = false
-				update = true
-			}
-			if !*webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
 
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
@@ -463,6 +459,21 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = webuiService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Webui"
+		if instance.Status.Webui != nil {
+			if *webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+				if err == nil {
+					create = false
+					delete = false
+					update = true
+				}
+			}
+			if !*webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
+				create = false
+				delete = true
+				update = false
+			}
+		}
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -512,9 +523,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range webuiService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = webuiService.Spec.ServiceConfiguration.Images
+			for container := range webuiService.Spec.ServiceConfiguration.Containers {
+				if webuiService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = webuiService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
@@ -678,12 +689,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *kubemanagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		cr := cr.GetKubemanagerCr()
+		cr.ObjectMeta = kubemanagerService.ObjectMeta
+		cr.Labels = kubemanagerService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "Kubemanager"
 		for _, kubemanagerStatus := range instance.Status.Kubemanagers {
 			if kubemanagerService.Name == *kubemanagerStatus.Name {
 				if *kubemanagerService.Spec.CommonConfiguration.Create && *kubemanagerStatus.Created {
-					create = false
-					delete = false
-					update = true
+					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+					if err == nil {
+						create = false
+						delete = false
+						update = true
+					}
 				}
 				if !*kubemanagerService.Spec.CommonConfiguration.Create && *kubemanagerStatus.Created {
 					create = false
@@ -692,13 +714,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 		}
-		cr := cr.GetKubemanagerCr()
-		cr.ObjectMeta = kubemanagerService.ObjectMeta
-		cr.Labels = kubemanagerService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Kubemanager"
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -754,9 +769,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range kubemanagerService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = kubemanagerService.Spec.ServiceConfiguration.Images
+			for container := range kubemanagerService.Spec.ServiceConfiguration.Containers {
+				if kubemanagerService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = kubemanagerService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}
@@ -937,18 +952,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *rabbitmqService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-		if instance.Status.Rabbitmq != nil {
-			if *rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
-				create = false
-				delete = false
-				update = true
-			}
-			if !*rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
 
 		cr := cr.GetRabbitmqCr()
 		cr.ObjectMeta = rabbitmqService.ObjectMeta
@@ -957,6 +960,21 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = rabbitmqService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Rabbitmq"
+		if instance.Status.Rabbitmq != nil {
+			if *rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+				if err == nil {
+					create = false
+					delete = false
+					update = true
+				}
+			}
+			if !*rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
+				create = false
+				delete = true
+				update = false
+			}
+		}
 		if create {
 			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 			if err != nil {
@@ -1006,9 +1024,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container, image := range rabbitmqService.Spec.ServiceConfiguration.Images {
-				if image != cr.Spec.ServiceConfiguration.Images[container] {
-					cr.Spec.ServiceConfiguration.Images = rabbitmqService.Spec.ServiceConfiguration.Images
+			for container := range rabbitmqService.Spec.ServiceConfiguration.Containers {
+				if rabbitmqService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
+					cr.Spec.ServiceConfiguration.Containers[container].Image = rabbitmqService.Spec.ServiceConfiguration.Containers[container].Image
 					imageChanged = true
 					break
 				}

@@ -32,10 +32,10 @@ type ZookeeperSpec struct {
 // ZookeeperConfiguration is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperConfiguration struct {
-	Images       map[string]string `json:"images"`
-	ClientPort   *int              `json:"clientPort,omitempty"`
-	ElectionPort *int              `json:"electionPort,omitempty"`
-	ServerPort   *int              `json:"serverPort,omitempty"`
+	Containers   map[string]*Container `json:"containers,omitempty"`
+	ClientPort   *int                  `json:"clientPort,omitempty"`
+	ElectionPort *int                  `json:"electionPort,omitempty"`
+	ServerPort   *int                  `json:"serverPort,omitempty"`
 }
 
 // ZookeeperStatus defines the status of the zookeeper object.

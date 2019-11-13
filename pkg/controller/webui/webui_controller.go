@@ -1,9 +1,10 @@
 package webui
 
 import (
+	"context"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -354,8 +355,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			command := []string{"bash", "-c",
 				"/certs-init.sh && /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
 				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
@@ -366,7 +370,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "webuijob" {
 			envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
@@ -406,8 +410,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			command := []string{"bash", "-c",
 				"/certs-init.sh && sleep 10;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
 				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
@@ -418,14 +425,17 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "redis" {
 			command := []string{"bash", "-c",
 				"redis-server --lua-time-limit 15000 --dbfilename '' --bind 127.0.0.1 ${POD_IP} --port 6380"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
 				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
@@ -436,15 +446,14 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 	}
 
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
 	}
 

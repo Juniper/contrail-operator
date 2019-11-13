@@ -1,10 +1,11 @@
 package kubemanager
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"context"
 	"reflect"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -387,7 +388,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			command := []string{"bash", "-c",
 				"/usr/bin/python /usr/bin/contrail-kube-manager -c /etc/mycontrail/kubemanager.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -399,15 +404,14 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 	}
 
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
 	}
 

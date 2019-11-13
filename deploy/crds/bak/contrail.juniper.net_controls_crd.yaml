@@ -1,20 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: zookeepers.contrail.juniper.net
+  name: controls.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: Zookeeper
-    listKind: ZookeeperList
-    plural: zookeepers
-    singular: zookeeper
+    kind: Control
+    listKind: ControlList
+    plural: controls
+    singular: control
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Zookeeper is the Schema for the zookeepers API.
+      description: Control is the Schema for the controls API.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,7 +29,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: ZookeeperSpec is the Spec for the zookeepers API.
+          description: ControlSpec is the Spec for the controls API.
           properties:
             commonConfiguration:
               description: CommonConfiguration is the common services struct.
@@ -107,22 +107,31 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: ZookeeperConfiguration is the Spec for the zookeepers API.
+              description: ControlConfiguration is the Spec for the controls API.
               properties:
-                clientPort:
+                asnNumber:
                   type: integer
+                bgpPort:
+                  type: integer
+                cassandraInstance:
+                  type: string
                 containers: {}
-                electionPort:
+                dnsIntrospectPort:
                   type: integer
-                serverPort:
+                dnsPort:
                   type: integer
+                nodeManager:
+                  type: boolean
+                xmppPort:
+                  type: integer
+                zookeeperInstance:
+                  type: string
               type: object
           required:
           - commonConfiguration
           - serviceConfiguration
           type: object
         status:
-          description: ZookeeperStatus defines the status of the zookeeper object.
           properties:
             active:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
@@ -135,10 +144,16 @@ spec:
                 type: string
               type: object
             ports:
-              description: ZookeeperStatusPorts defines the status of the ports of
-                the zookeeper object.
               properties:
-                clientPort:
+                asnNumber:
+                  type: string
+                bgpPort:
+                  type: string
+                dnsIntrospectPort:
+                  type: string
+                dnsPort:
+                  type: string
+                xmppPort:
                   type: string
               type: object
           type: object

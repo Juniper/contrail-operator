@@ -1,9 +1,10 @@
 package rabbitmq
 
 import (
+	"context"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -199,44 +200,45 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 			configMap2.Name: request.Name + "-" + instanceType + "-runner"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = image
-			}
-			if containerName == "rabbitmq" {
-				command := []string{"bash", "/runner/run.sh"}
-				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-				volumeMountList := []corev1.VolumeMount{}
 
-				volumeMount := corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/rabbitmq",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-				volumeMount = corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-runner",
-					MountPath: "/runner/",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
-					ConfigMapRef: &corev1.ConfigMapEnvSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: request.Name + "-" + instanceType + "-configmap",
-						},
-					},
-				}}
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+		if container.Name == "rabbitmq" {
+			command := []string{"bash", "/runner/run.sh"}
+			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
+			volumeMountList := []corev1.VolumeMount{}
+
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/etc/rabbitmq",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-runner",
+				MountPath: "/runner/",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: request.Name + "-" + instanceType + "-configmap",
+					},
+				},
+			}}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
+
 	}
 
 	// Configure InitContainers.
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
 	}
 

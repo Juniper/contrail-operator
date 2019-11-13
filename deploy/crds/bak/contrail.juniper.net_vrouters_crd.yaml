@@ -1,20 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: zookeepers.contrail.juniper.net
+  name: vrouters.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: Zookeeper
-    listKind: ZookeeperList
-    plural: zookeepers
-    singular: zookeeper
+    kind: Vrouter
+    listKind: VrouterList
+    plural: vrouters
+    singular: vrouter
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Zookeeper is the Schema for the zookeepers API.
+      description: Vrouter is the Schema for the vrouters API.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,7 +29,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: ZookeeperSpec is the Spec for the zookeepers API.
+          description: VrouterSpec is the Spec for the cassandras API.
           properties:
             commonConfiguration:
               description: CommonConfiguration is the common services struct.
@@ -107,38 +107,53 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: ZookeeperConfiguration is the Spec for the zookeepers API.
+              description: VrouterConfiguration is the Spec for the cassandras API.
               properties:
-                clientPort:
-                  type: integer
+                cassandraInstance:
+                  type: string
+                clusterRole:
+                  type: string
+                clusterRoleBinding:
+                  type: string
                 containers: {}
-                electionPort:
-                  type: integer
-                serverPort:
-                  type: integer
+                controlInstance:
+                  type: string
+                distribution:
+                  type: string
+                gateway:
+                  type: string
+                metaDataSecret:
+                  type: string
+                nodeManager:
+                  type: boolean
+                physicalInterface:
+                  type: string
+                serviceAccount:
+                  type: string
               type: object
           required:
           - commonConfiguration
           - serviceConfiguration
           type: object
         status:
-          description: ZookeeperStatus defines the status of the zookeeper object.
           properties:
-            active:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
-              type: boolean
             nodes:
               additionalProperties:
                 type: string
               type: object
             ports:
-              description: ZookeeperStatusPorts defines the status of the ports of
-                the zookeeper object.
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
-                clientPort:
+                analyticsPort:
+                  type: string
+                apiPort:
+                  type: string
+                collectorPort:
+                  type: string
+                redisPort:
                   type: string
               type: object
           type: object

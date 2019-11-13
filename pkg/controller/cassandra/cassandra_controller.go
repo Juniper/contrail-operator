@@ -1,10 +1,11 @@
 package cassandra
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"context"
 	"strconv"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -230,51 +231,51 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}}
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = image
-			}
-			if containerName == "cassandra" {
-				command := []string{"bash", "-c",
-					"/docker-entrypoint.sh cassandra -f -Dcassandra.config=file:///mydata/${POD_IP}.yaml"}
-				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+
+		if container.Name == "cassandra" {
+			command := []string{"bash", "-c",
+				"/docker-entrypoint.sh cassandra -f -Dcassandra.config=file:///mydata/${POD_IP}.yaml"}
+			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-
-				volumeMountList := []corev1.VolumeMount{}
-				volumeMount := corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/mydata",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-
-				volumeMount = corev1.VolumeMount{
-					Name:      "pvc",
-					MountPath: "/var/lib/cassandra",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-				var jvmOpts string
-				if instance.Spec.ServiceConfiguration.MinHeapSize != "" {
-					jvmOpts = "-Xms" + instance.Spec.ServiceConfiguration.MinHeapSize
-				}
-				if instance.Spec.ServiceConfiguration.MaxHeapSize != "" {
-					jvmOpts = jvmOpts + " -Xmx" + instance.Spec.ServiceConfiguration.MaxHeapSize
-				}
-				if jvmOpts != "" {
-					envs := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-					envs = append(envs)
-					jvmOptEnvVar := corev1.EnvVar{
-						Name:  "JVM_OPTS",
-						Value: jvmOpts,
-					}
-					envVars := statefulSet.Spec.Template.Spec.Containers[idx].Env
-					envVars = append(envVars, jvmOptEnvVar)
-					(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envVars
-				}
-
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
+			volumeMountList := []corev1.VolumeMount{}
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/mydata",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+
+			volumeMount = corev1.VolumeMount{
+				Name:      "pvc",
+				MountPath: "/var/lib/cassandra",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+			var jvmOpts string
+			if instance.Spec.ServiceConfiguration.MinHeapSize != "" {
+				jvmOpts = "-Xms" + instance.Spec.ServiceConfiguration.MinHeapSize
+			}
+			if instance.Spec.ServiceConfiguration.MaxHeapSize != "" {
+				jvmOpts = jvmOpts + " -Xmx" + instance.Spec.ServiceConfiguration.MaxHeapSize
+			}
+			if jvmOpts != "" {
+				envs := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
+				envs = append(envs)
+				jvmOptEnvVar := corev1.EnvVar{
+					Name:  "JVM_OPTS",
+					Value: jvmOpts,
+				}
+				envVars := statefulSet.Spec.Template.Spec.Containers[idx].Env
+				envVars = append(envVars, jvmOptEnvVar)
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envVars
+			}
+
 		}
+
 	}
 	initHostPathType := corev1.HostPathType("DirectoryOrCreate")
 	initHostPathSource := &corev1.HostPathVolumeSource{
@@ -289,18 +290,18 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
-			if containerName == "init" {
-				volumeMount := corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-init",
-					MountPath: cassandraDefaultConfiguration.StoragePath,
-				}
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
-			}
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
+		if container.Name == "init" {
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-init",
+				MountPath: cassandraDefaultConfiguration.StoragePath,
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
+
 	}
 
 	volumeBindingMode := storagev1.VolumeBindingMode("WaitForFirstConsumer")
