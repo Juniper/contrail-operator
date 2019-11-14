@@ -23,17 +23,19 @@ type ApiClient struct {
 
 func (c *ApiClient) EnsureConfigNodeExists(node ConfigNode) error {
 	body := `
-{
-    "config-node": {
-        "fq_name": [
-            "default-global-system-config",
-            "%s"
-        ],
-        "uuid": "%s"
-    }
+{ 
+   "config-node":{ 
+      "parent_type":"global-system-config",
+      "fq_name":[ 
+         "default-global-system-config",
+         "%s"
+      ],
+      "uuid":"%s",
+      "config_node_ip_address":"%s"
+   }
 }
 `
-	body = fmt.Sprintf(body, node.Host, node.UUID)
+	body = fmt.Sprintf(body, node.Hostname, node.UUID, node.IP)
 	response, err := c.client.Post(c.url+"/config-nodes", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		return err
@@ -48,6 +50,7 @@ func (c *ApiClient) EnsureConfigNodeExists(node ConfigNode) error {
 }
 
 type ConfigNode struct {
-	UUID string
-	Host string
+	UUID     string
+	Hostname string
+	IP       string
 }

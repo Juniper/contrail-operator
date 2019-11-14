@@ -26,34 +26,40 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 		}{
 			"localhost": {
 				configNode: config.ConfigNode{
-					UUID: "520f1126-34cc-4d1f-bda8-4df1b5aeea7d",
-					Host: "localhost",
+					UUID:     "520f1126-34cc-4d1f-bda8-4df1b5aeea7d",
+					Hostname: "localhost",
+					IP:       "10.0.2.15",
 				},
 				expectedBody: `
-					{
-						"config-node": {
-							"fq_name": [
-								"default-global-system-config",
-								"localhost"
-							],
-							"uuid": "520f1126-34cc-4d1f-bda8-4df1b5aeea7d"
-						}
+					{ 
+					   "config-node":{ 
+						  "parent_type":"global-system-config",
+						  "fq_name":[ 
+							 "default-global-system-config",
+							 "localhost"
+						  ],
+						  "uuid":"520f1126-34cc-4d1f-bda8-4df1b5aeea7d",
+						  "config_node_ip_address":"10.0.2.15"
+					   }
 					}`,
 			},
 			"juniper.net": {
 				configNode: config.ConfigNode{
-					UUID: "86f38811-a892-4877-885f-be0fa05ea164",
-					Host: "juniper.net",
+					UUID:     "86f38811-a892-4877-885f-be0fa05ea164",
+					Hostname: "juniper.net",
+					IP:       "10.0.2.1",
 				},
 				expectedBody: `
-					{
-						"config-node": {
-							"fq_name": [
-								"default-global-system-config",
-								"juniper.net"
-							],
-							"uuid": "86f38811-a892-4877-885f-be0fa05ea164"
-						}
+					{ 
+					   "config-node":{ 
+						  "parent_type":"global-system-config",
+						  "fq_name":[ 
+							 "default-global-system-config",
+							 "juniper.net"
+						  ],
+						  "uuid":"86f38811-a892-4877-885f-be0fa05ea164",
+						  "config_node_ip_address":"10.0.2.1"
+					   }
 					}`,
 			},
 		}
@@ -81,8 +87,8 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 		client := config.NewApiClient("http://127.0.0.1:1")
 		// when
 		err := client.EnsureConfigNodeExists(config.ConfigNode{
-			UUID: "123-123-123-123",
-			Host: "localhost",
+			UUID:     "123-123-123-123",
+			Hostname: "localhost",
 		})
 		// then
 		assert.Error(t, err)
@@ -98,8 +104,8 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 				client := config.NewApiClient(server.url())
 				// when
 				err := client.EnsureConfigNodeExists(config.ConfigNode{
-					UUID: "123-123-123-123",
-					Host: "localhost",
+					UUID:     "123-123-123-123",
+					Hostname: "localhost",
 				})
 				// then
 				assert.Error(t, err)
@@ -114,8 +120,8 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 		client := config.NewApiClient(server.url())
 		// when
 		err := client.EnsureConfigNodeExists(config.ConfigNode{
-			UUID: "123-123-123-123",
-			Host: "localhost",
+			UUID:     "123-123-123-123",
+			Hostname: "localhost",
 		})
 		// then
 		assert.NoError(t, err)

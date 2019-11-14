@@ -521,8 +521,9 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		apiClient := NewApiClient(apiURL)
 		configNode := ConfigNode{
-			UUID: "86f38811-a892-4877-885f-be0fa05ea164",
-			Host: "localhost",
+			UUID:     "86f38811-a892-4877-885f-be0fa05ea164",
+			Hostname: "localhost",
+			IP:       "localhost",
 		}
 		if err = apiClient.EnsureConfigNodeExists(configNode); err != nil {
 			log.Error(err, "EnsureConfigNodeExists failed")
