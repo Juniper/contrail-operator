@@ -115,7 +115,7 @@ spec:
           zookeeperInstance: zookeeper1
           containers:
             kubemanager:
-              image: opencontrailnightly/contrail-kubernetes-kube-manager:1910-latest
+              image: michaelhenkel/contrail-kubernetes-kube-manager:1910-latest
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
             init: 
