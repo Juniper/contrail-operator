@@ -879,8 +879,14 @@ spec:
                             containers: {}
                             erlangCookie:
                               type: string
+                            password:
+                              type: string
                             port:
                               type: integer
+                            user:
+                              type: string
+                            vhost:
+                              type: string
                           type: object
                       required:
                       - commonConfiguration

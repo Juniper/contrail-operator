@@ -1273,6 +1273,24 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref common.Referenc
 							Format: "",
 						},
 					},
+					"vhost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"user": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"password": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},

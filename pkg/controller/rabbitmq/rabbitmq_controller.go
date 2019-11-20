@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"context"
+	"math/rand"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -24,6 +26,8 @@ import (
 )
 
 var log = logf.Log.WithName("controller_rabbitmq")
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -154,6 +158,14 @@ type ReconcileRabbitmq struct {
 	Scheme *runtime.Scheme
 }
 
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
 // Reconcile reconciles the Rabbitmq resource.
 func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -242,6 +254,55 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 	}
 
+	var secretName string
+	if instance.Spec.ServiceConfiguration.Secret != "" {
+		secretName = instance.Spec.ServiceConfiguration.Secret
+	} else {
+		secretName = instance.Name + "-secret"
+	}
+
+	secret := &corev1.Secret{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: instance.Namespace}, secret)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			var password string
+			var user string
+			var vhost string
+			if instance.Spec.ServiceConfiguration.Password != "" {
+				password = instance.Spec.ServiceConfiguration.Password
+			} else {
+				password = randStringBytes(8)
+			}
+			if instance.Spec.ServiceConfiguration.User != "" {
+				user = instance.Spec.ServiceConfiguration.User
+			} else {
+				user = randStringBytes(8)
+			}
+			if instance.Spec.ServiceConfiguration.Vhost != "" {
+				vhost = instance.Spec.ServiceConfiguration.Vhost
+			} else {
+				vhost = randStringBytes(6)
+			}
+			var secretData = make(map[string][]byte)
+			secret.Name = instance.Name + "-secret"
+			secret.Namespace = instance.Namespace
+
+			secretPassword := []byte(password)
+			secretUser := []byte(user)
+			secretVhost := []byte(vhost)
+			secretData["password"] = secretPassword
+			secretData["user"] = secretUser
+			secretData["vhost"] = secretVhost
+			secret.Data = secretData
+			if err = controllerutil.SetControllerReference(instance, secret, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err := r.Client.Create(context.Background(), secret); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -270,6 +331,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		active := false
 		instance.Status.Active = &active
 	}
+
 	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
 		return reconcile.Result{}, err
 	}

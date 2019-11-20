@@ -131,20 +131,21 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
 		if err != nil {
 			return err
 		}
-		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer, zookeeperAuthBuffer bytes.Buffer
+		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
 
 		configtemplates.ZookeeperConfig.Execute(&zookeeperConfigBuffer, struct {
 			ClientPort string
 		}{
 			ClientPort: strconv.Itoa(*zookeeperConfig.ClientPort),
 		})
-		configtemplates.ZookeeperAuthConfig.Execute(&zookeeperAuthBuffer, struct{}{})
+
 		configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
 		configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
-		data := map[string]string{"zoo.cfg": zookeeperConfigBuffer.String(),
+		data := map[string]string{
+			"zoo.cfg":           zookeeperConfigBuffer.String(),
 			"log4j.properties":  zookeeperLogBuffer.String(),
 			"configuration.xsl": zookeeperXslBuffer.String(),
-			"jaas.conf":         zookeeperAuthBuffer.String()}
+		}
 		configMapInstancConfig.Data = data
 
 		err = client.Update(context.TODO(), configMapInstancConfig)
