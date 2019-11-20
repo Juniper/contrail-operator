@@ -52,6 +52,9 @@ type ControlConfiguration struct {
 	DNSPort           *int                  `json:"dnsPort,omitempty"`
 	DNSIntrospectPort *int                  `json:"dnsIntrospectPort,omitempty"`
 	NodeManager       *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -113,6 +116,19 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
@@ -127,6 +143,15 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 	controlConfigInterface := c.ConfigurationParameters()
 	controlConfig := controlConfigInterface.(ControlConfiguration)
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = controlConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = controlConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = controlConfig.RabbitmqVhost
+	}
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
@@ -152,6 +177,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -164,6 +192,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
 			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -183,6 +214,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -193,6 +227,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
 			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 

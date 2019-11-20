@@ -32,9 +32,9 @@ config_db_server_list={{ .CassandraServerList }}
 config_db_use_ssl=false
 config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 rabbitmq_server_list={{ .RabbitmqServerList }}
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
+rabbitmq_vhost={{ .RabbitmqVhost }}
+rabbitmq_user={{ .RabbitmqUser }}
+rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=False
 [SANDESH]
 introspect_ssl_enable=False
@@ -110,9 +110,9 @@ config_db_server_list={{ .CassandraServerList }}
 config_db_use_ssl=false
 config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 rabbitmq_server_list={{ .RabbitmqServerList }}
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
+rabbitmq_vhost={{ .RabbitmqVhost }}
+rabbitmq_user={{ .RabbitmqUser }}
+rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=False
 [SANDESH]
 introspect_ssl_enable=False

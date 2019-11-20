@@ -74,6 +74,9 @@ type KubemanagerConfiguration struct {
 	IPFabricSnat          *bool                 `json:"ipFabricSnat,omitempty"`
 	KubernetesTokenFile   string                `json:"kubernetesTokenFile,omitempty"`
 	HostNetworkService    *bool                 `json:"hostNetworkService,omitempty"`
+	RabbitmqUser          string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword      string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost         string                `json:"rabbitmqVhost,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.
@@ -119,6 +122,19 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -127,6 +143,15 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 
 	kubemanagerConfigInstance := c.ConfigurationParameters()
 	kubemanagerConfig := kubemanagerConfigInstance.(KubemanagerConfiguration)
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = kubemanagerConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = kubemanagerConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = kubemanagerConfig.RabbitmqVhost
+	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
 		controlPlaneEndpoint := ""
@@ -194,6 +219,9 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerPort    string
 			CollectorServerList   string
 			HostNetworkService    string
+			RabbitmqUser          string
+			RabbitmqPassword      string
+			RabbitmqVhost         string
 		}{
 			Token:                 token,
 			ListenAddress:         podList.Items[idx].Status.PodIP,
@@ -215,6 +243,9 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerPort:    rabbitmqNodesInformation.Port,
 			CollectorServerList:   configNodesInformation.CollectorServerListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),
+			RabbitmqUser:          rabbitmqSecretUser,
+			RabbitmqPassword:      rabbitmqSecretPassword,
+			RabbitmqVhost:         rabbitmqSecretVhost,
 		})
 		data["kubemanager."+podList.Items[idx].Status.PodIP] = kubemanagerConfigBuffer.String()
 	}

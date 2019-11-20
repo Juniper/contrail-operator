@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"sort"
@@ -143,6 +145,26 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	salt := [4]byte{}
+	_, err = rand.Read(salt[:])
+	if err != nil {
+		return err
+	}
+
+	saltedP := append(salt[:], secret.Data["password"]...)
+
+	hash := sha256.New()
+
+	_, err = hash.Write(saltedP)
+
+	if err != nil {
+		return err
+	}
+
+	hashPass := hash.Sum(nil)
+
+	saltedP = append(salt[:], hashPass...)
+
 	//rabbitmqPasswordString := string(secret.Data["password"])
 
 	var rabbitmqDefinitionBuffer bytes.Buffer
@@ -154,7 +176,7 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		RabbitmqUser: string(secret.Data["user"]),
 		//RabbitmqPassword: base64.StdEncoding.EncodeToString([]byte(rabbitmqConfig.Password)),
 		//RabbitmqPassword: rabbitmqPasswordString,
-		RabbitmqPassword: base64.StdEncoding.EncodeToString(secret.Data["password"]),
+		RabbitmqPassword: base64.StdEncoding.EncodeToString(saltedP),
 		RabbitmqVhost:    string(secret.Data["vhost"]),
 	})
 	configMapInstanceDynamicConfig.Data["definitions.json"] = rabbitmqDefinitionBuffer.String()

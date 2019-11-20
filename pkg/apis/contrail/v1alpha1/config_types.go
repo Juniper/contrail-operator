@@ -54,6 +54,9 @@ type ConfigConfiguration struct {
 	CassandraInstance string                `json:"cassandraInstance,omitempty"`
 	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
 	NodeManager       *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -115,10 +118,31 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	configConfigInterface := c.ConfigurationParameters()
 	configConfig := configConfigInterface.(ConfigConfiguration)
-
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = configConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = configConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = configConfig.RabbitmqVhost
+	}
 	var collectorServerList, analyticsServerList, apiServerList, analyticsServerSpaceSeparatedList, apiServerSpaceSeparatedList, redisServerSpaceSeparatedList string
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -148,6 +172,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -155,6 +182,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
 
@@ -167,6 +197,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -175,6 +208,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -187,6 +223,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -195,6 +234,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
@@ -207,6 +249,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -215,6 +260,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
@@ -228,6 +276,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			CollectorServerList string
 			RedisServerList     string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
@@ -237,6 +288,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
 			CollectorServerList: collectorServerList,
 			RedisServerList:     redisServerSpaceSeparatedList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -255,6 +309,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CassandraServerList string
 			ZookeeperServerList string
 			RabbitmqServerList  string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			Hostname:            hostname,
 			ListenAddress:       podList.Items[idx].Status.PodIP,
@@ -262,6 +319,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
@@ -452,6 +512,9 @@ func (c *Config) ConfigurationParameters() interface{} {
 	var analyticsPort int
 	var collectorPort int
 	var redisPort int
+	var rabbitmqUser string
+	var rabbitmqPassword string
+	var rabbitmqVhost string
 	if c.Spec.ServiceConfiguration.APIPort != nil {
 		apiPort = *c.Spec.ServiceConfiguration.APIPort
 	} else {
@@ -487,6 +550,26 @@ func (c *Config) ConfigurationParameters() interface{} {
 		configConfiguration.NodeManager = &nodeManager
 	}
 
+	if c.Spec.ServiceConfiguration.RabbitmqUser != "" {
+		rabbitmqUser = c.Spec.ServiceConfiguration.RabbitmqUser
+	} else {
+		rabbitmqUser = RabbitmqUser
+	}
+	configConfiguration.RabbitmqUser = rabbitmqUser
+
+	if c.Spec.ServiceConfiguration.RabbitmqPassword != "" {
+		rabbitmqPassword = c.Spec.ServiceConfiguration.RabbitmqPassword
+	} else {
+		rabbitmqPassword = RabbitmqPassword
+	}
+	configConfiguration.RabbitmqPassword = rabbitmqPassword
+
+	if c.Spec.ServiceConfiguration.RabbitmqVhost != "" {
+		rabbitmqVhost = c.Spec.ServiceConfiguration.RabbitmqVhost
+	} else {
+		rabbitmqVhost = RabbitmqVhost
+	}
+	configConfiguration.RabbitmqVhost = rabbitmqVhost
 	return configConfiguration
 
 }

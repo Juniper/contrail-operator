@@ -742,6 +742,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	var rabbitmqNodes []string
 	var rabbitmqCluster RabbitmqClusterConfiguration
 	var port string
+	secret := ""
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	rabbitmqList := &RabbitmqList{}
@@ -756,6 +757,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 		rabbitmqConfigInterface := rabbitmqList.Items[0].ConfigurationParameters()
 		rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
 		port = strconv.Itoa(*rabbitmqConfig.Port)
+		secret = rabbitmqList.Items[0].Status.Secret
 	}
 	sort.SliceStable(rabbitmqNodes, func(i, j int) bool { return rabbitmqNodes[i] < rabbitmqNodes[j] })
 	serverListCommaSeparated := strings.Join(rabbitmqNodes, ":"+port+",")
@@ -763,11 +765,13 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	serverListSpaceSeparated := strings.Join(rabbitmqNodes, ":"+port+" ")
 	serverListSpaceSeparated = serverListSpaceSeparated + ":" + port
 	serverListCommaSeparatedWithoutPort := strings.Join(rabbitmqNodes, ",")
+
 	rabbitmqCluster = RabbitmqClusterConfiguration{
 		Port:                                port,
 		ServerListCommaSeparated:            serverListCommaSeparated,
 		ServerListSpaceSeparated:            serverListSpaceSeparated,
 		ServerListCommaSeparatedWithoutPort: serverListCommaSeparatedWithoutPort,
+		Secret:                              secret,
 	}
 	return &rabbitmqCluster, nil
 }
@@ -871,6 +875,7 @@ type RabbitmqClusterConfiguration struct {
 	ServerListCommaSeparated            string
 	ServerListSpaceSeparated            string
 	ServerListCommaSeparatedWithoutPort string
+	Secret                              string
 }
 
 // CassandraClusterConfiguration defines all configuration knobs used to write the config file.
