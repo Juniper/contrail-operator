@@ -305,6 +305,11 @@ func (c *Kubemanager) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeCon
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Kubemanager) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Kubemanager PODs to ready.
 func (c *Kubemanager) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)

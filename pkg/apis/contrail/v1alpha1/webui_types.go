@@ -205,6 +205,11 @@ func (c *Webui) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMap
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Webui) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Webui PODs to ready.
 func (c *Webui) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)

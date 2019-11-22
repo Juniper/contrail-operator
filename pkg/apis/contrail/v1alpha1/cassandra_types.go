@@ -193,6 +193,11 @@ func (c *Cassandra) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfi
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Cassandra) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Cassandra PODs to ready.
 func (c *Cassandra) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)

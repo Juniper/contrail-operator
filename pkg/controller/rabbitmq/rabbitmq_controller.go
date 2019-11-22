@@ -14,7 +14,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -103,7 +102,7 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileRabbitmq{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileRabbitmq{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -164,8 +163,9 @@ var _ reconcile.Reconciler = &ReconcileRabbitmq{}
 type ReconcileRabbitmq struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
 func randStringBytes(n int) string {
@@ -231,6 +231,16 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	secret, err := instance.CreateSecret(request.Name+"-secret", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
@@ -239,6 +249,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 	instance.AddVolumesToIntendedSTS(statefulSet,
 		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume",
 			configMap2.Name: request.Name + "-" + instanceType + "-runner"})
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 
@@ -262,6 +273,11 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 				MountPath: "/runner/",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -272,7 +288,6 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
-
 	}
 
 	// Configure InitContainers.
@@ -283,55 +298,49 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 	}
 
-	var secretName string
-	if instance.Spec.ServiceConfiguration.Secret != "" {
-		secretName = instance.Spec.ServiceConfiguration.Secret
+	//err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: instance.Namespace}, secret)
+	//if err != nil && errors.IsNotFound(err) {
+	//	return reconcile.Result{}, err
+	//}
+
+	var password string
+	var user string
+	var vhost string
+	if instance.Spec.ServiceConfiguration.Password != "" {
+		password = instance.Spec.ServiceConfiguration.Password
 	} else {
-		secretName = instance.Name + "-secret"
+		password = randomString(32)
 	}
 
-	secret := &corev1.Secret{}
-	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: instance.Namespace}, secret)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			var password string
-			var user string
-			var vhost string
-			if instance.Spec.ServiceConfiguration.Password != "" {
-				password = instance.Spec.ServiceConfiguration.Password
-			} else {
-				password = randomString(32)
-			}
+	if instance.Spec.ServiceConfiguration.User != "" {
+		user = instance.Spec.ServiceConfiguration.User
+	} else {
+		user = randomString(8)
+	}
+	if instance.Spec.ServiceConfiguration.Vhost != "" {
+		vhost = instance.Spec.ServiceConfiguration.Vhost
+	} else {
+		vhost = randomString(6)
+	}
 
-			if instance.Spec.ServiceConfiguration.User != "" {
-				user = instance.Spec.ServiceConfiguration.User
-			} else {
-				user = randomString(8)
-			}
-			if instance.Spec.ServiceConfiguration.Vhost != "" {
-				vhost = instance.Spec.ServiceConfiguration.Vhost
-			} else {
-				vhost = randomString(6)
-			}
+	secretPassword := []byte(password)
+	secretUser := []byte(user)
+	secretVhost := []byte(vhost)
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	if _, ok := secret.Data["password"]; !ok {
+		secret.Data["password"] = secretPassword
+	}
+	if _, ok := secret.Data["user"]; !ok {
+		secret.Data["user"] = secretUser
+	}
+	if _, ok := secret.Data["vhost"]; !ok {
+		secret.Data["vhost"] = secretVhost
+	}
 
-			var secretData = make(map[string][]byte)
-			secret.Name = instance.Name + "-secret"
-			secret.Namespace = instance.Namespace
-
-			secretPassword := []byte(password)
-			secretUser := []byte(user)
-			secretVhost := []byte(vhost)
-			secretData["password"] = secretPassword
-			secretData["user"] = secretUser
-			secretData["vhost"] = secretVhost
-			secret.Data = secretData
-			if err = controllerutil.SetControllerReference(instance, secret, r.Scheme); err != nil {
-				return reconcile.Result{}, err
-			}
-			if err := r.Client.Create(context.Background(), secret); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
+	if err := r.Client.Update(context.Background(), secret); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
@@ -348,6 +357,9 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 	if len(podIPList.Items) > 0 {
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {

@@ -108,6 +108,7 @@ const (
 	RabbitmqNodes                               string = ""
 	RabbitmqErlangCookie                        string = "47EFF3BB-4786-46E0-A5BB-58455B3C2CB4"
 	RabbitmqNodePort                            int    = 5673
+	RabbitmqNodePortSSL                         int    = 15673
 	RabbitmqServers                             string = ""
 	RabbitmqSslCertfile                         string = "/etc/contrail/ssl/certs/server.pem"
 	RabbitmqSslKeyfile                          string = "/etc/contrail/ssl/private/server-privkey.pem"

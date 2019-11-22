@@ -1,8 +1,15 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,12 +18,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "k8s.io/api/apps/v1"
+	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -104,6 +115,304 @@ func SetPodsToReady(podList *corev1.PodList, client client.Client) error {
 	return nil
 }
 
+type errorString struct {
+	s string
+}
+
+func (e *errorString) Error() string {
+	return e.s
+}
+
+// CreateAndSignCsr creates and signs the CSR
+func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *runtime.Scheme, object v1.Object, restConfig *rest.Config, podList *corev1.PodList) error {
+	var privateKey []byte
+	var csrRequest []byte
+
+	csrSecret := &corev1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret-certificates", Namespace: request.Namespace}, csrSecret)
+	if err != nil && errors.IsNotFound(err) {
+		return err
+	}
+
+	var csrMap = make(map[string]bool)
+	var csrApprovedMap = make(map[string]bool)
+	var csrSecretMap = make(map[string]bool)
+	var pemSecretMap = make(map[string]bool)
+	var crtSecretMap = make(map[string]bool)
+
+	for _, pod := range podList.Items {
+		csr := &certv1beta1.CertificateSigningRequest{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
+		if err != nil && errors.IsNotFound(err) {
+			csrMap[request.Name+"-"+pod.Spec.NodeName] = false
+			csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false
+		} else {
+			csrMap[request.Name+"-"+pod.Spec.NodeName] = true
+			csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false
+			for _, condition := range csr.Status.Conditions {
+				if condition.Type == "Approved" {
+					csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = true
+				}
+			}
+		}
+		_, foundPem := csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"]
+		pemSecretMap["server-key-"+pod.Status.PodIP+".pem"] = foundPem
+		_, foundCsr := csrSecret.Data["server-"+pod.Status.PodIP+".csr"]
+		csrSecretMap["server-"+pod.Status.PodIP+".csr"] = foundCsr
+		_, foundCrt := csrSecret.Data["server-"+pod.Status.PodIP+".crt"]
+		crtSecretMap["server-"+pod.Status.PodIP+".crt"] = foundCrt
+	}
+
+	for _, pod := range podList.Items {
+		if !csrMap[request.Name+"-"+pod.Spec.NodeName] {
+			csrRequest, privateKey, err = generateCsr(pod.Spec.NodeName)
+			if err != nil {
+				return err
+			}
+			if csrSecret.Data == nil {
+				csrSecret.Data = make(map[string][]byte)
+			}
+			csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
+			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
+			err = client.Update(context.TODO(), csrSecret)
+			if err != nil {
+				return err
+			}
+			csr := &certv1beta1.CertificateSigningRequest{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
+			if err != nil && errors.IsNotFound(err) {
+				csr := &certv1beta1.CertificateSigningRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: request.Name + "-" + pod.Spec.NodeName,
+					},
+					Spec: certv1beta1.CertificateSigningRequestSpec{
+						Groups:  []string{"system:authenticated"},
+						Request: csrSecret.Data["server-"+pod.Status.PodIP+".csr"],
+						Usages: []certv1beta1.KeyUsage{
+							"digital signature",
+							"key encipherment",
+							"server auth",
+							"client auth",
+						},
+					},
+				}
+				if err = controllerutil.SetControllerReference(object, csr, scheme); err != nil {
+					return err
+				}
+				err = client.Create(context.TODO(), csr)
+				if err != nil {
+					if errors.IsAlreadyExists(err) {
+						return nil
+					}
+					return err
+				}
+			}
+		}
+	}
+
+	for _, pod := range podList.Items {
+		if !csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] {
+			csr := &certv1beta1.CertificateSigningRequest{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
+			if err != nil && errors.IsNotFound(err) {
+				return err
+			}
+			var conditionType certv1beta1.RequestConditionType
+			conditionType = "Approved"
+			csrCondition := certv1beta1.CertificateSigningRequestCondition{
+				Type:    conditionType,
+				Reason:  "ContrailApprove",
+				Message: "This CSR was approved by operator approve.",
+			}
+
+			csr.Status.Conditions = []certv1beta1.CertificateSigningRequestCondition{csrCondition}
+			clientset, err := kubernetes.NewForConfig(restConfig)
+			if err != nil {
+				return err
+			}
+			_, err = clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+
+	for _, pod := range podList.Items {
+		if !crtSecretMap["server-"+pod.Status.PodIP+".crt"] {
+			csr := &certv1beta1.CertificateSigningRequest{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
+			if err != nil && errors.IsNotFound(err) {
+				return err
+			}
+			signedRequest := &certv1beta1.CertificateSigningRequest{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: csr.Name, Namespace: csr.Namespace}, signedRequest)
+			if err != nil {
+				return err
+			}
+
+			if signedRequest.Status.Certificate == nil || len(signedRequest.Status.Certificate) == 0 {
+				err = errors.NewGone("csr not sigened yet")
+				return err
+			}
+			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = signedRequest.Status.Certificate
+
+			err = client.Update(context.TODO(), csrSecret)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	/*
+		for _, pod := range podList.Items {
+			_, foundPem := csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"]
+			_, foundCsr := csrSecret.Data["server-"+pod.Status.PodIP+".csr"]
+			_, foundCrt := csrSecret.Data["server-"+pod.Status.PodIP+".crt"]
+			if !foundPem || !foundCsr || !foundCrt {
+				csrRequest, privateKey, err = generateCsr(pod.Spec.NodeName)
+				if err != nil {
+					return err
+				}
+				if csrSecret.Data == nil {
+					csrSecret.Data = make(map[string][]byte)
+				}
+				csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
+				csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
+				err = client.Update(context.TODO(), csrSecret)
+				if err != nil {
+					return err
+				}
+
+				csr := &certv1beta1.CertificateSigningRequest{}
+				err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
+				if err != nil && errors.IsNotFound(err) {
+					csr := &certv1beta1.CertificateSigningRequest{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: request.Name + "-" + pod.Spec.NodeName,
+						},
+						Spec: certv1beta1.CertificateSigningRequestSpec{
+							Groups:  []string{"system:authenticated"},
+							Request: csrSecret.Data["server-"+pod.Status.PodIP+".csr"],
+							Usages: []certv1beta1.KeyUsage{
+								"digital signature",
+								"key encipherment",
+								"server auth",
+							},
+						},
+					}
+					if err = controllerutil.SetControllerReference(object, csr, scheme); err != nil {
+						return err
+					}
+					err = client.Create(context.TODO(), csr)
+					if err != nil {
+						if errors.IsAlreadyExists(err) {
+							return nil
+						}
+						return err
+					}
+
+				}
+			}
+
+			var conditionType certv1beta1.RequestConditionType
+			conditionType = "Approved"
+			csrCondition := certv1beta1.CertificateSigningRequestCondition{
+				Type:    conditionType,
+				Reason:  "ContrailApprove",
+				Message: "This CSR was approved by operator approve.",
+			}
+
+			csr.Status.Conditions = []certv1beta1.CertificateSigningRequestCondition{csrCondition}
+			clientset, err := kubernetes.NewForConfig(restConfig)
+			if err != nil {
+				return err
+			}
+			_, err = clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
+			if err != nil {
+				return err
+			}
+			signedRequest := &certv1beta1.CertificateSigningRequest{}
+			err = client.Get(context.TODO(), types.NamespacedName{Name: csr.Name, Namespace: csr.Namespace}, signedRequest)
+			if err != nil {
+				return err
+			}
+
+			if signedRequest.Status.Certificate == nil || len(signedRequest.Status.Certificate) == 0 {
+				err = errors.NewGone("csr not sigened yet")
+				return err
+			}
+			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = signedRequest.Status.Certificate
+
+			err = client.Update(context.TODO(), csrSecret)
+			if err != nil {
+				return err
+			}
+		}
+	*/
+	return nil
+}
+
+func generateCsr(nodeName string) ([]byte, []byte, error) {
+	certPrivKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	certPrivKeyPEM := new(bytes.Buffer)
+	pem.Encode(certPrivKeyPEM, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
+	})
+	privateKeyBuffer, err := ioutil.ReadAll(certPrivKeyPEM)
+	if err != nil {
+		fmt.Println("cannot read certPrivKeyPEM to privateKeyBuffer")
+		return nil, nil, err
+	}
+	fmt.Println("MODULUS:", fmt.Sprintf("%x", certPrivKey.PublicKey.N))
+	fmt.Println("PUBLIC EXPONENT:", fmt.Sprintf("%x", certPrivKey.PublicKey.E))
+	fmt.Println("PRIVATE EXPONENT:", fmt.Sprintf("%x", certPrivKey.D))
+	/*
+		oidEmailAddress := asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 1}
+		emailAddress := "test@example.com"
+		subj := pkix.Name{
+			CommonName:         "example.com",
+			Country:            []string{"US"},
+			Province:           []string{"CA"},
+			Locality:           []string{"Sunnyvale"},
+			Organization:       []string{"Juniper Networks"},
+			OrganizationalUnit: []string{"Contrail"},
+		}
+		rawSubj := subj.ToRDNSequence()
+		rawSubj = append(rawSubj, []pkix.AttributeTypeAndValue{
+			{Type: oidEmailAddress, Value: emailAddress},
+		})
+
+		asn1Subj, _ := asn1.Marshal(rawSubj)
+		csrTemplate := x509.CertificateRequest{
+			RawSubject:         asn1Subj,
+			EmailAddresses:     []string{emailAddress},
+			SignatureAlgorithm: x509.SHA256WithRSA,
+		}
+	*/
+	csrTemplate := x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName:         nodeName,
+			Country:            []string{"US"},
+			Province:           []string{"CA"},
+			Locality:           []string{"Sunnyvale"},
+			Organization:       []string{"Juniper Networks"},
+			OrganizationalUnit: []string{"Contrail"},
+		},
+		EmailAddresses: []string{"test@email.com"},
+	}
+	buf := new(bytes.Buffer)
+	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &csrTemplate, certPrivKey)
+	pem.Encode(buf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+	pemBuf, err := ioutil.ReadAll(buf)
+	if err != nil {
+		fmt.Println("cannot read buf to pemBuf")
+		return nil, nil, err
+	}
+
+	return pemBuf, privateKeyBuffer, nil
+}
+
 // CreateConfigMap creates a config map based on the instance type.
 func CreateConfigMap(configMapName string,
 	client client.Client,
@@ -129,6 +438,34 @@ func CreateConfigMap(configMapName string,
 		}
 	}
 	return configMap, nil
+}
+
+// CreateSecret creates a secret based on the instance type.
+func CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request,
+	instanceType string,
+	object v1.Object) (*corev1.Secret, error) {
+	secret := &corev1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: request.Namespace}, secret)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			secret.SetName(secretName)
+			secret.SetNamespace(request.Namespace)
+			secret.SetLabels(map[string]string{"contrail_manager": instanceType,
+				instanceType: request.Name})
+			var data = make(map[string][]byte)
+			secret.Data = data
+			if err = controllerutil.SetControllerReference(object, secret, scheme); err != nil {
+				return nil, err
+			}
+			if err = client.Create(context.TODO(), secret); err != nil && !errors.IsAlreadyExists(err) {
+				return nil, err
+			}
+		}
+	}
+	return secret, nil
 }
 
 // CurrentConfigMapExists checks if a current configuration exists and returns it.
@@ -286,6 +623,23 @@ func AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[str
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: configMapName,
 					},
+				},
+			},
+		}
+		volumeList = append(volumeList, volume)
+	}
+	sts.Spec.Template.Spec.Volumes = volumeList
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to a deployment.
+func AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeSecretMap map[string]string) {
+	volumeList := sts.Spec.Template.Spec.Volumes
+	for secretName, volumeName := range volumeSecretMap {
+		volume := corev1.Volume{
+			Name: volumeName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secretName,
 				},
 			},
 		}
@@ -742,6 +1096,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	var rabbitmqNodes []string
 	var rabbitmqCluster RabbitmqClusterConfiguration
 	var port string
+	var sslPort string
 	secret := ""
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
@@ -757,6 +1112,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 		rabbitmqConfigInterface := rabbitmqList.Items[0].ConfigurationParameters()
 		rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
 		port = strconv.Itoa(*rabbitmqConfig.Port)
+		sslPort = strconv.Itoa(*rabbitmqConfig.SSLPort)
 		secret = rabbitmqList.Items[0].Status.Secret
 	}
 	sort.SliceStable(rabbitmqNodes, func(i, j int) bool { return rabbitmqNodes[i] < rabbitmqNodes[j] })
@@ -766,10 +1122,18 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	serverListSpaceSeparated = serverListSpaceSeparated + ":" + port
 	serverListCommaSeparatedWithoutPort := strings.Join(rabbitmqNodes, ",")
 
+	serverListCommaSeparatedSSL := strings.Join(rabbitmqNodes, ":"+sslPort+",")
+	serverListCommaSeparatedSSL = serverListCommaSeparatedSSL + ":" + sslPort
+	serverListSpaceSeparatedSSL := strings.Join(rabbitmqNodes, ":"+sslPort+" ")
+	serverListSpaceSeparatedSSL = serverListSpaceSeparatedSSL + ":" + sslPort
+
 	rabbitmqCluster = RabbitmqClusterConfiguration{
 		Port:                                port,
+		SSLPort:                             sslPort,
 		ServerListCommaSeparated:            serverListCommaSeparated,
 		ServerListSpaceSeparated:            serverListSpaceSeparated,
+		ServerListCommaSeparatedSSL:         serverListCommaSeparatedSSL,
+		ServerListSpaceSeparatedSSL:         serverListSpaceSeparatedSSL,
 		ServerListCommaSeparatedWithoutPort: serverListCommaSeparatedWithoutPort,
 		Secret:                              secret,
 	}
@@ -872,8 +1236,11 @@ type ZookeeperClusterConfiguration struct {
 // RabbitmqClusterConfiguration defines all configuration knobs used to write the config file.
 type RabbitmqClusterConfiguration struct {
 	Port                                string
+	SSLPort                             string
 	ServerListCommaSeparated            string
 	ServerListSpaceSeparated            string
+	ServerListCommaSeparatedSSL         string
+	ServerListSpaceSeparatedSSL         string
 	ServerListCommaSeparatedWithoutPort string
 	Secret                              string
 }

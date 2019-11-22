@@ -346,6 +346,11 @@ func (c *Control) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigM
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Control) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Control PODs to ready.
 func (c *Control) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)

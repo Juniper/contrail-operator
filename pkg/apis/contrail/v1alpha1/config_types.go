@@ -180,7 +180,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -206,7 +206,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -232,7 +232,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -258,7 +258,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -285,7 +285,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RedisServerList:     redisServerSpaceSeparatedList,
 			RabbitmqUser:        rabbitmqSecretUser,
@@ -318,7 +318,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
@@ -385,6 +385,18 @@ func (c *Config) CurrentConfigMapExists(configMapName string,
 		request)
 }
 
+func (c *Config) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"config",
+		c)
+}
+
 func (c *Config) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
 	managerName := c.Labels["contrail_cluster"]
 	ownerRefList := c.GetOwnerReferences()
@@ -411,6 +423,11 @@ func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *Common
 // AddVolumesToIntendedSTS adds volumes to the config statefulset
 func (c *Config) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Config) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 //CreateSTS creates the STS

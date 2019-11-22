@@ -230,6 +230,11 @@ func (c *Zookeeper) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfi
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Zookeeper) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Zookeeper PODs to ready.
 func (c *Zookeeper) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)

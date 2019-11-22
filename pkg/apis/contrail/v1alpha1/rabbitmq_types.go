@@ -51,6 +51,7 @@ type RabbitmqSpec struct {
 type RabbitmqConfiguration struct {
 	Containers   map[string]*Container `json:"containers,omitempty"`
 	Port         *int                  `json:"port,omitempty"`
+	SSLPort      *int                  `json:"sslPort,omitempty"`
 	ErlangCookie string                `json:"erlangCookie,omitempty"`
 	Vhost        string                `json:"vhost,omitempty"`
 	User         string                `json:"user,omitempty"`
@@ -70,7 +71,8 @@ type RabbitmqStatus struct {
 }
 
 type RabbitmqStatusPorts struct {
-	Port string `json:"port,omitempty"`
+	Port    string `json:"port,omitempty"`
+	SSLPort string `json:"sslPort,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -108,20 +110,30 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 
 	rabbitmqConfigInterface := c.ConfigurationParameters()
 	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
+	var data = make(map[string]string)
+	for _, pod := range podList.Items {
+		rabbitmqConfigString := fmt.Sprintf("listeners.tcp.default = %d\n", *rabbitmqConfig.Port)
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("listeners.ssl.default = %d\n", *rabbitmqConfig.SSLPort)
 
-	rabbitmqConfigString := fmt.Sprintf("listeners.tcp.default = %d\n", *rabbitmqConfig.Port)
-	rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
-	rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.tcp.port = 15672\n")
-	rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.load_definitions = /etc/rabbitmq/definitions.json\n")
-
-	data := map[string]string{"rabbitmq.conf": rabbitmqConfigString,
-		"RABBITMQ_ERLANG_COOKIE":        rabbitmqConfig.ErlangCookie,
-		"RABBITMQ_USE_LONGNAME":         "true",
-		"RABBITMQ_CONFIG_FILE":          "/etc/rabbitmq/rabbitmq.conf",
-		"RABBITMQ_PID_FILE":             "/var/run/rabbitmq.pid",
-		"RABBITMQ_CONF_ENV_FILE":        "/var/lib/rabbitmq/rabbitmq.env",
-		"RABBITMQ_ENABLED_PLUGINS_FILE": "/etc/rabbitmq/plugins.conf",
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.tcp.port = 15671\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.load_definitions = /etc/rabbitmq/definitions.json\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = /run/secrets/kubernetes.io/serviceaccount/ca.crt\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.keyfile = /etc/certificates/server-key-"+pod.Status.PodIP+".pem\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.certfile = /etc/certificates/server-"+pod.Status.PodIP+".crt\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.fail_if_no_peer_cert = true\n")
+		//rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.versions.1 = tlsv1.2\n")
+		data["rabbitmq-"+pod.Status.PodIP+".conf"] = rabbitmqConfigString
 	}
+
+	data["RABBITMQ_ERLANG_COOKIE"] = rabbitmqConfig.ErlangCookie
+	data["RABBITMQ_USE_LONGNAME"] = "true"
+	data["RABBITMQ_CONFIG_FILE"] = "/etc/rabbitmq/rabbitmq-${POD_IP}.conf"
+	data["RABBITMQ_PID_FILE"] = "/var/run/rabbitmq.pid"
+	data["RABBITMQ_CONF_ENV_FILE"] = "/var/lib/rabbitmq/rabbitmq.env"
+	data["RABBITMQ_ENABLED_PLUGINS_FILE"] = "/etc/rabbitmq/plugins.conf"
+
 	configMapInstanceDynamicConfig.Data = data
 
 	var rabbitmqNodes string
@@ -210,6 +222,18 @@ func (c *Rabbitmq) CreateConfigMap(configMapName string,
 		c)
 }
 
+func (c *Rabbitmq) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"rabbitmq",
+		c)
+}
+
 func (c *Rabbitmq) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
 	managerName := c.Labels["contrail_cluster"]
 	ownerRefList := c.GetOwnerReferences()
@@ -275,6 +299,11 @@ func (c *Rabbitmq) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfig
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Rabbitmq) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Rabbitmq PODs to ready.
 func (c *Rabbitmq) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)
@@ -306,6 +335,7 @@ func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 	rabbitmqConfigInterface := c.ConfigurationParameters()
 	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
 	c.Status.Ports.Port = strconv.Itoa(*rabbitmqConfig.Port)
+	c.Status.Ports.SSLPort = strconv.Itoa(*rabbitmqConfig.SSLPort)
 	c.Status.Secret = rabbitmqConfig.Secret
 	err := client.Status().Update(context.TODO(), c)
 	if err != nil {
@@ -317,6 +347,7 @@ func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 func (c *Rabbitmq) ConfigurationParameters() interface{} {
 	rabbitmqConfiguration := RabbitmqConfiguration{}
 	var port int
+	var sslPort int
 	var erlangCookie string
 	var vhost string
 	var user string
@@ -326,6 +357,11 @@ func (c *Rabbitmq) ConfigurationParameters() interface{} {
 		port = *c.Spec.ServiceConfiguration.Port
 	} else {
 		port = RabbitmqNodePort
+	}
+	if c.Spec.ServiceConfiguration.SSLPort != nil {
+		sslPort = *c.Spec.ServiceConfiguration.SSLPort
+	} else {
+		sslPort = RabbitmqNodePortSSL
 	}
 	if c.Spec.ServiceConfiguration.ErlangCookie != "" {
 		erlangCookie = c.Spec.ServiceConfiguration.ErlangCookie
@@ -353,6 +389,7 @@ func (c *Rabbitmq) ConfigurationParameters() interface{} {
 		secret = c.GetName() + "-secret"
 	}
 	rabbitmqConfiguration.Port = &port
+	rabbitmqConfiguration.SSLPort = &sslPort
 	rabbitmqConfiguration.ErlangCookie = erlangCookie
 	rabbitmqConfiguration.Vhost = vhost
 	rabbitmqConfiguration.User = user
