@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"atom/atom/contrail/operator/pkg/volumeclaims"
 	"context"
 
 	core "k8s.io/api/core/v1"
@@ -30,7 +31,10 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcilePostgres{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	client := mgr.GetClient()
+	scheme := mgr.GetScheme()
+	claims := volumeclaims.New(client, scheme)
+	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -68,6 +72,7 @@ type ReconcilePostgres struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	claims *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a Postgres object and makes changes based on the state read
@@ -93,8 +98,17 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	namespacedName := types.NamespacedName{
+		Namespace: instance.Namespace,
+		Name:      instance.Name + "-pv-claim",
+	}
+
+	if err = r.claims.New(namespacedName, instance).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Define a new Pod object
-	pod := newPodForCR(instance)
+	pod := newPodForCR(instance, namespacedName.Name)
 
 	// Set Postgres instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -134,7 +148,7 @@ func (r *ReconcilePostgres) updateStatus(
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrail.Postgres) *core.Pod {
+func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -160,6 +174,10 @@ func newPodForCR(cr *contrail.Postgres) *core.Pod {
 							},
 						},
 					},
+					VolumeMounts: []core.VolumeMount{{
+						Name:             cr.Name + "-volume",
+						MountPath:        "/var/lib/postgresql/data",
+					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
 						{Name: "POSTGRES_PASSWORD", Value: "contrail123"},
@@ -167,10 +185,19 @@ func newPodForCR(cr *contrail.Postgres) *core.Pod {
 					},
 				},
 			},
+			Volumes: []core.Volume{{
+				Name:         cr.Name + "-volume",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: claimName,
+					},
+				},
+			}},
 			Tolerations: []core.Toleration{
 				{Operator: "Exists", Effect: "NoSchedule"},
 				{Operator: "Exists", Effect: "NoExecute"},
 			},
 		},
 	}
+
 }

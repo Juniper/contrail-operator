@@ -12,6 +12,8 @@ cat role_binding.yaml >> 1-create-operator.yaml
 echo "---" >> 1-create-operator.yaml
 cat cluster_role_binding.yaml >> 1-create-operator.yaml
 echo "---" >> 1-create-operator.yaml
+cat postgres_persistent_volume.yaml >> 1-create-operator.yaml
+echo "---" >> 1-create-operator.yaml
 for i in $(ls crds/*_crd.yaml); do
   cat $i >> 1-create-operator.yaml
   echo "---" >> 1-create-operator.yaml

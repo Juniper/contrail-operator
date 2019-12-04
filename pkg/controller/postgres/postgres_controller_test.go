@@ -1,7 +1,9 @@
 package postgres
 
 import (
+	"atom/atom/contrail/operator/pkg/volumeclaims"
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +41,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
+			claims: volumeclaims.New(fakeClient, scheme),
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -55,6 +58,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
+			claims: volumeclaims.New(fakeClient, scheme),
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
@@ -69,6 +73,35 @@ func TestPostgresController(t *testing.T) {
 		assertPostgresStatusActive(t, fakeClient, name, true)
 	})
 
+	t.Run("postgres persistent volume", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		reconcilePostgres := &ReconcilePostgres{
+			client: fakeClient,
+			scheme: scheme,
+			claims: volumeclaims.New(fakeClient, scheme),
+		}
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{
+			NamespacedName: name,
+		})
+		// when
+		makePodReady(t, fakeClient, podName)
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{
+			NamespacedName: name,
+		})
+		assert.NoError(t, err)
+		// then
+		t.Run("should add volume to pod", func(t *testing.T) {
+			assertVolumeMountedToPod(t, fakeClient, name, podName)
+		})
+		t.Run("should mount volume to container", func(t *testing.T) {
+			assertVolumeMountedToContainer(t, fakeClient, name, podName)
+		})
+		t.Run("should create persistent volume claim", func(t *testing.T) {
+			assertClaimCreated(t, fakeClient, name)
+		})
+
+	})
 }
 
 func assertPodExist(t *testing.T, c client.Client, name types.NamespacedName, containerImage string) {
@@ -98,4 +131,72 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
 	assert.Equal(t, active, postgres.Status.Active)
+}
+
+func assertVolumeMountedToPod(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
+	postgres := contrail.Postgres{}
+	postgresPod := core.Pod{}
+	err := c.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+
+	err = c.Get(context.TODO(), podName, &postgresPod)
+	assert.NoError(t, err)
+
+	expected := core.Volume{
+		Name: postgres.Name + "-volume",
+		VolumeSource: core.VolumeSource{
+			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+				ClaimName: postgres.Name + "-pv-claim",
+			},
+		},
+	}
+	var mounted bool
+	for _, volume := range postgresPod.Spec.Volumes {
+		mounted = reflect.DeepEqual(expected, volume) || mounted
+	}
+
+	assert.NoError(t, err)
+	assert.True(t, mounted)
+}
+
+
+func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
+	postgres := contrail.Postgres{}
+	postgresPod := core.Pod{}
+	err := c.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+
+	err = c.Get(context.TODO(), podName, &postgresPod)
+	assert.NoError(t, err)
+
+	expected := core.Volume{
+		Name:             postgres.Name + "-volume",
+		VolumeSource: core.VolumeSource{
+			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+				ClaimName: postgres.Name + "-pv-claim",
+			},
+		},
+	}
+	var mounted bool
+	for _, volume := range postgresPod.Spec.Volumes {
+		mounted = reflect.DeepEqual(expected, volume) || mounted
+	}
+
+	assert.NoError(t, err)
+	assert.True(t, mounted)
+}
+
+func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
+	postgres := contrail.Postgres{}
+	err := fakeClient.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+
+	claimName := types.NamespacedName{
+		Name: name.Name + "-pv-claim",
+		Namespace: name.Namespace,
+	}
+
+	claim := core.PersistentVolumeClaim{}
+	err = fakeClient.Get(context.TODO(), claimName, &claim)
+	assert.NoError(t, err)
 }
