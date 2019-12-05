@@ -350,7 +350,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		if container.Name == "queryengine" {
 			volumeMountList := []corev1.VolumeMount{}
-			queryEngineContainer := &intendedDeployment.Spec.Template.Spec.Containers[idx]
+			queryEngineContainer := &statefulSet.Spec.Template.Spec.Containers[idx]
 			queryEngineContainer.Command = []string{"bash", "-c",
 				"/usr/bin/contrail-query-engine --conf_file /etc/mycontrail/queryengine.${POD_IP}"}
 			if len(queryEngineContainer.VolumeMounts) > 0 {

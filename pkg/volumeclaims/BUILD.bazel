@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["pvc.go"],
-    importpath = "atom/atom/contrail/operator/pkg/volumeclaims",
+    importpath = "github.com/Juniper/contrail-operator/pkg/volumeclaims",
     visibility = ["//visibility:public"],
     deps = [
         "@io_k8s_api//core/v1:go_default_library",
@@ -21,8 +21,7 @@ go_test(
     srcs = ["pvc_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
-        "//logging-service/errors:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

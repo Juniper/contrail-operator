@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
-	"atom/atom/contrail/operator/pkg/controller/contrailcommand"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/contrailcommand"
 )
 
 func TestCommand(t *testing.T) {
@@ -153,7 +153,7 @@ func TestCommandPostgres(t *testing.T) {
 		// then:
 		//   - no deployments should be created
 		deploymentList := &apps.DeploymentList{}
-		err = r.Client.List(context.Background(), &client.ListOptions{}, deploymentList)
+		err = r.Client.List(context.Background(), deploymentList, &client.ListOptions{})
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(deploymentList.Items))
 

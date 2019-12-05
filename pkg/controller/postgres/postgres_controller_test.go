@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"atom/atom/contrail/operator/pkg/volumeclaims"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"context"
 	"reflect"
 	"testing"
@@ -17,7 +17,7 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 func TestPostgresController(t *testing.T) {

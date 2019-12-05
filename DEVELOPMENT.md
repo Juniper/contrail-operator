@@ -14,19 +14,19 @@ Open the parent atom folder in Goland.
 ## Generate k8s files
 
 ```
-cd atom/atom/contrail/operator
+cd github.com/Juniper/contrail/operator
 # everytime you want to generate files you have to copy go.mod files
 # Do not commit those files though and remove them before using Goland
 cp ../../go.* .
-docker run --rm -it -v $PWD:/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate k8s"
-docker run --rm -it -v $PWD:/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate openapi"
+docker run --rm -it -v $(pwd):/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate k8s"
+docker run --rm -it -v $(pwd):/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate openapi"
 rm go.*
 ```
 
 ## Troubleshooting
 
-* Problem: `atom/atom/base/go/server/testing/client imports
-atom/atom/base/go/server/testing/testserver/testservice: malformed module path "atom/atom/base/go/server/testing/testserver/testservice": missing dot in first path element`
+* Problem: `github.com/Juniper/base/go/server/testing/client imports
+github.com/Juniper/base/go/server/testing/testserver/testservice: malformed module path "github.com/Juniper/base/go/server/testing/testserver/testservice": missing dot in first path element`
   Solution: use golang 1.12
 
 * Problem: missing imports in Goland

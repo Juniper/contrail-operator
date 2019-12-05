@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"atom/atom/contrail/operator/pkg/volumeclaims"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"context"
 
 	core "k8s.io/api/core/v1"
@@ -18,7 +18,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_postgres")

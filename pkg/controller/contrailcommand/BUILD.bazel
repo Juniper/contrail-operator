@@ -3,10 +3,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["contrailcommand_controller.go"],
-    importpath = "atom/atom/contrail/operator/pkg/controller/contrailcommand",
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/contrailcommand",
     visibility = ["//visibility:public"],
     deps = [
-        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
@@ -30,7 +30,7 @@ go_test(
     srcs = ["contrailcommand_controller_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

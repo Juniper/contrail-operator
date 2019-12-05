@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"atom/atom/contrail/operator/pkg/controller/postgres"
+	"github.com/Juniper/contrail-operator/pkg/controller/postgres"
 )
 
 func init() {

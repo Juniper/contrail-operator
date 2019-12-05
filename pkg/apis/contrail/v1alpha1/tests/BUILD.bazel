@@ -4,7 +4,7 @@ go_test(
     name = "go_default_test",
     srcs = ["config_test.go"],
     deps = [
-        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@com_github_kylelemons_godebug//diff:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",

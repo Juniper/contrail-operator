@@ -9,9 +9,9 @@ go_test(
     local = 1,
     tags = ["manual"],
     deps = [
-        "//contrail/operator/pkg/apis:go_default_library",
-        "//contrail/operator/pkg/apis/contrail/v1alpha1:go_default_library",
-        "//contrail/operator/pkg/controller/utils:go_default_library",
+        "//pkg/apis:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "@com_github_juniper_contrail_go_api//:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/test:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/test/e2eutil:go_default_library",

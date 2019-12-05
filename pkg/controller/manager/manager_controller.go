@@ -1187,8 +1187,7 @@ func (r *ReconcileManager) processContrailCommand(manager *v1alpha1.Manager) (re
 	command := &v1alpha1.ContrailCommand{}
 	command.ObjectMeta = manager.Spec.Services.ContrailCommand.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, command, func(existing runtime.Object) error {
-		command := existing.(*v1alpha1.ContrailCommand)
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.ContrailCommand.Spec
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	}); err != nil {

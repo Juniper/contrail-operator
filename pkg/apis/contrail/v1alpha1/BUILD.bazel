@@ -25,7 +25,7 @@ go_library(
     importpath = "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
-        "//contrail/operator/pkg/apis/contrail/v1alpha1/templates:go_default_library",
+        "//pkg/apis/contrail/v1alpha1/templates:go_default_library",
         "@com_github_go_openapi_spec//:go_default_library",
         "@in_gopkg_yaml_v2//:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",

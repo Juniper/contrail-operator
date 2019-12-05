@@ -131,7 +131,7 @@ func (in *CassandraConfiguration) DeepCopy() *CassandraConfiguration {
 func (in *CassandraList) DeepCopyInto(out *CassandraList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Cassandra, len(*in))
@@ -374,7 +374,7 @@ func (in *ConfigConfiguration) DeepCopy() *ConfigConfiguration {
 func (in *ConfigList) DeepCopyInto(out *ConfigList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Config, len(*in))
@@ -535,7 +535,7 @@ func (in *ContrailCommandConfiguration) DeepCopy() *ContrailCommandConfiguration
 func (in *ContrailCommandList) DeepCopyInto(out *ContrailCommandList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ContrailCommand, len(*in))
@@ -699,7 +699,7 @@ func (in *ControlConfiguration) DeepCopy() *ControlConfiguration {
 func (in *ControlList) DeepCopyInto(out *ControlList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Control, len(*in))
@@ -897,7 +897,7 @@ func (in *KubemanagerConfiguration) DeepCopy() *KubemanagerConfiguration {
 func (in *KubemanagerList) DeepCopyInto(out *KubemanagerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Kubemanager, len(*in))
@@ -1009,7 +1009,7 @@ func (in *Manager) DeepCopyObject() runtime.Object {
 func (in *ManagerList) DeepCopyInto(out *ManagerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Manager, len(*in))
@@ -1181,7 +1181,7 @@ func (in *Postgres) DeepCopyObject() runtime.Object {
 func (in *PostgresList) DeepCopyInto(out *PostgresList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Postgres, len(*in))
@@ -1318,7 +1318,7 @@ func (in *RabbitmqConfiguration) DeepCopy() *RabbitmqConfiguration {
 func (in *RabbitmqList) DeepCopyInto(out *RabbitmqList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Rabbitmq, len(*in))
@@ -1653,7 +1653,7 @@ func (in *VrouterConfiguration) DeepCopy() *VrouterConfiguration {
 func (in *VrouterList) DeepCopyInto(out *VrouterList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Vrouter, len(*in))
@@ -1795,7 +1795,7 @@ func (in *WebuiConfiguration) DeepCopy() *WebuiConfiguration {
 func (in *WebuiList) DeepCopyInto(out *WebuiList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Webui, len(*in))
@@ -1956,7 +1956,7 @@ func (in *ZookeeperConfiguration) DeepCopy() *ZookeeperConfiguration {
 func (in *ZookeeperList) DeepCopyInto(out *ZookeeperList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Zookeeper, len(*in))

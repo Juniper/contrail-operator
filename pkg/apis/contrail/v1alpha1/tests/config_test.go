@@ -1463,7 +1463,7 @@ cluster_network={}
 pod_subnets=10.32.0.0/12
 ip_fabric_subnets=10.64.0.0/12
 service_subnets=10.96.0.0/12
-ip_fabric_forwarding=true
+ip_fabric_forwarding=false
 ip_fabric_snat=true
 host_network_service=false
 [VNC]

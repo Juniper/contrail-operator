@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-
-	"atom/atom/logging-service/errors"
+	"errors"
 )
 
 func NewApiClient(url string) *ApiClient {

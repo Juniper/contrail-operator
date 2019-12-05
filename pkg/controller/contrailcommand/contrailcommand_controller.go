@@ -19,7 +19,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_contrailcommand")
@@ -123,9 +123,8 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 
 	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{configMap.Name: configVolumeName})
 
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, deployment, func(existing runtime.Object) error {
-		deployment := existing.(*apps.Deployment)
-		deployment, err := command.PrepareIntendedDeployment(deployment,
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, deployment, func() error {
+		_, err := command.PrepareIntendedDeployment(deployment,
 			&command.Spec.CommonConfiguration, request, r.Scheme)
 		return err
 	}); err != nil {
@@ -148,8 +147,7 @@ func (r *ReconcileContrailCommand) ensurePostgres(command *contrail.ContrailComm
 		return nil, err
 	}
 
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, postgres, func(existing runtime.Object) error {
-		postgres = existing.(*contrail.Postgres)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, postgres, func() error {
 		return nil
 	})
 

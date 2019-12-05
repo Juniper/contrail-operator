@@ -2,6 +2,7 @@ package volumeclaims_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,10 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"atom/atom/contrail/operator/pkg/volumeclaims"
-	"atom/atom/logging-service/errors"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
-	contrail "atom/atom/contrail/operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 func TestNew(t *testing.T) {
@@ -94,19 +94,27 @@ func (f failingClient) Get(ctx context.Context, key client.ObjectKey, obj runtim
 	return errors.New("error")
 }
 
-func (f failingClient) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+func (f failingClient) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 	return errors.New("error")
 }
 
-func (f failingClient) Create(ctx context.Context, obj runtime.Object) error {
+func (f failingClient) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
 	return errors.New("error")
 }
 
-func (f failingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOptionFunc) error {
+func (f failingClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 	return errors.New("error")
 }
 
-func (f failingClient) Update(ctx context.Context, obj runtime.Object) error {
+func (f failingClient) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+	return errors.New("error")
+}
+
+func (f failingClient) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+	return errors.New("error")
+}
+
+func (f failingClient) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 	return errors.New("error")
 }
 

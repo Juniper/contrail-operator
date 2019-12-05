@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"atom/atom/contrail/operator/pkg/controller/config"
+	"github.com/Juniper/contrail-operator/pkg/controller/config"
 )
 
 func TestEnsureConfigNodeExists(t *testing.T) {
