@@ -39,8 +39,8 @@ github.com/Juniper/base/go/server/testing/testserver/testservice: malformed modu
 ## Updating Contrail operator
 
 * make bazel-sync
-* make docker-push contrail/operator/cmd/manager/contrail_operator_image_base
-* docker tag bazel/contrail/operator/cmd/manager:contrail_operator_image_base localhost:5000/contrail_operator:latest
+* make docker-push cmd/manager/contrail_operator_image_base
+* docker tag bazel/cmd/manager:contrail_operator_image_base localhost:5000/contrail_operator:latest
 * docker push localhost:5000/contrail_operator:latest
 
 
