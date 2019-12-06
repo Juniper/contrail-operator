@@ -100,8 +100,8 @@ func TestKeystone(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := keystone.ReconcileKeystone{
-				Client: cl,
-				Scheme: scheme,
+				Client:     cl,
+				Scheme:     scheme,
 				Kubernetes: k8s.New(cl, scheme),
 			}
 
