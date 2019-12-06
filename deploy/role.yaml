@@ -54,6 +54,7 @@ rules:
   - webuis
   - vrouters
   - contrailcommands
+  - keystones
   verbs:
   - '*'
 - apiGroups:

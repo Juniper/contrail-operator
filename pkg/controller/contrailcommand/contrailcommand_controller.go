@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/owner"
 )
 
 var log = logf.Log.WithName("controller_contrailcommand")
@@ -60,8 +61,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Watch for changes to secondary resource Postgres and requeue the owner ContrailCommand
 	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &contrail.ContrailCommand{},
+		OwnerType: &contrail.ContrailCommand{},
 	})
 
 	return err
@@ -105,12 +105,16 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	postgres, err := r.ensurePostgres(command)
+	psql, err := r.getPostgres(command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if !postgres.Status.Active {
+	if err := owner.EnsureOwnerReference(command, psql, r.Client, r.Scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
 
@@ -134,24 +138,14 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	return reconcile.Result{}, r.updateStatus(command, deployment, request)
 }
 
-func (r *ReconcileContrailCommand) ensurePostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
-	postgres := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      command.Name + "-db",
-			Namespace: command.Namespace,
-		},
-	}
+func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
+	psql := &contrail.Postgres{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.PostgresInstance,
+	}, psql)
 
-	// Set Command instance as the owner and controller
-	if err := controllerutil.SetControllerReference(command, postgres, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, postgres, func() error {
-		return nil
-	})
-
-	return postgres, err
+	return psql, err
 }
 
 func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
@@ -182,14 +176,14 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 						}},
 					}},
 					InitContainers: []core.Container{{
-						Name: "command-init",
+						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
 						Image:           "localhost:5000/contrail-command-init",
 						Env: []core.EnvVar{{
-							Name:	"POSTGRES_USER",
+							Name:  "POSTGRES_USER",
 							Value: "root",
-						},{
-							Name:	"POSTGRES_DB_NAME",
+						}, {
+							Name:  "POSTGRES_DB_NAME",
 							Value: "contrail_test",
 						}},
 						Command: []string{"bash", "/etc/contrail/cc_init_db.sh"},

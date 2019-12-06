@@ -1,7 +1,7 @@
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Postgres
 metadata:
-  name: example-postgres
+  name: postgres
 spec:
   # Add fields here
   size: 3

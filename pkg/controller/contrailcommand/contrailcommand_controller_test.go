@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -29,6 +28,7 @@ func TestCommand(t *testing.T) {
 		initObjs           []runtime.Object
 		expectedStatus     contrail.ContrailCommandStatus
 		expectedDeployment *apps.Deployment
+		expectedPostgres   *contrail.Postgres
 	}{
 		{
 			name: "create a new deployment",
@@ -38,6 +38,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedStatus:     contrail.ContrailCommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
+			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "remove tolerations from deployment",
@@ -50,6 +51,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedStatus:     contrail.ContrailCommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
+			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "update command status to false",
@@ -62,6 +64,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedStatus:     contrail.ContrailCommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
+			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "update command status to active",
@@ -76,6 +79,7 @@ func TestCommand(t *testing.T) {
 				Active: true,
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
+			expectedPostgres:   newPostgresWithOwner(true),
 		},
 	}
 
@@ -126,46 +130,17 @@ func TestCommand(t *testing.T) {
 			}, configMap)
 			assert.NoError(t, err)
 			assert.Equal(t, expConfigMap, configMap)
+
+			// Check if postgres has been updated
+			psql := &contrail.Postgres{}
+			err = r.Client.Get(context.Background(), types.NamespacedName{
+				Name:      tt.expectedPostgres.GetName(),
+				Namespace: tt.expectedPostgres.GetNamespace(),
+			}, psql)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedPostgres, psql)
 		})
 	}
-}
-
-func TestCommandPostgres(t *testing.T) {
-	scheme, err := contrail.SchemeBuilder.Build()
-	assert.NoError(t, err)
-	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
-	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
-	t.Run("create postgres if it doesn't exist", func(t *testing.T) {
-
-		// given command cr
-		cl := fake.NewFakeClientWithScheme(scheme, newContrailCommand())
-
-		r := contrailcommand.ReconcileContrailCommand{
-			Client: cl,
-			Scheme: scheme,
-		}
-		// when it's reconciled
-		req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "command", Namespace: "default"}}
-		res, err := r.Reconcile(req)
-		assert.NoError(t, err)
-		assert.False(t, res.Requeue)
-
-		// then:
-		//   - no deployments should be created
-		deploymentList := &apps.DeploymentList{}
-		err = r.Client.List(context.Background(), deploymentList, &client.ListOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(deploymentList.Items))
-
-		//   - a postgres cr should be created
-		postgres := &contrail.Postgres{}
-		err = r.Client.Get(context.Background(), types.NamespacedName{
-			Name:      "command-db",
-			Namespace: "default",
-		}, postgres)
-		assert.NoError(t, err)
-		assert.Equal(t, newPostgres(false), postgres)
-	})
 }
 
 func newContrailCommand() *contrail.ContrailCommand {
@@ -193,27 +168,34 @@ func newContrailCommand() *contrail.ContrailCommand {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ContrailCommandConfiguration{
-				AdminUsername: "test",
-				AdminPassword: "test123",
+				PostgresInstance: "command-db",
+				AdminUsername:    "test",
+				AdminPassword:    "test123",
 			},
 		},
 	}
 }
 
 func newPostgres(active bool) *contrail.Postgres {
-	trueVal := true
 	return &contrail.Postgres{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-db",
 			Namespace: "default",
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
-			},
 		},
 		Status: contrail.PostgresStatus{
 			Active: active,
 		},
 	}
+}
+
+func newPostgresWithOwner(active bool) *contrail.Postgres {
+	falseVal := false
+	psql := newPostgres(active)
+	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
+		{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &falseVal, &falseVal},
+	}
+
+	return psql
 }
 
 func newContrailCommandWithEmptyToleration() *contrail.ContrailCommand {

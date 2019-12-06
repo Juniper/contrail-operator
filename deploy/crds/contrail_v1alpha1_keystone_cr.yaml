@@ -1,7 +1,8 @@
 apiVersion: contrail.juniper.net/v1alpha1
-kind: ContrailCommand
+kind: Keystone
 metadata:
-  name: command
+  name: keystone
+  namespace: contrail
 spec:
   commonConfiguration:
     activate: true
@@ -16,6 +17,4 @@ spec:
       node-role.kubernetes.io/master: ""
   serviceConfiguration:
     postgresInstance: "postgres"
-    adminUsername: "admin"
-    adminPassword: "contrail123"
-
+    listenPort: 5555

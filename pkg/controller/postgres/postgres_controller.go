@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"context"
 
 	core "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_postgres")
@@ -141,6 +141,7 @@ func (r *ReconcilePostgres) updateStatus(
 
 	if len(pod.Status.ContainerStatuses) != 0 {
 		postgres.Status.Active = pod.Status.ContainerStatuses[0].Ready
+		postgres.Status.Node = pod.Status.PodIP + ":3306"
 	} else {
 		postgres.Status.Active = false
 	}
@@ -175,8 +176,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 						},
 					},
 					VolumeMounts: []core.VolumeMount{{
-						Name:             cr.Name + "-volume",
-						MountPath:        "/var/lib/postgresql/data",
+						Name:      cr.Name + "-volume",
+						MountPath: "/var/lib/postgresql/data",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
@@ -186,7 +187,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 				},
 			},
 			Volumes: []core.Volume{{
-				Name:         cr.Name + "-volume",
+				Name: cr.Name + "-volume",
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 						ClaimName: claimName,

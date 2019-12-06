@@ -31,6 +31,8 @@ type Services struct {
 	Zookeepers      []*Zookeeper     `json:"zookeepers,omitempty"`
 	Rabbitmq        *Rabbitmq        `json:"rabbitmq,omitempty"`
 	ContrailCommand *ContrailCommand `json:"contrailCommand,omitempty"`
+	Postgres        *Postgres        `json:"postgres,omitempty"`
+	Keystone        *Keystone        `json:"keystone,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
