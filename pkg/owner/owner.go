@@ -11,18 +11,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-type Object interface {
-	meta.Object
-	runtime.Object
-}
-
 // EnsureOwnerReference is used to ensure that owner reference is set
-func EnsureOwnerReference(owner Object, object Object, client client.Client, scheme *runtime.Scheme) error {
+func EnsureOwnerReference(owner object, object object, client client.Client, scheme *runtime.Scheme) error {
 	if err := setOwnerReference(owner, object, scheme); err != nil {
 		return err
 	}
 
 	return client.Update(context.TODO(), object)
+}
+
+type object interface {
+	meta.Object
+	runtime.Object
 }
 
 func setOwnerReference(owner, object meta.Object, scheme *runtime.Scheme) error {
