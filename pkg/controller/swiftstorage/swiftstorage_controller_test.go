@@ -1,9 +1,10 @@
 package swiftstorage_test
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
 	"context"
 	"testing"
+
+	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,7 @@ func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.Names
 
 func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.NamespacedName) {
 	statefulSetList := apps.StatefulSetList{}
-	err := c.List(context.TODO(), &client.ListOptions{}, &statefulSetList)
+	err := c.List(context.TODO(), &statefulSetList)
 	assert.NoError(t, err)
 	require.Len(t, statefulSetList.Items, 1, "Only one StatefulSet expected")
 	objectMeta := statefulSetList.Items[0].ObjectMeta
@@ -117,7 +118,7 @@ func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.Name
 }
 func assertNoStatefulSetExist(t *testing.T, c client.Client) {
 	statefulSetList := apps.StatefulSetList{}
-	err := c.List(context.TODO(), &client.ListOptions{}, &statefulSetList)
+	err := c.List(context.TODO(), &statefulSetList)
 	require.NoError(t, err)
 	assert.Empty(t, statefulSetList.Items, "Empty StatefulSet expected")
 }
