@@ -101,6 +101,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 				Image: "nginx",
 			},
 		}
+		statefulSet.Spec.Template.Spec.HostNetwork = true
 		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
 			{
 				Operator: core.TolerationOpExists,
