@@ -23,18 +23,12 @@ import (
 
 var log = logf.Log.WithName("controller_swiftstorage")
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
 // Add creates a new SwiftStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
-// newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	c := mgr.GetClient()
 	scheme := mgr.GetScheme()
@@ -105,6 +99,16 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 			{
 				Name:  "nginx",
 				Image: "nginx",
+			},
+		}
+		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
+			{
+				Operator: core.TolerationOpExists,
+				Effect:   core.TaintEffectNoSchedule,
+			},
+			{
+				Operator: core.TolerationOpExists,
+				Effect:   core.TaintEffectNoExecute,
 			},
 		}
 		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
