@@ -14,13 +14,9 @@ Open the parent atom folder in Goland.
 ## Generate k8s files
 
 ```
-cd github.com/Juniper/contrail/operator
-# everytime you want to generate files you have to copy go.mod files
-# Do not commit those files though and remove them before using Goland
-cp ../../go.* .
-docker run --rm -it -v $(pwd):/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate k8s"
-docker run --rm -it -v $(pwd):/project kaweue/operator-sdk:v.10-go-1.12 bash -c "cd /project;operator-sdk generate openapi"
-rm go.*
+cd github.com/Juniper/contrail-operator
+docker run --rm -it -v $(pwd):/contrail-operator katrybacka/operator-sdk:v.10-go-1.12  bash -c "cd /contrail-operator;operator-sdk generate k8s"
+docker run --rm -it -v $(pwd):/contrail-operator katrybacka/operator-sdk:v.10-go-1.12  bash -c "cd /contrail-operator;operator-sdk generate openapi"
 ```
 
 ## Troubleshooting
@@ -37,11 +33,11 @@ github.com/Juniper/base/go/server/testing/testserver/testservice: malformed modu
 
 
 ## Updating Contrail operator
-
-* make bazel-sync
-* make docker-push cmd/manager/contrail_operator_image_base
-* docker tag bazel/cmd/manager:contrail_operator_image_base localhost:5000/contrail_operator:latest
-* docker push localhost:5000/contrail_operator:latest
+```
+cd github.com/Juniper/contrail-operator
+docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock katrybacka/operator-sdk:v.10-go-1.12 bash
+$ cd /contrail-operator; operator-sdk build contrail-operator
+```
 
 
 ## Building CAVA image
