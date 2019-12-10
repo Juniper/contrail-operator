@@ -20,6 +20,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_keystone")
@@ -35,6 +36,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileKeystone{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
+		Claims:     volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
 		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
 	}
 }
@@ -78,6 +80,7 @@ type ReconcileKeystone struct {
 	Client     client.Client
 	Scheme     *runtime.Scheme
 	Kubernetes *k8s.Kubernetes
+	Claims     *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -107,21 +110,95 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
+	claimName := types.NamespacedName{
+		Namespace: keystone.Namespace,
+		Name:      keystone.Name + "-pv-claim",
+	}
+
+	if err := r.Claims.New(claimName, keystone).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	kc, err := r.configMaps(keystone).ensureKeystoneExists(psql)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc)
+	kfc, err := r.configMaps(keystone).ensureKeystoneFernetConfigMap(psql)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	ksc, err := r.configMaps(keystone).ensureKeystoneSSHConfigMap()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc, kfc, ksc, claimName)
 }
 
-func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone, kc *core.ConfigMap) error {
+func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
+	kc *core.ConfigMap, kfc *core.ConfigMap, ksc *core.ConfigMap,
+	claimName types.NamespacedName,
+) error {
 	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, sts, func() error {
-		sts.Spec.Template.Spec.Volumes = nil
-		contrail.AddVolumesToIntendedSTS(sts, map[string]string{
-			kc.Name: "keystone-config-volume",
-		})
+		sts.Spec.Template.Spec.Volumes = []core.Volume{
+			{
+				Name: "keystone-fernet-tokens-volume",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: claimName.Name,
+					},
+				},
+			},
+			{
+				Name: "keystone-config-volume",
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: kc.Name,
+						},
+					},
+				},
+			},
+			{
+				Name: "keystone-fernet-config-volume",
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: kfc.Name,
+						},
+					},
+				},
+			},
+			{
+				Name: "keystone-ssh-config-volume",
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: ksc.Name,
+						},
+					},
+				},
+			},
+			{
+				Name: "keystone-key-volume",
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						SecretName: "keystone-key",
+					},
+				},
+			},
+			{
+				Name: "keystone-public-key-volume",
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						SecretName: "keystone-public-key",
+					},
+				},
+			},
+		}
 
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
@@ -162,6 +239,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Env:             newKollaEnvs("keystone"),
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 						{
@@ -169,12 +247,22 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Image:           "localhost:5000/centos-binary-keystone-ssh:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-ssh"),
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								core.VolumeMount{Name: "keystone-public-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa.pub", ReadOnly: true},
+							},
 						},
 						{
 							Name:            "keystone-fernet",
 							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-fernet"),
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								core.VolumeMount{Name: "keystone-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa", ReadOnly: true},
+							},
 						},
 					},
 				},

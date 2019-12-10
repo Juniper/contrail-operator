@@ -43,6 +43,22 @@ func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) (*core.Config
 	return c.ensureExists(c.keystone.Name+"-keystone", cc)
 }
 
+func (c *configMaps) ensureKeystoneFernetConfigMap(psql *contrail.Postgres) (*core.ConfigMap, error) {
+	cc := &keystoneFernetConf{
+		RabbitMQServer:   "localhost:5672",
+		PostgreSQLServer: psql.Status.Node,
+		MemcacheServer:   "localhost:11211",
+	}
+
+	return c.ensureExists(c.keystone.Name+"-keystone-fernet", cc)
+}
+
+func (c *configMaps) ensureKeystoneSSHConfigMap() (*core.ConfigMap, error) {
+	cc := &keystoneSSHConf{}
+
+	return c.ensureExists(c.keystone.Name+"-keystone-ssh", cc)
+}
+
 func (c *configMaps) ensureExists(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {
 	cm, err := contrail.CreateConfigMap(name, c.client, c.scheme,
 		reconcile.Request{
