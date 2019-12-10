@@ -35,7 +35,11 @@ rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
 rabbitmq_password={{ .RabbitmqPassword }}
-rabbitmq_use_ssl=False
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
 introspect_ssl_enable=False
 sandesh_ssl_enable=False`))
@@ -113,7 +117,11 @@ rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
 rabbitmq_password={{ .RabbitmqPassword }}
-rabbitmq_use_ssl=False
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
 introspect_ssl_enable=False
 sandesh_ssl_enable=False`))

@@ -133,6 +133,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 	if err != nil && errors.IsNotFound(err) {
 		return err
 	}
+	fmt.Println("Got CSR secret for " + request.Name)
 
 	var csrMap = make(map[string]bool)
 	var csrApprovedMap = make(map[string]bool)
@@ -143,7 +144,10 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 	for _, pod := range podList.Items {
 		csr := &certv1beta1.CertificateSigningRequest{}
 		err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-		if err != nil && errors.IsNotFound(err) {
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
 			csrMap[request.Name+"-"+pod.Spec.NodeName] = false
 			csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false
 		} else {
@@ -174,13 +178,20 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			}
 			csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
 			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
+			if request.Name == "rabbitmq1" {
+				fmt.Println("request for rabbit")
+			}
 			err = client.Update(context.TODO(), csrSecret)
 			if err != nil {
 				return err
 			}
+			fmt.Println("Added CSR and PEM to secret for " + request.Name)
 			csr := &certv1beta1.CertificateSigningRequest{}
 			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil {
+				if !errors.IsNotFound(err) {
+					return err
+				}
 				csr := &certv1beta1.CertificateSigningRequest{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: request.Name + "-" + pod.Spec.NodeName,
@@ -206,6 +217,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 					}
 					return err
 				}
+				fmt.Println("Created CSR for " + request.Name)
 			}
 		}
 	}
@@ -234,6 +246,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			if err != nil {
 				return err
 			}
+			fmt.Println("Approved CSR for " + request.Name)
 
 		}
 	}
@@ -261,94 +274,10 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			if err != nil {
 				return err
 			}
+			fmt.Println("Added CRT to secret for " + request.Name)
+
 		}
 	}
-	/*
-		for _, pod := range podList.Items {
-			_, foundPem := csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"]
-			_, foundCsr := csrSecret.Data["server-"+pod.Status.PodIP+".csr"]
-			_, foundCrt := csrSecret.Data["server-"+pod.Status.PodIP+".crt"]
-			if !foundPem || !foundCsr || !foundCrt {
-				csrRequest, privateKey, err = generateCsr(pod.Spec.NodeName)
-				if err != nil {
-					return err
-				}
-				if csrSecret.Data == nil {
-					csrSecret.Data = make(map[string][]byte)
-				}
-				csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
-				csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
-				err = client.Update(context.TODO(), csrSecret)
-				if err != nil {
-					return err
-				}
-
-				csr := &certv1beta1.CertificateSigningRequest{}
-				err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-				if err != nil && errors.IsNotFound(err) {
-					csr := &certv1beta1.CertificateSigningRequest{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: request.Name + "-" + pod.Spec.NodeName,
-						},
-						Spec: certv1beta1.CertificateSigningRequestSpec{
-							Groups:  []string{"system:authenticated"},
-							Request: csrSecret.Data["server-"+pod.Status.PodIP+".csr"],
-							Usages: []certv1beta1.KeyUsage{
-								"digital signature",
-								"key encipherment",
-								"server auth",
-							},
-						},
-					}
-					if err = controllerutil.SetControllerReference(object, csr, scheme); err != nil {
-						return err
-					}
-					err = client.Create(context.TODO(), csr)
-					if err != nil {
-						if errors.IsAlreadyExists(err) {
-							return nil
-						}
-						return err
-					}
-
-				}
-			}
-
-			var conditionType certv1beta1.RequestConditionType
-			conditionType = "Approved"
-			csrCondition := certv1beta1.CertificateSigningRequestCondition{
-				Type:    conditionType,
-				Reason:  "ContrailApprove",
-				Message: "This CSR was approved by operator approve.",
-			}
-
-			csr.Status.Conditions = []certv1beta1.CertificateSigningRequestCondition{csrCondition}
-			clientset, err := kubernetes.NewForConfig(restConfig)
-			if err != nil {
-				return err
-			}
-			_, err = clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
-			if err != nil {
-				return err
-			}
-			signedRequest := &certv1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: csr.Name, Namespace: csr.Namespace}, signedRequest)
-			if err != nil {
-				return err
-			}
-
-			if signedRequest.Status.Certificate == nil || len(signedRequest.Status.Certificate) == 0 {
-				err = errors.NewGone("csr not sigened yet")
-				return err
-			}
-			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = signedRequest.Status.Certificate
-
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				return err
-			}
-		}
-	*/
 	return nil
 }
 
@@ -364,32 +293,6 @@ func generateCsr(nodeName string) ([]byte, []byte, error) {
 		fmt.Println("cannot read certPrivKeyPEM to privateKeyBuffer")
 		return nil, nil, err
 	}
-	fmt.Println("MODULUS:", fmt.Sprintf("%x", certPrivKey.PublicKey.N))
-	fmt.Println("PUBLIC EXPONENT:", fmt.Sprintf("%x", certPrivKey.PublicKey.E))
-	fmt.Println("PRIVATE EXPONENT:", fmt.Sprintf("%x", certPrivKey.D))
-	/*
-		oidEmailAddress := asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 1}
-		emailAddress := "test@example.com"
-		subj := pkix.Name{
-			CommonName:         "example.com",
-			Country:            []string{"US"},
-			Province:           []string{"CA"},
-			Locality:           []string{"Sunnyvale"},
-			Organization:       []string{"Juniper Networks"},
-			OrganizationalUnit: []string{"Contrail"},
-		}
-		rawSubj := subj.ToRDNSequence()
-		rawSubj = append(rawSubj, []pkix.AttributeTypeAndValue{
-			{Type: oidEmailAddress, Value: emailAddress},
-		})
-
-		asn1Subj, _ := asn1.Marshal(rawSubj)
-		csrTemplate := x509.CertificateRequest{
-			RawSubject:         asn1Subj,
-			EmailAddresses:     []string{emailAddress},
-			SignatureAlgorithm: x509.SHA256WithRSA,
-		}
-	*/
 	csrTemplate := x509.CertificateRequest{
 		Subject: pkix.Name{
 			CommonName:         nodeName,

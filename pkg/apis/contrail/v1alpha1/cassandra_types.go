@@ -164,6 +164,19 @@ func (c *Cassandra) CreateConfigMap(configMapName string,
 		c)
 }
 
+// CreateSecret creates a secret.
+func (c *Cassandra) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"cassandra",
+		c)
+}
+
 // OwnedByManager checks of the cassandra object is owned by the Manager.
 func (c *Cassandra) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
 	managerName := c.Labels["contrail_cluster"]

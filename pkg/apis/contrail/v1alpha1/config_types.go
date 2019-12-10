@@ -385,6 +385,7 @@ func (c *Config) CurrentConfigMapExists(configMapName string,
 		request)
 }
 
+// CreateSecret creates a secret.
 func (c *Config) CreateSecret(secretName string,
 	client client.Client,
 	scheme *runtime.Scheme,

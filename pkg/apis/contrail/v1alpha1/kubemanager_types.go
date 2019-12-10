@@ -240,7 +240,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			CassandraServerList:   cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList:   zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:    rabbitmqNodesInformation.ServerListCommaSeparatedWithoutPort,
-			RabbitmqServerPort:    rabbitmqNodesInformation.Port,
+			RabbitmqServerPort:    rabbitmqNodesInformation.SSLPort,
 			CollectorServerList:   configNodesInformation.CollectorServerListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),
 			RabbitmqUser:          rabbitmqSecretUser,
@@ -293,6 +293,19 @@ func (c *Kubemanager) IsActive(name string, namespace string, client client.Clie
 		return true
 	}
 	return false
+}
+
+// CreateSecret creates a secret.
+func (c *Kubemanager) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"kubemanager",
+		c)
 }
 
 // PrepareSTS prepares the intended deployment for the Kubemanager object.

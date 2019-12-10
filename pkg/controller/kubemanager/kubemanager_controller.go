@@ -95,7 +95,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler.
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -185,8 +185,9 @@ var _ reconcile.Reconciler = &ReconcileKubemanager{}
 type ReconcileKubemanager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
 // Reconcile reads that state of the cluster for a Kubemanager object and makes changes based on the state read
@@ -257,13 +258,18 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet,
-		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	var serviceAccountName string
 	if instance.Spec.ServiceConfiguration.ServiceAccount != "" {
@@ -403,6 +409,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 				MountPath: "/etc/mycontrail",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -435,6 +446,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	}
 	if len(podIPList.Items) > 0 {
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
 			return reconcile.Result{}, err
 		}
 

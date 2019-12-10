@@ -189,8 +189,8 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -224,8 +224,8 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -334,6 +334,19 @@ func (c *Control) IsActive(name string, namespace string, client client.Client) 
 		}
 	}
 	return false
+}
+
+// CreateSecret creates a secret.
+func (c *Control) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"control",
+		c)
 }
 
 // PrepareSTS prepares the intended deployment for the Control object.

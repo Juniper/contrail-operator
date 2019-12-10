@@ -96,7 +96,7 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCassandra{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileCassandra{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -158,8 +158,9 @@ var _ reconcile.Reconciler = &ReconcileCassandra{}
 type ReconcileCassandra struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
 // Reconcile reconciles cassandra.
@@ -199,13 +200,18 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet,
-		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	cassandraDefaultConfigurationInterface := instance.ConfigurationParameters()
 	cassandraDefaultConfiguration := cassandraDefaultConfigurationInterface.(v1alpha1.CassandraConfiguration)
@@ -251,6 +257,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			volumeMount = corev1.VolumeMount{
 				Name:      "pvc",
 				MountPath: "/var/lib/cassandra",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
@@ -402,11 +413,12 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
