@@ -107,18 +107,23 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	// CreateOrUpdate keystone
+	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc)
+}
+
+func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone, kc *core.ConfigMap) error {
 	sts := newKeystoneSTS(keystone)
-	_, err = controllerutil.CreateOrUpdate(context.Background(), r.Client, sts, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, sts, func() error {
 		sts.Spec.Template.Spec.Volumes = nil
 		contrail.AddVolumesToIntendedSTS(sts, map[string]string{
 			kc.Name: "keystone-config-volume",
 		})
 
-		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", request, r.Scheme, keystone, r.Client, true)
+		req := reconcile.Request{
+			types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
+		}
+		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.Scheme, keystone, r.Client, true)
 	})
-
-	return reconcile.Result{}, err
+	return err
 }
 
 func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgres, error) {

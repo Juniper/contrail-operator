@@ -15,7 +15,7 @@ type keystoneConf struct {
 	MemcacheServer   string
 }
 
-func (c *keystoneConf) setConfigMapData(cm *core.ConfigMap) {
+func (c *keystoneConf) fillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneKollaServiceConfig
 	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConfig)
 	cm.Data["wsgi-keystone.conf"] = c.executeTemplate(wsgiKeystoneConfig)

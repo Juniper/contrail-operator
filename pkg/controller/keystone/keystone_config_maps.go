@@ -19,8 +19,8 @@ type configMaps struct {
 	keystone *contrail.Keystone
 }
 
-type setConfigMapData interface {
-	setConfigMapData(cm *core.ConfigMap)
+type configMapFiller interface {
+	fillConfigMap(cm *core.ConfigMap)
 }
 
 func (r *ReconcileKeystone) configMaps(keystone *contrail.Keystone) *configMaps {
@@ -40,10 +40,10 @@ func (c *configMaps) ensureKeystoneConfigConfigMap(psql *contrail.Postgres) (*co
 		MemcacheServer:   "localhost:11211",
 	}
 
-	return c.ensureConfigMap(c.keystone.Name+"-keystone", cc)
+	return c.ensureExist(c.keystone.Name+"-keystone", cc)
 }
 
-func (c *configMaps) ensureConfigMap(name string, dataSetter setConfigMapData) (*core.ConfigMap, error) {
+func (c *configMaps) ensureExist(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {
 	cm, err := contrail.CreateConfigMap(name, c.client, c.scheme,
 		reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -56,7 +56,7 @@ func (c *configMaps) ensureConfigMap(name string, dataSetter setConfigMapData) (
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, cm, func() error {
 		cm.Data = map[string]string{}
-		dataSetter.setConfigMapData(cm)
+		dataSetter.fillConfigMap(cm)
 		return nil
 	})
 
