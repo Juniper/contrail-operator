@@ -3,7 +3,6 @@ module github.com/Juniper/contrail-operator
 go 1.13
 
 require (
-	github.com/Juniper/contrail-go-api v1.1.0
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/go-openapi/spec v0.19.0
