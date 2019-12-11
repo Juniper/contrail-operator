@@ -41,11 +41,14 @@ kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=true
+cassandra_use_ssl=True
 cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 collectors={{ .CollectorServerList }}
 zk_server_ip={{ .ZookeeperServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
-`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))

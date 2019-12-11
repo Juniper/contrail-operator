@@ -156,11 +156,12 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		csr := &certv1beta1.CertificateSigningRequest{}
 		err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if errors.IsNotFound(err) {
+				csrMap[request.Name+"-"+pod.Spec.NodeName] = false
+				csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false
+			} else {
 				return err
 			}
-			csrMap[request.Name+"-"+pod.Spec.NodeName] = false
-			csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false
 		} else {
 			csrMap[request.Name+"-"+pod.Spec.NodeName] = true
 			csrApprovedMap[request.Name+"-"+pod.Spec.NodeName] = false

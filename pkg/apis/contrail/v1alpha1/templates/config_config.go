@@ -16,6 +16,10 @@ auth=noauth
 aaa_mode=no-auth
 cloud_admin_role=admin
 global_read_only_role=
+config_api_ssl_enable=True
+config_api_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+config_api_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+config_api_ssl_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
 cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -32,8 +36,12 @@ kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigDeviceManagerConfig is the template of the DeviceManager service configuration.
 var ConfigDeviceManagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -41,7 +49,7 @@ host_ip={{ .ListenAddress }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 analytics_server_ip={{ .AnalyticsServerList}}
 analytics_server_port=8081
 push_mode=1
@@ -69,8 +77,12 @@ kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigSchematransformerConfig is the template of the SchemaTransformer service configuration.
 var ConfigSchematransformerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -78,7 +90,7 @@ host_ip={{ .ListenAddress }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-schema.log
 log_level=SYS_NOTICE
 log_local=1
@@ -98,8 +110,12 @@ kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigServicemonitorConfig is the template of the ServiceMonitor service configuration.
 var ConfigServicemonitorConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -107,7 +123,7 @@ host_ip={{ .ListenAddress }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList }}
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-svc-monitor.log
 log_level=SYS_NOTICE
 log_local=1
@@ -126,6 +142,11 @@ kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
+analytics_api_ssl_enable = True
+analytics_api_insecure_enable = False
+analytics_api_ssl_certfile = /etc/certificates/server-{{ .ListenAddress }}.crt
+analytics_api_ssl_keyfile = /etc/certificates/server-key-{{ .ListenAddress }}.pem
+analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SECURITY]
 use_certs=False
 keyfile=/etc/contrail/ssl/private/server-privkey.pem
@@ -136,8 +157,12 @@ ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 analytics_server_list={{ .AnalyticsServerList }}
 aaa_mode = no-auth
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigAnalyticsapiConfig is the template of the AnalyticsAPI service configuration.
 var ConfigAnalyticsapiConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -155,14 +180,23 @@ log_local=1
 #sandesh_send_rate_limit =
 collectors={{ .CollectorServerList}}
 api_server={{ .ApiServerList }}
-api_server_use_ssl=False
+api_server_use_ssl=True
 zk_list={{ .ZookeeperServerList }}
+analytics_api_ssl_enable = True
+analytics_api_insecure_enable = False
+analytics_api_ssl_certfile = /etc/certificates/server-{{ .ListenAddress }}.crt
+analytics_api_ssl_keyfile = /etc/certificates/server-key-{{ .ListenAddress }}.pem
+analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
 [REDIS]
 redis_uve_list={{ .RedisServerList }}
 redis_password=
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigCollectorConfig is the template of the Collector service configuration.
 var ConfigCollectorConfig = template.Must(template.New("").Parse(`[DEFAULT]
@@ -187,8 +221,8 @@ log_local=1
 # sandesh_send_rate_limit=
 zookeeper_server_list={{ .ZookeeperServerList }}
 [CASSANDRA]
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [COLLECTOR]
 port=8086
 server={{ .ListenAddress }}
@@ -201,7 +235,7 @@ port=3514
 [API_SERVER]
 # List of api-servers in ip:port format separated by space
 api_server_list={{ .ApiServerList }}
-api_server_use_ssl=False
+api_server_use_ssl=True
 [REDIS]
 port=6379
 server=127.0.0.1
@@ -220,8 +254,12 @@ rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigNodemanagerConfigConfig is the template of the Config Nodemanager service configuration.
 var ConfigNodemanagerConfigConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -236,8 +274,12 @@ db_use_ssl=true
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigNodemanagerAnalyticsConfig is the template of the Analytics Nodemanager service configuration.
 var ConfigNodemanagerAnalyticsConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -252,5 +294,9 @@ db_use_ssl=true
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))

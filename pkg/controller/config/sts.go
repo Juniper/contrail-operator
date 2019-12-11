@@ -33,6 +33,7 @@ spec:
         name: api
         readinessProbe:
           httpGet:
+            scheme: HTTPS
             path: /
             port: 8082
         volumeMounts:

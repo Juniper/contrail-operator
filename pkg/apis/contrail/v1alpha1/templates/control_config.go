@@ -29,7 +29,7 @@ xmpp_auth_enable=False
 config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=true
+config_db_use_ssl=True
 config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
@@ -41,8 +41,11 @@ rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlNamedConfig is the template of the Named service configuration.
 var ControlNamedConfig = template.Must(template.New("").Parse(`options {
@@ -111,7 +114,7 @@ xmpp_dns_auth_enable=False
 config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=true
+config_db_use_ssl=True
 config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
@@ -123,8 +126,11 @@ rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlNodemanagerConfig is the template of the Control Nodemanager service configuration.
 var ControlNodemanagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -139,8 +145,12 @@ db_use_ssl=True
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
