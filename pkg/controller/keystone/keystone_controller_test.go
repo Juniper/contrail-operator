@@ -215,6 +215,30 @@ func newExpectedSTS() *apps.StatefulSet {
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,
+					InitContainers: []core.Container{
+						{
+							Name:            "keystone-db-init",
+							Image:           "localhost:5000/keystone-init:latest",
+							ImagePullPolicy: core.PullAlways,
+							Command:         []string{"/bin/sh", "/tmp/init_db.sh"},
+						},
+						{
+							Name:            "keystone-init",
+							Image:           "localhost:5000/centos-binary-keystone:master",
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{{
+								Name:  "KOLLA_SERVICE_NAME",
+								Value: "keystone",
+							}, {
+								Name:  "KOLLA_CONFIG_STRATEGY",
+								Value: "COPY_ALWAYS",
+							}},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+							},
+						},
+					},
 					Containers: []core.Container{
 						{
 							Image:           "localhost:5000/centos-binary-keystone:master",
@@ -311,6 +335,16 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
+							Name: "keystone-init-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "keystone-keystone-init",
+									},
+								},
+							},
+						},
+						{
 							Name: "keystone-key-volume",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
@@ -381,6 +415,25 @@ func getExpectedKeystoneSSHConfigMap() *core.ConfigMap {
 		Data: map[string]string{
 			"config.json": expectedkeystoneSSHKollaServiceConfig,
 			"sshd_config": expectedSSHDConfig,
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-keystone-ssh",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+	}
+}
+
+func getExpectedKeystoneInitConfigMap() *core.ConfigMap {
+	trueVal := true
+	return &core.ConfigMap{
+		Data: map[string]string{
+			"config.json":   expectedKeystoneInitKollaServiceConfig,
+			"keystone.conf": expectedKeystoneConfig,
+			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
 		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone-ssh",

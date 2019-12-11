@@ -119,26 +119,31 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	kc, err := r.configMaps(keystone).ensureKeystoneExists(psql)
+	kc, err := r.configMaps(keystone).ensureKeystoneExists(keystone.Name+"-keystone", psql)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kfc, err := r.configMaps(keystone).ensureKeystoneFernetConfigMap(psql)
+	kfc, err := r.configMaps(keystone).ensureKeystoneFernetConfigMap(keystone.Name+"-keystone-fernet", psql)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	ksc, err := r.configMaps(keystone).ensureKeystoneSSHConfigMap()
+	ksc, err := r.configMaps(keystone).ensureKeystoneSSHConfigMap(keystone.Name + "-keystone-ssh")
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc, kfc, ksc, claimName)
+	kci, err := r.configMaps(keystone).ensureKeystoneInitExist(keystone.Name+"-keystone-init", psql)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc, kfc, ksc, kci, claimName)
 }
 
 func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
-	kc *core.ConfigMap, kfc *core.ConfigMap, ksc *core.ConfigMap,
+	kc *core.ConfigMap, kfc *core.ConfigMap, ksc *core.ConfigMap, kci *core.ConfigMap,
 	claimName types.NamespacedName,
 ) error {
 	sts := newKeystoneSTS(keystone)
@@ -178,6 +183,16 @@ func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
 							Name: ksc.Name,
+						},
+					},
+				},
+			},
+			{
+				Name: "keystone-init-config-volume",
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: kci.Name,
 						},
 					},
 				},
@@ -231,6 +246,24 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
 					DNSPolicy: core.DNSClusterFirst,
+					InitContainers: []core.Container{
+						{
+							Name:            "keystone-db-init",
+							Image:           "localhost:5000/keystone-init:latest",
+							ImagePullPolicy: core.PullAlways,
+							Command:         []string{"/bin/sh", "/tmp/init_db.sh"},
+						},
+						{
+							Name:            "keystone-init",
+							Image:           "localhost:5000/centos-binary-keystone:master",
+							ImagePullPolicy: core.PullAlways,
+							Env:             newKollaEnvs("keystone"),
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+							},
+						},
+					},
 					Containers: []core.Container{
 						{
 							Name:            "keystone",

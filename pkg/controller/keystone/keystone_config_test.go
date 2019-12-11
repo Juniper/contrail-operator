@@ -276,3 +276,53 @@ ListenAddress 10.0.2.15
 SyslogFacility AUTHPRIV
 UsePAM yes
 `
+
+const expectedKeystoneInitKollaServiceConfig = `{
+    "command": "/usr/bin/bootstrap.sh",
+    "config_files": [
+        {
+            "source": "/var/lib/kolla/config_files/keystone.conf",
+            "dest": "/etc/keystone/keystone.conf",
+            "owner": "keystone",
+            "perm": "0600"
+        },
+        {
+			"source": "/var/lib/kolla/config_files/bootstrap.sh",
+			"dest": "/usr/bin/bootstrap.sh",
+			"owner": "root",
+			"perm": "0755"
+		}
+    ],
+    "permissions": [
+        {
+            "path": "/var/log/kolla",
+            "owner": "keystone:kolla"
+        },
+        {
+            "path": "/var/log/kolla/keystone/keystone.log",
+            "owner": "keystone:keystone"
+        },
+        {
+            "path": "/etc/keystone/fernet-keys",
+            "owner": "keystone:keystone",
+            "perm": "0770"
+        },
+        {
+            "path": "/etc/keystone/domains",
+            "owner": "keystone:keystone",
+            "perm": "0700"
+        }
+    ]
+}`
+
+const expectedkeystoneInitBootstrapScript = `
+#!/bin/bash
+
+keystone-manage db_sync
+keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+keystone-manage bootstrap --bootstrap-password contrail123 \
+  --bootstrap-admin-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
+  --bootstrap-internal-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
+  --bootstrap-public-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/
+`
