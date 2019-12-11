@@ -100,6 +100,10 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	cassandraConfigInterface := c.ConfigurationParameters()
 	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
+	cassandraSecret := &corev1.Secret{}
+	if err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret", Namespace: request.Namespace}, cassandraSecret); err != nil {
+		return err
+	}
 	for idx := range podList.Items {
 		var seeds []string
 		for idx2 := range podList.Items {
@@ -122,6 +126,8 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 			RPCPort             string
 			RPCAddress          string
 			RPCBroadcastAddress string
+			KeystorePassword    string
+			TruststorePassword  string
 		}{
 			ClusterName:         cassandraConfig.ClusterName,
 			Seeds:               seedsListString,
@@ -134,6 +140,8 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 			RPCPort:             strconv.Itoa(*cassandraConfig.Port),
 			RPCAddress:          podList.Items[idx].Status.PodIP,
 			RPCBroadcastAddress: podList.Items[idx].Status.PodIP,
+			KeystorePassword:    string(cassandraSecret.Data["keystorePassword"]),
+			TruststorePassword:  string(cassandraSecret.Data["truststorePassword"]),
 		})
 		cassandraConfigString := cassandraConfigBuffer.String()
 

@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,6 +30,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	mRand "math/rand"
+)
+
+var src = mRand.NewSource(time.Now().UnixNano())
+
+const (
+	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
 // Container defines name, image and command.
@@ -689,6 +700,24 @@ func SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.Sta
 		return err
 	}
 	return nil
+}
+
+// RandomString creates a random string of size
+func RandomString(size int) string {
+	b := make([]byte, size)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax letters!
+	for i, cache, remain := size-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+	return string(b)
 }
 
 func getPodInitStatus(reconcileClient client.Client,

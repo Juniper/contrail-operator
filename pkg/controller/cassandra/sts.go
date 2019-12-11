@@ -72,11 +72,34 @@ spec:
         - -c
         - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: hub.juniper.net/contrail-nightly/contrail-status:5.2.0-0.740
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         image: busybox
         imagePullPolicy: Always
         name: init
+        resources: {}
+        securityContext:
+          privileged: false
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /tmp/podinfo
+          name: status
+      - command:
+        - sh
+        - -c
+        - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: busybox
+        imagePullPolicy: Always
+        name: init2
         resources: {}
         securityContext:
           privileged: false

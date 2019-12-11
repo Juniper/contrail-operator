@@ -27,6 +27,8 @@ spec:
               image: cassandra:3.11.4
             init: 
               image: python:alpine
+            init2: 
+              image: cassandra:3.11.4
             #maxHeapSize: 1024M
             #minHeapSize: 100M
     zookeepers:

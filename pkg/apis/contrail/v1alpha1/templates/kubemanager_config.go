@@ -41,8 +41,8 @@ kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 collectors={{ .CollectorServerList }}
 zk_server_ip={{ .ZookeeperServerList }}
 [SANDESH]

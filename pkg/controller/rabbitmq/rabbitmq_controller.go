@@ -190,9 +190,7 @@ func randomString(size int) string {
 		cache >>= letterIdxBits
 		remain--
 	}
-
 	return string(b)
-
 }
 
 // Reconcile reconciles the Rabbitmq resource.

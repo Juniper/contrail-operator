@@ -236,6 +236,14 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		},
 	}}
 
+	emptyVolume := corev1.Volume{
+		Name: request.Name + "-keystore",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, emptyVolume)
+
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 
 		if container.Name == "cassandra" {
@@ -262,6 +270,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-keystore",
+				MountPath: "/etc/keystore",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
@@ -299,16 +312,63 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			HostPath: initHostPathSource,
 		},
 	}
+
+	secret, err := instance.CreateSecret(request.Name+"-secret", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	_, KPok := secret.Data["keystorePassword"]
+	_, TPok := secret.Data["truststorePassword"]
+	if !KPok || !TPok {
+		cassandraKeystorePassword := v1alpha1.RandomString(10)
+		cassandraTruststorePassword := v1alpha1.RandomString(10)
+		secretData := map[string][]byte{"keystorePassword": []byte(cassandraKeystorePassword), "truststorePassword": []byte(cassandraTruststorePassword)}
+		secret.Data = secretData
+	}
+	r.Client.Update(context.TODO(), secret)
+
+	cassandraKeystorePassword := string(secret.Data["keystorePassword"])
+	cassandraTruststorePassword := string(secret.Data["truststorePassword"])
+
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
-		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
-			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
-		}
 		if container.Name == "init" {
+			command := []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"}
+
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-init",
 				MountPath: cassandraDefaultConfiguration.StoragePath,
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
+		if container.Name == "init2" {
+			command := []string{"bash", "-c",
+				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file /run/secrets/kubernetes.io/serviceaccount/ca.crt;" +
+					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile /run/secrets/kubernetes.io/serviceaccount/ca.crt -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile;" +
+					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f)"}
+
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-keystore",
+				MountPath: "/etc/keystore",
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}

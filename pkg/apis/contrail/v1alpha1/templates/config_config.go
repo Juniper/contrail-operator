@@ -17,8 +17,8 @@ aaa_mode=no-auth
 cloud_admin_role=admin
 global_read_only_role=
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -49,8 +49,8 @@ log_file=/var/log/contrail/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip={{ .ZookeeperServerList }}
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
@@ -83,7 +83,7 @@ log_file=/var/log/contrail/contrail-schema.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
+cassandra_use_ssl=true
 cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
@@ -112,8 +112,8 @@ log_file=/var/log/contrail/contrail-svc-monitor.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -208,8 +208,8 @@ server=127.0.0.1
 password=
 [CONFIGDB]
 config_db_server_list={{ .CassandraServerList }}
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+config_db_use_ssl=true
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
@@ -232,7 +232,7 @@ log_local=1
 hostip={{ .ListenAddress }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
-db_use_ssl=False
+db_use_ssl=true
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
@@ -248,7 +248,7 @@ log_local=1
 hostip={{ .ListenAddress }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
-db_use_ssl=False
+db_use_ssl=true
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
