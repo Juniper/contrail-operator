@@ -25,7 +25,7 @@ func TestSwiftStorageController(t *testing.T) {
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 
 	name := types.NamespacedName{Namespace: "default", Name: "test"}
-	statefulSetName := types.NamespacedName{Namespace: "default", Name: "test-stateful-set"}
+	statefulSetName := types.NamespacedName{Namespace: "default", Name: "test-statefulset"}
 	swiftStorageCR := &contrail.SwiftStorage{
 		ObjectMeta: meta.ObjectMeta{
 			Namespace: name.Namespace,

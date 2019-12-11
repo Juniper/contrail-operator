@@ -89,7 +89,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
-	statefulSet.Name = request.Name + "-stateful-set"
+	statefulSet.Name = request.Name + "-statefulset"
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
