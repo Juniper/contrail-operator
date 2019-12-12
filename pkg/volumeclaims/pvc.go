@@ -54,12 +54,8 @@ func (c *PersistentVolumeClaim) EnsureExists() error {
 		},
 	}
 
-	if err := controllerutil.SetControllerReference(c.owner, pvc, c.scheme); err != nil {
-		return err
-	}
-
 	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
-		return nil
+		return controllerutil.SetControllerReference(c.owner, pvc, c.scheme)
 	})
 
 	return err
