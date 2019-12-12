@@ -29,7 +29,7 @@ func (c *keystoneConfig) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-var keystoneKollaServiceConfig = `{
+const keystoneKollaServiceConfig = `{
     "command": "/usr/sbin/httpd",
     "config_files": [
         {

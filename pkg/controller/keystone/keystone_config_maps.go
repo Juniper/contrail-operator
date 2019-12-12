@@ -25,13 +25,13 @@ type configMapFiller interface {
 
 func (r *ReconcileKeystone) configMaps(keystone *contrail.Keystone) *configMaps {
 	return &configMaps{
-		client:   r.Client,
-		scheme:   r.Scheme,
+		client:   r.client,
+		scheme:   r.scheme,
 		keystone: keystone,
 	}
 }
 
-func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) (*core.ConfigMap, error) {
+func (c *configMaps) ensureKeystoneExists(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
 	cc := &keystoneConfig{
 		ListenAddress:    "0.0.0.0",
 		ListenPort:       c.keystone.Spec.ServiceConfiguration.ListenPort,
@@ -40,7 +40,37 @@ func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) (*core.Config
 		MemcacheServer:   "localhost:11211",
 	}
 
-	return c.ensureExists(c.keystone.Name+"-keystone", cc)
+	return c.ensureExists(name, cc)
+}
+
+func (c *configMaps) ensureKeystoneInitExist(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
+	cc := &keystoneInitConf{
+		ListenAddress:    "0.0.0.0",
+		ListenPort:       c.keystone.Spec.ServiceConfiguration.ListenPort,
+		RabbitMQServer:   "localhost:5672",
+		PostgreSQLServer: psql.Status.Node,
+		MemcacheServer:   "localhost:11211",
+	}
+
+	return c.ensureExists(name, cc)
+}
+
+func (c *configMaps) ensureKeystoneFernetConfigMap(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
+	cc := &keystoneFernetConf{
+		RabbitMQServer:   "localhost:5672",
+		PostgreSQLServer: psql.Status.Node,
+		MemcacheServer:   "localhost:11211",
+	}
+
+	return c.ensureExists(name, cc)
+}
+
+func (c *configMaps) ensureKeystoneSSHConfigMap(name string) (*core.ConfigMap, error) {
+	cc := &keystoneSSHConf{
+		ListenAddress: "0.0.0.0",
+	}
+
+	return c.ensureExists(name, cc)
 }
 
 func (c *configMaps) ensureExists(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {

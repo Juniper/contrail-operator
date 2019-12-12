@@ -17,6 +17,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/keystone"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 func TestKeystone(t *testing.T) {
@@ -44,7 +45,9 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
-				getExpectedKeystoneConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -58,7 +61,9 @@ func TestKeystone(t *testing.T) {
 			initObjs: []runtime.Object{
 				newKeystone(),
 				newExpectedSTS(),
-				getExpectedKeystoneConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
@@ -68,7 +73,9 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
-				getExpectedKeystoneConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -99,11 +106,9 @@ func TestKeystone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := keystone.ReconcileKeystone{
-				Client: cl,
-				Scheme: scheme,
-				Kubernetes: k8s.New(cl, scheme),
-			}
+			r := keystone.NewReconciler(
+				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme),
+			)
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -118,7 +123,7 @@ func TestKeystone(t *testing.T) {
 
 			sts := &apps.StatefulSet{}
 			exSTS := tt.expectedSTS
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      exSTS.Name,
 				Namespace: exSTS.Namespace,
 			}, sts)
@@ -130,7 +135,7 @@ func TestKeystone(t *testing.T) {
 
 			for _, expConfig := range tt.expectedConfigs {
 				configMap := &core.ConfigMap{}
-				err = r.Client.Get(context.Background(), types.NamespacedName{
+				err = cl.Get(context.Background(), types.NamespacedName{
 					Name:      expConfig.Name,
 					Namespace: expConfig.Namespace,
 				}, configMap)
@@ -141,7 +146,7 @@ func TestKeystone(t *testing.T) {
 
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      tt.expectedPostgres.GetName(),
 				Namespace: tt.expectedPostgres.GetNamespace(),
 			}, psql)
@@ -207,6 +212,30 @@ func newExpectedSTS() *apps.StatefulSet {
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,
+					InitContainers: []core.Container{
+						{
+							Name:            "keystone-db-init",
+							Image:           "localhost:5000/keystone-init:latest",
+							ImagePullPolicy: core.PullAlways,
+							Command:         []string{"/bin/sh", "/tmp/init_db.sh"},
+						},
+						{
+							Name:            "keystone-init",
+							Image:           "localhost:5000/centos-binary-keystone:master",
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{{
+								Name:  "KOLLA_SERVICE_NAME",
+								Value: "keystone",
+							}, {
+								Name:  "KOLLA_CONFIG_STRATEGY",
+								Value: "COPY_ALWAYS",
+							}},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+							},
+						},
+					},
 					Containers: []core.Container{
 						{
 							Image:           "localhost:5000/centos-binary-keystone:master",
@@ -221,6 +250,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							}},
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 						{
@@ -234,6 +264,11 @@ func newExpectedSTS() *apps.StatefulSet {
 								Name:  "KOLLA_CONFIG_STRATEGY",
 								Value: "COPY_ALWAYS",
 							}},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								core.VolumeMount{Name: "keystone-public-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa.pub", ReadOnly: true},
+							},
 						},
 						{
 							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
@@ -246,6 +281,11 @@ func newExpectedSTS() *apps.StatefulSet {
 								Name:  "KOLLA_CONFIG_STRATEGY",
 								Value: "COPY_ALWAYS",
 							}},
+							VolumeMounts: []core.VolumeMount{
+								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								core.VolumeMount{Name: "keystone-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa", ReadOnly: true},
+							},
 						},
 					},
 					Tolerations: []core.Toleration{
@@ -253,6 +293,14 @@ func newExpectedSTS() *apps.StatefulSet {
 						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 					Volumes: []core.Volume{
+						{
+							Name: "keystone-fernet-tokens-volume",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: "keystone-pv-claim",
+								},
+							},
+						},
 						{
 							Name: "keystone-config-volume",
 							VolumeSource: core.VolumeSource{
@@ -263,6 +311,52 @@ func newExpectedSTS() *apps.StatefulSet {
 								},
 							},
 						},
+						{
+							Name: "keystone-fernet-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "keystone-keystone-fernet",
+									},
+								},
+							},
+						},
+						{
+							Name: "keystone-ssh-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "keystone-keystone-ssh",
+									},
+								},
+							},
+						},
+						{
+							Name: "keystone-init-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "keystone-keystone-init",
+									},
+								},
+							},
+						},
+						{
+							Name: "keystone-key-volume",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-key",
+								},
+							},
+						},
+						{
+							Name: "keystone-public-key-volume",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-public-key",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -270,7 +364,7 @@ func newExpectedSTS() *apps.StatefulSet {
 	}
 }
 
-func getExpectedKeystoneConfigMap() *core.ConfigMap {
+func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
@@ -289,119 +383,62 @@ func getExpectedKeystoneConfigMap() *core.ConfigMap {
 	}
 }
 
-const expectedKeystoneKollaServiceConfig = `{
-    "command": "/usr/sbin/httpd",
-    "config_files": [
-        {
-            "source": "/var/lib/kolla/config_files/keystone.conf",
-            "dest": "/etc/keystone/keystone.conf",
-            "owner": "keystone",
-            "perm": "0600"
-        },
-        {
-            "source": "/var/lib/kolla/config_files/keystone-paste.ini",
-            "dest": "/etc/keystone/keystone-paste.ini",
-            "owner": "keystone",
-            "perm": "0600",
-            "optional": true
-        },
-        {
-            "source": "/var/lib/kolla/config_files/domains",
-            "dest": "/etc/keystone/domains",
-            "owner": "keystone",
-            "perm": "0600",
-            "optional": true
-        },
-        {
-            "source": "/var/lib/kolla/config_files/wsgi-keystone.conf",
-            "dest": "/etc/httpd/conf.d/wsgi-keystone.conf",
-            "owner": "keystone",
-            "perm": "0600"
-        }
-    ],
-    "permissions": [
-        {
-            "path": "/var/log/kolla",
-            "owner": "keystone:kolla"
-        },
-        {
-            "path": "/var/log/kolla/keystone/keystone.log",
-            "owner": "keystone:keystone"
-        },
-        {
-            "path": "/etc/keystone/fernet-keys",
-            "owner": "keystone:keystone",
-            "perm": "0770"
-        },
-        {
-            "path": "/etc/keystone/domains",
-            "owner": "keystone:keystone",
-            "perm": "0700"
-        }
-    ]
-}`
+func newExpectedKeystoneFernetConfigMap() *core.ConfigMap {
+	trueVal := true
+	return &core.ConfigMap{
+		Data: map[string]string{
+			"config.json":         expectedKeystoneFernetKollaServiceConfig,
+			"keystone.conf":       expectedKeystoneConfig,
+			"crontab":             expectedCrontab,
+			"fernet-node-sync.sh": expectedFernetNodeSyncScript,
+			"fernet-push.sh":      expectedFernetPushScript,
+			"fernet-rotate.sh":    expectedFernetRotateScript,
+			"ssh_config":          expectedSshConfig,
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-keystone-fernet",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+	}
+}
 
-const expectedKeystoneConfig = `
-[DEFAULT]
-debug = False
-transport_url = rabbit://guest:guest@localhost:5672//
-log_file = /var/log/kolla/keystone/keystone.log
-use_stderr = True
+func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
+	trueVal := true
+	return &core.ConfigMap{
+		Data: map[string]string{
+			"config.json": expectedkeystoneSSHKollaServiceConfig,
+			"sshd_config": expectedSSHDConfig,
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-keystone-ssh",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+	}
+}
 
-[oslo_middleware]
-enable_proxy_headers_parsing = True
-
-[database]
-connection = postgresql://keystone:contrail123@10.0.2.15:5432/keystone
-max_retries = -1
-
-[token]
-revoke_by_id = False
-provider = fernet
-expiration = 86400
-allow_expired_window = 172800
-
-[fernet_tokens]
-max_active_keys = 3
-
-[cache]
-backend = oslo_cache.memcache_pool
-enabled = True
-memcache_servers = localhost:11211
-
-[oslo_messaging_notifications]
-transport_url = rabbit://guest:guest@localhost:5672//
-driver = noop
-`
-
-const expectedWSGIKeystoneConfig = `
-Listen 0.0.0.0:5555
-
-ServerSignature Off
-ServerTokens Prod
-TraceEnable off
-
-
-<Directory "/usr/bin">
-    <FilesMatch "^keystone-wsgi-(public|admin)$">
-        AllowOverride None
-        Options None
-        Require all granted
-    </FilesMatch>
-</Directory>
-
-
-<VirtualHost *:5555>
-    WSGIDaemonProcess keystone-public processes=2 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
-    WSGIProcessGroup keystone-public
-    WSGIScriptAlias / /usr/bin/keystone-wsgi-public
-    WSGIApplicationGroup %{GLOBAL}
-    WSGIPassAuthorization On
-    <IfVersion >= 2.4>
-      ErrorLogFormat "%{cu}t %M"
-    </IfVersion>
-    ErrorLog "/var/log/kolla/keystone/keystone-apache-public-error.log"
-    LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b %D \"%{Referer}i\" \"%{User-Agent}i\"" logformat
-    CustomLog "/var/log/kolla/keystone/keystone-apache-public-access.log" logformat
-</VirtualHost>
-`
+func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
+	trueVal := true
+	return &core.ConfigMap{
+		Data: map[string]string{
+			"config.json":   expectedKeystoneInitKollaServiceConfig,
+			"keystone.conf": expectedKeystoneConfig,
+			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-keystone-ssh",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+	}
+}
