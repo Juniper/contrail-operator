@@ -164,7 +164,7 @@ TraceEnable off
 </VirtualHost>
 `
 
-var keystoneFernetKollaServiceConfig = `
+const keystoneFernetKollaServiceConfig = `
     {
         "command": "crond -s -n",
         "config_files": [{
@@ -250,7 +250,7 @@ Host *
   Port 8023
 `
 
-var expectedkeystoneSSHKollaServiceConfig = `
+const expectedkeystoneSSHKollaServiceConfig = `
 {
     "command": "/usr/sbin/sshd -D",
     "config_files": [

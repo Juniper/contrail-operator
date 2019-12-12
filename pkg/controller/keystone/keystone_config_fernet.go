@@ -31,7 +31,7 @@ func (c *keystoneFernetConf) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-var keystoneFernetKollaServiceConfig = `
+const keystoneFernetKollaServiceConfig = `
 {
 	"command": "crond -s -n",
 	"config_files": [{

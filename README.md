@@ -2,12 +2,27 @@
 
 ## Prerequisites
 
-- An installed kubernetes cluster (>=1.15.0)    
+- An installed kubernetes cluster (>=1.15.0)
 
-## Create CRDs, Service Account, Role, Bindings and Operator
+## Create CRDs, Service Account, Role, Bindings, Persistent volumes, Secrets Operator
+
+```bash
+for directory in $(seq 4); do
+  mkdir -p /mnt/volumes/$directory
+  rm -rf /mnt/volumes/$directory/*
+done
+
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/0-create-persistent-volumes.yaml | kubectl apply -f -
+```
 
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1-create-operator.yaml | kubectl apply -f -
+```
+
+```bash
+ssh-keygen
+kubectl create -n contrail secret generic keystone-key --from-file=ssh-privatekey=~/.ssh/id_rsa
+kubectl create -n contrail secret generic keystone-public-key --from-file=ssh-publickey=~/.ssh/id_rsa.pub
 ```
 
 Wait for Contrail Operator deployment to run:    

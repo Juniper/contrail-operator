@@ -29,7 +29,7 @@ func (c *keystoneInitConf) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-var keystoneInitKollaServiceConfig = `{
+const keystoneInitKollaServiceConfig = `{
     "command": "/usr/bin/bootstrap.sh",
     "config_files": [
         {

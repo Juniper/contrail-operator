@@ -143,10 +143,10 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.createOrUpdateSTS(keystone, kc, kfc, ksc, kci, claimName)
+	return reconcile.Result{}, r.ensureStatefulSetExists(keystone, kc, kfc, ksc, kci, claimName)
 }
 
-func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
+func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kc *core.ConfigMap, kfc *core.ConfigMap, ksc *core.ConfigMap, kci *core.ConfigMap,
 	claimName types.NamespacedName,
 ) error {

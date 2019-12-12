@@ -22,7 +22,7 @@ func (c *keystoneSSHConf) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-var keystoneSSHKollaServiceConfig = `
+const keystoneSSHKollaServiceConfig = `
 {
     "command": "/usr/sbin/sshd -D",
     "config_files": [

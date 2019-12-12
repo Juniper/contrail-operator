@@ -81,8 +81,8 @@ type ReconcileContrailCommand struct {
 }
 
 // NewReconciler is used to create contrail command reconciler
-func NewReconciler(c client.Client, scheme *runtime.Scheme, k *k8s.Kubernetes) *ReconcileContrailCommand {
-	return &ReconcileContrailCommand{client: c, scheme: scheme, kubernetes: k}
+func NewReconciler(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes) *ReconcileContrailCommand {
+	return &ReconcileContrailCommand{client: client, scheme: scheme, kubernetes: kubernetes}
 }
 
 // Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read

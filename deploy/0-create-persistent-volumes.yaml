@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: a-pv
+  name: 1-pv
 spec:
   accessModes:
     - ReadWriteOnce
   capacity:
     storage: 5Gi
   local:
-    path: /mnt/volumes/a
+    path: /mnt/volumes/1
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -20,14 +20,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: b-pv
+  name: 2-pv
 spec:
   accessModes:
     - ReadWriteOnce
   capacity:
     storage: 5Gi
   local:
-    path: /mnt/volumes/b
+    path: /mnt/volumes/2
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -39,14 +39,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: c-pv
+  name: 3-pv
 spec:
   accessModes:
     - ReadWriteOnce
   capacity:
     storage: 5Gi
   local:
-    path: /mnt/volumes/c
+    path: /mnt/volumes/3
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -58,14 +58,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: d-pv
+  name: 4-pv
 spec:
   accessModes:
     - ReadWriteOnce
   capacity:
     storage: 5Gi
   local:
-    path: /mnt/volumes/d
+    path: /mnt/volumes/4
   nodeAffinity:
     required:
       nodeSelectorTerms:

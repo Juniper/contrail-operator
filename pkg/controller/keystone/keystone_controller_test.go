@@ -45,9 +45,9 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
-				getExpectedKeystoneConfigMap(),
-				getExpectedKeystoneFernetConfigMap(),
-				getExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -61,9 +61,9 @@ func TestKeystone(t *testing.T) {
 			initObjs: []runtime.Object{
 				newKeystone(),
 				newExpectedSTS(),
-				getExpectedKeystoneConfigMap(),
-				getExpectedKeystoneFernetConfigMap(),
-				getExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
@@ -73,9 +73,9 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
-				getExpectedKeystoneConfigMap(),
-				getExpectedKeystoneFernetConfigMap(),
-				getExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -364,7 +364,7 @@ func newExpectedSTS() *apps.StatefulSet {
 	}
 }
 
-func getExpectedKeystoneConfigMap() *core.ConfigMap {
+func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
@@ -383,7 +383,7 @@ func getExpectedKeystoneConfigMap() *core.ConfigMap {
 	}
 }
 
-func getExpectedKeystoneFernetConfigMap() *core.ConfigMap {
+func newExpectedKeystoneFernetConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
@@ -406,7 +406,7 @@ func getExpectedKeystoneFernetConfigMap() *core.ConfigMap {
 	}
 }
 
-func getExpectedKeystoneSSHConfigMap() *core.ConfigMap {
+func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
@@ -424,7 +424,7 @@ func getExpectedKeystoneSSHConfigMap() *core.ConfigMap {
 	}
 }
 
-func getExpectedKeystoneInitConfigMap() *core.ConfigMap {
+func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
