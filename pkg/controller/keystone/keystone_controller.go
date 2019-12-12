@@ -33,12 +33,9 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKeystone{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		Claims:     volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
-		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
-	}
+	return NewReconciler(
+		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+	)
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -77,10 +74,17 @@ var _ reconcile.Reconciler = &ReconcileKeystone{}
 
 // ReconcileKeystone reconciles a Keystone object
 type ReconcileKeystone struct {
-	Client     client.Client
-	Scheme     *runtime.Scheme
-	Kubernetes *k8s.Kubernetes
-	Claims     *volumeclaims.PersistentVolumeClaims
+	client     client.Client
+	scheme     *runtime.Scheme
+	kubernetes *k8s.Kubernetes
+	claims     *volumeclaims.PersistentVolumeClaims
+}
+
+// NewReconciler is used to create a new ReconcileKeystone
+func NewReconciler(
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+) *ReconcileKeystone {
+	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -90,7 +94,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	reqLogger.Info("Reconciling Keystone")
 
 	keystone := &contrail.Keystone{}
-	if err := r.Client.Get(context.TODO(), request.NamespacedName, keystone); err != nil {
+	if err := r.client.Get(context.TODO(), request.NamespacedName, keystone); err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
@@ -102,7 +106,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err := r.Kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
+	if err := r.kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -115,7 +119,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		Name:      keystone.Name + "-pv-claim",
 	}
 
-	if err := r.Claims.New(claimName, keystone).EnsureExists(); err != nil {
+	if err := r.claims.New(claimName, keystone).EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -147,7 +151,7 @@ func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
 	claimName types.NamespacedName,
 ) error {
 	sts := newKeystoneSTS(keystone)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, sts, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
 		sts.Spec.Template.Spec.Volumes = []core.Volume{
 			{
 				Name: "keystone-fernet-tokens-volume",
@@ -218,14 +222,14 @@ func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone,
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
-		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.Scheme, keystone, r.Client, true)
+		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.scheme, keystone, r.client, true)
 	})
 	return err
 }
 
 func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgres, error) {
 	psql := &contrail.Postgres{}
-	err := r.Client.Get(context.TODO(),
+	err := r.client.Get(context.TODO(),
 		types.NamespacedName{
 			Namespace: cr.Namespace,
 			Name:      cr.Spec.ServiceConfiguration.PostgresInstance,

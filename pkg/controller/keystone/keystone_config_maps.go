@@ -25,8 +25,8 @@ type configMapFiller interface {
 
 func (r *ReconcileKeystone) configMaps(keystone *contrail.Keystone) *configMaps {
 	return &configMaps{
-		client:   r.Client,
-		scheme:   r.Scheme,
+		client:   r.client,
+		scheme:   r.scheme,
 		keystone: keystone,
 	}
 }

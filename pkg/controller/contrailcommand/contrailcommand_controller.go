@@ -33,11 +33,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileContrailCommand{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
-	}
+	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), kubernetes)
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -78,9 +75,14 @@ var _ reconcile.Reconciler = &ReconcileContrailCommand{}
 type ReconcileContrailCommand struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	Client     client.Client
-	Scheme     *runtime.Scheme
-	Kubernetes *k8s.Kubernetes
+	client     client.Client
+	scheme     *runtime.Scheme
+	kubernetes *k8s.Kubernetes
+}
+
+// NewReconciler is used to create contrail command reconciler
+func NewReconciler(c client.Client, scheme *runtime.Scheme, k *k8s.Kubernetes) *ReconcileContrailCommand {
+	return &ReconcileContrailCommand{client: c, scheme: scheme, kubernetes: k}
 }
 
 // Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read
@@ -90,7 +92,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	instanceType := "contrailcommand"
 	// Fetch the ContrailCommand command
 	command := &contrail.ContrailCommand{}
-	if err := r.Client.Get(context.Background(), request.NamespacedName, command); err != nil {
+	if err := r.client.Get(context.Background(), request.NamespacedName, command); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -101,12 +103,12 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	configMap, err := contrail.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.Client, r.Scheme, request, "contrailcommand", command)
+	configMap, err := contrail.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.client, r.scheme, request, "contrailcommand", command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := command.InstanceConfiguration(request, r.Client); err != nil {
+	if err := command.InstanceConfiguration(request, r.client); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -115,7 +117,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	if err := r.Kubernetes.Owner(command).EnsureOwns(psql); err != nil {
+	if err := r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -132,9 +134,9 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 
 	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{configMap.Name: configVolumeName})
 
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, deployment, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
 		_, err := command.PrepareIntendedDeployment(deployment,
-			&command.Spec.CommonConfiguration, request, r.Scheme)
+			&command.Spec.CommonConfiguration, request, r.scheme)
 		return err
 	}); err != nil {
 		return reconcile.Result{}, err
@@ -145,7 +147,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 
 func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
 	psql := &contrail.Postgres{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{
+	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Namespace: command.GetNamespace(),
 		Name:      command.Spec.ServiceConfiguration.PostgresInstance,
 	}, psql)
@@ -205,7 +207,7 @@ func (r *ReconcileContrailCommand) updateStatus(
 	deployment *apps.Deployment,
 	request reconcile.Request,
 ) error {
-	err := r.Client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
+	err := r.client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
 	if err != nil {
 		return err
 	}
@@ -219,5 +221,5 @@ func (r *ReconcileContrailCommand) updateStatus(
 		command.Status.Active = true
 	}
 
-	return r.Client.Status().Update(context.Background(), command)
+	return r.client.Status().Update(context.Background(), command)
 }

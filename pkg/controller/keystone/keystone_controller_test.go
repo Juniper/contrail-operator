@@ -106,12 +106,9 @@ func TestKeystone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := keystone.ReconcileKeystone{
-				Client:     cl,
-				Scheme:     scheme,
-				Kubernetes: k8s.New(cl, scheme),
-				Claims:     volumeclaims.New(cl, scheme),
-			}
+			r := keystone.NewReconciler(
+				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme),
+			)
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -126,7 +123,7 @@ func TestKeystone(t *testing.T) {
 
 			sts := &apps.StatefulSet{}
 			exSTS := tt.expectedSTS
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      exSTS.Name,
 				Namespace: exSTS.Namespace,
 			}, sts)
@@ -138,7 +135,7 @@ func TestKeystone(t *testing.T) {
 
 			for _, expConfig := range tt.expectedConfigs {
 				configMap := &core.ConfigMap{}
-				err = r.Client.Get(context.Background(), types.NamespacedName{
+				err = cl.Get(context.Background(), types.NamespacedName{
 					Name:      expConfig.Name,
 					Namespace: expConfig.Namespace,
 				}, configMap)
@@ -149,7 +146,7 @@ func TestKeystone(t *testing.T) {
 
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      tt.expectedPostgres.GetName(),
 				Namespace: tt.expectedPostgres.GetNamespace(),
 			}, psql)

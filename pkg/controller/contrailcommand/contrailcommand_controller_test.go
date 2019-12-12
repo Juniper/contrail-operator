@@ -88,11 +88,7 @@ func TestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := contrailcommand.ReconcileContrailCommand{
-				Client: cl,
-				Scheme: scheme,
-				Kubernetes: k8s.New(cl, scheme),
-			}
+			r := contrailcommand.NewReconciler(cl, scheme, k8s.New(cl, scheme))
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -107,7 +103,7 @@ func TestCommand(t *testing.T) {
 
 			// Check contrail command status
 			cc := &contrail.ContrailCommand{}
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      "command",
 				Namespace: "default",
 			}, cc)
@@ -116,7 +112,7 @@ func TestCommand(t *testing.T) {
 			// Check and verify command deployment
 			dep := &apps.Deployment{}
 			exDep := tt.expectedDeployment
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      exDep.Name,
 				Namespace: exDep.Namespace,
 			}, dep)
@@ -126,7 +122,7 @@ func TestCommand(t *testing.T) {
 			expConfigMap := getExpectedConfigMap()
 			// Check if config map has been created
 			configMap := &core.ConfigMap{}
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      "command-contrailcommand-configmap",
 				Namespace: "default",
 			}, configMap)
@@ -135,7 +131,7 @@ func TestCommand(t *testing.T) {
 
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
-			err = r.Client.Get(context.Background(), types.NamespacedName{
+			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      tt.expectedPostgres.GetName(),
 				Namespace: tt.expectedPostgres.GetNamespace(),
 			}, psql)
