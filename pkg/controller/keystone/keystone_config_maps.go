@@ -66,7 +66,9 @@ func (c *configMaps) ensureKeystoneFernetConfigMap(name string, psql *contrail.P
 }
 
 func (c *configMaps) ensureKeystoneSSHConfigMap(name string) (*core.ConfigMap, error) {
-	cc := &keystoneSSHConf{}
+	cc := &keystoneSSHConf{
+		ListenAddress: "0.0.0.0",
+	}
 
 	return c.ensureExists(name, cc)
 }

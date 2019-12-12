@@ -271,7 +271,7 @@ const expectedkeystoneSSHKollaServiceConfig = `
 
 const expectedSSHDConfig = `
 Port 8023
-ListenAddress 10.0.2.15
+ListenAddress 0.0.0.0
 
 SyslogFacility AUTHPRIV
 UsePAM yes

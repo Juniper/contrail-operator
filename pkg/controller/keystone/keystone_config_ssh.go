@@ -7,11 +7,13 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-type keystoneSSHConf struct{}
+type keystoneSSHConf struct {
+	ListenAddress string
+}
 
 func (c *keystoneSSHConf) fillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneSSHKollaServiceConfig
-	cm.Data["sshd_config"] = sshdConfig
+	cm.Data["sshd_config"] = c.executeTemplate(sshdConfig)
 }
 
 func (c *keystoneSSHConf) executeTemplate(t *template.Template) string {
@@ -41,10 +43,10 @@ const keystoneSSHKollaServiceConfig = `
     ]
 }`
 
-const sshdConfig = `
+var sshdConfig = template.Must(template.New("").Parse(`
 Port 8023
-ListenAddress 10.0.2.15
+ListenAddress {{ .ListenAddress }}
 
 SyslogFacility AUTHPRIV
 UsePAM yes
-`
+`))
