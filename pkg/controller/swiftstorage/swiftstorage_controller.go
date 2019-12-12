@@ -77,9 +77,9 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling SwiftStorage")
 
-	// Fetch the SwiftStorage instance
-	instance := &contrail.SwiftStorage{}
-	if err := r.client.Get(context.Background(), request.NamespacedName, instance); err != nil {
+	// Fetch the SwiftStorage
+	swiftStorage := &contrail.SwiftStorage{}
+	if err := r.client.Get(context.Background(), request.NamespacedName, swiftStorage); err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
@@ -114,13 +114,13 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 		replicas := int32(1)
 		statefulSet.Spec.Replicas = &replicas
-		return controllerutil.SetControllerReference(instance, statefulSet, r.scheme)
+		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	instance.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
 
-	return reconcile.Result{}, r.client.Update(context.Background(), instance)
+	return reconcile.Result{}, r.client.Update(context.Background(), swiftStorage)
 }
