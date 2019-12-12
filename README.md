@@ -20,9 +20,9 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1
 ```
 
 ```bash
-ssh-keygen
-kubectl create -n contrail secret generic keystone-key --from-file=ssh-privatekey=~/.ssh/id_rsa
-kubectl create -n contrail secret generic keystone-public-key --from-file=ssh-publickey=~/.ssh/id_rsa.pub
+ssh-keygen -f id_rsa
+
+kubectl create -n contrail secret generic keystone-keys --from-file=ssh-privatekey=id_rsa --from-file=ssh-publickey=id_rsa.pub
 ```
 
 Wait for Contrail Operator deployment to run:    

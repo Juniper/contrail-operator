@@ -202,18 +202,10 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				},
 			},
 			{
-				Name: "keystone-key-volume",
+				Name: "keystone-keys-volume",
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
-						SecretName: "keystone-key",
-					},
-				},
-			},
-			{
-				Name: "keystone-public-key-volume",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: "keystone-public-key",
+						SecretName: "keystone-keys",
 					},
 				},
 			},
@@ -287,7 +279,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-public-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa.pub", ReadOnly: true},
+								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
 							},
 						},
 						{
@@ -298,7 +290,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-key-volume", MountPath: "/var/lib/kolla/config_files/id_rsa", ReadOnly: true},
+								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
 							},
 						},
 					},
