@@ -21,7 +21,11 @@ log_local=1
 # log_category=
 # log_disable=0
 xmpp_server_port=5269
-xmpp_auth_enable=False
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -106,7 +110,10 @@ log_local=1
 # log_file_size=10485760 # 10MB
 # log_category=
 # log_disable=0
-xmpp_dns_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -158,6 +165,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
+  --api_server_use_ssl true
   --host_ip {{ .ListenAddress }} \
   --router_asn {{ .ASNNumber }} \
   --bgp_server_port {{ .BGPPort }} \

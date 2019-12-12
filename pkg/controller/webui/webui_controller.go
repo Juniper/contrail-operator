@@ -94,7 +94,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler.
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileWebui{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileWebui{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -161,8 +161,9 @@ var _ reconcile.Reconciler = &ReconcileWebui{}
 type ReconcileWebui struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
 // Reconcile reads that state of the cluster for a Webui object and makes changes based on the state read
@@ -209,6 +210,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
@@ -216,6 +222,8 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	instance.AddVolumesToIntendedSTS(statefulSet,
 		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	var serviceAccountName string
 	if instance.Spec.ServiceConfiguration.ServiceAccount != "" {
@@ -318,43 +326,44 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	statefulSet.Spec.Template.Spec.ServiceAccountName = serviceAccountName
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "webuiweb" {
-			envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-			env := corev1.EnvVar{
-				Name:  "SSL_ENABLE",
-				Value: "true",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CERTFILE",
-				Value: "/etc/contrail/webui_ssl/cs-cert.pem",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_KEYFILE",
-				Value: "/etc/contrail/webui_ssl/cs-key.pem",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CA_KEYFILE",
-				Value: "",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CA_CERTFILE",
-				Value: "",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "FORCE_GENERATE_CERT",
-				Value: "true",
-			}
-			envList = append(envList, env)
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
-			//command := []string{"bash", "-c",
-			//	"/certs-init.sh; sleep 5; /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+			/*
+				envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
+				env := corev1.EnvVar{
+					Name:  "SSL_ENABLE",
+					Value: "true",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CERTFILE",
+					Value: "/etc/contrail/webui_ssl/cs-cert.pem",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_KEYFILE",
+					Value: "/etc/contrail/webui_ssl/cs-key.pem",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CA_KEYFILE",
+					Value: "",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CA_CERTFILE",
+					Value: "",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "FORCE_GENERATE_CERT",
+					Value: "true",
+				}
+				envList = append(envList, env)
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
+			*/
 			command := []string{"bash", "-c",
-				"/certs-init.sh && /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				"/usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+
+			//"/certs-init.sh && /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -369,47 +378,53 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 				MountPath: "/etc/mycontrail",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "webuijob" {
-			envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-			env := corev1.EnvVar{
-				Name:  "SSL_ENABLE",
-				Value: "true",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CERTFILE",
-				Value: "/etc/contrail/webui_ssl/cs-cert.pem",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_KEYFILE",
-				Value: "/etc/contrail/webui_ssl/cs-key.pem",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CA_KEYFILE",
-				Value: "",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "SERVER_CA_CERTFILE",
-				Value: "",
-			}
-			envList = append(envList, env)
-			env = corev1.EnvVar{
-				Name:  "FORCE_GENERATE_CERT",
-				Value: "true",
-			}
-			envList = append(envList, env)
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
-			//command := []string{"bash", "-c",
-			//	"/certs-init.sh; sleep 5;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+			/*
+				envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
+				env := corev1.EnvVar{
+					Name:  "SSL_ENABLE",
+					Value: "true",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CERTFILE",
+					Value: "/etc/contrail/webui_ssl/cs-cert.pem",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_KEYFILE",
+					Value: "/etc/contrail/webui_ssl/cs-key.pem",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CA_KEYFILE",
+					Value: "",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "SERVER_CA_CERTFILE",
+					Value: "",
+				}
+				envList = append(envList, env)
+				env = corev1.EnvVar{
+					Name:  "FORCE_GENERATE_CERT",
+					Value: "true",
+				}
+				envList = append(envList, env)
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
+			*/
 			command := []string{"bash", "-c",
-				"/certs-init.sh && sleep 10;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				"/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+
+			//"/certs-init.sh && sleep 10;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -422,6 +437,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
 				MountPath: "/etc/mycontrail",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -473,6 +493,9 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	if len(podIPList.Items) > 0 {
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
 			return reconcile.Result{}, err
 		}
 

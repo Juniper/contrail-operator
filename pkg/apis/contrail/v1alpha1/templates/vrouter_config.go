@@ -13,8 +13,11 @@ log_level=SYS_NOTICE
 log_local=1
 hostname={{ .Hostname }}
 agent_name={{ .Hostname }}
-xmpp_dns_auth_enable=False
-xmpp_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 physical_interface_mac = {{ .PhysicalInterfaceMac }}
 tsn_servers = []
 [SANDESH]

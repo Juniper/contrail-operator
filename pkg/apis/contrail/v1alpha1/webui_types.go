@@ -151,6 +151,19 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	return nil
 }
 
+// CreateSecret creates a secret.
+func (c *Webui) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"webui",
+		c)
+}
+
 func (c *Webui) CreateConfigMap(configMapName string,
 	client client.Client,
 	scheme *runtime.Scheme,

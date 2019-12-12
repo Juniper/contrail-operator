@@ -117,6 +117,19 @@ func (c *Vrouter) CreateConfigMap(configMapName string,
 		c)
 }
 
+// CreateSecret creates a secret.
+func (c *Vrouter) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"vrouter",
+		c)
+}
+
 // PrepareDaemonSet prepares the intended podList.
 func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 	commonConfiguration *CommonConfiguration,
@@ -138,6 +151,11 @@ func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 		return err
 	}
 	return nil
+}
+
+// AddSecretVolumesToIntendedDS adds volumes to the Rabbitmq deployment.
+func (c *Vrouter) AddSecretVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedDS(ds, volumeConfigMapMap)
 }
 
 // SetDSCommonConfiguration takes common configuration parameters
