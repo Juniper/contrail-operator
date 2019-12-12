@@ -15,10 +15,7 @@
 package e2e
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -32,11 +29,12 @@ import (
 
 	apis "github.com/Juniper/contrail-operator/pkg/apis"
 
-	contrailapi "github.com/Juniper/contrail-go-api"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var (
@@ -158,31 +156,6 @@ func ManagerCluster(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	/*
-		if err = managerScaleTest(t, f, ctx); err != nil {
-			t.Fatal(err)
-		}
-	*/
-	/*
-		cClient, err := contrailClient(t, f, ctx, namespace, "config1")
-		if err != nil {
-			t.Fatal(err)
-		}
-		project := new(contrailtypes.Project)
-		project.SetFQName("domain", []string{"default-domain", "p1"})
-		err = cClient.Create(project)
-		if err != nil {
-			t.Fatal(err)
-		}
-		vn := new(contrailtypes.VirtualNetwork)
-		vn.SetParent(project)
-		vn.SetName("vn1")
-		err = cClient.Create(vn)
-		if err != nil {
-			t.Fatal(err)
-		}
-	*/
-
 	if err = upgradeZookeeper(t, f, ctx, namespace, "cluster1"); err != nil {
 		t.Fatal(err)
 	}
@@ -192,31 +165,6 @@ func ManagerCluster(t *testing.T) {
 		t.Fatal(err)
 	}
 
-}
-
-func contrailClient(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, namespace, name string) (*contrailapi.Client, error) {
-	var contrailClient *contrailapi.Client
-	configInstance := &v1alpha1.Config{}
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: "config1", Namespace: namespace}, configInstance)
-	if err != nil {
-		return contrailClient, err
-	}
-
-	var configIP string
-	for _, configNodeIP := range configInstance.Status.Nodes {
-		configIP = configNodeIP
-	}
-	for _, configNodeIP := range configInstance.Status.Nodes {
-		configIP = configNodeIP
-	}
-	apiPort, err := strconv.Atoi(configInstance.Status.Ports.APIPort)
-	if err != nil {
-		return contrailClient, err
-	}
-
-	contrailClient = contrailapi.NewClient(configIP, apiPort)
-
-	return contrailClient, nil
 }
 
 func getManager(namespace string, replicas int32, hostNetwork bool, versionMap map[string]string) v1alpha1.Manager {

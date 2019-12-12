@@ -44,16 +44,19 @@ func (c *PersistentVolumeClaim) EnsureExists() error {
 			Namespace: c.name.Namespace,
 		},
 	}
-	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
-		pvc.Spec = core.PersistentVolumeClaimSpec{
-			AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
-			Resources: core.ResourceRequirements{
-				Requests: map[core.ResourceName]resource.Quantity{
-					core.ResourceStorage: quantity,
-				},
+
+	pvc.Spec = core.PersistentVolumeClaimSpec{
+		AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
+		Resources: core.ResourceRequirements{
+			Requests: map[core.ResourceName]resource.Quantity{
+				core.ResourceStorage: quantity,
 			},
-		}
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
 		return controllerutil.SetControllerReference(c.owner, pvc, c.scheme)
 	})
+
 	return err
 }

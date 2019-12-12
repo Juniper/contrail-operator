@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_contrailcommand")
@@ -32,7 +33,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileContrailCommand{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileContrailCommand{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -60,8 +65,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Watch for changes to secondary resource Postgres and requeue the owner ContrailCommand
 	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &contrail.ContrailCommand{},
+		OwnerType: &contrail.ContrailCommand{},
 	})
 
 	return err
@@ -74,8 +78,9 @@ var _ reconcile.Reconciler = &ReconcileContrailCommand{}
 type ReconcileContrailCommand struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read
@@ -105,12 +110,16 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	postgres, err := r.ensurePostgres(command)
+	psql, err := r.getPostgres(command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if !postgres.Status.Active {
+	if err := r.Kubernetes.Owner(command).EnsureOwns(psql); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
 
@@ -134,24 +143,14 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	return reconcile.Result{}, r.updateStatus(command, deployment, request)
 }
 
-func (r *ReconcileContrailCommand) ensurePostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
-	postgres := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      command.Name + "-db",
-			Namespace: command.Namespace,
-		},
-	}
+func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
+	psql := &contrail.Postgres{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.PostgresInstance,
+	}, psql)
 
-	// Set Command instance as the owner and controller
-	if err := controllerutil.SetControllerReference(command, postgres, r.Scheme); err != nil {
-		return nil, err
-	}
-
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, postgres, func() error {
-		return nil
-	})
-
-	return postgres, err
+	return psql, err
 }
 
 func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
@@ -182,14 +181,14 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 						}},
 					}},
 					InitContainers: []core.Container{{
-						Name: "command-init",
+						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
 						Image:           "localhost:5000/contrail-command-init",
 						Env: []core.EnvVar{{
-							Name:	"POSTGRES_USER",
+							Name:  "POSTGRES_USER",
 							Value: "root",
-						},{
-							Name:	"POSTGRES_DB_NAME",
+						}, {
+							Name:  "POSTGRES_DB_NAME",
 							Value: "contrail_test",
 						}},
 						Command: []string{"bash", "/etc/contrail/cc_init_db.sh"},

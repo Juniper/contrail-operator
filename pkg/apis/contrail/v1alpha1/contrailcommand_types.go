@@ -38,8 +38,9 @@ type ContrailCommandSpec struct {
 // ContrailCommandConfiguration is the Spec for the ContrailCommand configuration
 // +k8s:openapi-gen=true
 type ContrailCommandConfiguration struct {
-	AdminUsername string `json:"adminUsername,omitempty"`
-	AdminPassword string `json:"adminPassword,omitempty"`
+	PostgresInstance string `json:"postgresInstance,omitempty"`
+	AdminUsername    string `json:"adminUsername,omitempty"`
+	AdminPassword    string `json:"adminPassword,omitempty"`
 }
 
 // ContrailCommandStatus defines the observed state of ContrailCommand

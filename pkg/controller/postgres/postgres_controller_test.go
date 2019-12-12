@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"context"
 	"reflect"
 	"testing"
@@ -18,6 +17,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 func TestPostgresController(t *testing.T) {
@@ -52,7 +52,7 @@ func TestPostgresController(t *testing.T) {
 		assertPostgresStatusActive(t, fakeClient, name, false)
 	})
 
-	t.Run("should update postgres.Status.Active to true when Postgres Pod is in ready state", func(t *testing.T) {
+	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
 		reconcilePostgres := &ReconcilePostgres{
@@ -71,6 +71,8 @@ func TestPostgresController(t *testing.T) {
 		assert.NoError(t, err)
 		// then
 		assertPostgresStatusActive(t, fakeClient, name, true)
+		// and
+		assertPostgresStatusNode(t, fakeClient, name, "1.1.1.1:5432")
 	})
 
 	t.Run("postgres persistent volume", func(t *testing.T) {
@@ -122,6 +124,7 @@ func makePodReady(t *testing.T, cl client.Client, name types.NamespacedName) {
 			Ready: true,
 		})
 	}
+	pod.Status.PodIP = "1.1.1.1"
 	err = cl.Update(context.TODO(), &pod)
 	require.NoError(t, err)
 }
@@ -131,6 +134,13 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
 	assert.Equal(t, active, postgres.Status.Active)
+}
+
+func assertPostgresStatusNode(t *testing.T, c client.Client, name types.NamespacedName, node string) {
+	postgres := contrail.Postgres{}
+	err := c.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+	assert.Equal(t, node, postgres.Status.Node)
 }
 
 func assertVolumeMountedToPod(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
@@ -159,7 +169,6 @@ func assertVolumeMountedToPod(t *testing.T, c client.Client, name types.Namespac
 	assert.True(t, mounted)
 }
 
-
 func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
 	postgres := contrail.Postgres{}
 	postgresPod := core.Pod{}
@@ -170,7 +179,7 @@ func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.Na
 	assert.NoError(t, err)
 
 	expected := core.Volume{
-		Name:             postgres.Name + "-volume",
+		Name: postgres.Name + "-volume",
 		VolumeSource: core.VolumeSource{
 			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 				ClaimName: postgres.Name + "-pv-claim",
@@ -192,7 +201,7 @@ func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.Names
 	assert.NoError(t, err)
 
 	claimName := types.NamespacedName{
-		Name: name.Name + "-pv-claim",
+		Name:      name.Name + "-pv-claim",
 		Namespace: name.Namespace,
 	}
 

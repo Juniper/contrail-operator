@@ -1,9 +1,9 @@
 package manager
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
 
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,12 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
-
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var log = logf.Log.WithName("controller_manager")
@@ -1176,42 +1175,64 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if result, err := r.processContrailCommand(instance); err != nil {
-		return result, err
+	if err := r.processPostgres(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processContrailCommand(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processKeystone(instance); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileManager) processContrailCommand(manager *v1alpha1.Manager) (reconcile.Result, error) {
+func (r *ReconcileManager) processContrailCommand(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.ContrailCommand == nil {
+		return nil
+	}
+
 	command := &v1alpha1.ContrailCommand{}
 	command.ObjectMeta = manager.Spec.Services.ContrailCommand.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, command, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.ContrailCommand.Spec
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
-	}); err != nil {
-		return reconcile.Result{}, err
-	}
-	return reconcile.Result{}, nil
+	})
+
+	return err
 }
 
-func (r *ReconcileManager) createCrd(instance *v1alpha1.Manager, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
-	reqLogger := log.WithValues("Instance.Namespace", instance.Namespace, "Instance.Name", instance.Name)
-	reqLogger.Info("Creating CRD")
-	newCrd := apiextensionsv1beta1.CustomResourceDefinition{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crd.Spec.Names.Plural + "." + crd.Spec.Group, Namespace: newCrd.Namespace}, &newCrd)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " not found. Creating it.")
-		//controllerutil.SetControllerReference(&newCrd, crd, r.scheme)
-		err = r.client.Create(context.TODO(), crd)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create new crd.", "crd.Namespace", crd.Namespace, "crd.Name", crd.Name)
-			return err
-		}
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " created.")
-	} else if err == nil {
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " already exists.")
+func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Keystone == nil {
+		return nil
 	}
-	return nil
+
+	keystone := &v1alpha1.Keystone{}
+	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta
+	keystone.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
+		keystone.Spec = manager.Spec.Services.Keystone.Spec
+		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
+	})
+
+	return err
+}
+
+func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Postgres == nil {
+		return nil
+	}
+	psql := &v1alpha1.Postgres{}
+	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta
+	psql.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
+		psql.Spec = manager.Spec.Services.Postgres.Spec
+		return controllerutil.SetControllerReference(manager, psql, r.scheme)
+	})
+
+	return err
 }
