@@ -122,5 +122,5 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 
 	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
 
-	return reconcile.Result{}, r.client.Update(context.Background(), swiftStorage)
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
