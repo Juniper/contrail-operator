@@ -71,7 +71,7 @@ const keystoneFernetKollaServiceConfig = `
 			"perm": "0600"
 		},
 		{
-			"source": "/var/lib/kolla/config_files/id_rsa",
+			"source": "/var/lib/kolla/ssh_files/id_rsa",
 			"dest": "/var/lib/keystone/.ssh/id_rsa",
 			"owner": "keystone",
 			"perm": "0600"

@@ -35,7 +35,7 @@ const keystoneSSHKollaServiceConfig = `
             "perm": "0600"
         },
         {
-            "source": "/var/lib/kolla/config_files/id_rsa.pub",
+            "source": "/var/lib/kolla/ssh_files/id_rsa.pub",
             "dest": "/var/lib/keystone/.ssh/authorized_keys",
             "owner": "keystone",
             "perm": "0600"
