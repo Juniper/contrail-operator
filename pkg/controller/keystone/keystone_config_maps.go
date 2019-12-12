@@ -31,8 +31,8 @@ func (r *ReconcileKeystone) configMaps(keystone *contrail.Keystone) *configMaps 
 	}
 }
 
-func (c *configMaps) ensureKeystoneConfigConfigMap(psql *contrail.Postgres) (*core.ConfigMap, error) {
-	cc := &keystoneConf{
+func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) (*core.ConfigMap, error) {
+	cc := &keystoneConfig{
 		ListenAddress:    "0.0.0.0",
 		ListenPort:       c.keystone.Spec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
@@ -40,10 +40,10 @@ func (c *configMaps) ensureKeystoneConfigConfigMap(psql *contrail.Postgres) (*co
 		MemcacheServer:   "localhost:11211",
 	}
 
-	return c.ensureExist(c.keystone.Name+"-keystone", cc)
+	return c.ensureExists(c.keystone.Name+"-keystone", cc)
 }
 
-func (c *configMaps) ensureExist(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {
+func (c *configMaps) ensureExists(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {
 	cm, err := contrail.CreateConfigMap(name, c.client, c.scheme,
 		reconcile.Request{
 			NamespacedName: types.NamespacedName{

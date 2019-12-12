@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/owner"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_contrailcommand")
@@ -33,7 +33,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileContrailCommand{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileContrailCommand{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -74,8 +78,9 @@ var _ reconcile.Reconciler = &ReconcileContrailCommand{}
 type ReconcileContrailCommand struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read
@@ -110,7 +115,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	if err := owner.EnsureOwnerReference(command, psql, r.Client, r.Scheme); err != nil {
+	if err := r.Kubernetes.Owner(command).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 

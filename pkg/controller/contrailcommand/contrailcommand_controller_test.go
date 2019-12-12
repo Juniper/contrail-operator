@@ -16,6 +16,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/contrailcommand"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestCommand(t *testing.T) {
@@ -90,6 +91,7 @@ func TestCommand(t *testing.T) {
 			r := contrailcommand.ReconcileContrailCommand{
 				Client: cl,
 				Scheme: scheme,
+				Kubernetes: k8s.New(cl, scheme),
 			}
 
 			req := reconcile.Request{

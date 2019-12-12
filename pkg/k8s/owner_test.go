@@ -1,17 +1,17 @@
-package owner_test
+package k8s_test
 
 import (
-	"testing"
 	"context"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/Juniper/contrail-operator/pkg/owner"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestSetOwnerReference(t *testing.T) {
@@ -87,7 +87,7 @@ func TestSetOwnerReference(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.dependent)
-			err := owner.EnsureOwnerReference(tt.owner, tt.dependent, cl, scheme)
+			err := k8s.New(cl, scheme).Owner(tt.owner).EnsureOwns(tt.dependent)
 			assert.NoError(t, err)
 
 			pod := &core.Pod{}

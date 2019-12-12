@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/owner"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_keystone")
@@ -32,7 +32,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKeystone{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileKeystone{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -71,8 +75,9 @@ var _ reconcile.Reconciler = &ReconcileKeystone{}
 
 // ReconcileKeystone reconciles a Keystone object
 type ReconcileKeystone struct {
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -94,7 +99,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err := owner.EnsureOwnerReference(keystone, psql, r.Client, r.Scheme); err != nil {
+	if err := r.Kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -102,7 +107,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	kc, err := r.configMaps(keystone).ensureKeystoneConfigConfigMap(psql)
+	kc, err := r.configMaps(keystone).ensureKeystoneExists(psql)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -119,7 +124,7 @@ func (r *ReconcileKeystone) createOrUpdateSTS(keystone *contrail.Keystone, kc *c
 		})
 
 		req := reconcile.Request{
-			types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
+			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
 		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.Scheme, keystone, r.Client, true)
 	})

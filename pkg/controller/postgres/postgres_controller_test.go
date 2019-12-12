@@ -72,7 +72,7 @@ func TestPostgresController(t *testing.T) {
 		// then
 		assertPostgresStatusActive(t, fakeClient, name, true)
 		// and
-		assertPostgresStatusNode(t, fakeClient, name, "1.1.1.1:3306")
+		assertPostgresStatusNode(t, fakeClient, name, "1.1.1.1:5432")
 	})
 
 	t.Run("postgres persistent volume", func(t *testing.T) {

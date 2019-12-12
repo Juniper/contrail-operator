@@ -141,7 +141,7 @@ func (r *ReconcilePostgres) updateStatus(
 
 	if len(pod.Status.ContainerStatuses) != 0 {
 		postgres.Status.Active = pod.Status.ContainerStatuses[0].Ready
-		postgres.Status.Node = pod.Status.PodIP + ":3306"
+		postgres.Status.Node = pod.Status.PodIP + ":5432"
 	} else {
 		postgres.Status.Active = false
 	}

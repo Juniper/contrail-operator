@@ -16,6 +16,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/keystone"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestKeystone(t *testing.T) {
@@ -38,7 +39,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:3306"},
+					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 			},
 			expectedSTS: newExpectedSTS(),
@@ -49,7 +50,7 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:3306"},
+				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -62,7 +63,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 					},
-					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:3306"},
+					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 			},
 			expectedSTS: newExpectedSTS(),
@@ -73,7 +74,7 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:3306"},
+				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -101,6 +102,7 @@ func TestKeystone(t *testing.T) {
 			r := keystone.ReconcileKeystone{
 				Client: cl,
 				Scheme: scheme,
+				Kubernetes: k8s.New(cl, scheme),
 			}
 
 			req := reconcile.Request{
@@ -350,7 +352,7 @@ use_stderr = True
 enable_proxy_headers_parsing = True
 
 [database]
-connection = postgresql://keystone:contrail123@10.0.2.15:3306/keystone
+connection = postgresql://keystone:contrail123@10.0.2.15:5432/keystone
 max_retries = -1
 
 [token]

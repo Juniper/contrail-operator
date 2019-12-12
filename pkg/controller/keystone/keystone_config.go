@@ -7,7 +7,7 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-type keystoneConf struct {
+type keystoneConfig struct {
 	ListenAddress    string
 	ListenPort       int
 	RabbitMQServer   string
@@ -15,13 +15,13 @@ type keystoneConf struct {
 	MemcacheServer   string
 }
 
-func (c *keystoneConf) fillConfigMap(cm *core.ConfigMap) {
+func (c *keystoneConfig) fillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneKollaServiceConfig
-	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConfig)
-	cm.Data["wsgi-keystone.conf"] = c.executeTemplate(wsgiKeystoneConfig)
+	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConf)
+	cm.Data["wsgi-keystone.conf"] = c.executeTemplate(wsgiKeystoneConf)
 }
 
-func (c *keystoneConf) executeTemplate(t *template.Template) string {
+func (c *keystoneConfig) executeTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ var keystoneKollaServiceConfig = `{
     ]
 }`
 
-var keystoneConfig = template.Must(template.New("").Parse(`
+var keystoneConf = template.Must(template.New("").Parse(`
 [DEFAULT]
 debug = False
 transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
@@ -114,7 +114,7 @@ transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
 driver = noop
 `))
 
-var wsgiKeystoneConfig = template.Must(template.New("").Parse(`
+var wsgiKeystoneConf = template.Must(template.New("").Parse(`
 Listen {{ .ListenAddress }}:{{ .ListenPort }}
 
 ServerSignature Off
