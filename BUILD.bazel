@@ -1,6 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
 filegroup(
+    name = "create-persistent-volumes",
+    srcs = [
+        "deploy/0-create-persistent-volumes.yaml",
+    ],
+)
+
+filegroup(
     name = "start_operator",
     srcs = [
         "deploy/1-create-operator.yaml",
