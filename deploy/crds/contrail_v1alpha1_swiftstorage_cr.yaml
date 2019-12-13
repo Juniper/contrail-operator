@@ -1,0 +1,4 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: SwiftStorage
+metadata:
+  name: example-swiftstorage

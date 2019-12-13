@@ -54,6 +54,7 @@ rules:
   - webuis
   - vrouters
   - contrailcommands
+  - swiftstorages
   - keystones
   verbs:
   - '*'
