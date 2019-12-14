@@ -398,6 +398,12 @@ spec:
                             containers: {}
                             nodeManager:
                               type: boolean
+                            rabbitmqPassword:
+                              type: string
+                            rabbitmqUser:
+                              type: string
+                            rabbitmqVhost:
+                              type: string
                             redisPort:
                               type: integer
                             zookeeperInstance:
@@ -559,6 +565,12 @@ spec:
                                 type: integer
                               nodeManager:
                                 type: boolean
+                              rabbitmqPassword:
+                                type: string
+                              rabbitmqUser:
+                                type: string
+                              rabbitmqVhost:
+                                type: string
                               xmppPort:
                                 type: integer
                               zookeeperInstance:
@@ -738,6 +750,12 @@ spec:
                                 type: string
                               podSubnets:
                                 type: string
+                              rabbitmqPassword:
+                                type: string
+                              rabbitmqUser:
+                                type: string
+                              rabbitmqVhost:
+                                type: string
                               serviceAccount:
                                 type: string
                               serviceSubnets:
@@ -883,6 +901,10 @@ spec:
                               type: string
                             port:
                               type: integer
+                            secret:
+                              type: string
+                            sslPort:
+                              type: integer
                             user:
                               type: string
                             vhost:
@@ -908,7 +930,11 @@ spec:
                           properties:
                             port:
                               type: string
+                            sslPort:
+                              type: string
                           type: object
+                        secret:
+                          type: string
                       type: object
                   type: object
                 vrouters:

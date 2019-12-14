@@ -122,6 +122,12 @@ spec:
                   type: integer
                 nodeManager:
                   type: boolean
+                rabbitmqPassword:
+                  type: string
+                rabbitmqUser:
+                  type: string
+                rabbitmqVhost:
+                  type: string
                 xmppPort:
                   type: integer
                 zookeeperInstance:

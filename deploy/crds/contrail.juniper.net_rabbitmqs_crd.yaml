@@ -116,6 +116,10 @@ spec:
                   type: string
                 port:
                   type: integer
+                secret:
+                  type: string
+                sslPort:
+                  type: integer
                 user:
                   type: string
                 vhost:
@@ -141,7 +145,11 @@ spec:
               properties:
                 port:
                   type: string
+                sslPort:
+                  type: string
               type: object
+            secret:
+              type: string
           type: object
       type: object
   version: v1alpha1

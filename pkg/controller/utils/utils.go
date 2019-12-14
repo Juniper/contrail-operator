@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -438,6 +438,35 @@ func ConfigActiveChange() predicate.Funcs {
 				oldConfigActive = *oldConfig.Status.Active
 			}
 			if !oldConfigActive && newConfigActive {
+				return true
+			}
+			return false
+
+		},
+	}
+}
+
+// VrouterActiveChange returns predicate function based on group kind.
+func VrouterActiveChange() predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldVrouter, ok := e.ObjectOld.(*v1alpha1.Vrouter)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newVrouter, ok := e.ObjectNew.(*v1alpha1.Vrouter)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newVrouterActive := false
+			oldVrouterActive := false
+			if newVrouter.Status.Active != nil {
+				newVrouterActive = *newVrouter.Status.Active
+			}
+			if oldVrouter.Status.Active != nil {
+				oldVrouterActive = *oldVrouter.Status.Active
+			}
+			if !oldVrouterActive && newVrouterActive {
 				return true
 			}
 			return false

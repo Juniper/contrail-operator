@@ -120,6 +120,12 @@ spec:
                 containers: {}
                 nodeManager:
                   type: boolean
+                rabbitmqPassword:
+                  type: string
+                rabbitmqUser:
+                  type: string
+                rabbitmqVhost:
+                  type: string
                 redisPort:
                   type: integer
                 zookeeperInstance:

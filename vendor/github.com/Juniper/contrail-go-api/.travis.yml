@@ -1,0 +1,32 @@
+language: go
+
+sudo: required
+
+services:
+  - rabbitmq
+  - docker
+
+before_install:
+  - curl -L http://debian.datastax.com/debian/repo_key | sudo apt-key add -
+  - echo "deb http://debian.datastax.com/community stable main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+  - sudo apt-get update -qq
+  - sudo apt-get install -y cassandra
+  - sudo sed -ri 's/^(start_rpc:) .*/\1 true/' /etc/cassandra/cassandra.yaml
+  - sudo service cassandra start
+
+before_script:
+  - docker run -e MYID=1 -e SERVERS=localhost --net=host -d mesoscloud/zookeeper:3.4.6
+  - docker run -p 8443:8443 --name=ifmap-server -d opencontrail/ifmap-server:2.20
+  - docker run --net=host --name=contrail-api -d opencontrail/config:2.20 /usr/bin/contrail-api
+
+install:
+  - wget https://github.com/Juniper/contrail-go-api/releases/download/1.0.0/contrail-go-api-generated-types-r2.20.tar.gz
+  - tar -zxvf contrail-go-api-generated-types-r2.20.tar.gz --strip-components=3
+  - go get github.com/stretchr/testify
+  - go get github.com/pborman/uuid
+  - go get github.com/golang/glog
+
+script:
+  - go test -v ./...
+  - go test -v ./test -contrail-api=localhost
+

@@ -139,6 +139,12 @@ spec:
                   type: string
                 podSubnets:
                   type: string
+                rabbitmqPassword:
+                  type: string
+                rabbitmqUser:
+                  type: string
+                rabbitmqVhost:
+                  type: string
                 serviceAccount:
                   type: string
                 serviceSubnets:

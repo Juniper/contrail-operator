@@ -24,11 +24,11 @@ spec:
         serviceConfiguration:
           containers:
             cassandra: 
-              image: cassandra:3.11.4
+              image: cassandra:3.11.5
             init: 
               image: python:alpine
             init2: 
-              image: cassandra:3.11.4
+              image: cassandra:3.11.5
             #maxHeapSize: 1024M
             #minHeapSize: 100M
     zookeepers:
@@ -136,7 +136,34 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          nodeManager: false
+          cassandraInstance: cassandra1
+          zookeeperInstance: zookeeper1
+          containers:
+            control: 
+              image: opencontrailnightly/contrail-controller-control-control:1910-latest
+            dns:
+              image: opencontrailnightly/contrail-controller-control-dns:1910-latest
+            named: 
+              image: opencontrailnightly/contrail-controller-control-named:1910-latest
+            nodemanager:
+              image: opencontrailnightly/contrail-nodemgr:1910-latest
+            nodeinit:
+              image: opencontrailnightly/contrail-node-init:1910-latest
+            init:
+              image: python:alpine
+      - metadata:
+        name: control-pop1
+        labels:
+          contrail_cluster: cluster1
+          control_role: master
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           nodeManager: false
           cassandraInstance: cassandra1
@@ -211,10 +238,10 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.opencontrail.org: "vrouter"  
+            node-role.opencontrail.org: "vrouter"
         serviceConfiguration:
           cassandraInstance: cassandra1
-          controlInstance: control1
+          controlInstance: control-pop1
           containers:
             vrouteragent: 
               image: opencontrailnightly/contrail-vrouter-agent:1910-latest

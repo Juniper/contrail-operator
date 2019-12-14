@@ -445,7 +445,88 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 
 		}
 	}
+	if instance.Spec.Services.ProvisionManager != nil {
+		provisionManagerService := instance.Spec.Services.ProvisionManager
+		create := *provisionManagerService.Spec.CommonConfiguration.Create
+		delete := false
 
+		cr := cr.GetProvisionManagerCr()
+		cr.ObjectMeta = provisionManagerService.ObjectMeta
+		cr.Labels = provisionManagerService.ObjectMeta.Labels
+		cr.Namespace = instance.Namespace
+		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
+		cr.TypeMeta.Kind = "ProvisionManager"
+		if instance.Status.ProvisionManager != nil {
+			if *provisionManagerService.Spec.CommonConfiguration.Create && *instance.Status.ProvisionManager.Created {
+				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+				if err == nil {
+					create = false
+					delete = false
+				}
+			}
+			if !*provisionManagerService.Spec.CommonConfiguration.Create && *instance.Status.ProvisionManager.Created {
+				create = false
+				delete = true
+			}
+		}
+		if create {
+			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			if err != nil {
+				if errors.IsNotFound(err) {
+					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = r.client.Create(context.TODO(), cr)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
+				}
+			}
+
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.ProvisionManager != nil {
+				status = instance.Status.ProvisionManager
+				status.Created = &create
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				instance.Status.ProvisionManager = status
+			}
+
+			err = r.client.Status().Update(context.TODO(), instance)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+		}
+
+		if delete {
+			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			err = r.client.Delete(context.TODO(), cr)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.ProvisionManager != nil {
+				status = instance.Status.ProvisionManager
+				status.Created = &create
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				instance.Status.ProvisionManager = status
+			}
+
+			err = r.client.Status().Update(context.TODO(), instance)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
 	if instance.Spec.Services.Webui != nil {
 		webuiService := instance.Spec.Services.Webui
 		create := *webuiService.Spec.CommonConfiguration.Create

@@ -39,8 +39,9 @@ type VrouterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Ports ConfigStatusPorts `json:"ports,omitempty"`
-	Nodes map[string]string `json:"nodes,omitempty"`
+	Ports  ConfigStatusPorts `json:"ports,omitempty"`
+	Nodes  map[string]string `json:"nodes,omitempty"`
+	Active *bool             `json:"active,omitempty"`
 }
 
 // VrouterSpec is the Spec for the cassandras API.
@@ -258,6 +259,24 @@ func (c *Vrouter) UpdateDS(ds *appsv1.DaemonSet,
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// SetInstanceActive sets the instance to active.
+func (c *Vrouter) SetInstanceActive(client client.Client, activeStatus *bool, ds *appsv1.DaemonSet, request reconcile.Request, object runtime.Object) error {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: ds.Name, Namespace: request.Namespace},
+		ds); err != nil {
+		return err
+	}
+	active := false
+	if ds.Status.DesiredNumberScheduled == ds.Status.NumberAvailable {
+		active = true
+	}
+
+	*activeStatus = active
+	if err := client.Status().Update(context.TODO(), object); err != nil {
+		return err
 	}
 	return nil
 }
