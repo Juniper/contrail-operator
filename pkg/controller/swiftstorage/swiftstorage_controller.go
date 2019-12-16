@@ -87,6 +87,17 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	statefulSet, err := r.createStatefulSet(request, swiftStorage)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
+}
+
+func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swiftStorage *contrail.SwiftStorage) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
@@ -98,6 +109,114 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 			{
 				Name:  "nginx",
 				Image: "nginx",
+			},
+			{
+				Name:                     "swift-rsyncd",
+				Image:                    "localhost:5000/centos-binary-swift-rsyncd:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-account-server",
+				Image:                    "localhost:5000/centos-binary-swift-account:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-account-auditor",
+				Image:                    "localhost:5000/centos-binary-swift-account:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-account-replication-server",
+				Image:                    "localhost:5000/centos-binary-swift-account:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-account-replicator",
+				Image:                    "localhost:5000/centos-binary-swift-account:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-account-reaper",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-container-server",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-container-auditor",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-container-replication-server",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-container-replicator",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-container-updater",
+				Image:                    "localhost:5000/centos-binary-swift-container:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-server",
+				Image:                    "localhost:5000/centos-binary-swift-object:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-auditor",
+				Image:                    "localhost:5000/centos-binary-swift-object:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-replication-server",
+				Image:                    "localhost:5000/centos-binary-swift-object:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-replicator",
+				Image:                    "localhost:5000/centos-binary-swift-object:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-updater",
+				Image:                    "localhost:5000/centos-binary-swift-object:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-object-expirer",
+				Image:                    "localhost:5000/centos-binary-swift-object-expirer:master ",
+				Env:                      nil,
+				VolumeMounts:             nil,
+			},
+			{
+				Name:                     "swift-proxy-server",
+				Image:                    "localhost:5000/centos-binary-swift-proxy-server:master",
+				Env:                      nil,
+				VolumeMounts:             nil,
 			},
 		}
 		statefulSet.Spec.Template.Spec.HostNetwork = true
@@ -116,11 +235,5 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		statefulSet.Spec.Replicas = &replicas
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
-
-	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
+	return statefulSet, err
 }
