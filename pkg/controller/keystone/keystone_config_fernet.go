@@ -13,7 +13,7 @@ type keystoneFernetConf struct {
 	MemcacheServer   string
 }
 
-func (c *keystoneFernetConf) fillConfigMap(cm *core.ConfigMap) {
+func (c *keystoneFernetConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneFernetKollaServiceConfig
 	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConf)
 	cm.Data["crontab"] = crontab

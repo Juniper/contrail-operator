@@ -106,6 +106,7 @@ func CreateConfigMap(configMapName string,
 	object v1.Object) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: request.Namespace}, configMap)
+	// TODO: Bug. If config map exists without labels and references, they won't be updated
 	if err != nil {
 		if errors.IsNotFound(err) {
 			configMap.SetName(configMapName)
