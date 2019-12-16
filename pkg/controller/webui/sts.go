@@ -84,6 +84,25 @@ spec:
         volumeMounts:
         - mountPath: /host/usr/bin
           name: host-usr-bin
+      - command:
+        - sh
+        - -c
+        - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+        env:
+        - name: CONTRAIL_STATUS_IMAGE
+          value: hub.juniper.net/contrail-nightly/contrail-status:5.2.0-0.740
+        image: busybox
+        imagePullPolicy: Always
+        name: init
+        resources: {}
+        securityContext:
+          privileged: false
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /tmp/podinfo
+          name: status
       nodeSelector:
         node-role.kubernetes.io/master: ""
       restartPolicy: Always

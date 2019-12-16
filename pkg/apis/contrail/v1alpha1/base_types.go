@@ -183,7 +183,9 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
-
+		if request.Name == "webui1" {
+			fmt.Println("request for webui")
+		}
 		csrINSecret := CSRINSecret(csrSecret, pod.Status.PodIP)
 		pemINSecret := PEMINSecret(csrSecret, pod.Status.PodIP)
 		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
@@ -197,9 +199,6 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			}
 			csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
 			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
-			if request.Name == "rabbitmq1" {
-				fmt.Println("request for rabbit")
-			}
 
 			fmt.Println("Added CSR and PEM to secret for " + request.Name + " " + pod.Status.PodIP)
 			csr := &certv1beta1.CertificateSigningRequest{}
@@ -210,7 +209,8 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 				}
 				csr := &certv1beta1.CertificateSigningRequest{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: request.Name + "-" + pod.Spec.NodeName,
+						Name:      request.Name + "-" + pod.Spec.NodeName,
+						Namespace: request.Namespace,
 					},
 					Spec: certv1beta1.CertificateSigningRequestSpec{
 						Groups:  []string{"system:authenticated"},
@@ -250,7 +250,9 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
-
+		if request.Name == "webui1" {
+			fmt.Println("request for webui")
+		}
 		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
 		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Pending") {
 			csr := &certv1beta1.CertificateSigningRequest{}
@@ -292,6 +294,9 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
+		if request.Name == "webui1" {
+			fmt.Println("request for webui")
+		}
 		if !CRTINSecret(csrSecret, pod.Status.PodIP) {
 			csr := &certv1beta1.CertificateSigningRequest{}
 			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
