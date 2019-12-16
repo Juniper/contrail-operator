@@ -3,6 +3,7 @@ package swiftstorage_test
 import (
 	"context"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,15 +98,21 @@ func TestSwiftStorageController(t *testing.T) {
 		assertNoStatefulSetExist(t, fakeClient)
 	})
 
-	t.Run("should create persistent volume claim", func(t *testing.T) {
+	t.Run("persistent volume claims", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, volumeclaims.New(fakeClient, scheme))
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
-		assert.NoError(t, err)
-		assertClaimCreated(t, fakeClient, name)
+			assert.NoError(t, err)
+		t.Run("should create persistent volume claim", func(t *testing.T) {
+			assertClaimCreated(t, fakeClient, name)
+		})
+	
+		t.Run("should add volume to StatefulSet", func(t *testing.T) {
+			assertVolumeMountedToSTS(t, fakeClient, name, statefulSetName)
+		})
 	})
 }
 
@@ -150,4 +157,28 @@ func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.Names
 	claim := core.PersistentVolumeClaim{}
 	err = fakeClient.Get(context.TODO(), claimName, &claim)
 	assert.NoError(t, err)
+}
+
+func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types.NamespacedName) {
+	sts := apps.StatefulSet{}
+
+	err := c.Get(context.TODO(), stsName, &sts)
+	assert.NoError(t, err)
+
+	expected := core.Volume{
+		Name:         "devices-mount-point-volume",
+		VolumeSource: core.VolumeSource{
+			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+				ClaimName: name.Name + "-pv-claim",
+			},
+		},
+	}
+	
+	var mounted bool
+	for _, volume := range sts.Spec.Template.Spec.Volumes {
+		mounted = reflect.DeepEqual(expected, volume) || mounted
+	}
+
+	assert.NoError(t, err)
+	assert.True(t, mounted)
 }
