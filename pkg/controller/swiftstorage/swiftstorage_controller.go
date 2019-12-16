@@ -2,12 +2,14 @@ package swiftstorage
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -31,11 +33,12 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	c := mgr.GetClient()
 	scheme := mgr.GetScheme()
-	return NewReconciler(c, scheme)
+	claims := volumeclaims.New(c, scheme)
+	return NewReconciler(c, scheme, claims)
 }
 
-func NewReconciler(c client.Client, scheme *runtime.Scheme) *ReconcileSwiftStorage {
-	return &ReconcileSwiftStorage{client: c, scheme: scheme}
+func NewReconciler(c client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwiftStorage {
+	return &ReconcileSwiftStorage{client: c, scheme: scheme, claims: claims}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -69,6 +72,7 @@ type ReconcileSwiftStorage struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	claims *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -84,6 +88,15 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
+		return reconcile.Result{}, err
+	}
+
+	namespacedName := types.NamespacedName{
+		Namespace: swiftStorage.Namespace,
+		Name:      swiftStorage.Name + "-pv-claim",
+	}
+
+	if err := r.claims.New(namespacedName, swiftStorage).EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 

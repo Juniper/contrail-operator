@@ -2,6 +2,7 @@ package swiftstorage_test
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should create SwiftStorage StatefulSet when SwiftStorage CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -50,7 +52,8 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Name = statefulSetName.Name
 		existingStatefulSet.Namespace = statefulSetName.Namespace
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -68,7 +71,8 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Status.ReadyReplicas = 1
 		existingStatefulSet.Status.Replicas = 1
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -84,7 +88,8 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Name = statefulSetName.Name
 		existingStatefulSet.Namespace = statefulSetName.Namespace
 		fakeClient := fake.NewFakeClientWithScheme(scheme, existingStatefulSet)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -92,6 +97,16 @@ func TestSwiftStorageController(t *testing.T) {
 		assertNoStatefulSetExist(t, fakeClient)
 	})
 
+	t.Run("should create persistent volume claim", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, volumeclaims.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+		assertClaimCreated(t, fakeClient, name)
+	})
 }
 
 func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.NamespacedName) *contrail.SwiftStorage {
@@ -114,9 +129,25 @@ func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.Name
 	require.NotNil(t, spec.Template.ObjectMeta.Labels)
 	assert.Equal(t, spec.Selector.MatchLabels, spec.Template.ObjectMeta.Labels)
 }
+
 func assertNoStatefulSetExist(t *testing.T, c client.Client) {
 	statefulSetList := apps.StatefulSetList{}
 	err := c.List(context.TODO(), &statefulSetList)
 	require.NoError(t, err)
 	assert.Empty(t, statefulSetList.Items, "Empty StatefulSet expected")
+}
+
+func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
+	swiftStorage := contrail.SwiftStorage{}
+	err := fakeClient.Get(context.TODO(), name, &swiftStorage)
+	assert.NoError(t, err)
+
+	claimName := types.NamespacedName{
+		Name:      name.Name + "-pv-claim",
+		Namespace: name.Namespace,
+	}
+
+	claim := core.PersistentVolumeClaim{}
+	err = fakeClient.Get(context.TODO(), claimName, &claim)
+	assert.NoError(t, err)
 }
