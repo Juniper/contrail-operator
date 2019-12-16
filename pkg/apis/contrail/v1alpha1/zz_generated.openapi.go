@@ -50,6 +50,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"./pkg/apis/contrail/v1alpha1.ServiceStatus":                schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref),
 		"./pkg/apis/contrail/v1alpha1.Services":                     schema_pkg_apis_contrail_v1alpha1_Services(ref),
 		"./pkg/apis/contrail/v1alpha1.Status":                       schema_pkg_apis_contrail_v1alpha1_Status(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxy":                   schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration":      schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxySpec":               schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxyStatus":             schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorage":                 schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorageSpec":             schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorageStatus":           schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref),
@@ -1796,6 +1800,126 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 						},
 					},
 				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftProxy is the Schema for the swiftproxies API",
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftProxySpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftProxyStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftProxySpec", "./pkg/apis/contrail/v1alpha1.SwiftProxyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftProxyConfiguration is the Spec for the keystone API.",
+				Properties: map[string]spec.Schema{
+					"listenPort": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"keystoneInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"keystoneAdminPassword": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"swiftPassword": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftProxySpec defines the desired state of SwiftProxy",
+				Properties: map[string]spec.Schema{
+					"serviceConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration"),
+						},
+					},
+				},
+				Required: []string{"serviceConfiguration"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftProxyStatus defines the observed state of SwiftProxy",
+				Properties: map[string]spec.Schema{
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"active"},
 			},
 		},
 		Dependencies: []string{},

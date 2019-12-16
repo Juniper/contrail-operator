@@ -57,6 +57,30 @@ func TestKeystone(t *testing.T) {
 			},
 		},
 		{
+			name: "set active status",
+			initObjs: []runtime.Object{
+				newKeystone(),
+				&contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
+					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				},
+				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+			},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "localhost:5555"},
+			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+			expectedConfigs: []*core.ConfigMap{
+				newExpectedKeystoneConfigMap(),
+				newExpectedKeystoneFernetConfigMap(),
+				newExpectedKeystoneSSHConfigMap(),
+			},
+			expectedPostgres: &contrail.Postgres{
+				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
+					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
+				},
+				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+			},
+		},
+		{
 			name: "reconciliation should be idempotent",
 			initObjs: []runtime.Object{
 				newKeystone(),
@@ -144,7 +168,6 @@ func TestKeystone(t *testing.T) {
 				assert.Equal(t, expConfig, configMap)
 			}
 
-			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
 			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      tt.expectedPostgres.GetName(),
@@ -152,6 +175,11 @@ func TestKeystone(t *testing.T) {
 			}, psql)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedPostgres, psql)
+
+			k := &contrail.Keystone{}
+			err = cl.Get(context.Background(), req.NamespacedName, k)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, k.Status)
 		})
 	}
 }
@@ -186,6 +214,12 @@ func newKeystone() *contrail.Keystone {
 			},
 		},
 	}
+}
+
+func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
+	sts := newExpectedSTS()
+	sts.Status = status
+	return sts
 }
 
 func newExpectedSTS() *apps.StatefulSet {

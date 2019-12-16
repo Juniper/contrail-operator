@@ -1,0 +1,11 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: SwiftProxy
+metadata:
+  name: swiftproxy
+  namespace: contrail
+spec:
+  serviceConfiguration:
+    keystoneInstance: "keystone"
+    listenPort: 5080
+    keystoneAdminPassword: "contrail123"
+    swiftPassword: "swiftpass"
