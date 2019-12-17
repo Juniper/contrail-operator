@@ -123,9 +123,9 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 		// Until we have a SwiftStorage pod we are starting nginx
 		statefulSet.Spec.Template.Spec.Containers = []core.Container{
 			{
-				Name:         "swift-account-server",
-				Image:        "localhost:5000/centos-binary-swift-account:master",
-				Env:          nil,
+				Name:  "swift-account-server",
+				Image: "localhost:5000/centos-binary-swift-account:master",
+				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 				},
@@ -148,7 +148,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			},
 			{
 				Name:  "swift-account-reaper",
-				Image: "localhost:5000/centos-binary-swift-container:master",
+				Image: "localhost:5000/centos-binary-swift-account:master",
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
@@ -220,7 +220,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			},
 			{
 				Name:  "swift-object-expirer",
-				Image: "localhost:5000/centos-binary-swift-object-expirer:master ",
+				Image: "localhost:5000/centos-binary-swift-object-expirer:master",
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
