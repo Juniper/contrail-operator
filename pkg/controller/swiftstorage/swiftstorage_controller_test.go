@@ -114,6 +114,17 @@ func TestSwiftStorageController(t *testing.T) {
 			assertVolumeMountedToSTS(t, fakeClient, name, statefulSetName)
 		})
 	})
+
+	t.Run("should create all Swift's containers", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, volumeclaims.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+		assertContainersCreated(t, fakeClient, statefulSetName)
+	})
 }
 
 func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.NamespacedName) *contrail.SwiftStorage {
@@ -181,4 +192,46 @@ func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types
 
 	assert.NoError(t, err)
 	assert.True(t, mounted)
+}
+
+func assertContainersCreated(t *testing.T, c client.Client, stsName types.NamespacedName) {
+	sts := apps.StatefulSet{}
+
+	err := c.Get(context.TODO(), stsName, &sts)
+	assert.NoError(t, err)
+
+	expectedContainers := []expectedContainerData{
+		{"localhost:5000/centos-binary-swift-object-expirer:master", "swift-object-expirer"},
+		{"localhost:5000/centos-binary-swift-object:master", "swift-object-updater"},
+		{"localhost:5000/centos-binary-swift-object:master", "swift-object-replicator"},
+		{"localhost:5000/centos-binary-swift-object:master", "swift-object-auditor"},
+		{"localhost:5000/centos-binary-swift-object:master", "swift-object-server"},
+		{"localhost:5000/centos-binary-swift-container:master", "swift-container-updater"},
+		{"localhost:5000/centos-binary-swift-container:master", "swift-container-replicator"},
+		{"localhost:5000/centos-binary-swift-container:master", "swift-container-auditor"},
+		{"localhost:5000/centos-binary-swift-container:master", "swift-container-server"},
+		{"localhost:5000/centos-binary-swift-account:master", "swift-account-reaper"},
+		{"localhost:5000/centos-binary-swift-account:master", "swift-account-replicator"},
+		{"localhost:5000/centos-binary-swift-account:master", "swift-account-auditor"},
+		{"localhost:5000/centos-binary-swift-account:master", "swift-account-server"},
+	}
+
+	assert.Equal(t, len(expectedContainers), len(sts.Spec.Template.Spec.Containers))
+
+	for _, expectedContainer := range expectedContainers {
+		assertContainerCreated(t, &expectedContainer, sts.Spec.Template.Spec.Containers)
+	}
+}
+
+type expectedContainerData struct {
+	Image, Name string
+}
+
+func assertContainerCreated(t *testing.T, c *expectedContainerData, actualContainers []core.Container) {
+	for _, container := range actualContainers {
+		if c.Image == container.Image && c.Name == container.Name {
+			return
+		}
+	}
+	t.Errorf("Container (Image %s, Name %s) has not been created", c.Image, c.Name)
 }
