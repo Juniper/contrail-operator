@@ -134,9 +134,30 @@ func TestSwiftStorageController(t *testing.T) {
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
 		assert.NoError(t, err)
-		assertDeviceMountPointVolumeMounted(t, fakeClient, statefulSetName)
+
+		expectedMountPoint := core.VolumeMount{
+			Name:      "devices-mount-point-volume",
+			MountPath: "srv/node",
+		}
+		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
 
+	t.Run("should mount localtime volume mount to all Swift's containers", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, volumeclaims.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+
+		expectedMountPoint := core.VolumeMount{
+			Name:      "localtime-volume",
+			MountPath: "/etc/localtime",
+			ReadOnly:  true,
+		}
+		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
+	})
 }
 
 func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.NamespacedName) *contrail.SwiftStorage {
@@ -235,21 +256,16 @@ func assertContainersCreated(t *testing.T, c client.Client, stsName types.Namesp
 	}
 }
 
-func assertDeviceMountPointVolumeMounted(t *testing.T, c client.Client, stsName types.NamespacedName) {
+func assertVolumeMountMounted(t *testing.T, c client.Client, stsName types.NamespacedName, expectedMountPoint *core.VolumeMount) {
 	sts := apps.StatefulSet{}
 
 	err := c.Get(context.TODO(), stsName, &sts)
 	assert.NoError(t, err)
 
-	expectedMountPoint := core.VolumeMount{
-		Name:      "devices-mount-point-volume",
-		MountPath: "srv/node",
-	}
-
 	for _, container := range sts.Spec.Template.Spec.Containers {
 		var mounted bool
 		for _, volume := range container.VolumeMounts {
-			mounted = reflect.DeepEqual(expectedMountPoint, volume) || mounted
+			mounted = reflect.DeepEqual(*expectedMountPoint, volume) || mounted
 		}
 		assert.True(t, mounted)
 	}
