@@ -113,122 +113,118 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
+	deviceMountPointVolumeMount := core.VolumeMount{
+		Name:      "devices-mount-point-volume",
+		MountPath: "srv/node",
+	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
 		// Until we have a SwiftStorage pod we are starting nginx
 		statefulSet.Spec.Template.Spec.Containers = []core.Container{
 			{
-				Name:  "nginx",
-				Image: "nginx",
-			},
-			{
-				Name:         "swift-rsyncd",
-				Image:        "localhost:5000/centos-binary-swift-rsyncd:master",
-				Env:          nil,
-				VolumeMounts: nil,
-			},
-			{
 				Name:         "swift-account-server",
 				Image:        "localhost:5000/centos-binary-swift-account:master",
 				Env:          nil,
-				VolumeMounts: nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-account-auditor",
-				Image:        "localhost:5000/centos-binary-swift-account:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-account-auditor",
+				Image: "localhost:5000/centos-binary-swift-account:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-account-replication-server",
-				Image:        "localhost:5000/centos-binary-swift-account:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-account-replicator",
+				Image: "localhost:5000/centos-binary-swift-account:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-account-replicator",
-				Image:        "localhost:5000/centos-binary-swift-account:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-account-reaper",
+				Image: "localhost:5000/centos-binary-swift-container:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-account-reaper",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-container-server",
+				Image: "localhost:5000/centos-binary-swift-container:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-container-server",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-container-auditor",
+				Image: "localhost:5000/centos-binary-swift-container:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-container-auditor",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-container-replicator",
+				Image: "localhost:5000/centos-binary-swift-container:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-container-replication-server",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-container-updater",
+				Image: "localhost:5000/centos-binary-swift-container:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-container-replicator",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-object-server",
+				Image: "localhost:5000/centos-binary-swift-object:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-container-updater",
-				Image:        "localhost:5000/centos-binary-swift-container:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-object-auditor",
+				Image: "localhost:5000/centos-binary-swift-object:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-object-server",
-				Image:        "localhost:5000/centos-binary-swift-object:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-object-replicator",
+				Image: "localhost:5000/centos-binary-swift-object:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-object-auditor",
-				Image:        "localhost:5000/centos-binary-swift-object:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-object-updater",
+				Image: "localhost:5000/centos-binary-swift-object:master",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 			{
-				Name:         "swift-object-replication-server",
-				Image:        "localhost:5000/centos-binary-swift-object:master",
-				Env:          nil,
-				VolumeMounts: nil,
-			},
-			{
-				Name:         "swift-object-replicator",
-				Image:        "localhost:5000/centos-binary-swift-object:master",
-				Env:          nil,
-				VolumeMounts: nil,
-			},
-			{
-				Name:         "swift-object-updater",
-				Image:        "localhost:5000/centos-binary-swift-object:master",
-				Env:          nil,
-				VolumeMounts: nil,
-			},
-			{
-				Name:         "swift-object-expirer",
-				Image:        "localhost:5000/centos-binary-swift-object-expirer:master ",
-				Env:          nil,
-				VolumeMounts: nil,
-			},
-			{
-				Name:         "swift-proxy-server",
-				Image:        "localhost:5000/centos-binary-swift-proxy-server:master",
-				Env:          nil,
-				VolumeMounts: nil,
+				Name:  "swift-object-expirer",
+				Image: "localhost:5000/centos-binary-swift-object-expirer:master ",
+				Env:   nil,
+				VolumeMounts: []core.VolumeMount{
+					deviceMountPointVolumeMount,
+				},
 			},
 		}
 		statefulSet.Spec.Template.Spec.HostNetwork = true
