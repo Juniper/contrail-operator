@@ -117,6 +117,12 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 		Name:      "devices-mount-point-volume",
 		MountPath: "srv/node",
 	}
+	localtimeVolumeMount := core.VolumeMount{
+		Name:      "localtime-volume",
+		MountPath: "/etc/localtime",
+		ReadOnly:  true,
+	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
@@ -128,6 +134,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -136,6 +143,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -144,6 +152,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -152,6 +161,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -160,6 +170,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -168,6 +179,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -176,6 +188,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -184,6 +197,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -192,6 +206,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -200,6 +215,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -208,6 +224,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -216,6 +233,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 			{
@@ -224,6 +242,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
+					localtimeVolumeMount,
 				},
 			},
 		}
@@ -234,6 +253,14 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 						ClaimName: claimName,
+					},
+				},
+			},
+			{
+				Name: "localtime-volume",
+				VolumeSource: core.VolumeSource{
+					HostPath: &core.HostPathVolumeSource{
+						Path: "/etc/localtime",
 					},
 				},
 			},
