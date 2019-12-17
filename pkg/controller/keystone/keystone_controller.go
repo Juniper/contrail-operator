@@ -123,31 +123,31 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	kc, err := r.configMaps(keystone).ensureKeystoneExists(keystone.Name+"-keystone", psql)
-	if err != nil {
+	kcName := keystone.Name + "-keystone"
+	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kfc, err := r.configMaps(keystone).ensureKeystoneFernetConfigMap(keystone.Name+"-keystone-fernet", psql)
-	if err != nil {
+	kfcName := keystone.Name + "-keystone-fernet"
+	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	ksc, err := r.configMaps(keystone).ensureKeystoneSSHConfigMap(keystone.Name + "-keystone-ssh")
-	if err != nil {
+	kscName := keystone.Name + "-keystone-ssh"
+	if err := r.configMap(kscName, "keystone", keystone).ensureKeystoneSSHConfigMap(); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kci, err := r.configMaps(keystone).ensureKeystoneInitExist(keystone.Name+"-keystone-init", psql)
-	if err != nil {
+	kciName := keystone.Name + "-keystone-init"
+	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.ensureStatefulSetExists(keystone, kc, kfc, ksc, kci, claimName)
+	return reconcile.Result{}, r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, claimName)
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kc *core.ConfigMap, kfc *core.ConfigMap, ksc *core.ConfigMap, kci *core.ConfigMap,
+	kcName, kfcName, kscName, kciName string,
 	claimName types.NamespacedName,
 ) error {
 	sts := newKeystoneSTS(keystone)
@@ -166,7 +166,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				VolumeSource: core.VolumeSource{
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
-							Name: kc.Name,
+							Name: kcName,
 						},
 					},
 				},
@@ -176,7 +176,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				VolumeSource: core.VolumeSource{
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
-							Name: kfc.Name,
+							Name: kfcName,
 						},
 					},
 				},
@@ -186,7 +186,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				VolumeSource: core.VolumeSource{
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
-							Name: ksc.Name,
+							Name: kscName,
 						},
 					},
 				},
@@ -196,7 +196,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				VolumeSource: core.VolumeSource{
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
-							Name: kci.Name,
+							Name: kciName,
 						},
 					},
 				},

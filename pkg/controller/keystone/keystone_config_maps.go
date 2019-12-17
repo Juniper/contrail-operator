@@ -1,94 +1,59 @@
 package keystone
 
 import (
-	"context"
-
-	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type configMaps struct {
-	client   client.Client
-	scheme   *runtime.Scheme
-	keystone *contrail.Keystone
+	cm           *k8s.ConfigMap
+	keystoneSpec contrail.KeystoneSpec
 }
 
-type configMapFiller interface {
-	fillConfigMap(cm *core.ConfigMap)
-}
-
-func (r *ReconcileKeystone) configMaps(keystone *contrail.Keystone) *configMaps {
+func (r *ReconcileKeystone) configMap(configMapName, ownerType string, keystone *contrail.Keystone) *configMaps {
 	return &configMaps{
-		client:   r.client,
-		scheme:   r.scheme,
-		keystone: keystone,
+		cm:           r.kubernetes.ConfigMap(configMapName, ownerType, keystone),
+		keystoneSpec: keystone.Spec,
 	}
 }
 
-func (c *configMaps) ensureKeystoneExists(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
+func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) error {
 	cc := &keystoneConfig{
 		ListenAddress:    "0.0.0.0",
-		ListenPort:       c.keystone.Spec.ServiceConfiguration.ListenPort,
+		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
 		MemcacheServer:   "localhost:11211",
 	}
-
-	return c.ensureExists(name, cc)
+	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneInitExist(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
+func (c *configMaps) ensureKeystoneInitExist(psql *contrail.Postgres) error {
 	cc := &keystoneInitConf{
 		ListenAddress:    "0.0.0.0",
-		ListenPort:       c.keystone.Spec.ServiceConfiguration.ListenPort,
+		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
 		MemcacheServer:   "localhost:11211",
 	}
 
-	return c.ensureExists(name, cc)
+	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneFernetConfigMap(name string, psql *contrail.Postgres) (*core.ConfigMap, error) {
+func (c *configMaps) ensureKeystoneFernetConfigMap(psql *contrail.Postgres) error {
 	cc := &keystoneFernetConf{
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
 		MemcacheServer:   "localhost:11211",
 	}
 
-	return c.ensureExists(name, cc)
+	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneSSHConfigMap(name string) (*core.ConfigMap, error) {
+func (c *configMaps) ensureKeystoneSSHConfigMap() error {
 	cc := &keystoneSSHConf{
 		ListenAddress: "0.0.0.0",
 	}
 
-	return c.ensureExists(name, cc)
-}
-
-func (c *configMaps) ensureExists(name string, dataSetter configMapFiller) (*core.ConfigMap, error) {
-	cm, err := contrail.CreateConfigMap(name, c.client, c.scheme,
-		reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: c.keystone.GetNamespace(),
-				Name:      c.keystone.GetName(),
-			},
-		}, "keystone", c.keystone)
-	if err != nil {
-		return nil, err
-	}
-	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, cm, func() error {
-		cm.Data = map[string]string{}
-		dataSetter.fillConfigMap(cm)
-		return nil
-	})
-
-	return cm, nil
+	return c.cm.EnsureExists(cc)
 }

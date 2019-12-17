@@ -11,7 +11,7 @@ type keystoneSSHConf struct {
 	ListenAddress string
 }
 
-func (c *keystoneSSHConf) fillConfigMap(cm *core.ConfigMap) {
+func (c *keystoneSSHConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneSSHKollaServiceConfig
 	cm.Data["sshd_config"] = c.executeTemplate(sshdConfig)
 }
