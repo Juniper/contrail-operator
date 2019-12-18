@@ -9,13 +9,13 @@ node('multicloud-node') {
                     url: 'git@github.com:Juniper/contrail-operator.git']]])
         }
     }
-    docker.image('golang:1.13').inside('--user root --privileged -v /home/ubuntu/test-${ghprbPullId}:/home/test-${ghprbPullId}') {
+    docker.image('golang:1.13').inside("--user root --privileged -v /home/ubuntu/test-${ghprbPullId}:/home/test-${ghprbPullId}") {
         stage('Build') {
             sh "cd /home/test-${ghprbPullId}/cmd/manager/ && go build main.go"
         }
     }
     stage('Cleanup'){
-        dir('/home/test-${ghprbPullId}'){
+        dir("/home/ubuntu/test-${ghprbPullId}"){
             cleanWs()
         }
     }
