@@ -10,16 +10,13 @@ node('multicloud-node') {
         }
     }
     docker.image('golang:1.13').inside("--user root -v /home/ubuntu/test-${ghprbPullId}:/home/test-${ghprbPullId}") {
-        stage('Build') {
-            sh "cd /home/test-${ghprbPullId} && go build cmd/manager/main.go"
-        }
-        stage('Unit test') {
-            sh "cd /home/test-${ghprbPullId} && go test -race -v ./pkg/..."
-        }
-    }
-    post {
-        always {
-            cleanWs()
+        stage('Build and test') {
+            try {
+                sh "cd /home/test-${ghprbPullId} && go build cmd/manager/main.go"
+                sh "cd /home/test-${ghprbPullId} && go test -race -v ./pkg/..."
+            } finally {
+                sh "cd /home/test-${ghprbPullId} && rm -rf *"
+            }
         }
     }
 }
