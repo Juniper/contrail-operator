@@ -1645,6 +1645,11 @@ func (in *Services) DeepCopyInto(out *Services) {
 		*out = new(Keystone)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SwiftStorage != nil {
+		in, out := &in.SwiftStorage, &out.SwiftStorage
+		*out = new(SwiftStorage)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

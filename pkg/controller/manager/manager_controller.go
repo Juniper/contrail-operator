@@ -1187,6 +1187,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if err := r.processSwiftStorage(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }
 
@@ -1232,6 +1236,22 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
 		psql.Spec = manager.Spec.Services.Postgres.Spec
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
+	})
+
+	return err
+}
+
+func (r *ReconcileManager) processSwiftStorage(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.SwiftStorage == nil {
+		return nil
+	}
+
+	swiftStorage := &v1alpha1.SwiftStorage{}
+	swiftStorage.ObjectMeta = manager.Spec.Services.SwiftStorage.ObjectMeta
+	swiftStorage.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, swiftStorage, func() error {
+		swiftStorage.Spec = manager.Spec.Services.SwiftStorage.Spec
+		return controllerutil.SetControllerReference(manager, swiftStorage, r.scheme)
 	})
 
 	return err

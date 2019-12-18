@@ -395,6 +395,62 @@ func TestManagerController(t *testing.T) {
 		}
 		assertKeystone(t, expectedKeystone, fakeClient)
 	})
+
+	t.Run("should create SwiftStorage CR when manager is reconciled and SwiftStorage CR does not exist", func(t *testing.T) {
+		// given
+		swiftStorage := contrail.SwiftStorage{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "swift",
+				Namespace: "default",
+			},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					SwiftStorage: &swiftStorage,
+				},
+			},
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR)
+		reconciler := ReconcileManager{
+			client: fakeClient,
+			scheme: scheme,
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedSwiftStorage := contrail.SwiftStorage{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "swift",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+		}
+		assertSwiftStorage(t, expectedSwiftStorage, fakeClient)
+	})
+
 }
 
 func assertCommandDeployed(t *testing.T, expected contrail.ContrailCommand, fakeClient client.Client) {
@@ -425,4 +481,15 @@ func assertKeystone(t *testing.T, expected contrail.Keystone, fakeClient client.
 	}, &keystone)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, keystone)
+}
+
+
+func assertSwiftStorage(t *testing.T, expected contrail.SwiftStorage, fakeClient client.Client) {
+	swiftStorage := contrail.SwiftStorage{}
+	err := fakeClient.Get(context.Background(), types.NamespacedName{
+		Name:      expected.Name,
+		Namespace: expected.Namespace,
+	}, &swiftStorage)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, swiftStorage)
 }
