@@ -4,7 +4,9 @@ import (
 	"context"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
+
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -30,14 +32,15 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	c := mgr.GetClient()
-	scheme := mgr.GetScheme()
-	claims := volumeclaims.New(c, scheme)
-	return NewReconciler(c, scheme, claims)
+	return NewReconciler(
+		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+	)
 }
 
-func NewReconciler(c client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwiftStorage {
-	return &ReconcileSwiftStorage{client: c, scheme: scheme, claims: claims}
+func NewReconciler(
+client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+) *ReconcileSwiftStorage {
+	return &ReconcileSwiftStorage{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -71,7 +74,8 @@ type ReconcileSwiftStorage struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	claims *volumeclaims.PersistentVolumeClaims
+	kubernetes *k8s.Kubernetes
+	claims     *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
