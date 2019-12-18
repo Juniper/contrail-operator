@@ -13,8 +13,8 @@ node('multicloud-node') {
         stage('Build') {
             sh "cd /home/test-${ghprbPullId} && go build cmd/manager/main.go"
         }
-        stage('Test') {
-            sh "cd /home/test-${ghprbPullId} && go test -race ./..."
+        stage('Unit test') {
+            sh "cd /home/test-${ghprbPullId} && go test -race -v ./pkg/..."
         }
     }
     stage('Cleanup'){
