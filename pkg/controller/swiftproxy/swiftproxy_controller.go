@@ -129,7 +129,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		setDefaultValues(deployment, scName, sicName)
+		updatePodTemplate(&deployment.Spec.Template.Spec, scName, sicName)
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
 	})
 	if err != nil {
@@ -167,9 +167,9 @@ func (r *ReconcileSwiftProxy) updateStatus(
 	return r.client.Status().Update(context.Background(), sp)
 }
 
-func setDefaultValues(d *apps.Deployment, scName, sicName string) {
+func updatePodTemplate(pod *core.PodSpec, scName, sicName string) {
 
-	d.Spec.Template.Spec.InitContainers = []core.Container{
+	pod.InitContainers = []core.Container{
 		{
 			Name:            "init",
 			Image:           "localhost:5000/centos-binary-kolla-toolbox:master",
@@ -181,7 +181,7 @@ func setDefaultValues(d *apps.Deployment, scName, sicName string) {
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
 		},
 	}
-	d.Spec.Template.Spec.Containers = []core.Container{{
+	pod.Containers = []core.Container{{
 		Name:  "api",
 		Image: "localhost:5000/centos-binary-swift-proxy-server:master",
 		VolumeMounts: []core.VolumeMount{
@@ -195,8 +195,8 @@ func setDefaultValues(d *apps.Deployment, scName, sicName string) {
 			Value: "COPY_ALWAYS",
 		}},
 	}}
-	d.Spec.Template.Spec.HostNetwork = true
-	d.Spec.Template.Spec.Tolerations = []core.Toleration{
+	pod.HostNetwork = true
+	pod.Tolerations = []core.Toleration{
 		{
 			Operator: core.TolerationOpExists,
 			Effect:   core.TaintEffectNoSchedule,
@@ -206,7 +206,7 @@ func setDefaultValues(d *apps.Deployment, scName, sicName string) {
 			Effect:   core.TaintEffectNoExecute,
 		},
 	}
-	d.Spec.Template.Spec.Volumes = []core.Volume{
+	pod.Volumes = []core.Volume{
 		{
 			Name: "config-volume",
 			VolumeSource: core.VolumeSource{
