@@ -17,8 +17,8 @@ node('multicloud-node') {
             sh "cd /home/test-${ghprbPullId} && go test -race -v ./pkg/..."
         }
     }
-    stage('Cleanup'){
-        dir("/home/ubuntu/test-${ghprbPullId}"){
+    post {
+        always {
             cleanWs()
         }
     }
