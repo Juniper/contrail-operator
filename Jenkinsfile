@@ -13,8 +13,6 @@ node('multicloud-node') {
         stage('Build') {
             sh "cd /home/test-${ghprbPullId} && go build cmd/manager/main.go"
         }
-    }
-    docker.image('golang:1.13').inside("--user root --privileged -v /home/ubuntu/test-${ghprbPullId}:/home/test-${ghprbPullId}") {
         stage('Test') {
             sh "cd /home/test-${ghprbPullId} && go test -race ./..."
         }
