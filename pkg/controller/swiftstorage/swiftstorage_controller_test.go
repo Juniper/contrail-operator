@@ -167,7 +167,7 @@ func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.Names
 
 func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.NamespacedName) {
 	statefulSetList := apps.StatefulSetList{}
-	err := c.List(context.TODO(), &statefulSetList)
+	err := c.List(context.Background(), &statefulSetList)
 	assert.NoError(t, err)
 	require.Len(t, statefulSetList.Items, 1, "Only one StatefulSet expected")
 	objectMeta := statefulSetList.Items[0].ObjectMeta
@@ -182,14 +182,14 @@ func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.Name
 
 func assertNoStatefulSetExist(t *testing.T, c client.Client) {
 	statefulSetList := apps.StatefulSetList{}
-	err := c.List(context.TODO(), &statefulSetList)
+	err := c.List(context.Background(), &statefulSetList)
 	require.NoError(t, err)
 	assert.Empty(t, statefulSetList.Items, "Empty StatefulSet expected")
 }
 
 func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
 	swiftStorage := contrail.SwiftStorage{}
-	err := fakeClient.Get(context.TODO(), name, &swiftStorage)
+	err := fakeClient.Get(context.Background(), name, &swiftStorage)
 	assert.NoError(t, err)
 
 	claimName := types.NamespacedName{
@@ -198,14 +198,14 @@ func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.Names
 	}
 
 	claim := core.PersistentVolumeClaim{}
-	err = fakeClient.Get(context.TODO(), claimName, &claim)
+	err = fakeClient.Get(context.Background(), claimName, &claim)
 	assert.NoError(t, err)
 }
 
 func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types.NamespacedName) {
 	sts := apps.StatefulSet{}
 
-	err := c.Get(context.TODO(), stsName, &sts)
+	err := c.Get(context.Background(), stsName, &sts)
 	assert.NoError(t, err)
 
 	expected := core.Volume{
@@ -229,7 +229,7 @@ func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types
 func assertContainersCreated(t *testing.T, c client.Client, stsName types.NamespacedName) {
 	sts := apps.StatefulSet{}
 
-	err := c.Get(context.TODO(), stsName, &sts)
+	err := c.Get(context.Background(), stsName, &sts)
 	assert.NoError(t, err)
 
 	expectedContainers := []expectedContainerData{
@@ -258,7 +258,7 @@ func assertContainersCreated(t *testing.T, c client.Client, stsName types.Namesp
 func assertVolumeMountMounted(t *testing.T, c client.Client, stsName types.NamespacedName, expectedMountPoint *core.VolumeMount) {
 	sts := apps.StatefulSet{}
 
-	err := c.Get(context.TODO(), stsName, &sts)
+	err := c.Get(context.Background(), stsName, &sts)
 	assert.NoError(t, err)
 
 	for _, container := range sts.Spec.Template.Spec.Containers {
