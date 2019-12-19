@@ -99,7 +99,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	statefulSet, err := r.createStatefulSet(request, swiftStorage, claimNamespacedName.Name)
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -112,130 +112,15 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string) (*apps.StatefulSet, error) {
+func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
-	deviceMountPointVolumeMount := core.VolumeMount{
-		Name:      "devices-mount-point-volume",
-		MountPath: "/srv/node",
-	}
-	localtimeVolumeMount := core.VolumeMount{
-		Name:      "localtime-volume",
-		MountPath: "/etc/localtime",
-		ReadOnly:  true,
-	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
-		// Until we have a SwiftStorage pod we are starting nginx
-		statefulSet.Spec.Template.Spec.Containers = []core.Container{
-			{
-				Name:  "swift-account-server",
-				Image: "localhost:5000/centos-binary-swift-account:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-account-auditor",
-				Image: "localhost:5000/centos-binary-swift-account:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-account-replicator",
-				Image: "localhost:5000/centos-binary-swift-account:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-account-reaper",
-				Image: "localhost:5000/centos-binary-swift-account:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-container-server",
-				Image: "localhost:5000/centos-binary-swift-container:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-container-auditor",
-				Image: "localhost:5000/centos-binary-swift-container:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-container-replicator",
-				Image: "localhost:5000/centos-binary-swift-container:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-container-updater",
-				Image: "localhost:5000/centos-binary-swift-container:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-object-server",
-				Image: "localhost:5000/centos-binary-swift-object:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-object-auditor",
-				Image: "localhost:5000/centos-binary-swift-object:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-object-replicator",
-				Image: "localhost:5000/centos-binary-swift-object:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-object-updater",
-				Image: "localhost:5000/centos-binary-swift-object:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-			{
-				Name:  "swift-object-expirer",
-				Image: "localhost:5000/centos-binary-swift-object-expirer:master",
-				VolumeMounts: []core.VolumeMount{
-					deviceMountPointVolumeMount,
-					localtimeVolumeMount,
-				},
-			},
-		}
+		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers()
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		statefulSet.Spec.Template.Spec.Volumes = []core.Volume{
 			{
@@ -271,4 +156,43 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
 	return statefulSet, err
+}
+
+func (r *ReconcileSwiftStorage) swiftContainers() []core.Container {
+	return []core.Container{
+		swiftContainer("swift-account-server", "swift-account"),
+		swiftContainer("swift-account-auditor", "swift-account"),
+		swiftContainer("swift-account-replicator", "swift-account"),
+		swiftContainer("swift-account-reaper", "swift-account"),
+		swiftContainer("swift-container-server", "swift-container"),
+		swiftContainer("swift-container-auditor", "swift-container"),
+		swiftContainer("swift-container-replicator", "swift-container"),
+		swiftContainer("swift-container-updater", "swift-container"),
+		swiftContainer("swift-object-server", "swift-object"),
+		swiftContainer("swift-object-auditor", "swift-object"),
+		swiftContainer("swift-object-replicator", "swift-object"),
+		swiftContainer("swift-object-updater", "swift-object"),
+		swiftContainer("swift-object-expirer", "swift-object-expirer"),
+	}
+}
+
+func swiftContainer(name, imageBase string) core.Container{
+	deviceMountPointVolumeMount := core.VolumeMount{
+		Name:      "devices-mount-point-volume",
+		MountPath: "/srv/node",
+	}
+	localtimeVolumeMount := core.VolumeMount{
+		Name:      "localtime-volume",
+		MountPath: "/etc/localtime",
+		ReadOnly:  true,
+	}
+
+	return core.Container{
+		Name:  name,
+		Image: "localhost:5000/centos-binary-" + imageBase + ":master",
+		VolumeMounts: []core.VolumeMount{
+			deviceMountPointVolumeMount,
+			localtimeVolumeMount,
+		},
+	}
 }

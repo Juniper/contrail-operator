@@ -7,7 +7,7 @@
 ## Create CRDs, Service Account, Role, Bindings, Persistent volumes, Secrets Operator
 
 ```bash
-for directory in $(seq 4); do
+for directory in $(seq 5); do
   mkdir -p /mnt/volumes/$directory
   rm -rf /mnt/volumes/$directory/*
 done
