@@ -181,7 +181,7 @@ func (r *ReconcileSwiftStorage) swiftContainers() []core.Container {
 	}
 }
 
-func swiftContainer(name, imageBase string) core.Container {
+func swiftContainer(name, image string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
 		MountPath: "/srv/node",
@@ -194,7 +194,7 @@ func swiftContainer(name, imageBase string) core.Container {
 
 	return core.Container{
 		Name:  name,
-		Image: "localhost:5000/centos-binary-" + imageBase + ":master",
+		Image: "localhost:5000/centos-binary-" + image + ":master",
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
 			localtimeVolumeMount,
