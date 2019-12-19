@@ -1,33 +1,8 @@
 package swiftstorage
 
 import (
-	"bytes"
-	core "k8s.io/api/core/v1"
 	"text/template"
 )
-
-type swiftAccountServiceConfig struct {
-	SrcConfigFilePath string
-	DestConfigFilePath string
-	SwiftAccountContainerName string
-	BindAddress string
-	BindPort int
-	ServiceConfigTemplate *template.Template
-}
-
-func (c *swiftAccountServiceConfig) FillConfigMap(cm *core.ConfigMap) {
-	cm.Data["config.json"] = c.executeTemplate(swiftAccountServiceConfigTemplate)
-	cm.Data[c.serviceConfigTemplate.Name()] = c.executeTemplate(c.serviceConfigTemplate)
-	cm.Data["swift.conf"] = swiftConfig
-}
-
-func (c *swiftAccountServiceConfig) executeTemplate(t *template.Template) string {
-	var buffer bytes.Buffer
-	if err := t.Execute(&buffer, c); err != nil {
-		panic(err)
-	}
-	return buffer.String()
-}
 
 const swiftConfig = `
 [swift-hash]
@@ -35,15 +10,16 @@ swift_hash_path_suffix = changeme
 swift_hash_path_prefix = changeme
 `
 
-var swiftAccountServiceConfigTemplate = template.Must(template.New("").Parse(`
+var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
 {
-    "command": "{{ .SwiftAccountContainerName }} {{ .DestConfigFilePath }} --verbose",
+    "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",
     "config_files": [
         {
             "source": "/var/lib/kolla/swift/account.ring.gz",
             "dest": "/etc/swift/account.ring.gz",
             "owner": "swift",
-            "perm": "0640"
+            "perm": "0640",
+            "optional": true
         },
         {
             "source": "/var/lib/kolla/config_files/swift.conf",
@@ -52,8 +28,8 @@ var swiftAccountServiceConfigTemplate = template.Must(template.New("").Parse(`
             "perm": "0640"
         },
         {
-            "source": "{{ .SrcConfigFilePath }}",
-            "dest": "{{ .DestConfigFilePath }}",
+            "source": "/var/lib/kolla/config_files/{{ .SrcConfigFileName }}",
+            "dest": "/etc/swift/{{ .DestConfigFileName }}",
             "owner": "swift",
             "perm": "0640"
         },
@@ -76,7 +52,7 @@ devices = /srv/node
 mount_check = false
 log_udp_host = {{ .BindAddress }}
 log_udp_port = 5140
-log_name = {{ .SwiftAccountContainerName }}
+log_name =
 log_facility = local0
 log_level = INFO
 workers = 2
@@ -102,7 +78,7 @@ devices = /srv/node
 mount_check = false
 log_udp_host = {{ .BindAddress }}
 log_udp_port = 5140
-log_name = {{ .SwiftAccountContainerName }}
+log_name =
 log_facility = local0
 log_level = INFO
 workers = 2
@@ -128,7 +104,7 @@ devices = /srv/node
 mount_check = false
 log_udp_host = {{ .BindAddress }}
 log_udp_port = 5140
-log_name = {{ .SwiftAccountContainerName }}
+log_name =
 log_facility = local0
 log_level = INFO
 workers = 2
@@ -153,7 +129,7 @@ devices = /srv/node
 mount_check = false
 log_udp_host = {{ .BindAddress }}
 log_udp_port = 5140
-log_name = {{ .SwiftAccountContainerName }}
+log_name =
 log_facility = local0
 log_level = INFO
 workers = 2
@@ -172,7 +148,7 @@ use = egg:swift#account
 rsync_module = {replication_ip}:{meta}:account
 `))
 
-var swiftAccountServerConf = template.Must(template.New("account-replicator.conf").Parse(`
+var swiftAccountServerConf = template.Must(template.New("account-server.conf").Parse(`
 [DEFAULT]
 bind_ip = {{ .BindAddress }}
 bind_port = {{ .BindPort }}
@@ -180,7 +156,7 @@ devices = /srv/node
 mount_check = false
 log_udp_host = {{ .BindAddress }}
 log_udp_port = 5140
-log_name = {{ .SwiftAccountContainerName }}
+log_name =
 log_facility = local0
 log_level = INFO
 workers = 2

@@ -1,76 +1,66 @@
 package swiftstorage
 
-import (
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
-)
-
-type configMaps struct {
-	cm           *k8s.ConfigMap
-}
-
-func (r *ReconcileSwiftStorage) configMap(configMapName, ownerType string, swiftStorage *contrail.SwiftStorage) *configMaps {
-	return &configMaps{
-		cm:           r.kubernetes.ConfigMap(configMapName, ownerType, swiftStorage),
-	}
-}
-
 func (c *configMaps) ensureSwiftAccountAuditor() error {
-	cc := &swiftAccountServiceConfig{
-		BindAddress: "10.0.2.15", //TODO: change to POD_IP
-		BindPort: 6001,
-		SrcConfigFilePath: "/var/lib/kolla/config_files/account-auditor.conf",
-		DestConfigFilePath: "/etc/swift/account-auditor.conf",
-		SwiftAccountContainerName: "swift-account-auditor",
-		ServiceConfigTemplate: swiftAccountAuditorConf,
+	cc := &swiftServiceConfig{
+		BindAddress:                "0.0.0.0", 
+		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		SrcConfigFileName:          "account-auditor.conf",
+		DestConfigFileName:         "account-auditor.conf",
+		ContainerName:              "swift-account-auditor",
+		ServiceConfigTemplate:      swiftAccountAuditorConf,
+		ServiceStartConfigTemplate: swiftAccountServiceStartConfig,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
 func (c *configMaps) ensureSwiftAccountReaper() error {
-	cc := &swiftAccountServiceConfig{
-		BindAddress: "10.0.2.15", //TODO: change to POD_IP
-		BindPort: 6001,
-		SrcConfigFilePath: "/var/lib/kolla/config_files/account-reaper.conf",
-		DestConfigFilePath: "/etc/swift/account-reaper.conf",
-		SwiftAccountContainerName: "swift-account-reaper",
-		ServiceConfigTemplate: swiftAccountReaperConf,
+	cc := &swiftServiceConfig{
+		BindAddress:                "0.0.0.0", 
+		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		SrcConfigFileName:          "account-reaper.conf",
+		DestConfigFileName:         "account-reaper.conf",
+		ContainerName:              "swift-account-reaper",
+		ServiceConfigTemplate:      swiftAccountReaperConf,
+		ServiceStartConfigTemplate: swiftAccountServiceStartConfig,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
 func (c *configMaps) ensureSwiftAccountReplicationServer() error {
-	cc := &swiftAccountServiceConfig{
-		BindAddress: "10.0.2.15", //TODO: change to POD_IP
-		BindPort: 6001,
-		SrcConfigFilePath: "/var/lib/kolla/config_files/account-replication-server.conf",
-		DestConfigFilePath: "/etc/swift/account-server.conf",
-		SwiftAccountContainerName: "swift-account-server",
-		ServiceConfigTemplate: swiftAccountReplicationServerConf,
+	cc := &swiftServiceConfig{
+		BindAddress:                "0.0.0.0", 
+		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		SrcConfigFileName:          "account-replication-server.conf",
+		DestConfigFileName:         "account-server.conf",
+		ContainerName:              "swift-account-server",
+		ServiceConfigTemplate:      swiftAccountReplicationServerConf,
+		ServiceStartConfigTemplate: swiftAccountServiceStartConfig,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
 func (c *configMaps) ensureSwiftAccountReplicator() error {
-	cc := &swiftAccountServiceConfig{
-		BindAddress: "10.0.2.15", //TODO: change to POD_IP
-		BindPort: 6001,
-		SrcConfigFilePath: "/var/lib/kolla/config_files/account-replicator.conf",
-		DestConfigFilePath: "/etc/swift/account-replicator.conf",
-		SwiftAccountContainerName: "swift-account-replicator",
-		ServiceConfigTemplate: swiftAccountReplicatorConf,
+	cc := &swiftServiceConfig{
+		BindAddress:                "0.0.0.0", 
+		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		SrcConfigFileName:          "account-replicator.conf",
+		DestConfigFileName:         "account-replicator.conf",
+		ContainerName:              "swift-account-replicator",
+		ServiceConfigTemplate:      swiftAccountReplicatorConf,
+		ServiceStartConfigTemplate: swiftAccountServiceStartConfig,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
 func (c *configMaps) ensureSwiftAccountServer() error {
-	cc := &swiftAccountServiceConfig{
-		BindAddress: "10.0.2.15", //TODO: change to POD_IP
-		BindPort: 6001,
-		SrcConfigFilePath: "/var/lib/kolla/config_files/account-server.conf",
-		DestConfigFilePath: "/etc/swift/account-server.conf",
-		SwiftAccountContainerName: "swift-account-server",
-		ServiceConfigTemplate: swiftAccountServerConf,
+	cc := &swiftServiceConfig{
+		BindAddress:                "0.0.0.0", 
+		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		SrcConfigFileName:          "account-server.conf",
+		DestConfigFileName:         "account-server.conf",
+		ContainerName:              "swift-account-server",
+		ServiceConfigTemplate:      swiftAccountServerConf,
+		ServiceStartConfigTemplate: swiftAccountServiceStartConfig,
 	}
 	return c.cm.EnsureExists(cc)
 }

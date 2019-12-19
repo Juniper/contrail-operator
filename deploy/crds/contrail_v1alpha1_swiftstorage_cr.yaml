@@ -3,3 +3,7 @@ kind: SwiftStorage
 metadata:
   name: example-swiftstorage
   namespace: contrail
+spec:
+    accountBindPort: 6001
+    containerBindPort: 6002
+    objectBindPort: 6000
