@@ -105,8 +105,13 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	swiftStorage.Status.Active = false
+	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
-		swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+		intendentReplicas = *statefulSet.Spec.Replicas
+	}
+
+	if statefulSet.Status.ReadyReplicas == intendentReplicas {
+		swiftStorage.Status.Active = true
 	}
 
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
@@ -176,7 +181,7 @@ func (r *ReconcileSwiftStorage) swiftContainers() []core.Container {
 	}
 }
 
-func swiftContainer(name, imageBase string) core.Container{
+func swiftContainer(name, imageBase string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
 		MountPath: "/srv/node",
