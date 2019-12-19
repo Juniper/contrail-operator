@@ -2,10 +2,12 @@ package swiftstorage_test
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"reflect"
 	"testing"
 
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -15,9 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
 )
 
 func TestSwiftStorageController(t *testing.T) {
@@ -137,7 +136,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		expectedMountPoint := core.VolumeMount{
 			Name:      "devices-mount-point-volume",
-			MountPath: "srv/node",
+			MountPath: "/srv/node",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})

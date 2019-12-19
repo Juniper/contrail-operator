@@ -2,6 +2,8 @@ package swiftstorage
 
 import (
 	"context"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -17,8 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_swiftstorage")
@@ -104,7 +104,10 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+	swiftStorage.Status.Active = false
+	if statefulSet.Spec.Replicas != nil {
+		swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+	}
 
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
@@ -115,7 +118,7 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 	statefulSet.Name = request.Name + "-statefulset"
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
-		MountPath: "srv/node",
+		MountPath: "/srv/node",
 	}
 	localtimeVolumeMount := core.VolumeMount{
 		Name:      "localtime-volume",
@@ -131,7 +134,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-account-server",
 				Image: "localhost:5000/centos-binary-swift-account:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -140,7 +142,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-account-auditor",
 				Image: "localhost:5000/centos-binary-swift-account:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -149,7 +150,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-account-replicator",
 				Image: "localhost:5000/centos-binary-swift-account:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -158,7 +158,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-account-reaper",
 				Image: "localhost:5000/centos-binary-swift-account:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -167,7 +166,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-container-server",
 				Image: "localhost:5000/centos-binary-swift-container:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -176,7 +174,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-container-auditor",
 				Image: "localhost:5000/centos-binary-swift-container:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -185,7 +182,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-container-replicator",
 				Image: "localhost:5000/centos-binary-swift-container:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -194,7 +190,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-container-updater",
 				Image: "localhost:5000/centos-binary-swift-container:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -203,7 +198,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-object-server",
 				Image: "localhost:5000/centos-binary-swift-object:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -212,7 +206,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-object-auditor",
 				Image: "localhost:5000/centos-binary-swift-object:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -221,7 +214,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-object-replicator",
 				Image: "localhost:5000/centos-binary-swift-object:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -230,7 +222,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-object-updater",
 				Image: "localhost:5000/centos-binary-swift-object:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
@@ -239,7 +230,6 @@ func (r *ReconcileSwiftStorage) createStatefulSet(request reconcile.Request, swi
 			{
 				Name:  "swift-object-expirer",
 				Image: "localhost:5000/centos-binary-swift-object-expirer:master",
-				Env:   nil,
 				VolumeMounts: []core.VolumeMount{
 					deviceMountPointVolumeMount,
 					localtimeVolumeMount,
