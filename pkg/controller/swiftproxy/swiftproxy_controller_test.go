@@ -42,13 +42,12 @@ func TestSwiftProxyController(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 
-			// than
+			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
 				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
-			expectedStatus: contrail.SwiftProxyStatus{},
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
@@ -68,7 +67,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyInitConfigMap(),
 			},
 
-			// than
+			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
 				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
@@ -78,7 +77,6 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
 			},
-			expectedStatus: contrail.SwiftProxyStatus{},
 		},
 		{
 			name: "updates status to active",
@@ -91,7 +89,7 @@ func TestSwiftProxyController(t *testing.T) {
 				}),
 			},
 
-			// than
+			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedKeystone: newKeystone(
 				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
@@ -110,13 +108,12 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedDeployment(apps.DeploymentStatus{}),
 			},
 
-			// than
+			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
 				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
-			expectedStatus: contrail.SwiftProxyStatus{},
 		},
 	}
 
@@ -255,7 +252,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: "swiftproxy-swiftproxy",
+										Name: "swiftproxy-swiftproxy-config",
 									},
 								},
 							},
@@ -265,7 +262,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: "swiftproxy-swiftproxy-init",
+										Name: "swiftproxy-swiftproxy-init-config",
 									},
 								},
 							},
@@ -304,7 +301,7 @@ func newExpectedSwiftProxyConfigMap() *core.ConfigMap {
 			"proxy-server.conf": proxyServerConfig,
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "swiftproxy-swiftproxy",
+			Name:      "swiftproxy-swiftproxy-config",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "SwiftProxy", "SwiftProxy": "swiftproxy"},
 			OwnerReferences: []meta.OwnerReference{
@@ -322,7 +319,7 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 			"config.yaml":   registerConfig,
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "swiftproxy-swiftproxy-init",
+			Name:      "swiftproxy-swiftproxy-init-config",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "SwiftProxy", "SwiftProxy": "swiftproxy"},
 			OwnerReferences: []meta.OwnerReference{

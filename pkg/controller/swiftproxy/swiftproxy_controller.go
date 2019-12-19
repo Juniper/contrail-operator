@@ -48,15 +48,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource SwiftProxy
 	err = c.Watch(&source.Kind{Type: &contrail.SwiftProxy{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner SwiftProxy
-	err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.SwiftProxy{},
 	})
@@ -64,7 +61,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	return nil
+	err = c.Watch(&source.Kind{Type: &contrail.Keystone{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftProxy{},
+	})
+
+	return err
 }
 
 // blank assignment to verify that ReconcileSwiftProxy implements reconcile.Reconciler
@@ -108,13 +109,13 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, nil
 	}
 
-	scName := swiftProxy.Name + "-swiftproxy"
-	if err := r.configMap(scName, swiftProxy).ensureExists(keystone); err != nil {
+	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
+	if err := r.configMap(swiftConfigName, swiftProxy, keystone).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	sicName := swiftProxy.Name + "-swiftproxy-init"
-	if err := r.configMap(sicName, swiftProxy).ensureInitExists(keystone); err != nil {
+	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
+	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone).ensureInitExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -129,7 +130,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		updatePodTemplate(&deployment.Spec.Template.Spec, scName, sicName)
+		updatePodTemplate(&deployment.Spec.Template.Spec, swiftConfigName, swiftInitConfigName)
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
 	})
 	if err != nil {
@@ -167,7 +168,7 @@ func (r *ReconcileSwiftProxy) updateStatus(
 	return r.client.Status().Update(context.Background(), sp)
 }
 
-func updatePodTemplate(pod *core.PodSpec, scName, sicName string) {
+func updatePodTemplate(pod *core.PodSpec, swiftConfigName, swiftInitConfigName string) {
 
 	pod.InitContainers = []core.Container{
 		{
@@ -212,7 +213,7 @@ func updatePodTemplate(pod *core.PodSpec, scName, sicName string) {
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: scName,
+						Name: swiftConfigName,
 					},
 				},
 			},
@@ -222,7 +223,7 @@ func updatePodTemplate(pod *core.PodSpec, scName, sicName string) {
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: sicName,
+						Name: swiftInitConfigName,
 					},
 				},
 			},
