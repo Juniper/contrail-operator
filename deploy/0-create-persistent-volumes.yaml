@@ -73,22 +73,3 @@ spec:
             - key: node-role.kubernetes.io/master
               operator: Exists
   persistentVolumeReclaimPolicy: Retain
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: 5-pv
-spec:
-  accessModes:
-    - ReadWriteOnce
-  capacity:
-    storage: 5Gi
-  local:
-    path: /mnt/volumes/5
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: node-role.kubernetes.io/master
-              operator: Exists
-  persistentVolumeReclaimPolicy: Retain

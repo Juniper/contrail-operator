@@ -3,14 +3,11 @@ package swiftstorage
 import (
 	"context"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -19,6 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_swiftstorage")
@@ -32,12 +31,11 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	c := mgr.GetClient()
 	scheme := mgr.GetScheme()
-	claims := volumeclaims.New(c, scheme)
-	return NewReconciler(c, scheme, claims)
+	return NewReconciler(c, scheme)
 }
 
-func NewReconciler(c client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwiftStorage {
-	return &ReconcileSwiftStorage{client: c, scheme: scheme, claims: claims}
+func NewReconciler(c client.Client, scheme *runtime.Scheme) *ReconcileSwiftStorage {
+	return &ReconcileSwiftStorage{client: c, scheme: scheme}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -71,7 +69,6 @@ type ReconcileSwiftStorage struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	claims *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -90,61 +87,20 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	claimNamespacedName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-pv-claim",
-	}
-
-	if err := r.claims.New(claimNamespacedName, swiftStorage).EnsureExists(); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	swiftStorage.Status.Active = false
-	intendentReplicas := int32(1)
-	if statefulSet.Spec.Replicas != nil {
-		intendentReplicas = *statefulSet.Spec.Replicas
-	}
-
-	if statefulSet.Status.ReadyReplicas == intendentReplicas {
-		swiftStorage.Status.Active = true
-	}
-
-	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
-}
-
-func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
-
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
-		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers()
-		statefulSet.Spec.Template.Spec.HostNetwork = true
-		statefulSet.Spec.Template.Spec.Volumes = []core.Volume{
+		// Until we have a SwiftStorage pod we are starting nginx
+		statefulSet.Spec.Template.Spec.Containers = []core.Container{
 			{
-				Name: "devices-mount-point-volume",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName,
-					},
-				},
-			},
-			{
-				Name: "localtime-volume",
-				VolumeSource: core.VolumeSource{
-					HostPath: &core.HostPathVolumeSource{
-						Path: "/etc/localtime",
-					},
-				},
+				Name:  "nginx",
+				Image: "nginx",
 			},
 		}
+		statefulSet.Spec.Template.Spec.HostNetwork = true
 		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
 			{
 				Operator: core.TolerationOpExists,
@@ -160,44 +116,11 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 		statefulSet.Spec.Replicas = &replicas
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
-	return statefulSet, err
-}
-
-func (r *ReconcileSwiftStorage) swiftContainers() []core.Container {
-	return []core.Container{
-		swiftContainer("swift-account-server", "swift-account"),
-		swiftContainer("swift-account-auditor", "swift-account"),
-		swiftContainer("swift-account-replicator", "swift-account"),
-		swiftContainer("swift-account-reaper", "swift-account"),
-		swiftContainer("swift-container-server", "swift-container"),
-		swiftContainer("swift-container-auditor", "swift-container"),
-		swiftContainer("swift-container-replicator", "swift-container"),
-		swiftContainer("swift-container-updater", "swift-container"),
-		swiftContainer("swift-object-server", "swift-object"),
-		swiftContainer("swift-object-auditor", "swift-object"),
-		swiftContainer("swift-object-replicator", "swift-object"),
-		swiftContainer("swift-object-updater", "swift-object"),
-		swiftContainer("swift-object-expirer", "swift-object-expirer"),
-	}
-}
-
-func swiftContainer(name, image string) core.Container {
-	deviceMountPointVolumeMount := core.VolumeMount{
-		Name:      "devices-mount-point-volume",
-		MountPath: "/srv/node",
-	}
-	localtimeVolumeMount := core.VolumeMount{
-		Name:      "localtime-volume",
-		MountPath: "/etc/localtime",
-		ReadOnly:  true,
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
-	return core.Container{
-		Name:  name,
-		Image: "localhost:5000/centos-binary-" + image + ":master",
-		VolumeMounts: []core.VolumeMount{
-			deviceMountPointVolumeMount,
-			localtimeVolumeMount,
-		},
-	}
+	swiftStorage.Status.Active = *statefulSet.Spec.Replicas == statefulSet.Status.ReadyReplicas
+
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
