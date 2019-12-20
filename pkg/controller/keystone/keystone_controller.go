@@ -2,6 +2,7 @@ package keystone
 
 import (
 	"context"
+	"fmt"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -143,13 +144,18 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, claimName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, claimName)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, r.updateStatus(keystone, sts)
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kfcName, kscName, kciName string,
 	claimName types.NamespacedName,
-) error {
+) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
 		sts.Spec.Template.Spec.Volumes = []core.Volume{
@@ -216,7 +222,26 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 		}
 		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.scheme, keystone, r.client, true)
 	})
-	return err
+	return sts, err
+}
+
+func (r *ReconcileKeystone) updateStatus(
+	k *contrail.Keystone,
+	sts *apps.StatefulSet,
+) error {
+	k.Status = contrail.KeystoneStatus{}
+	intendentReplicas := int32(1)
+	if sts.Spec.Replicas != nil {
+		intendentReplicas = *sts.Spec.Replicas
+	}
+
+	if sts.Status.ReadyReplicas == intendentReplicas {
+		k.Status.Active = true
+		//TODO get ip from POD
+		k.Status.Node = fmt.Sprintf("localhost:%v", k.Spec.ServiceConfiguration.ListenPort)
+	}
+
+	return r.client.Status().Update(context.Background(), k)
 }
 
 func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgres, error) {

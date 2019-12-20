@@ -142,7 +142,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(command, deployment, request)
+	return reconcile.Result{}, r.updateStatus(command, deployment)
 }
 
 func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
@@ -205,12 +205,7 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 func (r *ReconcileContrailCommand) updateStatus(
 	command *contrail.ContrailCommand,
 	deployment *apps.Deployment,
-	request reconcile.Request,
 ) error {
-	err := r.client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: request.Namespace}, deployment)
-	if err != nil {
-		return err
-	}
 	command.Status.Active = false
 	intendentReplicas := int32(1)
 	if deployment.Spec.Replicas != nil {
