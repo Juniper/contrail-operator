@@ -4,15 +4,11 @@ go 1.13
 
 require (
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
-	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/go-openapi/spec v0.19.0
 	github.com/kylelemons/godebug v1.1.0
-	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/operator-framework/operator-sdk v0.12.0
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0
-	google.golang.org/genproto v0.0.0-20181016170114-94acd270e44e // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0

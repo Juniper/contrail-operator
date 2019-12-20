@@ -394,7 +394,7 @@ func zookeeperVersion(t *testing.T, f *framework.Framework, ctx *framework.TestC
 		"zookeeper": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	podList := &corev1.PodList{}
-	err = f.Client.List(goctx.TODO(), listOps, podList)
+	err = f.Client.List(goctx.TODO(), podList, listOps)
 	if err != nil {
 		return err
 	}
