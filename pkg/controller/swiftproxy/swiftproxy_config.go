@@ -56,7 +56,7 @@ const swiftProxyServiceConfig = `{
 var proxyServerConfig = template.Must(template.New("").Parse(`
 [DEFAULT]
 bind_ip = 0.0.0.0
-bind_port = 8080
+bind_port = {{ .ListenPort }}
 log_udp_host =
 log_udp_port = 5140
 log_name = swift-proxy-server

@@ -356,7 +356,7 @@ const swiftProxyServiceConfig = `{
 const proxyServerConfig = `
 [DEFAULT]
 bind_ip = 0.0.0.0
-bind_port = 8080
+bind_port = 5070
 log_udp_host =
 log_udp_port = 5140
 log_name = swift-proxy-server
