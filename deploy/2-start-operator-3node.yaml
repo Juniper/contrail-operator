@@ -9,6 +9,23 @@ spec:
     replicas: 3
     hostNetwork: true
   services:
+    provisionManager:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: provmanager1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+          replicas: 3
+        serviceConfiguration:
+          containers:
+            init:
+              image: python:alpine
+            provisioner:
+              image: michaelhenkel/contrail-provisioner:debug
     cassandras:
     - metadata:
         name: cassandra1
