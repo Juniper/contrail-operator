@@ -1,7 +1,21 @@
 package v1alpha1
 
 import (
+	"context"
+	"sort"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v2"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -10,11 +24,14 @@ import (
 // ProvisionManagerSpec defines the desired state of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerSpec struct {
-	CommonConfiguration CommonConfiguration `json:"commonConfiguration"`
+	CommonConfiguration  CommonConfiguration           `json:"commonConfiguration"`
+	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
+}
 
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+// ProvisionManagerConfiguration defines the provision manager configuration
+// +k8s:openapi-gen=true
+type ProvisionManagerConfiguration struct {
+	Containers map[string]*Container `json:"containers,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -23,6 +40,7 @@ type ProvisionManagerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	Active              *bool             `json:"active,omitempty"`
 	Nodes               map[string]string `json:"nodes,omitempty"`
 	GlobalConfiguration map[string]string `json:"globalConfiguration,omitempty"`
 }
@@ -50,6 +68,363 @@ type ProvisionManagerList struct {
 	Items           []ProvisionManager `json:"items"`
 }
 
+// ProvisionConfig defines the structure of the provison config
+type ProvisionConfig struct {
+	Nodes     *Nodes     `yaml:"nodes,omitempty"`
+	APIServer *APIServer `yaml:"apiServer,omitempty"`
+}
+
+type Nodes struct {
+	ControlNodes   []*ControlNode   `yaml:"controlNodes,omitempty"`
+	AnalyticsNodes []*AnalyticsNode `yaml:"analyticsNodes,omitempty"`
+	VrouterNodes   []*VrouterNode   `yaml:"vrouterNodes,omitempty"`
+	ConfigNodes    []*ConfigNode    `yaml:"configNodes,omitempty"`
+}
+
+type APIServer struct {
+	APIPort       string     `yaml:"apiPort,omitempty"`
+	APIServerList []string   `yaml:"apiServerList,omitempty"`
+	Encryption    Encryption `yaml:"encryption,omitempty"`
+}
+
+type Encryption struct {
+	CA       string `yaml:"ca,omitempty"`
+	Cert     string `yaml:"cert,omitempty"`
+	Key      string `yaml:"key,omitempty"`
+	Insecure bool   `yaml:"insecure,omitempty"`
+}
+
+type ControlNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+	ASN       int    `yaml:"asn,omitempty"`
+}
+
+type ConfigNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+}
+
+type AnalyticsNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+}
+
+type VrouterNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+}
+
 func init() {
 	SchemeBuilder.Register(&ProvisionManager{}, &ProvisionManagerList{})
+}
+
+func (c *ProvisionManager) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
+	managerName := c.Labels["contrail_cluster"]
+	ownerRefList := c.GetOwnerReferences()
+	for _, ownerRef := range ownerRefList {
+		if *ownerRef.Controller {
+			if ownerRef.Kind == "Manager" {
+				managerInstance := &Manager{}
+				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
+				if err != nil {
+					return nil, err
+				}
+				return managerInstance, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (c *ProvisionManager) CreateConfigMap(configMapName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.ConfigMap, error) {
+	return CreateConfigMap(configMapName,
+		client,
+		scheme,
+		request,
+		"provisionmanager",
+		c)
+}
+
+// CreateSecret creates a secret.
+func (c *ProvisionManager) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"provisionmanager",
+		c)
+}
+
+// PrepareSTS prepares the intented statefulset for the config object
+func (c *ProvisionManager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+	return PrepareSTS(sts, commonConfiguration, "provisionmanager", request, scheme, c, client, true)
+}
+
+// AddVolumesToIntendedSTS adds volumes to the config statefulset
+func (c *ProvisionManager) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *ProvisionManager) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+//CreateSTS creates the STS
+func (c *ProvisionManager) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+}
+
+//UpdateSTS updates the STS
+func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+}
+
+func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
+	pod := &corev1.Pod{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	if err != nil {
+		return "", err
+	}
+	hostname, ok := pod.Annotations["hostname"]
+	if !ok {
+		return "", err
+	}
+	return hostname, nil
+}
+
+func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
+	podList *corev1.PodList,
+	client client.Client) error {
+
+	configMapConfigNodes := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-confignodes", Namespace: request.Namespace}, configMapConfigNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapControlNodes := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-controlnodes", Namespace: request.Namespace}, configMapControlNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapVrouterNodes := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-vrouternodes", Namespace: request.Namespace}, configMapVrouterNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapAnalyticsNodes := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-analyticsnodes", Namespace: request.Namespace}, configMapAnalyticsNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapAPIServer := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-apiserver", Namespace: request.Namespace}, configMapAPIServer)
+	if err != nil {
+		return err
+	}
+
+	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
+		request.Namespace, client)
+	if err != nil {
+		return err
+	}
+
+	listOps := &runtimeClient.ListOptions{Namespace: request.Namespace}
+	configList := &ConfigList{}
+	if err = client.List(context.TODO(), configList, listOps); err != nil {
+		return err
+	}
+	var podIPList []string
+	for _, pod := range podList.Items {
+		podIPList = append(podIPList, pod.Status.PodIP)
+	}
+	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
+	sort.SliceStable(podIPList, func(i, j int) bool { return podIPList[i] < podIPList[j] })
+	var apiServerList []string
+	var apiPort string
+	var configNodeData = make(map[string]string)
+	var controlNodeData = make(map[string]string)
+	var analyticsNodeData = make(map[string]string)
+	var vrouterNodeData = make(map[string]string)
+	var apiServerData = make(map[string]string)
+
+	if len(configList.Items) > 0 {
+		nodes := &Nodes{}
+		nodeList := []*ConfigNode{}
+		for _, configService := range configList.Items {
+			for podName, ipAddress := range configService.Status.Nodes {
+				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				n := ConfigNode{
+					IPAddress: ipAddress,
+					Hostname:  hostname,
+				}
+				nodeList = append(nodeList, &n)
+				apiServerList = append(apiServerList, ipAddress)
+			}
+			apiPort = configService.Status.Ports.APIPort
+		}
+		nodes.ConfigNodes = nodeList
+		nodeYaml, err := yaml.Marshal(nodes.ConfigNodes)
+		if err != nil {
+			return err
+		}
+		configNodeData["confignodes.yaml"] = string(nodeYaml)
+
+	}
+	if len(configList.Items) > 0 {
+		nodes := &Nodes{}
+		nodeList := []*AnalyticsNode{}
+		for _, configService := range configList.Items {
+			for podName, ipAddress := range configService.Status.Nodes {
+				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				n := &AnalyticsNode{
+					IPAddress: ipAddress,
+					Hostname:  hostname,
+				}
+				nodeList = append(nodeList, n)
+			}
+		}
+		nodes.AnalyticsNodes = nodeList
+		nodeYaml, err := yaml.Marshal(nodes.AnalyticsNodes)
+		if err != nil {
+			return err
+		}
+		analyticsNodeData["analyticsnodes.yaml"] = string(nodeYaml)
+	}
+
+	controlList := &ControlList{}
+	if err = client.List(context.TODO(), controlList, listOps); err != nil {
+		return err
+	}
+	if len(controlList.Items) > 0 {
+		nodes := &Nodes{}
+		nodeList := []*ControlNode{}
+		for _, controlService := range controlList.Items {
+			for podName, ipAddress := range controlService.Status.Nodes {
+				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				asn, err := strconv.Atoi(controlService.Status.Ports.ASNNumber)
+				if err != nil {
+					return err
+				}
+				n := &ControlNode{
+					IPAddress: ipAddress,
+					Hostname:  hostname,
+					ASN:       asn,
+				}
+				nodeList = append(nodeList, n)
+			}
+		}
+		nodes.ControlNodes = nodeList
+		nodeYaml, err := yaml.Marshal(nodes.ControlNodes)
+		if err != nil {
+			return err
+		}
+		controlNodeData["controlnodes.yaml"] = string(nodeYaml)
+	}
+
+	vrouterList := &VrouterList{}
+	if err = client.List(context.TODO(), vrouterList, listOps); err != nil {
+		return err
+	}
+	if len(vrouterList.Items) > 0 {
+		nodes := &Nodes{}
+		nodeList := []*VrouterNode{}
+		for _, vrouterService := range vrouterList.Items {
+			for podName, ipAddress := range vrouterService.Status.Nodes {
+				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				n := &VrouterNode{
+					IPAddress: ipAddress,
+					Hostname:  hostname,
+				}
+				nodeList = append(nodeList, n)
+			}
+		}
+		nodes.VrouterNodes = nodeList
+		nodeYaml, err := yaml.Marshal(nodes.VrouterNodes)
+		if err != nil {
+			return err
+		}
+		vrouterNodeData["vrouternodes.yaml"] = string(nodeYaml)
+	}
+	for _, pod := range podList.Items {
+		apiServer := &APIServer{
+			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
+			APIPort:       apiPort,
+			Encryption: Encryption{
+				CA:       "/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
+				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
+				Insecure: false,
+			},
+		}
+		apiServerYaml, err := yaml.Marshal(apiServer)
+		if err != nil {
+			return err
+		}
+		apiServerData["apiserver-"+pod.Status.PodIP+".yaml"] = string(apiServerYaml)
+	}
+
+	configMapConfigNodes.Data = configNodeData
+	err = client.Update(context.TODO(), configMapConfigNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapControlNodes.Data = controlNodeData
+	err = client.Update(context.TODO(), configMapControlNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapAnalyticsNodes.Data = analyticsNodeData
+	err = client.Update(context.TODO(), configMapAnalyticsNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapVrouterNodes.Data = vrouterNodeData
+	err = client.Update(context.TODO(), configMapVrouterNodes)
+	if err != nil {
+		return err
+	}
+
+	configMapAPIServer.Data = apiServerData
+	err = client.Update(context.TODO(), configMapAPIServer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
+func (c *ProvisionManager) PodIPListAndIPMapFromInstance(request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
+	return PodIPListAndIPMapFromInstance("provisionmanager", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
+}
+
+func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
+	return SetPodsToReady(podIPList, client)
 }

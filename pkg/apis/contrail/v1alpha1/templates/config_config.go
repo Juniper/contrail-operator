@@ -2,6 +2,23 @@ package templates
 
 import "text/template"
 
+var ConfigAPIServerConfig = template.Must(template.New("").Parse(`encryption:
+ca: /run/secrets/kubernetes.io/serviceaccount/ca.crt
+cert: /etc/certificates/server-{{ .ListenAddress }}.crt
+key: /etc/certificates/server-key-{{ .ListenAddress }}.pem
+insecure: false
+apiServerList:
+{{range .APIServerList}}
+- {{ . }}
+{{ end }}
+apiPort: {{ .ListenPort }}
+`))
+
+var ConfigNodeConfig = template.Must(template.New("").Parse(`{{range .APIServerList}}
+- {{ . }}
+{{ end }}
+`))
+
 // ConfigAPIConfig is the template of the Config API service configuration.
 var ConfigAPIConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 listen_ip_addr={{ .ListenAddress }}

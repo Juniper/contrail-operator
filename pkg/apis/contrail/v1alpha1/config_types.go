@@ -94,9 +94,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	client client.Client) error {
 	instanceConfigMapName := request.Name + "-" + "config" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig)
 	if err != nil {
 		return err
 	}

@@ -2,8 +2,6 @@ package provisionmanager
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -16,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
-	contrail "github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
 	corev1 "k8s.io/api/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -98,7 +94,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileProvisionManager{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileProvisionManager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -112,6 +108,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to primary resource ProvisionManager
 	err = c.Watch(&source.Kind{Type: &v1alpha1.ProvisionManager{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
+		return err
+	}
+
+	// Watch for changes to PODs
+	serviceMap := map[string]string{"contrail_manager": "provisionmanager"}
+	srcPod := &source.Kind{Type: &corev1.Pod{}}
+	podHandler := resourceHandler(mgr.GetClient())
+	predInitStatus := utils.PodInitStatusChange(serviceMap)
+	predPodIPChange := utils.PodIPChange(serviceMap)
+	predInitRunning := utils.PodInitRunning(serviceMap)
+
+	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
+		return err
+	}
+	if err = c.Watch(srcPod, podHandler, predInitStatus); err != nil {
+		return err
+	}
+	if err = c.Watch(srcPod, podHandler, predInitRunning); err != nil {
 		return err
 	}
 
@@ -146,131 +160,181 @@ var _ reconcile.Reconciler = &ReconcileProvisionManager{}
 type ReconcileProvisionManager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
-// Reconcile reads that state of the cluster for a ProvisionManager object and makes changes based on the state read
-// and what is in the ProvisionManager.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ProvisionManager")
-
-	// Fetch the ProvisionManager instance
+	instanceType := "provisionmanager"
 	instance := &v1alpha1.ProvisionManager{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 
 	configInstance := &v1alpha1.Config{}
-	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.client)
+	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
 	if !configActive {
-		reqLogger.Info("Config not active, sleeping")
 		return reconcile.Result{}, nil
 	}
 
-	listOps := &client.ListOptions{Namespace: request.Namespace}
-
-	configList := &v1alpha1.ConfigList{}
-	if err = r.client.List(context.TODO(), configList, listOps); err != nil {
+	managerInstance, err := instance.OwnedByManager(r.Client, request)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	var nodeList []*node
-	var configPort string
-	var apiServerList []string
-
-	if len(configList.Items) > 0 {
-		for _, configService := range configList.Items {
-			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := r.getHostnameFromAnnotations(podName, request.Namespace)
+	if managerInstance != nil {
+		if managerInstance.Spec.Services.Config != nil {
+			provisionManagerInstance := managerInstance.Spec.Services.ProvisionManager
+			if provisionManagerInstance.Name == request.Name {
+				instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(managerInstance.Spec.CommonConfiguration, provisionManagerInstance.Spec.CommonConfiguration)
+				err = r.Client.Update(context.TODO(), instance)
 				if err != nil {
 					return reconcile.Result{}, err
 				}
-				n := &node{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
-					Type:      "config",
-				}
-				nodeList = append(nodeList, n)
-				apiServerList = append(apiServerList, ipAddress)
-			}
-			configPort = configService.Status.Ports.APIPort
-		}
-	}
-	if len(configList.Items) > 0 {
-		for _, configService := range configList.Items {
-			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := r.getHostnameFromAnnotations(podName, request.Namespace)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-				n := &node{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
-					Type:      "config",
-				}
-				nodeList = append(nodeList, n)
 			}
 		}
 	}
 
-	controlList := &v1alpha1.ControlList{}
-	if err = r.client.List(context.TODO(), controlList, listOps); err != nil {
+	configMapConfigNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-confignodes", r.Client, r.Scheme, request)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if len(controlList.Items) > 0 {
-		for _, controlService := range controlList.Items {
-			for podName, ipAddress := range controlService.Status.Nodes {
-				hostname, err := r.getHostnameFromAnnotations(podName, request.Namespace)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-				n := &node{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
-					Type:      "config",
-				}
-				nodeList = append(nodeList, n)
+
+	configMapControlNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-controlnodes", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	configMapVrouterNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-vrouternodes", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	configMapAnalyticsNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-analyticsnodes", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	configMapAPIServer, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-apiserver", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	statefulSet := GetSTS()
+	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMapConfigNodes.Name:    request.Name + "-" + instanceType + "-confignodes-volume",
+		configMapControlNodes.Name:   request.Name + "-" + instanceType + "-controlnodes-volume",
+		configMapVrouterNodes.Name:   request.Name + "-" + instanceType + "-vrouternodes-volume",
+		configMapAnalyticsNodes.Name: request.Name + "-" + instanceType + "-analyticsnodes-volume",
+		configMapAPIServer.Name:      request.Name + "-" + instanceType + "-apiserver-volume",
+	})
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
+
+	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
+		if container.Name == "provisioner" {
+			command := []string{"/contrail-provisioner",
+				"-dir", "/etc/provision",
+				"-controlNodes", "/etc/provision/control/controlnodes.yaml",
+				"-configNodes", "/etc/provision/config/confignodes.yaml",
+				"-analyticsNodes", "/etc/provision/analytics/analyticsnodes.yaml",
+				"-vrouterNodes", "/etc/provision/vrouter/vrouternodes.yaml",
+				"-apiserver", "/etc/provision/apiserver/apiserver-${POD_IP}.yaml",
+				"-mode", "watch"}
+			command = []string{"sh", "-c",
+				"/contrail-provisioner -dir /etc/provision -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -mode watch",
 			}
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
+			volumeMountList := []corev1.VolumeMount{}
+			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
+				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+			}
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-confignodes-volume",
+				MountPath: "/etc/provision/config",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-analyticsnodes-volume",
+				MountPath: "/etc/provision/analytics",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-controlnodes-volume",
+				MountPath: "/etc/provision/control",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-vrouternodes-volume",
+				MountPath: "/etc/provision/vrouter",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-apiserver-volume",
+				MountPath: "/etc/provision/apiserver",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 	}
 
-	vrouterList := &v1alpha1.VrouterList{}
-	if err = r.client.List(context.TODO(), vrouterList, listOps); err != nil {
-		return reconcile.Result{}, err
-	}
-	if len(vrouterList.Items) > 0 {
-		for _, vrouterService := range vrouterList.Items {
-			for podName, ipAddress := range vrouterService.Status.Nodes {
-				hostname, err := r.getHostnameFromAnnotations(podName, request.Namespace)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-				n := &node{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
-					Type:      "config",
-				}
-				nodeList = append(nodeList, n)
-			}
+	// Configure InitContainers
+	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
 	}
-	if err = provision(nodeList, configPort, &apiServerList); err != nil {
+
+	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	strategy := "deleteFirst"
+	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(request, r.Client)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if len(podIPMap) > 0 {
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	return reconcile.Result{}, nil
@@ -278,7 +342,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 
 func (r *ReconcileProvisionManager) getHostnameFromAnnotations(podName string, namespace string) (string, error) {
 	pod := &corev1.Pod{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
 	if err != nil {
 		return "", err
 	}
@@ -287,55 +351,4 @@ func (r *ReconcileProvisionManager) getHostnameFromAnnotations(podName string, n
 		return "", err
 	}
 	return hostname, nil
-}
-
-type node struct {
-	IPAddress string
-	Hostname  string
-	Type      string
-}
-
-func provision(nodeList []*node, apiPort string, apiServerList *[]string) error {
-	for _, node := range nodeList {
-		fmt.Println("NodeType: ", node.Type)
-		fmt.Println("NodeName: ", node.Hostname)
-		fmt.Println("NodeIP: ", node.IPAddress)
-	}
-	fmt.Println("API port: ", apiPort)
-	apiPortInt, err := strconv.Atoi(apiPort)
-	if err != nil {
-		return err
-	}
-	for _, apiServer := range *apiServerList {
-		contrailClient := contrail.NewClient(apiServer, apiPortInt)
-		if err = getNodesFromConfigDB(contrailClient, "config_node"); err != nil {
-			return err
-		}
-	}
-	return nil
-
-}
-
-func getNodesFromConfigDB(contrailClient *contrail.Client, nodeType string) error {
-	nodeList, err := contrailClient.List(nodeType)
-	if err != nil {
-		return err
-	}
-
-	if len(nodeList) > 0 {
-		for _, nodeItem := range nodeList {
-			node, err := contrailClient.ReadListResult(nodeType, &nodeItem)
-			if err != nil {
-				return err
-			}
-			switch nodeType{
-				case "config-node": 
-				var configNode *contrailTypes.ConfigNode = node.(*contrailTypes.ConfigNode)
-				//configNode := node.(*contrailTypes.ConfigNode)
-				fmt.Println("bla" , configNode)
-			
-			}
-		}
-	}
-	return nil
 }

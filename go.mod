@@ -43,6 +43,7 @@ require (
 	github.com/go-openapi/spec v0.19.5
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
 	github.com/operator-framework/operator-sdk v0.13.0
+	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/pflag v1.0.5
 	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.0.0
