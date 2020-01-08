@@ -11,6 +11,17 @@ snap install go --classic --channel 1.13/stable
 Keep in mind that for Goland you have to have atom folder inside another atom foleder.
 Open the parent atom folder in Goland.
 
+## Add new API and controller
+
+```
+cd github.com/Juniper/contrail-operator
+docker run --user `id -u`:`id -g` -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock hakyer/operator-sdk:v.10-go-1.13 bash
+$ cd /contrail-operator
+$ operator-sdk add api --api-version=contrail/v1alpha1 --kind=Memcached
+$ operator-sdk add controller --api-version=contrail/v1alpha1 --kind=Memcached 
+```
+
+
 ## Generate k8s files
 
 ```
