@@ -583,10 +583,6 @@ spec:
                       status:
                         properties:
                           active:
-                            description: 'INSERT ADDITIONAL STATUS FIELD - define
-                              observed state of cluster Important: Run "operator-sdk
-                              generate k8s" to regenerate code after modifying this
-                              file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
                             type: boolean
                           nodes:
                             additionalProperties:
@@ -604,6 +600,10 @@ spec:
                                 type: string
                               xmppPort:
                                 type: string
+                            type: object
+                          serviceStatus:
+                            additionalProperties:
+                              type: object
                             type: object
                         type: object
                     type: object

@@ -11,6 +11,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.BGPPeer":                       schema_pkg_apis_contrail_v1alpha1_BGPPeer(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Cassandra":                     schema_pkg_apis_contrail_v1alpha1_Cassandra(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CassandraConfiguration":        schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CassandraSpec":                 schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref),
@@ -20,9 +21,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigConfiguration":           schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigSpec":                    schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigStatus":                  schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref),
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Connection":                    schema_pkg_apis_contrail_v1alpha1_Connection(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Container":                     schema_pkg_apis_contrail_v1alpha1_Container(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Control":                       schema_pkg_apis_contrail_v1alpha1_Control(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlConfiguration":          schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref),
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlServiceStatus":          schema_pkg_apis_contrail_v1alpha1_ControlServiceStatus(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlSpec":                   schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlStatus":                 schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CrdStatus":                     schema_pkg_apis_contrail_v1alpha1_CrdStatus(ref),
@@ -43,6 +46,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.RabbitmqStatus":                schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ServiceStatus":                 schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Services":                      schema_pkg_apis_contrail_v1alpha1_Services(ref),
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.StaticRoutes":                  schema_pkg_apis_contrail_v1alpha1_StaticRoutes(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Status":                        schema_pkg_apis_contrail_v1alpha1_Status(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Vrouter":                       schema_pkg_apis_contrail_v1alpha1_Vrouter(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.VrouterConfiguration":          schema_pkg_apis_contrail_v1alpha1_VrouterConfiguration(ref),
@@ -56,6 +60,31 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ZookeeperConfiguration":        schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ZookeeperSpec":                 schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ZookeeperStatus":               schema_pkg_apis_contrail_v1alpha1_ZookeeperStatus(ref),
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_BGPPeer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Up": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Number": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Up", "Number"},
+			},
+		},
 	}
 }
 
@@ -558,6 +587,50 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 	}
 }
 
+func schema_pkg_apis_contrail_v1alpha1_Connection(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Type": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Status": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Nodes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"Type", "Name", "Status", "Nodes"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_contrail_v1alpha1_Container(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -728,6 +801,61 @@ func schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref common.Reference
 	}
 }
 
+func schema_pkg_apis_contrail_v1alpha1_ControlServiceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Connections": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Connection"),
+									},
+								},
+							},
+						},
+					},
+					"NumberOfXMPPPeers": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"NumberOfRoutingInstances": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"StaticRoutes": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.StaticRoutes"),
+						},
+					},
+					"BGPPeer": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.BGPPeer"),
+						},
+					},
+					"State": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Connections", "NumberOfXMPPPeers", "NumberOfRoutingInstances", "StaticRoutes", "BGPPeer", "State"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.BGPPeer", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Connection", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.StaticRoutes"},
+	}
+}
+
 func schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -762,9 +890,8 @@ func schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
-							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 					"nodes": {
@@ -786,11 +913,24 @@ func schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref common.ReferenceCallbac
 							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlStatusPorts"),
 						},
 					},
+					"serviceStatus": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlServiceStatus"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlStatusPorts"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlServiceStatus", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlStatusPorts"},
 	}
 }
 
@@ -1721,6 +1861,31 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Cassandra", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Config", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Control", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Kubemanager", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ProvisionManager", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Rabbitmq", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Vrouter", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Webui", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Zookeeper"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_StaticRoutes(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Down": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Number": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Down", "Number"},
+			},
+		},
 	}
 }
 

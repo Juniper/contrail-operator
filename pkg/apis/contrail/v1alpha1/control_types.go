@@ -59,12 +59,40 @@ type ControlConfiguration struct {
 
 // +k8s:openapi-gen=true
 type ControlStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active *bool              `json:"active,omitempty"`
-	Nodes  map[string]string  `json:"nodes,omitempty"`
-	Ports  ControlStatusPorts `json:"ports,omitempty"`
+	Active        *bool                           `json:"active,omitempty"`
+	Nodes         map[string]string               `json:"nodes,omitempty"`
+	Ports         ControlStatusPorts              `json:"ports,omitempty"`
+	ServiceStatus map[string]ControlServiceStatus `json:"serviceStatus,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type ControlServiceStatus struct {
+	Connections              []Connection
+	NumberOfXMPPPeers        string
+	NumberOfRoutingInstances string
+	StaticRoutes             StaticRoutes
+	BGPPeer                  BGPPeer
+	State                    string
+}
+
+// +k8s:openapi-gen=true
+type StaticRoutes struct {
+	Down   string
+	Number string
+}
+
+// +k8s:openapi-gen=true
+type BGPPeer struct {
+	Up     string
+	Number string
+}
+
+// +k8s:openapi-gen=true
+type Connection struct {
+	Type   string
+	Name   string
+	Status string
+	Nodes  []string
 }
 
 type ControlStatusPorts struct {
