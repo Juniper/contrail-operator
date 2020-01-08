@@ -19,7 +19,7 @@ docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/doc
 $ cd /contrail-operator
 $ operator-sdk add api --api-version=contrail/v1alpha1 --kind=Memcached
 $ operator-sdk add controller --api-version=contrail/v1alpha1 --kind=Memcached 
-$ chown -R `id -u`:`id -g` ./**/*.pdf
+$ chown -R `id -u`:`id -g` ./**/*
 ```
 
 
