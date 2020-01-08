@@ -35,7 +35,7 @@ github.com/Juniper/base/go/server/testing/testserver/testservice: malformed modu
 ## Updating Contrail operator
 ```
 cd github.com/Juniper/contrail-operator
-docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock katrybacka/operator-sdk:v.10-go-1.12 bash
+docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock hakyer/operator-sdk:v.10-go-1.13
 $ cd /contrail-operator; operator-sdk build contrail-operator
 ```
 
