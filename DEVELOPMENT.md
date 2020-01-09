@@ -17,8 +17,8 @@ Open the parent atom folder in Goland.
 cd github.com/Juniper/contrail-operator
 docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock hakyer/operator-sdk:v.10-go-1.13 bash
 $ cd /contrail-operator
-$ operator-sdk add api --api-version=contrail/v1alpha1 --kind=Memcached
-$ operator-sdk add controller --api-version=contrail/v1alpha1 --kind=Memcached 
+$ operator-sdk add api --api-version=contrail.juniper.net/v1alpha1 --kind=Memcached
+$ operator-sdk add controller --api-version=contrail.juniper.net/v1alpha1 --kind=Memcached
 $ exit
 
 sudo chown -R `id -u`:`id -g` ./**/*
