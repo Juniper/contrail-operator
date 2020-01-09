@@ -13,6 +13,12 @@ type SwiftStorageSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	ServiceConfiguration SwiftStorageConfiguration `json:"serviceConfiguration"`
+}
+
+// SwiftStorageConfiguration is the Spec for the keystone API.
+// +k8s:openapi-gen=true
+type SwiftStorageConfiguration struct {
 	AccountBindPort   int `json:"accountBindPort,omitempty"`
 	ContainerBindPort int `json:"containerBindPort,omitempty"`
 	ObjectBindPort    int `json:"objectBindPort,omitempty"`

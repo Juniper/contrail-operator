@@ -61,6 +61,7 @@ rules:
   - contrailcommands
   - swiftstorages
   - keystones
+  - swifts
   verbs:
   - '*'
 - apiGroups:
@@ -2356,6 +2357,78 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: swifts.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Swift
+    listKind: SwiftList
+    plural: swifts
+    singular: swift
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            serviceConfiguration:
+              properties:
+                swiftProxyConfiguration:
+                  properties:
+                    keystoneAdminPassword:
+                      type: string
+                    keystoneInstance:
+                      type: string
+                    listenPort:
+                      format: int64
+                      type: integer
+                    swiftPassword:
+                      type: string
+                  type: object
+                swiftStorageConfiguration:
+                  properties:
+                    accountBindPort:
+                      format: int64
+                      type: integer
+                    containerBindPort:
+                      format: int64
+                      type: integer
+                    objectBindPort:
+                      format: int64
+                      type: integer
+                  type: object
+              required:
+              - swiftStorageConfiguration
+              - swiftProxyConfiguration
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: swiftproxies.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -2443,19 +2516,24 @@ spec:
           type: object
         spec:
           properties:
-            accountBindPort:
+            serviceConfiguration:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
-              format: int64
-              type: integer
-            containerBindPort:
-              format: int64
-              type: integer
-            objectBindPort:
-              format: int64
-              type: integer
+              properties:
+                accountBindPort:
+                  format: int64
+                  type: integer
+                containerBindPort:
+                  format: int64
+                  type: integer
+                objectBindPort:
+                  format: int64
+                  type: integer
+              type: object
+          required:
+          - serviceConfiguration
           type: object
         status:
           properties:
@@ -2855,7 +2933,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: localhost:5000/contrail_operator:latest
+          image: michaelhenkel/contrail-operator:latest
           #command:
           #- contrail-operator
           imagePullPolicy: Always

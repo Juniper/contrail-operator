@@ -4,12 +4,6 @@ import (
 	"text/template"
 )
 
-const swiftConfig = `
-[swift-hash]
-swift_hash_path_suffix = changeme
-swift_hash_path_prefix = changeme
-`
-
 var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
 {
     "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",

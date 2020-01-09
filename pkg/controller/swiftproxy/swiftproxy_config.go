@@ -17,7 +17,6 @@ type swiftProxyConfig struct {
 
 func (s *swiftProxyConfig) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = swiftProxyServiceConfig
-	cm.Data["swift.conf"] = swiftConfig
 	cm.Data["proxy-server.conf"] = s.executeTemplate(proxyServerConfig)
 }
 
@@ -28,12 +27,6 @@ func (s *swiftProxyConfig) executeTemplate(t *template.Template) string {
 	}
 	return buffer.String()
 }
-
-const swiftConfig = `
-[swift-hash]
-swift_hash_path_suffix = changeme
-swift_hash_path_prefix = changeme
-`
 
 const swiftProxyServiceConfig = `{
     "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",

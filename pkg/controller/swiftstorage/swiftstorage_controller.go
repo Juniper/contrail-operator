@@ -161,6 +161,14 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 					},
 				},
 			},
+			{
+				Name: "swift-conf-volume",
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						SecretName: "swift-conf",
+					},
+				},
+			},
 		}, volumes...)
 		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
 			{
@@ -212,7 +220,10 @@ func swiftContainer(name, image string) core.Container {
 	serviceVolumeMount := core.VolumeMount{
 		Name: name + "-config-volume",
 		MountPath: "/var/lib/kolla/config_files/",
+		//TODO readonly
 	}
+
+	swiftConfVolumeMount := core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true}
 
 	return core.Container{
 		Name:  name,
@@ -222,6 +233,7 @@ func swiftContainer(name, image string) core.Container {
 			deviceMountPointVolumeMount,
 			localtimeVolumeMount,
 			serviceVolumeMount,
+			swiftConfVolumeMount,
 		},
 	}
 }
