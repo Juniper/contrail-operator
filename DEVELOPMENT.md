@@ -37,6 +37,13 @@ docker run --rm -it -v $(pwd):/contrail-operator hakyer/operator-sdk:v.10-go-1.1
 
 * Problem: unsupported type invalid type for invalid type
   Solution: export GOROOT
+* Problem: on running operator container `/usr/local/bin/entrypoint: Permission denied`
+  Solution:
+  ```
+  sudo chown -R `id -u`:`id -g` build
+  chmod -R 755 build/bin build/_output
+  <rebuild operator>
+  ```
 
 
 ## Updating Contrail operator
