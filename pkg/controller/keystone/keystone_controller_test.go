@@ -211,6 +211,7 @@ func newKeystone() *contrail.Keystone {
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				PostgresInstance: "psql",
 				ListenPort:       5555,
+				ImageRegistry:    "registry:5000",
 			},
 		},
 	}
@@ -249,13 +250,14 @@ func newExpectedSTS() *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "keystone-db-init",
-							Image:           "localhost:5000/keystone-init:latest",
+							Image:           "registry:5000/postgresql-client",
 							ImagePullPolicy: core.PullAlways,
-							Command:         []string{"/bin/sh", "/tmp/init_db.sh"},
+							Command:         []string{"/bin/sh"},
+							Args:            []string{"-c", expectedCommandImage},
 						},
 						{
 							Name:            "keystone-init",
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           "registry:5000/centos-binary-keystone:master",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
@@ -272,7 +274,7 @@ func newExpectedSTS() *apps.StatefulSet {
 					},
 					Containers: []core.Container{
 						{
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           "registry:5000/centos-binary-keystone:master",
 							Name:            "keystone",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -288,7 +290,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "localhost:5000/centos-binary-keystone-ssh:master",
+							Image:           "registry:5000/centos-binary-keystone-ssh:master",
 							Name:            "keystone-ssh",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -305,7 +307,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
+							Image:           "registry:5000/centos-binary-keystone-fernet:master",
 							Name:            "keystone-fernet",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -468,3 +470,13 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 		},
 	}
 }
+
+const expectedCommandImage = `DB_USER=${DB_USER:-root}
+DB_NAME=${DB_NAME:-contrail_test}
+KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
+KEYSTONE="keystone"
+
+createuser -h localhost -U $DB_USER $KEYSTONE
+psql -h localhost -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h localhost -U $DB_USER $KEYSTONE
+psql -h localhost -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`

@@ -74,6 +74,8 @@ spec:
                   type: string
                 adminUsername:
                   type: string
+                image:
+                  type: string
                 postgresInstance:
                   type: string
               type: object

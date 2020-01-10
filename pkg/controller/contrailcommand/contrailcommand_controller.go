@@ -103,12 +103,8 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	configMap, err := contrail.CreateConfigMap(request.Name+"-contrailcommand-configmap", r.client, r.scheme, request, "contrailcommand", command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err := command.InstanceConfiguration(request, r.client); err != nil {
+	commandConfigName := command.Name + "-contrailcommand-configmap"
+	if err := r.configMap(commandConfigName, "contrailcommand", command).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -124,15 +120,20 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
+	image := "localhost:5000/contrail-command"
+	if command.Spec.ServiceConfiguration.Image != "" {
+		image = command.Spec.ServiceConfiguration.Image
+	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
 	deployment := newDeployment(
 		request.Name+"-"+instanceType+"-deployment",
+		image,
 		request.Namespace,
 		configVolumeName,
 	)
 
-	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{configMap.Name: configVolumeName})
+	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{commandConfigName: configVolumeName})
 
 	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
 		_, err := command.PrepareIntendedDeployment(deployment,
@@ -155,7 +156,7 @@ func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand
 	return psql, err
 }
 
-func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
+func newDeployment(name, image, namespace, configVolumeName string) *apps.Deployment {
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name,
@@ -168,7 +169,7 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
-						Image:           "localhost:5000/contrail-command",
+						Image:           image,
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -185,15 +186,12 @@ func newDeployment(name, namespace, configVolumeName string) *apps.Deployment {
 					InitContainers: []core.Container{{
 						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
-						Image:           "localhost:5000/contrail-command-init",
-						Env: []core.EnvVar{{
-							Name:  "POSTGRES_USER",
-							Value: "root",
-						}, {
-							Name:  "POSTGRES_DB_NAME",
-							Value: "contrail_test",
+						Image:           image,
+						VolumeMounts: []core.VolumeMount{{
+							Name:      configVolumeName,
+							MountPath: "/etc/contrail",
 						}},
-						Command: []string{"bash", "/etc/contrail/cc_init_db.sh"},
+						Command: []string{"bash", "/etc/contrail/bootstrap.sh"},
 					}},
 					DNSPolicy: core.DNSClusterFirst,
 				},

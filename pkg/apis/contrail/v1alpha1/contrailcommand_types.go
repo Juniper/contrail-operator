@@ -1,18 +1,10 @@
 package v1alpha1
 
 import (
-	"bytes"
-	"context"
-
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -41,6 +33,7 @@ type ContrailCommandConfiguration struct {
 	PostgresInstance string `json:"postgresInstance,omitempty"`
 	AdminUsername    string `json:"adminUsername,omitempty"`
 	AdminPassword    string `json:"adminPassword,omitempty"`
+	Image            string `json:"image,omitempty"`
 }
 
 // ContrailCommandStatus defines the observed state of ContrailCommand
@@ -66,48 +59,4 @@ func (c *ContrailCommand) PrepareIntendedDeployment(
 	instanceDeployment *appsv1.Deployment, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme,
 ) (*appsv1.Deployment, error) {
 	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "contrailcommand", request, scheme, c)
-}
-
-func (c *ContrailCommand) InstanceConfiguration(request reconcile.Request,
-	client client.Client) error {
-	instanceConfigMapName := request.Name + "-" + "contrailcommand" + "-configmap"
-	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.Background(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
-
-	ccConfig := c.ConfigurationParameters()
-	var data = make(map[string]string)
-	var ccConfigBuffer bytes.Buffer
-	templates.ContrailCommandConfig.Execute(&ccConfigBuffer, struct {
-		AdminUsername string
-		AdminPassword string
-	}{
-		AdminUsername: ccConfig.AdminUsername,
-		AdminPassword: ccConfig.AdminPassword,
-	})
-	data["contrail.yml"] = ccConfigBuffer.String()
-
-	configMapInstanceDynamicConfig.Data = data
-	return client.Update(context.Background(), configMapInstanceDynamicConfig)
-}
-
-func (c *ContrailCommand) ConfigurationParameters() ContrailCommandClusterConfiguration {
-	ccConfig := ContrailCommandClusterConfiguration{
-		AdminUsername: "admin",
-		AdminPassword: "contrail123",
-	}
-
-	if c.Spec.ServiceConfiguration.AdminUsername != "" {
-		ccConfig.AdminUsername = c.Spec.ServiceConfiguration.AdminUsername
-	}
-
-	if c.Spec.ServiceConfiguration.AdminPassword != "" {
-		ccConfig.AdminPassword = c.Spec.ServiceConfiguration.AdminPassword
-	}
-
-	return ccConfig
 }

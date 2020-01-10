@@ -119,7 +119,6 @@ func TestCommand(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, exDep, dep)
-			expConfigMap := getExpectedConfigMap()
 			// Check if config map has been created
 			configMap := &core.ConfigMap{}
 			err = cl.Get(context.Background(), types.NamespacedName{
@@ -127,7 +126,7 @@ func TestCommand(t *testing.T) {
 				Namespace: "default",
 			}, configMap)
 			assert.NoError(t, err)
-			assert.Equal(t, expConfigMap, configMap)
+			assertConfigMap(t, configMap)
 
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
@@ -169,6 +168,7 @@ func newContrailCommand() *contrail.ContrailCommand {
 				PostgresInstance: "command-db",
 				AdminUsername:    "test",
 				AdminPassword:    "test123",
+				Image:            "registry:5000/contrail-command",
 			},
 		},
 	}
@@ -233,7 +233,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 					DNSPolicy:    core.DNSClusterFirst,
 					Containers: []core.Container{
 						{
-							Image:           "localhost:5000/contrail-command",
+							Image:           "registry:5000/contrail-command",
 							Name:            "command",
 							ImagePullPolicy: core.PullAlways,
 							ReadinessProbe: &core.Probe{
@@ -249,15 +249,11 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 					InitContainers: []core.Container{{
 						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
-						Image:           "localhost:5000/contrail-command-init",
-						Env: []core.EnvVar{{
-							Name:  "POSTGRES_USER",
-							Value: "root",
-						}, {
-							Name:  "POSTGRES_DB_NAME",
-							Value: "contrail_test",
-						}},
-						Command: []string{"bash", "/etc/contrail/cc_init_db.sh"},
+						Image:           "registry:5000/contrail-command",
+						Command:         []string{"bash", "/etc/contrail/bootstrap.sh"},
+						VolumeMounts: []core.VolumeMount{
+							core.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
+						},
 					}},
 					Volumes: []core.Volume{
 						{
@@ -282,22 +278,22 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	}
 }
 
-func getExpectedConfigMap() *core.ConfigMap {
+func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{"contrail.yml": contrailCommandExpectedConfig},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "command-contrailcommand-configmap",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
-			},
+	assert.Equal(t, meta.ObjectMeta{
+		Name:      "command-contrailcommand-configmap",
+		Namespace: "default",
+		Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+		OwnerReferences: []meta.OwnerReference{
+			{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
 		},
-	}
+	}, actual.ObjectMeta)
+
+	assert.Equal(t, expectedCommandConfig, actual.Data["contrail.yml"])
+	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 }
 
-const contrailCommandExpectedConfig = `
+const expectedCommandConfig = `
 database:
   host: localhost
   user: root
@@ -416,4 +412,22 @@ replication:
     enabled: false
   amqp:
     enabled: false
+`
+const expectedBootstrapScript = `
+#!/bin/bash
+
+QUERY_RESULT=$(psql -w -h localhost -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+QUERY_EXIT_CODE=$?
+if [[ $QUERY_EXIT_CODE -eq 0 && $QUERY_RESULT -eq 't' ]]; then
+    exit 0
+fi
+
+if [[ $QUERY_EXIT_CODE -eq 2 ]]; then
+    exit 1
+fi
+
+set -e
+psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
+contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
+contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
 `

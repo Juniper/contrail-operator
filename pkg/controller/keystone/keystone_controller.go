@@ -257,6 +257,12 @@ func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgr
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
 func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
+
+	imageRegistry := "localhost:5000"
+	if cr.Spec.ServiceConfiguration.ImageRegistry != "" {
+		imageRegistry = cr.Spec.ServiceConfiguration.ImageRegistry
+	}
+
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -270,13 +276,14 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "keystone-db-init",
-							Image:           "localhost:5000/keystone-init:latest",
+							Image:           imageRegistry + "/postgresql-client",
 							ImagePullPolicy: core.PullAlways,
-							Command:         []string{"/bin/sh", "/tmp/init_db.sh"},
+							Command:         []string{"/bin/sh"},
+							Args:            []string{"-c", initDBScript},
 						},
 						{
 							Name:            "keystone-init",
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           imageRegistry + "/centos-binary-keystone:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone"),
 							VolumeMounts: []core.VolumeMount{
@@ -288,7 +295,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 					Containers: []core.Container{
 						{
 							Name:            "keystone",
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           imageRegistry + "/centos-binary-keystone:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone"),
 							VolumeMounts: []core.VolumeMount{
@@ -298,7 +305,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						},
 						{
 							Name:            "keystone-ssh",
-							Image:           "localhost:5000/centos-binary-keystone-ssh:master",
+							Image:           imageRegistry + "/centos-binary-keystone-ssh:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-ssh"),
 							VolumeMounts: []core.VolumeMount{
@@ -309,7 +316,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						},
 						{
 							Name:            "keystone-fernet",
-							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
+							Image:           imageRegistry + "/centos-binary-keystone-fernet:master",
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-fernet"),
 							VolumeMounts: []core.VolumeMount{
@@ -334,3 +341,13 @@ func newKollaEnvs(kollaService string) []core.EnvVar {
 		Value: "COPY_ALWAYS",
 	}}
 }
+
+const initDBScript = `DB_USER=${DB_USER:-root}
+DB_NAME=${DB_NAME:-contrail_test}
+KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
+KEYSTONE="keystone"
+
+createuser -h localhost -U $DB_USER $KEYSTONE
+psql -h localhost -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h localhost -U $DB_USER $KEYSTONE
+psql -h localhost -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
