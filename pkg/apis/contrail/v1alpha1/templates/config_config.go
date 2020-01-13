@@ -19,6 +19,23 @@ var ConfigNodeConfig = template.Must(template.New("").Parse(`{{range .APIServerL
 {{ end }}
 `))
 
+var ConfigAPIVNC = template.Must(template.New("").Parse(`[global]
+WEB_SERVER = {{ .ListenAddress }}
+WEB_PORT = {{ .ListenPort }} ; connection to api-server directly
+BASE_URL = /
+use_ssl = True
+cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+; Authentication settings (optional)
+[auth]
+AUTHN_TYPE = noauth
+;AUTHN_TYPE = keystone
+;AUTHN_PROTOCOL = http
+;AUTHN_SERVER = 127.0.0.1
+;AUTHN_PORT = 35357
+;AUTHN_URL = /v2.0/tokens
+;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
+`))
+
 // ConfigAPIConfig is the template of the Config API service configuration.
 var ConfigAPIConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 listen_ip_addr={{ .ListenAddress }}
@@ -26,7 +43,7 @@ listen_port={{ .ListenPort }}
 http_server_port=8084
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-api.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 list_optimization_enabled=True
 auth=noauth
@@ -71,7 +88,7 @@ analytics_server_ip={{ .AnalyticsServerList}}
 analytics_server_port=8081
 push_mode=1
 log_file=/var/log/contrail/contrail-device-manager.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
@@ -109,7 +126,7 @@ api_server_ip={{ .ApiServerList}}
 api_server_port=8082
 api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-schema.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
@@ -142,7 +159,7 @@ api_server_ip={{ .ApiServerList }}
 api_server_port=8082
 api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-svc-monitor.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
@@ -233,7 +250,7 @@ ipfix_port=4739
 log_file=/var/log/contrail/contrail-collector.log
 log_files_count=10
 log_file_size=1048576
-log_level=SYS_DEBUG
+log_level={{ .LogLevel }}
 log_local=1
 # sandesh_send_rate_limit=
 zookeeper_server_list={{ .ZookeeperServerList }}
@@ -282,7 +299,7 @@ sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 var ConfigNodemanagerConfigConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 hostip={{ .ListenAddress }}
 db_port={{ .CassandraPort }}
@@ -302,7 +319,7 @@ sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 var ConfigNodemanagerAnalyticsConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
-log_level=SYS_NOTICE
+log_level={{ .LogLevel }}
 log_local=1
 hostip={{ .ListenAddress }}
 db_port={{ .CassandraPort }}

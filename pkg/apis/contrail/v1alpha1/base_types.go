@@ -173,24 +173,29 @@ func SigningRequestStatus(secret *corev1.Secret, podIP string) string {
 }
 
 // CreateAndSignCsr creates and signs the CSR
-func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *runtime.Scheme, object v1.Object, restConfig *rest.Config, podList *corev1.PodList) error {
+func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *runtime.Scheme, object v1.Object, restConfig *rest.Config, podList *corev1.PodList, hostNetwork bool) error {
 
 	//var csrINSecret bool
 	//var pemINSecret bool
 	//var signingRequestStatus string
+	var hostname string
+
 	csrSecret, err := getSecret(client, request)
 	if err != nil {
 		return err
 	}
 	for _, pod := range podList.Items {
-		if request.Name == "webui1" {
-			fmt.Println("request for webui")
+
+		if hostNetwork {
+			hostname = pod.Spec.NodeName
+		} else {
+			hostname = pod.Spec.Hostname
 		}
 		csrINSecret := CSRINSecret(csrSecret, pod.Status.PodIP)
 		pemINSecret := PEMINSecret(csrSecret, pod.Status.PodIP)
 		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
 		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Created" || signingRequestStatus == "Pending") || !(csrINSecret || pemINSecret) {
-			csrRequest, privateKey, err := generateCsr(pod.Status.PodIP)
+			csrRequest, privateKey, err := generateCsr(pod.Status.PodIP, hostname)
 			if err != nil {
 				return err
 			}
@@ -330,7 +335,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 	return nil
 }
 
-func generateCsr(nodeName string) ([]byte, []byte, error) {
+func generateCsr(ipAddress string, hostname string) ([]byte, []byte, error) {
 	certPrivKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	certPrivKeyPEM := new(bytes.Buffer)
 	pem.Encode(certPrivKeyPEM, &pem.Block{
@@ -344,15 +349,16 @@ func generateCsr(nodeName string) ([]byte, []byte, error) {
 	}
 	csrTemplate := x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName:         nodeName,
+			CommonName:         ipAddress,
 			Country:            []string{"US"},
 			Province:           []string{"CA"},
 			Locality:           []string{"Sunnyvale"},
 			Organization:       []string{"Juniper Networks"},
 			OrganizationalUnit: []string{"Contrail"},
 		},
+		DNSNames:       []string{hostname},
 		EmailAddresses: []string{"test@email.com"},
-		IPAddresses:    []net.IP{net.ParseIP(nodeName)},
+		IPAddresses:    []net.IP{net.ParseIP(ipAddress)},
 	}
 	buf := new(bytes.Buffer)
 	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &csrTemplate, certPrivKey)

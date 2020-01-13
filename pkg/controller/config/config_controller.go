@@ -250,7 +250,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "api" {
 			command := []string{"bash", "-c",
-				"/usr/bin/python /usr/bin/contrail-api --conf_file /etc/mycontrail/api.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf --worker_id 0"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-api --conf_file /etc/mycontrail/api.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf --worker_id 0"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -276,7 +276,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		if container.Name == "devicemanager" {
 			command := []string{"bash", "-c",
-				"/usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -301,7 +301,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		if container.Name == "servicemonitor" {
 			command := []string{"bash", "-c",
-				"/usr/bin/python /usr/bin/contrail-svc-monitor --conf_file /etc/mycontrail/servicemonitor.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-svc-monitor --conf_file /etc/mycontrail/servicemonitor.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -326,7 +326,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		if container.Name == "schematransformer" {
 			command := []string{"bash", "-c",
-				"/usr/bin/python /usr/bin/contrail-schema --conf_file /etc/mycontrail/schematransformer.${POD_IP}  --conf_file /etc/contrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-schema --conf_file /etc/mycontrail/schematransformer.${POD_IP}  --conf_file /etc/contrail/contrail-keystone-auth.conf"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -504,8 +504,11 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
+		hostNetwork := true
+		if instance.Spec.CommonConfiguration.HostNetwork != nil {
+			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 

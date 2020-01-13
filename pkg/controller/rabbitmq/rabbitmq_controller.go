@@ -357,7 +357,11 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList); err != nil {
+		hostNetwork := true
+		if instance.Spec.CommonConfiguration.HostNetwork != nil {
+			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {

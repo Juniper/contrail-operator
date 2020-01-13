@@ -57,6 +57,7 @@ type ConfigConfiguration struct {
 	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
 	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel          string                `json:"logLevel,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -173,6 +174,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -183,8 +185,19 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
+
+		var vncApiConfigBuffer bytes.Buffer
+		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
+			ListenAddress string
+			ListenPort    string
+		}{
+			ListenAddress: podList.Items[idx].Status.PodIP,
+			ListenPort:    strconv.Itoa(*configConfig.APIPort),
+		})
+		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
@@ -198,6 +211,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -209,6 +223,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -224,6 +239,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -235,6 +251,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
@@ -250,6 +267,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -261,6 +279,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
@@ -277,6 +296,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			//LogLevel            string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
@@ -289,6 +309,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			//LogLevel:            configConfig.LogLevel,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -310,6 +331,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			Hostname:            hostname,
 			ListenAddress:       podList.Items[idx].Status.PodIP,
@@ -320,6 +342,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
@@ -531,6 +554,13 @@ func (c *Config) ConfigurationParameters() interface{} {
 	var rabbitmqUser string
 	var rabbitmqPassword string
 	var rabbitmqVhost string
+	var logLevel string
+	if c.Spec.ServiceConfiguration.LogLevel != "" {
+		logLevel = c.Spec.ServiceConfiguration.LogLevel
+	} else {
+		logLevel = LogLevel
+	}
+	configConfiguration.LogLevel = logLevel
 	if c.Spec.ServiceConfiguration.APIPort != nil {
 		apiPort = *c.Spec.ServiceConfiguration.APIPort
 	} else {
