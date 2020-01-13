@@ -26,11 +26,13 @@ func TestSwiftStorageController(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
-	configMapNameSuffixes := []string{"-swift-account-auditor", "-swift-account-reaper", "-swift-account-replication-server",
-		"-swift-account-replicator", "-swift-account-server", "-swift-container-auditor", "-swift-container-replication-server",
-		"-swift-container-replicator", "-swift-container-server", "-swift-container-updater", "-swift-object-auditor",
-		"-swift-object-expirer", "-swift-object-replication-server", "-swift-object-replicator", "-swift-object-server",
-		"-swift-object-updater"}
+	configMapNameSuffixes := []string{
+		"-swift-account-auditor", "-swift-account-reaper", "-swift-account-replication-server",
+		"-swift-account-replicator", "-swift-account-server", "-swift-container-auditor",
+		"-swift-container-replication-server", "-swift-container-replicator", "-swift-container-server",
+		"-swift-container-updater", "-swift-object-auditor", "-swift-object-expirer",
+		"-swift-object-replication-server", "-swift-object-replicator", "-swift-object-server", "-swift-object-updater",
+	}
 
 	name := types.NamespacedName{Namespace: "default", Name: "test"}
 	statefulSetName := types.NamespacedName{Namespace: "default", Name: "test-statefulset"}
@@ -40,9 +42,11 @@ func TestSwiftStorageController(t *testing.T) {
 			Name:      name.Name,
 		},
 		Spec: contrail.SwiftStorageSpec{
-			AccountBindPort:   6001,
-			ContainerBindPort: 6002,
-			ObjectBindPort:    6000,
+			ServiceConfiguration: contrail.SwiftStorageConfiguration{
+				AccountBindPort:   6001,
+				ContainerBindPort: 6002,
+				ObjectBindPort:    6000,
+			},
 		},
 	}
 
@@ -50,7 +54,7 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -73,7 +77,7 @@ func TestSwiftStorageController(t *testing.T) {
 		})
 
 		t.Run("should create Config Maps for all Swift Containers", func(t *testing.T) {
-			for _, cm := range configMapNameSuffixes{
+			for _, cm := range configMapNameSuffixes {
 				configMap := &core.ConfigMap{}
 				err = fakeClient.Get(context.Background(), types.NamespacedName{
 					Name:      "test" + cm,
@@ -85,14 +89,13 @@ func TestSwiftStorageController(t *testing.T) {
 			}
 		})
 
-
 	})
 
 	t.Run("reconciliation should be idempotent", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, newExpectedAccountAuditorConfigMap())
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -115,7 +118,7 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Namespace = statefulSetName.Namespace
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -134,7 +137,7 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Status.Replicas = 1
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -143,27 +146,11 @@ func TestSwiftStorageController(t *testing.T) {
 		assert.True(t, actualSwiftStorage.Status.Active)
 	})
 
-	t.Run("should delete StatefulSet when SwiftStorage CR is reconciled after removal", func(t *testing.T) {
-		t.Skip("This magically happens but we can't just test it")
-		// given
-		existingStatefulSet := &apps.StatefulSet{}
-		existingStatefulSet.Name = statefulSetName.Name
-		existingStatefulSet.Namespace = statefulSetName.Namespace
-		fakeClient := fake.NewFakeClientWithScheme(scheme, existingStatefulSet)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
-		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.NoError(t, err)
-		assertNoStatefulSetExist(t, fakeClient)
-	})
-
 	t.Run("persistent volume claims", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -181,7 +168,7 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -193,7 +180,7 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -210,7 +197,7 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
 		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient,scheme), claims)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -219,6 +206,24 @@ func TestSwiftStorageController(t *testing.T) {
 		expectedMountPoint := core.VolumeMount{
 			Name:      "localtime-volume",
 			MountPath: "/etc/localtime",
+			ReadOnly:  true,
+		}
+		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
+	})
+
+	t.Run("should mount swift conf volume mount to all Swift's containers", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+
+		expectedMountPoint := core.VolumeMount{
+			Name:      "swift-conf-volume",
+			MountPath: "/var/lib/kolla/swift_config/",
 			ReadOnly:  true,
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
@@ -246,20 +251,11 @@ func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.Name
 	assert.Equal(t, spec.Selector.MatchLabels, spec.Template.ObjectMeta.Labels)
 }
 
-func assertNoStatefulSetExist(t *testing.T, c client.Client) {
-	statefulSetList := apps.StatefulSetList{}
-	err := c.List(context.Background(), &statefulSetList)
-	require.NoError(t, err)
-	assert.Empty(t, statefulSetList.Items, "Empty StatefulSet expected")
-}
-
-
 func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
-			"config.json": expectedConfig,
-			"swift.conf": expectedSwiftConf,
+			"config.json":          expectedConfig,
 			"account-auditor.conf": expectedAccountAuditorConf,
 		},
 		ObjectMeta: meta.ObjectMeta{
@@ -285,7 +281,7 @@ var expectedConfig = `
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"
@@ -306,11 +302,7 @@ var expectedConfig = `
     ]
 }
 `
-var expectedSwiftConf = `
-[swift-hash]
-swift_hash_path_suffix = changeme
-swift_hash_path_prefix = changeme
-`
+
 var expectedAccountAuditorConf = `
 [DEFAULT]
 bind_ip = 0.0.0.0

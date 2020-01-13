@@ -32,7 +32,7 @@ const swiftProxyServiceConfig = `{
     "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",
     "config_files": [
 		{
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"

@@ -2933,7 +2933,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: michaelhenkel/contrail-operator:latest
+          image: localhost:5000/contrail_operator:latest
           #command:
           #- contrail-operator
           imagePullPolicy: Always

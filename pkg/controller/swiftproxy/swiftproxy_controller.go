@@ -187,7 +187,7 @@ func updatePodTemplate(pod *core.PodSpec, swiftConfigName, swiftInitConfigName s
 		Image: "localhost:5000/centos-binary-swift-proxy-server:master",
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
-			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",

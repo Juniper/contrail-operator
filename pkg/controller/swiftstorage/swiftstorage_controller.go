@@ -38,7 +38,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 }
 
 func NewReconciler(
-client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
 ) *ReconcileSwiftStorage {
 	return &ReconcileSwiftStorage{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
@@ -72,8 +72,8 @@ var _ reconcile.Reconciler = &ReconcileSwiftStorage{}
 type ReconcileSwiftStorage struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client     client.Client
+	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
 	claims     *volumeclaims.PersistentVolumeClaims
 }
@@ -218,17 +218,21 @@ func swiftContainer(name, image string) core.Container {
 	}
 
 	serviceVolumeMount := core.VolumeMount{
-		Name: name + "-config-volume",
+		Name:      name + "-config-volume",
 		MountPath: "/var/lib/kolla/config_files/",
 		//TODO readonly
 	}
 
-	swiftConfVolumeMount := core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true}
+	swiftConfVolumeMount := core.VolumeMount{
+		Name:      "swift-conf-volume",
+		MountPath: "/var/lib/kolla/swift_config/",
+		ReadOnly:  true,
+	}
 
 	return core.Container{
 		Name:  name,
 		Image: "localhost:5000/centos-binary-" + image + ":master",
-		Env: newKollaEnvs(name),
+		Env:   newKollaEnvs(name),
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
 			localtimeVolumeMount,
@@ -280,12 +284,12 @@ func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMaps(swiftStor
 	}
 
 	serverConfigName := swiftStorage.Name + "-swift-container-server"
-	if err := r.configMap(serverConfigName,  "swift-storage", swiftStorage).ensureSwiftContainerServer(); err != nil {
+	if err := r.configMap(serverConfigName, "swift-storage", swiftStorage).ensureSwiftContainerServer(); err != nil {
 		return err
 	}
 
 	updaterConfigName := swiftStorage.Name + "-swift-container-updater"
-	return r.configMap(updaterConfigName,  "swift-storage", swiftStorage).ensureSwiftContainerUpdater()
+	return r.configMap(updaterConfigName, "swift-storage", swiftStorage).ensureSwiftContainerUpdater()
 }
 
 func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
@@ -308,32 +312,32 @@ func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMaps(swiftStorage
 	}
 
 	serverConfigName := swiftStorage.Name + "-swift-object-server"
-	if err := r.configMap(serverConfigName,  "swift-storage", swiftStorage).ensureSwiftObjectServer(); err != nil {
+	if err := r.configMap(serverConfigName, "swift-storage", swiftStorage).ensureSwiftObjectServer(); err != nil {
 		return err
 	}
 
 	updaterConfigName := swiftStorage.Name + "-swift-object-updater"
-	return r.configMap(updaterConfigName,  "swift-storage", swiftStorage).ensureSwiftObjectUpdater()
+	return r.configMap(updaterConfigName, "swift-storage", swiftStorage).ensureSwiftObjectUpdater()
 }
 
-func (r *ReconcileSwiftStorage) volumesNameConfigMapNameMap (swiftStorageName string) map[string]string {
-	return map[string]string {
-		"swift-account-auditor-config-volume": swiftStorageName + "-swift-account-auditor",
-		"swift-account-reaper-config-volume": swiftStorageName + "-swift-account-reaper",
-		"swift-account-replication-server-config-volume": swiftStorageName + "-swift-account-replication-server",
-		"swift-account-replicator-config-volume": swiftStorageName + "-swift-account-replicator",
-		"swift-account-server-config-volume": swiftStorageName + "-swift-account-server",
-		"swift-container-auditor-config-volume": swiftStorageName + "-swift-container-auditor",
+func (r *ReconcileSwiftStorage) volumesNameConfigMapNameMap(swiftStorageName string) map[string]string {
+	return map[string]string{
+		"swift-account-auditor-config-volume":              swiftStorageName + "-swift-account-auditor",
+		"swift-account-reaper-config-volume":               swiftStorageName + "-swift-account-reaper",
+		"swift-account-replication-server-config-volume":   swiftStorageName + "-swift-account-replication-server",
+		"swift-account-replicator-config-volume":           swiftStorageName + "-swift-account-replicator",
+		"swift-account-server-config-volume":               swiftStorageName + "-swift-account-server",
+		"swift-container-auditor-config-volume":            swiftStorageName + "-swift-container-auditor",
 		"swift-container-replication-server-config-volume": swiftStorageName + "-swift-container-replication-server",
-		"swift-container-replicator-config-volume": swiftStorageName + "-swift-container-replicator",
-		"swift-container-server-config-volume": swiftStorageName + "-swift-container-server",
-		"swift-container-updater-config-volume": swiftStorageName + "-swift-container-updater",
-		"swift-object-auditor-config-volume": swiftStorageName + "-swift-object-auditor",
-		"swift-object-expirer-config-volume": swiftStorageName + "-swift-object-expirer",
-		"swift-object-replication-server-config-volume": swiftStorageName + "-swift-object-replication-server",
-		"swift-object-replicator-config-volume": swiftStorageName + "-swift-object-replicator",
-		"swift-object-server-config-volume": swiftStorageName + "-swift-object-server",
-		"swift-object-updater-config-volume": swiftStorageName + "-swift-object-updater",
+		"swift-container-replicator-config-volume":         swiftStorageName + "-swift-container-replicator",
+		"swift-container-server-config-volume":             swiftStorageName + "-swift-container-server",
+		"swift-container-updater-config-volume":            swiftStorageName + "-swift-container-updater",
+		"swift-object-auditor-config-volume":               swiftStorageName + "-swift-object-auditor",
+		"swift-object-expirer-config-volume":               swiftStorageName + "-swift-object-expirer",
+		"swift-object-replication-server-config-volume":    swiftStorageName + "-swift-object-replication-server",
+		"swift-object-replicator-config-volume":            swiftStorageName + "-swift-object-replicator",
+		"swift-object-server-config-volume":                swiftStorageName + "-swift-object-server",
+		"swift-object-updater-config-volume":               swiftStorageName + "-swift-object-updater",
 	}
 }
 
@@ -342,7 +346,7 @@ func (r *ReconcileSwiftStorage) swiftServicesVolumes(swiftStorageName string) []
 	vNamesCMNamesMap := r.volumesNameConfigMapNameMap(swiftStorageName)
 	for vn, cmn := range vNamesCMNamesMap {
 		volumes = append(volumes, core.Volume{
-			Name:         vn,
+			Name: vn,
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{

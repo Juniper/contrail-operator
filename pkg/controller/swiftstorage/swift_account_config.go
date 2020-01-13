@@ -16,7 +16,7 @@ var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"
