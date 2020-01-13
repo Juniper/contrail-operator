@@ -30,7 +30,7 @@ spec:
           postgresInstance: postgres
           adminUsername: admin
           adminPassword: contrail123
-          image: registry:5000/contrail-command:latest
+          image: 172.17.14.127:5000/contrail-command:latest
     keystone:
       metadata:
         name: keystone
@@ -49,9 +49,9 @@ spec:
         serviceConfiguration:
           postgresInstance: postgres
           listenPort: 5555
-          imageRegistry: registry:5000
+          imageRegistry: 172.17.14.127:5000
     postgres:
       metadata:
         name: postgres
       spec: 
-        image: registry:5000/postgres:latest
+        image: 172.17.14.127:5000/postgres:latest

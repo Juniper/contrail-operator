@@ -5,8 +5,9 @@
     GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1
 
 ## Create a test env
-
-    KIND_CLUSTER_NAME=kind ./create_testenv.sh
+    export KIND_CLUSTER_NAME=kind
+    export EXTERNAL_INSECURE_REGISTRY=172.17.14.127:5000
+    ./create_testenv.sh
 
 It creates Kubernetes IN Docker cluster with a docker registry. This docker registry is accessible from host at `localhost:5000` and from inside the cluster at `registry:5000`
 
@@ -15,8 +16,8 @@ It creates Kubernetes IN Docker cluster with a docker registry. This docker regi
     ssh-keygen -t rsa -b 1024 -N "" -f deploy/id_rsa
 
 ## Apply operator and cluster
-
-    KIND_CLUSTER_NAME=kind ./apply_cluster.sh
+    export KIND_CLUSTER_NAME=kind
+    ./apply_cluster.sh
 
 ## Destroy operator and cluster
 
