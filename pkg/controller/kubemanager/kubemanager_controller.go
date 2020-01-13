@@ -392,7 +392,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "kubemanager" {
 			command := []string{"bash", "-c",
-				"/usr/bin/python /usr/bin/contrail-kube-manager -c /etc/mycontrail/kubemanager.${POD_IP}"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;/usr/bin/python /usr/bin/contrail-kube-manager -c /etc/mycontrail/kubemanager.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command

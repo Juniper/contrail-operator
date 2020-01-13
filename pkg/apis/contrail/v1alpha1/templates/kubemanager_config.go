@@ -52,3 +52,20 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+
+var KubemanagerAPIVNC = template.Must(template.New("").Parse(`[global]
+WEB_SERVER = {{ .ListenAddress }}
+WEB_PORT = {{ .ListenPort }} ; connection to api-server directly
+BASE_URL = /
+use_ssl = True
+cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+; Authentication settings (optional)
+[auth]
+AUTHN_TYPE = noauth
+;AUTHN_TYPE = keystone
+;AUTHN_PROTOCOL = http
+;AUTHN_SERVER = 127.0.0.1
+;AUTHN_PORT = 35357
+;AUTHN_URL = /v2.0/tokens
+;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
+`))

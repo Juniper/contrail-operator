@@ -248,6 +248,16 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:         rabbitmqSecretVhost,
 		})
 		data["kubemanager."+podList.Items[idx].Status.PodIP] = kubemanagerConfigBuffer.String()
+
+		var vncApiConfigBuffer bytes.Buffer
+		configtemplates.KubemanagerAPIVNC.Execute(&vncApiConfigBuffer, struct {
+			ListenAddress string
+			ListenPort    string
+		}{
+			ListenAddress: podList.Items[idx].Status.PodIP,
+			ListenPort:    configNodesInformation.APIServerPort,
+		})
+		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
 	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
