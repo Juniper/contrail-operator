@@ -28,6 +28,9 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            image:
+              type: string
           type: object
         status:
           properties:
