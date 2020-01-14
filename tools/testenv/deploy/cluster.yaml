@@ -9,8 +9,168 @@ spec:
     replicas: 1
     hostNetwork: true
     imagePullSecrets:
-    - contrail-nightly
+      - contrail-nightly
   services:
+    cassandras:
+      - metadata:
+          name: cassandra1
+          labels:
+            contrail_cluster: cluster1
+        spec:
+          commonConfiguration:
+            activate: true
+            create: true
+            tolerations:
+              - effect: NoSchedule
+                operator: Exists
+              - effect: NoExecute
+                operator: Exists
+            nodeSelector:
+              node-role.kubernetes.io/master: ""
+          serviceConfiguration:
+            images:
+              cassandra: 172.17.14.127:5000/cassandra:3.11.4
+              init: 172.17.14.127:5000/python:alpine
+            listenAddress: auto
+            startRpc: true
+            port: 9160
+            cqlPort: 9042
+            sslStoragePort: 7001
+            storagePort: 7000
+            jmxLocalPort: 7199
+            clusterName: ContrailConfigDB
+            maxHeapSize: 1024M
+            minHeapSize: 100M
+    zookeepers:
+      - metadata:
+          name: zookeeper1
+          labels:
+            contrail_cluster: cluster1
+        spec:
+          commonConfiguration:
+            activate: true
+            create: true
+            tolerations:
+              - effect: NoSchedule
+                operator: Exists
+              - effect: NoExecute
+                operator: Exists
+            nodeSelector:
+              node-role.kubernetes.io/master: ""
+          serviceConfiguration:
+            images:
+              zookeeper: 172.17.14.127:5000/zookeeper:3.5.5
+              init: 172.17.14.127:5000/python:alpine
+            clientPort: 2181
+            electionPort: 3888
+            serverPort: 2888
+    rabbitmq:
+      metadata:
+        name: rabbitmq1
+        labels:
+          contrail_cluster: cluster1
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          images:
+            rabbitmq: 172.17.14.127:5000/rabbitmq:3.7
+            init: 172.17.14.127:5000/python:alpine
+          port: 5673
+          erlangCookie: 47EFF3BB-4786-46E0-A5BB-58455B3C2CB4
+    config:
+      metadata:
+        name: config1
+        labels:
+          contrail_cluster: cluster1
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          zookeeperInstance: zookeeper1
+          images:
+            api: 172.17.14.127:5000/contrail-controller-config-api:latest
+            devicemanager: 172.17.14.127:5000/contrail-controller-config-devicemgr:latest
+            schematransformer: 172.17.14.127:5000/contrail-controller-config-schema:latest
+            servicemonitor: 172.17.14.127:5000/contrail-controller-config-svcmonitor:latest
+            analyticsapi: 172.17.14.127:5000/contrail-analytics-api:latest
+            queryengine: 172.17.14.127:5000/contrail-analytics-query-engine:latest
+            collector: 172.17.14.127:5000/contrail-analytics-collector:latest
+            redis: 172.17.14.127:5000/redis:4.0.2
+            nodemanagerconfig: 172.17.14.127:5000/contrail-nodemgr:latest
+            nodemanageranalytics: 172.17.14.127:5000/contrail-nodemgr:latest
+            nodeinit: 172.17.14.127:5000/contrail-node-init:latest
+            init: 172.17.14.127:5000/python:alpine
+            init2: 172.17.14.127:5000/python:alpine
+    controls:
+      - metadata:
+          name: control1
+          labels:
+            contrail_cluster: cluster1
+            control_role: master
+        spec:
+          commonConfiguration:
+            activate: true
+            create: true
+            tolerations:
+              - effect: NoSchedule
+                operator: Exists
+              - effect: NoExecute
+                operator: Exists
+            nodeSelector:
+              node-role.kubernetes.io/master: ""
+          serviceConfiguration:
+            cassandraInstance: cassandra1
+            zookeeperInstance: zookeeper1
+            images:
+              control: 172.17.14.127:5000/contrail-controller-control-control:latest
+              dns: 172.17.14.127:5000/contrail-controller-control-dns:latest
+              named: 172.17.14.127:5000/contrail-controller-control-named:latest
+              nodemanager: 172.17.14.127:5000/contrail-nodemgr:latest
+              nodeinit: 172.17.14.127:5000/contrail-node-init:latest
+              init: 172.17.14.127:5000/python:alpine
+    webui:
+      metadata:
+        name: webui1
+        labels:
+          contrail_cluster: cluster1
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          clusterUsername: admin
+          clusterPassword: contrail123
+          images:
+            webuiweb: 172.17.14.127:5000/contrail-controller-webui-web:latest
+            webuijob: 172.17.14.127:5000/contrail-controller-webui-job:latest
+            redis: 172.17.14.127:5000/redis:4.0.2
+            nodeinit: 172.17.14.127:5000/contrail-node-init:latest
     contrailCommand:
       metadata:
         name: command
@@ -20,12 +180,12 @@ spec:
           create: true
           hostNetwork: true
           tolerations:
-          - effect: NoSchedule
-            operator: Exists
-          - effect: NoExecute
-            operator: Exists
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
           nodeSelector:
-            node-role.kubernetes.io/master: ''
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           postgresInstance: postgres
           adminUsername: admin
@@ -40,12 +200,12 @@ spec:
           create: true
           hostNetwork: true
           tolerations:
-          - effect: NoSchedule
-            operator: Exists
-          - effect: NoExecute
-            operator: Exists
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
           nodeSelector:
-            node-role.kubernetes.io/master: ''
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           postgresInstance: postgres
           listenPort: 5555
@@ -53,5 +213,5 @@ spec:
     postgres:
       metadata:
         name: postgres
-      spec: 
+      spec:
         image: 172.17.14.127:5000/postgres:latest
