@@ -130,7 +130,7 @@ log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -149,7 +149,12 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+[SECURITY]
+use_certs=True
+ca_certs=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem`))
 
 // ConfigServicemonitorConfig is the template of the ServiceMonitor service configuration.
 var ConfigServicemonitorConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -182,10 +187,10 @@ analytics_api_ssl_certfile = /etc/certificates/server-{{ .ListenAddress }}.crt
 analytics_api_ssl_keyfile = /etc/certificates/server-key-{{ .ListenAddress }}.pem
 analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SECURITY]
-use_certs=False
-keyfile=/etc/contrail/ssl/private/server-privkey.pem
-certfile=/etc/contrail/ssl/certs/server.pem
-ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+use_certs=True
+keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list={{ .AnalyticsServerList }}
