@@ -7,9 +7,10 @@
 ## Create a test env
     export KIND_CLUSTER_NAME=kind
     export EXTERNAL_INSECURE_REGISTRY=172.17.14.127:5000
+    export INTERNAL_INSECURE_REGISTRY_PORT=6000
     ./create_testenv.sh
 
-It creates Kubernetes IN Docker cluster with a docker registry. This docker registry is accessible from host at `localhost:5000` and from inside the cluster at `registry:5000`
+It creates Kubernetes IN Docker cluster with a docker registry. This docker registry is accessible from host at `localhost:6000` and from inside the cluster at `registry:5000`
 
 ## Create keystone ssh keys
 
