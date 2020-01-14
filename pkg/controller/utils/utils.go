@@ -38,6 +38,10 @@ const (
 
 var err error
 
+func RemoveIndex(s []corev1.Container, index int) []corev1.Container {
+	return append(s[:index], s[index+1:]...)
+}
+
 // GetGroupKindFromObject return GK.
 func GetGroupKindFromObject(object runtime.Object) schema.GroupKind {
 	objectKind := object.GetObjectKind()

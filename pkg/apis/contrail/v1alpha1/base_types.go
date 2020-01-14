@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +32,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,6 +45,25 @@ const (
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
+
+type MonitorConfig struct {
+	APIServerList  []string          `yaml:"apiServerList,omitempty"`
+	Encryption     MonitorEncryption `yaml:"encryption,omitempty"`
+	NodeType       string            `yaml:"nodeType,omitempty"`
+	Interval       int64             `yaml:"interval,omitempty"`
+	Hostname       string            `yaml:"hostname,omitempty"`
+	InCluster      *bool             `yaml:"inCluster,omitempty"`
+	KubeConfigPath string            `yaml:"kubeConfigPath,omitempty"`
+	NodeName       string            `yaml:"nodeName,omitempty"`
+	Namespace      string            `yaml:"namespace,omitempty"`
+}
+
+type MonitorEncryption struct {
+	CA       *string `yaml:"ca,omitempty"`
+	Cert     *string `yaml:"cert,omitempty"`
+	Key      *string `yaml:"key,omitempty"`
+	Insecure bool    `yaml:"insecure,omitempty"`
+}
 
 // Container defines name, image and command.
 // +k8s:openapi-gen=true
@@ -111,6 +132,140 @@ type CommonConfiguration struct {
 	// zero and not specified. Defaults to 1.
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
+}
+
+func CreateAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
+
+	serviceAccountName := "serviceaccount-" + accountName
+	clusterRoleName := "clusterrole-" + accountName
+	clusterRoleBindingName := "clusterrolebinding-" + accountName
+	secretName := "secret-" + accountName
+
+	existingServiceAccount := &corev1.ServiceAccount{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceAccountName, Namespace: namespace}, existingServiceAccount)
+	if err != nil && errors.IsNotFound(err) {
+		serviceAccount := &corev1.ServiceAccount{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "ServiceAccount",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			},
+		}
+		controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		if err = client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+
+	existingSecret := &corev1.Secret{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: namespace}, existingSecret)
+	if err != nil && errors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					"kubernetes.io/service-account.name": serviceAccountName,
+				},
+			},
+			Type: corev1.SecretType("kubernetes.io/service-account-token"),
+		}
+		controllerutil.SetControllerReference(owner, secret, scheme)
+		if err = client.Create(context.TODO(), secret); err != nil {
+			return err
+		}
+	}
+
+	existingClusterRole := &rbacv1.ClusterRole{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
+	if err != nil && errors.IsNotFound(err) {
+		clusterRole := &rbacv1.ClusterRole{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRole",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterRoleName,
+				Namespace: namespace,
+			},
+			Rules: []rbacv1.PolicyRule{{
+				Verbs: []string{
+					"*",
+				},
+				APIGroups: []string{
+					"*",
+				},
+				Resources: []string{
+					"*",
+				},
+			}},
+		}
+		controllerutil.SetControllerReference(owner, clusterRole, scheme)
+		if err = client.Create(context.TODO(), clusterRole); err != nil {
+			return err
+		}
+	}
+
+	existingClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBindingName}, existingClusterRoleBinding)
+	if err != nil && errors.IsNotFound(err) {
+		clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRoleBinding",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterRoleBindingName,
+				Namespace: namespace,
+			},
+			Subjects: []rbacv1.Subject{{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			}},
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+				Name:     clusterRoleName,
+			},
+		}
+		controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
+		if err = client.Create(context.TODO(), clusterRoleBinding); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
+	cert := "/etc/certificates/server-" + podIP + ".crt"
+	key := "/etc/certificates/server-key-" + podIP + ".pem"
+	ca := "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	inCluster := true
+	monitorConfig := MonitorConfig{
+		APIServerList: configNodeList,
+		Encryption: MonitorEncryption{
+			CA:       &ca,
+			Cert:     &cert,
+			Key:      &key,
+			Insecure: true,
+		},
+		NodeType:  nodeType,
+		Hostname:  hostname,
+		Interval:  10,
+		InCluster: &inCluster,
+		NodeName:  nodeName,
+		Namespace: namespace,
+	}
+
+	monitorYaml, err := yaml.Marshal(monitorConfig)
+	if err != nil {
+		return "", err
+	}
+	return string(monitorYaml), nil
 }
 
 // SetPodsToReady sets the status label of a POD to ready.

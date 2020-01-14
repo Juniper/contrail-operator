@@ -37,6 +37,17 @@ spec:
         volumeMounts:
         - mountPath: /var/log/contrail
           name: control-logs
+      - image: docker.io/michaelhenkel/contrail-statusmonitor:debug
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: statusmonitor
+        volumeMounts:
+        - mountPath: /var/log/contrail
+          name: control-logs
       - image: docker.io/michaelhenkel/contrail-controller-control-dns:5.2.0-dev1
         env:
         - name: POD_IP

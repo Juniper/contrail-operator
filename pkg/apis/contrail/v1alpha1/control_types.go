@@ -5,6 +5,7 @@ import (
 	"context"
 	"sort"
 	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -184,14 +185,19 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
 	for idx := range podList.Items {
+		hostname := podList.Items[idx].Annotations["hostname"]
+		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
 		/*
-			command := []string{"/bin/sh", "-c", "hostname"}
-			hostname, _, err := ExecToPodThroughAPI(command, "init", podList.Items[idx].Name, podList.Items[idx].Namespace, nil)
-			if err != nil {
-				return err
+			for idx, configNode := range configNodesList {
+				configNodesList[idx] = configNode + ":" + configNodesInformation.APIServerPort
 			}
 		*/
-		hostname := podList.Items[idx].Annotations["hostname"]
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP, "control", request.Name, request.Namespace)
+		if err != nil {
+			return err
+		}
+		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
+
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
 			ListenAddress       string

@@ -326,42 +326,8 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	statefulSet.Spec.Template.Spec.ServiceAccountName = serviceAccountName
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "webuiweb" {
-			/*
-				envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-				env := corev1.EnvVar{
-					Name:  "SSL_ENABLE",
-					Value: "true",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CERTFILE",
-					Value: "/etc/contrail/webui_ssl/cs-cert.pem",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_KEYFILE",
-					Value: "/etc/contrail/webui_ssl/cs-key.pem",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CA_KEYFILE",
-					Value: "",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CA_CERTFILE",
-					Value: "",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "FORCE_GENERATE_CERT",
-					Value: "true",
-				}
-				envList = append(envList, env)
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
-			*/
 			command := []string{"bash", "-c",
-				"/usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+				"cp /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/contrail/config.global.js"}
 
 			//"/certs-init.sh && /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
@@ -387,42 +353,8 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "webuijob" {
-			/*
-				envList := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-				env := corev1.EnvVar{
-					Name:  "SSL_ENABLE",
-					Value: "true",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CERTFILE",
-					Value: "/etc/contrail/webui_ssl/cs-cert.pem",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_KEYFILE",
-					Value: "/etc/contrail/webui_ssl/cs-key.pem",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CA_KEYFILE",
-					Value: "",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "SERVER_CA_CERTFILE",
-					Value: "",
-				}
-				envList = append(envList, env)
-				env = corev1.EnvVar{
-					Name:  "FORCE_GENERATE_CERT",
-					Value: "true",
-				}
-				envList = append(envList, env)
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Env = envList
-			*/
 			command := []string{"bash", "-c",
-				"/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
+				"cp /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/contrail/config.global.js"}
 
 			//"/certs-init.sh && sleep 10;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {

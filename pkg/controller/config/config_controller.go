@@ -247,6 +247,30 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
+	configNodeMgr := true
+	analyticsNodeMgr := true
+
+	if _, ok := instance.Spec.ServiceConfiguration.Containers["nodemanagerconfig"]; !ok {
+		configNodeMgr = false
+	}
+
+	if _, ok := instance.Spec.ServiceConfiguration.Containers["nodemanageranalytics"]; !ok {
+		analyticsNodeMgr = false
+	}
+
+	if instance.Spec.ServiceConfiguration.NodeManager != nil && !*instance.Spec.ServiceConfiguration.NodeManager {
+		for idx, container := range statefulSet.Spec.Template.Spec.Containers {
+			if container.Name == "nodemanagerconfig" {
+				statefulSet.Spec.Template.Spec.Containers = utils.RemoveIndex(statefulSet.Spec.Template.Spec.Containers, idx)
+			}
+		}
+		for idx, container := range statefulSet.Spec.Template.Spec.Containers {
+			if container.Name == "nodemanageranalytics" {
+				statefulSet.Spec.Template.Spec.Containers = utils.RemoveIndex(statefulSet.Spec.Template.Spec.Containers, idx)
+			}
+		}
+	}
+
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "api" {
 			command := []string{"bash", "-c",
@@ -420,57 +444,72 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "nodemanagerconfig" {
+			if configNodeMgr {
+				command := []string{"bash", "-c",
+					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-config"}
 
-			command := []string{"bash", "-c",
-				"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-config"}
-			if instance.Spec.ServiceConfiguration.NodeManager != nil && !*instance.Spec.ServiceConfiguration.NodeManager {
-				command = []string{"bash", "-c",
-					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; while true; do sleep 10; done"}
-			}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+				} else {
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				}
+
+				volumeMountList := []corev1.VolumeMount{}
+				if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
+					volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+				}
+				volumeMount := corev1.VolumeMount{
+					Name:      request.Name + "-" + instanceType + "-volume",
+					MountPath: "/etc/mycontrail",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			}
 
-			volumeMountList := []corev1.VolumeMount{}
-			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
-				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
-			}
-			volumeMount := corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "nodemanageranalytics" {
-			command := []string{"bash", "-c",
-				"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;/usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-analytics"}
-			if instance.Spec.ServiceConfiguration.NodeManager != nil && !*instance.Spec.ServiceConfiguration.NodeManager {
-				command = []string{"bash", "-c",
-					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;while true; do sleep 10; done"}
+			if analyticsNodeMgr {
+				command := []string{"bash", "-c",
+					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;/usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-analytics"}
+
+				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+				} else {
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				}
+				volumeMountList := []corev1.VolumeMount{}
+				if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
+					volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+				}
+				volumeMount := corev1.VolumeMount{
+					Name:      request.Name + "-" + instanceType + "-volume",
+					MountPath: "/etc/mycontrail",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+
 			}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+		}
+	}
+
+	if !configNodeMgr {
+		for idx, container := range statefulSet.Spec.Template.Spec.Containers {
+			if container.Name == "nodemanagerconfig" {
+				statefulSet.Spec.Template.Spec.Containers = utils.RemoveIndex(statefulSet.Spec.Template.Spec.Containers, idx)
 			}
-			volumeMountList := []corev1.VolumeMount{}
-			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
-				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+		}
+	}
+
+	if !analyticsNodeMgr {
+		for idx, container := range statefulSet.Spec.Template.Spec.Containers {
+			if container.Name == "nodemanageranalytics" {
+				statefulSet.Spec.Template.Spec.Containers = utils.RemoveIndex(statefulSet.Spec.Template.Spec.Containers, idx)
 			}
-			volumeMount := corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 	}
 
