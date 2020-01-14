@@ -608,6 +608,12 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 							Format: "",
 						},
 					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -921,6 +927,12 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 						},
 					},
 					"postgresInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"imageRegistry": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -1442,7 +1454,14 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PostgresSpec defines the desired state of Postgres",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 		Dependencies: []string{},

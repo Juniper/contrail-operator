@@ -153,6 +153,11 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
+
+	image := "localhost:5000/postgres"
+	if cr.Spec.Image != "" {
+		image = cr.Spec.Image
+	}
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -165,7 +170,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			DNSPolicy:    core.DNSClusterFirst,
 			Containers: []core.Container{
 				{
-					Image:           "localhost:5000/postgres",
+					Image:           image,
 					Name:            "postgres",
 					ImagePullPolicy: core.PullAlways,
 					ReadinessProbe: &core.Probe{

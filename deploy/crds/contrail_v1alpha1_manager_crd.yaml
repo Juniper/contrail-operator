@@ -384,6 +384,8 @@ spec:
                               type: string
                             adminUsername:
                               type: string
+                            image:
+                              type: string
                             postgresInstance:
                               type: string
                           type: object
@@ -584,6 +586,8 @@ spec:
                           type: object
                         serviceConfiguration:
                           properties:
+                            imageRegistry:
+                              type: string
                             listenPort:
                               format: int64
                               type: integer
@@ -749,6 +753,9 @@ spec:
                     metadata:
                       type: object
                     spec:
+                      properties:
+                        image:
+                          type: string
                       type: object
                     status:
                       properties:

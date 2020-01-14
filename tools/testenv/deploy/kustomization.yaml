@@ -1,0 +1,18 @@
+resources:
+  - 0-create-persistent-volumes.yaml
+  - 1-create-operator.yaml
+  - cluster.yaml
+
+secretGenerator:
+- name: keystone-keys
+  namespace: contrail
+  files:
+  - id_rsa
+  - id_rsa.pub
+generatorOptions:
+  disableNameSuffixHash: true
+
+images:
+  - name: michaelhenkel/contrail-operator:latest
+    newName: registry:5000/contrail-operator
+

@@ -52,6 +52,32 @@ func TestPostgresController(t *testing.T) {
 		assertPostgresStatusActive(t, fakeClient, name, false)
 	})
 
+	t.Run("should create Postgres k8s with provided registry Pod when Postgres CR is created", func(t *testing.T) {
+		// given
+		postgresCR := &contrail.Postgres{
+			ObjectMeta: meta.ObjectMeta{
+				Namespace: name.Namespace,
+				Name:      name.Name,
+			},
+			Spec: contrail.PostgresSpec{
+				Image: "registry:5000/postgress",
+			},
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		reconcilePostgres := &ReconcilePostgres{
+			client: fakeClient,
+			scheme: scheme,
+			claims: volumeclaims.New(fakeClient, scheme),
+		}
+		// when
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+		assertPodExist(t, fakeClient, podName, "registry:5000/postgress")
+		// and
+		assertPostgresStatusActive(t, fakeClient, name, false)
+	})
+
 	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)

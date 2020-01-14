@@ -16,6 +16,7 @@ type KeystoneSpec struct {
 type KeystoneConfiguration struct {
 	ListenPort       int    `json:"listenPort,omitempty"`
 	PostgresInstance string `json:"postgresInstance,omitempty"`
+	ImageRegistry    string `json:"imageRegistry,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone
