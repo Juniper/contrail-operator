@@ -3,8 +3,6 @@ module github.com/Juniper/contrail-operator
 go 1.13
 
 replace (
-	github.com/Juniper/contrail-go-api => ../contrail-go-api
-	github.com/Juniper/contrail-go-api/types => ../contrail-go-api/types
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191205124210-07afe84a85e4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.0
