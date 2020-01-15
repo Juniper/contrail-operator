@@ -165,7 +165,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 				Name: "swift-conf-volume",
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
-						SecretName: "swift-conf",
+						SecretName: swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName,
 					},
 				},
 			},
@@ -220,7 +220,7 @@ func swiftContainer(name, image string) core.Container {
 	serviceVolumeMount := core.VolumeMount{
 		Name:      name + "-config-volume",
 		MountPath: "/var/lib/kolla/config_files/",
-		//TODO readonly
+		ReadOnly:  true,
 	}
 
 	swiftConfVolumeMount := core.VolumeMount{

@@ -40,6 +40,8 @@ spec:
                     listenPort:
                       format: int64
                       type: integer
+                    swiftConfSecretName:
+                      type: string
                     swiftPassword:
                       type: string
                   type: object
@@ -54,6 +56,8 @@ spec:
                     objectBindPort:
                       format: int64
                       type: integer
+                    swiftConfSecretName:
+                      type: string
                   type: object
               required:
               - swiftStorageConfiguration

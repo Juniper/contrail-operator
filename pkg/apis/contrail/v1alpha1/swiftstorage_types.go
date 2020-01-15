@@ -22,6 +22,7 @@ type SwiftStorageConfiguration struct {
 	AccountBindPort   int `json:"accountBindPort,omitempty"`
 	ContainerBindPort int `json:"containerBindPort,omitempty"`
 	ObjectBindPort    int `json:"objectBindPort,omitempty"`
+	SwiftConfSecretName string  `json:"swiftConfSecretName,omitempty"`
 }
 
 // SwiftStorageStatus defines the observed state of SwiftStorage

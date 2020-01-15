@@ -38,6 +38,8 @@ spec:
                 listenPort:
                   format: int64
                   type: integer
+                swiftConfSecretName:
+                  type: string
                 swiftPassword:
                   type: string
               type: object

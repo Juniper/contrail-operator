@@ -1,7 +1,7 @@
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Swift
 metadata:
-  name: example-swift
+  name: swift
   namespace: contrail
 spec:
   serviceConfiguration:

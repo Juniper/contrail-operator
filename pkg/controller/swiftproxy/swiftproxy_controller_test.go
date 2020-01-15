@@ -186,6 +186,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				KeystoneInstance:      "keystone",
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
+				SwiftConfSecretName: "test-secret",
 			},
 		},
 		Status: status,
@@ -272,7 +273,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							Name: "swift-conf-volume",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
-									SecretName: "swift-conf",
+									SecretName: "test-secret",
 								},
 							},
 						},

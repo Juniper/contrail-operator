@@ -130,7 +130,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		updatePodTemplate(&deployment.Spec.Template.Spec, swiftConfigName, swiftInitConfigName)
+		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
+		updatePodTemplate(&deployment.Spec.Template.Spec, swiftConfigName, swiftInitConfigName, swiftConfSecretName)
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
 	})
 	if err != nil {
@@ -168,7 +169,7 @@ func (r *ReconcileSwiftProxy) updateStatus(
 	return r.client.Status().Update(context.Background(), sp)
 }
 
-func updatePodTemplate(pod *core.PodSpec, swiftConfigName, swiftInitConfigName string) {
+func updatePodTemplate(pod *core.PodSpec, swiftConfigName, swiftInitConfigName, swiftConfSecretName string) {
 
 	pod.InitContainers = []core.Container{
 		{
@@ -233,7 +234,7 @@ func updatePodTemplate(pod *core.PodSpec, swiftConfigName, swiftInitConfigName s
 			Name: "swift-conf-volume",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName: "swift-conf",
+					SecretName: swiftConfSecretName,
 				},
 			},
 		},

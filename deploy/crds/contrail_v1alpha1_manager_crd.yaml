@@ -856,6 +856,64 @@ spec:
                           type: object
                       type: object
                   type: object
+                swift:
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      properties:
+                        serviceConfiguration:
+                          properties:
+                            swiftProxyConfiguration:
+                              properties:
+                                keystoneAdminPassword:
+                                  type: string
+                                keystoneInstance:
+                                  type: string
+                                listenPort:
+                                  format: int64
+                                  type: integer
+                                swiftConfSecretName:
+                                  type: string
+                                swiftPassword:
+                                  type: string
+                              type: object
+                            swiftStorageConfiguration:
+                              properties:
+                                accountBindPort:
+                                  format: int64
+                                  type: integer
+                                containerBindPort:
+                                  format: int64
+                                  type: integer
+                                objectBindPort:
+                                  format: int64
+                                  type: integer
+                                swiftConfSecretName:
+                                  type: string
+                              type: object
+                          required:
+                          - swiftStorageConfiguration
+                          - swiftProxyConfiguration
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      type: object
+                  type: object
                 vrouters:
                   items:
                     properties:

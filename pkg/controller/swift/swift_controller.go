@@ -2,7 +2,7 @@ package swift
 
 import (
 	"context"
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,14 +16,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("controller_swift")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
 
 // Add creates a new Swift Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -92,8 +89,8 @@ var _ reconcile.Reconciler = &ReconcileSwift{}
 type ReconcileSwift struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
+	client client.Client
+	scheme *runtime.Scheme
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -114,72 +111,76 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftConfSecretExists(swift); err != nil {
+	swiftConfSecretName := "swift-conf"
+	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftStorageExists(swift); err != nil {
+	if err := r.ensureSwiftStorageExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftProxyExists(swift); err != nil {
+	if err := r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift) error {
+func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftSecret := &corev1.Secret{}
-	secretNamespacedName := types.NamespacedName{Name: "swift-conf", Namespace:swift.Namespace}
+	secretNamespacedName := types.NamespacedName{Name: swiftConfSecretName, Namespace: swift.Namespace}
 	if err := controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
 		return err
 	}
 
 	err := r.client.Get(context.TODO(), secretNamespacedName, swiftSecret)
-	if err != nil && errors.IsNotFound(err) {
-		var swiftConfig string
-		swiftConfig, err = generateSwiftConfig()
-		if err != nil {
-			return err
-		}
-
-		swiftSecret.Name = secretNamespacedName.Name
-		swiftSecret.Namespace = secretNamespacedName.Namespace
-		swiftSecret.StringData = map[string]string{
-			"swift.conf": swiftConfig,
-		}
-		if err = r.client.Create(context.TODO(), swiftSecret); err != nil {
-			return err
-		}
+	if err == nil || !errors.IsNotFound(err) {
+		return err
 	}
-	return err
+	var swiftConfig string
+	swiftConfig, err = generateSwiftConfig()
+	if err != nil {
+		return err
+	}
+
+	swiftSecret.Name = secretNamespacedName.Name
+	swiftSecret.Namespace = secretNamespacedName.Namespace
+	swiftSecret.StringData = map[string]string{
+		"swift.conf": swiftConfig,
+	}
+	if err = r.client.Create(context.TODO(), swiftSecret); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r * ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift) error {
+func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftStorage := &contrail.SwiftStorage{
 		ObjectMeta: v1.ObjectMeta{
-			Name: swift.Name + "-storage",
+			Name:      swift.Name + "-storage",
 			Namespace: swift.Namespace,
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
+		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftStorage, r.scheme)
 	})
 	return err
 }
 
-func (r * ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift) error {
+func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: v1.ObjectMeta{
-			Name: swift.Name + "-proxy",
+			Name:      swift.Name + "-proxy",
 			Namespace: swift.Namespace,
 		},
 	}
-	 _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
+		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
-	 return err
+	return err
 }
