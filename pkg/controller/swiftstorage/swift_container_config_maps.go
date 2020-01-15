@@ -4,7 +4,7 @@ package swiftstorage
 func (c *configMaps) ensureSwiftContainerAuditor() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.ContainerBindPort,
+		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-auditor.conf",
 		DestConfigFileName:         "container-auditor.conf",
 		ContainerName:              "swift-container-auditor",
@@ -17,7 +17,7 @@ func (c *configMaps) ensureSwiftContainerAuditor() error {
 func (c *configMaps) ensureSwiftContainerReplicationServer() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.ContainerBindPort,
+		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-replication-server.conf",
 		DestConfigFileName:         "container-server.conf",
 		ContainerName:              "swift-container-server",
@@ -30,7 +30,7 @@ func (c *configMaps) ensureSwiftContainerReplicationServer() error {
 func (c *configMaps) ensureSwiftContainerReplicator() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.ContainerBindPort,
+		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-replicator.conf",
 		DestConfigFileName:         "container-replicator.conf",
 		ContainerName:              "swift-container-replicator",
@@ -43,7 +43,7 @@ func (c *configMaps) ensureSwiftContainerReplicator() error {
 func (c *configMaps) ensureSwiftContainerServer() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.ContainerBindPort,
+		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-server.conf",
 		DestConfigFileName:         "container-server.conf",
 		ContainerName:              "swift-container-server",
@@ -56,7 +56,7 @@ func (c *configMaps) ensureSwiftContainerServer() error {
 func (c *configMaps) ensureSwiftContainerUpdater() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.ContainerBindPort,
+		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-updater.conf",
 		DestConfigFileName:         "container-updater.conf",
 		ContainerName:              "swift-container-updater",

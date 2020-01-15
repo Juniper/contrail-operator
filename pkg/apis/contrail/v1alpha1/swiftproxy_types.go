@@ -17,6 +17,7 @@ type SwiftProxyConfiguration struct {
 	KeystoneInstance      string `json:"keystoneInstance,omitempty"`
 	KeystoneAdminPassword string `json:"keystoneAdminPassword,omitempty"`
 	SwiftPassword         string `json:"swiftPassword,omitempty"`
+	SwiftConfSecretName string  `json:"swiftConfSecretName,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy

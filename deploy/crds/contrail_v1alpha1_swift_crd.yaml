@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: swiftstorages.contrail.juniper.net
+  name: swifts.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: SwiftStorage
-    listKind: SwiftStorageList
-    plural: swiftstorages
-    singular: swiftstorage
+    kind: Swift
+    listKind: SwiftList
+    plural: swifts
+    singular: swift
   scope: Namespaced
   subresources:
     status: {}
@@ -30,32 +30,43 @@ spec:
         spec:
           properties:
             serviceConfiguration:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "operator-sdk generate k8s" to regenerate code after
-                modifying this file Add custom validation using kubebuilder tags:
-                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
-                accountBindPort:
-                  format: int64
-                  type: integer
-                containerBindPort:
-                  format: int64
-                  type: integer
-                objectBindPort:
-                  format: int64
-                  type: integer
-                swiftConfSecretName:
-                  type: string
+                swiftProxyConfiguration:
+                  properties:
+                    keystoneAdminPassword:
+                      type: string
+                    keystoneInstance:
+                      type: string
+                    listenPort:
+                      format: int64
+                      type: integer
+                    swiftConfSecretName:
+                      type: string
+                    swiftPassword:
+                      type: string
+                  type: object
+                swiftStorageConfiguration:
+                  properties:
+                    accountBindPort:
+                      format: int64
+                      type: integer
+                    containerBindPort:
+                      format: int64
+                      type: integer
+                    objectBindPort:
+                      format: int64
+                      type: integer
+                    swiftConfSecretName:
+                      type: string
+                  type: object
+              required:
+              - swiftStorageConfiguration
+              - swiftProxyConfiguration
               type: object
           required:
           - serviceConfiguration
           type: object
         status:
-          properties:
-            active:
-              type: boolean
-          required:
-          - active
           type: object
   version: v1alpha1
   versions:

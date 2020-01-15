@@ -16,7 +16,7 @@ var swiftContainerServiceBaseStartConfig = template.Must(template.New("").Parse(
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"
@@ -40,7 +40,7 @@ var swiftContainerServiceBaseStartConfig = template.Must(template.New("").Parse(
 
 var swiftContainerServiceUpdaterStartConfig = template.Must(template.New("").Parse(`
 {
-    "command": "{{ .ContainerName }} {{ .DestConfigFileName }} --verbose",
+    "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",
     "config_files": [
 		{
             "source": "/var/lib/kolla/swift/account.ring.gz",
@@ -57,7 +57,7 @@ var swiftContainerServiceUpdaterStartConfig = template.Must(template.New("").Par
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"

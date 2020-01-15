@@ -50,11 +50,16 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"./pkg/apis/contrail/v1alpha1.ServiceStatus":                schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref),
 		"./pkg/apis/contrail/v1alpha1.Services":                     schema_pkg_apis_contrail_v1alpha1_Services(ref),
 		"./pkg/apis/contrail/v1alpha1.Status":                       schema_pkg_apis_contrail_v1alpha1_Status(ref),
+		"./pkg/apis/contrail/v1alpha1.Swift":                        schema_pkg_apis_contrail_v1alpha1_Swift(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftConfiguration":           schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftProxy":                   schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration":      schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftProxySpec":               schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftProxyStatus":             schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftSpec":                    schema_pkg_apis_contrail_v1alpha1_SwiftSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStatus":                  schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorage":                 schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration":    schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorageSpec":             schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref),
 		"./pkg/apis/contrail/v1alpha1.SwiftStorageStatus":           schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref),
 		"./pkg/apis/contrail/v1alpha1.Vrouter":                      schema_pkg_apis_contrail_v1alpha1_Vrouter(ref),
@@ -1771,11 +1776,16 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Keystone"),
 						},
 					},
+					"swift": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Swift"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
+			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Swift", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
 	}
 }
 
@@ -1822,6 +1832,74 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_Swift(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Swift is the Schema for the swifts API",
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftSpec", "./pkg/apis/contrail/v1alpha1.SwiftStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftConfiguration is the Spec for the keystone API.",
+				Properties: map[string]spec.Schema{
+					"swiftStorageConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"),
+						},
+					},
+					"swiftProxyConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration"),
+						},
+					},
+				},
+				Required: []string{"swiftStorageConfiguration", "swiftProxyConfiguration"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration", "./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
 	}
 }
 
@@ -1898,6 +1976,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 							Format: "",
 						},
 					},
+					"swiftConfSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -1939,6 +2023,38 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref common.ReferenceCall
 					},
 				},
 				Required: []string{"active"},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftSpec defines the desired state of Swift",
+				Properties: map[string]spec.Schema{
+					"serviceConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftConfiguration"),
+						},
+					},
+				},
+				Required: []string{"serviceConfiguration"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftConfiguration"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftStatus defines the observed state of Swift",
+				Properties:  map[string]spec.Schema{},
 			},
 		},
 		Dependencies: []string{},
@@ -1988,17 +2104,16 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref common.ReferenceCallback
 	}
 }
 
-func schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SwiftStorageSpec defines the desired state of SwiftStorage",
+				Description: "SwiftStorageConfiguration is the Spec for the keystone API.",
 				Properties: map[string]spec.Schema{
 					"accountBindPort": {
 						SchemaProps: spec.SchemaProps{
-							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Type:   []string{"integer"},
+							Format: "int32",
 						},
 					},
 					"containerBindPort": {
@@ -2013,10 +2128,37 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref common.ReferenceCall
 							Format: "int32",
 						},
 					},
+					"swiftConfSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SwiftStorageSpec defines the desired state of SwiftStorage",
+				Properties: map[string]spec.Schema{
+					"serviceConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Ref:         ref("./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"),
+						},
+					},
+				},
+				Required: []string{"serviceConfiguration"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
 	}
 }
 

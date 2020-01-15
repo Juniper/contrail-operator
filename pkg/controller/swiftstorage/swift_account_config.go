@@ -4,12 +4,6 @@ import (
 	"text/template"
 )
 
-const swiftConfig = `
-[swift-hash]
-swift_hash_path_suffix = changeme
-swift_hash_path_prefix = changeme
-`
-
 var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
 {
     "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",
@@ -22,7 +16,7 @@ var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"

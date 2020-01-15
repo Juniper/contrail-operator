@@ -1187,6 +1187,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if err := r.processSwift(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }
 
@@ -1236,3 +1240,19 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
 
 	return err
 }
+
+func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Swift == nil {
+		return nil
+	}
+	swift := &v1alpha1.Swift{}
+	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
+	swift.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
+		swift.Spec = manager.Spec.Services.Swift.Spec
+		return controllerutil.SetControllerReference(manager, swift, r.scheme)
+	})
+
+	return err
+}
+

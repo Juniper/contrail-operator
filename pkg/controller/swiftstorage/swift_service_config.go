@@ -21,7 +21,6 @@ type swiftServiceConfig struct {
 func (c *swiftServiceConfig) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = c.executeTemplate(c.ServiceStartConfigTemplate)
 	cm.Data[c.ServiceConfigTemplate.Name()] = c.executeTemplate(c.ServiceConfigTemplate)
-	cm.Data["swift.conf"] = swiftConfig
 }
 
 func (c *swiftServiceConfig) executeTemplate(t *template.Template) string {
@@ -33,13 +32,13 @@ func (c *swiftServiceConfig) executeTemplate(t *template.Template) string {
 }
 
 type configMaps struct {
-	cm       *k8s.ConfigMap
-	swiftStorageSpec contrail.SwiftStorageSpec
+	cm               *k8s.ConfigMap
+	swiftStorageConf contrail.SwiftStorageConfiguration
 }
 
 func (r *ReconcileSwiftStorage) configMap(configMapName, ownerType string, swiftStorage *contrail.SwiftStorage) *configMaps {
 	return &configMaps{
-		cm:       r.kubernetes.ConfigMap(configMapName, ownerType, swiftStorage),
-		swiftStorageSpec: swiftStorage.Spec,
+		cm:               r.kubernetes.ConfigMap(configMapName, ownerType, swiftStorage),
+		swiftStorageConf: swiftStorage.Spec.ServiceConfiguration,
 	}
 }

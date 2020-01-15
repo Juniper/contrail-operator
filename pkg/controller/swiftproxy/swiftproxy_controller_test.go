@@ -186,6 +186,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				KeystoneInstance:      "keystone",
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
+				SwiftConfSecretName: "test-secret",
 			},
 		},
 		Status: status,
@@ -226,6 +227,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						Image: "localhost:5000/centos-binary-swift-proxy-server:master",
 						VolumeMounts: []core.VolumeMount{
 							core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+							core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -267,6 +269,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 								},
 							},
 						},
+						{
+							Name: "swift-conf-volume",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "test-secret",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -297,7 +307,6 @@ func newExpectedSwiftProxyConfigMap() *core.ConfigMap {
 	return &core.ConfigMap{
 		Data: map[string]string{
 			"config.json":       swiftProxyServiceConfig,
-			"swift.conf":        swiftConfig,
 			"proxy-server.conf": proxyServerConfig,
 		},
 		ObjectMeta: meta.ObjectMeta{
@@ -329,17 +338,11 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 	}
 }
 
-const swiftConfig = `
-[swift-hash]
-swift_hash_path_suffix = changeme
-swift_hash_path_prefix = changeme
-`
-
 const swiftProxyServiceConfig = `{
     "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",
     "config_files": [
 		{
-            "source": "/var/lib/kolla/config_files/swift.conf",
+            "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
             "perm": "0640"

@@ -3,7 +3,7 @@ package swiftstorage
 func (c *configMaps) ensureSwiftAccountAuditor() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-auditor.conf",
 		DestConfigFileName:         "account-auditor.conf",
 		ContainerName:              "swift-account-auditor",
@@ -16,7 +16,7 @@ func (c *configMaps) ensureSwiftAccountAuditor() error {
 func (c *configMaps) ensureSwiftAccountReaper() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-reaper.conf",
 		DestConfigFileName:         "account-reaper.conf",
 		ContainerName:              "swift-account-reaper",
@@ -29,7 +29,7 @@ func (c *configMaps) ensureSwiftAccountReaper() error {
 func (c *configMaps) ensureSwiftAccountReplicationServer() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-replication-server.conf",
 		DestConfigFileName:         "account-server.conf",
 		ContainerName:              "swift-account-server",
@@ -42,7 +42,7 @@ func (c *configMaps) ensureSwiftAccountReplicationServer() error {
 func (c *configMaps) ensureSwiftAccountReplicator() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-replicator.conf",
 		DestConfigFileName:         "account-replicator.conf",
 		ContainerName:              "swift-account-replicator",
@@ -55,7 +55,7 @@ func (c *configMaps) ensureSwiftAccountReplicator() error {
 func (c *configMaps) ensureSwiftAccountServer() error {
 	cc := &swiftServiceConfig{
 		BindAddress:                "0.0.0.0", 
-		BindPort:                   c.swiftStorageSpec.AccountBindPort,
+		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-server.conf",
 		DestConfigFileName:         "account-server.conf",
 		ContainerName:              "swift-account-server",

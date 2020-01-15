@@ -33,6 +33,7 @@ type Services struct {
 	ContrailCommand *ContrailCommand `json:"contrailCommand,omitempty"`
 	Postgres        *Postgres        `json:"postgres,omitempty"`
 	Keystone        *Keystone        `json:"keystone,omitempty"`
+	Swift           *Swift           `json:"swift,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
