@@ -21,7 +21,11 @@ log_local=1
 # log_category=
 # log_disable=0
 xmpp_server_port=5269
-xmpp_auth_enable=False
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -29,16 +33,23 @@ xmpp_auth_enable=False
 config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+config_db_use_ssl=True
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_server_list={{ .RabbitmqServerList }}
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
-rabbitmq_use_ssl=False
+rabbitmq_vhost={{ .RabbitmqVhost }}
+rabbitmq_user={{ .RabbitmqUser }}
+rabbitmq_password={{ .RabbitmqPassword }}
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlNamedConfig is the template of the Named service configuration.
 var ControlNamedConfig = template.Must(template.New("").Parse(`options {
@@ -99,7 +110,10 @@ log_local=1
 # log_file_size=10485760 # 10MB
 # log_category=
 # log_disable=0
-xmpp_dns_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -107,16 +121,23 @@ xmpp_dns_auth_enable=False
 config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+config_db_use_ssl=True
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 rabbitmq_server_list={{ .RabbitmqServerList }}
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
-rabbitmq_use_ssl=False
+rabbitmq_vhost={{ .RabbitmqVhost }}
+rabbitmq_user={{ .RabbitmqUser }}
+rabbitmq_password={{ .RabbitmqPassword }}
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlNodemanagerConfig is the template of the Control Nodemanager service configuration.
 var ControlNodemanagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -127,12 +148,16 @@ log_local=1
 hostip={{ .ListenAddress }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
-db_use_ssl=False
+db_use_ssl=True
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
@@ -140,6 +165,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
+  --api_server_use_ssl true
   --host_ip {{ .ListenAddress }} \
   --router_asn {{ .ASNNumber }} \
   --bgp_server_port {{ .BGPPort }} \

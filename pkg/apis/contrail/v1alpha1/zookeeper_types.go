@@ -32,10 +32,10 @@ type ZookeeperSpec struct {
 // ZookeeperConfiguration is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperConfiguration struct {
-	Images       map[string]string `json:"images"`
-	ClientPort   *int              `json:"clientPort,omitempty"`
-	ElectionPort *int              `json:"electionPort,omitempty"`
-	ServerPort   *int              `json:"serverPort,omitempty"`
+	Containers   map[string]*Container `json:"containers,omitempty"`
+	ClientPort   *int                  `json:"clientPort,omitempty"`
+	ElectionPort *int                  `json:"electionPort,omitempty"`
+	ServerPort   *int                  `json:"serverPort,omitempty"`
 }
 
 // ZookeeperStatus defines the status of the zookeeper object.
@@ -131,20 +131,21 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
 		if err != nil {
 			return err
 		}
-		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer, zookeeperAuthBuffer bytes.Buffer
+		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
 
 		configtemplates.ZookeeperConfig.Execute(&zookeeperConfigBuffer, struct {
 			ClientPort string
 		}{
 			ClientPort: strconv.Itoa(*zookeeperConfig.ClientPort),
 		})
-		configtemplates.ZookeeperAuthConfig.Execute(&zookeeperAuthBuffer, struct{}{})
+
 		configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
 		configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
-		data := map[string]string{"zoo.cfg": zookeeperConfigBuffer.String(),
+		data := map[string]string{
+			"zoo.cfg":           zookeeperConfigBuffer.String(),
 			"log4j.properties":  zookeeperLogBuffer.String(),
 			"configuration.xsl": zookeeperXslBuffer.String(),
-			"jaas.conf":         zookeeperAuthBuffer.String()}
+		}
 		configMapInstancConfig.Data = data
 
 		err = client.Update(context.TODO(), configMapInstancConfig)
@@ -227,6 +228,11 @@ func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *Com
 // AddVolumesToIntendedSTS adds volumes to the Zookeeper deployment.
 func (c *Zookeeper) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Zookeeper) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 // SetPodsToReady sets Zookeeper PODs to ready.

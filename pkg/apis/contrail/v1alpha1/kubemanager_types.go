@@ -55,25 +55,28 @@ type KubemanagerStatus struct {
 // KubemanagerConfiguration is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
-	Images                map[string]string `json:"images"`
-	CassandraInstance     string            `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance     string            `json:"zookeeperInstance,omitempty"`
-	UseKubeadmConfig      *bool             `json:"useKubeadmConfig,omitempty"`
-	ServiceAccount        string            `json:"serviceAccount,omitempty"`
-	ClusterRole           string            `json:"clusterRole,omitempty"`
-	ClusterRoleBinding    string            `json:"clusterRoleBinding,omitempty"`
-	CloudOrchestrator     string            `json:"cloudOrchestrator,omitempty"`
-	KubernetesAPIServer   string            `json:"kubernetesAPIServer,omitempty"`
-	KubernetesAPIPort     *int              `json:"kubernetesAPIPort,omitempty"`
-	KubernetesAPISSLPort  *int              `json:"kubernetesAPISSLPort,omitempty"`
-	PodSubnets            string            `json:"podSubnets,omitempty"`
-	ServiceSubnets        string            `json:"serviceSubnets,omitempty"`
-	KubernetesClusterName string            `json:"kubernetesClusterName,omitempty"`
-	IPFabricSubnets       string            `json:"ipFabricSubnets,omitempty"`
-	IPFabricForwarding    *bool             `json:"ipFabricForwarding,omitempty"`
-	IPFabricSnat          *bool             `json:"ipFabricSnat,omitempty"`
-	KubernetesTokenFile   string            `json:"kubernetesTokenFile,omitempty"`
-	HostNetworkService    *bool             `json:"hostNetworkService,omitempty"`
+	Containers            map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance     string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance     string                `json:"zookeeperInstance,omitempty"`
+	UseKubeadmConfig      *bool                 `json:"useKubeadmConfig,omitempty"`
+	ServiceAccount        string                `json:"serviceAccount,omitempty"`
+	ClusterRole           string                `json:"clusterRole,omitempty"`
+	ClusterRoleBinding    string                `json:"clusterRoleBinding,omitempty"`
+	CloudOrchestrator     string                `json:"cloudOrchestrator,omitempty"`
+	KubernetesAPIServer   string                `json:"kubernetesAPIServer,omitempty"`
+	KubernetesAPIPort     *int                  `json:"kubernetesAPIPort,omitempty"`
+	KubernetesAPISSLPort  *int                  `json:"kubernetesAPISSLPort,omitempty"`
+	PodSubnets            string                `json:"podSubnets,omitempty"`
+	ServiceSubnets        string                `json:"serviceSubnets,omitempty"`
+	KubernetesClusterName string                `json:"kubernetesClusterName,omitempty"`
+	IPFabricSubnets       string                `json:"ipFabricSubnets,omitempty"`
+	IPFabricForwarding    *bool                 `json:"ipFabricForwarding,omitempty"`
+	IPFabricSnat          *bool                 `json:"ipFabricSnat,omitempty"`
+	KubernetesTokenFile   string                `json:"kubernetesTokenFile,omitempty"`
+	HostNetworkService    *bool                 `json:"hostNetworkService,omitempty"`
+	RabbitmqUser          string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword      string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost         string                `json:"rabbitmqVhost,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.
@@ -119,6 +122,19 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -127,6 +143,15 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 
 	kubemanagerConfigInstance := c.ConfigurationParameters()
 	kubemanagerConfig := kubemanagerConfigInstance.(KubemanagerConfiguration)
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = kubemanagerConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = kubemanagerConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = kubemanagerConfig.RabbitmqVhost
+	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
 		controlPlaneEndpoint := ""
@@ -194,6 +219,9 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerPort    string
 			CollectorServerList   string
 			HostNetworkService    string
+			RabbitmqUser          string
+			RabbitmqPassword      string
+			RabbitmqVhost         string
 		}{
 			Token:                 token,
 			ListenAddress:         podList.Items[idx].Status.PodIP,
@@ -212,11 +240,24 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			CassandraServerList:   cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList:   zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:    rabbitmqNodesInformation.ServerListCommaSeparatedWithoutPort,
-			RabbitmqServerPort:    rabbitmqNodesInformation.Port,
+			RabbitmqServerPort:    rabbitmqNodesInformation.SSLPort,
 			CollectorServerList:   configNodesInformation.CollectorServerListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),
+			RabbitmqUser:          rabbitmqSecretUser,
+			RabbitmqPassword:      rabbitmqSecretPassword,
+			RabbitmqVhost:         rabbitmqSecretVhost,
 		})
 		data["kubemanager."+podList.Items[idx].Status.PodIP] = kubemanagerConfigBuffer.String()
+
+		var vncApiConfigBuffer bytes.Buffer
+		configtemplates.KubemanagerAPIVNC.Execute(&vncApiConfigBuffer, struct {
+			ListenAddress string
+			ListenPort    string
+		}{
+			ListenAddress: podList.Items[idx].Status.PodIP,
+			ListenPort:    configNodesInformation.APIServerPort,
+		})
+		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
 	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
@@ -264,6 +305,19 @@ func (c *Kubemanager) IsActive(name string, namespace string, client client.Clie
 	return false
 }
 
+// CreateSecret creates a secret.
+func (c *Kubemanager) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"kubemanager",
+		c)
+}
+
 // PrepareSTS prepares the intended deployment for the Kubemanager object.
 func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "kubemanager", request, scheme, c, client, true)
@@ -272,6 +326,11 @@ func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *C
 // AddVolumesToIntendedSTS adds volumes to the Kubemanager deployment.
 func (c *Kubemanager) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Kubemanager) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 // SetPodsToReady sets Kubemanager PODs to ready.

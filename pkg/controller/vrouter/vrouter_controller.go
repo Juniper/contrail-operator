@@ -1,9 +1,10 @@
 package vrouter
 
 import (
+	"context"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,7 +95,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler.
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -148,6 +150,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	srcDS := &source.Kind{Type: &appsv1.DaemonSet{}}
+	dsHandler := &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Vrouter{},
+	}
+	dsPred := utils.DSStatusChange(utils.VrouterGroupKind())
+	if err = c.Watch(srcDS, dsHandler, dsPred); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -158,8 +170,9 @@ var _ reconcile.Reconciler = &ReconcileVrouter{}
 type ReconcileVrouter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -217,12 +230,18 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	daemonSet := GetDaemonset()
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	instance.AddVolumesToIntendedDS(daemonSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	instance.AddSecretVolumesToIntendedDS(daemonSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	var serviceAccountName string
 	if instance.Spec.ServiceConfiguration.ServiceAccount != "" {
@@ -324,7 +343,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	daemonSet.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+	nodemgr := true
 
+	if _, ok := instance.Spec.ServiceConfiguration.Containers["nodemanager"]; !ok {
+		nodemgr = false
+	}
 	for idx, container := range daemonSet.Spec.Template.Spec.Containers {
 		if container.Name == "vrouteragent" {
 			//command := []string{"bash", "-c",
@@ -332,8 +355,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			command := []string{"bash", "-c",
 				"/entrypoint.sh /usr/bin/contrail-vrouter-agent --config_file /etc/mycontrail/vrouter.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
-
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
 				volumeMountList = (&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
@@ -343,8 +369,13 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/mycontrail",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -355,9 +386,13 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 		if container.Name == "vroutercni" {
 			command := []string{"sh", "-c",
-				"cp loopback /host/opt_cni_bin/ && cp /contrailcni_client /host/opt_cni_bin/contrail-k8s-cni && mkdir /host/etc_cni/net.d && mkdir /var/run/contrail && mkdir -p /var/lib/contrail/ports/vm && cp /etc/mycontrail/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && /contrailcni_server"}
+				"cp loopback /host/opt_cni_bin/ && cp /contrailcni_client /host/opt_cni_bin/contrail-k8s-cni && mkdir /host/etc_cni/net.d ||true && mkdir /var/run/contrail || true && mkdir -p /var/lib/contrail/ports/vm || true && cp /etc/mycontrail/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && /contrailcni_server"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
 
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -368,8 +403,13 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/mycontrail",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
+			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -379,37 +419,50 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}}
 		}
 		if container.Name == "nodemanager" {
-			command := []string{"bash", "-c",
-				"bash /etc/mycontrail/provision.sh.${POD_IP} add; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-vrouter"}
-			if instance.Spec.ServiceConfiguration.NodeManager != nil && !*instance.Spec.ServiceConfiguration.NodeManager {
-				command = []string{"bash", "-c",
-					"bash /etc/mycontrail/provision.sh.${POD_IP} add; while true; do sleep 10; done"}
-			}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
+			if nodemgr {
+				command := []string{"bash", "-c",
+					"bash /etc/mycontrail/provision.sh.${POD_IP} add; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-vrouter"}
+				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+					(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
+				} else {
+					(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				}
 
-			volumeMountList := []corev1.VolumeMount{}
-			if len((&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
-				volumeMountList = (&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+				volumeMountList := []corev1.VolumeMount{}
+				if len((&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
+					volumeMountList = (&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
+				}
+				volumeMount := corev1.VolumeMount{
+					Name:      request.Name + "-" + instanceType + "-volume",
+					MountPath: "/etc/mycontrail",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				volumeMount = corev1.VolumeMount{
+					Name:      request.Name + "-secret-certificates",
+					MountPath: "/etc/certificates",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+				(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			}
-			volumeMount := corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+		}
+	}
+
+	if !nodemgr {
+		for idx, container := range daemonSet.Spec.Template.Spec.Containers {
+			if container.Name == "nodemanager" {
+				daemonSet.Spec.Template.Spec.Containers = utils.RemoveIndex(daemonSet.Spec.Template.Spec.Containers, idx)
 			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
 		}
 	}
 
 	ubuntu := v1alpha1.UBUNTU
 	for idx, container := range daemonSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
+		(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
-
 		if container.Name == "vrouterkernelinit" {
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
@@ -419,7 +472,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				},
 			}}
 			if instance.Spec.ServiceConfiguration.Distribution != nil || instance.Spec.ServiceConfiguration.Distribution == &ubuntu {
-				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Images["vrouterkernelbuildinit"]
+				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			}
 		}
 
@@ -449,6 +502,14 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 
+		hostNetwork := true
+		if instance.Spec.CommonConfiguration.HostNetwork != nil {
+			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+			return reconcile.Result{}, err
+		}
+
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -457,5 +518,14 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 	}
+
+	if instance.Status.Active == nil {
+		active := false
+		instance.Status.Active = &active
+	}
+	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, daemonSet, request, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }

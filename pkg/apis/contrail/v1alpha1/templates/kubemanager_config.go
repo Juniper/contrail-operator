@@ -31,17 +31,41 @@ vnc_endpoint_ip={{ .APIServerList }}
 vnc_endpoint_port={{ .APIServerPort }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_port={{ .RabbitmqServerPort }}
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_vhost={{ .RabbitmqVhost }}
+rabbit_user={{ .RabbitmqUser }}
+rabbit_password={{ .RabbitmqPassword }}
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+kombu_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 cassandra_server_list={{ .CassandraServerList }}
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=True
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 collectors={{ .CollectorServerList }}
 zk_server_ip={{ .ZookeeperServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+
+var KubemanagerAPIVNC = template.Must(template.New("").Parse(`[global]
+WEB_SERVER = {{ .ListenAddress }}
+WEB_PORT = {{ .ListenPort }} ; connection to api-server directly
+BASE_URL = /
+use_ssl = True
+cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+; Authentication settings (optional)
+[auth]
+AUTHN_TYPE = noauth
+;AUTHN_TYPE = keystone
+;AUTHN_PROTOCOL = http
+;AUTHN_SERVER = 127.0.0.1
+;AUTHN_PORT = 35357
+;AUTHN_URL = /v2.0/tokens
+;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
