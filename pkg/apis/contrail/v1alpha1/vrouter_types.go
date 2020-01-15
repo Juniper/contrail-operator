@@ -270,7 +270,7 @@ func (c *Vrouter) SetInstanceActive(client client.Client, activeStatus *bool, ds
 		return err
 	}
 	active := false
-	if ds.Status.DesiredNumberScheduled == ds.Status.NumberAvailable {
+	if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
 		active = true
 	}
 

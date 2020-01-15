@@ -410,9 +410,6 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
-		if request.Name == "webui1" {
-			fmt.Println("request for webui")
-		}
 		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
 		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Pending") {
 			csr := &certv1beta1.CertificateSigningRequest{}
@@ -456,9 +453,6 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
-		if request.Name == "webui1" {
-			fmt.Println("request for webui")
-		}
 		if !CRTINSecret(csrSecret, pod.Status.PodIP) {
 			csr := &certv1beta1.CertificateSigningRequest{}
 			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)

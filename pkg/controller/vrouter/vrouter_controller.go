@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -146,6 +147,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	controlHandler := resourceHandler(mgr.GetClient())
 	predControlSizeChange := utils.ControlActiveChange()
 	if err = c.Watch(srcControl, controlHandler, predControlSizeChange); err != nil {
+		return err
+	}
+
+	srcDS := &source.Kind{Type: &appsv1.DaemonSet{}}
+	dsHandler := &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Vrouter{},
+	}
+	dsPred := utils.DSStatusChange(utils.VrouterGroupKind())
+	if err = c.Watch(srcDS, dsHandler, dsPred); err != nil {
 		return err
 	}
 

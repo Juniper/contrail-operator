@@ -238,6 +238,35 @@ func STSStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
 	}
 }
 
+// DSStatusChange monitors per application size change.
+func DSStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldDS, ok := e.ObjectOld.(*appsv1.DaemonSet)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newDS, ok := e.ObjectNew.(*appsv1.DaemonSet)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			isOwner := false
+			for _, owner := range newDS.ObjectMeta.OwnerReferences {
+				if *owner.Controller {
+					groupVersionKind := schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind)
+					if appGroupKind == groupVersionKind.GroupKind() {
+						isOwner = true
+					}
+				}
+			}
+			if (oldDS.Status.NumberReady != newDS.Status.NumberReady) && isOwner {
+				return true
+			}
+			return false
+		},
+	}
+}
+
 // PodStatusChange monitors per application size change.
 func PodStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
 	return predicate.Funcs{
