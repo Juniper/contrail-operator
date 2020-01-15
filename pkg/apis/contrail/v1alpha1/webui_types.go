@@ -115,7 +115,6 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var webuiWebConfigBuffer bytes.Buffer
 		configtemplates.WebuiWebConfig.Execute(&webuiWebConfigBuffer, struct {
-			ListenAddress       string
 			Hostname            string
 			APIServerList       string
 			APIServerPort       string
@@ -130,7 +129,6 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername       string
 			AdminPassword       string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
 			APIServerList:       configNodesInformation.APIServerListQuotedCommaSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,

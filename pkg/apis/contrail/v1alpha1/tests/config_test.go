@@ -1,7 +1,6 @@
 package contrailtest
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
 	"fmt"
 	"reflect"
@@ -18,6 +17,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var config = &v1alpha1.Config{
@@ -808,7 +809,7 @@ config.cassandra.use_ssl = false;
 config.cassandra.ca_certs = '/etc/contrail/ssl/certs/ca-cert.pem';
 config.kue = {};
 config.kue.ui_port = '3002'
-config.webui_addresses = ['1.1.7.1'];
+config.webui_addresses = {};
 config.insecure_access = false;
 config.http_port = '8180';
 config.https_port = '8143';
@@ -860,7 +861,7 @@ module.exports = auth;
 `
 
 var configConfigHa = `[DEFAULTS]
-listen_ip_addr=1.1.1.1
+listen_ip_addr=0.0.0.0
 listen_port=8082
 http_server_port=8084
 http_server_ip=0.0.0.0
@@ -1182,7 +1183,7 @@ host_ip=1.1.1.1
 http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
-rest_api_ip=1.1.1.1
+rest_api_ip=0.0.0.0
 aaa_mode=no-auth
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
@@ -1228,7 +1229,7 @@ cassandra_use_ssl=false
 cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 [COLLECTOR]
 port=8086
-server=1.1.1.1
+server=0.0.0.0
 protobuf_port=3333
 [STRUCTURED_SYSLOG_COLLECTOR]
 # TCP & UDP port to listen on for receiving structured syslog messages

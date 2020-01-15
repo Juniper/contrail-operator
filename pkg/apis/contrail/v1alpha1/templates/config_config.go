@@ -4,7 +4,7 @@ import "text/template"
 
 // ConfigAPIConfig is the template of the Config API service configuration.
 var ConfigAPIConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-listen_ip_addr={{ .ListenAddress }}
+listen_ip_addr=0.0.0.0
 listen_port={{ .ListenPort }}
 http_server_port=8084
 http_server_ip=0.0.0.0
@@ -33,7 +33,7 @@ sandesh_ssl_enable=False`))
 
 // ConfigDeviceManagerConfig is the template of the DeviceManager service configuration.
 var ConfigDeviceManagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .ListenAddress }}
+host_ip={{ .HostIP }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082
@@ -66,7 +66,7 @@ sandesh_ssl_enable=False`))
 
 // ConfigSchematransformerConfig is the template of the SchemaTransformer service configuration.
 var ConfigSchematransformerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .ListenAddress }}
+host_ip={{ .HostIP }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082
@@ -91,7 +91,7 @@ sandesh_ssl_enable=False`))
 
 // ConfigServicemonitorConfig is the template of the ServiceMonitor service configuration.
 var ConfigServicemonitorConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .ListenAddress }}
+host_ip={{ .HostIP }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList }}
 api_server_port=8082
@@ -125,11 +125,11 @@ sandesh_ssl_enable=False`))
 
 // ConfigAnalyticsapiConfig is the template of the AnalyticsAPI service configuration.
 var ConfigAnalyticsapiConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .ListenAddress }}
+host_ip={{ .HostIP }}
 http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
-rest_api_ip={{ .ListenAddress }}
+rest_api_ip=0.0.0.0
 aaa_mode=no-auth
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
@@ -155,7 +155,7 @@ analytics_config_audit_ttl=2160
 analytics_statistics_ttl=168
 analytics_flow_ttl=2
 partitions=30
-hostip={{ .ListenAddress }}
+hostip={{ .HostIP }}
 hostname={{ .Hostname }}
 http_server_port=8089
 http_server_ip=0.0.0.0
@@ -176,7 +176,7 @@ cassandra_use_ssl=false
 cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
 [COLLECTOR]
 port=8086
-server={{ .ListenAddress }}
+server=0.0.0.0
 protobuf_port=3333
 [STRUCTURED_SYSLOG_COLLECTOR]
 # TCP & UDP port to listen on for receiving structured syslog messages
@@ -207,7 +207,7 @@ sandesh_ssl_enable=False`))
 // ConfigQueryEngineConfig is the template of the Config Nodemanager service configuration.
 var ConfigQueryEngineConfig = template.Must(template.New("").Parse(`[DEFAULT]
 analytics_data_ttl=48
-hostip={{ .ListenAddress }}
+hostip={{ .HostIP }}
 hostname={{ .Hostname }}
 http_server_ip=0.0.0.0
 http_server_port=8091
@@ -239,7 +239,7 @@ http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
 log_level=SYS_NOTICE
 log_local=1
-hostip={{ .ListenAddress }}
+hostip={{ .HostIP }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
 db_use_ssl=False
@@ -255,7 +255,7 @@ http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
 log_level=SYS_NOTICE
 log_local=1
-hostip={{ .ListenAddress }}
+hostip={{ .HostIP }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
 db_use_ssl=False
