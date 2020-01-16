@@ -142,14 +142,14 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var configApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIConfig.Execute(&configApiConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ListenPort          string
 			CassandraServerList string
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
@@ -160,7 +160,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -168,7 +168,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			CollectorServerList string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -180,7 +180,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configSchematransformerConfigBuffer bytes.Buffer
 		configtemplates.ConfigSchematransformerConfig.Execute(&configSchematransformerConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -188,7 +188,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			CollectorServerList string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -200,7 +200,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configServicemonitorConfigBuffer bytes.Buffer
 		configtemplates.ConfigServicemonitorConfig.Execute(&configServicemonitorConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -208,7 +208,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			CollectorServerList string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -220,7 +220,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configAnalyticsapiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAnalyticsapiConfig.Execute(&configAnalyticsapiConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -229,7 +229,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			RedisServerList     string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -250,14 +250,14 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		var configCollectorConfigBuffer bytes.Buffer
 		configtemplates.ConfigCollectorConfig.Execute(&configCollectorConfigBuffer, struct {
 			Hostname            string
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			CassandraServerList string
 			ZookeeperServerList string
 			RabbitmqServerList  string
 		}{
 			Hostname:            hostname,
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
@@ -268,7 +268,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		var configQueryEngineConfigBuffer bytes.Buffer
 		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, map[string]string{
 			"Hostname":            hostname,
-			"ListenAddress":       podList.Items[idx].Status.PodIP,
+			"HostIP":              podList.Items[idx].Status.PodIP,
 			"CassandraServerList": cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			"CollectorServerList": collectorServerList,
 			"RedisServerList":     redisServerSpaceSeparatedList,
@@ -277,12 +277,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configNodemanagerconfigConfigBuffer bytes.Buffer
 		configtemplates.ConfigNodemanagerConfigConfig.Execute(&configNodemanagerconfigConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
@@ -291,12 +291,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configNodemanageranalyticsConfigBuffer bytes.Buffer
 		configtemplates.ConfigNodemanagerAnalyticsConfig.Execute(&configNodemanageranalyticsConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
