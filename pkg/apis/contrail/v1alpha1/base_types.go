@@ -530,6 +530,7 @@ func CreateConfigMap(configMapName string,
 	object v1.Object) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: request.Namespace}, configMap)
+	// TODO: Bug. If config map exists without labels and references, they won't be updated
 	if err != nil {
 		if errors.IsNotFound(err) {
 			configMap.SetName(configMapName)
@@ -1338,6 +1339,18 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		RedisPort:                               redisServerPort,
 	}
 	return &configCluster, nil
+}
+
+// WebUIClusterConfiguration defines all configuration knobs used to write the config file.
+type WebUIClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
+}
+
+// ContrailCommandClusterConfiguration defines all configuration knobs used to write the config file.
+type ContrailCommandClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
 }
 
 // ConfigClusterConfiguration defines all configuration knobs used to write the config file.

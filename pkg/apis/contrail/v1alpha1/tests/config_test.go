@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
 	"github.com/kylelemons/godebug/diff"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,6 +16,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var config = &v1alpha1.Config{
@@ -57,6 +57,12 @@ var webui = &v1alpha1.Webui{
 		Namespace: "default",
 		Labels: map[string]string{
 			"contrail_cluster": "cluster1",
+		},
+	},
+	Spec: v1alpha1.WebuiSpec{
+		ServiceConfiguration: v1alpha1.WebuiConfiguration{
+			AdminUsername: "test",
+			AdminPassword: "test123",
 		},
 	},
 }
@@ -490,6 +496,11 @@ func TestConfigConfig(t *testing.T) {
 		t.Fatalf("get analyticsapi config: \n%v\n", diff)
 	}
 
+	if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+		diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+		t.Fatalf("get queryengine config: \n%v\n", diff)
+	}
+
 	if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
 		diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
 		t.Fatalf("get collector config: \n%v\n", diff)
@@ -629,6 +640,11 @@ func TestWebuiConfig(t *testing.T) {
 	if environment.webuiConfigMap.Data["config.global.js.1.1.7.1"] != webuiConfigHa {
 		configDiff := diff.Diff(environment.webuiConfigMap.Data["config.global.js.1.1.7.1"], webuiConfigHa)
 		t.Fatalf("get webui config: \n%v\n", configDiff)
+	}
+
+	if environment.webuiConfigMap.Data["contrail-webui-userauth.js"] != webuiAuthConfig {
+		configDiff := diff.Diff(environment.webuiConfigMap.Data["contrail-webui-userauth.js"], webuiAuthConfig)
+		t.Fatalf("get webui auth config: \n%v\n", configDiff)
 	}
 }
 
@@ -818,7 +834,7 @@ config.cassandra.use_ssl = true;
 config.cassandra.ca_certs = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.kue = {};
 config.kue.ui_port = '3002'
-config.webui_addresses = ['1.1.7.1'];
+config.webui_addresses = {};
 config.insecure_access = false;
 config.http_port = '8180';
 config.https_port = '8143';
@@ -853,13 +869,24 @@ config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-
 module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
-config.staticAuth[0].username = 'admin';
-config.staticAuth[0].password = 'contrail123';
+config.staticAuth[0].username = 'test';
+config.staticAuth[0].password = 'test123';
 config.staticAuth[0].roles = ['cloudAdmin'];
 `
 
+var webuiAuthConfig = `/*
+* Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
+*/
+var auth = {};
+auth.admin_user = 'test';
+auth.admin_password = 'test123';
+auth.admin_token = '';
+auth.admin_tenant_name = 'test';
+module.exports = auth;
+`
+
 var configConfigHa = `[DEFAULTS]
-listen_ip_addr=1.1.1.1
+listen_ip_addr=0.0.0.0
 listen_port=8082
 http_server_port=8084
 http_server_ip=0.0.0.0
@@ -1256,12 +1283,43 @@ sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
+var queryengineConfig = `[DEFAULT]
+analytics_data_ttl=48
+hostip=1.1.1.1
+hostname=host1
+http_server_ip=0.0.0.0
+http_server_port=8091
+log_file=/var/log/contrail/contrail-query-engine.log
+log_level=SYS_DEBUG
+log_local=1
+max_slice=100
+max_tasks=16
+start_time=0
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[CASSANDRA]
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+[REDIS]
+server_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
+password=
+redis_ssl_enable=False
+[SANDESH]
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
+
 var analyticsapiConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
-rest_api_ip=1.1.1.1
+rest_api_ip=0.0.0.0
 aaa_mode=no-auth
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
@@ -1309,13 +1367,14 @@ log_file_size=1048576
 log_level=SYS_NOTICE
 log_local=1
 # sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 zookeeper_server_list=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [CASSANDRA]
 cassandra_use_ssl=true
 cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [COLLECTOR]
 port=8086
-server=1.1.1.1
+server=0.0.0.0
 protobuf_port=3333
 [STRUCTURED_SYSLOG_COLLECTOR]
 # TCP & UDP port to listen on for receiving structured syslog messages
@@ -1519,7 +1578,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
-  --api_server_use_ssl true
+  --api_server_use_ssl true \
   --host_ip 1.1.5.1 \
   --router_asn 64512 \
   --bgp_server_port 179 \

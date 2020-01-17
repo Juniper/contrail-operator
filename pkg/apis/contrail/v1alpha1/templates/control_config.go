@@ -165,7 +165,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
-  --api_server_use_ssl true
+  --api_server_use_ssl true \
   --host_ip {{ .ListenAddress }} \
   --router_asn {{ .ASNNumber }} \
   --bgp_server_port {{ .BGPPort }} \

@@ -78,8 +78,23 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: ANALYTICSDB_ENABLE
+          value: "true"
+        - name: ANALYTICS_ALARM_ENABLE
+          value: "true"
         imagePullPolicy: Always
         name: analyticsapi
+        volumeMounts:
+        - mountPath: /var/log/contrail
+          name: config-logs
+      - image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: queryengine
         volumeMounts:
         - mountPath: /var/log/contrail
           name: config-logs
@@ -124,6 +139,8 @@ spec:
           name: config-logs
         - mountPath: /mnt
           name: docker-unix-socket
+        - mountPath: /var/crashes
+          name: crashes
       - env:
         - name: DOCKER_HOST
           value: unix://mnt/docker.sock
@@ -141,6 +158,8 @@ spec:
           name: config-logs
         - mountPath: /mnt
           name: docker-unix-socket
+        - mountPath: /var/crashes
+          name: crashes
       dnsPolicy: ClusterFirst
       hostNetwork: true
       initContainers:
@@ -190,6 +209,10 @@ spec:
           path: /var/log/contrail/config
           type: ""
         name: config-logs
+      - hostPath:
+          path: /var/contrail/crashes
+          type: ""
+        name: crashes
       - hostPath:
           path: /var/lib/contrail/config
           type: ""

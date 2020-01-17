@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 cat namespace.yaml > 1-create-operator.yaml
 echo "---" >> 1-create-operator.yaml
 cat role.yaml >> 1-create-operator.yaml

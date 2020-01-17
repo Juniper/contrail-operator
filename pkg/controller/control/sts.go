@@ -101,6 +101,8 @@ spec:
         volumeMounts:
         - mountPath: /var/log/contrail
           name: control-logs
+        - mountPath: /var/crashes
+          name: crashes
         - mountPath: /mnt
           name: docker-unix-socket
       dnsPolicy: ClusterFirst
@@ -151,6 +153,10 @@ spec:
           path: /var/log/contrail/control
           type: ""
         name: control-logs
+      - hostPath:
+          path: /var/contrail/crashes
+          type: ""
+        name: crashes
       - hostPath:
           path: /var/run
           type: ""

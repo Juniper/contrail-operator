@@ -83,8 +83,8 @@ config.vcenter.wsdl = "/usr/src/contrail/contrail-web-core/webroot/js/vim.wsdl";
 config.introspect = {};
 config.introspect.ssl = {};
 config.introspect.ssl.enabled = true;
-config.introspect.ssl.key = '/etc/certificates/server-key-{{ .ListenAddress }}.pem';
-config.introspect.ssl.cert = '/etc/certificates/server-{{ .ListenAddress }}.crt';
+config.introspect.ssl.key = '/etc/certificates/server-key-{{ .HostIP }}.pem';
+config.introspect.ssl.cert = '/etc/certificates/server-{{ .HostIP }}.crt';
 config.introspect.ssl.ca = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.introspect.ssl.strictSSL = false;
 config.jobServer = {};
@@ -100,7 +100,7 @@ config.cassandra.use_ssl = true;
 config.cassandra.ca_certs = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.kue = {};
 config.kue.ui_port = '3002'
-config.webui_addresses = ['{{ .ListenAddress }}'];
+config.webui_addresses = {};
 config.insecure_access = false;
 config.http_port = '8180';
 config.https_port = '8143';
@@ -129,14 +129,14 @@ config.network.L2_enable = false;
 config.getDomainsFromApiServer = false;
 config.jsonSchemaPath = "/usr/src/contrail/contrail-web-core/src/serverroot/configJsonSchemas";
 config.server_options = {};
-config.server_options.key_file = '/etc/certificates/server-key-{{ .ListenAddress }}.pem';
-config.server_options.cert_file = '/etc/certificates/server-{{ .ListenAddress }}.crt';
+config.server_options.key_file = '/etc/certificates/server-key-{{ .HostIP }}.pem';
+config.server_options.cert_file = '/etc/certificates/server-{{ .HostIP }}.crt';
 config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA';
 module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
-config.staticAuth[0].username = 'admin';
-config.staticAuth[0].password = 'contrail123';
+config.staticAuth[0].username = '{{ .AdminUsername }}';
+config.staticAuth[0].password = '{{ .AdminPassword }}';
 config.staticAuth[0].roles = ['cloudAdmin'];
 `))
 
@@ -145,9 +145,9 @@ var WebuiAuthConfig = template.Must(template.New("").Parse(`/*
 * Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
 */
 var auth = {};
-auth.admin_user = 'admin';
-auth.admin_password = 'contrail123';
+auth.admin_user = '{{ .AdminUsername }}';
+auth.admin_password = '{{ .AdminPassword }}';
 auth.admin_token = '';
-auth.admin_tenant_name = 'admin';
+auth.admin_tenant_name = '{{ .AdminUsername }}';
 module.exports = auth;
 `))

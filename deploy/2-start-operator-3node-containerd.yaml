@@ -119,6 +119,8 @@ spec:
               image: python:alpine
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
+            queryengine:
+              image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
     kubemanagers:
     - metadata:
         name: kubemanager1

@@ -1,11 +1,12 @@
 package config
 
 import (
+	"context"
+	"fmt"
+	"reflect"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
-	"context"
-	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -398,6 +399,25 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
+		if container.Name == "queryengine" {
+			volumeMountList := []corev1.VolumeMount{}
+			queryEngineContainer := &statefulSet.Spec.Template.Spec.Containers[idx]
+			queryEngineContainer.Command = []string{"bash", "-c",
+				"/usr/bin/contrail-query-engine --conf_file /etc/mycontrail/queryengine.${POD_IP}"}
+			if len(queryEngineContainer.VolumeMounts) > 0 {
+				volumeMountList = container.VolumeMounts
+			}
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/etc/mycontrail",
+			})
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			})
+			queryEngineContainer.VolumeMounts = volumeMountList
+			queryEngineContainer.Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		}
 		if container.Name == "collector" {
 			command := []string{"bash", "-c",
 				"/usr/bin/contrail-collector --conf_file /etc/mycontrail/collector.${POD_IP}"}
@@ -587,5 +607,38 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
+	if *instance.Status.Active {
+		apiURL, err := apiURL(instance, podIPList)
+		if err != nil {
+			log.Error(err, "Config API URL cannot be created")
+			return reconcile.Result{}, err
+		}
+		apiClient := NewApiClient(apiURL)
+		configNode := ConfigNode{
+			UUID:     "86f38811-a892-4877-885f-be0fa05ea164",
+			Hostname: "localhost",
+			IP:       "localhost",
+		}
+		if err = apiClient.EnsureConfigNodeExists(configNode); err != nil {
+			log.Error(err, "EnsureConfigNodeExists failed")
+			return reconcile.Result{}, err
+		}
+	}
 	return reconcile.Result{}, nil
+}
+
+func apiURL(config *v1alpha1.Config, configPods *corev1.PodList) (string, error) {
+	if len(configPods.Items) == 0 {
+		return "", fmt.Errorf("no config pods")
+	}
+	podIP := configPods.Items[0].Status.PodIP
+	if podIP == "" {
+		return "", fmt.Errorf("empty PodIP in config pod Status")
+	}
+	apiPort := config.Status.Ports.APIPort
+	if apiPort == "" {
+		return "", fmt.Errorf("empty API port in Config.Status.Ports.APIPort")
+	}
+	url := fmt.Sprintf("http://%s:%s", podIP, apiPort)
+	return url, nil
 }
