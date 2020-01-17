@@ -1,19 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: webuis.contrail.juniper.net
+  name: configs.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: Webui
-    listKind: WebuiList
-    plural: webuis
-    singular: webui
-  scope: Namespaced
+    kind: Config
+    listKind: ConfigList
+    plural: configs
+    singular: config
+  scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
+      description: Config is the Schema for the configs API.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -28,8 +29,10 @@ spec:
         metadata:
           type: object
         spec:
+          description: ConfigSpec is the Spec for the cassandras API.
           properties:
             commonConfiguration:
+              description: CommonConfiguration is the common services struct.
               properties:
                 activate:
                   description: Activate defines if the service will be activated by
@@ -41,7 +44,7 @@ spec:
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's
                     network namespace. If this option is set, the ports that will
-                    be used must be specified. Default to false. +k8s:conversion-gen=false
+                    be used must be specified. Default to false.
                   type: boolean
                 imagePullSecrets:
                   description: ImagePullSecrets is an optional list of references
@@ -65,29 +68,70 @@ spec:
                 tolerations:
                   description: If specified, the pod's tolerations.
                   items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
                     type: object
                   type: array
               type: object
             serviceConfiguration:
+              description: ConfigConfiguration is the Spec for the cassandras API.
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
+                analyticsPort:
+                  type: integer
+                apiPort:
+                  type: integer
                 cassandraInstance:
                   type: string
-                clusterRole:
+                collectorPort:
+                  type: integer
+                containers: {}
+                logLevel:
                   type: string
-                clusterRoleBinding:
+                nodeManager:
+                  type: boolean
+                rabbitmqPassword:
                   type: string
-                images:
-                  additionalProperties:
-                    type: string
-                  type: object
-                serviceAccount:
+                rabbitmqUser:
                   type: string
-              required:
-              - images
+                rabbitmqVhost:
+                  type: string
+                redisPort:
+                  type: integer
+                zookeeperInstance:
+                  type: string
               type: object
           required:
           - commonConfiguration
@@ -101,11 +145,25 @@ spec:
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: boolean
+            configChanged:
+              type: boolean
             nodes:
               additionalProperties:
                 type: string
               type: object
+            ports:
+              properties:
+                analyticsPort:
+                  type: string
+                apiPort:
+                  type: string
+                collectorPort:
+                  type: string
+                redisPort:
+                  type: string
+              type: object
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1

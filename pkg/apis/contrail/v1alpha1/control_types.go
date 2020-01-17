@@ -5,6 +5,7 @@ import (
 	"context"
 	"sort"
 	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,25 +44,56 @@ type ControlSpec struct {
 // ControlConfiguration is the Spec for the controls API.
 // +k8s:openapi-gen=true
 type ControlConfiguration struct {
-	Images            map[string]string `json:"images"`
-	CassandraInstance string            `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string            `json:"zookeeperInstance,omitempty"`
-	BGPPort           *int              `json:"bgpPort,omitempty"`
-	ASNNumber         *int              `json:"asnNumber,omitempty"`
-	XMPPPort          *int              `json:"xmppPort,omitempty"`
-	DNSPort           *int              `json:"dnsPort,omitempty"`
-	DNSIntrospectPort *int              `json:"dnsIntrospectPort,omitempty"`
-	NodeManager       *bool             `json:"nodeManager,omitempty"`
+	Containers        map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
+	BGPPort           *int                  `json:"bgpPort,omitempty"`
+	ASNNumber         *int                  `json:"asnNumber,omitempty"`
+	XMPPPort          *int                  `json:"xmppPort,omitempty"`
+	DNSPort           *int                  `json:"dnsPort,omitempty"`
+	DNSIntrospectPort *int                  `json:"dnsIntrospectPort,omitempty"`
+	NodeManager       *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 type ControlStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active *bool              `json:"active,omitempty"`
-	Nodes  map[string]string  `json:"nodes,omitempty"`
-	Ports  ControlStatusPorts `json:"ports,omitempty"`
+	Active        *bool                           `json:"active,omitempty"`
+	Nodes         map[string]string               `json:"nodes,omitempty"`
+	Ports         ControlStatusPorts              `json:"ports,omitempty"`
+	ServiceStatus map[string]ControlServiceStatus `json:"serviceStatus,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type ControlServiceStatus struct {
+	Connections              []Connection
+	NumberOfXMPPPeers        string
+	NumberOfRoutingInstances string
+	StaticRoutes             StaticRoutes
+	BGPPeer                  BGPPeer
+	State                    string
+}
+
+// +k8s:openapi-gen=true
+type StaticRoutes struct {
+	Down   string
+	Number string
+}
+
+// +k8s:openapi-gen=true
+type BGPPeer struct {
+	Up     string
+	Number string
+}
+
+// +k8s:openapi-gen=true
+type Connection struct {
+	Type   string
+	Name   string
+	Status string
+	Nodes  []string
 }
 
 type ControlStatusPorts struct {
@@ -113,6 +145,19 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
@@ -127,18 +172,32 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 	controlConfigInterface := c.ConfigurationParameters()
 	controlConfig := controlConfigInterface.(ControlConfiguration)
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = controlConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = controlConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = controlConfig.RabbitmqVhost
+	}
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
 	for idx := range podList.Items {
+		hostname := podList.Items[idx].Annotations["hostname"]
+		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
 		/*
-			command := []string{"/bin/sh", "-c", "hostname"}
-			hostname, _, err := ExecToPodThroughAPI(command, "init", podList.Items[idx].Name, podList.Items[idx].Namespace, nil)
-			if err != nil {
-				return err
+			for idx, configNode := range configNodesList {
+				configNodesList[idx] = configNode + ":" + configNodesInformation.APIServerPort
 			}
 		*/
-		hostname := podList.Items[idx].Annotations["hostname"]
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP, "control", request.Name, request.Namespace)
+		if err != nil {
+			return err
+		}
+		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
+
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
 			ListenAddress       string
@@ -152,6 +211,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -161,9 +223,12 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -183,6 +248,9 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -190,9 +258,12 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerPort:  rabbitmqNodesInformation.Port,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 
@@ -299,6 +370,19 @@ func (c *Control) IsActive(name string, namespace string, client client.Client) 
 	return false
 }
 
+// CreateSecret creates a secret.
+func (c *Control) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"control",
+		c)
+}
+
 // PrepareSTS prepares the intended deployment for the Control object.
 func (c *Control) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "control", request, scheme, c, client, true)
@@ -307,6 +391,11 @@ func (c *Control) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *Commo
 // AddVolumesToIntendedSTS adds volumes to the Control deployment.
 func (c *Control) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Control) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 // SetPodsToReady sets Control PODs to ready.

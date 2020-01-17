@@ -13,13 +13,20 @@ log_level=SYS_NOTICE
 log_local=1
 hostname={{ .Hostname }}
 agent_name={{ .Hostname }}
-xmpp_dns_auth_enable=False
-xmpp_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 physical_interface_mac = {{ .PhysicalInterfaceMac }}
 tsn_servers = []
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [NETWORKS]
 control_network_ip={{ .ListenAddress }}
 [DNS]
@@ -41,8 +48,7 @@ type = kvm
 fabric_snat_hash_table_size = 4096
 [SESSION]
 slo_destination = collector
-sample_destination = collector
-`))
+sample_destination = collector`))
 
 var ContrailCNIConfig = template.Must(template.New("").Parse(`{
   "cniVersion": "0.3.1",
@@ -73,8 +79,12 @@ db_use_ssl=False
 [COLLECTOR]
 server_list={{ .CollectorServerList }}
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`))
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // VrouterProvisionConfig is the template of the Vrouter provision script.
 var VrouterProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash

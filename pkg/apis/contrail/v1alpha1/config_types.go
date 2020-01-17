@@ -46,14 +46,18 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Images            map[string]string `json:"images"`
-	APIPort           *int              `json:"apiPort,omitempty"`
-	AnalyticsPort     *int              `json:"analyticsPort,omitempty"`
-	CollectorPort     *int              `json:"collectorPort,omitempty"`
-	RedisPort         *int              `json:"redisPort,omitempty"`
-	CassandraInstance string            `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string            `json:"zookeeperInstance,omitempty"`
-	NodeManager       *bool             `json:"nodeManager,omitempty"`
+	Containers        map[string]*Container `json:"containers,omitempty"`
+	APIPort           *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort     *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort     *int                  `json:"collectorPort,omitempty"`
+	RedisPort         *int                  `json:"redisPort,omitempty"`
+	CassandraInstance string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
+	NodeManager       *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel          string                `json:"logLevel,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -91,9 +95,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	client client.Client) error {
 	instanceConfigMapName := request.Name + "-" + "config" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig)
 	if err != nil {
 		return err
 	}
@@ -115,10 +117,31 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+	var rabbitmqSecretUser string
+	var rabbitmqSecretPassword string
+	var rabbitmqSecretVhost string
+	if rabbitmqNodesInformation.Secret != "" {
+		rabbitmqSecret := &corev1.Secret{}
+		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		if err != nil {
+			return err
+		}
+		rabbitmqSecretUser = string(rabbitmqSecret.Data["user"])
+		rabbitmqSecretPassword = string(rabbitmqSecret.Data["password"])
+		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
+	}
 
 	configConfigInterface := c.ConfigurationParameters()
 	configConfig := configConfigInterface.(ConfigConfiguration)
-
+	if rabbitmqSecretUser == "" {
+		rabbitmqSecretUser = configConfig.RabbitmqUser
+	}
+	if rabbitmqSecretPassword == "" {
+		rabbitmqSecretPassword = configConfig.RabbitmqPassword
+	}
+	if rabbitmqSecretVhost == "" {
+		rabbitmqSecretVhost = configConfig.RabbitmqVhost
+	}
 	var collectorServerList, analyticsServerList, apiServerList, analyticsServerSpaceSeparatedList, apiServerSpaceSeparatedList, redisServerSpaceSeparatedList string
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -148,15 +171,33 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
+
+		var vncApiConfigBuffer bytes.Buffer
+		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
+			HostIP     string
+			ListenPort string
+		}{
+			HostIP:     podList.Items[idx].Status.PodIP,
+			ListenPort: strconv.Itoa(*configConfig.APIPort),
+		})
+		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
@@ -167,14 +208,22 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -187,14 +236,22 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
@@ -207,14 +264,22 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
@@ -228,15 +293,23 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqServerList  string
 			CollectorServerList string
 			RedisServerList     string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			//LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
 			CollectorServerList: collectorServerList,
 			RedisServerList:     redisServerSpaceSeparatedList,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			//LogLevel:            configConfig.LogLevel,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -255,13 +328,21 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CassandraServerList string
 			ZookeeperServerList string
 			RabbitmqServerList  string
+			RabbitmqUser        string
+			RabbitmqPassword    string
+			RabbitmqVhost       string
+			LogLevel            string
 		}{
 			Hostname:            hostname,
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparated,
+			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqUser:        rabbitmqSecretUser,
+			RabbitmqPassword:    rabbitmqSecretPassword,
+			RabbitmqVhost:       rabbitmqSecretVhost,
+			LogLevel:            configConfig.LogLevel,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
@@ -335,6 +416,19 @@ func (c *Config) CurrentConfigMapExists(configMapName string,
 		request)
 }
 
+// CreateSecret creates a secret.
+func (c *Config) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"config",
+		c)
+}
+
 func (c *Config) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
 	managerName := c.Labels["contrail_cluster"]
 	ownerRefList := c.GetOwnerReferences()
@@ -361,6 +455,11 @@ func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *Common
 // AddVolumesToIntendedSTS adds volumes to the config statefulset
 func (c *Config) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Config) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 //CreateSTS creates the STS
@@ -462,6 +561,16 @@ func (c *Config) ConfigurationParameters() interface{} {
 	var analyticsPort int
 	var collectorPort int
 	var redisPort int
+	var rabbitmqUser string
+	var rabbitmqPassword string
+	var rabbitmqVhost string
+	var logLevel string
+	if c.Spec.ServiceConfiguration.LogLevel != "" {
+		logLevel = c.Spec.ServiceConfiguration.LogLevel
+	} else {
+		logLevel = LogLevel
+	}
+	configConfiguration.LogLevel = logLevel
 	if c.Spec.ServiceConfiguration.APIPort != nil {
 		apiPort = *c.Spec.ServiceConfiguration.APIPort
 	} else {
@@ -497,6 +606,26 @@ func (c *Config) ConfigurationParameters() interface{} {
 		configConfiguration.NodeManager = &nodeManager
 	}
 
+	if c.Spec.ServiceConfiguration.RabbitmqUser != "" {
+		rabbitmqUser = c.Spec.ServiceConfiguration.RabbitmqUser
+	} else {
+		rabbitmqUser = RabbitmqUser
+	}
+	configConfiguration.RabbitmqUser = rabbitmqUser
+
+	if c.Spec.ServiceConfiguration.RabbitmqPassword != "" {
+		rabbitmqPassword = c.Spec.ServiceConfiguration.RabbitmqPassword
+	} else {
+		rabbitmqPassword = RabbitmqPassword
+	}
+	configConfiguration.RabbitmqPassword = rabbitmqPassword
+
+	if c.Spec.ServiceConfiguration.RabbitmqVhost != "" {
+		rabbitmqVhost = c.Spec.ServiceConfiguration.RabbitmqVhost
+	} else {
+		rabbitmqVhost = RabbitmqVhost
+	}
+	configConfiguration.RabbitmqVhost = rabbitmqVhost
 	return configConfiguration
 
 }

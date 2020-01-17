@@ -3,7 +3,6 @@ package contrailtest
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
@@ -181,6 +180,29 @@ func SetupEnv() Environment {
 	data["token"] = []byte("THISISATOKEN")
 	kubemanagerSecret.Data = data
 
+	rabbitmqSecret := *secret
+
+	rabbitmqSecret.Name = "rabbitmq-secret"
+	rabbitmqSecret.Namespace = "default"
+	rabbitmqSecret.Annotations = map[string]string{"kubernetes.io/service-account.name": "contrail-service-account"}
+
+	rabbitmqSecret.Data = map[string][]byte{
+		"user":     []byte("user"),
+		"password": []byte("password"),
+		"vhost":    []byte("vhost"),
+	}
+
+	cassandraSecret := *secret
+
+	cassandraSecret.Name = "cassandra1-secret"
+	cassandraSecret.Namespace = "default"
+	cassandraSecret.Annotations = map[string]string{"kubernetes.io/service-account.name": "contrail-service-account"}
+
+	cassandraSecret.Data = map[string][]byte{
+		"keystorePassword":   []byte("keystorePassword"),
+		"truststorePassword": []byte("truststorePassword"),
+	}
+
 	configConfigMap.Name = "config1-config-configmap"
 	configConfigMap.Namespace = "default"
 
@@ -252,6 +274,8 @@ func SetupEnv() Environment {
 		&webuiConfigMap,
 		&vrouterConfigMap,
 		&vrouterConfigMap2,
+		&rabbitmqSecret,
+		&cassandraSecret,
 		&kubemanagerSecret}
 
 	cl := fake.NewFakeClient(objs...)
@@ -689,15 +713,16 @@ func TestRabbitmqConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if !reflect.DeepEqual(environment.rabbitmqConfigMap.Data, rabbitmqConfig) {
-		configDiff := diff.Diff(environment.rabbitmqConfigMap.Data["rabbitmq.conf"], rabbitmqConfig["rabbitmq.conf"])
-		configDiff = diff.Diff(environment.rabbitmqConfigMap.Data["rabbitmq.nodes"], rabbitmqConfig["rabbitmq.nodes"])
-		configDiff = configDiff + diff.Diff(environment.rabbitmqConfigMap.Data["RABBITMQ_ERLANG_COOKIE"], rabbitmqConfig["RABBITMQ_ERLANG_COOKIE"])
-		configDiff = configDiff + diff.Diff(environment.rabbitmqConfigMap.Data["RABBITMQ_USE_LONGNAME"], rabbitmqConfig["RABBITMQ_USE_LONGNAME"])
-		configDiff = configDiff + diff.Diff(environment.rabbitmqConfigMap.Data["RABBITMQ_CONFIG_FILE"], rabbitmqConfig["RABBITMQ_CONFIG_FILE"])
-		configDiff = configDiff + diff.Diff(environment.rabbitmqConfigMap.Data["RABBITMQ_PID_FILE"], rabbitmqConfig["RABBITMQ_PID_FILE"])
-		configDiff = configDiff + diff.Diff(environment.rabbitmqConfigMap.Data["RABBITMQ_CONF_ENV_FILE"], rabbitmqConfig["RABBITMQ_CONF_ENV_FILE"])
-		t.Fatalf("get rabbitmq config: \n%v\n", configDiff)
+
+	for _, k := range []string{
+		"rabbitmq-1.1.4.1.conf", "rabbitmq-1.1.4.2.conf", "rabbitmq-1.1.4.3.conf", "rabbitmq.nodes",
+		"RABBITMQ_ERLANG_COOKIE", "RABBITMQ_USE_LONGNAME", "RABBITMQ_CONFIG_FILE", "RABBITMQ_PID_FILE",
+		"RABBITMQ_PID_FILE", "RABBITMQ_CONF_ENV_FILE", "plugins.conf",
+		// "definitions.json" TODO: Handle random password_hash in test
+	} {
+		if configDiff := diff.Diff(environment.rabbitmqConfigMap.Data[k], rabbitmqConfig[k]); configDiff != "" {
+			t.Fatalf("get rabbitmq config key = %v: \n%v\n", k, configDiff)
+		}
 	}
 
 	err = cl.Get(context.TODO(),
@@ -765,16 +790,16 @@ config.storageManager.ca = "";
 config.cnfg = {};
 config.cnfg.server_ip = ['1.1.1.1','1.1.1.2','1.1.1.3'];
 config.cnfg.server_port = "8082";
-config.cnfg.authProtocol = "http";
+config.cnfg.authProtocol = "https";
 config.cnfg.strictSSL = false;
-config.cnfg.ca = "/etc/contrail/ssl/certs/ca-cert.pem";
+config.cnfg.ca = "/run/secrets/kubernetes.io/serviceaccount/ca.crt";
 config.cnfg.statusURL = '/global-system-configs';
 config.analytics = {};
 config.analytics.server_ip = ['1.1.1.1','1.1.1.2','1.1.1.3'];
 config.analytics.server_port = "8081";
-config.analytics.authProtocol = "http";
+config.analytics.authProtocol = "https";
 config.analytics.strictSSL = false;
-config.analytics.ca = '';
+config.analytics.ca = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.analytics.statusURL = '/analytics/uves/bgp-peers';
 config.dns = {};
 config.dns.server_ip = ['1.1.5.1','1.1.5.2','1.1.5.3'];
@@ -791,10 +816,10 @@ config.vcenter.ca = '';                                            //specify the
 config.vcenter.wsdl = "/usr/src/contrail/contrail-web-core/webroot/js/vim.wsdl";
 config.introspect = {};
 config.introspect.ssl = {};
-config.introspect.ssl.enabled = false;
-config.introspect.ssl.key = '/etc/contrail/ssl/private/server-privkey.pem';
-config.introspect.ssl.cert = '/etc/contrail/ssl/certs/server.pem';
-config.introspect.ssl.ca = '/etc/contrail/ssl/certs/ca-cert.pem';
+config.introspect.ssl.enabled = true;
+config.introspect.ssl.key = '/etc/certificates/server-key-1.1.7.1.pem';
+config.introspect.ssl.cert = '/etc/certificates/server-1.1.7.1.crt';
+config.introspect.ssl.ca = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.introspect.ssl.strictSSL = false;
 config.jobServer = {};
 config.jobServer.server_ip = '127.0.0.1';
@@ -805,8 +830,8 @@ config.cassandra = {};
 config.cassandra.server_ips = ['1.1.2.1','1.1.2.2','1.1.2.3'];
 config.cassandra.server_port = '9042';
 config.cassandra.enable_edit = false;
-config.cassandra.use_ssl = false;
-config.cassandra.ca_certs = '/etc/contrail/ssl/certs/ca-cert.pem';
+config.cassandra.use_ssl = true;
+config.cassandra.ca_certs = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.kue = {};
 config.kue.ui_port = '3002'
 config.webui_addresses = {};
@@ -838,8 +863,8 @@ config.network.L2_enable = false;
 config.getDomainsFromApiServer = false;
 config.jsonSchemaPath = "/usr/src/contrail/contrail-web-core/src/serverroot/configJsonSchemas";
 config.server_options = {};
-config.server_options.key_file = '/etc/contrail/webui_ssl/cs-key.pem';
-config.server_options.cert_file = '/etc/contrail/webui_ssl/cs-cert.pem';
+config.server_options.key_file = '/etc/certificates/server-key-1.1.7.1.pem';
+config.server_options.cert_file = '/etc/certificates/server-1.1.7.1.crt';
 config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA';
 module.exports = config;
 config.staticAuth = [];
@@ -873,20 +898,32 @@ auth=noauth
 aaa_mode=no-auth
 cloud_admin_role=admin
 global_read_only_role=
+config_api_ssl_enable=True
+config_api_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+config_api_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+config_api_ssl_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
-rabbit_server=1.1.4.1:5673,1.1.4.2:5673,1.1.4.3:5673
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var cassandraConfig = `cluster_name: ContrailConfigDB
 num_tokens: 32
@@ -972,16 +1009,18 @@ dynamic_snitch_reset_interval_in_ms: 600000
 dynamic_snitch_badness_threshold: 0.1
 request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 server_encryption_options:
-  internode_encryption: none
-  keystore: conf/.keystore
-  keystore_password: cassandra
-  truststore: conf/.truststore
-  truststore_password: cassandra
+  internode_encryption: all
+  keystore: /etc/keystore/server-keystore.jks
+  keystore_password: keystorePassword
+  truststore: /etc/keystore/server-truststore.jks
+  truststore_password: truststorePassword
+  require_client_auth: true
+  store_type: JKS
 client_encryption_options:
-  enabled: false
+  enabled: true
   optional: false
-  keystore: conf/.keystore
-  keystore_password: cassandra
+  keystore: /etc/keystore/server-keystore.jks
+  keystore_password: keystorePassword
 internode_compression: all
 inter_dc_tcp_nodelay: false
 tracetype_query_ttl: 86400
@@ -1049,24 +1088,84 @@ else
 fi
 `
 
-var rabbitmqConfig = map[string]string{"rabbitmq.conf": fmt.Sprintf("listeners.tcp.default = 5673\nloopback_users = none\n"),
+var rabbitmqConfig = map[string]string{
+	"rabbitmq-1.1.4.1.conf": `listeners.tcp.default = 5673
+listeners.ssl.default = 15673
+loopback_users = none
+management.tcp.port = 15671
+management.load_definitions = /etc/rabbitmq/definitions.json
+ssl_options.cacertfile = /run/secrets/kubernetes.io/serviceaccount/ca.crt
+ssl_options.keyfile = /etc/certificates/server-key-1.1.4.1.pem
+ssl_options.certfile = /etc/certificates/server-1.1.4.1.crt
+ssl_options.verify = verify_peer
+ssl_options.fail_if_no_peer_cert = true
+`,
+	"rabbitmq-1.1.4.2.conf": `listeners.tcp.default = 5673
+listeners.ssl.default = 15673
+loopback_users = none
+management.tcp.port = 15671
+management.load_definitions = /etc/rabbitmq/definitions.json
+ssl_options.cacertfile = /run/secrets/kubernetes.io/serviceaccount/ca.crt
+ssl_options.keyfile = /etc/certificates/server-key-1.1.4.2.pem
+ssl_options.certfile = /etc/certificates/server-1.1.4.2.crt
+ssl_options.verify = verify_peer
+ssl_options.fail_if_no_peer_cert = true
+`,
+	"rabbitmq-1.1.4.3.conf": `listeners.tcp.default = 5673
+listeners.ssl.default = 15673
+loopback_users = none
+management.tcp.port = 15671
+management.load_definitions = /etc/rabbitmq/definitions.json
+ssl_options.cacertfile = /run/secrets/kubernetes.io/serviceaccount/ca.crt
+ssl_options.keyfile = /etc/certificates/server-key-1.1.4.3.pem
+ssl_options.certfile = /etc/certificates/server-1.1.4.3.crt
+ssl_options.verify = verify_peer
+ssl_options.fail_if_no_peer_cert = true
+`,
 	"rabbitmq.nodes":         fmt.Sprintf("1.1.4.1\n1.1.4.2\n1.1.4.3\n"),
 	"0":                      "1.1.4.1",
 	"1":                      "1.1.4.2",
 	"2":                      "1.1.4.3",
 	"RABBITMQ_ERLANG_COOKIE": "47EFF3BB-4786-46E0-A5BB-58455B3C2CB4",
 	"RABBITMQ_USE_LONGNAME":  "true",
-	"RABBITMQ_CONFIG_FILE":   "/etc/rabbitmq/rabbitmq.conf",
+	"RABBITMQ_CONFIG_FILE":   "/etc/rabbitmq/rabbitmq-${POD_IP}.conf",
 	"RABBITMQ_PID_FILE":      "/var/run/rabbitmq.pid",
 	"RABBITMQ_CONF_ENV_FILE": "/var/lib/rabbitmq/rabbitmq.env",
+	"definitions.json":       rabbitmqDefinition,
+	"plugins.conf":           "[rabbitmq_management,rabbitmq_management_agent].",
 }
+
+var rabbitmqDefinition = `{
+  "users": [
+    {
+      "name": "user",
+      "password_hash": "0TeE2b17AedPdBgaZSwAtAfgwXDSqqoDki44i3AcXqxU1DIB",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "vhost"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "user",
+      "vhost": "vhost",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+}
+`
 
 var devicemanagerConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_ip=0.0.0.0
 api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 analytics_server_port=8081
 push_mode=1
@@ -1074,81 +1173,115 @@ log_file=/var/log/contrail/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
 dnsmasq_conf_dir=/etc/dnsmasq
 tftp_dir=/etc/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
-rabbit_server=1.1.4.1:5673,1.1.4.2:5673,1.1.4.3:5673
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var schematransformerConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_ip=0.0.0.0
 api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-schema.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
-rabbit_server=1.1.4.1:5673,1.1.4.2:5673,1.1.4.3:5673
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+[SECURITY]
+use_certs=True
+ca_certs=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+certfile=/etc/certificates/server-1.1.1.1.crt
+keyfile=/etc/certificates/server-key-1.1.1.1.pem`
 
 var servicemonitorConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_ip=0.0.0.0
 api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 api_server_port=8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-svc-monitor.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
-rabbit_server=1.1.4.1:5673,1.1.4.2:5673,1.1.4.3:5673
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+analytics_api_ssl_enable = True
+analytics_api_insecure_enable = False
+analytics_api_ssl_certfile = /etc/certificates/server-1.1.1.1.crt
+analytics_api_ssl_keyfile = /etc/certificates/server-key-1.1.1.1.pem
+analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SECURITY]
-use_certs=False
-keyfile=/etc/contrail/ssl/private/server-privkey.pem
-certfile=/etc/contrail/ssl/certs/server.pem
-ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+use_certs=True
+keyfile=/etc/certificates/server-key-1.1.1.1.pem
+certfile=/etc/certificates/server-1.1.1.1.crt
+ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list=1.1.1.1:8081 1.1.1.2:8081 1.1.1.3:8081
 aaa_mode = no-auth
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var queryengineConfig = `[DEFAULT]
 analytics_data_ttl=48
@@ -1168,15 +1301,18 @@ start_time=0
 cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [CASSANDRA]
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [REDIS]
 server_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
 password=
 redis_ssl_enable=False
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var analyticsapiConfig = `[DEFAULTS]
 host_ip=1.1.1.1
@@ -1193,14 +1329,23 @@ log_local=1
 #sandesh_send_rate_limit =
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 api_server=1.1.1.1:8082 1.1.1.2:8082 1.1.1.3:8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 zk_list=1.1.3.1:2181 1.1.3.2:2181 1.1.3.3:2181
+analytics_api_ssl_enable = True
+analytics_api_insecure_enable = True
+analytics_api_ssl_certfile = /etc/certificates/server-1.1.1.1.crt
+analytics_api_ssl_keyfile = /etc/certificates/server-key-1.1.1.1.pem
+analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
 [REDIS]
 redis_uve_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
 redis_password=
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var collectorConfig = `[DEFAULT]
 analytics_data_ttl=48
@@ -1219,14 +1364,14 @@ ipfix_port=4739
 log_file=/var/log/contrail/contrail-collector.log
 log_files_count=10
 log_file_size=1048576
-log_level=SYS_DEBUG
+log_level=SYS_NOTICE
 log_local=1
 # sandesh_send_rate_limit=
 cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 zookeeper_server_list=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [CASSANDRA]
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [COLLECTOR]
 port=8086
 server=0.0.0.0
@@ -1239,53 +1384,41 @@ port=3514
 [API_SERVER]
 # List of api-servers in ip:port format separated by space
 api_server_list=1.1.1.1:8082 1.1.1.2:8082 1.1.1.3:8082
-api_server_use_ssl=False
+api_server_use_ssl=True
 [REDIS]
 port=6379
 server=127.0.0.1
 password=
 [CONFIGDB]
 config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
-rabbitmq_server_list=1.1.4.1:5673 1.1.4.2:5673 1.1.4.3:5673
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
-rabbitmq_use_ssl=False
+config_db_use_ssl=true
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
+rabbitmq_vhost=vhost
+rabbitmq_user=user
+rabbitmq_password=password
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var confignodemanagerConfig = `[DEFAULTS]
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
-log_level=SYS_NOTICE
-log_local=1
-hostip=1.1.1.1
-db_port=9042
-db_jmx_port=7200
-db_use_ssl=False
-[COLLECTOR]
-server_list=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
-[SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+log_level=`
 
 var confignodemanagerAnalytics = `[DEFAULTS]
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-config-nodemgr.log
-log_level=SYS_NOTICE
-log_local=1
-hostip=1.1.1.1
-db_port=9042
-db_jmx_port=7200
-db_use_ssl=False
-[COLLECTOR]
-server_list=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
-[SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+log_level=`
 
 var controlConfig = `[DEFAULT]
 # bgp_config_file=bgp_config.xml
@@ -1305,7 +1438,11 @@ log_local=1
 # log_category=
 # log_disable=0
 xmpp_server_port=5269
-xmpp_auth_enable=False
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-1.1.5.1.crt
+xmpp_server_key=/etc/certificates/server-key-1.1.5.1.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -1313,16 +1450,23 @@ xmpp_auth_enable=False
 config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
-rabbitmq_server_list=1.1.4.1:5673 1.1.4.2:5673 1.1.4.3:5673
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
-rabbitmq_use_ssl=False
+config_db_use_ssl=True
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
+rabbitmq_vhost=vhost
+rabbitmq_user=user
+rabbitmq_password=password
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-1.1.5.1.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var dnsConfig = `[DEFAULT]
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
@@ -1345,7 +1489,10 @@ log_local=1
 # log_file_size=10485760 # 10MB
 # log_category=
 # log_disable=0
-xmpp_dns_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-1.1.5.1.crt
+xmpp_server_key=/etc/certificates/server-key-1.1.5.1.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -1353,16 +1500,23 @@ xmpp_dns_auth_enable=False
 config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 # config_db_username=
 # config_db_password=
-config_db_use_ssl=false
-config_db_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
-rabbitmq_server_list=1.1.4.1:5673 1.1.4.2:5673 1.1.4.3:5673
-rabbitmq_vhost=/
-rabbitmq_user=guest
-rabbitmq_password=guest
-rabbitmq_use_ssl=False
+config_db_use_ssl=True
+config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
+rabbitmq_vhost=vhost
+rabbitmq_user=user
+rabbitmq_password=password
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-1.1.5.1.crt
+rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_version=sslv23
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var controlNodemanagerConfig = `[DEFAULTS]
 http_server_ip=0.0.0.0
@@ -1372,12 +1526,16 @@ log_local=1
 hostip=1.1.5.1
 db_port=9042
 db_jmx_port=7200
-db_use_ssl=False
+db_use_ssl=True
 [COLLECTOR]
 server_list=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var namedConfig = `options {
     directory "/etc/contrail/dns";
@@ -1420,6 +1578,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
+  --api_server_use_ssl true \
   --host_ip 1.1.5.1 \
   --router_asn 64512 \
   --bgp_server_port 179 \
@@ -1472,21 +1631,28 @@ public_fip_pool={}
 vnc_endpoint_ip=1.1.1.1,1.1.1.2,1.1.1.3
 vnc_endpoint_port=8082
 rabbit_server=1.1.4.1,1.1.4.2,1.1.4.3
-rabbit_port=5673
-rabbit_vhost=/
-rabbit_user=guest
-rabbit_password=guest
-rabbit_use_ssl=False
+rabbit_port=15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.6.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.6.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=false
-cassandra_ca_certs=/etc/contrail/ssl/certs/ca-cert.pem
+cassandra_use_ssl=True
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
-`
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.6.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.6.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
 var vrouterConfig = `[CONTROL-NODE]
 servers=1.1.5.1:5269 1.1.5.2:5269 1.1.5.3:5269
@@ -1498,13 +1664,20 @@ log_level=SYS_NOTICE
 log_local=1
 hostname=host1
 agent_name=host1
-xmpp_dns_auth_enable=False
-xmpp_auth_enable=False
+xmpp_dns_auth_enable=True
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-1.1.8.1.crt
+xmpp_server_key=/etc/certificates/server-key-1.1.8.1.pem
+xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 physical_interface_mac = de:ad:be:ef:ba:be
 tsn_servers = []
 [SANDESH]
-introspect_ssl_enable=False
-sandesh_ssl_enable=False
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.8.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.8.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [NETWORKS]
 control_network_ip=1.1.8.1
 [DNS]
@@ -1526,5 +1699,4 @@ type = kvm
 fabric_snat_hash_table_size = 4096
 [SESSION]
 slo_destination = collector
-sample_destination = collector
-`
+sample_destination = collector`

@@ -33,6 +33,7 @@ spec:
         name: api
         readinessProbe:
           httpGet:
+            scheme: HTTPS
             path: /
             port: 8082
         volumeMounts:
@@ -257,22 +258,3 @@ func GetSTS() *appsv1.StatefulSet {
 	}
 	return &sts
 }
-
-var vncApiLib = `[global]
-;WEB_SERVER = 127.0.0.1
-;WEB_PORT = 9696  ; connection through quantum plugin
-
-WEB_SERVER = localhost
-WEB_PORT = 8082 ; connection to api-server directly
-BASE_URL = /
-;BASE_URL = /tenants/infra ; common-prefix for all URLs
-
-; Authentication settings (optional)
-[auth]
-;AUTHN_TYPE = keystone
-;AUTHN_PROTOCOL = http
-;AUTHN_SERVER = 127.0.0.1
-;AUTHN_PORT = 35357
-;AUTHN_URL = /v2.0/tokens
-;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
-`

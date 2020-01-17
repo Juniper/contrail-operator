@@ -22,7 +22,7 @@ It creates Kubernetes IN Docker cluster with a docker registry. This docker regi
 
 ## Destroy operator and cluster
 
-    kubectl --context "${KIND_CLUSTER_NAME}"-kind delete -k deploy/
+    ./clear_cluster.sh
 
 ## Delete cluster
 

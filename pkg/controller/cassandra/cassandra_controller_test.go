@@ -1,8 +1,8 @@
 package cassandra
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -34,8 +34,10 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 				Replicas: &replicas,
 			},
 			ServiceConfiguration: v1alpha1.CassandraConfiguration{
-				Images: map[string]string{"cassandra": "cassandra:3.5",
-					"init": "busybox"},
+				Containers: map[string]*v1alpha1.Container{
+					"cassandra": &v1alpha1.Container{Image: "cassandra:3.5"},
+					"init":      &v1alpha1.Container{Image: "busybox"},
+					"init2":     &v1alpha1.Container{Image: "cassandra:3.5"}},
 			},
 		},
 	}

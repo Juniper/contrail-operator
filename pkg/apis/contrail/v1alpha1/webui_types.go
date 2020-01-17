@@ -43,13 +43,13 @@ type WebuiSpec struct {
 // WebuiConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiConfiguration struct {
-	Images             map[string]string `json:"images"`
-	CassandraInstance  string            `json:"cassandraInstance,omitempty"`
-	ServiceAccount     string            `json:"serviceAccount,omitempty"`
-	ClusterRole        string            `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string            `json:"clusterRoleBinding,omitempty"`
-	AdminUsername      string            `json:"adminUsername,omitempty"`
-	AdminPassword      string            `json:"adminPassword,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
+	ServiceAccount     string                `json:"serviceAccount,omitempty"`
+	ClusterRole        string                `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
+	AdminUsername      string                `json:"adminUsername,omitempty"`
+	AdminPassword      string                `json:"adminPassword,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -115,6 +115,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var webuiWebConfigBuffer bytes.Buffer
 		configtemplates.WebuiWebConfig.Execute(&webuiWebConfigBuffer, struct {
+			HostIP              string
 			Hostname            string
 			APIServerList       string
 			APIServerPort       string
@@ -129,6 +130,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername       string
 			AdminPassword       string
 		}{
+			HostIP:              podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
 			APIServerList:       configNodesInformation.APIServerListQuotedCommaSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
@@ -161,6 +163,19 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 	return nil
+}
+
+// CreateSecret creates a secret.
+func (c *Webui) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"webui",
+		c)
 }
 
 func (c *Webui) ConfigurationParameters() *WebUIClusterConfiguration {
@@ -231,6 +246,11 @@ func (c *Webui) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonC
 // AddVolumesToIntendedSTS adds volumes to the Webui deployment.
 func (c *Webui) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Webui) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
 // SetPodsToReady sets Webui PODs to ready.

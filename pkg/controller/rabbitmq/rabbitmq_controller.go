@@ -1,9 +1,12 @@
 package rabbitmq
 
 import (
+	"context"
+
+	"time"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,12 +20,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	mRand "math/rand"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var log = logf.Log.WithName("controller_rabbitmq")
+
+const (
+	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+var src = mRand.NewSource(time.Now().UnixNano())
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -88,7 +102,7 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileRabbitmq{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
+	return &ReconcileRabbitmq{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -149,8 +163,34 @@ var _ reconcile.Reconciler = &ReconcileRabbitmq{}
 type ReconcileRabbitmq struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
+}
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[mRand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func randomString(size int) string {
+	b := make([]byte, size)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax letters!
+	for i, cache, remain := size-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+	return string(b)
 }
 
 // Reconcile reconciles the Rabbitmq resource.
@@ -189,6 +229,16 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	secret, err := instance.CreateSecret(request.Name+"-secret", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
@@ -197,47 +247,98 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 	instance.AddVolumesToIntendedSTS(statefulSet,
 		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume",
 			configMap2.Name: request.Name + "-" + instanceType + "-runner"})
+	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = image
-			}
-			if containerName == "rabbitmq" {
-				command := []string{"bash", "/runner/run.sh"}
-				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
-				volumeMountList := []corev1.VolumeMount{}
 
-				volumeMount := corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/rabbitmq",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-				volumeMount = corev1.VolumeMount{
-					Name:      request.Name + "-" + instanceType + "-runner",
-					MountPath: "/runner/",
-				}
-				volumeMountList = append(volumeMountList, volumeMount)
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
-					ConfigMapRef: &corev1.ConfigMapEnvSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: request.Name + "-" + instanceType + "-configmap",
-						},
-					},
-				}}
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+		if container.Name == "rabbitmq" {
+			command := []string{"bash", "/runner/run.sh"}
+			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
+			} else {
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
+			volumeMountList := []corev1.VolumeMount{}
+
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/etc/rabbitmq",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-runner",
+				MountPath: "/runner/",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: request.Name + "-" + instanceType + "-configmap",
+					},
+				},
+			}}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 	}
 
 	// Configure InitContainers.
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		for containerName, image := range instance.Spec.ServiceConfiguration.Images {
-			if containerName == container.Name {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = image
-			}
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
+	}
+
+	//err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: instance.Namespace}, secret)
+	//if err != nil && errors.IsNotFound(err) {
+	//	return reconcile.Result{}, err
+	//}
+
+	var password string
+	var user string
+	var vhost string
+	if instance.Spec.ServiceConfiguration.Password != "" {
+		password = instance.Spec.ServiceConfiguration.Password
+	} else {
+		password = randomString(32)
+	}
+
+	if instance.Spec.ServiceConfiguration.User != "" {
+		user = instance.Spec.ServiceConfiguration.User
+	} else {
+		user = randomString(8)
+	}
+	if instance.Spec.ServiceConfiguration.Vhost != "" {
+		vhost = instance.Spec.ServiceConfiguration.Vhost
+	} else {
+		vhost = randomString(6)
+	}
+
+	secretPassword := []byte(password)
+	secretUser := []byte(user)
+	secretVhost := []byte(vhost)
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	if _, ok := secret.Data["password"]; !ok {
+		secret.Data["password"] = secretPassword
+	}
+	if _, ok := secret.Data["user"]; !ok {
+		secret.Data["user"] = secretUser
+	}
+	if _, ok := secret.Data["vhost"]; !ok {
+		secret.Data["vhost"] = secretVhost
+	}
+
+	if err := r.Client.Update(context.Background(), secret); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
@@ -256,6 +357,13 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
+		hostNetwork := true
+		if instance.Spec.CommonConfiguration.HostNetwork != nil {
+			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+		}
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -268,6 +376,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		active := false
 		instance.Status.Active = &active
 	}
+
 	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
 		return reconcile.Result{}, err
 	}

@@ -3,6 +3,9 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"sort"
 	"strconv"
@@ -46,9 +49,14 @@ type RabbitmqSpec struct {
 // RabbitmqConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type RabbitmqConfiguration struct {
-	Images       map[string]string `json:"images"`
-	Port         *int              `json:"port,omitempty"`
-	ErlangCookie string            `json:"erlangCookie,omitempty"`
+	Containers   map[string]*Container `json:"containers,omitempty"`
+	Port         *int                  `json:"port,omitempty"`
+	SSLPort      *int                  `json:"sslPort,omitempty"`
+	ErlangCookie string                `json:"erlangCookie,omitempty"`
+	Vhost        string                `json:"vhost,omitempty"`
+	User         string                `json:"user,omitempty"`
+	Password     string                `json:"password,omitempty"`
+	Secret       string                `json:"secret,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -59,10 +67,12 @@ type RabbitmqStatus struct {
 	Active *bool               `json:"active,omitempty"`
 	Nodes  map[string]string   `json:"nodes,omitempty"`
 	Ports  RabbitmqStatusPorts `json:"ports,omitempty"`
+	Secret string              `json:"secret,omitempty"`
 }
 
 type RabbitmqStatusPorts struct {
-	Port string `json:"port,omitempty"`
+	Port    string `json:"port,omitempty"`
+	SSLPort string `json:"sslPort,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -100,17 +110,30 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 
 	rabbitmqConfigInterface := c.ConfigurationParameters()
 	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
+	var data = make(map[string]string)
+	for _, pod := range podList.Items {
+		rabbitmqConfigString := fmt.Sprintf("listeners.tcp.default = %d\n", *rabbitmqConfig.Port)
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("listeners.ssl.default = %d\n", *rabbitmqConfig.SSLPort)
 
-	rabbitmqConfigString := fmt.Sprintf("listeners.tcp.default = %d\n", *rabbitmqConfig.Port)
-	rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
-
-	data := map[string]string{"rabbitmq.conf": rabbitmqConfigString,
-		"RABBITMQ_ERLANG_COOKIE": rabbitmqConfig.ErlangCookie,
-		"RABBITMQ_USE_LONGNAME":  "true",
-		"RABBITMQ_CONFIG_FILE":   "/etc/rabbitmq/rabbitmq.conf",
-		"RABBITMQ_PID_FILE":      "/var/run/rabbitmq.pid",
-		"RABBITMQ_CONF_ENV_FILE": "/var/lib/rabbitmq/rabbitmq.env",
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.tcp.port = 15671\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.load_definitions = /etc/rabbitmq/definitions.json\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = /run/secrets/kubernetes.io/serviceaccount/ca.crt\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.keyfile = /etc/certificates/server-key-"+pod.Status.PodIP+".pem\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.certfile = /etc/certificates/server-"+pod.Status.PodIP+".crt\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.fail_if_no_peer_cert = true\n")
+		//rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.versions.1 = tlsv1.2\n")
+		data["rabbitmq-"+pod.Status.PodIP+".conf"] = rabbitmqConfigString
 	}
+
+	data["RABBITMQ_ERLANG_COOKIE"] = rabbitmqConfig.ErlangCookie
+	data["RABBITMQ_USE_LONGNAME"] = "true"
+	data["RABBITMQ_CONFIG_FILE"] = "/etc/rabbitmq/rabbitmq-${POD_IP}.conf"
+	data["RABBITMQ_PID_FILE"] = "/var/run/rabbitmq.pid"
+	data["RABBITMQ_CONF_ENV_FILE"] = "/var/lib/rabbitmq/rabbitmq.env"
+	data["RABBITMQ_ENABLED_PLUGINS_FILE"] = "/etc/rabbitmq/plugins.conf"
+
 	configMapInstanceDynamicConfig.Data = data
 
 	var rabbitmqNodes string
@@ -120,6 +143,56 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqNodes = rabbitmqNodes + fmt.Sprintf("%s\n", pod.Status.PodIP)
 	}
 	configMapInstanceDynamicConfig.Data["rabbitmq.nodes"] = rabbitmqNodes
+	configMapInstanceDynamicConfig.Data["plugins.conf"] = "[rabbitmq_management,rabbitmq_management_agent]."
+
+	var secretName string
+	secret := &corev1.Secret{}
+	if rabbitmqConfig.Secret != "" {
+		secretName = rabbitmqConfig.Secret
+	} else {
+		secretName = request.Name + "-secret"
+	}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: request.Namespace}, secret)
+	if err != nil {
+		return err
+	}
+
+	salt := [4]byte{}
+	_, err = rand.Read(salt[:])
+	if err != nil {
+		return err
+	}
+
+	saltedP := append(salt[:], secret.Data["password"]...)
+
+	hash := sha256.New()
+
+	_, err = hash.Write(saltedP)
+
+	if err != nil {
+		return err
+	}
+
+	hashPass := hash.Sum(nil)
+
+	saltedP = append(salt[:], hashPass...)
+
+	//rabbitmqPasswordString := string(secret.Data["password"])
+
+	var rabbitmqDefinitionBuffer bytes.Buffer
+	configtemplates.RabbitmqDefinition.Execute(&rabbitmqDefinitionBuffer, struct {
+		RabbitmqUser     string
+		RabbitmqPassword string
+		RabbitmqVhost    string
+	}{
+		RabbitmqUser: string(secret.Data["user"]),
+		//RabbitmqPassword: base64.StdEncoding.EncodeToString([]byte(rabbitmqConfig.Password)),
+		//RabbitmqPassword: rabbitmqPasswordString,
+		RabbitmqPassword: base64.StdEncoding.EncodeToString(saltedP),
+		RabbitmqVhost:    string(secret.Data["vhost"]),
+	})
+	configMapInstanceDynamicConfig.Data["definitions.json"] = rabbitmqDefinitionBuffer.String()
+
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
 	if err != nil {
 		return err
@@ -142,6 +215,18 @@ func (c *Rabbitmq) CreateConfigMap(configMapName string,
 	scheme *runtime.Scheme,
 	request reconcile.Request) (*corev1.ConfigMap, error) {
 	return CreateConfigMap(configMapName,
+		client,
+		scheme,
+		request,
+		"rabbitmq",
+		c)
+}
+
+func (c *Rabbitmq) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
 		client,
 		scheme,
 		request,
@@ -214,6 +299,11 @@ func (c *Rabbitmq) AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfig
 	AddVolumesToIntendedSTS(sts, volumeConfigMapMap)
 }
 
+// AddSecretVolumesToIntendedSTS adds volumes to the Rabbitmq deployment.
+func (c *Rabbitmq) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedSTS(sts, volumeConfigMapMap)
+}
+
 // SetPodsToReady sets Rabbitmq PODs to ready.
 func (c *Rabbitmq) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)
@@ -245,6 +335,8 @@ func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 	rabbitmqConfigInterface := c.ConfigurationParameters()
 	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
 	c.Status.Ports.Port = strconv.Itoa(*rabbitmqConfig.Port)
+	c.Status.Ports.SSLPort = strconv.Itoa(*rabbitmqConfig.SSLPort)
+	c.Status.Secret = rabbitmqConfig.Secret
 	err := client.Status().Update(context.TODO(), c)
 	if err != nil {
 		return err
@@ -255,19 +347,54 @@ func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 func (c *Rabbitmq) ConfigurationParameters() interface{} {
 	rabbitmqConfiguration := RabbitmqConfiguration{}
 	var port int
+	var sslPort int
 	var erlangCookie string
+	var vhost string
+	var user string
+	var password string
+	var secret string
 	if c.Spec.ServiceConfiguration.Port != nil {
 		port = *c.Spec.ServiceConfiguration.Port
 	} else {
 		port = RabbitmqNodePort
+	}
+	if c.Spec.ServiceConfiguration.SSLPort != nil {
+		sslPort = *c.Spec.ServiceConfiguration.SSLPort
+	} else {
+		sslPort = RabbitmqNodePortSSL
 	}
 	if c.Spec.ServiceConfiguration.ErlangCookie != "" {
 		erlangCookie = c.Spec.ServiceConfiguration.ErlangCookie
 	} else {
 		erlangCookie = RabbitmqErlangCookie
 	}
+	if c.Spec.ServiceConfiguration.Vhost != "" {
+		vhost = c.Spec.ServiceConfiguration.Vhost
+	} else {
+		vhost = RabbitmqVhost
+	}
+	if c.Spec.ServiceConfiguration.User != "" {
+		user = c.Spec.ServiceConfiguration.User
+	} else {
+		user = RabbitmqUser
+	}
+	if c.Spec.ServiceConfiguration.Password != "" {
+		password = c.Spec.ServiceConfiguration.Password
+	} else {
+		password = RabbitmqPassword
+	}
+	if c.Spec.ServiceConfiguration.Secret != "" {
+		secret = c.Spec.ServiceConfiguration.Secret
+	} else {
+		secret = c.GetName() + "-secret"
+	}
 	rabbitmqConfiguration.Port = &port
+	rabbitmqConfiguration.SSLPort = &sslPort
 	rabbitmqConfiguration.ErlangCookie = erlangCookie
+	rabbitmqConfiguration.Vhost = vhost
+	rabbitmqConfiguration.User = user
+	rabbitmqConfiguration.Password = password
+	rabbitmqConfiguration.Secret = secret
 
 	return rabbitmqConfiguration
 }

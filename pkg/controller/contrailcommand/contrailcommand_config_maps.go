@@ -21,6 +21,8 @@ func (c *configMaps) ensureCommandConfigExist() error {
 	cc := &commandConf{
 		AdminUsername:  "admin",
 		AdminPassword:  "contrail123",
+		ConfigAPIURL:   "http://localhost:8082",
+		TelemetryURL:   "http://localhost:8081",
 		PostgresUser:   "root",
 		PostgresDBName: "contrail_test",
 	}
@@ -31,6 +33,14 @@ func (c *configMaps) ensureCommandConfigExist() error {
 
 	if c.ccSpec.ServiceConfiguration.AdminPassword != "" {
 		cc.AdminPassword = c.ccSpec.ServiceConfiguration.AdminPassword
+	}
+
+	if c.ccSpec.ServiceConfiguration.ConfigAPIURL != "" {
+		cc.ConfigAPIURL = c.ccSpec.ServiceConfiguration.ConfigAPIURL
+	}
+
+	if c.ccSpec.ServiceConfiguration.TelemetryURL != "" {
+		cc.TelemetryURL = c.ccSpec.ServiceConfiguration.TelemetryURL
 	}
 
 	return c.cm.EnsureExists(cc)

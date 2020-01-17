@@ -30,6 +30,8 @@ type ContrailCommandSpec struct {
 // ContrailCommandConfiguration is the Spec for the ContrailCommand configuration
 // +k8s:openapi-gen=true
 type ContrailCommandConfiguration struct {
+	ConfigAPIURL     string `json:"configAPIURL,omitempty"`
+	TelemetryURL     string `json:"telemetryURL,omitempty"`
 	PostgresInstance string `json:"postgresInstance,omitempty"`
 	AdminUsername    string `json:"adminUsername,omitempty"`
 	AdminPassword    string `json:"adminPassword,omitempty"`

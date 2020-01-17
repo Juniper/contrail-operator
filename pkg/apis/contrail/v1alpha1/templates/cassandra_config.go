@@ -87,16 +87,18 @@ dynamic_snitch_reset_interval_in_ms: 600000
 dynamic_snitch_badness_threshold: 0.1
 request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 server_encryption_options:
-  internode_encryption: none
-  keystore: conf/.keystore
-  keystore_password: cassandra
-  truststore: conf/.truststore
-  truststore_password: cassandra
+  internode_encryption: all
+  keystore: /etc/keystore/server-keystore.jks
+  keystore_password: {{ .KeystorePassword }}
+  truststore: /etc/keystore/server-truststore.jks
+  truststore_password: {{ .TruststorePassword }}
+  require_client_auth: true
+  store_type: JKS
 client_encryption_options:
-  enabled: false
+  enabled: true
   optional: false
-  keystore: conf/.keystore
-  keystore_password: cassandra
+  keystore: /etc/keystore/server-keystore.jks
+  keystore_password: {{ .KeystorePassword }}
 internode_compression: all
 inter_dc_tcp_nodelay: false
 tracetype_query_ttl: 86400

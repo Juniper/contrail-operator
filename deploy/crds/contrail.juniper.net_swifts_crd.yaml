@@ -9,11 +9,12 @@ spec:
     listKind: SwiftList
     plural: swifts
     singular: swift
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
+      description: Swift is the Schema for the swifts API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -28,17 +29,20 @@ spec:
         metadata:
           type: object
         spec:
+          description: SwiftSpec defines the desired state of Swift
           properties:
             serviceConfiguration:
+              description: SwiftConfiguration is the Spec for the keystone API.
               properties:
                 swiftProxyConfiguration:
+                  description: SwiftProxyConfiguration is the Spec for the keystone
+                    API.
                   properties:
                     keystoneAdminPassword:
                       type: string
                     keystoneInstance:
                       type: string
                     listenPort:
-                      format: int64
                       type: integer
                     swiftConfSecretName:
                       type: string
@@ -46,28 +50,29 @@ spec:
                       type: string
                   type: object
                 swiftStorageConfiguration:
+                  description: SwiftStorageConfiguration is the Spec for the keystone
+                    API.
                   properties:
                     accountBindPort:
-                      format: int64
                       type: integer
                     containerBindPort:
-                      format: int64
                       type: integer
                     objectBindPort:
-                      format: int64
                       type: integer
                     swiftConfSecretName:
                       type: string
                   type: object
               required:
-              - swiftStorageConfiguration
               - swiftProxyConfiguration
+              - swiftStorageConfiguration
               type: object
           required:
           - serviceConfiguration
           type: object
         status:
+          description: SwiftStatus defines the observed state of Swift
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1

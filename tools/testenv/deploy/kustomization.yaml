@@ -1,7 +1,3 @@
-resources:
-  - 0-create-persistent-volumes.yaml
-  - 1-create-operator.yaml
-  - cluster.yaml
 
 secretGenerator:
 - name: keystone-keys

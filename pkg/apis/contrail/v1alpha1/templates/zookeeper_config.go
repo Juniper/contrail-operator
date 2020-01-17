@@ -18,20 +18,6 @@ reconfigEnabled=true
 dynamicConfigFile=/mydata/zoo.cfg.dynamic.100000000
 `))
 
-// ZookeeperAuthConfig is the template of the Zookeeper Auth configuration.
-var ZookeeperAuthConfig = template.Must(template.New("").Parse(`Server {
-org.apache.zookeeper.server.auth.DigestLoginModule required
-user_super="adminsecret"
-user_bob="bobsecret"
-user_dev="devpassword";
-};
-Client{
-org.apache.zookeeper.server.auth.DigestLoginModule required
-username="blah"
-password="blahblah";
-};
-`))
-
 // ZookeeperLogConfig is the template of the Zookeeper Log configuration.
 var ZookeeperLogConfig = template.Must(template.New("").Parse(`zookeeper.root.logger=INFO, CONSOLE
 zookeeper.console.threshold=INFO

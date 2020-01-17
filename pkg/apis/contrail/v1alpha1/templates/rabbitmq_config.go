@@ -26,3 +26,29 @@ else
   rabbitmq-server
 fi
 `))
+
+// RabbitmqDefinition is the template for Rabbitmq user/vhost configuration
+var RabbitmqDefinition = template.Must(template.New("").Parse(`{
+  "users": [
+    {
+      "name": "{{ .RabbitmqUser }}",
+      "password_hash": "{{ .RabbitmqPassword }}",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "{{ .RabbitmqVhost }}"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "{{ .RabbitmqUser }}",
+      "vhost": "{{ .RabbitmqVhost }}",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+}
+`))
