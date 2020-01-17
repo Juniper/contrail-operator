@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +37,10 @@ const (
 )
 
 var err error
+
+func RemoveIndex(s []corev1.Container, index int) []corev1.Container {
+	return append(s[:index], s[index+1:]...)
+}
 
 // GetGroupKindFromObject return GK.
 func GetGroupKindFromObject(object runtime.Object) schema.GroupKind {
@@ -227,6 +231,35 @@ func STSStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
 				}
 			}
 			if (oldSTS.Status.ReadyReplicas != newSTS.Status.ReadyReplicas) && isOwner {
+				return true
+			}
+			return false
+		},
+	}
+}
+
+// DSStatusChange monitors per application size change.
+func DSStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldDS, ok := e.ObjectOld.(*appsv1.DaemonSet)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newDS, ok := e.ObjectNew.(*appsv1.DaemonSet)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			isOwner := false
+			for _, owner := range newDS.ObjectMeta.OwnerReferences {
+				if *owner.Controller {
+					groupVersionKind := schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind)
+					if appGroupKind == groupVersionKind.GroupKind() {
+						isOwner = true
+					}
+				}
+			}
+			if (oldDS.Status.NumberReady != newDS.Status.NumberReady) && isOwner {
 				return true
 			}
 			return false
@@ -438,6 +471,35 @@ func ConfigActiveChange() predicate.Funcs {
 				oldConfigActive = *oldConfig.Status.Active
 			}
 			if !oldConfigActive && newConfigActive {
+				return true
+			}
+			return false
+
+		},
+	}
+}
+
+// VrouterActiveChange returns predicate function based on group kind.
+func VrouterActiveChange() predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldVrouter, ok := e.ObjectOld.(*v1alpha1.Vrouter)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newVrouter, ok := e.ObjectNew.(*v1alpha1.Vrouter)
+			if !ok {
+				reqLogger.Info("type conversion mismatch")
+			}
+			newVrouterActive := false
+			oldVrouterActive := false
+			if newVrouter.Status.Active != nil {
+				newVrouterActive = *newVrouter.Status.Active
+			}
+			if oldVrouter.Status.Active != nil {
+				oldVrouterActive = *oldVrouter.Status.Active
+			}
+			if !oldVrouterActive && newVrouterActive {
 				return true
 			}
 			return false

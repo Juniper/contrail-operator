@@ -1,19 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: postgres.contrail.juniper.net
+  name: swiftproxies.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: Postgres
-    listKind: PostgresList
-    plural: postgres
-    singular: postgres
-  scope: Namespaced
+    kind: SwiftProxy
+    listKind: SwiftProxyList
+    plural: swiftproxies
+    singular: swiftproxy
+  scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
+      description: SwiftProxy is the Schema for the swiftproxies API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -28,17 +29,34 @@ spec:
         metadata:
           type: object
         spec:
+          description: SwiftProxySpec defines the desired state of SwiftProxy
           properties:
-            image:
-              type: string
+            serviceConfiguration:
+              description: SwiftProxyConfiguration is the Spec for the keystone API.
+              properties:
+                keystoneAdminPassword:
+                  type: string
+                keystoneInstance:
+                  type: string
+                listenPort:
+                  type: integer
+                swiftConfSecretName:
+                  type: string
+                swiftPassword:
+                  type: string
+              type: object
+          required:
+          - serviceConfiguration
           type: object
         status:
+          description: SwiftProxyStatus defines the observed state of SwiftProxy
           properties:
             active:
               type: boolean
-            node:
-              type: string
+          required:
+          - active
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1

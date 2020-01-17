@@ -2,7 +2,7 @@
 
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 
-cp ../../deploy/0-create-persistent-volumes.yaml deploy/0-create-persistent-volumes.yaml
-cp ../../deploy/1-create-operator.yaml deploy/1-create-operator.yaml
+kubectl apply -f ../../deploy/1-create-operator.yaml
+kubectl apply -f deploy/cluster.yaml
 
 kubectl --context "${KIND_CLUSTER_NAME}"-kind apply -k deploy/

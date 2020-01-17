@@ -178,6 +178,8 @@ func newDeployment(name, image, namespace, configVolumeName string) *apps.Deploy
 								},
 							},
 						},
+						//TODO: Command should support CA certificates
+						Command: []string{"bash", "/etc/contrail/entrypoint.sh"},
 						VolumeMounts: []core.VolumeMount{{
 							Name:      configVolumeName,
 							MountPath: "/etc/contrail",

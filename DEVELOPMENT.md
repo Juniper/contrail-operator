@@ -29,8 +29,8 @@ sudo chown -R `id -u`:`id -g` ./**/*
 
 ```
 cd github.com/Juniper/contrail-operator
-docker run --rm -it -v $(pwd):/contrail-operator hakyer/operator-sdk:v.10-go-1.13  bash -c "cd /contrail-operator;operator-sdk generate k8s"
-docker run --rm -it -v $(pwd):/contrail-operator hakyer/operator-sdk:v.10-go-1.13  bash -c "cd /contrail-operator;operator-sdk generate openapi"
+docker run --rm -it -v $(pwd):/contrail-operator kaweue/operator-sdk:v.13-go-1.13  bash -c "cd /contrail-operator;operator-sdk generate k8s"
+docker run --rm -it -v $(pwd):/contrail-operator kaweue/operator-sdk:v.13-go-1.13  bash -c "cd /contrail-operator;operator-sdk generate openapi"
 ```
 
 ## Troubleshooting
@@ -49,7 +49,7 @@ docker run --rm -it -v $(pwd):/contrail-operator hakyer/operator-sdk:v.10-go-1.1
 ## Updating Contrail operator
 ```
 cd github.com/Juniper/contrail-operator
-docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock hakyer/operator-sdk:v.10-go-1.13 bash
+docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash
 $ cd /contrail-operator; operator-sdk build contrail-operator
 ```
 

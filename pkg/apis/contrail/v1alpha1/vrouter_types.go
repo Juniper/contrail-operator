@@ -39,8 +39,9 @@ type VrouterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Ports ConfigStatusPorts `json:"ports,omitempty"`
-	Nodes map[string]string `json:"nodes,omitempty"`
+	Ports  ConfigStatusPorts `json:"ports,omitempty"`
+	Nodes  map[string]string `json:"nodes,omitempty"`
+	Active *bool             `json:"active,omitempty"`
 }
 
 // VrouterSpec is the Spec for the cassandras API.
@@ -53,17 +54,17 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Images            map[string]string `json:"images"`
-	ControlInstance   string            `json:"controlInstance,omitempty"`
-	CassandraInstance string            `json:"cassandraInstance,omitempty"`
-	Gateway           string            `json:"gateway,omitempty"`
-	PhysicalInterface string            `json:"physicalInterface,omitempty"`
-	MetaDataSecret    string            `json:"metaDataSecret,omitempty"`
-	NodeManager       *bool             `json:"nodeManager,omitempty"`
-	Distribution      *Distribution     `json:"distribution,omitempty"`
-	ServiceAccount        string            `json:"serviceAccount,omitempty"`
-	ClusterRole           string            `json:"clusterRole,omitempty"`
-	ClusterRoleBinding    string            `json:"clusterRoleBinding,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	ControlInstance    string                `json:"controlInstance,omitempty"`
+	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
+	Gateway            string                `json:"gateway,omitempty"`
+	PhysicalInterface  string                `json:"physicalInterface,omitempty"`
+	MetaDataSecret     string                `json:"metaDataSecret,omitempty"`
+	NodeManager        *bool                 `json:"nodeManager,omitempty"`
+	Distribution       *Distribution         `json:"distribution,omitempty"`
+	ServiceAccount     string                `json:"serviceAccount,omitempty"`
+	ClusterRole        string                `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -117,6 +118,19 @@ func (c *Vrouter) CreateConfigMap(configMapName string,
 		c)
 }
 
+// CreateSecret creates a secret.
+func (c *Vrouter) CreateSecret(secretName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.Secret, error) {
+	return CreateSecret(secretName,
+		client,
+		scheme,
+		request,
+		"vrouter",
+		c)
+}
+
 // PrepareDaemonSet prepares the intended podList.
 func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 	commonConfiguration *CommonConfiguration,
@@ -138,6 +152,11 @@ func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 		return err
 	}
 	return nil
+}
+
+// AddSecretVolumesToIntendedDS adds volumes to the Rabbitmq deployment.
+func (c *Vrouter) AddSecretVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeConfigMapMap map[string]string) {
+	AddSecretVolumesToIntendedDS(ds, volumeConfigMapMap)
 }
 
 // SetDSCommonConfiguration takes common configuration parameters
@@ -240,6 +259,24 @@ func (c *Vrouter) UpdateDS(ds *appsv1.DaemonSet,
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// SetInstanceActive sets the instance to active.
+func (c *Vrouter) SetInstanceActive(client client.Client, activeStatus *bool, ds *appsv1.DaemonSet, request reconcile.Request, object runtime.Object) error {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: ds.Name, Namespace: request.Namespace},
+		ds); err != nil {
+		return err
+	}
+	active := false
+	if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+		active = true
+	}
+
+	*activeStatus = active
+	if err := client.Status().Update(context.TODO(), object); err != nil {
+		return err
 	}
 	return nil
 }

@@ -22,18 +22,19 @@ type ManagerSpec struct {
 // Services defines the desired state of Services.
 // +k8s:openapi-gen=true
 type Services struct {
-	Config          *Config          `json:"config,omitempty"`
-	Controls        []*Control       `json:"controls,omitempty"`
-	Kubemanagers    []*Kubemanager   `json:"kubemanagers,omitempty"`
-	Webui           *Webui           `json:"webui,omitempty"`
-	Vrouters        []*Vrouter       `json:"vrouters,omitempty"`
-	Cassandras      []*Cassandra     `json:"cassandras,omitempty"`
-	Zookeepers      []*Zookeeper     `json:"zookeepers,omitempty"`
-	Rabbitmq        *Rabbitmq        `json:"rabbitmq,omitempty"`
-	ContrailCommand *ContrailCommand `json:"contrailCommand,omitempty"`
-	Postgres        *Postgres        `json:"postgres,omitempty"`
-	Keystone        *Keystone        `json:"keystone,omitempty"`
-	Swift           *Swift           `json:"swift,omitempty"`
+	Config           *Config           `json:"config,omitempty"`
+	Controls         []*Control        `json:"controls,omitempty"`
+	Kubemanagers     []*Kubemanager    `json:"kubemanagers,omitempty"`
+	Webui            *Webui            `json:"webui,omitempty"`
+	Vrouters         []*Vrouter        `json:"vrouters,omitempty"`
+	Cassandras       []*Cassandra      `json:"cassandras,omitempty"`
+	Zookeepers       []*Zookeeper      `json:"zookeepers,omitempty"`
+	Rabbitmq         *Rabbitmq         `json:"rabbitmq,omitempty"`
+	ProvisionManager *ProvisionManager `json:"provisionManager,omitempty"`
+	ContrailCommand  *ContrailCommand  `json:"contrailCommand,omitempty"`
+	Postgres         *Postgres         `json:"postgres,omitempty"`
+	Keystone         *Keystone         `json:"keystone,omitempty"`
+	Swift            *Swift            `json:"swift,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
@@ -42,15 +43,16 @@ type ManagerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Config       *ServiceStatus   `json:"config,omitempty"`
-	Controls     []*ServiceStatus `json:"controls,omitempty"`
-	Kubemanagers []*ServiceStatus `json:"kubemanagers,omitempty"`
-	Webui        *ServiceStatus   `json:"webui,omitempty"`
-	Vrouters     []*ServiceStatus `json:"vrouters,omitempty"`
-	Cassandras   []*ServiceStatus `json:"cassandras,omitempty"`
-	Zookeepers   []*ServiceStatus `json:"zookeepers,omitempty"`
-	Rabbitmq     *ServiceStatus   `json:"rabbitmq,omitempty"`
-	CrdStatus    []CrdStatus      `json:"crdStatus,omitempty"`
+	Config           *ServiceStatus   `json:"config,omitempty"`
+	Controls         []*ServiceStatus `json:"controls,omitempty"`
+	Kubemanagers     []*ServiceStatus `json:"kubemanagers,omitempty"`
+	Webui            *ServiceStatus   `json:"webui,omitempty"`
+	Vrouters         []*ServiceStatus `json:"vrouters,omitempty"`
+	Cassandras       []*ServiceStatus `json:"cassandras,omitempty"`
+	Zookeepers       []*ServiceStatus `json:"zookeepers,omitempty"`
+	Rabbitmq         *ServiceStatus   `json:"rabbitmq,omitempty"`
+	ProvisionManager *ServiceStatus   `json:"provisionManager,omitempty"`
+	CrdStatus        []CrdStatus      `json:"crdStatus,omitempty"`
 }
 
 // CrdStatus tracks status of CRD.

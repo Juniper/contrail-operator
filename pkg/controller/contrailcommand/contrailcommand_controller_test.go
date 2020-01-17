@@ -241,6 +241,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 									HTTPGet: &core.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
+							Command: []string{"bash", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
 							},

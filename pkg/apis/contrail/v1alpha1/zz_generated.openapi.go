@@ -11,69 +11,103 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/contrail/v1alpha1.Cassandra":                    schema_pkg_apis_contrail_v1alpha1_Cassandra(ref),
-		"./pkg/apis/contrail/v1alpha1.CassandraConfiguration":       schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.CassandraSpec":                schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.CassandraStatus":              schema_pkg_apis_contrail_v1alpha1_CassandraStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.CommonConfiguration":          schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.Config":                       schema_pkg_apis_contrail_v1alpha1_Config(ref),
-		"./pkg/apis/contrail/v1alpha1.ConfigConfiguration":          schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.ConfigSpec":                   schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.ConfigStatus":                 schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.ContrailCommand":              schema_pkg_apis_contrail_v1alpha1_ContrailCommand(ref),
-		"./pkg/apis/contrail/v1alpha1.ContrailCommandConfiguration": schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.ContrailCommandSpec":          schema_pkg_apis_contrail_v1alpha1_ContrailCommandSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.ContrailCommandStatus":        schema_pkg_apis_contrail_v1alpha1_ContrailCommandStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Control":                      schema_pkg_apis_contrail_v1alpha1_Control(ref),
-		"./pkg/apis/contrail/v1alpha1.ControlConfiguration":         schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.ControlSpec":                  schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.ControlStatus":                schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.CrdStatus":                    schema_pkg_apis_contrail_v1alpha1_CrdStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Keystone":                     schema_pkg_apis_contrail_v1alpha1_Keystone(ref),
-		"./pkg/apis/contrail/v1alpha1.KeystoneConfiguration":        schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.KeystoneSpec":                 schema_pkg_apis_contrail_v1alpha1_KeystoneSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.KeystoneStatus":               schema_pkg_apis_contrail_v1alpha1_KeystoneStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Kubemanager":                  schema_pkg_apis_contrail_v1alpha1_Kubemanager(ref),
-		"./pkg/apis/contrail/v1alpha1.KubemanagerConfiguration":     schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.KubemanagerSpec":              schema_pkg_apis_contrail_v1alpha1_KubemanagerSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.KubemanagerStatus":            schema_pkg_apis_contrail_v1alpha1_KubemanagerStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Manager":                      schema_pkg_apis_contrail_v1alpha1_Manager(ref),
-		"./pkg/apis/contrail/v1alpha1.ManagerSpec":                  schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.ManagerStatus":                schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Postgres":                     schema_pkg_apis_contrail_v1alpha1_Postgres(ref),
-		"./pkg/apis/contrail/v1alpha1.PostgresSpec":                 schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.PostgresStatus":               schema_pkg_apis_contrail_v1alpha1_PostgresStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Rabbitmq":                     schema_pkg_apis_contrail_v1alpha1_Rabbitmq(ref),
-		"./pkg/apis/contrail/v1alpha1.RabbitmqConfiguration":        schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.RabbitmqSpec":                 schema_pkg_apis_contrail_v1alpha1_RabbitmqSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.RabbitmqStatus":               schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.ServiceStatus":                schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Services":                     schema_pkg_apis_contrail_v1alpha1_Services(ref),
-		"./pkg/apis/contrail/v1alpha1.Status":                       schema_pkg_apis_contrail_v1alpha1_Status(ref),
-		"./pkg/apis/contrail/v1alpha1.Swift":                        schema_pkg_apis_contrail_v1alpha1_Swift(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftConfiguration":           schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftProxy":                   schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration":      schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftProxySpec":               schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftProxyStatus":             schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftSpec":                    schema_pkg_apis_contrail_v1alpha1_SwiftSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftStatus":                  schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftStorage":                 schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration":    schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftStorageSpec":             schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.SwiftStorageStatus":           schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Vrouter":                      schema_pkg_apis_contrail_v1alpha1_Vrouter(ref),
-		"./pkg/apis/contrail/v1alpha1.VrouterConfiguration":         schema_pkg_apis_contrail_v1alpha1_VrouterConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.VrouterSpec":                  schema_pkg_apis_contrail_v1alpha1_VrouterSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.VrouterStatus":                schema_pkg_apis_contrail_v1alpha1_VrouterStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Webui":                        schema_pkg_apis_contrail_v1alpha1_Webui(ref),
-		"./pkg/apis/contrail/v1alpha1.WebuiConfiguration":           schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.WebuiSpec":                    schema_pkg_apis_contrail_v1alpha1_WebuiSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.WebuiStatus":                  schema_pkg_apis_contrail_v1alpha1_WebuiStatus(ref),
-		"./pkg/apis/contrail/v1alpha1.Zookeeper":                    schema_pkg_apis_contrail_v1alpha1_Zookeeper(ref),
-		"./pkg/apis/contrail/v1alpha1.ZookeeperConfiguration":       schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref),
-		"./pkg/apis/contrail/v1alpha1.ZookeeperSpec":                schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref),
-		"./pkg/apis/contrail/v1alpha1.ZookeeperStatus":              schema_pkg_apis_contrail_v1alpha1_ZookeeperStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.BGPPeer":                       schema_pkg_apis_contrail_v1alpha1_BGPPeer(ref),
+		"./pkg/apis/contrail/v1alpha1.Cassandra":                     schema_pkg_apis_contrail_v1alpha1_Cassandra(ref),
+		"./pkg/apis/contrail/v1alpha1.CassandraConfiguration":        schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.CassandraSpec":                 schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.CassandraStatus":               schema_pkg_apis_contrail_v1alpha1_CassandraStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.CommonConfiguration":           schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.Config":                        schema_pkg_apis_contrail_v1alpha1_Config(ref),
+		"./pkg/apis/contrail/v1alpha1.ConfigConfiguration":           schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.ConfigSpec":                    schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ConfigStatus":                  schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Connection":                    schema_pkg_apis_contrail_v1alpha1_Connection(ref),
+		"./pkg/apis/contrail/v1alpha1.Container":                     schema_pkg_apis_contrail_v1alpha1_Container(ref),
+		"./pkg/apis/contrail/v1alpha1.ContrailCommand":               schema_pkg_apis_contrail_v1alpha1_ContrailCommand(ref),
+		"./pkg/apis/contrail/v1alpha1.ContrailCommandConfiguration":  schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.ContrailCommandSpec":           schema_pkg_apis_contrail_v1alpha1_ContrailCommandSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ContrailCommandStatus":         schema_pkg_apis_contrail_v1alpha1_ContrailCommandStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Control":                       schema_pkg_apis_contrail_v1alpha1_Control(ref),
+		"./pkg/apis/contrail/v1alpha1.ControlConfiguration":          schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.ControlServiceStatus":          schema_pkg_apis_contrail_v1alpha1_ControlServiceStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.ControlSpec":                   schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ControlStatus":                 schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.CrdStatus":                     schema_pkg_apis_contrail_v1alpha1_CrdStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Keystone":                      schema_pkg_apis_contrail_v1alpha1_Keystone(ref),
+		"./pkg/apis/contrail/v1alpha1.KeystoneConfiguration":         schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.KeystoneSpec":                  schema_pkg_apis_contrail_v1alpha1_KeystoneSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.KeystoneStatus":                schema_pkg_apis_contrail_v1alpha1_KeystoneStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Kubemanager":                   schema_pkg_apis_contrail_v1alpha1_Kubemanager(ref),
+		"./pkg/apis/contrail/v1alpha1.KubemanagerConfiguration":      schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.KubemanagerSpec":               schema_pkg_apis_contrail_v1alpha1_KubemanagerSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.KubemanagerStatus":             schema_pkg_apis_contrail_v1alpha1_KubemanagerStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Manager":                       schema_pkg_apis_contrail_v1alpha1_Manager(ref),
+		"./pkg/apis/contrail/v1alpha1.ManagerSpec":                   schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ManagerStatus":                 schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Postgres":                      schema_pkg_apis_contrail_v1alpha1_Postgres(ref),
+		"./pkg/apis/contrail/v1alpha1.PostgresSpec":                  schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.PostgresStatus":                schema_pkg_apis_contrail_v1alpha1_PostgresStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.ProvisionManager":              schema_pkg_apis_contrail_v1alpha1_ProvisionManager(ref),
+		"./pkg/apis/contrail/v1alpha1.ProvisionManagerConfiguration": schema_pkg_apis_contrail_v1alpha1_ProvisionManagerConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.ProvisionManagerSpec":          schema_pkg_apis_contrail_v1alpha1_ProvisionManagerSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ProvisionManagerStatus":        schema_pkg_apis_contrail_v1alpha1_ProvisionManagerStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Rabbitmq":                      schema_pkg_apis_contrail_v1alpha1_Rabbitmq(ref),
+		"./pkg/apis/contrail/v1alpha1.RabbitmqConfiguration":         schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.RabbitmqSpec":                  schema_pkg_apis_contrail_v1alpha1_RabbitmqSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.RabbitmqStatus":                schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.ServiceStatus":                 schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Services":                      schema_pkg_apis_contrail_v1alpha1_Services(ref),
+		"./pkg/apis/contrail/v1alpha1.StaticRoutes":                  schema_pkg_apis_contrail_v1alpha1_StaticRoutes(ref),
+		"./pkg/apis/contrail/v1alpha1.Status":                        schema_pkg_apis_contrail_v1alpha1_Status(ref),
+		"./pkg/apis/contrail/v1alpha1.Swift":                         schema_pkg_apis_contrail_v1alpha1_Swift(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftConfiguration":            schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxy":                    schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration":       schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxySpec":                schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftProxyStatus":              schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftSpec":                     schema_pkg_apis_contrail_v1alpha1_SwiftSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStatus":                   schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStorage":                  schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration":     schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStorageSpec":              schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.SwiftStorageStatus":            schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Vrouter":                       schema_pkg_apis_contrail_v1alpha1_Vrouter(ref),
+		"./pkg/apis/contrail/v1alpha1.VrouterConfiguration":          schema_pkg_apis_contrail_v1alpha1_VrouterConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.VrouterSpec":                   schema_pkg_apis_contrail_v1alpha1_VrouterSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.VrouterStatus":                 schema_pkg_apis_contrail_v1alpha1_VrouterStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Webui":                         schema_pkg_apis_contrail_v1alpha1_Webui(ref),
+		"./pkg/apis/contrail/v1alpha1.WebuiConfiguration":            schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.WebuiSpec":                     schema_pkg_apis_contrail_v1alpha1_WebuiSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.WebuiStatus":                   schema_pkg_apis_contrail_v1alpha1_WebuiStatus(ref),
+		"./pkg/apis/contrail/v1alpha1.Zookeeper":                     schema_pkg_apis_contrail_v1alpha1_Zookeeper(ref),
+		"./pkg/apis/contrail/v1alpha1.ZookeeperConfiguration":        schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref),
+		"./pkg/apis/contrail/v1alpha1.ZookeeperSpec":                 schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref),
+		"./pkg/apis/contrail/v1alpha1.ZookeeperStatus":               schema_pkg_apis_contrail_v1alpha1_ZookeeperStatus(ref),
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_BGPPeer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Up": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Number": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Up", "Number"},
+			},
+		},
 	}
 }
 
@@ -82,6 +116,7 @@ func schema_pkg_apis_contrail_v1alpha1_Cassandra(ref common.ReferenceCallback) c
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Cassandra is the Schema for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -125,15 +160,16 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "CassandraConfiguration is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -212,10 +248,10 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -224,6 +260,7 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "CassandraSpec is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -249,6 +286,7 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraStatus(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "CassandraStatus defines the status of the cassandra object.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -260,6 +298,7 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraStatus(ref common.ReferenceCallb
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -287,6 +326,7 @@ func schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref common.ReferenceC
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "CommonConfiguration is the common services struct.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"activate": {
 						SchemaProps: spec.SchemaProps{
@@ -307,6 +347,7 @@ func schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref common.ReferenceC
 							Description: "NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node's labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -370,6 +411,7 @@ func schema_pkg_apis_contrail_v1alpha1_Config(ref common.ReferenceCallback) comm
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Config is the Schema for the configs API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -413,15 +455,16 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ConfigConfiguration is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -469,11 +512,35 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 							Format: "",
 						},
 					},
+					"rabbitmqUser": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqPassword": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqVhost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"logLevel": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -482,6 +549,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref common.ReferenceCallback) 
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ConfigSpec is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -506,6 +574,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -518,6 +587,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -546,11 +616,88 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 	}
 }
 
+func schema_pkg_apis_contrail_v1alpha1_Connection(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Type": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Status": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Nodes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"Type", "Name", "Status", "Nodes"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_Container(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Container defines name, image and command.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"command": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_contrail_v1alpha1_ContrailCommand(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ContrailCommand is the Schema for the contrailcommands API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -594,7 +741,20 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ContrailCommandConfiguration is the Spec for the ContrailCommand configuration",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"configAPIURL": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"telemetryURL": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"postgresInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -622,7 +782,6 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -631,6 +790,7 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandSpec(ref common.ReferenceC
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ContrailCommandSpec defines the desired state of ContrailCommand",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -656,6 +816,7 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandStatus(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ContrailCommandStatus defines the observed state of ContrailCommand",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -666,7 +827,6 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandStatus(ref common.Referenc
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -675,6 +835,7 @@ func schema_pkg_apis_contrail_v1alpha1_Control(ref common.ReferenceCallback) com
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Control is the Schema for the controls API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -718,15 +879,16 @@ func schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref common.Reference
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ControlConfiguration is the Spec for the controls API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -780,11 +942,84 @@ func schema_pkg_apis_contrail_v1alpha1_ControlConfiguration(ref common.Reference
 							Format: "",
 						},
 					},
+					"rabbitmqUser": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqPassword": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqVhost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_ControlServiceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Connections": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Connection"),
+									},
+								},
+							},
+						},
+					},
+					"NumberOfXMPPPeers": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"NumberOfRoutingInstances": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"StaticRoutes": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.StaticRoutes"),
+						},
+					},
+					"BGPPeer": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.BGPPeer"),
+						},
+					},
+					"State": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Connections", "NumberOfXMPPPeers", "NumberOfRoutingInstances", "StaticRoutes", "BGPPeer", "State"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.BGPPeer", "./pkg/apis/contrail/v1alpha1.Connection", "./pkg/apis/contrail/v1alpha1.StaticRoutes"},
 	}
 }
 
@@ -793,6 +1028,7 @@ func schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ControlSpec is the Spec for the controls API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -817,18 +1053,19 @@ func schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
-							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 					"nodes": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -843,11 +1080,24 @@ func schema_pkg_apis_contrail_v1alpha1_ControlStatus(ref common.ReferenceCallbac
 							Ref: ref("./pkg/apis/contrail/v1alpha1.ControlStatusPorts"),
 						},
 					},
+					"serviceStatus": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.ControlServiceStatus"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.ControlStatusPorts"},
+			"./pkg/apis/contrail/v1alpha1.ControlServiceStatus", "./pkg/apis/contrail/v1alpha1.ControlStatusPorts"},
 	}
 }
 
@@ -856,6 +1106,7 @@ func schema_pkg_apis_contrail_v1alpha1_CrdStatus(ref common.ReferenceCallback) c
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "CrdStatus tracks status of CRD.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
@@ -872,7 +1123,6 @@ func schema_pkg_apis_contrail_v1alpha1_CrdStatus(ref common.ReferenceCallback) c
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -881,6 +1131,7 @@ func schema_pkg_apis_contrail_v1alpha1_Keystone(ref common.ReferenceCallback) co
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Keystone is the Schema for the keystones API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -924,6 +1175,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KeystoneConfiguration is the Spec for the keystone API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"listenPort": {
 						SchemaProps: spec.SchemaProps{
@@ -946,7 +1198,6 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -955,6 +1206,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneSpec(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KeystoneSpec defines the desired state of Keystone",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -980,6 +1232,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneStatus(ref common.ReferenceCallba
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KeystoneStatus defines the observed state of Keystone",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -996,7 +1249,6 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneStatus(ref common.ReferenceCallba
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1005,6 +1257,7 @@ func schema_pkg_apis_contrail_v1alpha1_Kubemanager(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Kubemanager is the Schema for the kubemanagers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1048,15 +1301,16 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref common.Refer
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KubemanagerConfiguration is the Spec for the kubemanagers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -1170,11 +1424,29 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerConfiguration(ref common.Refer
 							Format: "",
 						},
 					},
+					"rabbitmqUser": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqPassword": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rabbitmqVhost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1183,6 +1455,7 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerSpec(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KubemanagerSpec is the Spec for the kubemanagers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -1207,6 +1480,7 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerStatus(ref common.ReferenceCal
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -1219,6 +1493,7 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerStatus(ref common.ReferenceCal
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -1237,7 +1512,6 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerStatus(ref common.ReferenceCal
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1246,6 +1520,7 @@ func schema_pkg_apis_contrail_v1alpha1_Manager(ref common.ReferenceCallback) com
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Manager is the Schema for the managers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1289,6 +1564,7 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ManagerSpec defines the desired state of Manager.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -1314,6 +1590,7 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ManagerStatus defines the observed state of Manager.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"config": {
 						SchemaProps: spec.SchemaProps{
@@ -1391,6 +1668,11 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref common.ReferenceCallbac
 							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
 						},
 					},
+					"provisionManager": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
 					"crdStatus": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
@@ -1416,6 +1698,7 @@ func schema_pkg_apis_contrail_v1alpha1_Postgres(ref common.ReferenceCallback) co
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Postgres is the Schema for the postgres API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1459,6 +1742,7 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PostgresSpec defines the desired state of Postgres",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"image": {
 						SchemaProps: spec.SchemaProps{
@@ -1469,7 +1753,6 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref common.ReferenceCallback
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1478,6 +1761,7 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresStatus(ref common.ReferenceCallba
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PostgresStatus defines the observed state of Postgres",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -1494,7 +1778,152 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresStatus(ref common.ReferenceCallba
 				},
 			},
 		},
-		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_ProvisionManager(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ProvisionManager is the Schema for the provisionmanagers API",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ProvisionManagerSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ProvisionManagerStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.ProvisionManagerSpec", "./pkg/apis/contrail/v1alpha1.ProvisionManagerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_ProvisionManagerConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ProvisionManagerConfiguration defines the provision manager configuration",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"containers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_ProvisionManagerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ProvisionManagerSpec defines the desired state of ProvisionManager",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"commonConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+						},
+					},
+					"serviceConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ProvisionManagerConfiguration"),
+						},
+					},
+				},
+				Required: []string{"commonConfiguration", "serviceConfiguration"},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.CommonConfiguration", "./pkg/apis/contrail/v1alpha1.ProvisionManagerConfiguration"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_ProvisionManagerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ProvisionManagerStatus defines the observed state of ProvisionManager",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"nodes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"globalConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -1503,6 +1932,7 @@ func schema_pkg_apis_contrail_v1alpha1_Rabbitmq(ref common.ReferenceCallback) co
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Rabbitmq is the Schema for the rabbitmqs API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1546,15 +1976,16 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "RabbitmqConfiguration is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -1566,17 +1997,47 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqConfiguration(ref common.Referenc
 							Format: "int32",
 						},
 					},
+					"sslPort": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
 					"erlangCookie": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
+					"vhost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"user": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"password": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"secret": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1585,6 +2046,7 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqSpec(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "RabbitmqSpec is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -1609,6 +2071,7 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -1621,6 +2084,7 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -1633,6 +2097,12 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqStatus(ref common.ReferenceCallba
 					"ports": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("./pkg/apis/contrail/v1alpha1.RabbitmqStatusPorts"),
+						},
+					},
+					"secret": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
@@ -1648,6 +2118,7 @@ func schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ServiceStatus provides information on the current status of the service.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
@@ -1676,7 +2147,6 @@ func schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref common.ReferenceCallbac
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1685,6 +2155,7 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Services defines the desired state of Services.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"config": {
 						SchemaProps: spec.SchemaProps{
@@ -1761,6 +2232,11 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Rabbitmq"),
 						},
 					},
+					"provisionManager": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ProvisionManager"),
+						},
+					},
 					"contrailCommand": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("./pkg/apis/contrail/v1alpha1.ContrailCommand"),
@@ -1785,7 +2261,32 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Swift", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
+			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.ProvisionManager", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Swift", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
+	}
+}
+
+func schema_pkg_apis_contrail_v1alpha1_StaticRoutes(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Down": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"Number": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Down", "Number"},
+			},
+		},
 	}
 }
 
@@ -1794,6 +2295,7 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Status is the status of the service.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -1806,6 +2308,7 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -1819,6 +2322,7 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -1831,7 +2335,6 @@ func schema_pkg_apis_contrail_v1alpha1_Status(ref common.ReferenceCallback) comm
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1840,6 +2343,7 @@ func schema_pkg_apis_contrail_v1alpha1_Swift(ref common.ReferenceCallback) commo
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Swift is the Schema for the swifts API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1883,6 +2387,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftConfiguration is the Spec for the keystone API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"swiftStorageConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -1908,6 +2413,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxy(ref common.ReferenceCallback) 
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftProxy is the Schema for the swiftproxies API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1951,6 +2457,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftProxyConfiguration is the Spec for the keystone API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"listenPort": {
 						SchemaProps: spec.SchemaProps{
@@ -1985,7 +2492,6 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -1994,6 +2500,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxySpec(ref common.ReferenceCallba
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftProxySpec defines the desired state of SwiftProxy",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"serviceConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2014,6 +2521,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref common.ReferenceCall
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftProxyStatus defines the observed state of SwiftProxy",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -2025,7 +2533,6 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyStatus(ref common.ReferenceCall
 				Required: []string{"active"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -2034,6 +2541,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftSpec(ref common.ReferenceCallback) c
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftSpec defines the desired state of Swift",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"serviceConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2054,10 +2562,9 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStatus defines the observed state of Swift",
-				Properties:  map[string]spec.Schema{},
+				Type:        []string{"object"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -2066,6 +2573,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorage(ref common.ReferenceCallback
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStorage is the Schema for the swiftstorages API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -2109,6 +2617,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStorageConfiguration is the Spec for the keystone API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"accountBindPort": {
 						SchemaProps: spec.SchemaProps{
@@ -2137,7 +2646,6 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -2146,6 +2654,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageSpec(ref common.ReferenceCall
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStorageSpec defines the desired state of SwiftStorage",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"serviceConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2167,6 +2676,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref common.ReferenceCa
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStorageStatus defines the observed state of SwiftStorage",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -2178,7 +2688,6 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref common.ReferenceCa
 				Required: []string{"active"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -2187,6 +2696,7 @@ func schema_pkg_apis_contrail_v1alpha1_Vrouter(ref common.ReferenceCallback) com
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Vrouter is the Schema for the vrouters API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -2230,15 +2740,16 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterConfiguration(ref common.Reference
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "VrouterConfiguration is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -2305,10 +2816,10 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterConfiguration(ref common.Reference
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -2317,6 +2828,7 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterSpec(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "VrouterSpec is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2341,6 +2853,7 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterStatus(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"ports": {
 						SchemaProps: spec.SchemaProps{
@@ -2352,6 +2865,7 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterStatus(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -2359,6 +2873,12 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterStatus(ref common.ReferenceCallbac
 									},
 								},
 							},
+						},
+					},
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 				},
@@ -2374,6 +2894,7 @@ func schema_pkg_apis_contrail_v1alpha1_Webui(ref common.ReferenceCallback) commo
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Webui is the Schema for the webuis API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -2417,15 +2938,16 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref common.ReferenceCa
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "WebuiConfiguration is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -2468,10 +2990,10 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -2480,6 +3002,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiSpec(ref common.ReferenceCallback) c
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "WebuiSpec is the Spec for the cassandras API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2504,6 +3027,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiStatus(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -2516,6 +3040,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiStatus(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -2528,7 +3053,6 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiStatus(ref common.ReferenceCallback)
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -2537,6 +3061,7 @@ func schema_pkg_apis_contrail_v1alpha1_Zookeeper(ref common.ReferenceCallback) c
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Zookeeper is the Schema for the zookeepers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -2580,15 +3105,16 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref common.Referen
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ZookeeperConfiguration is the Spec for the zookeepers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"images": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
 									},
 								},
 							},
@@ -2613,10 +3139,10 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperConfiguration(ref common.Referen
 						},
 					},
 				},
-				Required: []string{"images"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -2625,6 +3151,7 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ZookeeperSpec is the Spec for the zookeepers API.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
@@ -2650,6 +3177,7 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperStatus(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ZookeeperStatus defines the status of the zookeeper object.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"active": {
 						SchemaProps: spec.SchemaProps{
@@ -2662,6 +3190,7 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperStatus(ref common.ReferenceCallb
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},

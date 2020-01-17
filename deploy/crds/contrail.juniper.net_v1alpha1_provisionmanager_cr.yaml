@@ -1,0 +1,7 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: ProvisionManager
+metadata:
+  name: example-provisionmanager
+spec:
+  # Add fields here
+  size: 3

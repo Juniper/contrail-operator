@@ -1,19 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: kubemanagers.contrail.juniper.net
+  name: zookeepers.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: Kubemanager
-    listKind: KubemanagerList
-    plural: kubemanagers
-    singular: kubemanager
-  scope: Namespaced
+    kind: Zookeeper
+    listKind: ZookeeperList
+    plural: zookeepers
+    singular: zookeeper
+  scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
+      description: Zookeeper is the Schema for the zookeepers API.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -28,8 +29,10 @@ spec:
         metadata:
           type: object
         spec:
+          description: ZookeeperSpec is the Spec for the zookeepers API.
           properties:
             commonConfiguration:
+              description: CommonConfiguration is the common services struct.
               properties:
                 activate:
                   description: Activate defines if the service will be activated by
@@ -41,7 +44,7 @@ spec:
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's
                     network namespace. If this option is set, the ports that will
-                    be used must be specified. Default to false. +k8s:conversion-gen=false
+                    be used must be specified. Default to false.
                   type: boolean
                 imagePullSecrets:
                   description: ImagePullSecrets is an optional list of references
@@ -65,61 +68,61 @@ spec:
                 tolerations:
                   description: If specified, the pod's tolerations.
                   items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
                     type: object
                   type: array
               type: object
             serviceConfiguration:
+              description: ZookeeperConfiguration is the Spec for the zookeepers API.
               properties:
-                cassandraInstance:
-                  type: string
-                cloudOrchestrator:
-                  type: string
-                clusterRole:
-                  type: string
-                clusterRoleBinding:
-                  type: string
-                hostNetworkService:
-                  type: boolean
-                images:
-                  additionalProperties:
-                    type: string
-                  type: object
-                ipFabricForwarding:
-                  type: boolean
-                ipFabricSnat:
-                  type: boolean
-                ipFabricSubnets:
-                  type: string
-                kubernetesAPIPort:
-                  format: int64
+                clientPort:
                   type: integer
-                kubernetesAPISSLPort:
-                  format: int64
+                containers: {}
+                electionPort:
                   type: integer
-                kubernetesAPIServer:
-                  type: string
-                kubernetesClusterName:
-                  type: string
-                kubernetesTokenFile:
-                  type: string
-                podSubnets:
-                  type: string
-                serviceAccount:
-                  type: string
-                serviceSubnets:
-                  type: string
-                useKubeadmConfig:
-                  type: boolean
-                zookeeperInstance:
-                  type: string
-              required:
-              - images
+                serverPort:
+                  type: integer
               type: object
           required:
           - commonConfiguration
           - serviceConfiguration
           type: object
         status:
+          description: ZookeeperStatus defines the status of the zookeeper object.
           properties:
             active:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
@@ -127,13 +130,19 @@ spec:
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: boolean
-            configChanged:
-              type: boolean
             nodes:
               additionalProperties:
                 type: string
               type: object
+            ports:
+              description: ZookeeperStatusPorts defines the status of the ports of
+                the zookeeper object.
+              properties:
+                clientPort:
+                  type: string
+              type: object
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
