@@ -138,15 +138,16 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 	if len(pods.Items) != 0 {
-		err = r.startRingReconcilingJob("account", ringsClaimName, pods, swiftStorage)
+		swiftSpec := swiftStorage.Spec.ServiceConfiguration
+		err = r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		err = r.startRingReconcilingJob("object", ringsClaimName, pods, swiftStorage)
+		err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		err = r.startRingReconcilingJob("container", ringsClaimName, pods, swiftStorage)
+		err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -164,7 +165,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port int, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
 	accountRing, err := ring.New(ringsClaimName.Name, "/etc/swift", ringType)
 	if err != nil {
 		return err
@@ -174,7 +175,7 @@ func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, ringsCl
 			Region: "1",
 			Zone:   "1",
 			IP:     pod.Status.PodIP,
-			Port:   swiftStorage.Spec.ServiceConfiguration.AccountBindPort,
+			Port:   port,
 			Device: "d1",
 		})
 	}
