@@ -6,6 +6,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/swift/ring"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	apps "k8s.io/api/apps/v1"
@@ -104,6 +105,15 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	ringsClaimName := types.NamespacedName{
+		Namespace: swiftStorage.Namespace,
+		Name:      swiftStorage.Name + "-rings",
+	}
+
+	if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -116,11 +126,31 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name)
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaimName.Name)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
+	pods := core.PodList{}
+	var labels client.MatchingLabels = statefulSet.Spec.Selector.MatchLabels
+	err = r.client.List(context.Background(), &pods, labels)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if len(pods.Items) != 0 {
+		err = r.startRingReconcilingJob("account", ringsClaimName, pods, swiftStorage)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		err = r.startRingReconcilingJob("object", ringsClaimName, pods, swiftStorage)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		err = r.startRingReconcilingJob("container", ringsClaimName, pods, swiftStorage)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 	swiftStorage.Status.Active = false
 	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
@@ -134,7 +164,31 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string) (*apps.StatefulSet, error) {
+func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
+	accountRing, err := ring.New(ringsClaimName.Name, "/etc/swift", ringType)
+	if err != nil {
+		return err
+	}
+	for _, pod := range pods.Items {
+		accountRing.AddDevice(ring.Device{
+			Region: "1",
+			Zone:   "1",
+			IP:     pod.Status.PodIP,
+			Port:   swiftStorage.Spec.ServiceConfiguration.AccountBindPort,
+			Device: "d1",
+		})
+	}
+	job, err := accountRing.BuildJob(types.NamespacedName{
+		Namespace: swiftStorage.Namespace,
+		Name:      "ring-" + ringType + "-job",
+	})
+	if err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), &job)
+}
+
+func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
@@ -167,6 +221,15 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
 						SecretName: swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName,
+					},
+				},
+			},
+			{
+				Name: "rings",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: ringsClaimName,
+						ReadOnly:  true,
 					},
 				},
 			},
@@ -237,6 +300,12 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 		ReadOnly:  true,
 	}
 
+	ringsVolumeMount := core.VolumeMount{
+		Name:      "rings",
+		ReadOnly:  true,
+		MountPath: "/etc/swift",
+	}
+
 	return core.Container{
 		Name:    name,
 		Image:   cg.getImage(name),
@@ -247,6 +316,7 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 			localtimeVolumeMount,
 			serviceVolumeMount,
 			swiftConfVolumeMount,
+			ringsVolumeMount,
 		},
 	}
 }
