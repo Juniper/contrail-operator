@@ -85,7 +85,7 @@ var keystoneConf = template.Must(template.New("").Parse(`
 [DEFAULT]
 debug = False
 transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-log_file = /var/log/kolla/keystone/keystone.log
+log_file = /dev/null
 use_stderr = True
 
 [oslo_middleware]
@@ -140,8 +140,8 @@ TraceEnable off
     <IfVersion >= 2.4>
       ErrorLogFormat "%{cu}t %M"
     </IfVersion>
-    ErrorLog "/var/log/kolla/keystone/keystone-apache-public-error.log"
+    ErrorLog "/dev/null"
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b %D \"%{Referer}i\" \"%{User-Agent}i\"" logformat
-    CustomLog "/var/log/kolla/keystone/keystone-apache-public-access.log" logformat
+    CustomLog "/dev/null" logformat
 </VirtualHost>
 `))
