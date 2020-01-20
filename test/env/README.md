@@ -6,7 +6,6 @@
 
 ## Create a test env
     export KIND_CLUSTER_NAME=kind
-    export EXTERNAL_INSECURE_REGISTRY=172.17.14.127:5000
     export INTERNAL_INSECURE_REGISTRY_PORT=6000
     ./create_testenv.sh
 
@@ -22,18 +21,17 @@ It creates Kubernetes IN Docker cluster with a docker registry. This docker regi
 
 ## Apply operator and cluster
     export KIND_CLUSTER_NAME=kind
-    ./apply_cluster.sh
+    ./apply_contrail_cluster.sh
 
 ## Destroy operator and cluster
 
-    ./clear_cluster.sh
+    ./clear_contrail_cluster.sh
 
 ## Delete cluster
 
     kind delete cluster
 
 # E2E tests
-
 
 ## Run test
 

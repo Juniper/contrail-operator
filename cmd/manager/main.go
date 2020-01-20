@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/Juniper/contrail-operator/pkg/apis"
-	"github.com/Juniper/contrail-operator/pkg/controller"
 	"context"
 	"flag"
 	"fmt"
@@ -14,21 +12,23 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	_ "github.com/operator-framework/operator-sdk/pkg/metrics"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
+	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	sdkVersion "github.com/operator-framework/operator-sdk/version"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"github.com/Juniper/contrail-operator/pkg/apis"
+	"github.com/Juniper/contrail-operator/pkg/controller"
 )
 
 // Change below variables to serve metrics on different host or port.
 var (
-	metricsHost       = "0.0.0.0"
-	metricsPort int32 = 8383
+	metricsHost          = "0.0.0.0"
+	metricsPort    int32 = 8383
+	metricsEnabled       = false
 )
 var log = logf.Log.WithName("cmd")
 
@@ -83,11 +83,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	metricsBindAddress := "0"
+	if metricsEnabled {
+		fmt.Sprintf("%s:%d", metricsHost, metricsPort)
+	}
+
 	// Create a new Cmd to provide shared dependencies and start components.
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
 		MapperProvider:     restmapper.NewDynamicRESTMapper,
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		MetricsBindAddress: metricsBindAddress,
 	})
 	if err != nil {
 		log.Error(err, "")
@@ -111,8 +116,8 @@ func main() {
 	// Create Service object to expose the metrics port.
 	//_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
 	//if err != nil {
-//		log.Info(err.Error())
-//	}
+	//		log.Info(err.Error())
+	//	}
 
 	log.Info("Starting the Cmd.")
 
