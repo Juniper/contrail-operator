@@ -46,6 +46,7 @@ func TestSwiftController(t *testing.T) {
 					KeystoneInstance:      "keystone",
 					KeystoneAdminPassword: "c0ntrail123",
 					SwiftPassword:         "swiftpass",
+					ImageRegistry:         "registry:5000",
 				},
 			},
 		},
@@ -69,7 +70,7 @@ func TestSwiftController(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotEmpty(t, secret)
-			expectedOwnerRefs :=  []v1.OwnerReference{{
+			expectedOwnerRefs := []v1.OwnerReference{{
 				APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 			}}
 			assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
@@ -98,26 +99,26 @@ func TestSwiftController(t *testing.T) {
 
 		existingSwiftProxy := &contrail.SwiftProxy{
 			ObjectMeta: v1.ObjectMeta{
-				Name: swiftName.Name + "-proxy",
+				Name:      swiftName.Name + "-proxy",
 				Namespace: swiftName.Namespace,
 				OwnerReferences: []v1.OwnerReference{{
 					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 				}},
 			},
-			Spec:       contrail.SwiftProxySpec{
+			Spec: contrail.SwiftProxySpec{
 				ServiceConfiguration: swiftCR.Spec.ServiceConfiguration.SwiftProxyConfiguration,
 			},
 		}
 
 		existingSwiftStorage := &contrail.SwiftStorage{
 			ObjectMeta: v1.ObjectMeta{
-				Name: swiftName.Name + "-storage",
+				Name:      swiftName.Name + "-storage",
 				Namespace: swiftName.Namespace,
 				OwnerReferences: []v1.OwnerReference{{
 					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 				}},
 			},
-			Spec:       contrail.SwiftStorageSpec{
+			Spec: contrail.SwiftStorageSpec{
 				ServiceConfiguration: swiftCR.Spec.ServiceConfiguration.SwiftStorageConfiguration,
 			},
 		}
@@ -151,31 +152,31 @@ func TestSwiftController(t *testing.T) {
 		// given
 		existingSwiftProxy := &contrail.SwiftProxy{
 			ObjectMeta: v1.ObjectMeta{
-				Name: swiftName.Name + "-proxy",
+				Name:      swiftName.Name + "-proxy",
 				Namespace: swiftName.Namespace,
 				OwnerReferences: []v1.OwnerReference{{
 					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 				}},
 			},
-			Spec:       contrail.SwiftProxySpec{
-				ServiceConfiguration:  contrail.SwiftProxyConfiguration{
-				ListenPort:            0000,
-				KeystoneInstance:      "old",
-				KeystoneAdminPassword: "old",
-				SwiftPassword:         "old",
-			},
+			Spec: contrail.SwiftProxySpec{
+				ServiceConfiguration: contrail.SwiftProxyConfiguration{
+					ListenPort:            0000,
+					KeystoneInstance:      "old",
+					KeystoneAdminPassword: "old",
+					SwiftPassword:         "old",
+				},
 			},
 		}
 
 		existingSwiftStorage := &contrail.SwiftStorage{
 			ObjectMeta: v1.ObjectMeta{
-				Name: swiftName.Name + "-storage",
+				Name:      swiftName.Name + "-storage",
 				Namespace: swiftName.Namespace,
 				OwnerReferences: []v1.OwnerReference{{
 					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 				}},
 			},
-			Spec:       contrail.SwiftStorageSpec{
+			Spec: contrail.SwiftStorageSpec{
 				ServiceConfiguration: contrail.SwiftStorageConfiguration{
 					AccountBindPort:   0000,
 					ContainerBindPort: 0000,
@@ -207,10 +208,10 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	assert.NoError(t, err)
 	require.Len(t, swiftStorageList.Items, 1, "Only one Swift Storage CR is expected")
 	swiftStorage := swiftStorageList.Items[0]
-	assert.Equal(t, swiftCR.Name + "-storage", swiftStorage.Name)
+	assert.Equal(t, swiftCR.Name+"-storage", swiftStorage.Name)
 	assert.Equal(t, swiftCR.Namespace, swiftStorage.Namespace)
 	trueVal := true
-	expectedOwnerRefs :=  []v1.OwnerReference{{
+	expectedOwnerRefs := []v1.OwnerReference{{
 		APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 	}}
 	assert.Equal(t, expectedOwnerRefs, swiftStorage.OwnerReferences)
@@ -218,6 +219,8 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	require.Equal(t, expectedSwiftStorageConf.AccountBindPort, swiftStorage.Spec.ServiceConfiguration.AccountBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ContainerBindPort, swiftStorage.Spec.ServiceConfiguration.ContainerBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ObjectBindPort, swiftStorage.Spec.ServiceConfiguration.ObjectBindPort)
+	assert.Equal(t, expectedSwiftStorageConf.ImageRegistry, swiftStorage.Spec.ServiceConfiguration.ImageRegistry)
+
 }
 
 func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.Swift) {
@@ -226,10 +229,10 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.NoError(t, err)
 	require.Len(t, swiftProxyList.Items, 1, "Only one Swift Proxy CR is expected")
 	swiftProxy := swiftProxyList.Items[0]
-	assert.Equal(t, swiftCR.Name + "-proxy", swiftProxy.Name)
+	assert.Equal(t, swiftCR.Name+"-proxy", swiftProxy.Name)
 	assert.Equal(t, swiftCR.Namespace, swiftProxy.Namespace)
 	trueVal := true
-	expectedOwnerRefs :=  []v1.OwnerReference{{
+	expectedOwnerRefs := []v1.OwnerReference{{
 		APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 	}}
 	assert.Equal(t, expectedOwnerRefs, swiftProxy.OwnerReferences)
@@ -238,4 +241,5 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
+	assert.Equal(t, expectedSwiftProxyConf.ImageRegistry, swiftProxy.Spec.ServiceConfiguration.ImageRegistry)
 }

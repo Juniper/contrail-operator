@@ -37,13 +37,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-var (
-	retryInterval        = time.Second * 5
-	timeout              = time.Second * 120
-	cleanupRetryInterval = time.Second * 1
-	cleanupTimeout       = time.Second * 5
-)
-
 /*
 func TestRabbitmq(t *testing.T) {
 	rabbitmqList := &v1alpha1.RabbitmqList{
@@ -84,18 +77,18 @@ var initialVersionMap = map[string]string{
 	"rabbitmq":    "3.7.16",
 	"cassandra":   "3.11.3",
 	"zookeeper":   "3.5.4-beta",
-	"config":      "5.2.0-0.740",
-	"control":     "5.2.0-0.740",
-	"kubemanager": "5.2.0-0.740",
+	"config":      "1912-latest",
+	"control":     "1912-latest",
+	"kubemanager": "1912-latest",
 }
 
 var targetVersionMap = map[string]string{
 	"rabbitmq":    "3.7.17",
 	"cassandra":   "3.11.4",
 	"zookeeper":   "3.5.5",
-	"config":      "1908.47",
-	"control":     "1908.47",
-	"kubemanager": "1908.47",
+	"config":      "2002-latest",
+	"control":     "2002-latest",
+	"kubemanager": "2002-latest",
 }
 
 func ManagerCluster(t *testing.T) {
@@ -103,8 +96,11 @@ func ManagerCluster(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
+	if err := framework.AddToFrameworkScheme(v1alpha1.SchemeBuilder.AddToScheme, &v1alpha1.ManagerList{}); err != nil {
+		t.Fatalf("Failed to add framework scheme: %v", err)
+	}
+
+	if err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
 
@@ -193,11 +189,14 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.RabbitmqSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
-							Images: map[string]string{"rabbitmq": "rabbitmq:" + versionMap["rabbitmq"],
-								"init": "busybox"},
+							Containers: map[string]*v1alpha1.Container{
+								"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:" + versionMap["rabbitmq"]},
+								"init":     &v1alpha1.Container{Image: "registry:5000/busybox"},
+							},
 						},
 					},
 				},
@@ -209,11 +208,14 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.ZookeeperSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ZookeeperConfiguration{
-							Images: map[string]string{"zookeeper": "docker.io/zookeeper:" + versionMap["zookeeper"],
-								"init": "busybox"},
+							Containers: map[string]*v1alpha1.Container{
+								"zookeeper": &v1alpha1.Container{Image: "registry:5000/zookeeper:" + versionMap["zookeeper"]},
+								"init":      &v1alpha1.Container{Image: "registry:5000/busybox"},
+							},
 						},
 					},
 				}},
@@ -225,11 +227,15 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.CassandraSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.CassandraConfiguration{
-							Images: map[string]string{"cassandra": "cassandra:" + versionMap["cassandra"],
-								"init": "busybox"},
+							Containers: map[string]*v1alpha1.Container{
+								"cassandra": &v1alpha1.Container{Image: "registry:5000/cassandra:" + initialVersionMap["cassandra"]},
+								"init":      &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init2":     &v1alpha1.Container{Image: "registry:5000/cassandra:" + initialVersionMap["cassandra"]},
+							},
 						},
 					},
 				}},
@@ -241,22 +247,26 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.ConfigSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ConfigConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
-							Images: map[string]string{"api": "hub.juniper.net/contrail-nightly/contrail-controller-config-api:" + versionMap["config"],
-								"devicemanager":        "hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:" + versionMap["config"],
-								"schematransformer":    "hub.juniper.net/contrail-nightly/contrail-controller-config-schema:" + versionMap["config"],
-								"servicemonitor":       "hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:" + versionMap["config"],
-								"analyticsapi":         "hub.juniper.net/contrail-nightly/contrail-analytics-api:" + versionMap["config"],
-								"collector":            "hub.juniper.net/contrail-nightly/contrail-analytics-collector:" + versionMap["config"],
-								"redis":                "redis:4.0.2",
-								"nodemanagerconfig":    "hub.juniper.net/contrail-nightly/contrail-nodemgr:" + versionMap["config"],
-								"nodemanageranalytics": "hub.juniper.net/contrail-nightly/contrail-nodemgr:" + versionMap["config"],
-								"nodeinit":             "hub.juniper.net/contrail-nightly/contrail-node-init:" + versionMap["config"],
-								"init":                 "busybox"},
+
+							Containers: map[string]*v1alpha1.Container{
+								"api":               &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-api:" + versionMap["config"]},
+								"devicemanager":     &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-devicemgr:" + versionMap["config"]},
+								"schematransformer": &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-schema:" + versionMap["config"]},
+								"servicemonitor":    &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-svcmonitor:" + versionMap["config"]},
+								"analyticsapi":      &v1alpha1.Container{Image: "registry:5000/contrail-analytics-api:" + versionMap["config"]},
+								"collector":         &v1alpha1.Container{Image: "registry:5000/contrail-analytics-collector:" + versionMap["config"]},
+								"queryengine":       &v1alpha1.Container{Image: "registry:5000/contrail-analytics-query-engine:" + versionMap["config"]},
+								"redis":             &v1alpha1.Container{Image: "registry:5000/redis:4.0.2"},
+								"nodeinit":          &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
+								"init":              &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+								"init2":             &v1alpha1.Container{Image: "registry:5000/busybox"},
+							},
 						},
 					},
 				},
@@ -264,21 +274,27 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "control1",
 						Namespace: namespace,
-						Labels:    map[string]string{"contrail_cluster": "cluster1"},
+						Labels: map[string]string{
+							"contrail_cluster": "cluster1",
+							"control_role":     "master",
+						},
 					},
 					Spec: v1alpha1.ControlSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ControlConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
-							Images: map[string]string{"control": "hub.juniper.net/contrail-nightly/contrail-controller-control-control:" + versionMap["control"],
-								"dns":         "hub.juniper.net/contrail-nightly/contrail-controller-control-dns:" + versionMap["control"],
-								"named":       "hub.juniper.net/contrail-nightly/contrail-controller-control-named:" + versionMap["control"],
-								"nodemanager": "hub.juniper.net/contrail-nightly/contrail-nodemgr:" + versionMap["control"],
-								"nodeinit":    "hub.juniper.net/contrail-nightly/contrail-node-init:" + versionMap["control"],
-								"init":        "busybox"},
+							Containers: map[string]*v1alpha1.Container{
+								"control":       &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-control:" + versionMap["control"]},
+								"dns":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-dns:" + versionMap["control"]},
+								"named":         &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-named:" + versionMap["control"]},
+								"statusmonitor": &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:debug"},
+								"nodeinit":      &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["control"]},
+								"init":          &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+							},
 						},
 					},
 				}},
@@ -290,14 +306,18 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.KubemanagerSpec{
 						CommonConfiguration: v1alpha1.CommonConfiguration{
-							Create: &create,
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
-							Images: map[string]string{"kubemanager": "hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"],
-								"nodeinit": "hub.juniper.net/contrail-nightly/contrail-node-init:" + versionMap["kubemanager"],
-								"init":     "busybox"},
+
+							Containers: map[string]*v1alpha1.Container{
+								"kubemanager": &v1alpha1.Container{Image: "registry:5000/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
+								"nodeinit":    &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["kubemanager"]},
+								"init":        &v1alpha1.Container{Image: "registry:5000/busybox"},
+							},
 						},
 					},
 				}},
@@ -331,11 +351,14 @@ func RabbitmqCluster(t *testing.T) {
 		},
 		Spec: v1alpha1.RabbitmqSpec{
 			CommonConfiguration: v1alpha1.CommonConfiguration{
-				Replicas: &replicas,
+				Replicas:     &replicas,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
-				Images: map[string]string{"rabbitmq": "rabbitmq:3.7",
-					"init": "busybox"},
+				Containers: map[string]*v1alpha1.Container{
+					"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:3.7"},
+					"init":     &v1alpha1.Container{Image: "registry:5000/busybox"},
+				},
 			},
 		},
 	}
@@ -356,7 +379,7 @@ func upgradeZookeeper(t *testing.T, f *framework.Framework, ctx *framework.TestC
 	if err != nil {
 		return err
 	}
-	instance.Spec.Services.Zookeepers[0].Spec.ServiceConfiguration.Images["zookeeper"] = "docker.io/zookeeper:" + targetVersionMap["zookeeper"]
+	instance.Spec.Services.Zookeepers[0].Spec.ServiceConfiguration.Containers["zookeeper"].Image = "docker.io/zookeeper:" + targetVersionMap["zookeeper"]
 	err = f.Client.Update(goctx.TODO(), instance)
 	if err != nil {
 		return err
@@ -425,7 +448,8 @@ func upgradeCassandra(t *testing.T, f *framework.Framework, ctx *framework.TestC
 	if err != nil {
 		return err
 	}
-	instance.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Images["cassandra"] = "cassandra:" + targetVersionMap["cassandra"]
+
+	instance.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Containers["cassandra"].Image = "cassandra:" + targetVersionMap["cassandra"]
 	err = f.Client.Update(goctx.TODO(), instance)
 	if err != nil {
 		return err
@@ -519,7 +543,7 @@ func waitForZookeeper(t *testing.T, f *framework.Framework, ctx *framework.TestC
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s zookeeper\n", name)
@@ -544,7 +568,7 @@ func waitForCassandra(t *testing.T, f *framework.Framework, ctx *framework.TestC
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s cassandra\n", name)
@@ -569,7 +593,7 @@ func waitForRabbitmq(t *testing.T, f *framework.Framework, ctx *framework.TestCt
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s rabbitmq\n", name)
@@ -594,7 +618,7 @@ func waitForConfig(t *testing.T, f *framework.Framework, ctx *framework.TestCtx,
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s config\n", name)
@@ -619,7 +643,7 @@ func waitForKubemanager(t *testing.T, f *framework.Framework, ctx *framework.Tes
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s kubemanager\n", name)
@@ -644,7 +668,7 @@ func waitForControl(t *testing.T, f *framework.Framework, ctx *framework.TestCtx
 			return false, err
 		}
 
-		if *instance.Status.Active {
+		if instance.Status.Active != nil && *instance.Status.Active {
 			return true, nil
 		}
 		t.Logf("Waiting for full availability of %s control\n", name)

@@ -37,7 +37,8 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 				Containers: map[string]*v1alpha1.Container{
 					"cassandra": &v1alpha1.Container{Image: "cassandra:3.5"},
 					"init":      &v1alpha1.Container{Image: "busybox"},
-					"init2":     &v1alpha1.Container{Image: "cassandra:3.5"}},
+					"init2":     &v1alpha1.Container{Image: "cassandra:3.5"},
+				},
 			},
 		},
 	}

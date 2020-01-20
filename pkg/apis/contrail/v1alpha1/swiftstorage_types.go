@@ -19,10 +19,11 @@ type SwiftStorageSpec struct {
 // SwiftStorageConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftStorageConfiguration struct {
-	AccountBindPort   int `json:"accountBindPort,omitempty"`
-	ContainerBindPort int `json:"containerBindPort,omitempty"`
-	ObjectBindPort    int `json:"objectBindPort,omitempty"`
-	SwiftConfSecretName string  `json:"swiftConfSecretName,omitempty"`
+	AccountBindPort     int    `json:"accountBindPort,omitempty"`
+	ContainerBindPort   int    `json:"containerBindPort,omitempty"`
+	ObjectBindPort      int    `json:"objectBindPort,omitempty"`
+	SwiftConfSecretName string `json:"swiftConfSecretName,omitempty"`
+	ImageRegistry       string `json:"imageRegistry,omitempty"`
 }
 
 // SwiftStorageStatus defines the observed state of SwiftStorage
