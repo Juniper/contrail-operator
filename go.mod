@@ -2,6 +2,7 @@ module github.com/Juniper/contrail-operator
 
 go 1.13
 
+//github.com/Juniper/contrail-go-api v1.1.0
 require (
 	github.com/Juniper/contrail-go-api v1.1.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -20,9 +21,10 @@ require (
 )
 
 // Pinned to kubernetes-1.16.2
+//github.com/Juniper/contrail-go-api => ../contrail-go-api
 replace (
-	github.com/Juniper/contrail-go-api => ../contrail-go-api
-	github.com/Juniper/contrail-go-api/types => ../contrail-go-api/types
+	github.com/Juniper/contrail-go-api => ./build/contrail-go-api
+	github.com/Juniper/contrail-go-api/types => ./build/contrail-go-api/types
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8

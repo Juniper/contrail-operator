@@ -395,7 +395,7 @@ func getAPIClient(apiServerObj *APIServer) (*contrail.Client, error) {
 		fmt.Printf("api server %s:%d\n", apiServerSlice[0], apiPortInt)
 		contrailClient := contrail.NewClient(apiServerSlice[0], apiPortInt)
 		contrailClient.AddEncryption(apiServerObj.Encryption.CA, apiServerObj.Encryption.Key, apiServerObj.Encryption.Cert, true)
-		contrailClient.AddHTTPParameter(1)
+		//contrailClient.AddHTTPParameter(1)
 		_, err = contrailClient.List("global-system-config")
 		if err == nil {
 			return contrailClient, nil
