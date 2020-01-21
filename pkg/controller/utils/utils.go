@@ -156,19 +156,20 @@ func ManagerSizeChange(appGroupKind schema.GroupKind) predicate.Funcs {
 
 			case RabbitmqGroupKind():
 				oldInstance := oldManager.Spec.Services.Rabbitmq
-				if oldInstance != nil {
-					if oldInstance.Spec.CommonConfiguration.Replicas != nil {
-						oldSize = *oldInstance.Spec.CommonConfiguration.Replicas
+				if oldInstance == nil {
+					break
+				}
+				if oldInstance.Spec.CommonConfiguration.Replicas != nil {
+					oldSize = *oldInstance.Spec.CommonConfiguration.Replicas
+				} else {
+					oldSize = *oldManager.Spec.CommonConfiguration.Replicas
+				}
+				newInstance := newManager.Spec.Services.Rabbitmq
+				if oldInstance.Name == newInstance.Name {
+					if newInstance.Spec.CommonConfiguration.Replicas != nil {
+						newSize = *newInstance.Spec.CommonConfiguration.Replicas
 					} else {
-						oldSize = *oldManager.Spec.CommonConfiguration.Replicas
-					}
-					newInstance := newManager.Spec.Services.Rabbitmq
-					if oldInstance.Name == newInstance.Name {
-						if newInstance.Spec.CommonConfiguration.Replicas != nil {
-							newSize = *newInstance.Spec.CommonConfiguration.Replicas
-						} else {
-							newSize = *newManager.Spec.CommonConfiguration.Replicas
-						}
+						newSize = *newManager.Spec.CommonConfiguration.Replicas
 					}
 				}
 
