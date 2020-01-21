@@ -1,0 +1,11 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Memcached
+metadata:
+  name: example-memcached
+  namespace: contrail
+spec:
+  serviceConfiguration:
+    apiInterfaceAddress: "0.0.0.0"
+    listenPort: 11211
+    connectionLimit: 5000
+    maxMemory: 256

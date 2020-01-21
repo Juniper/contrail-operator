@@ -1,0 +1,173 @@
+package memcached
+
+import (
+	"context"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+var log = logf.Log.WithName("controller_memcached")
+
+// Add creates a new Memcached Controller and adds it to the Manager. The Manager will set fields on the Controller
+// and Start it when the Manager is Started.
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
+}
+
+// newReconciler returns a new reconcile.Reconciler
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	return NewReconcileMemcached(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()))
+}
+
+func NewReconcileMemcached(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes) *ReconcileMemcached {
+	return &ReconcileMemcached{
+		client:     client,
+		scheme:     scheme,
+		kubernetes: kubernetes,
+	}
+}
+
+// add adds a new Controller to mgr with r as the reconcile.Reconciler
+func add(mgr manager.Manager, r reconcile.Reconciler) error {
+	c, err := controller.New("memcached-controller", mgr, controller.Options{Reconciler: r})
+	if err != nil {
+		return err
+	}
+	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+	err = c.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.Memcached{},
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// blank assignment to verify that ReconcileMemcached implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileMemcached{}
+
+// ReconcileMemcached reconciles a Memcached object
+type ReconcileMemcached struct {
+	client     client.Client
+	scheme     *runtime.Scheme
+	kubernetes *k8s.Kubernetes
+}
+
+// Reconcile reads that state of the cluster for a Memcached object and makes changes based on the state read
+// and what is in the Memcached.Spec
+// Note:
+// The Controller will requeue the Request to be processed again if the returned error is non-nil or
+// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
+func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger.Info("Reconciling Memcached")
+	memcachedCR := &contrail.Memcached{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, memcachedCR)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, err
+	}
+	memcachedConfigMapName := memcachedCR.Name + "-config"
+	if err := r.configMap(memcachedConfigMapName, memcachedCR).ensureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+	deployment := &apps.Deployment{
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: request.Namespace,
+			Name:      request.Name + "-deployment",
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
+		labels := map[string]string{"Memcached": request.Name}
+		deployment.Spec.Template.ObjectMeta.Labels = labels
+		deployment.ObjectMeta.Labels = labels
+		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
+		updateMemcachedPodSpec(
+			&deployment.Spec.Template.Spec,
+			memcachedCR.Spec.ServiceConfiguration.ListenPort,
+			memcachedConfigMapName,
+		)
+		return controllerutil.SetControllerReference(memcachedCR, deployment, r.scheme)
+	})
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), memcachedCR)
+}
+
+func updateMemcachedPodSpec(podSpec *core.PodSpec, listenPort int32, configMapName string) {
+	podSpec.HostNetwork = true
+	podSpec.Tolerations = []core.Toleration{
+		{
+			Operator: core.TolerationOpExists,
+			Effect:   core.TaintEffectNoSchedule,
+		},
+		{
+			Operator: core.TolerationOpExists,
+			Effect:   core.TaintEffectNoExecute,
+		},
+	}
+	podSpec.Volumes = []core.Volume{
+		{
+			Name: "localtime-volume",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/etc/localtime",
+				},
+			},
+		},
+		{
+			Name: "config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: configMapName,
+					},
+				},
+			},
+		},
+	}
+	podSpec.Containers = []core.Container{memcachedContainer(listenPort)}
+}
+
+func memcachedContainer(listenPort int32) core.Container {
+	return core.Container{
+		Name:  "memcached",
+		Image: "localhost:5000/centos-binary-memcached:master",
+		Ports: []core.ContainerPort{{
+			ContainerPort: listenPort,
+			Name:          "memcached",
+		}},
+		VolumeMounts: []core.VolumeMount{
+			{
+				Name:      "localtime-volume",
+				ReadOnly:  true,
+				MountPath: "/etc/localtime",
+			},
+			{
+				Name:      "config-volume",
+				ReadOnly:  true,
+				MountPath: "/var/lib/kolla/config_files/",
+			},
+		},
+	}
+}
