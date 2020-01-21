@@ -2489,6 +2489,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 							Format: "",
 						},
 					},
+					"imageRegistry": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -2638,6 +2644,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 						},
 					},
 					"swiftConfSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"imageRegistry": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

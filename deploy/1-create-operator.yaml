@@ -2534,6 +2534,8 @@ spec:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.
                               properties:
+                                imageRegistry:
+                                  type: string
                                 keystoneAdminPassword:
                                   type: string
                                 keystoneInstance:
@@ -2553,6 +2555,8 @@ spec:
                                   type: integer
                                 containerBindPort:
                                   type: integer
+                                imageRegistry:
+                                  type: string
                                 objectBindPort:
                                   type: integer
                                 swiftConfSecretName:
@@ -3564,6 +3568,8 @@ spec:
             serviceConfiguration:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
+                imageRegistry:
+                  type: string
                 keystoneAdminPassword:
                   type: string
                 keystoneInstance:
@@ -3633,6 +3639,8 @@ spec:
                   description: SwiftProxyConfiguration is the Spec for the keystone
                     API.
                   properties:
+                    imageRegistry:
+                      type: string
                     keystoneAdminPassword:
                       type: string
                     keystoneInstance:
@@ -3652,6 +3660,8 @@ spec:
                       type: integer
                     containerBindPort:
                       type: integer
+                    imageRegistry:
+                      type: string
                     objectBindPort:
                       type: integer
                     swiftConfSecretName:
@@ -3717,6 +3727,8 @@ spec:
                   type: integer
                 containerBindPort:
                   type: integer
+                imageRegistry:
+                  type: string
                 objectBindPort:
                   type: integer
                 swiftConfSecretName:

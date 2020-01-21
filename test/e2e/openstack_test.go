@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	core "k8s.io/api/core/v1"
@@ -19,33 +19,33 @@ import (
 )
 
 func TestOpenstackServices(t *testing.T) {
-	ctx := framework.NewTestCtx(t)
+	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	if err := framework.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
+	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
-	f := framework.Global
+	f := test.Global
 	wait := wait.Wait{
 		Namespace:     namespace,
-		Timeout:       timeout,
+		Timeout:       waitTimeout,
 		RetryInterval: retryInterval,
 		KubeClient:    f.KubeClient,
 	}
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, timeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
 		assert.NoError(t, err)
 
 		// TODO: ssh keys creations should be moved to keystone controller
 		keystoneSecret := createKeystoneKeys()
-		err = f.Client.Create(context.TODO(), keystoneSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+		err = f.Client.Create(context.TODO(), keystoneSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 		assert.NoError(t, err)
 
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestOpenstackServices(t *testing.T) {
 			}
 
 			keystone := &contrail.Keystone{
-				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest"},
+				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
 				Spec: contrail.KeystoneSpec{
 					CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
 					ServiceConfiguration: contrail.KeystoneConfiguration{
@@ -86,11 +86,11 @@ func TestOpenstackServices(t *testing.T) {
 				},
 			}
 
-			err = f.Client.Create(context.TODO(), cluster, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestOpenstackServices(t *testing.T) {
 				karBody, _ := json.Marshal(kar)
 				req := f.KubeClient.CoreV1().RESTClient().Get()
 				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-statefulset-0", keystone.Spec.ServiceConfiguration.ListenPort))
+					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", keystone.Spec.ServiceConfiguration.ListenPort))
 				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
 
 				assert.NoError(t, res.Error())
@@ -117,7 +117,7 @@ func TestOpenstackServices(t *testing.T) {
 			cluster.Spec.Services.Swift = &contrail.Swift{
 				ObjectMeta: v1.ObjectMeta{
 					Namespace: namespace,
-					Name:      "openstacktest",
+					Name:      "openstacktest-swift",
 				},
 				Spec: contrail.SwiftSpec{
 					ServiceConfiguration: contrail.SwiftConfiguration{
@@ -129,7 +129,7 @@ func TestOpenstackServices(t *testing.T) {
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 							ListenPort:            5070,
-							KeystoneInstance:      "openstacktest",
+							KeystoneInstance:      "openstacktest-keystone",
 							KeystoneAdminPassword: "contrail123",
 							SwiftPassword:         "swiftpass",
 							ImageRegistry:         "registry:5000",
@@ -143,12 +143,12 @@ func TestOpenstackServices(t *testing.T) {
 
 			// TODO: check ready state
 			t.Run("then a SwiftStorage StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForStatefulSet("openstacktest-storage-statefulset"))
+				assert.NoError(t, wait.ForStatefulSet("openstacktest-swift-storage-statefulset"))
 			})
 
 			// TODO: check ready state
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForDeployment("openstacktest-proxy-deployment"))
+				assert.NoError(t, wait.ForDeployment("openstacktest-swift-proxy-deployment"))
 			})
 		})
 	})
