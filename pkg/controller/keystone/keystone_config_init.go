@@ -47,14 +47,6 @@ const keystoneInitKollaServiceConfig = `{
     ],
     "permissions": [
         {
-            "path": "/var/log/kolla",
-            "owner": "keystone:kolla"
-        },
-        {
-            "path": "/var/log/kolla/keystone/keystone.log",
-            "owner": "keystone:keystone"
-        },
-        {
             "path": "/etc/keystone/fernet-keys",
             "owner": "keystone:keystone",
             "perm": "0770"
