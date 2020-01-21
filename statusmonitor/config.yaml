@@ -1,0 +1,13 @@
+apiServerList:
+- 127.0.0.1:8088
+encryption:
+  ca:
+  cert:
+  key:
+  insecure: true
+nodeType: control
+nodeName: control1
+namespace: contrail
+interval: 1
+hostname: kvm3-eth2.local
+inCluster: false

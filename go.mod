@@ -3,6 +3,8 @@ module github.com/Juniper/contrail-operator
 go 1.13
 
 replace (
+	github.com/Juniper/contrail-go-api => ../contrail-go-api
+	github.com/Juniper/contrail-go-api/types => ../contrail-go-api/types
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191205124210-07afe84a85e4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.0
@@ -43,6 +45,7 @@ require (
 	github.com/operator-framework/operator-sdk v0.13.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/pflag v1.0.5
+	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0
