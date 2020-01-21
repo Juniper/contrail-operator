@@ -87,7 +87,6 @@ var keystoneFernetConfig = template.Must(template.New("").Parse(`
 [DEFAULT]
 debug = False
 transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-log_file = /dev/null
 use_stderr = True
 
 [oslo_middleware]

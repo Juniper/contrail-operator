@@ -32,6 +32,10 @@ const expectedKeystoneKollaServiceConfig = `{
     ],
     "permissions": [
         {
+            "path": "/var/log/kolla",
+            "owner": "keystone:kolla"
+        },
+        {
             "path": "/etc/keystone/fernet-keys",
             "owner": "keystone:keystone",
             "perm": "0770"
@@ -95,7 +99,6 @@ const expectedKeystoneConfig = `
 [DEFAULT]
 debug = False
 transport_url = rabbit://guest:guest@localhost:5672//
-log_file = /dev/null
 use_stderr = True
 
 [oslo_middleware]
@@ -150,9 +153,9 @@ TraceEnable off
     <IfVersion >= 2.4>
       ErrorLogFormat "%{cu}t %M"
     </IfVersion>
-    ErrorLog "/dev/null"
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b %D \"%{Referer}i\" \"%{User-Agent}i\"" logformat
-    CustomLog "/dev/null" logformat
+    ErrorLog "|/usr/sbin/rotatelogs /var/log/kolla/keystone/keystone-apache-public-error.log"
+    CustomLog "|/usr/sbin/rotatelogs /var/log/kolla/keystone/keystone-apache-public-access.log 604800" logformat
 </VirtualHost>
 `
 
@@ -286,6 +289,10 @@ const expectedKeystoneInitKollaServiceConfig = `{
 		}
     ],
     "permissions": [
+        {
+            "path": "/var/log/kolla",
+            "owner": "keystone:kolla"
+        },
         {
             "path": "/etc/keystone/fernet-keys",
             "owner": "keystone:keystone",
