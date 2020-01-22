@@ -171,7 +171,7 @@ type keystoneAuthRequest struct {
 	} `json:"auth"`
 }
 
-// createKeystoneKeys creates a secrate with Vagrand inscure key pair
+// createKeystoneKeys creates a secret with Vagrant insecure key pair
 // https://github.com/hashicorp/vagrant/tree/master/keys
 func createKeystoneKeys() *core.Secret {
 	return &core.Secret{
