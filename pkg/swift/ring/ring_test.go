@@ -273,7 +273,7 @@ func TestRing_BuildJob(t *testing.T) {
 		containers := job.Spec.Template.Spec.Containers
 		require.NotEmpty(t, containers)
 		image := containers[0].Image
-		assert.True(t, strings.HasPrefix(image, "localhost:5000/"))
+		assert.True(t, strings.HasPrefix(image, "registry:5000/"))
 	})
 
 	t.Run("should specify restartPolicy (default Always is not supported in jobs)", func(t *testing.T) {
@@ -285,4 +285,55 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, core.RestartPolicyNever, job.Spec.Template.Spec.RestartPolicy)
 	})
 
+}
+
+func TestRing_AddDevice(t *testing.T) {
+	t.Run("should return error when region is empty", func(t *testing.T) {
+		tests := map[string]ring.Device{
+			"empty region": {
+				Region: "",
+				Zone:   "1",
+				IP:     "192.168.0.1",
+				Port:   300,
+				Device: "d1",
+			},
+			"empty zone": {
+				Region: "1",
+				Zone:   "",
+				IP:     "192.168.0.1",
+				Port:   300,
+				Device: "d1",
+			},
+			"empty IP": {
+				Region: "1",
+				Zone:   "1",
+				IP:     "",
+				Port:   300,
+				Device: "d1",
+			},
+			"empty device": {
+				Region: "1",
+				Zone:   "1",
+				IP:     "192.168.0.1",
+				Port:   300,
+				Device: "",
+			},
+		}
+		for name, device := range tests {
+			t.Run(name, func(t *testing.T) {
+				theRing, _ := ring.New("a", "/etc/swift", "account")
+				// when
+				err := theRing.AddDevice(device)
+				// then
+				require.Error(t, err)
+				// and when
+				_, err = theRing.BuildJob(types.NamespacedName{
+					Namespace: "t",
+					Name:      "t",
+				})
+				// then
+				require.Error(t, err)
+			})
+		}
+	})
 }

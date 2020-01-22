@@ -295,6 +295,21 @@ func TestSwiftStorageController(t *testing.T) {
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
 
+	t.Run("should requeue until IP is assigned to pod", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// when
+		stsLabels := map[string]string{"app": name.Name}
+		deployPodWithoutIP(t, fakeClient, stsLabels)
+		result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.True(t, result.Requeue)
+		assert.Error(t, err)
+	})
+
 	t.Run("should create a jobs reconciling rings after Swift Storage Pod is deployed", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
@@ -329,6 +344,17 @@ func deployPodWithIP(t *testing.T, fakeClient client.Client, labels map[string]s
 		Spec:       core.PodSpec{},
 		Status: core.PodStatus{
 			PodIP: "192.168.0.1",
+		},
+	}
+	err := fakeClient.Create(context.Background(), pod)
+	require.NoError(t, err)
+}
+func deployPodWithoutIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
+	pod := &core.Pod{
+		ObjectMeta: meta.ObjectMeta{Labels: labels},
+		Spec:       core.PodSpec{},
+		Status: core.PodStatus{
+			PodIP: "",
 		},
 	}
 	err := fakeClient.Create(context.Background(), pod)

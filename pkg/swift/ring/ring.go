@@ -38,7 +38,6 @@ type Ring struct {
 	ringType  string
 }
 
-// TODO validate invariants
 type Device struct {
 	Region string
 	Zone   string
@@ -51,8 +50,21 @@ func (d Device) Formatted() string {
 	return fmt.Sprintf("r%sz%s-%s:%d/%s", d.Region, d.Zone, d.IP, d.Port, d.Device)
 }
 
-func (r *Ring) AddDevice(device Device) {
+func (r *Ring) AddDevice(device Device) error {
+	if device.Region == "" {
+		return errors.New("empty region")
+	}
+	if device.Zone == "" {
+		return errors.New("empty zone")
+	}
+	if device.IP == "" {
+		return errors.New("empty IP")
+	}
+	if device.Device == "" {
+		return errors.New("empty IP")
+	}
 	r.devices = append(r.devices, device)
+	return nil
 }
 
 func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
@@ -88,7 +100,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					Containers: []core.Container{
 						{
 							Name:  "kolla",
-							Image: "localhost:5000/centos-source-swift-base:master",
+							Image: "registry:5000/centos-source-swift-base:master",
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "swift",

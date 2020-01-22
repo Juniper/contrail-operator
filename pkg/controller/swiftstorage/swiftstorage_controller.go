@@ -139,17 +139,14 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	}
 	if len(pods.Items) != 0 {
 		swiftSpec := swiftStorage.Spec.ServiceConfiguration
-		err = r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage)
-		if err != nil {
-			return reconcile.Result{}, err
+		if err := r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+			return reconcile.Result{Requeue: true}, err
 		}
-		err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage)
-		if err != nil {
-			return reconcile.Result{}, err
+		if err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+			return reconcile.Result{Requeue: true}, err
 		}
-		err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage)
-		if err != nil {
-			return reconcile.Result{}, err
+		if err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+			return reconcile.Result{Requeue: true}, err
 		}
 	}
 	swiftStorage.Status.Active = false
@@ -171,13 +168,15 @@ func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port in
 		return err
 	}
 	for _, pod := range pods.Items {
-		theRing.AddDevice(ring.Device{
+		if err := theRing.AddDevice(ring.Device{
 			Region: "1",
 			Zone:   "1",
 			IP:     pod.Status.PodIP,
 			Port:   port,
 			Device: "d1",
-		})
+		}); err != nil {
+			return err
+		}
 	}
 	job, err := theRing.BuildJob(types.NamespacedName{
 		Namespace: swiftStorage.Namespace,
