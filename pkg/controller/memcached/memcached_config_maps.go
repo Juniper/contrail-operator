@@ -2,10 +2,12 @@ package memcached
 
 import (
 	"bytes"
+	"text/template"
+
+	core "k8s.io/api/core/v1"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	core "k8s.io/api/core/v1"
-	"text/template"
 )
 
 type configMaps struct {
