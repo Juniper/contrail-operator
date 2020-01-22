@@ -11,6 +11,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -287,6 +288,13 @@ func newExpectedSTS() *apps.StatefulSet {
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+							},
+							ReadinessProbe: &core.Probe{
+								Handler: core.Handler{
+									HTTPGet: &core.HTTPGetAction{Path: "/v3", Port: intstr.IntOrString{
+										IntVal: 5555,
+									}},
+								},
 							},
 						},
 						{

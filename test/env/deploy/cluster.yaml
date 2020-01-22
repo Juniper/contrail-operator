@@ -59,11 +59,11 @@ spec:
         serviceConfiguration:
           containers:
             cassandra:
-              image: cassandra:3.11.4
+              image: registry:5000/cassandra:3.11.4
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             init2:
-              image: cassandra:3.11.4
+              image: registry:5000/cassandra:3.11.4
     config:
       metadata:
         labels:
@@ -78,27 +78,27 @@ spec:
           cassandraInstance: cassandra1
           containers:
             analyticsapi:
-              image: opencontrailnightly/contrail-analytics-api:1912-latest
+              image: registry:5000/contrail-analytics-api:1912-latest
             api:
-              image: opencontrailnightly/contrail-controller-config-api:1912-latest
+              image: registry:5000/contrail-controller-config-api:1912-latest
             collector:
-              image: opencontrailnightly/contrail-analytics-collector:1912-latest
+              image: registry:5000/contrail-analytics-collector:1912-latest
             devicemanager:
-              image: opencontrailnightly/contrail-controller-config-devicemgr:1912-latest
+              image: registry:5000/contrail-controller-config-devicemgr:1912-latest
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             init2:
-              image: busybox
+              image: registry:5000/busybox
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1912-latest
+              image: registry:5000/contrail-node-init:1912-latest
             redis:
-              image: redis:4.0.2
+              image: registry:5000/redis:4.0.2
             schematransformer:
-              image: opencontrailnightly/contrail-controller-config-schema:1912-latest
+              image: registry:5000/contrail-controller-config-schema:1912-latest
             servicemonitor:
-              image: opencontrailnightly/contrail-controller-config-svcmonitor:1912-latest
+              image: registry:5000/contrail-controller-config-svcmonitor:1912-latest
             queryengine:
-              image: opencontrailnightly/contrail-analytics-query-engine:1912-latest
+              image: registry:5000/contrail-analytics-query-engine:1912-latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -116,17 +116,17 @@ spec:
           cassandraInstance: cassandra1
           containers:
             control:
-              image: opencontrailnightly/contrail-controller-control-control:1912-latest
+              image: registry:5000/contrail-controller-control-control:1912-latest
             dns:
-              image: opencontrailnightly/contrail-controller-control-dns:1912-latest
+              image: registry:5000/contrail-controller-control-dns:1912-latest
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             named:
-              image: opencontrailnightly/contrail-controller-control-named:1912-latest
+              image: registry:5000/contrail-controller-control-named:1912-latest
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1912-latest
+              image: registry:5000/contrail-node-init:1912-latest
             statusmonitor:
-              image: michaelhenkel/contrail-statusmonitor:debug
+              image: registry:5000/contrail-statusmonitor:debug
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -142,9 +142,9 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             provisioner:
-              image: michaelhenkel/contrail-provisioner:debug
+              image: registry:5000/contrail-provisioner:debug
     rabbitmq:
       metadata:
         labels:
@@ -158,9 +158,9 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             rabbitmq:
-              image: rabbitmq:3.7
+              image: registry:5000/rabbitmq:3.7
     webui:
       metadata:
         labels:
@@ -175,15 +175,15 @@ spec:
           cassandraInstance: cassandra1
           containers:
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1912-latest
+              image: registry:5000/contrail-node-init:1912-latest
             redis:
-              image: redis:4.0.2
+              image: registry:5000/redis:4.0.2
             webuijob:
-              image: opencontrailnightly/contrail-controller-webui-job:1912-latest
+              image: registry:5000/contrail-controller-webui-job:1912-latest
             webuiweb:
-              image: opencontrailnightly/contrail-controller-webui-web:1912-latest
+              image: registry:5000/contrail-controller-webui-web:1912-latest
     zookeepers:
     - metadata:
         labels:
@@ -197,9 +197,9 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: registry:5000/python:alpine
             zookeeper:
-              image: docker.io/zookeeper:3.5.5
+              image: registry:5000/zookeeper:3.5.5
     contrailCommand:
       metadata:
         name: command
@@ -245,4 +245,20 @@ spec:
       metadata:
         name: postgres
       spec:
-        image: postgres
+        image: registry:5000/postgres
+    swift:
+      metadata:
+        name: swift
+      spec:
+        serviceConfiguration:
+          swiftProxyConfiguration:
+            keystoneInstance: "keystone"
+            listenPort: 5080
+            keystoneAdminPassword: "contrail123"
+            swiftPassword: "swiftpass"
+            imageRegistry: registry:5000
+          swiftStorageConfiguration:
+            accountBindPort: 6001
+            containerBindPort: 6002
+            objectBindPort: 6000
+            imageRegistry: registry:5000

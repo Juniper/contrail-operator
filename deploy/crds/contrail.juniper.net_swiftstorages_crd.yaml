@@ -41,6 +41,8 @@ spec:
                   type: integer
                 containerBindPort:
                   type: integer
+                imageRegistry:
+                  type: string
                 objectBindPort:
                   type: integer
                 swiftConfSecretName:

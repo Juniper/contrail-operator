@@ -37,8 +37,4 @@ for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
   docker exec "${node}" sh -c "${cmd}"
 done
 
-# create directories for persistent volumes
-docker exec "${KIND_CLUSTER_NAME}"-control-plane bash -c "for directory in \$(seq 5); do
-  mkdir -p /mnt/volumes/$directory
-  rm -rf /mnt/volumes/$directory/*
-done"
+docker cp -L /etc/localtime "${KIND_CLUSTER_NAME}"-control-plane:/etc/localtime

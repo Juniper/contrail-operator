@@ -138,10 +138,15 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
 
+	imageRegistry := "localhost:5000"
+	if swiftStorage.Spec.ServiceConfiguration.ImageRegistry != "" {
+		imageRegistry = swiftStorage.Spec.ServiceConfiguration.ImageRegistry
+	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
-		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers()
+		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(imageRegistry)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		volumes := r.swiftServicesVolumes(swiftStorage.Name)
 		statefulSet.Spec.Template.Spec.Volumes = append([]core.Volume{
@@ -188,25 +193,32 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	return statefulSet, err
 }
 
-func (r *ReconcileSwiftStorage) swiftContainers() []core.Container {
+func (r *ReconcileSwiftStorage) swiftContainers(registry string) []core.Container {
+	cg := containerGenerator{
+		registry: registry,
+	}
 	return []core.Container{
-		swiftContainer("swift-account-server", "swift-account"),
-		swiftContainer("swift-account-auditor", "swift-account"),
-		swiftContainer("swift-account-replicator", "swift-account"),
-		swiftContainer("swift-account-reaper", "swift-account"),
-		swiftContainer("swift-container-server", "swift-container"),
-		swiftContainer("swift-container-auditor", "swift-container"),
-		swiftContainer("swift-container-replicator", "swift-container"),
-		swiftContainer("swift-container-updater", "swift-container"),
-		swiftContainer("swift-object-server", "swift-object"),
-		swiftContainer("swift-object-auditor", "swift-object"),
-		swiftContainer("swift-object-replicator", "swift-object"),
-		swiftContainer("swift-object-updater", "swift-object"),
-		swiftContainer("swift-object-expirer", "swift-object-expirer"),
+		cg.swiftContainer("swift-account-server", "swift-account"),
+		cg.swiftContainer("swift-account-auditor", "swift-account"),
+		cg.swiftContainer("swift-account-replicator", "swift-account"),
+		cg.swiftContainer("swift-account-reaper", "swift-account"),
+		cg.swiftContainer("swift-container-server", "swift-container"),
+		cg.swiftContainer("swift-container-auditor", "swift-container"),
+		cg.swiftContainer("swift-container-replicator", "swift-container"),
+		cg.swiftContainer("swift-container-updater", "swift-container"),
+		cg.swiftContainer("swift-object-server", "swift-object"),
+		cg.swiftContainer("swift-object-auditor", "swift-object"),
+		cg.swiftContainer("swift-object-replicator", "swift-object"),
+		cg.swiftContainer("swift-object-updater", "swift-object"),
+		cg.swiftContainer("swift-object-expirer", "swift-object-expirer"),
 	}
 }
 
-func swiftContainer(name, image string) core.Container {
+type containerGenerator struct {
+	registry string
+}
+
+func (cg *containerGenerator) swiftContainer(name, image string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
 		MountPath: "/srv/node",
@@ -231,7 +243,7 @@ func swiftContainer(name, image string) core.Container {
 
 	return core.Container{
 		Name:  name,
-		Image: "localhost:5000/centos-binary-" + image + ":master",
+		Image: cg.registry + "/centos-binary-" + image + ":master",
 		Env:   newKollaEnvs(name),
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
