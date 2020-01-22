@@ -15,10 +15,9 @@ type MemcachedStatus struct {
 }
 
 type MemcachedConfiguration struct {
-	ApiInterfaceAddress string `json:"apiInterfaceAddress"`
-	ListenPort          int32  `json:"listenPort"`
-	ConnectionLimit     int32  `json:"connectionLimit"`
-	MaxMemory           int32  `json:"maxMemory"`
+	ListenPort      int32 `json:"listenPort"`
+	ConnectionLimit int32 `json:"connectionLimit"`
+	MaxMemory       int32 `json:"maxMemory"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

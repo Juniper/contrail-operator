@@ -5,7 +5,6 @@ metadata:
   namespace: contrail
 spec:
   serviceConfiguration:
-    apiInterfaceAddress: "0.0.0.0"
     listenPort: 11211
     connectionLimit: 5000
     maxMemory: 256

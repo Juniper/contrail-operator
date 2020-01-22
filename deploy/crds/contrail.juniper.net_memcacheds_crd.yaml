@@ -33,8 +33,6 @@ spec:
           properties:
             serviceConfiguration:
               properties:
-                apiInterfaceAddress:
-                  type: string
                 connectionLimit:
                   format: int32
                   type: integer
@@ -45,7 +43,6 @@ spec:
                   format: int32
                   type: integer
               required:
-              - apiInterfaceAddress
               - connectionLimit
               - listenPort
               - maxMemory

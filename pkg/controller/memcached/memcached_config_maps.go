@@ -24,19 +24,17 @@ func (r *ReconcileMemcached) configMap(configMapName string, memcached *contrail
 
 func (c *configMaps) ensureExists() error {
 	spc := &memcachedConfig{
-		ApiInterfaceAddress: c.memcachedSpec.ServiceConfiguration.ApiInterfaceAddress,
-		ListenPort:          c.memcachedSpec.ServiceConfiguration.ListenPort,
-		ConnectionLimit:     c.memcachedSpec.ServiceConfiguration.ConnectionLimit,
-		MaxMemory:           c.memcachedSpec.ServiceConfiguration.MaxMemory,
+		ListenPort:      c.memcachedSpec.ServiceConfiguration.ListenPort,
+		ConnectionLimit: c.memcachedSpec.ServiceConfiguration.ConnectionLimit,
+		MaxMemory:       c.memcachedSpec.ServiceConfiguration.MaxMemory,
 	}
 	return c.cm.EnsureExists(spc)
 }
 
 type memcachedConfig struct {
-	ApiInterfaceAddress string
-	ListenPort          int32
-	ConnectionLimit     int32
-	MaxMemory           int32
+	ListenPort      int32
+	ConnectionLimit int32
+	MaxMemory       int32
 }
 
 func (c *memcachedConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -53,6 +51,6 @@ func (c *memcachedConfig) String() string {
 }
 
 const memcachedConfigTemplate = `{
-	"command": "/usr/bin/memcached -v -l {{ .ApiInterfaceAddress }} -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
+	"command": "/usr/bin/memcached -v -l 0.0.0.0 -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
 	"config_files": []
 }`
