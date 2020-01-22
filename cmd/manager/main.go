@@ -83,16 +83,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	metricsBindAddress := "0"
-	if metricsEnabled {
-		fmt.Sprintf("%s:%d", metricsHost, metricsPort)
-	}
-
 	// Create a new Cmd to provide shared dependencies and start components.
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
 		MapperProvider:     restmapper.NewDynamicRESTMapper,
-		MetricsBindAddress: metricsBindAddress,
+		MetricsBindAddress: "0",
 	})
 	if err != nil {
 		log.Error(err, "")
