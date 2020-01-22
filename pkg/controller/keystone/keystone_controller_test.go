@@ -125,6 +125,26 @@ func TestKeystone(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "containers should be configurable according to keystone spec",
+			initObjs: []runtime.Object{
+				newKeystoneWithCustomImages(),
+				&contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
+						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
+					},
+					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				},
+			},
+			expectedSTS:     newExpectedSTSWithCustomImages(),
+			expectedConfigs: []*core.ConfigMap{},
+			expectedPostgres: &contrail.Postgres{
+				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
+					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
+				},
+				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -212,7 +232,6 @@ func newKeystone() *contrail.Keystone {
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				PostgresInstance: "psql",
 				ListenPort:       5555,
-				ImageRegistry:    "registry:5000",
 			},
 		},
 	}
@@ -251,14 +270,14 @@ func newExpectedSTS() *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "keystone-db-init",
-							Image:           "registry:5000/postgresql-client",
+							Image:           "localhost:5000/postgresql-client",
 							ImagePullPolicy: core.PullAlways,
 							Command:         []string{"/bin/sh"},
 							Args:            []string{"-c", expectedCommandImage},
 						},
 						{
 							Name:            "keystone-init",
-							Image:           "registry:5000/centos-binary-keystone:master",
+							Image:           "localhost:5000/centos-binary-keystone:master",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
@@ -275,7 +294,7 @@ func newExpectedSTS() *apps.StatefulSet {
 					},
 					Containers: []core.Container{
 						{
-							Image:           "registry:5000/centos-binary-keystone:master",
+							Image:           "localhost:5000/centos-binary-keystone:master",
 							Name:            "keystone",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -298,7 +317,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "registry:5000/centos-binary-keystone-ssh:master",
+							Image:           "localhost:5000/centos-binary-keystone-ssh:master",
 							Name:            "keystone-ssh",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -315,7 +334,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "registry:5000/centos-binary-keystone-fernet:master",
+							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
 							Name:            "keystone-fernet",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -477,6 +496,112 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 			},
 		},
 	}
+}
+
+func newKeystoneWithCustomImages() *contrail.Keystone {
+	keystone := newKeystone()
+	keystone.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
+		"keystoneDbInit": {
+			Image: "image1",
+		},
+		"keystoneInit": {
+			Image: "image2",
+		},
+		"keystone": {
+			Image: "image3",
+		},
+		"keystoneSsh": {
+			Image: "image4",
+		},
+		"keystoneFernet": {
+			Image: "image5",
+		},
+	}
+
+	return keystone
+}
+
+func newExpectedSTSWithCustomImages() *apps.StatefulSet {
+	sts := newExpectedSTS()
+	sts.Spec.Template.Spec.InitContainers = []core.Container{
+		{
+			Name:            "keystone-db-init",
+			Image:           "image1",
+			ImagePullPolicy: core.PullAlways,
+			Command:         []string{"/bin/sh"},
+			Args:            []string{"-c", expectedCommandImage},
+		},
+		{
+			Name:            "keystone-init",
+			Image:           "image2",
+			ImagePullPolicy: core.PullAlways,
+			Env: []core.EnvVar{{
+				Name:  "KOLLA_SERVICE_NAME",
+				Value: "keystone",
+			}, {
+				Name:  "KOLLA_CONFIG_STRATEGY",
+				Value: "COPY_ALWAYS",
+			}},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+			},
+		},
+	}
+
+	sts.Spec.Template.Spec.Containers = []core.Container{
+		{
+			Image:           "image3",
+			Name:            "keystone",
+			ImagePullPolicy: core.PullAlways,
+			Env: []core.EnvVar{{
+				Name:  "KOLLA_SERVICE_NAME",
+				Value: "keystone",
+			}, {
+				Name:  "KOLLA_CONFIG_STRATEGY",
+				Value: "COPY_ALWAYS",
+			}},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+			},
+		},
+		{
+			Image:           "image4",
+			Name:            "keystone-ssh",
+			ImagePullPolicy: core.PullAlways,
+			Env: []core.EnvVar{{
+				Name:  "KOLLA_SERVICE_NAME",
+				Value: "keystone-ssh",
+			}, {
+				Name:  "KOLLA_CONFIG_STRATEGY",
+				Value: "COPY_ALWAYS",
+			}},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
+			},
+		},
+		{
+			Image:           "image5",
+			Name:            "keystone-fernet",
+			ImagePullPolicy: core.PullAlways,
+			Env: []core.EnvVar{{
+				Name:  "KOLLA_SERVICE_NAME",
+				Value: "keystone-fernet",
+			}, {
+				Name:  "KOLLA_CONFIG_STRATEGY",
+				Value: "COPY_ALWAYS",
+			}},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
+			},
+		},
+	}
+	return sts
 }
 
 const expectedCommandImage = `DB_USER=${DB_USER:-root}
