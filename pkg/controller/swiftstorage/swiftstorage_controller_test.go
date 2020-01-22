@@ -309,17 +309,18 @@ func TestSwiftStorageController(t *testing.T) {
 		require.NoError(t, err)
 		assertJobExists(t, fakeClient, types.NamespacedName{
 			Namespace: name.Namespace,
-			Name:      "ring-account-job",
+			Name:      swiftStorageCR.Name + "-ring-account-job",
 		})
 		assertJobExists(t, fakeClient, types.NamespacedName{
 			Namespace: name.Namespace,
-			Name:      "ring-container-job",
+			Name:      swiftStorageCR.Name + "-ring-container-job",
 		})
 		assertJobExists(t, fakeClient, types.NamespacedName{
 			Namespace: name.Namespace,
-			Name:      "ring-object-job",
+			Name:      swiftStorageCR.Name + "-ring-object-job",
 		})
 	})
+
 }
 
 func deployPodWithIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
