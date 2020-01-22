@@ -56,10 +56,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &contrail.Memcached{},
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // blank assignment to verify that ReconcileMemcached implements reconcile.Reconciler
