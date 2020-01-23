@@ -10,7 +10,7 @@ import (
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Image string `json:"image,omitempty"`
+	Containers map[string]*Container `json:"containers,omitempty"`
 }
 
 // PostgresStatus defines the observed state of Postgres

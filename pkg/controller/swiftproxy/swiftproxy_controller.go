@@ -187,19 +187,21 @@ func updatePodTemplate(
 
 	pod.InitContainers = []core.Container{
 		{
-			Name:  "init",
-			Image: getImage(containers, "init"),
+			Name:            "init",
+			Image:           getImage(containers, "init"),
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
 			},
-			Command: []string{"ansible-playbook"},
+			//Command: []string{"ansible-playbook"},
+			Command: getCommand(containers, "init"),
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
 		},
 	}
 	pod.Containers = []core.Container{{
-		Name:  "api",
-		Image: getImage(containers, "api"),
+		Name:    "api",
+		Image:   getImage(containers, "api"),
+		Command: getCommand(containers, "api"),
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
@@ -256,6 +258,11 @@ func updatePodTemplate(
 }
 
 func getImage(containers map[string]*contrail.Container, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"init": "localhost:5000/centos-binary-kolla-toolbox:master",
+		"api":  "localhost:5000/centos-binary-swift-proxy-server:master",
+	}
+
 	c, ok := containers[containerName]
 	if ok == false {
 		return defaultContainersImages[containerName]
@@ -268,7 +275,19 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	return c.Image
 }
 
-var defaultContainersImages = map[string]string{
-	"init": "localhost:5000/centos-binary-kolla-toolbox:master",
-	"api":  "localhost:5000/centos-binary-swift-proxy-server:master",
+func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+	var defaultContainersCommand = map[string][]string{
+		"init": []string{"ansible-playbook"},
+	}
+
+	c, ok := containers[containerName]
+	if ok == false {
+		return defaultContainersCommand[containerName]
+	}
+
+	if c != nil && c.Command != nil {
+		return c.Command
+	}
+
+	return defaultContainersCommand[containerName]
 }

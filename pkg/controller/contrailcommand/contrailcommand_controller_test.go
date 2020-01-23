@@ -168,7 +168,10 @@ func newContrailCommand() *contrail.ContrailCommand {
 				PostgresInstance: "command-db",
 				AdminUsername:    "test",
 				AdminPassword:    "test123",
-				Image:            "registry:5000/contrail-command",
+				Containers: map[string]*contrail.Container{
+					"init": {Image: "registry:5000/contrail-command"},
+					"api": {Image: "registry:5000/contrail-command"},
+				},
 			},
 		},
 	}
