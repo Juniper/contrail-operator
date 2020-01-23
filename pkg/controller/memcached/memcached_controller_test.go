@@ -130,8 +130,16 @@ func newExpectedDeployment() *apps.Deployment {
 				},
 				Spec: core.PodSpec{
 					Containers: []core.Container{{
-						Name:  "memcached",
-						Image: "localhost:5000/centos-binary-memcached:master",
+						Name:            "memcached",
+						Image:           "localhost:5000/centos-binary-memcached:master",
+						ImagePullPolicy: core.PullAlways,
+						Env: []core.EnvVar{{
+							Name:  "KOLLA_SERVICE_NAME",
+							Value: "memcached",
+						}, {
+							Name:  "KOLLA_CONFIG_STRATEGY",
+							Value: "COPY_ALWAYS",
+						}},
 						Ports: []core.ContainerPort{{
 							ContainerPort: 11211,
 							Name:          "memcached",

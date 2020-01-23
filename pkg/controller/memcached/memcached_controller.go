@@ -146,8 +146,16 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 	return core.Container{
-		Name:  "memcached",
-		Image: memcachedCR.Spec.ServiceConfiguration.Image,
+		Name:            "memcached",
+		Image:           memcachedCR.Spec.ServiceConfiguration.Image,
+		ImagePullPolicy: core.PullAlways,
+		Env: []core.EnvVar{{
+			Name:  "KOLLA_SERVICE_NAME",
+			Value: "memcached",
+		}, {
+			Name:  "KOLLA_CONFIG_STRATEGY",
+			Value: "COPY_ALWAYS",
+		}},
 		Ports: []core.ContainerPort{{
 			ContainerPort: memcachedCR.Spec.ServiceConfiguration.ListenPort,
 			Name:          "memcached",
