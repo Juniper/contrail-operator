@@ -46,7 +46,6 @@ func TestSwiftController(t *testing.T) {
 					KeystoneInstance:      "keystone",
 					KeystoneAdminPassword: "c0ntrail123",
 					SwiftPassword:         "swiftpass",
-					ImageRegistry:         "registry:5000",
 				},
 			},
 		},
@@ -241,5 +240,5 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
-	assert.Equal(t, expectedSwiftProxyConf.ImageRegistry, swiftProxy.Spec.ServiceConfiguration.ImageRegistry)
+	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
 }

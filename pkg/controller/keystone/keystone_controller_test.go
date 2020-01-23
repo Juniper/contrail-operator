@@ -565,6 +565,13 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 			},
+			ReadinessProbe: &core.Probe{
+				Handler: core.Handler{
+					HTTPGet: &core.HTTPGetAction{Path: "/v3", Port: intstr.IntOrString{
+						IntVal: 5555,
+					}},
+				},
+			},
 		},
 		{
 			Image:           "image4",

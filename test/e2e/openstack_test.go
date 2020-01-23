@@ -64,7 +64,13 @@ func TestOpenstackServices(t *testing.T) {
 					ServiceConfiguration: contrail.KeystoneConfiguration{
 						PostgresInstance: "openstacktest-psql",
 						ListenPort:       5555,
-						ImageRegistry:    "registry:5000",
+						Containers: map[string]*contrail.Container{
+							"keystoneDbInit": {Image:"registry:5000/postgresql-client"},
+							"keystoneInit": {Image:"registry:5000/centos-binary-keystone:master"},
+							"keystone": {Image:"registry:5000/centos-binary-keystone:master"},
+							"keystoneSsh": {Image:"registry:5000/centos-binary-keystone-ssh:master"},
+							"keystoneFernet": {Image:"registry:5000/centos-binary-keystone-fernet:master"},
+						},
 					},
 				},
 			}
@@ -132,7 +138,10 @@ func TestOpenstackServices(t *testing.T) {
 							KeystoneInstance:      "openstacktest-keystone",
 							KeystoneAdminPassword: "contrail123",
 							SwiftPassword:         "swiftpass",
-							ImageRegistry:         "registry:5000",
+							Containers: map[string]*contrail.Container{
+								"init": {Image:"registry:5000/centos-binary-kolla-toolbox:master"},
+								"api":  {Image:"registry:5000/centos-binary-swift-proxy-server:master"},
+							},
 						},
 					},
 				},

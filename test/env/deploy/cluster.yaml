@@ -240,7 +240,17 @@ spec:
         serviceConfiguration:
           postgresInstance: postgres
           listenPort: 5555
-          imageRegistry: registry:5000
+          containers:
+            keystoneDbInit:
+              image: registry:5000/postgresql-client
+            keystoneInit:
+              image: registry:5000/centos-binary-keystone:master
+            keystone:
+              image: registry:5000/centos-binary-keystone:master
+            keystoneSsh:
+              image: registry:5000/centos-binary-keystone-ssh:master
+            keystoneFernet:
+              image: registry:5000/centos-binary-keystone-fernet:master
     postgres:
       metadata:
         name: postgres
@@ -256,7 +266,11 @@ spec:
             listenPort: 5080
             keystoneAdminPassword: "contrail123"
             swiftPassword: "swiftpass"
-            imageRegistry: registry:5000
+            containers:
+              init:
+                image: registry:5000/centos-binary-kolla-toolbox:master
+              api:
+                image: registry:5000/centos-binary-swift-proxy-server:master
           swiftStorageConfiguration:
             accountBindPort: 6001
             containerBindPort: 6002
