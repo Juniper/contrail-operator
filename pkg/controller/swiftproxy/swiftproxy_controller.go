@@ -189,7 +189,6 @@ func updatePodTemplate(
 		{
 			Name:  "init",
 			Image: getImage(containers, "init"),
-			//Image:           imageRegistry + "/centos-binary-kolla-toolbox:master",
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
@@ -201,7 +200,6 @@ func updatePodTemplate(
 	pod.Containers = []core.Container{{
 		Name:  "api",
 		Image: getImage(containers, "api"),
-		//Image: imageRegistry + "/centos-binary-swift-proxy-server:master",
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},

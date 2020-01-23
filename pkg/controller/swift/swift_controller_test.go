@@ -40,12 +40,20 @@ func TestSwiftController(t *testing.T) {
 					AccountBindPort:   6001,
 					ContainerBindPort: 6002,
 					ObjectBindPort:    6000,
+					Containers: map[string]*contrail.Container{
+						"container1": {Image: "image1"},
+						"container2": {Image: "image2"},
+					},
 				},
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 					ListenPort:            5070,
 					KeystoneInstance:      "keystone",
 					KeystoneAdminPassword: "c0ntrail123",
 					SwiftPassword:         "swiftpass",
+					Containers: map[string]*contrail.Container{
+						"container3": {Image: "image3"},
+						"container4": {Image: "image4"},
+					},
 				},
 			},
 		},
@@ -218,7 +226,7 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	require.Equal(t, expectedSwiftStorageConf.AccountBindPort, swiftStorage.Spec.ServiceConfiguration.AccountBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ContainerBindPort, swiftStorage.Spec.ServiceConfiguration.ContainerBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ObjectBindPort, swiftStorage.Spec.ServiceConfiguration.ObjectBindPort)
-	assert.Equal(t, expectedSwiftStorageConf.ImageRegistry, swiftStorage.Spec.ServiceConfiguration.ImageRegistry)
+	assert.Equal(t, expectedSwiftStorageConf.Containers, swiftStorage.Spec.ServiceConfiguration.Containers)
 
 }
 
