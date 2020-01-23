@@ -21,6 +21,7 @@ type swiftServiceConfig struct {
 func (c *swiftServiceConfig) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = c.executeTemplate(c.ServiceStartConfigTemplate)
 	cm.Data[c.ServiceConfigTemplate.Name()] = c.executeTemplate(c.ServiceConfigTemplate)
+	cm.Data["bootstrap.sh"] = c.executeTemplate(bootstrapScript)
 }
 
 func (c *swiftServiceConfig) executeTemplate(t *template.Template) string {
@@ -42,3 +43,12 @@ func (r *ReconcileSwiftStorage) configMap(configMapName, ownerType string, swift
 		swiftStorageConf: swiftStorage.Spec.ServiceConfiguration,
 	}
 }
+
+var bootstrapScript = template.Must(template.New("").Parse(`
+#!/bin/bash
+
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose
+`))

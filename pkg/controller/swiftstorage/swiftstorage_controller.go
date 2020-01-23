@@ -2,6 +2,7 @@ package swiftstorage
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -163,7 +164,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 }
 
 func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port int, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
-	theRing, err := ring.New(ringsClaimName.Name, "/etc/swift", ringType)
+	theRing, err := ring.New(ringsClaimName.Name, "/etc/rings", ringType)
 	if err != nil {
 		return err
 	}
@@ -280,7 +281,7 @@ type containerGenerator struct {
 func (cg *containerGenerator) swiftContainer(name, image string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
-		MountPath: "/srv/node",
+		MountPath: "/srv/node/d1",
 	}
 	localtimeVolumeMount := core.VolumeMount{
 		Name:      "localtime-volume",
@@ -303,7 +304,7 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 	ringsVolumeMount := core.VolumeMount{
 		Name:      "rings",
 		ReadOnly:  true,
-		MountPath: "/etc/swift",
+		MountPath: "/etc/rings",
 	}
 
 	return core.Container{

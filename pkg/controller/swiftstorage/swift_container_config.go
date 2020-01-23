@@ -6,21 +6,14 @@ import (
 
 var swiftContainerServiceBaseStartConfig = template.Must(template.New("").Parse(`
 {
-    "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
 		{
-            "source": "/var/lib/kolla/swift/container.ring.gz",
-            "dest": "/etc/swift/container.ring.gz",
-            "owner": "swift",
-            "perm": "0640",
-            "optional": true
-        },
-        {
-            "source": "/var/lib/kolla/swift_config/swift.conf",
-            "dest": "/etc/swift/swift.conf",
-            "owner": "swift",
-            "perm": "0640"
-        },
+			"source": "/var/lib/kolla/config_files/bootstrap.sh",
+			"dest": "/usr/bin/bootstrap.sh",
+			"owner": "root",
+			"perm": "0755"
+		},
         {
             "source": "/var/lib/kolla/config_files/{{ .SrcConfigFileName }}",
             "dest": "/etc/swift/{{ .DestConfigFileName }}",
@@ -40,28 +33,14 @@ var swiftContainerServiceBaseStartConfig = template.Must(template.New("").Parse(
 
 var swiftContainerServiceUpdaterStartConfig = template.Must(template.New("").Parse(`
 {
-    "command": "{{ .ContainerName }} /etc/swift/{{ .DestConfigFileName }} --verbose",
+    "command":"/usr/bin/bootstrap.sh",
     "config_files": [
 		{
-            "source": "/var/lib/kolla/swift/account.ring.gz",
-            "dest": "/etc/swift/account.ring.gz",
-            "owner": "swift",
-            "perm": "0640",
-            "optional": true
-        },
-		{
-            "source": "/var/lib/kolla/swift/container.ring.gz",
-            "dest": "/etc/swift/container.ring.gz",
-            "owner": "swift",
-            "perm": "0640",
-            "optional": true
-        },
-        {
-            "source": "/var/lib/kolla/swift_config/swift.conf",
-            "dest": "/etc/swift/swift.conf",
-            "owner": "swift",
-            "perm": "0640"
-        },
+			"source": "/var/lib/kolla/config_files/bootstrap.sh",
+			"dest": "/usr/bin/bootstrap.sh",
+			"owner": "root",
+			"perm": "0755"
+		},
         {
             "source": "/var/lib/kolla/config_files/{{ .SrcConfigFileName }}",
             "dest": "/etc/swift/{{ .DestConfigFileName }}",
@@ -130,7 +109,6 @@ recon_cache_path = /var/cache/swift
 use = egg:swift#container
 allow_versions = True
 `))
-
 
 var swiftContainerReplicatorConf = template.Must(template.New("container-replicator.conf").Parse(`
 [DEFAULT]

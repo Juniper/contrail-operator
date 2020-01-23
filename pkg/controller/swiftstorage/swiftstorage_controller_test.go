@@ -236,7 +236,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		expectedMountPoint := core.VolumeMount{
 			Name:      "devices-mount-point-volume",
-			MountPath: "/srv/node",
+			MountPath: "/srv/node/d1",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
@@ -289,7 +289,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		expectedMountPoint := core.VolumeMount{
 			Name:      "rings",
-			MountPath: "/etc/swift",
+			MountPath: "/etc/rings",
 			ReadOnly:  true,
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
