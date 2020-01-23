@@ -340,7 +340,13 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			return reconcile.Result{}, err
 		}
 	}
-
+	if instance.Status.Active == nil {
+		active := false
+		instance.Status.Active = &active
+	}
+	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, nil
 }
 

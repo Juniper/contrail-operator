@@ -152,6 +152,11 @@ func ManagerCluster(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	err = waitForManager(t, f, ctx, namespace, "cluster1", retryInterval, waitTimeout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if err = upgradeZookeeper(t, f, ctx, namespace, "cluster1"); err != nil {
 		t.Fatal(err)
 	}
@@ -678,5 +683,29 @@ func waitForControl(t *testing.T, f *test.Framework, ctx *test.TestCtx, namespac
 		return err
 	}
 	t.Logf("Control %s available\n", name)
+	return nil
+}
+
+func waitForManager(t *testing.T, f *test.Framework, ctx *test.TestCtx, namespace, name string, retryInterval, waitTimeout time.Duration) error {
+	err := wait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+		instance := &v1alpha1.Manager{}
+		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, instance)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Logf("Waiting for availability of %s Manager\n", name)
+				return false, nil
+			}
+			return false, err
+		}
+		if !instance.IsClusterReady() {
+			t.Logf("Waiting for full availability of %s Manager\n", name)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	t.Logf("Manager %s available\n", name)
 	return nil
 }

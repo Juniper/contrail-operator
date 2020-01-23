@@ -1435,6 +1435,9 @@ spec:
                       type: object
                     status:
                       description: SwiftStatus defines the observed state of Swift
+                      properties:
+                        active:
+                          type: boolean
                       type: object
                   type: object
                 vrouters:
@@ -1925,6 +1928,19 @@ spec:
                 name:
                   type: string
               type: object
+            contrailCommand:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                controllerRunning:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
             controls:
               items:
                 description: ServiceStatus provides information on the current status
@@ -1950,6 +1966,19 @@ spec:
                     type: string
                 type: object
               type: array
+            keystone:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                controllerRunning:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
             kubemanagers:
               items:
                 description: ServiceStatus provides information on the current status
@@ -1965,6 +1994,19 @@ spec:
                     type: string
                 type: object
               type: array
+            postgres:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                controllerRunning:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
             provisionManager:
               description: ServiceStatus provides information on the current status
                 of the service.
@@ -1979,6 +2021,19 @@ spec:
                   type: string
               type: object
             rabbitmq:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                controllerRunning:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            swift:
               description: ServiceStatus provides information on the current status
                 of the service.
               properties:

@@ -1685,6 +1685,26 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref common.ReferenceCallbac
 							},
 						},
 					},
+					"keystone": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
+					"postgres": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
+					"swift": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
+					"contrailCommand": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
 				},
 			},
 		},
@@ -2569,6 +2589,14 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref common.ReferenceCallback)
 			SchemaProps: spec.SchemaProps{
 				Description: "SwiftStatus defines the observed state of Swift",
 				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 	}

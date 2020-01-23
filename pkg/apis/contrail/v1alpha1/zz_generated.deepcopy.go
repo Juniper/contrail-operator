@@ -1460,6 +1460,26 @@ func (in *ManagerStatus) DeepCopyInto(out *ManagerStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Keystone != nil {
+		in, out := &in.Keystone, &out.Keystone
+		*out = new(ServiceStatus)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Postgres != nil {
+		in, out := &in.Postgres, &out.Postgres
+		*out = new(ServiceStatus)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Swift != nil {
+		in, out := &in.Swift, &out.Swift
+		*out = new(ServiceStatus)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ContrailCommand != nil {
+		in, out := &in.ContrailCommand, &out.ContrailCommand
+		*out = new(ServiceStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
