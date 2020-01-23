@@ -20,6 +20,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swiftproxy")
@@ -32,7 +33,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()))
+	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), kubernetes)
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
@@ -78,6 +80,7 @@ type ReconcileSwiftProxy struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
+	claims     *volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftProxy object and makes changes based on the state read
@@ -132,12 +135,15 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
+		// TODO This should be a swift proxy spec parameter
+		ringsClaimName := "swift-storage-rings"
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
 			swiftConfigName,
 			swiftInitConfigName,
 			swiftConfSecretName,
 			swiftProxy.Spec.ServiceConfiguration.Containers,
+			ringsClaimName,
 		)
 
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
@@ -183,6 +189,7 @@ func updatePodTemplate(
 	swiftInitConfigName string,
 	swiftConfSecretName string,
 	containers map[string]*contrail.Container,
+	ringsClaimName string,
 ) {
 
 	pod.InitContainers = []core.Container{
@@ -202,8 +209,9 @@ func updatePodTemplate(
 		Image:   getImage(containers, "api"),
 		Command: getCommand(containers, "api"),
 		VolumeMounts: []core.VolumeMount{
-			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
-			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
@@ -250,6 +258,15 @@ func updatePodTemplate(
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					SecretName: swiftConfSecretName,
+				},
+			},
+		},
+		{
+			Name: "rings",
+			VolumeSource: core.VolumeSource{
+				PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+					ClaimName: ringsClaimName,
+					ReadOnly:  true,
 				},
 			},
 		},

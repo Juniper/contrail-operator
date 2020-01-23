@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -17,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestSwiftProxyController(t *testing.T) {
@@ -136,7 +136,8 @@ func TestSwiftProxyController(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
-			r := swiftproxy.NewReconciler(cl, scheme, k8s.New(cl, scheme))
+			kubernetes := k8s.New(cl, scheme)
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes)
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -227,7 +228,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					InitContainers: []core.Container{
 						{
 							Name:            "init",
-							Image:           "localhost:5000/centos-binary-kolla-toolbox:master",
+							Image:           "registry:5000/centos-binary-kolla-toolbox:master",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
@@ -238,10 +239,11 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					},
 					Containers: []core.Container{{
 						Name:  "api",
-						Image: "localhost:5000/centos-binary-swift-proxy-server:master",
+						Image: "registry:5000/centos-binary-swift-proxy-server:master",
 						VolumeMounts: []core.VolumeMount{
-							core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
-							core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -288,6 +290,15 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "test-secret",
+								},
+							},
+						},
+						{
+							Name: "rings",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: "swift-storage-rings",
+									ReadOnly:  true,
 								},
 							},
 						},
