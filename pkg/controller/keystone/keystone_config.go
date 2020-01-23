@@ -65,10 +65,6 @@ const keystoneKollaServiceConfig = `{
             "owner": "keystone:kolla"
         },
         {
-            "path": "/var/log/kolla/keystone/keystone.log",
-            "owner": "keystone:keystone"
-        },
-        {
             "path": "/etc/keystone/fernet-keys",
             "owner": "keystone:keystone",
             "perm": "0770"
@@ -85,7 +81,6 @@ var keystoneConf = template.Must(template.New("").Parse(`
 [DEFAULT]
 debug = False
 transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-log_file = /var/log/kolla/keystone/keystone.log
 use_stderr = True
 
 [oslo_middleware]
@@ -140,8 +135,8 @@ TraceEnable off
     <IfVersion >= 2.4>
       ErrorLogFormat "%{cu}t %M"
     </IfVersion>
-    ErrorLog "/var/log/kolla/keystone/keystone-apache-public-error.log"
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b %D \"%{Referer}i\" \"%{User-Agent}i\"" logformat
-    CustomLog "/var/log/kolla/keystone/keystone-apache-public-access.log" logformat
+    ErrorLog "|/usr/sbin/rotatelogs /var/log/kolla/keystone/keystone-apache-public-error.log"
+    CustomLog "|/usr/sbin/rotatelogs /var/log/kolla/keystone/keystone-apache-public-access.log 604800" logformat
 </VirtualHost>
 `))
