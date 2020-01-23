@@ -53,6 +53,10 @@ type ManagerStatus struct {
 	Rabbitmq         *ServiceStatus   `json:"rabbitmq,omitempty"`
 	ProvisionManager *ServiceStatus   `json:"provisionManager,omitempty"`
 	CrdStatus        []CrdStatus      `json:"crdStatus,omitempty"`
+	Keystone         *ServiceStatus   `json:"keystone,omitempty"`
+	Postgres         *ServiceStatus   `json:"postgres,omitempty"`
+	Swift            *ServiceStatus   `json:"swift,omitempty"`
+	ContrailCommand  *ServiceStatus   `json:"contrailCommand,omitempty"`
 }
 
 // CrdStatus tracks status of CRD.
@@ -121,6 +125,55 @@ func (m *Manager) Delete(client client.Client) error {
 
 func (m *Manager) GetObjectFromObjectList(objectList *[]*interface{}, request reconcile.Request) interface{} {
 	return nil
+}
+
+func (m Manager) IsClusterReady() bool {
+	for _, cassandraService := range m.Spec.Services.Cassandras {
+		for _, cassandraStatus := range m.Status.Cassandras {
+			if cassandraService.Name == *cassandraStatus.Name && !*cassandraStatus.Active {
+				return false
+			}
+		}
+	}
+	for _, zookeeperService := range m.Spec.Services.Zookeepers {
+		for _, zookeeperStatus := range m.Status.Zookeepers {
+			if zookeeperService.Name == *zookeeperStatus.Name && !*zookeeperStatus.Active {
+				return false
+			}
+		}
+	}
+	for _, controlService := range m.Spec.Services.Controls {
+		for _, controlStatus := range m.Status.Controls {
+			if controlService.Name == *controlStatus.Name && !*controlStatus.Active {
+				return false
+			}
+		}
+	}
+	if m.Spec.Services.Webui != nil && !*m.Status.Webui.Active {
+		return false
+	}
+	if m.Spec.Services.ProvisionManager != nil && !*m.Status.ProvisionManager.Active {
+		return false
+	}
+	if m.Spec.Services.Config != nil && !*m.Status.Config.Active {
+		return false
+	}
+	if m.Spec.Services.Rabbitmq != nil && !*m.Status.Rabbitmq.Active {
+		return false
+	}
+	if m.Spec.Services.Postgres != nil && !*m.Status.Postgres.Active {
+		return false
+	}
+	if m.Spec.Services.ContrailCommand != nil && !*m.Status.ContrailCommand.Active {
+		return false
+	}
+	if m.Spec.Services.Keystone != nil && !*m.Status.Keystone.Active {
+		return false
+	}
+	if m.Spec.Services.Swift != nil && !*m.Status.Swift.Active {
+		return false
+	}
+	return true
 }
 
 func init() {

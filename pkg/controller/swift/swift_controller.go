@@ -116,15 +116,33 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftStorageExists(swift, swiftConfSecretName); err != nil {
+	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	swiftProxyAndStorageActiveStatus := false
+	if err, swiftProxyAndStorageActiveStatus = r.checkSwiftProxyAndStorageActive(swift); err != nil {
+		return reconcile.Result{}, err
+	}
+	swift.Status.Active = swiftProxyAndStorageActiveStatus
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileSwift) checkSwiftProxyAndStorageActive(swift *contrail.Swift) (error, bool) {
+	swiftStorage := &contrail.SwiftStorage{}
+	swiftProxy := &contrail.SwiftProxy{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
+		return err, false
+	}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-proxy", Namespace: swift.Namespace}, swiftProxy); err != nil {
+		return err, false
+	}
+	return nil, swiftStorage.Status.Active && swiftProxy.Status.Active
 }
 
 func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swiftConfSecretName string) error {
