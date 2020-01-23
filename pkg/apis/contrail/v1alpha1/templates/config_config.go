@@ -96,8 +96,8 @@ cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip={{ .ZookeeperServerList }}
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
-dnsmasq_conf_dir=/etc/dnsmasq
-tftp_dir=/etc/tftp
+dnsmasq_conf_dir=/var/lib/dnsmasq
+tftp_dir=/var/lib/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -117,6 +117,17 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+
+// ConfigDNSMasqConfig is the template of the DNSMasq service configuration.
+var ConfigDNSMasqConfig = `
+log-facility=/dev/stdout
+bogus-priv
+log-dhcp
+enable-tftp
+tftp-root=/var/lib/tftp
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+conf-dir=/var/lib/dnsmasq/,*.conf
+`
 
 // ConfigSchematransformerConfig is the template of the SchemaTransformer service configuration.
 var ConfigSchematransformerConfig = template.Must(template.New("").Parse(`[DEFAULTS]

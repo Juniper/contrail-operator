@@ -50,6 +50,14 @@ spec:
         volumeMounts:
         - mountPath: /var/log/contrail
           name: config-logs
+      - image: docker.io/michaelhenkel/contrail-external-dnsmasq:5.2.0-dev1
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: dnsmasq
       - image: docker.io/michaelhenkel/contrail-controller-config-schema:5.2.0-dev1
         env:
         - name: POD_IP
@@ -205,6 +213,10 @@ spec:
       - effect: NoExecute
         operator: Exists
       volumes:
+      - persistentVolumeClaim: {}
+        name: tftp
+      - persistentVolumeClaim: {}
+        name: dnsmasq
       - hostPath:
           path: /var/log/contrail/config
           type: ""

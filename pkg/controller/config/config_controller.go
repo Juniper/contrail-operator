@@ -7,6 +7,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -91,7 +92,12 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileConfig{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+	return &ReconcileConfig{
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Manager: mgr,
+		claims:  volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller.
@@ -172,6 +178,7 @@ type ReconcileConfig struct {
 	Client    client.Client
 	Scheme    *runtime.Scheme
 	Manager   manager.Manager
+	claims    *volumeclaims.PersistentVolumeClaims
 	podsReady *bool
 }
 
@@ -241,8 +248,26 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	statefulSet := GetSTS()
+	// DeviceManager pushes configuration to dnsmasq service and then needs to restart it by sending a signal.
+	// Therefore those services needs to share a one process namespace
+	// TODO: Move device manager and dnsmasq to a separate pod. They are separate service which requires
+	// peristent volumes and capabilities
+	trueVal := true
+	statefulSet.Spec.Template.Spec.ShareProcessNamespace = &trueVal
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	for _, vol := range statefulSet.Spec.Template.Spec.Volumes {
+		pvc := vol.VolumeSource.PersistentVolumeClaim
+		if pvc == nil {
+			continue
+		}
+		pvc.ClaimName = instance.Name + "-" + instanceType + "-" + vol.Name
+		if err := r.claims.New(types.NamespacedName{Namespace: instance.Namespace, Name: pvc.ClaimName},
+			instance).EnsureExists(); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
@@ -307,6 +332,11 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			} else {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).SecurityContext = &corev1.SecurityContext{
+				Capabilities: &corev1.Capabilities{
+					Add: []corev1.Capability{"SYS_PTRACE"},
+				},
+			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
 				volumeMountList = (&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts
@@ -321,8 +351,50 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      "tftp",
+				MountPath: "/var/lib/tftp",
+			})
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      "dnsmasq",
+				MountPath: "/var/lib/dnsmasq",
+			})
+
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+		}
+		if container.Name == "dnsmasq" {
+			command := []string{"bash", "-c", "mkdir -p /etc/tftp; dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
+			container := &statefulSet.Spec.Template.Spec.Containers[idx]
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				container.Command = command
+			} else {
+				container.Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			}
+			container.SecurityContext = &corev1.SecurityContext{
+				Capabilities: &corev1.Capabilities{
+					Add: []corev1.Capability{"NET_ADMIN", "NET_RAW"},
+				},
+			}
+
+			volumeMountList := []corev1.VolumeMount{}
+			if len(container.VolumeMounts) > 0 {
+				volumeMountList = container.VolumeMounts
+			}
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-volume",
+				MountPath: "/etc/mycontrail",
+			})
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      "tftp",
+				MountPath: "/var/lib/tftp",
+			})
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      "dnsmasq",
+				MountPath: "/var/lib/dnsmasq",
+			})
+			container.VolumeMounts = volumeMountList
+			container.Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "servicemonitor" {
 			command := []string{"bash", "-c",
