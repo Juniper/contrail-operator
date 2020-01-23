@@ -2,7 +2,6 @@ package swiftstorage
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -446,37 +445,38 @@ func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMaps(swiftStorage
 	return r.configMap(updaterConfigName, "swift-storage", swiftStorage).ensureSwiftObjectUpdater()
 }
 
-func (r *ReconcileSwiftStorage) volumesNameConfigMapNameMap(swiftStorageName string) map[string]string {
-	return map[string]string{
-		"swift-account-auditor-config-volume":              swiftStorageName + "-swift-account-auditor",
-		"swift-account-reaper-config-volume":               swiftStorageName + "-swift-account-reaper",
-		"swift-account-replication-server-config-volume":   swiftStorageName + "-swift-account-replication-server",
-		"swift-account-replicator-config-volume":           swiftStorageName + "-swift-account-replicator",
-		"swift-account-server-config-volume":               swiftStorageName + "-swift-account-server",
-		"swift-container-auditor-config-volume":            swiftStorageName + "-swift-container-auditor",
-		"swift-container-replication-server-config-volume": swiftStorageName + "-swift-container-replication-server",
-		"swift-container-replicator-config-volume":         swiftStorageName + "-swift-container-replicator",
-		"swift-container-server-config-volume":             swiftStorageName + "-swift-container-server",
-		"swift-container-updater-config-volume":            swiftStorageName + "-swift-container-updater",
-		"swift-object-auditor-config-volume":               swiftStorageName + "-swift-object-auditor",
-		"swift-object-expirer-config-volume":               swiftStorageName + "-swift-object-expirer",
-		"swift-object-replication-server-config-volume":    swiftStorageName + "-swift-object-replication-server",
-		"swift-object-replicator-config-volume":            swiftStorageName + "-swift-object-replicator",
-		"swift-object-server-config-volume":                swiftStorageName + "-swift-object-server",
-		"swift-object-updater-config-volume":               swiftStorageName + "-swift-object-updater",
+func services() []string {
+	return []string{
+		"swift-account-auditor",
+		"swift-account-reaper",
+		"swift-account-replication-server",
+		"swift-account-replicator",
+		"swift-account-server",
+		"swift-container-auditor",
+		"swift-container-replication-server",
+		"swift-container-replicator",
+		"swift-container-server",
+		"swift-container-updater",
+		"swift-object-auditor",
+		"swift-object-expirer",
+		"swift-object-replication-server",
+		"swift-object-replicator",
+		"swift-object-server",
+		"swift-object-updater",
 	}
 }
 
 func (r *ReconcileSwiftStorage) swiftServicesVolumes(swiftStorageName string) []core.Volume {
 	var volumes []core.Volume
-	vNamesCMNamesMap := r.volumesNameConfigMapNameMap(swiftStorageName)
-	for vn, cmn := range vNamesCMNamesMap {
+	for _, service := range services() {
+		volumeName := service + "-config-volume"
+		configMapName := swiftStorageName + "-" + service
 		volumes = append(volumes, core.Volume{
-			Name: vn,
+			Name: volumeName,
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: cmn,
+						Name: configMapName,
 					},
 				},
 			},
