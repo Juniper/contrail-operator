@@ -2,6 +2,7 @@ package memcached
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -106,7 +107,24 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	return reconcile.Result{}, r.client.Status().Update(context.Background(), memcachedCR)
+	return reconcile.Result{}, r.updateStatus(memcachedCR, deployment)
+}
+
+func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deployment *apps.Deployment) error {
+	err := r.client.Get(context.Background(), types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, deployment)
+	if err != nil {
+		return err
+	}
+	expectedReplicas := int32(1)
+	if deployment.Spec.Replicas != nil {
+		expectedReplicas = *deployment.Spec.Replicas
+	}
+	if deployment.Status.ReadyReplicas == expectedReplicas {
+		memcachedCR.Status.Active = true
+	} else {
+		memcachedCR.Status.Active = false
+	}
+	return r.client.Status().Update(context.Background(), memcachedCR)
 }
 
 func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcached, configMapName string) {

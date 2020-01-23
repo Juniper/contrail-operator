@@ -25,25 +25,13 @@ func TestMemcachedController(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 
-	memcachedName := types.NamespacedName{Namespace: "default", Name: "test-memcached"}
-	memcachedCR := &contrail.Memcached{
-		ObjectMeta: meta.ObjectMeta{Namespace: memcachedName.Namespace, Name: memcachedName.Name},
-		Spec: contrail.MemcachedSpec{
-			ServiceConfiguration: contrail.MemcachedConfiguration{
-				Image:           "localhost:5000/centos-binary-memcached:master",
-				ListenPort:      11211,
-				ConnectionLimit: 5000,
-				MaxMemory:       256,
-			},
-		},
-	}
-
 	t.Run("when Memcached CR is reconciled and Memcached Deployment and Config Map do not exist", func(t *testing.T) {
 		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
 		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: memcachedName})
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
 		// then
 		assert.NoError(t, err)
 		t.Run("should create Memcached Deployment", func(t *testing.T) {
@@ -56,12 +44,13 @@ func TestMemcachedController(t *testing.T) {
 
 	t.Run("when Memcached CR is reconciled and Memcached Deployment and Config Map exist (unchanged)", func(t *testing.T) {
 		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		existingMemcachedDeployment := newExpectedDeployment()
 		existingMemcachedConfigMap := newExpectedMemcachedConfigMap()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment, existingMemcachedConfigMap)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
 		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: memcachedName})
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
 		// then
 		assert.NoError(t, err)
 		t.Run("should not create nor update Memcached Deployment", func(t *testing.T) {
@@ -74,6 +63,7 @@ func TestMemcachedController(t *testing.T) {
 
 	t.Run("when Memcached CR is reconciled and Memcached Deployment and Config Map exist (changed)", func(t *testing.T) {
 		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		changedMemcachedDeployment := newExpectedDeployment()
 		changedMemcachedDeployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 10000
 		changedMemcachedConfigMap := newExpectedMemcachedConfigMap()
@@ -81,7 +71,7 @@ func TestMemcachedController(t *testing.T) {
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, changedMemcachedDeployment, changedMemcachedConfigMap)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
 		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: memcachedName})
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
 		// then
 		assert.NoError(t, err)
 		t.Run("should update Memcached Deployment", func(t *testing.T) {
@@ -91,6 +81,47 @@ func TestMemcachedController(t *testing.T) {
 			assertValidMemcachedConfigMapExists(t, fakeClient)
 		})
 	})
+
+	t.Run("when Memcached Deployment ReadyReplicas count is equal expected Replicas count", func(t *testing.T) {
+		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: false})
+		existingMemcachedDeployment := newExpectedDeployment()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		setMemcachedDeploymentStatus(t, fakeClient, apps.DeploymentStatus{ReadyReplicas: 1})
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should set Memcached status to Active", func(t *testing.T) {
+			assertMemcachedIsActive(t, fakeClient)
+		})
+	})
+
+	t.Run("when Memcached Deployment ReadyReplicas count is not equal expected Replicas count", func(t *testing.T) {
+		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: true})
+		existingMemcachedDeployment := newExpectedDeployment()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		setMemcachedDeploymentStatus(t, fakeClient, apps.DeploymentStatus{ReadyReplicas: 0})
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should set Memcached status to Inactive", func(t *testing.T) {
+			assertMemcachedIsInactive(t, fakeClient)
+		})
+	})
+}
+
+func setMemcachedDeploymentStatus(t *testing.T, c client.Client, status apps.DeploymentStatus) {
+	deployment := apps.Deployment{}
+	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached-deployment"}, &deployment)
+	require.NoError(t, err)
+	deployment.Status = status
+	err = c.Update(context.TODO(), &deployment)
+	require.NoError(t, err)
 }
 
 func assertValidMemcachedDeploymentExists(t *testing.T, c client.Client) {
@@ -110,6 +141,20 @@ func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
 	}, configMap)
 	assert.NoError(t, err)
 	assert.Equal(t, newExpectedMemcachedConfigMap(), configMap)
+}
+
+func assertMemcachedIsActive(t *testing.T, c client.Client) {
+	memcachedCR := contrail.Memcached{}
+	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
+	assert.NoError(t, err)
+	assert.True(t, memcachedCR.Status.Active)
+}
+
+func assertMemcachedIsInactive(t *testing.T, c client.Client) {
+	memcachedCR := contrail.Memcached{}
+	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
+	assert.NoError(t, err)
+	assert.False(t, memcachedCR.Status.Active)
 }
 
 func newExpectedDeployment() *apps.Deployment {
@@ -215,5 +260,20 @@ func newExpectedMemcachedConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "Memcached", "test-memcached", "", &trueVal, &trueVal},
 			},
 		},
+	}
+}
+
+func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
+	return &contrail.Memcached{
+		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
+		Spec: contrail.MemcachedSpec{
+			ServiceConfiguration: contrail.MemcachedConfiguration{
+				Image:           "localhost:5000/centos-binary-memcached:master",
+				ListenPort:      11211,
+				ConnectionLimit: 5000,
+				MaxMemory:       256,
+			},
+		},
+		Status: status,
 	}
 }
