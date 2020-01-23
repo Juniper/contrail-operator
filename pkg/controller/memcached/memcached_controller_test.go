@@ -30,6 +30,7 @@ func TestMemcachedController(t *testing.T) {
 		ObjectMeta: meta.ObjectMeta{Namespace: memcachedName.Namespace, Name: memcachedName.Name},
 		Spec: contrail.MemcachedSpec{
 			ServiceConfiguration: contrail.MemcachedConfiguration{
+				Image:           "localhost:5000/centos-binary-memcached:master",
 				ListenPort:      11211,
 				ConnectionLimit: 5000,
 				MaxMemory:       256,

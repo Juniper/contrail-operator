@@ -36,6 +36,8 @@ spec:
                 connectionLimit:
                   format: int32
                   type: integer
+                image:
+                  type: string
                 listenPort:
                   format: int32
                   type: integer
@@ -44,6 +46,7 @@ spec:
                   type: integer
               required:
               - connectionLimit
+              - image
               - listenPort
               - maxMemory
               type: object

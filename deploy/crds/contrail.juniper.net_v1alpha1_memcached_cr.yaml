@@ -5,6 +5,7 @@ metadata:
   namespace: contrail
 spec:
   serviceConfiguration:
+    image: "localhost:5000/centos-binary-memcached:master"
     listenPort: 11211
     connectionLimit: 5000
     maxMemory: 256

@@ -100,11 +100,7 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		updateMemcachedPodSpec(
-			&deployment.Spec.Template.Spec,
-			memcachedCR.Spec.ServiceConfiguration.ListenPort,
-			memcachedConfigMapName,
-		)
+		updateMemcachedPodSpec(&deployment.Spec.Template.Spec, memcachedCR, memcachedConfigMapName)
 		return controllerutil.SetControllerReference(memcachedCR, deployment, r.scheme)
 	})
 	if err != nil {
@@ -113,7 +109,7 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), memcachedCR)
 }
 
-func updateMemcachedPodSpec(podSpec *core.PodSpec, listenPort int32, configMapName string) {
+func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcached, configMapName string) {
 	podSpec.HostNetwork = true
 	podSpec.Tolerations = []core.Toleration{
 		{
@@ -145,15 +141,15 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, listenPort int32, configMapNa
 			},
 		},
 	}
-	podSpec.Containers = []core.Container{memcachedContainer(listenPort)}
+	podSpec.Containers = []core.Container{memcachedContainer(memcachedCR)}
 }
 
-func memcachedContainer(listenPort int32) core.Container {
+func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 	return core.Container{
 		Name:  "memcached",
-		Image: "localhost:5000/centos-binary-memcached:master",
+		Image: memcachedCR.Spec.ServiceConfiguration.Image,
 		Ports: []core.ContainerPort{{
-			ContainerPort: listenPort,
+			ContainerPort: memcachedCR.Spec.ServiceConfiguration.ListenPort,
 			Name:          "memcached",
 		}},
 		VolumeMounts: []core.VolumeMount{
