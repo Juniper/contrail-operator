@@ -11,6 +11,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -252,6 +253,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							Name:  "KOLLA_CONFIG_STRATEGY",
 							Value: "COPY_ALWAYS",
 						}},
+						ReadinessProbe: &core.Probe{
+							Handler: core.Handler{
+								HTTPGet: &core.HTTPGetAction{
+									Path: "/healthcheck",
+									Port: intstr.IntOrString{IntVal: int32(5070)},
+								},
+							},
+						},
 					}},
 					HostNetwork: true,
 					Tolerations: []core.Toleration{
@@ -375,6 +384,7 @@ func newExpectedSwiftProxyConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
+			"bootstrap.sh":      boostrapScript,
 			"config.json":       swiftProxyServiceConfig,
 			"proxy-server.conf": proxyServerConfig,
 		},
@@ -407,10 +417,24 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 	}
 }
 
+const boostrapScript = `
+#!/bin/bash
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+swift-proxy-server /etc/swift/proxy-server.conf --verbose
+`
+
 const swiftProxyServiceConfig = `{
-    "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
-		{
+        {
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
+        },
+        {
             "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",

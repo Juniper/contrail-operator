@@ -414,6 +414,7 @@ func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
+			"bootstrap.sh":         bootstrapScript,
 			"config.json":          expectedConfig,
 			"account-auditor.conf": expectedAccountAuditorConf,
 		},
@@ -428,16 +429,25 @@ func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 	}
 }
 
+var bootstrapScript = `
+#!/bin/bash
+
+chmod 777 /srv/node/d1
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+swift-account-auditor /etc/swift/account-auditor.conf --verbose
+`
+
 var expectedConfig = `
 {
-    "command": "swift-account-auditor /etc/swift/account-auditor.conf --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
         {
-            "source": "/var/lib/kolla/swift/account.ring.gz",
-            "dest": "/etc/swift/account.ring.gz",
-            "owner": "swift",
-            "perm": "0640",
-            "optional": true
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
         },
         {
             "source": "/var/lib/kolla/swift_config/swift.conf",

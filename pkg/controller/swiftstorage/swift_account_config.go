@@ -8,12 +8,12 @@ var swiftAccountServiceStartConfig = template.Must(template.New("").Parse(`
 {
     "command": "/usr/bin/bootstrap.sh",
     "config_files": [
-		{
-			"source": "/var/lib/kolla/config_files/bootstrap.sh",
-			"dest": "/usr/bin/bootstrap.sh",
-			"owner": "root",
-			"perm": "0755"
-		},
+        {
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
+        },
         {
             "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
