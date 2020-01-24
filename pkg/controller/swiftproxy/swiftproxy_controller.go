@@ -9,6 +9,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -137,6 +138,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 		// TODO This should be a swift proxy spec parameter
 		ringsClaimName := "swift-storage-rings"
+		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
 			swiftConfigName,
@@ -144,6 +146,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 			swiftConfSecretName,
 			swiftProxy.Spec.ServiceConfiguration.Containers,
 			ringsClaimName,
+			listenPort,
 		)
 
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
@@ -190,6 +193,7 @@ func updatePodTemplate(
 	swiftConfSecretName string,
 	containers map[string]*contrail.Container,
 	ringsClaimName string,
+	port int,
 ) {
 
 	pod.InitContainers = []core.Container{
@@ -212,6 +216,14 @@ func updatePodTemplate(
 			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+		},
+		ReadinessProbe: &core.Probe{
+			Handler: core.Handler{
+				HTTPGet: &core.HTTPGetAction{
+					Path: "/healthcheck",
+					Port: intstr.IntOrString{IntVal: int32(port)},
+				},
+			},
 		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
