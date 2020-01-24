@@ -47,6 +47,7 @@ func (r *ReconcileSwiftStorage) configMap(configMapName, ownerType string, swift
 var bootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
 
+chmod 777 /srv/node/d1
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
 ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
