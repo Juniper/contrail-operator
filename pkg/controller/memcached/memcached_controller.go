@@ -163,9 +163,13 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 }
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
+	port := memcachedCR.Spec.ServiceConfiguration.ListenPort
+	if port == 0 {
+		port = 11211
+	}
 	return core.Container{
 		Name:            "memcached",
-		Image:           memcachedCR.Spec.ServiceConfiguration.Image,
+		Image:           memcachedCR.Spec.ServiceConfiguration.Container.Image,
 		ImagePullPolicy: core.PullAlways,
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
@@ -175,7 +179,7 @@ func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 			Value: "COPY_ALWAYS",
 		}},
 		Ports: []core.ContainerPort{{
-			ContainerPort: memcachedCR.Spec.ServiceConfiguration.ListenPort,
+			ContainerPort: port,
 			Name:          "memcached",
 		}},
 		VolumeMounts: []core.VolumeMount{

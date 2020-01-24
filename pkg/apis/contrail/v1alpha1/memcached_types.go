@@ -15,10 +15,13 @@ type MemcachedStatus struct {
 }
 
 type MemcachedConfiguration struct {
-	Image           string `json:"image"`
-	ListenPort      int32  `json:"listenPort"`
-	ConnectionLimit int32  `json:"connectionLimit"`
-	MaxMemory       int32  `json:"maxMemory"`
+	Container Container `json:"container"`
+	// +optional
+	ListenPort int32 `json:"listenPort,omitempty"`
+	// +optional
+	ConnectionLimit int32 `json:"connectionLimit,omitempty"`
+	// +optional
+	MaxMemory int32 `json:"maxMemory,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -42,6 +42,23 @@ func TestMemcachedController(t *testing.T) {
 		})
 	})
 
+	t.Run("when Memcached CR with default values is reconciled and Memcached Deployment and Config Map do not exist", func(t *testing.T) {
+		// given
+		memcachedCR := newMemcachedCRWithDefaultValues()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should create Memcached Deployment", func(t *testing.T) {
+			assertValidMemcachedDeploymentExists(t, fakeClient)
+		})
+		t.Run("should create Memcached Config Map", func(t *testing.T) {
+			assertValidMemcachedConfigMapExists(t, fakeClient)
+		})
+	})
+
 	t.Run("when Memcached CR is reconciled and Memcached Deployment and Config Map exist (unchanged)", func(t *testing.T) {
 		// given
 		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
@@ -268,12 +285,23 @@ func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
 			ServiceConfiguration: contrail.MemcachedConfiguration{
-				Image:           "localhost:5000/centos-binary-memcached:master",
+				Container:       contrail.Container{Image: "localhost:5000/centos-binary-memcached:master"},
 				ListenPort:      11211,
 				ConnectionLimit: 5000,
 				MaxMemory:       256,
 			},
 		},
 		Status: status,
+	}
+}
+
+func newMemcachedCRWithDefaultValues() *contrail.Memcached {
+	return &contrail.Memcached{
+		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
+		Spec: contrail.MemcachedSpec{
+			ServiceConfiguration: contrail.MemcachedConfiguration{
+				Container: contrail.Container{Image: "localhost:5000/centos-binary-memcached:master"},
+			},
+		},
 	}
 }

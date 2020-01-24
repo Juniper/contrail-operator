@@ -28,6 +28,15 @@ func (c *configMaps) ensureExists() error {
 		ConnectionLimit: c.memcachedSpec.ServiceConfiguration.ConnectionLimit,
 		MaxMemory:       c.memcachedSpec.ServiceConfiguration.MaxMemory,
 	}
+	if spc.ListenPort == 0 {
+		spc.ListenPort = 11211
+	}
+	if spc.ConnectionLimit == 0 {
+		spc.ConnectionLimit = 5000
+	}
+	if spc.MaxMemory == 0 {
+		spc.MaxMemory = 256
+	}
 	return c.cm.EnsureExists(spc)
 }
 

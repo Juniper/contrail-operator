@@ -3223,8 +3223,16 @@ spec:
                 connectionLimit:
                   format: int32
                   type: integer
-                image:
-                  type: string
+                container:
+                  description: Container defines name, image and command.
+                  properties:
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    image:
+                      type: string
+                  type: object
                 listenPort:
                   format: int32
                   type: integer
@@ -3232,10 +3240,7 @@ spec:
                   format: int32
                   type: integer
               required:
-              - connectionLimit
-              - image
-              - listenPort
-              - maxMemory
+              - container
               type: object
           required:
           - serviceConfiguration
