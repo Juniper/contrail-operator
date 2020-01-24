@@ -1,0 +1,72 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: memcacheds.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Memcached
+    listKind: MemcachedList
+    plural: memcacheds
+    singular: memcached
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Memcached is the Schema for the memcacheds API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: MemcachedSpec defines the desired state of Memcached
+          properties:
+            serviceConfiguration:
+              properties:
+                connectionLimit:
+                  format: int32
+                  type: integer
+                container:
+                  description: Container defines name, image and command.
+                  properties:
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    image:
+                      type: string
+                  type: object
+                listenPort:
+                  format: int32
+                  type: integer
+                maxMemory:
+                  format: int32
+                  type: integer
+              required:
+              - container
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: MemcachedStatus defines the observed state of Memcached
+          properties:
+            active:
+              type: boolean
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
