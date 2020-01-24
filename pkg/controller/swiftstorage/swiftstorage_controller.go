@@ -198,6 +198,11 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
 		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
+		var swiftGroupId int64 = 0
+		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
+		statefulSet.Spec.Template.Spec.SecurityContext.FSGroup = &swiftGroupId
+		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &swiftGroupId
+		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &swiftGroupId
 		volumes := r.swiftServicesVolumes(swiftStorage.Name)
 		statefulSet.Spec.Template.Spec.Volumes = append([]core.Volume{
 			{
