@@ -250,8 +250,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	statefulSet := GetSTS()
 	// DeviceManager pushes configuration to dnsmasq service and then needs to restart it by sending a signal.
 	// Therefore those services needs to share a one process namespace
-	// TODO: Move device manager and dnsmasq to a separate pod. They are separate service which requires
-	// peristent volumes and capabilities
+	// TODO: Move device manager and dnsmasq to a separate pod. They are separate services which requires
+	// persistent volumes and capabilities
 	trueVal := true
 	statefulSet.Spec.Template.Spec.ShareProcessNamespace = &trueVal
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
@@ -364,11 +364,9 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "dnsmasq" {
-			command := []string{"bash", "-c", "mkdir -p /etc/tftp; dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
 			container := &statefulSet.Spec.Template.Spec.Containers[idx]
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
-				container.Command = command
-			} else {
+			container.Command = []string{"bash", "-c", "mkdir -p /etc/tftp; dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
+			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
 				container.Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			container.SecurityContext = &corev1.SecurityContext{
