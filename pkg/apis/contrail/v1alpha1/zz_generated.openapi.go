@@ -1186,6 +1186,12 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 				Description: "KeystoneConfiguration is the Spec for the keystone API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"memcachedInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"listenPort": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},

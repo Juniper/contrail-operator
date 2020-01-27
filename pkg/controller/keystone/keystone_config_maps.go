@@ -17,34 +17,34 @@ func (r *ReconcileKeystone) configMap(configMapName, ownerType string, keystone 
 	}
 }
 
-func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres) error {
+func (c *configMaps) ensureKeystoneExists(psql *contrail.Postgres, memcached *contrail.Memcached) error {
 	cc := &keystoneConfig{
 		ListenAddress:    "0.0.0.0",
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
-		MemcacheServer:   "localhost:11211",
+		MemcacheServer:   memcached.Status.Node,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneInitExist(psql *contrail.Postgres) error {
+func (c *configMaps) ensureKeystoneInitExist(psql *contrail.Postgres, memcached *contrail.Memcached) error {
 	cc := &keystoneInitConf{
 		ListenAddress:    "0.0.0.0",
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
-		MemcacheServer:   "localhost:11211",
+		MemcacheServer:   memcached.Status.Node,
 	}
 
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneFernetConfigMap(psql *contrail.Postgres) error {
+func (c *configMaps) ensureKeystoneFernetConfigMap(psql *contrail.Postgres, memcached *contrail.Memcached) error {
 	cc := &keystoneFernetConf{
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: psql.Status.Node,
-		MemcacheServer:   "localhost:11211",
+		MemcacheServer:   memcached.Status.Node,
 	}
 
 	return c.cm.EnsureExists(cc)

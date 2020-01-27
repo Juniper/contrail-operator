@@ -854,6 +854,8 @@ spec:
                           properties:
                             listenPort:
                               type: integer
+                            memcachedInstance:
+                              type: string
                             postgresInstance:
                               type: string
                           type: object
