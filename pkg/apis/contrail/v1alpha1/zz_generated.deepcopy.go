@@ -1510,6 +1510,11 @@ func (in *ManagerStatus) DeepCopyInto(out *ManagerStatus) {
 		*out = new(ServiceStatus)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Memcached != nil {
+		in, out := &in.Memcached, &out.Memcached
+		*out = new(ServiceStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -2344,6 +2349,11 @@ func (in *Services) DeepCopyInto(out *Services) {
 	if in.Swift != nil {
 		in, out := &in.Swift, &out.Swift
 		*out = new(Swift)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Memcached != nil {
+		in, out := &in.Memcached, &out.Memcached
+		*out = new(Memcached)
 		(*in).DeepCopyInto(*out)
 	}
 	return

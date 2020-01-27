@@ -35,6 +35,7 @@ type Services struct {
 	Postgres         *Postgres         `json:"postgres,omitempty"`
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
+	Memcached        *Memcached        `json:"memcached,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
@@ -57,6 +58,7 @@ type ManagerStatus struct {
 	Postgres         *ServiceStatus   `json:"postgres,omitempty"`
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	ContrailCommand  *ServiceStatus   `json:"contrailCommand,omitempty"`
+	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
 }
 
 // CrdStatus tracks status of CRD.
