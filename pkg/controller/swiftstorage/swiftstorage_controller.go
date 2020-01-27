@@ -2,6 +2,9 @@ package swiftstorage
 
 import (
 	"context"
+	"fmt"
+
+	v1 "k8s.io/api/batch/v1"
 	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -134,8 +137,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 
 	pods := core.PodList{}
 	var labels client.MatchingLabels = statefulSet.Spec.Selector.MatchLabels
-	err = r.client.List(context.Background(), &pods, labels)
-	if err != nil {
+	if err = r.client.List(context.Background(), &pods, labels); err != nil {
 		return reconcile.Result{}, err
 	}
 	if len(pods.Items) != 0 {
@@ -164,6 +166,24 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 }
 
 func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port int, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
+	jobName := types.NamespacedName{
+		Namespace: swiftStorage.Namespace,
+		Name:      swiftStorage.Name + "-ring-" + ringType + "-job",
+	}
+	existingJob := &v1.Job{}
+	err := r.client.Get(context.Background(), jobName, existingJob)
+	jobAlreadyExists := err == nil
+	if jobAlreadyExists {
+		jobCompleted := existingJob.Status.CompletionTime != nil
+		if !jobCompleted {
+			return fmt.Errorf("job %v is running", jobName)
+		}
+		if err := r.client.Delete(context.Background(), existingJob); err != nil {
+			return err
+		}
+		return fmt.Errorf("job %v is beeing deleted", jobName)
+	}
+
 	theRing, err := ring.New(ringsClaimName.Name, "/etc/rings", ringType)
 	if err != nil {
 		return err
@@ -179,10 +199,7 @@ func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port in
 			return err
 		}
 	}
-	job, err := theRing.BuildJob(types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-ring-" + ringType + "-job",
-	})
+	job, err := theRing.BuildJob(jobName)
 	if err != nil {
 		return err
 	}

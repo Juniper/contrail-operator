@@ -1,6 +1,6 @@
 package ring
 
-var reconcileRingScript = `#!/var/lib/kolla/venv/bin/python
+var reconcileRingScript = `#/usr/bin/env python
 from sys import argv
 from os import path
 

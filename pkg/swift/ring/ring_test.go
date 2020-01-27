@@ -52,7 +52,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 	t.Run("should create a job with given name", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(jobName)
 		require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 	t.Run("should use default namespace when job namespace not given", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(types.NamespacedName{
 			Namespace: "",
@@ -72,7 +72,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 	t.Run("should return error when job name not given", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		_, err := account.BuildJob(types.NamespacedName{
 			Namespace: "contrail",
@@ -88,14 +88,14 @@ func TestRing_BuildJob(t *testing.T) {
 		for name, claimName := range tests {
 			t.Run(name, func(t *testing.T) {
 				account, _ := ring.New(claimName, "/etc/swift", "account")
-				account.AddDevice(device)
+				_ = account.AddDevice(device)
 				// when
 				job, _ := account.BuildJob(jobName)
 				// then
 				volumes := job.Spec.Template.Spec.Volumes
 				require.Len(t, volumes, 1)
 				expectedVolume := core.Volume{
-					Name: "swift",
+					Name: "rings",
 					VolumeSource: core.VolumeSource{
 						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 							ClaimName: claimName,
@@ -115,7 +115,7 @@ func TestRing_BuildJob(t *testing.T) {
 		for name, path := range tests {
 			t.Run(name, func(t *testing.T) {
 				account, _ := ring.New("rings", path, "account")
-				account.AddDevice(device)
+				_ = account.AddDevice(device)
 				// when
 				job, _ := account.BuildJob(jobName)
 				// then
@@ -124,7 +124,7 @@ func TestRing_BuildJob(t *testing.T) {
 				volumeMounts := containers[0].VolumeMounts
 				require.Len(t, volumeMounts, 1)
 				expectedVolumeMount := core.VolumeMount{
-					Name:      "swift",
+					Name:      "rings",
 					MountPath: path,
 				}
 				assert.Equal(t, expectedVolumeMount, volumeMounts[0])
@@ -161,7 +161,7 @@ func TestRing_BuildJob(t *testing.T) {
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
 				account, _ := ring.New("rings", test.path, test.ringType)
-				account.AddDevice(device)
+				_ = account.AddDevice(device)
 				// when
 				job, _ := account.BuildJob(jobName)
 				// then
@@ -233,7 +233,7 @@ func TestRing_BuildJob(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				account, _ := ring.New("rings", "/etc/swift", "account")
 				for _, device := range test.devices {
-					account.AddDevice(device)
+					_ = account.AddDevice(device)
 				}
 				// when
 				job, err := account.BuildJob(jobName)
@@ -248,7 +248,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 	t.Run("should specify container's required properties", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
 		// then
@@ -266,7 +266,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 	t.Run("should specify container's image from local registry", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
 		// then
@@ -278,7 +278,7 @@ func TestRing_BuildJob(t *testing.T) {
 
 	t.Run("should specify restartPolicy (default Always is not supported in jobs)", func(t *testing.T) {
 		account, _ := ring.New("rings", "/etc/swift", "account")
-		account.AddDevice(device)
+		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
 		// then

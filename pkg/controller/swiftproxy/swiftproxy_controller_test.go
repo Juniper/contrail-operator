@@ -229,7 +229,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					InitContainers: []core.Container{
 						{
 							Name:            "init",
-							Image:           "registry:5000/centos-binary-kolla-toolbox:master",
+							Image:           "localhost:5000/centos-binary-kolla-toolbox:master",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
@@ -240,7 +240,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					},
 					Containers: []core.Container{{
 						Name:  "api",
-						Image: "registry:5000/centos-binary-swift-proxy-server:master",
+						Image: "localhost:5000/centos-binary-swift-proxy-server:master",
 						VolumeMounts: []core.VolumeMount{
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},

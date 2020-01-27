@@ -167,7 +167,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		t.Run("should create rings persistent volume claim", func(t *testing.T) {
 			claimName := types.NamespacedName{
-				Name:      name.Name + "-rings",
+				Name:      "swift-storage-rings",
 				Namespace: name.Namespace,
 			}
 			assertClaimCreated(t, fakeClient, claimName)
@@ -190,7 +190,7 @@ func TestSwiftStorageController(t *testing.T) {
 				Name: "rings",
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: name.Name + "-rings",
+						ClaimName: "swift-storage-rings",
 						ReadOnly:  true,
 					},
 				},

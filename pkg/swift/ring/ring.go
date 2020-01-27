@@ -61,7 +61,7 @@ func (r *Ring) AddDevice(device Device) error {
 		return errors.New("empty IP")
 	}
 	if device.Device == "" {
-		return errors.New("empty IP")
+		return errors.New("empty device")
 	}
 	r.devices = append(r.devices, device)
 	return nil
@@ -88,7 +88,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
 						{
-							Name: "swift",
+							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 									ClaimName: r.claimName,
@@ -99,11 +99,11 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					},
 					Containers: []core.Container{
 						{
-							Name:  "kolla",
+							Name:  "ring-reconciler",
 							Image: "registry:5000/centos-source-swift-base:master",
 							VolumeMounts: []core.VolumeMount{
 								{
-									Name:      "swift",
+									Name:      "rings",
 									MountPath: r.path,
 								},
 							},
