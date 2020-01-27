@@ -50,3 +50,24 @@ type MemcachedList struct {
 func init() {
 	SchemeBuilder.Register(&Memcached{}, &MemcachedList{})
 }
+
+func (m *MemcachedConfiguration) GetListenPort() int32 {
+	if m.ListenPort == 0 {
+		return 11211
+	}
+	return m.ListenPort
+}
+
+func (m *MemcachedConfiguration) GetConnectionLimit() int32 {
+	if m.ConnectionLimit == 0 {
+		return 5000
+	}
+	return m.ConnectionLimit
+}
+
+func (m *MemcachedConfiguration) GetMaxMemory() int32 {
+	if m.MaxMemory == 0 {
+		return 256
+	}
+	return m.MaxMemory
+}

@@ -122,7 +122,7 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	}
 	if deployment.Status.ReadyReplicas == expectedReplicas {
 		memcachedCR.Status.Active = true
-		memcachedCR.Status.Node = fmt.Sprintf("localhost:%v", memcachedCR.Spec.ServiceConfiguration.ListenPort) // TODO get pod by labels
+		memcachedCR.Status.Node = fmt.Sprintf("localhost:%v", memcachedCR.Spec.ServiceConfiguration.GetListenPort()) // TODO get pod by labels
 	} else {
 		memcachedCR.Status.Active = false
 	}
@@ -157,10 +157,6 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 }
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
-	port := memcachedCR.Spec.ServiceConfiguration.ListenPort
-	if port == 0 {
-		port = 11211
-	}
 	return core.Container{
 		Name:            "memcached",
 		Image:           memcachedCR.Spec.ServiceConfiguration.Container.Image,
@@ -173,7 +169,7 @@ func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 			Value: "COPY_ALWAYS",
 		}},
 		Ports: []core.ContainerPort{{
-			ContainerPort: port,
+			ContainerPort: memcachedCR.Spec.ServiceConfiguration.GetListenPort(),
 			Name:          "memcached",
 		}},
 		VolumeMounts: []core.VolumeMount{
