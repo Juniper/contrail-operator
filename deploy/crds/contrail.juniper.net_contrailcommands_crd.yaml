@@ -116,8 +116,7 @@ spec:
                   type: string
                 configAPIURL:
                   type: string
-                image:
-                  type: string
+                container: {}
                 postgresInstance:
                   type: string
                 telemetryURL:

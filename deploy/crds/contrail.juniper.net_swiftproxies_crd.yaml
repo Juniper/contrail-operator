@@ -34,8 +34,7 @@ spec:
             serviceConfiguration:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
-                imageRegistry:
-                  type: string
+                containers: {}
                 keystoneAdminPassword:
                   type: string
                 keystoneInstance:

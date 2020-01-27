@@ -31,8 +31,7 @@ spec:
         spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
-            image:
-              type: string
+            containers: {}
           type: object
         status:
           description: PostgresStatus defines the observed state of Postgres
