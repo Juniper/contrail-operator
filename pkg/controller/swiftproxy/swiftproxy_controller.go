@@ -67,6 +67,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Keystone{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.SwiftProxy{},
 	})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftProxy{},
+	})
 
 	return err
 }
@@ -104,17 +111,26 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if err := r.kubernetes.Owner(swiftProxy).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
 
+	memcached, err := r.getMemcached(swiftProxy)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := r.kubernetes.Owner(swiftProxy).EnsureOwns(memcached); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !memcached.Status.Active {
+		return reconcile.Result{}, nil
+	}
+
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
-	if err := r.configMap(swiftConfigName, swiftProxy, keystone).ensureExists(); err != nil {
+	if err := r.configMap(swiftConfigName, swiftProxy, keystone).ensureExists(memcached); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -166,6 +182,13 @@ func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Ke
 			Name:      cr.Spec.ServiceConfiguration.KeystoneInstance,
 		}, key)
 
+	return key, err
+}
+
+func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.Memcached, error) {
+	key := &contrail.Memcached{}
+	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
+	err := r.client.Get(context.Background(), name, key)
 	return key, err
 }
 

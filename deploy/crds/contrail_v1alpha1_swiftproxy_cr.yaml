@@ -5,6 +5,7 @@ metadata:
   namespace: contrail
 spec:
   serviceConfiguration:
+    memcachedInstance: "memcached"
     keystoneInstance: "keystone"
     listenPort: 5080
     keystoneAdminPassword: "contrail123"

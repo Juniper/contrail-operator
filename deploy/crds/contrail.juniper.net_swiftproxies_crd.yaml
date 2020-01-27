@@ -41,6 +41,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                memcachedInstance:
+                  type: string
                 swiftConfSecretName:
                   type: string
                 swiftPassword:

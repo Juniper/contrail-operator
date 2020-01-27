@@ -937,6 +937,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                memcachedInstance:
+                  type: string
                 postgresInstance:
                   type: string
               type: object
@@ -2000,6 +2002,8 @@ spec:
                               type: string
                             listenPort:
                               type: integer
+                            memcachedInstance:
+                              type: string
                             postgresInstance:
                               type: string
                           type: object
@@ -2549,6 +2553,8 @@ spec:
                                   type: string
                                 listenPort:
                                   type: integer
+                                memcachedInstance:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                                 swiftPassword:
@@ -3713,6 +3719,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                memcachedInstance:
+                  type: string
                 swiftConfSecretName:
                   type: string
                 swiftPassword:
@@ -3784,6 +3792,8 @@ spec:
                       type: string
                     listenPort:
                       type: integer
+                    memcachedInstance:
+                      type: string
                     swiftConfSecretName:
                       type: string
                     swiftPassword:
