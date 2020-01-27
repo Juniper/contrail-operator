@@ -121,6 +121,7 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	}
 	if deployment.Status.ReadyReplicas == expectedReplicas {
 		memcachedCR.Status.Active = true
+		//memcachedCR.Status.Node = TODO get pod by labels -> IP
 	} else {
 		memcachedCR.Status.Active = false
 	}
