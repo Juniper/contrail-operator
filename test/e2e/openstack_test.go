@@ -44,8 +44,7 @@ func TestOpenstackServices(t *testing.T) {
 		assert.NoError(t, err)
 
 		// TODO: ssh keys creations should be moved to keystone controller
-		keystoneSecret := createKeystoneKeys()
-		err = f.Client.Create(context.TODO(), keystoneSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+		err = f.Client.Create(context.TODO(), createKeystoneKeys(), &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 		assert.NoError(t, err)
 
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
@@ -168,14 +167,27 @@ func TestOpenstackServices(t *testing.T) {
 			err = f.Client.Update(context.TODO(), cluster)
 			assert.NoError(t, err)
 
-			// TODO: check ready state
 			t.Run("then a SwiftStorage StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForStatefulSet("openstacktest-swift-storage-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
 			})
 
-			// TODO: check ready state
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForDeployment("openstacktest-swift-proxy-deployment"))
+				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
+			})
+
+			t.Run("then swift user should be registered in keystone", func(t *testing.T) {
+				kar := &keystoneAuthRequest{}
+				kar.Auth.Identity.Methods = []string{"password"}
+				kar.Auth.Identity.Password.User.Name = "swift"
+				kar.Auth.Identity.Password.User.Domain.ID = "default"
+				kar.Auth.Identity.Password.User.Password = "swiftpass"
+				karBody, _ := json.Marshal(kar)
+				req := f.KubeClient.CoreV1().RESTClient().Get()
+				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
+					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", 5555))
+				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
+
+				assert.NoError(t, res.Error())
 			})
 		})
 	})

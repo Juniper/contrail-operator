@@ -2,7 +2,7 @@
 
 ## Install KIND (Kubernetes IN Docker)
 
-    GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1
+    GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
 
 ## Create a test env
     export KIND_CLUSTER_NAME=kind

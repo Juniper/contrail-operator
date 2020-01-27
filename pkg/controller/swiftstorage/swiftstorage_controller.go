@@ -107,7 +107,8 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 
 	ringsClaimName := types.NamespacedName{
 		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-rings",
+		// TODO This should be a swift proxy spec parameter
+		Name: "swift-storage-rings",
 	}
 
 	if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
