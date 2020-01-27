@@ -2,13 +2,14 @@ package memcached
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
+	"fmt"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -121,7 +122,7 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	}
 	if deployment.Status.ReadyReplicas == expectedReplicas {
 		memcachedCR.Status.Active = true
-		//memcachedCR.Status.Node = TODO get pod by labels -> IP
+		memcachedCR.Status.Node = fmt.Sprintf("localhost:%v", memcachedCR.Spec.ServiceConfiguration.ListenPort) // TODO get pod by labels
 	} else {
 		memcachedCR.Status.Active = false
 	}
