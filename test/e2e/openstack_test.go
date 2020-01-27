@@ -65,8 +65,9 @@ func TestOpenstackServices(t *testing.T) {
 				Spec: contrail.KeystoneSpec{
 					CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
 					ServiceConfiguration: contrail.KeystoneConfiguration{
-						PostgresInstance: "openstacktest-psql",
-						ListenPort:       5555,
+						MemcachedInstance: "openstacktest-memcached",
+						PostgresInstance:  "openstacktest-psql",
+						ListenPort:        5555,
 						Containers: map[string]*contrail.Container{
 							"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
 							"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
@@ -151,6 +152,7 @@ func TestOpenstackServices(t *testing.T) {
 							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+							MemcachedInstance:     "openstacktest-memcached",
 							ListenPort:            5070,
 							KeystoneInstance:      "openstacktest-keystone",
 							KeystoneAdminPassword: "contrail123",
@@ -160,6 +162,18 @@ func TestOpenstackServices(t *testing.T) {
 								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},
 							},
 						},
+					},
+				},
+			}
+
+			cluster.Spec.Services.Memcached = &contrail.Memcached{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "openstacktest-memcached",
+				},
+				Spec: contrail.MemcachedSpec{
+					ServiceConfiguration: contrail.MemcachedConfiguration{
+						Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:master"},
 					},
 				},
 			}
