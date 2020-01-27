@@ -481,6 +481,11 @@ func TestConfigConfig(t *testing.T) {
 		t.Fatalf("get devicemanager config: \n%v\n", diff)
 	}
 
+	if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+		diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+		t.Fatalf("get dnsmasq config: \n%v\n", diff)
+	}
+
 	if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
 		diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
 		t.Fatalf("get schematransformer config: \n%v\n", diff)
@@ -1178,8 +1183,8 @@ cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
-dnsmasq_conf_dir=/etc/dnsmasq
-tftp_dir=/etc/tftp
+dnsmasq_conf_dir=/var/lib/dnsmasq
+tftp_dir=/var/lib/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
 rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
 rabbit_vhost=vhost
@@ -1200,6 +1205,15 @@ sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
+var dnsmasqConfig = `
+log-facility=/dev/stdout
+bogus-priv
+log-dhcp
+enable-tftp
+tftp-root=/var/lib/tftp
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+conf-dir=/var/lib/dnsmasq/,*.conf
+`
 var schematransformerConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_ip=0.0.0.0

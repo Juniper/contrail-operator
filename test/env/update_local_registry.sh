@@ -30,6 +30,7 @@ contrail-nodemgr:1912-latest
 contrail-analytics-api:1912-latest
 contrail-analytics-collector:1912-latest
 contrail-analytics-query-engine:1912-latest
+contrail-external-dnsmasq:1910-latest
 EOF
 
 while read line; do
@@ -63,7 +64,6 @@ rabbitmq:3.7.16
 EOF
 
 pull_image tmaier postgresql-client
-pull_image hub.juniper.net/contrail-nightly contrail-command:1912-latest
 
 while read line; do
 	pull_image michaelhenkel "${line}"
@@ -72,3 +72,4 @@ contrail-statusmonitor:debug
 contrail-provisioner:debug
 EOF
 
+pull_image hub.juniper.net/contrail-nightly contrail-command:1912-latest

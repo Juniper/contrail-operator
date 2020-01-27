@@ -48,6 +48,8 @@ spec:
               image: opencontrailnightly/contrail-analytics-collector:1910-latest
             devicemanager:
               image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+            dnsmasq:
+              image: opencontrailnightly/contrail-external-dnsmasq:1910-latest
             init:
               image: python:alpine
             init2:
