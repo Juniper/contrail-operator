@@ -54,7 +54,11 @@ func TestOpenstackServices(t *testing.T) {
 
 			psql := &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
-				Spec:       contrail.PostgresSpec{Image: "registry:5000/postgres"},
+				Spec:       contrail.PostgresSpec{
+					Containers: map[string]*contrail.Container{
+						"postgres": {Image: "registry:5000/postgres"},
+					},
+				},
 			}
 
 			keystone := &contrail.Keystone{
