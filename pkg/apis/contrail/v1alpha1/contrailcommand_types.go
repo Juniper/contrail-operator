@@ -36,7 +36,6 @@ type ContrailCommandConfiguration struct {
 	AdminUsername    string                `json:"adminUsername,omitempty"`
 	AdminPassword    string                `json:"adminPassword,omitempty"`
 	Containers       map[string]*Container `json:"container,omitempty"`
-	//Image            string                `json:"image,omitempty"`
 }
 
 // ContrailCommandStatus defines the observed state of ContrailCommand

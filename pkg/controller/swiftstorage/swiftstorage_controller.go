@@ -238,11 +238,9 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 	}
 
 	return core.Container{
-		Name: name,
-		// todo
-		//Image: cg.registry + "/centos-binary-" + image + ":master",
-		Image: cg.getImage(name),
-		Env:   newKollaEnvs(name),
+		Name:    name,
+		Image:   cg.getImage(name),
+		Env:     newKollaEnvs(name),
 		Command: cg.getCommand(name),
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
@@ -298,7 +296,6 @@ func (cg *containerGenerator) getCommand(name string) []string {
 
 	return defaultCommands[name]
 }
-
 
 func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-account-auditor"

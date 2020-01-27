@@ -170,7 +170,7 @@ func newContrailCommand() *contrail.ContrailCommand {
 				AdminPassword:    "test123",
 				Containers: map[string]*contrail.Container{
 					"init": {Image: "registry:5000/contrail-command"},
-					"api": {Image: "registry:5000/contrail-command"},
+					"api":  {Image: "registry:5000/contrail-command"},
 				},
 			},
 		},

@@ -294,7 +294,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Image:           getImage(cr, "keystone"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone"),
-							Command:	getCommand(cr, "keystone"),
+							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
@@ -310,7 +310,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						{
 							Name:            "keystone-ssh",
 							Image:           getImage(cr, "keystoneSsh"),
-							Command:           getCommand(cr, "keystoneSsh"),
+							Command:         getCommand(cr, "keystoneSsh"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-ssh"),
 							VolumeMounts: []core.VolumeMount{
@@ -322,7 +322,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						{
 							Name:            "keystone-fernet",
 							Image:           getImage(cr, "keystoneFernet"),
-							Command:           getCommand(cr, "keystoneFernet"),
+							Command:         getCommand(cr, "keystoneFernet"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-fernet"),
 							VolumeMounts: []core.VolumeMount{
@@ -358,30 +358,20 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 	}
 
 	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if ok == false {
-		return defaultContainersImages[containerName]
-	}
-
-	if c == nil {
+	if ok == false || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
 	return c.Image
 }
 
-
-
 func getCommand(cr *contrail.Keystone, containerName string) []string {
 	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if ok == false {
+	if ok == false || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 
-	if c != nil && c.Command != nil {
-		return c.Command
-	}
-
-	return defaultContainersCommand[containerName]
+	return c.Command
 }
 
 var defaultContainersCommand = map[string][]string{

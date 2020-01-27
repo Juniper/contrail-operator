@@ -4,7 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
 // SwiftSpec defines the desired state of Swift
 // +k8s:openapi-gen=true
 type SwiftSpec struct {
@@ -15,7 +14,7 @@ type SwiftSpec struct {
 // +k8s:openapi-gen=true
 type SwiftConfiguration struct {
 	SwiftStorageConfiguration SwiftStorageConfiguration `json:"swiftStorageConfiguration"`
-	SwiftProxyConfiguration SwiftProxyConfiguration `json:"swiftProxyConfiguration"`
+	SwiftProxyConfiguration   SwiftProxyConfiguration   `json:"swiftProxyConfiguration"`
 }
 
 // SwiftStatus defines the observed state of Swift

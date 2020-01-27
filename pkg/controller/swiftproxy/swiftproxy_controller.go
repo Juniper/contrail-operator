@@ -193,7 +193,6 @@ func updatePodTemplate(
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
 			},
-			//Command: []string{"ansible-playbook"},
 			Command: getCommand(containers, "init"),
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
 		},
@@ -264,11 +263,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	}
 
 	c, ok := containers[containerName]
-	if ok == false {
-		return defaultContainersImages[containerName]
-	}
-
-	if c == nil {
+	if ok == false || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -281,13 +276,9 @@ func getCommand(containers map[string]*contrail.Container, containerName string)
 	}
 
 	c, ok := containers[containerName]
-	if ok == false {
+	if ok == false || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 
-	if c != nil && c.Command != nil {
-		return c.Command
-	}
-
-	return defaultContainersCommand[containerName]
+	return c.Command
 }

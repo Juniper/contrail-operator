@@ -166,7 +166,7 @@ func newDeployment(name, namespace, configVolumeName string, containers map[stri
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "api"),
-						Command:           getCommand(containers, "api"),
+						Command:         getCommand(containers, "api"),
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -185,7 +185,7 @@ func newDeployment(name, namespace, configVolumeName string, containers map[stri
 						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "init"),
-						Command: getCommand(containers, "init"),
+						Command:         getCommand(containers, "init"),
 						VolumeMounts: []core.VolumeMount{{
 							Name:      configVolumeName,
 							MountPath: "/etc/contrail",
@@ -205,11 +205,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	}
 
 	c, ok := containers[containerName]
-	if ok == false {
-		return defaultContainersImages[containerName]
-	}
-
-	if c == nil {
+	if ok == false || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -219,21 +215,16 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
 		"init": []string{"bash", "/etc/contrail/bootstrap.sh"},
-		"api": []string{"bash", "/etc/contrail/entrypoint.sh"},
+		"api":  []string{"bash", "/etc/contrail/entrypoint.sh"},
 	}
 
 	c, ok := containers[containerName]
-	if ok == false {
+	if ok == false || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 
-	if c != nil && c.Command != nil {
-		return c.Command
-	}
-
-	return defaultContainersCommand[containerName]
+	return c.Command
 }
-
 
 func (r *ReconcileContrailCommand) updateStatus(
 	command *contrail.ContrailCommand,
