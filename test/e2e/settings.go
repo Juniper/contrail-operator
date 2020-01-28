@@ -3,8 +3,8 @@ package e2e
 import "time"
 
 var (
-	retryInterval        = time.Second * 10
-	waitTimeout          = time.Second * 240
-	cleanupRetryInterval = time.Second * 2
-	cleanupTimeout       = time.Second * 10
+	retryInterval        = time.Second * 20
+	waitTimeout          = time.Second * 480
+	cleanupRetryInterval = time.Second * 4
+	cleanupTimeout       = time.Second * 20
 )
