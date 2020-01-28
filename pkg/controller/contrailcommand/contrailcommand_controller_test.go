@@ -337,11 +337,11 @@ server:
     - http://localhost:8082
   notify_etcd: false
 
-no_auth: true
+no_auth: false
 insecure: true
 
 keystone:
-  local: true # Enable local keystone v3. This is only for testing now.
+  local: true
   assignment:
     type: static
     data:
@@ -358,10 +358,6 @@ keystone:
           id: demo
           name: demo
           domain: *default
-        neutron: &neutron
-          id: aa907485e1f94a14834d8c69ed9cb3b2
-          name: neutron
-          domain: *default
       users:
         test:
           id: test
@@ -373,9 +369,6 @@ keystone:
           - id: admin
             name: admin
             project: *admin
-          - id: aa907485e1f94a14834d8c69ed9cb3b2
-            name: neutron
-            project: *neutron
         bob:
           id: bob
           name: Bob
@@ -388,8 +381,14 @@ keystone:
             project: *demo
   store:
     type: memory
-    expire: 3600
+    expire: 36000
   insecure: true
+  authurl: http://localhost:9091/keystone/v3
+  service_user:
+    id: swift
+    password: swiftpass
+    project_name: service
+    domain_id: default
 
 sync:
   enabled: false

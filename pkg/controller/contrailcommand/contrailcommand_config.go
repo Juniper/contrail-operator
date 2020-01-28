@@ -295,6 +295,80 @@ resources:
         - 53494d5c-f40c-11e9-9c47-38c986460fd4
         - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
     kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
+      name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      fq_name:
+        - default-global-system-config
+        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      id_perms:
+        enable: true
+        user_visible: true
+        permissions:
+          owner: cloud-admin
+          owner_access: 7
+          other_access: 7
+          group: cloud-admin-group
+          group_access: 7
+        uuid:
+          uuid_mslong: 13126355967647631000
+          uuid_lslong: 12539414524672110000
+      display_name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      annotations: {}
+      perms2:
+        owner: default-project
+        owner_access: 7
+        global_access: 0
+        share: []
+      href: http://localhost:9091/endpoint/b62a2f34-c6f7-4a25-eeee-f312d2747291
+      prefix: keystone
+      private_url: "http://localhost:5555"
+      public_url: "http://localhost:5555"
+      to:
+        - default-global-system-config
+        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
+      name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      fq_name:
+        - default-global-system-config
+        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      id_perms:
+        enable: true
+        user_visible: true
+        permissions:
+          owner: cloud-admin
+          owner_access: 7
+          other_access: 7
+          group: cloud-admin-group
+          group_access: 7
+        uuid:
+          uuid_mslong: 13126355967647631000
+          uuid_lslong: 12539414524672110000
+      display_name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      annotations: {}
+      perms2:
+        owner: default-project
+        owner_access: 7
+        global_access: 0
+        share: []
+      href: http://localhost:9091/endpoint/b62a2f34-c6f7-4a25-efef-f312d2747291
+      prefix: swift
+      private_url: "http://localhost:5080"
+      public_url: "http://localhost:5080"
+      to:
+        - default-global-system-config
+        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+    kind: endpoint
 `))
 
 var contrailCommandConfig = template.Must(template.New("").Parse(`
@@ -337,11 +411,11 @@ server:
     - {{ .ConfigAPIURL }}
   notify_etcd: false
 
-no_auth: true
+no_auth: false
 insecure: true
 
 keystone:
-  local: true # Enable local keystone v3. This is only for testing now.
+  local: true
   assignment:
     type: static
     data:
@@ -358,10 +432,6 @@ keystone:
           id: demo
           name: demo
           domain: *default
-        neutron: &neutron
-          id: aa907485e1f94a14834d8c69ed9cb3b2
-          name: neutron
-          domain: *default
       users:
         {{ .AdminUsername }}:
           id: {{ .AdminUsername }}
@@ -373,9 +443,6 @@ keystone:
           - id: admin
             name: admin
             project: *admin
-          - id: aa907485e1f94a14834d8c69ed9cb3b2
-            name: neutron
-            project: *neutron
         bob:
           id: bob
           name: Bob
@@ -388,8 +455,14 @@ keystone:
             project: *demo
   store:
     type: memory
-    expire: 3600
+    expire: 36000
   insecure: true
+  authurl: http://localhost:9091/keystone/v3
+  service_user:
+    id: swift
+    password: swiftpass
+    project_name: service
+    domain_id: default
 
 sync:
   enabled: false
