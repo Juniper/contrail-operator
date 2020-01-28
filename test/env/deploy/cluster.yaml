@@ -223,7 +223,11 @@ spec:
           postgresInstance: postgres
           adminUsername: admin
           adminPassword: contrail123
-          image: registry:5000/contrail-command:1912-latest
+          containers:
+            api:
+              image: registry:5000/contrail-command:1912-latest
+            init:
+              image: registry:5000/contrail-command:1912-latest
     keystone:
       metadata:
         name: keystone

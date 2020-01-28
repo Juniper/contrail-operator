@@ -35,7 +35,7 @@ type ContrailCommandConfiguration struct {
 	PostgresInstance string                `json:"postgresInstance,omitempty"`
 	AdminUsername    string                `json:"adminUsername,omitempty"`
 	AdminPassword    string                `json:"adminPassword,omitempty"`
-	Containers       map[string]*Container `json:"container,omitempty"`
+	Containers       map[string]*Container `json:"containers,omitempty"`
 }
 
 // ContrailCommandStatus defines the observed state of ContrailCommand
