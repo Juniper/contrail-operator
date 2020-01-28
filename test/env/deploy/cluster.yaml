@@ -257,7 +257,9 @@ spec:
       metadata:
         name: postgres
       spec:
-        image: registry:5000/postgres
+        containers:
+          postgres: 
+            image: registry:5000/postgres
     swift:
       metadata:
         name: swift
