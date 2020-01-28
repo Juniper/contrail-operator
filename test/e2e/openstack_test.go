@@ -54,7 +54,11 @@ func TestOpenstackServices(t *testing.T) {
 
 			psql := &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
-				Spec:       contrail.PostgresSpec{Image: "registry:5000/postgres"},
+				Spec: contrail.PostgresSpec{
+					Containers: map[string]*contrail.Container{
+						"postgres": {Image: "registry:5000/postgres"},
+					},
+				},
 			}
 
 			keystone := &contrail.Keystone{
@@ -64,7 +68,13 @@ func TestOpenstackServices(t *testing.T) {
 					ServiceConfiguration: contrail.KeystoneConfiguration{
 						PostgresInstance: "openstacktest-psql",
 						ListenPort:       5555,
-						ImageRegistry:    "registry:5000",
+						Containers: map[string]*contrail.Container{
+							"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
+							"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
+							"keystone":       {Image: "registry:5000/centos-binary-keystone:master"},
+							"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:master"},
+							"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:master"},
+						},
 					},
 				},
 			}
@@ -125,14 +135,31 @@ func TestOpenstackServices(t *testing.T) {
 							AccountBindPort:   6001,
 							ContainerBindPort: 6002,
 							ObjectBindPort:    6000,
-							ImageRegistry:     "registry:5000",
+							Containers: map[string]*contrail.Container{
+								"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:master"},
+								"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:master"},
+								"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:master"},
+								"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:master"},
+								"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:master"},
+								"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:master"},
+								"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:master"},
+								"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:master"},
+								"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:master"},
+								"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:master"},
+								"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:master"},
+								"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:master"},
+								"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:master"},
+							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 							ListenPort:            5070,
 							KeystoneInstance:      "openstacktest-keystone",
 							KeystoneAdminPassword: "contrail123",
 							SwiftPassword:         "swiftpass",
-							ImageRegistry:         "registry:5000",
+							Containers: map[string]*contrail.Container{
+								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
+								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},
+							},
 						},
 					},
 				},

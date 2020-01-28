@@ -773,15 +773,24 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 							Format: "",
 						},
 					},
-					"image": {
+					"container": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1189,15 +1198,25 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 							Format: "",
 						},
 					},
-					"imageRegistry": {
+					"Containers": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
 						},
 					},
 				},
+				Required: []string{"Containers"},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -1764,15 +1783,24 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref common.ReferenceCallback
 				Description: "PostgresSpec defines the desired state of Postgres",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"image": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -2509,15 +2537,24 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 							Format: "",
 						},
 					},
-					"imageRegistry": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 
@@ -2677,15 +2714,24 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 							Format: "",
 						},
 					},
-					"imageRegistry": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/contrail/v1alpha1.Container"},
 	}
 }
 

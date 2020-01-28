@@ -35,7 +35,7 @@ func TestSwiftProxyController(t *testing.T) {
 		expectedKeystone   *contrail.Keystone
 	}{
 		{
-			name: "creates a new deployment",
+			name: "creates a new deployment with default images",
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
@@ -115,6 +115,21 @@ func TestSwiftProxyController(t *testing.T) {
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 		},
+		{
+			name: "containers' images are set according to resource spec",
+			// given
+			initObjs: []runtime.Object{
+				newSwiftProxyWithCustomImages(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+
+			// then
+			expectedDeployment: newExpectedDeploymentWithCustomImages(),
+			expectedKeystone: newKeystone(
+				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
+			),
+		},
 	}
 
 	for _, tt := range tests {
@@ -174,7 +189,6 @@ func TestSwiftProxyController(t *testing.T) {
 }
 
 func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
-
 	return &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy",
@@ -186,7 +200,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				KeystoneInstance:      "keystone",
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
-				SwiftConfSecretName: "test-secret",
+				SwiftConfSecretName:   "test-secret",
 			},
 		},
 		Status: status,
@@ -289,6 +303,50 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	}
 
 	return d
+}
+
+func newSwiftProxyWithCustomImages() runtime.Object {
+	sp := newSwiftProxy(contrail.SwiftProxyStatus{})
+	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
+		"init": {Image: "image1"},
+		"api":  {Image: "image2"},
+	}
+
+	return sp
+}
+
+func newExpectedDeploymentWithCustomImages() *apps.Deployment {
+	deployment := newExpectedDeployment(apps.DeploymentStatus{})
+	deployment.Spec.Template.Spec.InitContainers = []core.Container{
+		{
+			Name:            "init",
+			Image:           "image1",
+			ImagePullPolicy: core.PullAlways,
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
+			},
+			Command: []string{"ansible-playbook"},
+			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
+		},
+	}
+
+	deployment.Spec.Template.Spec.Containers = []core.Container{{
+		Name:  "api",
+		Image: "image2",
+		VolumeMounts: []core.VolumeMount{
+			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+		},
+		Env: []core.EnvVar{{
+			Name:  "KOLLA_SERVICE_NAME",
+			Value: "swift-proxy-server",
+		}, {
+			Name:  "KOLLA_CONFIG_STRATEGY",
+			Value: "COPY_ALWAYS",
+		}},
+	}}
+
+	return deployment
 }
 
 func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerReference) *contrail.Keystone {

@@ -173,7 +173,20 @@ func TestSwiftStorageController(t *testing.T) {
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
 		assert.NoError(t, err)
-		assertContainersCreated(t, fakeClient, statefulSetName)
+		assertContainersCreated(t, fakeClient, statefulSetName, defaultExpectedContainers)
+	})
+
+	t.Run("should create all Swift's containers with custom images", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, setCustomImages(*swiftStorageCR))
+
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+		assertContainersCreated(t, fakeClient, statefulSetName, customExpectedContainers)
 	})
 
 	t.Run("should mount device mount point to all Swift's containers", func(t *testing.T) {
@@ -228,6 +241,25 @@ func TestSwiftStorageController(t *testing.T) {
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
+}
+
+func setCustomImages(cr contrail.SwiftStorage) *contrail.SwiftStorage {
+	cr.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
+		"swiftObjectExpirer":       {Image: "image1"},
+		"swiftObjectUpdater":       {Image: "image2"},
+		"swiftObjectReplicator":    {Image: "image3"},
+		"swiftObjectAuditor":       {Image: "image4"},
+		"swiftObjectServer":        {Image: "image5"},
+		"swiftContainerUpdater":    {Image: "image6"},
+		"swiftContainerReplicator": {Image: "image7"},
+		"swiftContainerAuditor":    {Image: "image8"},
+		"swiftContainerServer":     {Image: "image9"},
+		"swiftAccountReaper":       {Image: "image10"},
+		"swiftAccountReplicator":   {Image: "image11"},
+		"swiftAccountAuditor":      {Image: "image12"},
+		"swiftAccountServer":       {Image: "image13"},
+	}
+	return &cr
 }
 
 func lookupSwiftStorage(t *testing.T, fakeClient client.Client, name types.NamespacedName) *contrail.SwiftStorage {
@@ -368,28 +400,16 @@ func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types
 	assert.True(t, mounted)
 }
 
-func assertContainersCreated(t *testing.T, c client.Client, stsName types.NamespacedName) {
+func assertContainersCreated(
+	t *testing.T,
+	c client.Client,
+	stsName types.NamespacedName,
+	expectedContainers []expectedContainerData,
+) {
 	sts := apps.StatefulSet{}
 
 	err := c.Get(context.Background(), stsName, &sts)
 	assert.NoError(t, err)
-
-	expectedContainers := []expectedContainerData{
-		{"localhost:5000/centos-binary-swift-object-expirer:master", "swift-object-expirer"},
-		{"localhost:5000/centos-binary-swift-object:master", "swift-object-updater"},
-		{"localhost:5000/centos-binary-swift-object:master", "swift-object-replicator"},
-		{"localhost:5000/centos-binary-swift-object:master", "swift-object-auditor"},
-		{"localhost:5000/centos-binary-swift-object:master", "swift-object-server"},
-		{"localhost:5000/centos-binary-swift-container:master", "swift-container-updater"},
-		{"localhost:5000/centos-binary-swift-container:master", "swift-container-replicator"},
-		{"localhost:5000/centos-binary-swift-container:master", "swift-container-auditor"},
-		{"localhost:5000/centos-binary-swift-container:master", "swift-container-server"},
-		{"localhost:5000/centos-binary-swift-account:master", "swift-account-reaper"},
-		{"localhost:5000/centos-binary-swift-account:master", "swift-account-replicator"},
-		{"localhost:5000/centos-binary-swift-account:master", "swift-account-auditor"},
-		{"localhost:5000/centos-binary-swift-account:master", "swift-account-server"},
-	}
-
 	assert.Equal(t, len(expectedContainers), len(sts.Spec.Template.Spec.Containers))
 
 	for _, expectedContainer := range expectedContainers {
@@ -423,4 +443,36 @@ func assertContainerCreated(t *testing.T, c *expectedContainerData, actualContai
 		}
 	}
 	t.Errorf("Container (Image %s, Name %s) has not been created", c.Image, c.Name)
+}
+
+var defaultExpectedContainers = []expectedContainerData{
+	{"localhost:5000/centos-binary-swift-object-expirer:master", "swift-object-expirer"},
+	{"localhost:5000/centos-binary-swift-object:master", "swift-object-updater"},
+	{"localhost:5000/centos-binary-swift-object:master", "swift-object-replicator"},
+	{"localhost:5000/centos-binary-swift-object:master", "swift-object-auditor"},
+	{"localhost:5000/centos-binary-swift-object:master", "swift-object-server"},
+	{"localhost:5000/centos-binary-swift-container:master", "swift-container-updater"},
+	{"localhost:5000/centos-binary-swift-container:master", "swift-container-replicator"},
+	{"localhost:5000/centos-binary-swift-container:master", "swift-container-auditor"},
+	{"localhost:5000/centos-binary-swift-container:master", "swift-container-server"},
+	{"localhost:5000/centos-binary-swift-account:master", "swift-account-reaper"},
+	{"localhost:5000/centos-binary-swift-account:master", "swift-account-replicator"},
+	{"localhost:5000/centos-binary-swift-account:master", "swift-account-auditor"},
+	{"localhost:5000/centos-binary-swift-account:master", "swift-account-server"},
+}
+
+var customExpectedContainers = []expectedContainerData{
+	{"image1", "swift-object-expirer"},
+	{"image2", "swift-object-updater"},
+	{"image3", "swift-object-replicator"},
+	{"image4", "swift-object-auditor"},
+	{"image5", "swift-object-server"},
+	{"image6", "swift-container-updater"},
+	{"image7", "swift-container-replicator"},
+	{"image8", "swift-container-auditor"},
+	{"image9", "swift-container-server"},
+	{"image10", "swift-account-reaper"},
+	{"image11", "swift-account-replicator"},
+	{"image12", "swift-account-auditor"},
+	{"image13", "swift-account-server"},
 }

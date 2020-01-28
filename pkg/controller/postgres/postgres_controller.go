@@ -155,8 +155,15 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	}
 
 	image := "localhost:5000/postgres"
-	if cr.Spec.Image != "" {
-		image = cr.Spec.Image
+	var command []string
+	if c := cr.Spec.Containers["postgres"]; c != nil {
+		if c.Image != "" {
+			image = c.Image
+		}
+
+		if c.Command != nil {
+			command = c.Command
+		}
 	}
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
@@ -171,6 +178,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			Containers: []core.Container{
 				{
 					Image:           image,
+					Command:         command,
 					Name:            "postgres",
 					ImagePullPolicy: core.PullAlways,
 					ReadinessProbe: &core.Probe{

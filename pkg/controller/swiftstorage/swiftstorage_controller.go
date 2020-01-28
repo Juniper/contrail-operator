@@ -2,6 +2,7 @@ package swiftstorage
 
 import (
 	"context"
+	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -138,15 +139,10 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
 
-	imageRegistry := "localhost:5000"
-	if swiftStorage.Spec.ServiceConfiguration.ImageRegistry != "" {
-		imageRegistry = swiftStorage.Spec.ServiceConfiguration.ImageRegistry
-	}
-
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
-		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(imageRegistry)
+		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		volumes := r.swiftServicesVolumes(swiftStorage.Name)
 		statefulSet.Spec.Template.Spec.Volumes = append([]core.Volume{
@@ -193,9 +189,9 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	return statefulSet, err
 }
 
-func (r *ReconcileSwiftStorage) swiftContainers(registry string) []core.Container {
+func (r *ReconcileSwiftStorage) swiftContainers(containers map[string]*contrail.Container) []core.Container {
 	cg := containerGenerator{
-		registry: registry,
+		containersSpec: containers,
 	}
 	return []core.Container{
 		cg.swiftContainer("swift-account-server", "swift-account"),
@@ -215,7 +211,7 @@ func (r *ReconcileSwiftStorage) swiftContainers(registry string) []core.Containe
 }
 
 type containerGenerator struct {
-	registry string
+	containersSpec map[string]*contrail.Container
 }
 
 func (cg *containerGenerator) swiftContainer(name, image string) core.Container {
@@ -242,9 +238,10 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 	}
 
 	return core.Container{
-		Name:  name,
-		Image: cg.registry + "/centos-binary-" + image + ":master",
-		Env:   newKollaEnvs(name),
+		Name:    name,
+		Image:   cg.getImage(name),
+		Env:     newKollaEnvs(name),
+		Command: cg.getCommand(name),
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
 			localtimeVolumeMount,
@@ -252,6 +249,52 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 			swiftConfVolumeMount,
 		},
 	}
+}
+
+func (cg *containerGenerator) getImage(name string) string {
+	var defaultImages = map[string]string{
+		"swift-account-server":       "localhost:5000/centos-binary-swift-account:master",
+		"swift-account-auditor":      "localhost:5000/centos-binary-swift-account:master",
+		"swift-account-replicator":   "localhost:5000/centos-binary-swift-account:master",
+		"swift-account-reaper":       "localhost:5000/centos-binary-swift-account:master",
+		"swift-container-server":     "localhost:5000/centos-binary-swift-container:master",
+		"swift-container-auditor":    "localhost:5000/centos-binary-swift-container:master",
+		"swift-container-replicator": "localhost:5000/centos-binary-swift-container:master",
+		"swift-container-updater":    "localhost:5000/centos-binary-swift-container:master",
+		"swift-object-server":        "localhost:5000/centos-binary-swift-object:master",
+		"swift-object-auditor":       "localhost:5000/centos-binary-swift-object:master",
+		"swift-object-replicator":    "localhost:5000/centos-binary-swift-object:master",
+		"swift-object-updater":       "localhost:5000/centos-binary-swift-object:master",
+		"swift-object-expirer":       "localhost:5000/centos-binary-swift-object-expirer:master",
+	}
+
+	if cg.containersSpec == nil {
+		return defaultImages[name]
+	}
+
+	camelCaseName := kebabToCamelCase(name)
+	if v, ok := cg.containersSpec[camelCaseName]; ok {
+		return v.Image
+	}
+
+	return defaultImages[name]
+}
+
+func (cg *containerGenerator) getCommand(name string) []string {
+	var defaultCommands = map[string][]string{}
+
+	if cg.containersSpec == nil {
+		return defaultCommands[name]
+	}
+
+	camelCaseName := kebabToCamelCase(name)
+	if v, ok := cg.containersSpec[camelCaseName]; ok {
+		if v.Command != nil {
+			return v.Command
+		}
+	}
+
+	return defaultCommands[name]
 }
 
 func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
@@ -379,4 +422,21 @@ func newKollaEnvs(kollaService string) []core.EnvVar {
 		Name:  "KOLLA_CONFIG_STRATEGY",
 		Value: "COPY_ALWAYS",
 	}}
+}
+
+func kebabToCamelCase(kebab string) (camelCase string) {
+	isToUpper := false
+	for _, runeValue := range kebab {
+		if isToUpper {
+			camelCase += strings.ToUpper(string(runeValue))
+			isToUpper = false
+		} else {
+			if runeValue == '-' {
+				isToUpper = true
+			} else {
+				camelCase += string(runeValue)
+			}
+		}
+	}
+	return
 }

@@ -120,17 +120,13 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
-	image := "localhost:5000/contrail-command"
-	if command.Spec.ServiceConfiguration.Image != "" {
-		image = command.Spec.ServiceConfiguration.Image
-	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
 	deployment := newDeployment(
 		request.Name+"-"+instanceType+"-deployment",
-		image,
 		request.Namespace,
 		configVolumeName,
+		command.Spec.ServiceConfiguration.Containers,
 	)
 
 	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{commandConfigName: configVolumeName})
@@ -156,7 +152,7 @@ func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand
 	return psql, err
 }
 
-func newDeployment(name, image, namespace, configVolumeName string) *apps.Deployment {
+func newDeployment(name, namespace, configVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name,
@@ -169,7 +165,8 @@ func newDeployment(name, image, namespace, configVolumeName string) *apps.Deploy
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
-						Image:           image,
+						Image:           getImage(containers, "api"),
+						Command:         getCommand(containers, "api"),
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -179,7 +176,6 @@ func newDeployment(name, image, namespace, configVolumeName string) *apps.Deploy
 							},
 						},
 						//TODO: Command should support CA certificates
-						Command: []string{"bash", "/etc/contrail/entrypoint.sh"},
 						VolumeMounts: []core.VolumeMount{{
 							Name:      configVolumeName,
 							MountPath: "/etc/contrail",
@@ -188,18 +184,46 @@ func newDeployment(name, image, namespace, configVolumeName string) *apps.Deploy
 					InitContainers: []core.Container{{
 						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
-						Image:           image,
+						Image:           getImage(containers, "init"),
+						Command:         getCommand(containers, "init"),
 						VolumeMounts: []core.VolumeMount{{
 							Name:      configVolumeName,
 							MountPath: "/etc/contrail",
 						}},
-						Command: []string{"bash", "/etc/contrail/bootstrap.sh"},
 					}},
 					DNSPolicy: core.DNSClusterFirst,
 				},
 			},
 		},
 	}
+}
+
+func getImage(containers map[string]*contrail.Container, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"init": "localhost:5000/contrail-command",
+		"api":  "localhost:5000/contrail-command",
+	}
+
+	c, ok := containers[containerName]
+	if ok == false || c == nil {
+		return defaultContainersImages[containerName]
+	}
+
+	return c.Image
+}
+
+func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+	var defaultContainersCommand = map[string][]string{
+		"init": []string{"bash", "/etc/contrail/bootstrap.sh"},
+		"api":  []string{"bash", "/etc/contrail/entrypoint.sh"},
+	}
+
+	c, ok := containers[containerName]
+	if ok == false || c == nil || c.Command == nil {
+		return defaultContainersCommand[containerName]
+	}
+
+	return c.Command
 }
 
 func (r *ReconcileContrailCommand) updateStatus(

@@ -258,12 +258,6 @@ func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgr
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
 func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
-
-	imageRegistry := "localhost:5000"
-	if cr.Spec.ServiceConfiguration.ImageRegistry != "" {
-		imageRegistry = cr.Spec.ServiceConfiguration.ImageRegistry
-	}
-
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -277,16 +271,17 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "keystone-db-init",
-							Image:           imageRegistry + "/postgresql-client",
+							Image:           getImage(cr, "keystoneDbInit"),
 							ImagePullPolicy: core.PullAlways,
-							Command:         []string{"/bin/sh"},
+							Command:         getCommand(cr, "keystoneDbInit"),
 							Args:            []string{"-c", initDBScript},
 						},
 						{
 							Name:            "keystone-init",
-							Image:           imageRegistry + "/centos-binary-keystone:master",
+							Image:           getImage(cr, "keystoneInit"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone"),
+							Command:         getCommand(cr, "keystoneInit"),
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
@@ -296,9 +291,10 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 					Containers: []core.Container{
 						{
 							Name:            "keystone",
-							Image:           imageRegistry + "/centos-binary-keystone:master",
+							Image:           getImage(cr, "keystone"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone"),
+							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
@@ -313,7 +309,8 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						},
 						{
 							Name:            "keystone-ssh",
-							Image:           imageRegistry + "/centos-binary-keystone-ssh:master",
+							Image:           getImage(cr, "keystoneSsh"),
+							Command:         getCommand(cr, "keystoneSsh"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-ssh"),
 							VolumeMounts: []core.VolumeMount{
@@ -324,7 +321,8 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						},
 						{
 							Name:            "keystone-fernet",
-							Image:           imageRegistry + "/centos-binary-keystone-fernet:master",
+							Image:           getImage(cr, "keystoneFernet"),
+							Command:         getCommand(cr, "keystoneFernet"),
 							ImagePullPolicy: core.PullAlways,
 							Env:             newKollaEnvs("keystone-fernet"),
 							VolumeMounts: []core.VolumeMount{
@@ -348,6 +346,36 @@ func newKollaEnvs(kollaService string) []core.EnvVar {
 		Name:  "KOLLA_CONFIG_STRATEGY",
 		Value: "COPY_ALWAYS",
 	}}
+}
+
+func getImage(cr *contrail.Keystone, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"keystoneDbInit": "localhost:5000/postgresql-client",
+		"keystoneInit":   "localhost:5000/centos-binary-keystone:master",
+		"keystone":       "localhost:5000/centos-binary-keystone:master",
+		"keystoneSsh":    "localhost:5000/centos-binary-keystone-ssh:master",
+		"keystoneFernet": "localhost:5000/centos-binary-keystone-fernet:master",
+	}
+
+	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
+	if ok == false || c == nil {
+		return defaultContainersImages[containerName]
+	}
+
+	return c.Image
+}
+
+func getCommand(cr *contrail.Keystone, containerName string) []string {
+	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
+	if ok == false || c == nil || c.Command == nil {
+		return defaultContainersCommand[containerName]
+	}
+
+	return c.Command
+}
+
+var defaultContainersCommand = map[string][]string{
+	"keystoneDbInit": []string{"/bin/sh"},
 }
 
 const initDBScript = `DB_USER=${DB_USER:-root}
