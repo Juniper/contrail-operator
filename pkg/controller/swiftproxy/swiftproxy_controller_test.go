@@ -356,6 +356,15 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+		},
+		ReadinessProbe: &core.Probe{
+			Handler: core.Handler{
+				HTTPGet: &core.HTTPGetAction{
+					Path: "/healthcheck",
+					Port: intstr.IntOrString{IntVal: int32(5070)},
+				},
+			},
 		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",

@@ -3,9 +3,9 @@ package swiftstorage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/batch/v1"
-	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
