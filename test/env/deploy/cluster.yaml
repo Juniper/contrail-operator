@@ -277,30 +277,30 @@ spec:
             accountBindPort: 6001
             containerBindPort: 6002
             objectBindPort: 6000
-              containers:
-                swiftObjectExpirer:
-                  image: registry:5000/centos-binary-swift-object-expirer:master
-                swiftObjectUpdater:
-                  image: registry:5000/centos-binary-swift-object:master
-                swiftObjectReplicator:
-                  image: registry:5000/centos-binary-swift-object:master
-                swiftObjectAuditor:
-                  image: registry:5000/centos-binary-swift-object:master
-                swiftObjectServer:
-                  image: registry:5000/centos-binary-swift-object:master
-                swiftContainerUpdater:
-                  image: registry:5000/centos-binary-swift-container:master
-                swiftContainerReplicator:
-                  image: registry:5000/centos-binary-swift-container:master
-                swiftContainerAuditor:
-                  image: registry:5000/centos-binary-swift-container:master
-                swiftContainerServer:
-                  image: registry:5000/centos-binary-swift-container:master
-                swiftAccountReaper:
-                  image: registry:5000/centos-binary-swift-account:master
-                swiftAccountReplicator:
-                  image: registry:5000/centos-binary-swift-account:master
-                swiftAccountAuditor:
-                  image: registry:5000/centos-binary-swift-account:master
-                swiftAccountServer:
-                  image: registry:5000/centos-binary-swift-account:master
+            containers:
+              swiftObjectExpirer:
+                image: registry:5000/centos-binary-swift-object-expirer:master
+              swiftObjectUpdater:
+                image: registry:5000/centos-binary-swift-object:master
+              swiftObjectReplicator:
+                image: registry:5000/centos-binary-swift-object:master
+              swiftObjectAuditor:
+                image: registry:5000/centos-binary-swift-object:master
+              swiftObjectServer:
+                image: registry:5000/centos-binary-swift-object:master
+              swiftContainerUpdater:
+                image: registry:5000/centos-binary-swift-container:master
+              swiftContainerReplicator:
+                image: registry:5000/centos-binary-swift-container:master
+              swiftContainerAuditor:
+                image: registry:5000/centos-binary-swift-container:master
+              swiftContainerServer:
+                image: registry:5000/centos-binary-swift-container:master
+              swiftAccountReaper:
+                image: registry:5000/centos-binary-swift-account:master
+              swiftAccountReplicator:
+                image: registry:5000/centos-binary-swift-account:master
+              swiftAccountAuditor:
+                image: registry:5000/centos-binary-swift-account:master
+              swiftAccountServer:
+                image: registry:5000/centos-binary-swift-account:master
