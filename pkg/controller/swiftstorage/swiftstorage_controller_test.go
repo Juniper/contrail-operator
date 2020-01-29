@@ -2,23 +2,24 @@ package swiftstorage_test
 
 import (
 	"context"
-
 	"reflect"
 	"testing"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/swiftstorage"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 func TestSwiftStorageController(t *testing.T) {
@@ -26,6 +27,7 @@ func TestSwiftStorageController(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 	configMapNameSuffixes := []string{
 		"-swift-account-auditor", "-swift-account-reaper", "-swift-account-replication-server",
 		"-swift-account-replicator", "-swift-account-server", "-swift-container-auditor",
@@ -156,11 +158,44 @@ func TestSwiftStorageController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		t.Run("should create persistent volume claim", func(t *testing.T) {
-			assertClaimCreated(t, fakeClient, name)
+			claimName := types.NamespacedName{
+				Name:      name.Name + "-pv-claim",
+				Namespace: name.Namespace,
+			}
+			assertClaimCreated(t, fakeClient, claimName)
+		})
+
+		t.Run("should create rings persistent volume claim", func(t *testing.T) {
+			claimName := types.NamespacedName{
+				Name:      "swift-storage-rings",
+				Namespace: name.Namespace,
+			}
+			assertClaimCreated(t, fakeClient, claimName)
 		})
 
 		t.Run("should add volume to StatefulSet", func(t *testing.T) {
-			assertVolumeMountedToSTS(t, fakeClient, name, statefulSetName)
+			expectedVolume := core.Volume{
+				Name: "devices-mount-point-volume",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: name.Name + "-pv-claim",
+					},
+				},
+			}
+			assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
+		})
+
+		t.Run("should add rings volume to StatefulSet", func(t *testing.T) {
+			expectedVolume := core.Volume{
+				Name: "rings",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: "swift-storage-rings",
+						ReadOnly:  true,
+					},
+				},
+			}
+			assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
 		})
 	})
 
@@ -201,25 +236,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		expectedMountPoint := core.VolumeMount{
 			Name:      "devices-mount-point-volume",
-			MountPath: "/srv/node",
-		}
-		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
-	})
-
-	t.Run("should mount localtime volume mount to all Swift's containers", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
-		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.NoError(t, err)
-
-		expectedMountPoint := core.VolumeMount{
-			Name:      "localtime-volume",
-			MountPath: "/etc/localtime",
-			ReadOnly:  true,
+			MountPath: "/srv/node/d1",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
@@ -241,6 +258,98 @@ func TestSwiftStorageController(t *testing.T) {
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
+
+	t.Run("should mount rings volume mount to all Swift's containers", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		require.NoError(t, err)
+
+		expectedMountPoint := core.VolumeMount{
+			Name:      "rings",
+			MountPath: "/etc/rings",
+			ReadOnly:  true,
+		}
+		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
+	})
+
+	t.Run("should requeue until IP is assigned to pod", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// when
+		stsLabels := map[string]string{"app": name.Name}
+		deployPodWithoutIP(t, fakeClient, stsLabels)
+		result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.True(t, result.Requeue)
+		assert.Error(t, err)
+	})
+
+	t.Run("should create a jobs reconciling rings after Swift Storage Pod is deployed", func(t *testing.T) {
+		// given
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// when
+		stsLabels := map[string]string{"app": name.Name}
+		deployPodWithIP(t, fakeClient, stsLabels)
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		require.NoError(t, err)
+		assertJobExists(t, fakeClient, types.NamespacedName{
+			Namespace: name.Namespace,
+			Name:      swiftStorageCR.Name + "-ring-account-job",
+		})
+		assertJobExists(t, fakeClient, types.NamespacedName{
+			Namespace: name.Namespace,
+			Name:      swiftStorageCR.Name + "-ring-container-job",
+		})
+		assertJobExists(t, fakeClient, types.NamespacedName{
+			Namespace: name.Namespace,
+			Name:      swiftStorageCR.Name + "-ring-object-job",
+		})
+	})
+
+}
+
+func deployPodWithIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
+	pod := &core.Pod{
+		ObjectMeta: meta.ObjectMeta{Labels: labels},
+		Spec:       core.PodSpec{},
+		Status: core.PodStatus{
+			PodIP: "192.168.0.1",
+		},
+	}
+	err := fakeClient.Create(context.Background(), pod)
+	require.NoError(t, err)
+}
+func deployPodWithoutIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
+	pod := &core.Pod{
+		ObjectMeta: meta.ObjectMeta{Labels: labels},
+		Spec:       core.PodSpec{},
+		Status: core.PodStatus{
+			PodIP: "",
+		},
+	}
+	err := fakeClient.Create(context.Background(), pod)
+	require.NoError(t, err)
+}
+
+func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.NamespacedName) {
+	job := &batch.Job{}
+	err := fakeClient.Get(context.Background(), client.ObjectKey{
+		Name:      jobName.Name,
+		Namespace: jobName.Namespace,
+	}, job)
+	require.NoError(t, err, "job %v does not exist", jobName)
 }
 
 func setCustomImages(cr contrail.SwiftStorage) *contrail.SwiftStorage {
@@ -287,6 +396,7 @@ func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
+			"bootstrap.sh":         bootstrapScript,
 			"config.json":          expectedConfig,
 			"account-auditor.conf": expectedAccountAuditorConf,
 		},
@@ -301,16 +411,25 @@ func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 	}
 }
 
+var bootstrapScript = `
+#!/bin/bash
+
+chmod 777 /srv/node/d1
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+swift-account-auditor /etc/swift/account-auditor.conf --verbose
+`
+
 var expectedConfig = `
 {
-    "command": "swift-account-auditor /etc/swift/account-auditor.conf --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
         {
-            "source": "/var/lib/kolla/swift/account.ring.gz",
-            "dest": "/etc/swift/account.ring.gz",
-            "owner": "swift",
-            "perm": "0640",
-            "optional": true
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
         },
         {
             "source": "/var/lib/kolla/swift_config/swift.conf",
@@ -361,39 +480,21 @@ use = egg:swift#account
 [account-auditor]
 `
 
-func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
-	swiftStorage := contrail.SwiftStorage{}
-	err := fakeClient.Get(context.Background(), name, &swiftStorage)
-	assert.NoError(t, err)
-
-	claimName := types.NamespacedName{
-		Name:      name.Name + "-pv-claim",
-		Namespace: name.Namespace,
-	}
-
+func assertClaimCreated(t *testing.T, fakeClient client.Client, claimName types.NamespacedName) {
 	claim := core.PersistentVolumeClaim{}
-	err = fakeClient.Get(context.Background(), claimName, &claim)
+	err := fakeClient.Get(context.Background(), claimName, &claim)
 	assert.NoError(t, err)
 }
 
-func assertVolumeMountedToSTS(t *testing.T, c client.Client, name, stsName types.NamespacedName) {
+func assertVolumeMountedToSTS(t *testing.T, c client.Client, stsName types.NamespacedName, expectedVolume core.Volume) {
 	sts := apps.StatefulSet{}
 
 	err := c.Get(context.Background(), stsName, &sts)
 	assert.NoError(t, err)
 
-	expected := core.Volume{
-		Name: "devices-mount-point-volume",
-		VolumeSource: core.VolumeSource{
-			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-				ClaimName: name.Name + "-pv-claim",
-			},
-		},
-	}
-
 	var mounted bool
 	for _, volume := range sts.Spec.Template.Spec.Volumes {
-		mounted = reflect.DeepEqual(expected, volume) || mounted
+		mounted = reflect.DeepEqual(expectedVolume, volume) || mounted
 	}
 
 	assert.NoError(t, err)

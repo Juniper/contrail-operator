@@ -46,6 +46,7 @@ centos-binary-swift-object:master
 centos-binary-swift-proxy-server:master
 centos-binary-swift-rsyncd:master
 centos-binary-kolla-toolbox:master
+centos-source-swift-base:master
 EOF
 
 while read line; do

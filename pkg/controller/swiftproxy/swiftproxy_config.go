@@ -18,6 +18,7 @@ type swiftProxyConfig struct {
 func (s *swiftProxyConfig) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = swiftProxyServiceConfig
 	cm.Data["proxy-server.conf"] = s.executeTemplate(proxyServerConfig)
+	cm.Data["bootstrap.sh"] = bootstrapScript
 }
 
 func (s *swiftProxyConfig) executeTemplate(t *template.Template) string {
@@ -29,9 +30,15 @@ func (s *swiftProxyConfig) executeTemplate(t *template.Template) string {
 }
 
 const swiftProxyServiceConfig = `{
-    "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
-		{
+        {
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
+        },
+        {
             "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
@@ -128,3 +135,11 @@ use = egg:swift#versioned_writes
 allow_versioned_writes = True
 
 `))
+
+const bootstrapScript = `
+#!/bin/bash
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+swift-proxy-server /etc/swift/proxy-server.conf --verbose
+`

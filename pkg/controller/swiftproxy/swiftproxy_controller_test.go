@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -13,10 +11,13 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestSwiftProxyController(t *testing.T) {
@@ -136,7 +137,8 @@ func TestSwiftProxyController(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
-			r := swiftproxy.NewReconciler(cl, scheme, k8s.New(cl, scheme))
+			kubernetes := k8s.New(cl, scheme)
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes)
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -240,8 +242,9 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						Name:  "api",
 						Image: "localhost:5000/centos-binary-swift-proxy-server:master",
 						VolumeMounts: []core.VolumeMount{
-							core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
-							core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -250,6 +253,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							Name:  "KOLLA_CONFIG_STRATEGY",
 							Value: "COPY_ALWAYS",
 						}},
+						ReadinessProbe: &core.Probe{
+							Handler: core.Handler{
+								HTTPGet: &core.HTTPGetAction{
+									Path: "/healthcheck",
+									Port: intstr.IntOrString{IntVal: int32(5070)},
+								},
+							},
+						},
 					}},
 					HostNetwork: true,
 					Tolerations: []core.Toleration{
@@ -288,6 +299,15 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "test-secret",
+								},
+							},
+						},
+						{
+							Name: "rings",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: "swift-storage-rings",
+									ReadOnly:  true,
 								},
 							},
 						},
@@ -336,6 +356,15 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		VolumeMounts: []core.VolumeMount{
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+		},
+		ReadinessProbe: &core.Probe{
+			Handler: core.Handler{
+				HTTPGet: &core.HTTPGetAction{
+					Path: "/healthcheck",
+					Port: intstr.IntOrString{IntVal: int32(5070)},
+				},
+			},
 		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
@@ -364,6 +393,7 @@ func newExpectedSwiftProxyConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
+			"bootstrap.sh":      boostrapScript,
 			"config.json":       swiftProxyServiceConfig,
 			"proxy-server.conf": proxyServerConfig,
 		},
@@ -396,10 +426,24 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 	}
 }
 
+const boostrapScript = `
+#!/bin/bash
+ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
+ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
+ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
+swift-proxy-server /etc/swift/proxy-server.conf --verbose
+`
+
 const swiftProxyServiceConfig = `{
-    "command": "swift-proxy-server /etc/swift/proxy-server.conf --verbose",
+    "command": "/usr/bin/bootstrap.sh",
     "config_files": [
-		{
+        {
+            "source": "/var/lib/kolla/config_files/bootstrap.sh",
+            "dest": "/usr/bin/bootstrap.sh",
+            "owner": "root",
+            "perm": "0755"
+        },
+        {
             "source": "/var/lib/kolla/swift_config/swift.conf",
             "dest": "/etc/swift/swift.conf",
             "owner": "swift",
