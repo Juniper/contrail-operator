@@ -141,14 +141,6 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 	}
 	podSpec.Volumes = []core.Volume{
 		{
-			Name: "localtime-volume",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/etc/localtime",
-				},
-			},
-		},
-		{
 			Name: "config-volume",
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
@@ -183,11 +175,6 @@ func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 			Name:          "memcached",
 		}},
 		VolumeMounts: []core.VolumeMount{
-			{
-				Name:      "localtime-volume",
-				ReadOnly:  true,
-				MountPath: "/etc/localtime",
-			},
 			{
 				Name:      "config-volume",
 				ReadOnly:  true,

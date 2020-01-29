@@ -208,11 +208,6 @@ func newExpectedDeployment() *apps.Deployment {
 						}},
 						VolumeMounts: []core.VolumeMount{
 							{
-								Name:      "localtime-volume",
-								ReadOnly:  true,
-								MountPath: "/etc/localtime",
-							},
-							{
 								Name:      "config-volume",
 								ReadOnly:  true,
 								MountPath: "/var/lib/kolla/config_files/",
@@ -231,14 +226,6 @@ func newExpectedDeployment() *apps.Deployment {
 						},
 					},
 					Volumes: []core.Volume{
-						{
-							Name: "localtime-volume",
-							VolumeSource: core.VolumeSource{
-								HostPath: &core.HostPathVolumeSource{
-									Path: "/etc/localtime",
-								},
-							},
-						},
 						{
 							Name: "config-volume",
 							VolumeSource: core.VolumeSource{

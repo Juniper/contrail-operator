@@ -232,14 +232,6 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 				},
 			},
 			{
-				Name: "localtime-volume",
-				VolumeSource: core.VolumeSource{
-					HostPath: &core.HostPathVolumeSource{
-						Path: "/etc/localtime",
-					},
-				},
-			},
-			{
 				Name: "swift-conf-volume",
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
@@ -305,12 +297,6 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 		Name:      "devices-mount-point-volume",
 		MountPath: "/srv/node/d1",
 	}
-	localtimeVolumeMount := core.VolumeMount{
-		Name:      "localtime-volume",
-		MountPath: "/etc/localtime",
-		ReadOnly:  true,
-	}
-
 	serviceVolumeMount := core.VolumeMount{
 		Name:      name + "-config-volume",
 		MountPath: "/var/lib/kolla/config_files/",
@@ -336,7 +322,6 @@ func (cg *containerGenerator) swiftContainer(name, image string) core.Container 
 		Command: cg.getCommand(name),
 		VolumeMounts: []core.VolumeMount{
 			deviceMountPointVolumeMount,
-			localtimeVolumeMount,
 			serviceVolumeMount,
 			swiftConfVolumeMount,
 			ringsVolumeMount,

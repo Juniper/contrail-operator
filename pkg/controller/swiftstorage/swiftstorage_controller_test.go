@@ -241,24 +241,6 @@ func TestSwiftStorageController(t *testing.T) {
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
 
-	t.Run("should mount localtime volume mount to all Swift's containers", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
-		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.NoError(t, err)
-
-		expectedMountPoint := core.VolumeMount{
-			Name:      "localtime-volume",
-			MountPath: "/etc/localtime",
-			ReadOnly:  true,
-		}
-		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
-	})
-
 	t.Run("should mount swift conf volume mount to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
