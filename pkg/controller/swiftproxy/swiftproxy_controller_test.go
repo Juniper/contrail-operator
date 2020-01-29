@@ -126,6 +126,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxyWithCustomImages(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newMemcached(),
 			},
 
 			// then
@@ -204,6 +205,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
 				ListenPort:            5070,
 				KeystoneInstance:      "keystone",
+				MemcachedInstance:     "memcached-instance",
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
 				SwiftConfSecretName:   "test-secret",

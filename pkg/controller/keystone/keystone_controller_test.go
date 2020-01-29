@@ -139,6 +139,7 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				newMemcached(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
 			expectedConfigs: []*core.ConfigMap{},
