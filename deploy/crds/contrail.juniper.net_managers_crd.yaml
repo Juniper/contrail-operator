@@ -558,7 +558,7 @@ spec:
                               type: string
                             configAPIURL:
                               type: string
-                            container: {}
+                            containers: {}
                             postgresInstance:
                               type: string
                             telemetryURL:

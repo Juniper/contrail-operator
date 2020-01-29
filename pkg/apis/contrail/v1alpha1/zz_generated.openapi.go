@@ -773,7 +773,7 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 							Format: "",
 						},
 					},
-					"container": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{

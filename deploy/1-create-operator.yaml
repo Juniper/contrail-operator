@@ -626,8 +626,7 @@ spec:
                   type: string
                 configAPIURL:
                   type: string
-                image:
-                  type: string
+                containers: {}
                 postgresInstance:
                   type: string
                 telemetryURL:
@@ -933,8 +932,7 @@ spec:
             serviceConfiguration:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
-                imageRegistry:
-                  type: string
+                containers: {}
                 listenPort:
                   type: integer
                 postgresInstance:
@@ -1701,8 +1699,7 @@ spec:
                               type: string
                             configAPIURL:
                               type: string
-                            image:
-                              type: string
+                            containers: {}
                             postgresInstance:
                               type: string
                             telemetryURL:
@@ -1996,8 +1993,7 @@ spec:
                           description: KeystoneConfiguration is the Spec for the keystone
                             API.
                           properties:
-                            imageRegistry:
-                              type: string
+                            containers: {}
                             listenPort:
                               type: integer
                             postgresInstance:
@@ -2214,8 +2210,7 @@ spec:
                     spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
-                        image:
-                          type: string
+                        containers: {}
                       type: object
                     status:
                       description: PostgresStatus defines the observed state of Postgres
@@ -2541,8 +2536,7 @@ spec:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.
                               properties:
-                                imageRegistry:
-                                  type: string
+                                containers: {}
                                 keystoneAdminPassword:
                                   type: string
                                 keystoneInstance:
@@ -2562,8 +2556,7 @@ spec:
                                   type: integer
                                 containerBindPort:
                                   type: integer
-                                imageRegistry:
-                                  type: string
+                                containers: {}
                                 objectBindPort:
                                   type: integer
                                 swiftConfSecretName:
@@ -3346,8 +3339,7 @@ spec:
         spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
-            image:
-              type: string
+            containers: {}
           type: object
         status:
           description: PostgresStatus defines the observed state of Postgres
@@ -3703,8 +3695,7 @@ spec:
             serviceConfiguration:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
-                imageRegistry:
-                  type: string
+                containers: {}
                 keystoneAdminPassword:
                   type: string
                 keystoneInstance:
@@ -3774,8 +3765,7 @@ spec:
                   description: SwiftProxyConfiguration is the Spec for the keystone
                     API.
                   properties:
-                    imageRegistry:
-                      type: string
+                    containers: {}
                     keystoneAdminPassword:
                       type: string
                     keystoneInstance:
@@ -3795,8 +3785,7 @@ spec:
                       type: integer
                     containerBindPort:
                       type: integer
-                    imageRegistry:
-                      type: string
+                    containers: {}
                     objectBindPort:
                       type: integer
                     swiftConfSecretName:
@@ -3865,8 +3854,7 @@ spec:
                   type: integer
                 containerBindPort:
                   type: integer
-                imageRegistry:
-                  type: string
+                containers: {}
                 objectBindPort:
                   type: integer
                 swiftConfSecretName:
