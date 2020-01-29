@@ -558,7 +558,7 @@ spec:
                               type: string
                             configAPIURL:
                               type: string
-                            container: {}
+                            containers: {}
                             postgresInstance:
                               type: string
                             telemetryURL:
@@ -852,6 +852,7 @@ spec:
                           description: KeystoneConfiguration is the Spec for the keystone
                             API.
                           properties:
+                            containers: {}
                             listenPort:
                               type: integer
                             memcachedInstance:
