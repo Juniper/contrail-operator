@@ -1,14 +1,4 @@
 
-secretGenerator:
-- name: keystone-keys
-  namespace: contrail
-  files:
-  - id_rsa
-  - id_rsa.pub
-generatorOptions:
-  disableNameSuffixHash: true
-
 images:
   - name: michaelhenkel/contrail-operator:latest
     newName: registry:5000/contrail-operator
-

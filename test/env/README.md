@@ -15,10 +15,6 @@ It creates Kubernetes IN Docker cluster with a docker registry. This docker regi
     export INTERNAL_INSECURE_REGISTRY_PORT=6000
     ./update_local_registry.sh
 
-## Create keystone ssh keys
-
-    ssh-keygen -t rsa -b 1024 -N "" -f deploy/id_rsa
-
 ## Apply operator and cluster
     export KIND_CLUSTER_NAME=kind
     ./apply_contrail_cluster.sh
