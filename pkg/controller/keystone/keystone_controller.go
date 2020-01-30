@@ -142,12 +142,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kcName := keystone.Name + "-keystone"
-	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql, memcached); err != nil {
+	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kfcName := keystone.Name + "-keystone-fernet"
-	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql, memcached); err != nil {
+	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -157,7 +157,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql, memcached); err != nil {
+	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 

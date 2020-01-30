@@ -23,12 +23,12 @@ func (r *ReconcileSwiftProxy) configMap(
 	}
 }
 
-func (c *configMaps) ensureExists(memcached *contrail.Memcached) error {
+func (c *configMaps) ensureExists(memcachedNode string) error {
 
 	spc := &swiftProxyConfig{
 		ListenPort:            c.swiftProxySpec.ServiceConfiguration.ListenPort,
 		KeystoneServer:        c.keystoneStatus.Node,
-		MemcachedServer:       memcached.Status.Node,
+		MemcachedServer:       memcachedNode,
 		KeystoneAdminPassword: c.swiftProxySpec.ServiceConfiguration.KeystoneAdminPassword,
 		SwiftPassword:         c.swiftProxySpec.ServiceConfiguration.SwiftPassword,
 	}
