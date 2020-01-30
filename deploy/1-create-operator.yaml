@@ -3103,8 +3103,6 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
@@ -3119,8 +3117,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3131,8 +3127,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -3145,8 +3139,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean
@@ -3170,8 +3162,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3183,8 +3173,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean
@@ -3198,8 +3186,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3210,8 +3196,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -3224,8 +3208,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3237,8 +3219,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3249,8 +3229,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -3264,8 +3242,6 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
@@ -3278,8 +3254,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3291,8 +3265,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean

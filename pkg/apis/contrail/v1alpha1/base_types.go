@@ -75,10 +75,9 @@ type Container struct {
 // ServiceStatus provides information on the current status of the service.
 // +k8s:openapi-gen=true
 type ServiceStatus struct {
-	Name              *string `json:"name,omitempty"`
-	Active            *bool   `json:"active,omitempty"`
-	Created           *bool   `json:"created,omitempty"`
-	ControllerRunning *bool   `json:"controllerRunning,omitempty"`
+	Name    *string `json:"name,omitempty"`
+	Active  *bool   `json:"active,omitempty"`
+	Created *bool   `json:"created,omitempty"`
 }
 
 // Status is the status of the service.

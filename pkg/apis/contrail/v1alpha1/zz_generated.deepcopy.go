@@ -2235,11 +2235,6 @@ func (in *ServiceStatus) DeepCopyInto(out *ServiceStatus) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.ControllerRunning != nil {
-		in, out := &in.ControllerRunning, &out.ControllerRunning
-		*out = new(bool)
-		**out = **in
-	}
 	return
 }
 
