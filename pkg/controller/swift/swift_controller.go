@@ -2,10 +2,12 @@ package swift
 
 import (
 	"context"
+	"fmt"
 
+	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,6 +20,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/swift/ring"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swift")
@@ -30,12 +34,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme())
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()))
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcileSwift {
-	return &ReconcileSwift{client: client, scheme: scheme}
+func NewReconciler(client client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+	return &ReconcileSwift{client: client, scheme: scheme, claims: claims}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -91,6 +95,7 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	claims *volumeclaims.PersistentVolumeClaims
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -122,6 +127,37 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	swiftStorage := &contrail.SwiftStorage{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	ringsClaim := types.NamespacedName{
+		Namespace: swiftStorage.Namespace,
+		Name:      "swift-storage-rings",
+	}
+
+	if err := r.claims.New(ringsClaim, swiftStorage).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	ips := swiftStorage.Status.IPs
+	if len(ips) == 0 {
+		ips = []string{"0.0.0.0"}
+	}
+	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
+	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim.Name, ips, swift); err != nil {
+		return reconcile.Result{Requeue: true}, err
+	}
+	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
+	if err = r.startRingReconcilingJob("object", objectPort, ringsClaim.Name, ips, swift); err != nil {
+		return reconcile.Result{Requeue: true}, err
+	}
+	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
+	if err = r.startRingReconcilingJob("container", containerPort, ringsClaim.Name, ips, swift); err != nil {
+		return reconcile.Result{Requeue: true}, err
 	}
 
 	swiftProxyAndStorageActiveStatus := false
@@ -175,7 +211,7 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 
 func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftStorage := &contrail.SwiftStorage{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-storage",
 			Namespace: swift.Namespace,
 		},
@@ -190,7 +226,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 
 func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftProxy := &contrail.SwiftProxy{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-proxy",
 			Namespace: swift.Namespace,
 		},
@@ -201,4 +237,48 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConf
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
 	return err
+}
+
+func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ips []string, swift *contrail.Swift) error {
+	jobName := types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      swift.Name + "-ring-" + ringType + "-job",
+	}
+	existingJob := &batch.Job{}
+	err := r.client.Get(context.Background(), jobName, existingJob)
+	jobAlreadyExists := err == nil
+	if jobAlreadyExists {
+		jobCompleted := existingJob.Status.CompletionTime != nil
+		if !jobCompleted {
+			return fmt.Errorf("job %v is running", jobName)
+		}
+		if err := r.client.Delete(context.Background(), existingJob, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
+			return err
+		}
+		return fmt.Errorf("removing job %v", jobName)
+	}
+
+	theRing, err := ring.New(ringsClaimName, "/etc/rings", ringType)
+	if err != nil {
+		return err
+	}
+	for _, ip := range ips {
+		if err := theRing.AddDevice(ring.Device{
+			Region: "1",
+			Zone:   "1",
+			IP:     ip,
+			Port:   port,
+			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
+		}); err != nil {
+			return err
+		}
+	}
+	job, err := theRing.BuildJob(jobName)
+	if err != nil {
+		return err
+	}
+	if err = controllerutil.SetControllerReference(swift, &job, r.scheme); err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), &job)
 }

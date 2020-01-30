@@ -107,16 +107,15 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err := r.claims.New(claimNamespacedName, swiftStorage).EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+	//
+	//ringsClaimName := types.NamespacedName{
+	//	Namespace: swiftStorage.Namespace,
+	//	Name: "swift-storage-rings",
+	//}
 
-	ringsClaimName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		// TODO This should be a swift proxy spec parameter
-		Name: "swift-storage-rings",
-	}
-
-	if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
-		return reconcile.Result{}, err
-	}
+	//if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
+	//	return reconcile.Result{}, err
+	//}
 
 	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
 		return reconcile.Result{}, err
@@ -130,7 +129,8 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaimName.Name)
+	// TODO This should be a swift proxy spec parameter
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, "swift-storage-rings")
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -140,18 +140,18 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err = r.client.List(context.Background(), &pods, labels); err != nil {
 		return reconcile.Result{}, err
 	}
-	if len(pods.Items) != 0 {
-		swiftSpec := swiftStorage.Spec.ServiceConfiguration
-		if err := r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
-		}
-		if err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
-		}
-		if err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
-		}
-	}
+	//if len(pods.Items) != 0 {
+	//	swiftSpec := swiftStorage.Spec.ServiceConfiguration
+	//	if err := r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+	//		return reconcile.Result{Requeue: true}, err
+	//	}
+	//	if err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+	//		return reconcile.Result{Requeue: true}, err
+	//	}
+	//	if err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage); err != nil {
+	//		return reconcile.Result{Requeue: true}, err
+	//	}
+	//}
 	swiftStorage.Status.IPs = []string{}
 	for _, pod := range pods.Items {
 		if pod.Status.PodIP != "" {

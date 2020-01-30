@@ -62,7 +62,7 @@ func TestSwiftController(t *testing.T) {
 	t.Run("when Swift CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, nil)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -131,7 +131,7 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSecret, existingSwiftProxy, existingSwiftStorage)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, nil)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -193,7 +193,7 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSwiftProxy, existingSwiftStorage)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, nil)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
