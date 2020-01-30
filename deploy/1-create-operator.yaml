@@ -2619,6 +2619,8 @@ spec:
                                 containerBindPort:
                                   type: integer
                                 containers: {}
+                                device:
+                                  type: string
                                 objectBindPort:
                                   type: integer
                                 swiftConfSecretName:
@@ -3839,6 +3841,8 @@ spec:
                     containerBindPort:
                       type: integer
                     containers: {}
+                    device:
+                      type: string
                     objectBindPort:
                       type: integer
                     swiftConfSecretName:
@@ -3908,6 +3912,8 @@ spec:
                 containerBindPort:
                   type: integer
                 containers: {}
+                device:
+                  type: string
                 objectBindPort:
                   type: integer
                 swiftConfSecretName:

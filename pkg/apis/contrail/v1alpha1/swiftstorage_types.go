@@ -23,6 +23,7 @@ type SwiftStorageConfiguration struct {
 	ContainerBindPort   int                   `json:"containerBindPort,omitempty"`
 	ObjectBindPort      int                   `json:"objectBindPort,omitempty"`
 	SwiftConfSecretName string                `json:"swiftConfSecretName,omitempty"`
+	Device              string                `json:"device,omitempty"`
 	Containers          map[string]*Container `json:"containers,omitempty"`
 }
 
@@ -30,8 +31,7 @@ type SwiftStorageConfiguration struct {
 // +k8s:openapi-gen=true
 type SwiftStorageStatus struct {
 	Active bool `json:"active"`
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	IPs    []string
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

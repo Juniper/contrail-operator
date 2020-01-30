@@ -2729,6 +2729,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 							Format: "",
 						},
 					},
+					"device": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
@@ -2785,8 +2791,21 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageStatus(ref common.ReferenceCa
 							Format: "",
 						},
 					},
+					"IPs": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
 				},
-				Required: []string{"active"},
+				Required: []string{"active", "IPs"},
 			},
 		},
 	}
