@@ -3,6 +3,7 @@ package swift
 import (
 	"context"
 	"fmt"
+	"time"
 
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -149,15 +150,15 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
 	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
 	if err = r.startRingReconcilingJob("object", objectPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
 	if err = r.startRingReconcilingJob("container", containerPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
 	swiftProxyAndStorageActiveStatus := false
