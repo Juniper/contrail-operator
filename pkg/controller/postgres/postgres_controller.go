@@ -98,6 +98,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	namespacedName := types.NamespacedName{
 		Namespace: instance.Namespace,
 		Name:      instance.Name + "-pv-claim",

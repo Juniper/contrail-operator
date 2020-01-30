@@ -145,6 +145,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 		return reconcile.Result{}, err
 	}
+
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	provisionConfigMap := &corev1.ConfigMap{}
 	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "provision-config", Namespace: request.Namespace}, provisionConfigMap); err != nil {
 		if errors.IsNotFound(err) {
@@ -1418,6 +1423,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	r.setConditions(instance)
+
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -1425,10 +1432,19 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	return reconcile.Result{}, nil
 }
 
+func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
+	readyStatus := v1alpha1.ConditionFalse
+	if manager.IsClusterReady() {
+		readyStatus = v1alpha1.ConditionTrue
+	}
+
+	manager.Status.Conditions = []v1alpha1.ManagerCondition{{
+		Type:   v1alpha1.ManagerReady,
+		Status: readyStatus,
+	}}
+}
+
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
-	log.Info("Test process command")
-	log.Info("Test ", "Manager Spec : ", manager.Spec.Services)
-	log.Info("Test ", "Manager Spec command : ", manager.Spec.Services.Command)
 	if manager.Spec.Services.Command == nil {
 		return nil
 	}

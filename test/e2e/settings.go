@@ -6,5 +6,5 @@ var (
 	retryInterval        = time.Second * 5
 	waitTimeout          = time.Second * 120
 	cleanupRetryInterval = time.Second * 1
-	cleanupTimeout       = time.Second * 5
+	cleanupTimeout       = time.Minute * 5
 )

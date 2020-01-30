@@ -95,6 +95,10 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	if !swiftStorage.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	claimNamespacedName := types.NamespacedName{
 		Namespace: swiftStorage.Namespace,
 		Name:      swiftStorage.Name + "-pv-claim",

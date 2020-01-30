@@ -133,6 +133,18 @@ type CommonConfiguration struct {
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 }
 
+func (ss *ServiceStatus) ready() bool {
+	if ss == nil {
+		return false
+	}
+	if ss.Active == nil {
+		return false
+	}
+
+	return *ss.Active
+
+}
+
 func CreateAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
 
 	serviceAccountName := "serviceaccount-" + accountName

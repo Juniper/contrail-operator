@@ -178,6 +178,10 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	configInstance := &v1alpha1.Config{}
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
 	if !configActive {

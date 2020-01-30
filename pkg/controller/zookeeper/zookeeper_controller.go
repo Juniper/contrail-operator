@@ -163,6 +163,10 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	currentZookeeperInstance := *instance
 	managerInstance, err := instance.OwnedByManager(r.Client, request)
 	if err != nil {

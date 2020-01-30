@@ -1734,11 +1734,29 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref common.ReferenceCallbac
 							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
 						},
 					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.ManagerCondition"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.CrdStatus", "./pkg/apis/contrail/v1alpha1.ServiceStatus"},
+			"./pkg/apis/contrail/v1alpha1.CrdStatus", "./pkg/apis/contrail/v1alpha1.ManagerCondition", "./pkg/apis/contrail/v1alpha1.ServiceStatus"},
 	}
 }
 

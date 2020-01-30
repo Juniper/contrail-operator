@@ -200,7 +200,9 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, nil
 	}
 
-	//currentInstance := *config
+	if !config.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
 
 	cassandraActive := cassandraInstance.IsActive(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
