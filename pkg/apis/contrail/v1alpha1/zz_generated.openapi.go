@@ -773,7 +773,7 @@ func schema_pkg_apis_contrail_v1alpha1_ContrailCommandConfiguration(ref common.R
 							Format: "",
 						},
 					},
-					"container": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
@@ -1198,7 +1198,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 							Format: "",
 						},
 					},
-					"Containers": {
+					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
@@ -1212,7 +1212,6 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"Containers"},
 			},
 		},
 		Dependencies: []string{

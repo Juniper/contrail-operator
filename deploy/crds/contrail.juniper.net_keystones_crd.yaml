@@ -109,6 +109,7 @@ spec:
             serviceConfiguration:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
+                containers: {}
                 listenPort:
                   type: integer
                 postgresInstance:
