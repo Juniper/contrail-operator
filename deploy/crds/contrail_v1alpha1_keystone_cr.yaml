@@ -16,5 +16,6 @@ spec:
     nodeSelector:
       node-role.kubernetes.io/master: ""
   serviceConfiguration:
+    memcachedInstance: "memcached"
     postgresInstance: "postgres"
     listenPort: 5555

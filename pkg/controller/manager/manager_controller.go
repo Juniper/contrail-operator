@@ -37,6 +37,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.ContrailCommand{},
 	&v1alpha1.Keystone{},
 	&v1alpha1.Swift{},
+	&v1alpha1.Memcached{},
 }
 
 /**
@@ -1412,6 +1413,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err := r.processSwift(instance); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	if err := r.processMemcached(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -1486,5 +1492,22 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	status := &v1alpha1.ServiceStatus{}
 	status.Active = &swift.Status.Active
 	manager.Status.Swift = status
+	return err
+}
+
+func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Memcached == nil {
+		return nil
+	}
+	memcached := &v1alpha1.Memcached{}
+	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta
+	memcached.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
+		memcached.Spec = manager.Spec.Services.Memcached.Spec
+		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &memcached.Status.Active
+	manager.Status.Memcached = status
 	return err
 }

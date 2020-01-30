@@ -1186,6 +1186,12 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 				Description: "KeystoneConfiguration is the Spec for the keystone API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"memcachedInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"listenPort": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
@@ -1723,6 +1729,11 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerStatus(ref common.ReferenceCallbac
 							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
 						},
 					},
+					"memcached": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.ServiceStatus"),
+						},
+					},
 				},
 			},
 		},
@@ -2185,12 +2196,6 @@ func schema_pkg_apis_contrail_v1alpha1_ServiceStatus(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
-					"controllerRunning": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
 				},
 			},
 		},
@@ -2304,11 +2309,16 @@ func schema_pkg_apis_contrail_v1alpha1_Services(ref common.ReferenceCallback) co
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Swift"),
 						},
 					},
+					"memcached": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Memcached"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.ProvisionManager", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Swift", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
+			"./pkg/apis/contrail/v1alpha1.Cassandra", "./pkg/apis/contrail/v1alpha1.Config", "./pkg/apis/contrail/v1alpha1.ContrailCommand", "./pkg/apis/contrail/v1alpha1.Control", "./pkg/apis/contrail/v1alpha1.Keystone", "./pkg/apis/contrail/v1alpha1.Kubemanager", "./pkg/apis/contrail/v1alpha1.Memcached", "./pkg/apis/contrail/v1alpha1.Postgres", "./pkg/apis/contrail/v1alpha1.ProvisionManager", "./pkg/apis/contrail/v1alpha1.Rabbitmq", "./pkg/apis/contrail/v1alpha1.Swift", "./pkg/apis/contrail/v1alpha1.Vrouter", "./pkg/apis/contrail/v1alpha1.Webui", "./pkg/apis/contrail/v1alpha1.Zookeeper"},
 	}
 }
 
@@ -2506,6 +2516,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 				Description: "SwiftProxyConfiguration is the Spec for the keystone API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"memcachedInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"listenPort": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},

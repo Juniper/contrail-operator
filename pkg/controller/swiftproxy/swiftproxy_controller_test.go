@@ -41,6 +41,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newMemcached(),
 			},
 
 			// then
@@ -66,6 +67,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
+				newMemcached(),
 			},
 
 			// then
@@ -88,6 +90,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
+				newMemcached(),
 			},
 
 			// then
@@ -107,6 +110,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newSwiftProxy(contrail.SwiftProxyStatus{Active: true}),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
+				newMemcached(),
 			},
 
 			// then
@@ -122,6 +126,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxyWithCustomImages(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newMemcached(),
 			},
 
 			// then
@@ -200,6 +205,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
 				ListenPort:            5070,
 				KeystoneInstance:      "keystone",
+				MemcachedInstance:     "memcached-instance",
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
 				SwiftConfSecretName:   "test-secret",
@@ -386,6 +392,16 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 			OwnerReferences: ownersReferences,
 		},
 		Status: status,
+	}
+}
+
+func newMemcached() *contrail.Memcached {
+	return &contrail.Memcached{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "memcached-instance",
+			Namespace: "default",
+		},
+		Status: contrail.MemcachedStatus{Active: true, Node: "localhost:11211"},
 	}
 }
 

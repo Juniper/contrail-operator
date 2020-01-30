@@ -244,6 +244,7 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
+          memcachedInstance: "memcached"
           postgresInstance: postgres
           listenPort: 5555
           containers:
@@ -264,12 +265,21 @@ spec:
         containers:
           postgres: 
             image: registry:5000/postgres
+    memcached:
+      metadata:
+        name: memcached
+        namespace: contrail
+      spec:
+        serviceConfiguration:
+          container:
+            image: "registry:5000/centos-binary-memcached:master"
     swift:
       metadata:
         name: swift
       spec:
         serviceConfiguration:
           swiftProxyConfiguration:
+            memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
             keystoneAdminPassword: "contrail123"

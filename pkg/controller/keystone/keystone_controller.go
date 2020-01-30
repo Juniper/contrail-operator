@@ -67,6 +67,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Keystone{},
+	})
 
 	return err
 }
@@ -107,12 +114,21 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if err := r.kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if !psql.Status.Active {
+		return reconcile.Result{}, nil
+	}
+
+	memcached, err := r.getMemcached(keystone)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := r.kubernetes.Owner(keystone).EnsureOwns(memcached); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !memcached.Status.Active {
 		return reconcile.Result{}, nil
 	}
 
@@ -126,12 +142,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kcName := keystone.Name + "-keystone"
-	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql); err != nil {
+	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kfcName := keystone.Name + "-keystone-fernet"
-	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql); err != nil {
+	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -141,7 +157,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql); err != nil {
+	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -254,6 +270,13 @@ func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgr
 		}, psql)
 
 	return psql, err
+}
+
+func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memcached, error) {
+	key := &contrail.Memcached{}
+	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
+	err := r.client.Get(context.Background(), name, key)
+	return key, err
 }
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr

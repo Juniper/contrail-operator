@@ -63,6 +63,8 @@ spec:
           properties:
             active:
               type: boolean
+            node:
+              type: string
           type: object
       type: object
   version: v1alpha1

@@ -111,7 +111,7 @@ func TestMemcachedController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		t.Run("should set Memcached status to Active", func(t *testing.T) {
-			assertMemcachedIsActive(t, fakeClient)
+			assertMemcachedIsActiveAndNodeStatusIsSet(t, fakeClient)
 		})
 	})
 
@@ -160,11 +160,12 @@ func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
 	assert.Equal(t, newExpectedMemcachedConfigMap(), configMap)
 }
 
-func assertMemcachedIsActive(t *testing.T, c client.Client) {
+func assertMemcachedIsActiveAndNodeStatusIsSet(t *testing.T, c client.Client) {
 	memcachedCR := contrail.Memcached{}
 	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
 	assert.NoError(t, err)
 	assert.True(t, memcachedCR.Status.Active)
+	assert.Equal(t, "localhost:11211", memcachedCR.Status.Node)
 }
 
 func assertMemcachedIsInactive(t *testing.T, c client.Client) {

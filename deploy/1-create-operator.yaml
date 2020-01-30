@@ -935,6 +935,8 @@ spec:
                 containers: {}
                 listenPort:
                   type: integer
+                memcachedInstance:
+                  type: string
                 postgresInstance:
                   type: string
               type: object
@@ -1996,6 +1998,8 @@ spec:
                             containers: {}
                             listenPort:
                               type: integer
+                            memcachedInstance:
+                              type: string
                             postgresInstance:
                               type: string
                           type: object
@@ -2190,6 +2194,62 @@ spec:
                         type: object
                     type: object
                   type: array
+                memcached:
+                  description: Memcached is the Schema for the memcacheds API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: MemcachedSpec defines the desired state of Memcached
+                      properties:
+                        serviceConfiguration:
+                          properties:
+                            connectionLimit:
+                              format: int32
+                              type: integer
+                            container:
+                              description: Container defines name, image and command.
+                              properties:
+                                command:
+                                  items:
+                                    type: string
+                                  type: array
+                                image:
+                                  type: string
+                              type: object
+                            listenPort:
+                              format: int32
+                              type: integer
+                            maxMemory:
+                              format: int32
+                              type: integer
+                          required:
+                          - container
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: MemcachedStatus defines the observed state of Memcached
+                      properties:
+                        active:
+                          type: boolean
+                        node:
+                          type: string
+                      type: object
+                  type: object
                 postgres:
                   description: Postgres is the Schema for the postgres API
                   properties:
@@ -2543,6 +2603,8 @@ spec:
                                   type: string
                                 listenPort:
                                   type: integer
+                                memcachedInstance:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                                 swiftPassword:
@@ -3041,8 +3103,6 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
@@ -3057,8 +3117,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3069,8 +3127,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -3083,8 +3139,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean
@@ -3108,8 +3162,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3122,21 +3174,28 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
                     type: string
                 type: object
               type: array
-            postgres:
+            memcached:
               description: ServiceStatus provides information on the current status
                 of the service.
               properties:
                 active:
                   type: boolean
-                controllerRunning:
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            postgres:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
                   type: boolean
                 created:
                   type: boolean
@@ -3149,8 +3208,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3162,8 +3219,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3174,8 +3229,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -3189,8 +3242,6 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
@@ -3203,8 +3254,6 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
-                  type: boolean
                 created:
                   type: boolean
                 name:
@@ -3216,8 +3265,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean
@@ -3298,6 +3345,8 @@ spec:
           properties:
             active:
               type: boolean
+            node:
+              type: string
           type: object
       type: object
   version: v1alpha1
@@ -3702,6 +3751,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                memcachedInstance:
+                  type: string
                 swiftConfSecretName:
                   type: string
                 swiftPassword:
@@ -3772,6 +3823,8 @@ spec:
                       type: string
                     listenPort:
                       type: integer
+                    memcachedInstance:
+                      type: string
                     swiftConfSecretName:
                       type: string
                     swiftPassword:

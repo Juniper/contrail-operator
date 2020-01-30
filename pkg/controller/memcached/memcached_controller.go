@@ -2,13 +2,14 @@ package memcached
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
+	"fmt"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -121,6 +122,7 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	}
 	if deployment.Status.ReadyReplicas == expectedReplicas {
 		memcachedCR.Status.Active = true
+		memcachedCR.Status.Node = fmt.Sprintf("localhost:%v", memcachedCR.Spec.ServiceConfiguration.GetListenPort()) // TODO get pod by labels
 	} else {
 		memcachedCR.Status.Active = false
 	}
@@ -155,10 +157,6 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 }
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
-	port := memcachedCR.Spec.ServiceConfiguration.ListenPort
-	if port == 0 {
-		port = 11211
-	}
 	return core.Container{
 		Name:            "memcached",
 		Image:           memcachedCR.Spec.ServiceConfiguration.Container.Image,
@@ -171,7 +169,7 @@ func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 			Value: "COPY_ALWAYS",
 		}},
 		Ports: []core.ContainerPort{{
-			ContainerPort: port,
+			ContainerPort: memcachedCR.Spec.ServiceConfiguration.GetListenPort(),
 			Name:          "memcached",
 		}},
 		VolumeMounts: []core.VolumeMount{

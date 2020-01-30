@@ -43,6 +43,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				newMemcached(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -66,6 +67,7 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+				newMemcached(),
 			},
 			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "localhost:5555"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
@@ -95,6 +97,7 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				newMemcached(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -116,6 +119,7 @@ func TestKeystone(t *testing.T) {
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 				},
+				newMemcached(),
 			},
 			expectedSTS:     &apps.StatefulSet{},
 			expectedConfigs: []*core.ConfigMap{},
@@ -135,6 +139,7 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				newMemcached(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
 			expectedConfigs: []*core.ConfigMap{},
@@ -230,10 +235,21 @@ func newKeystone() *contrail.Keystone {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				PostgresInstance: "psql",
-				ListenPort:       5555,
+				MemcachedInstance: "memcached-instance",
+				PostgresInstance:  "psql",
+				ListenPort:        5555,
 			},
 		},
+	}
+}
+
+func newMemcached() *contrail.Memcached {
+	return &contrail.Memcached{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "memcached-instance",
+			Namespace: "default",
+		},
+		Status: contrail.MemcachedStatus{Active: true, Node: "localhost:11211"},
 	}
 }
 

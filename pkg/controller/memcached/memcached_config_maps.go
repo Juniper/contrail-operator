@@ -24,18 +24,9 @@ func (r *ReconcileMemcached) configMap(configMapName string, memcached *contrail
 
 func (c *configMaps) ensureExists() error {
 	spc := &memcachedConfig{
-		ListenPort:      c.memcachedSpec.ServiceConfiguration.ListenPort,
-		ConnectionLimit: c.memcachedSpec.ServiceConfiguration.ConnectionLimit,
-		MaxMemory:       c.memcachedSpec.ServiceConfiguration.MaxMemory,
-	}
-	if spc.ListenPort == 0 {
-		spc.ListenPort = 11211
-	}
-	if spc.ConnectionLimit == 0 {
-		spc.ConnectionLimit = 5000
-	}
-	if spc.MaxMemory == 0 {
-		spc.MaxMemory = 256
+		ListenPort:      c.memcachedSpec.ServiceConfiguration.GetListenPort(),
+		ConnectionLimit: c.memcachedSpec.ServiceConfiguration.GetConnectionLimit(),
+		MaxMemory:       c.memcachedSpec.ServiceConfiguration.GetMaxMemory(),
 	}
 	return c.cm.EnsureExists(spc)
 }
