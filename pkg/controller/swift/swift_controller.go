@@ -148,17 +148,26 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
+
+	result, err := r.removeRingReconcilingJobs(types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      swift.Name,
+	})
+	if result.Requeue || err != nil {
+		return result, err
+	}
+
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
 	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		return reconcile.Result{}, err
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
 	if err = r.startRingReconcilingJob("object", objectPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		return reconcile.Result{}, err
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
 	if err = r.startRingReconcilingJob("container", containerPort, ringsClaim.Name, ips, swift); err != nil {
-		return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		return reconcile.Result{}, err
 	}
 
 	swiftProxyAndStorageActiveStatus := false
@@ -282,4 +291,38 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 		return err
 	}
 	return r.client.Create(context.Background(), &job)
+}
+
+func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedName) (reconcile.Result, error) {
+	var removedAtLeastOneJob bool
+	ringTypes := []string{"account", "container", "object"}
+	for _, ringType := range ringTypes {
+		jobName := types.NamespacedName{
+			Namespace: swiftName.Namespace,
+			Name:      swiftName.Name + "-ring-" + ringType + "-job",
+		}
+		job := &batch.Job{}
+		err := r.client.Get(context.Background(), jobName, job)
+		existingJob := err == nil
+		if existingJob {
+			pending := job.Status.CompletionTime == nil
+			if pending {
+				return reconcile.Result{
+					Requeue:      true,
+					RequeueAfter: time.Second * 5,
+				}, nil
+			}
+			removedAtLeastOneJob = true
+			if err := r.client.Delete(context.Background(), job, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+	if removedAtLeastOneJob {
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: time.Second * 5,
+		}, nil
+	}
+	return reconcile.Result{}, nil
 }
