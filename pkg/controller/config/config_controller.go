@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -87,16 +88,17 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 }
 
 // Add adds the Config controller to the manager.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, httpClient *http.Client) error {
+	return add(mgr, newReconciler(mgr, httpClient))
 }
 
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, httpClient *http.Client) reconcile.Reconciler {
 	return &ReconcileConfig{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Manager: mgr,
-		claims:  volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Manager:    mgr,
+		claims:     volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+		httpClient: httpClient,
 	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -175,11 +177,12 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client    client.Client
-	Scheme    *runtime.Scheme
-	Manager   manager.Manager
-	claims    *volumeclaims.PersistentVolumeClaims
-	podsReady *bool
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Manager    manager.Manager
+	claims     *volumeclaims.PersistentVolumeClaims
+	podsReady  *bool
+	httpClient *http.Client
 }
 
 // Reconcile reconciles Config.
@@ -188,35 +191,35 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Config")
 	instanceType := "config"
-	instance := &v1alpha1.Config{}
+	config := &v1alpha1.Config{}
 	cassandraInstance := &v1alpha1.Cassandra{}
 	zookeeperInstance := &v1alpha1.Zookeeper{}
 	rabbitmqInstance := &v1alpha1.Rabbitmq{}
 
-	if err = r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
+	if err = r.Client.Get(context.TODO(), request.NamespacedName, config); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
-	//currentInstance := *instance
+	//currentInstance := *config
 
-	cassandraActive := cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
+	cassandraActive := cassandraInstance.IsActive(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
-	zookeeperActive := zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
+	zookeeperActive := zookeeperInstance.IsActive(config.Spec.ServiceConfiguration.ZookeeperInstance,
 		request.Namespace, r.Client)
-	rabbitmqActive := rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
+	rabbitmqActive := rabbitmqInstance.IsActive(config.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
-	cassandraUpgrading := cassandraInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
+	cassandraUpgrading := cassandraInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
-	zookeeperUpgrading := zookeeperInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
+	zookeeperUpgrading := zookeeperInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
-	rabbitmqUpgrading := rabbitmqInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
+	rabbitmqUpgrading := rabbitmqInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
 
 	if !cassandraActive || !rabbitmqActive || !zookeeperActive || cassandraUpgrading || zookeeperUpgrading || rabbitmqUpgrading {
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
+	managerInstance, err := config.OwnedByManager(r.Client, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -224,10 +227,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if managerInstance.Spec.Services.Config != nil {
 			configManagerInstance := managerInstance.Spec.Services.Config
 			if configManagerInstance.Name == request.Name {
-				instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
+				config.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
 					managerInstance.Spec.CommonConfiguration,
 					configManagerInstance.Spec.CommonConfiguration)
-				err = r.Client.Update(context.TODO(), instance)
+				err = r.Client.Update(context.TODO(), config)
 				if err != nil {
 					return reconcile.Result{}, err
 				}
@@ -235,14 +238,14 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	currentConfigMap, currentConfigExists := instance.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
+	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
-	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
+	configMap, err := config.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
+	secretCertificates, err := config.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -254,7 +257,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	// persistent volumes and capabilities
 	trueVal := true
 	statefulSet.Spec.Template.Spec.ShareProcessNamespace = &trueVal
-	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	if err = config.PrepareSTS(statefulSet, &config.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -263,28 +266,28 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if pvc == nil {
 			continue
 		}
-		pvc.ClaimName = instance.Name + "-" + instanceType + "-" + vol.Name
-		if err := r.claims.New(types.NamespacedName{Namespace: instance.Namespace, Name: pvc.ClaimName},
-			instance).EnsureExists(); err != nil {
+		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
+		if err := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName},
+			config).EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
-	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
+	config.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	config.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	configNodeMgr := true
 	analyticsNodeMgr := true
 
-	if _, ok := instance.Spec.ServiceConfiguration.Containers["nodemanagerconfig"]; !ok {
+	if _, ok := config.Spec.ServiceConfiguration.Containers["nodemanagerconfig"]; !ok {
 		configNodeMgr = false
 	}
 
-	if _, ok := instance.Spec.ServiceConfiguration.Containers["nodemanageranalytics"]; !ok {
+	if _, ok := config.Spec.ServiceConfiguration.Containers["nodemanageranalytics"]; !ok {
 		analyticsNodeMgr = false
 	}
 
-	if instance.Spec.ServiceConfiguration.NodeManager != nil && !*instance.Spec.ServiceConfiguration.NodeManager {
+	if config.Spec.ServiceConfiguration.NodeManager != nil && !*config.Spec.ServiceConfiguration.NodeManager {
 		for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 			if container.Name == "nodemanagerconfig" {
 				statefulSet.Spec.Template.Spec.Containers = utils.RemoveIndex(statefulSet.Spec.Template.Spec.Containers, idx)
@@ -301,10 +304,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if container.Name == "api" {
 			command := []string{"bash", "-c",
 				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-api --conf_file /etc/mycontrail/api.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf --worker_id 0"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 
 			volumeMountList := []corev1.VolumeMount{}
@@ -322,15 +325,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "devicemanager" {
 			command := []string{"bash", "-c",
 				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).SecurityContext = &corev1.SecurityContext{
 				Capabilities: &corev1.Capabilities{
@@ -361,7 +364,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			})
 
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "dnsmasq" {
 			container := &statefulSet.Spec.Template.Spec.Containers[idx]
@@ -369,8 +372,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini;ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;" +
 					"dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
 
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
-				container.Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+				container.Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			container.SecurityContext = &corev1.SecurityContext{
 				Capabilities: &corev1.Capabilities{
@@ -406,15 +409,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				{Name: "KEYSTONE_AUTH_ADMIN_TENANT", Value: ""},
 			}...)
 			container.VolumeMounts = volumeMountList
-			container.Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			container.Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "servicemonitor" {
 			command := []string{"bash", "-c",
 				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-svc-monitor --conf_file /etc/mycontrail/servicemonitor.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -431,15 +434,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "schematransformer" {
 			command := []string{"bash", "-c",
 				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-schema --conf_file /etc/mycontrail/schematransformer.${POD_IP}  --conf_file /etc/contrail/contrail-keystone-auth.conf"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -456,15 +459,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "analyticsapi" {
 			command := []string{"bash", "-c",
 				"/usr/bin/python /usr/bin/contrail-analytics-api -c /etc/mycontrail/analyticsapi.${POD_IP} -c /etc/contrail/contrail-keystone-auth.conf"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -481,7 +484,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "queryengine" {
 			volumeMountList := []corev1.VolumeMount{}
@@ -500,15 +503,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				MountPath: "/etc/certificates",
 			})
 			queryEngineContainer.VolumeMounts = volumeMountList
-			queryEngineContainer.Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			queryEngineContainer.Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "collector" {
 			command := []string{"bash", "-c",
 				"/usr/bin/contrail-collector --conf_file /etc/mycontrail/collector.${POD_IP}"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -525,15 +528,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "redis" {
 			command := []string{"bash", "-c",
 				"redis-server --lua-time-limit 15000 --dbfilename '' --bind 127.0.0.1 ${POD_IP} --port 6379"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -545,17 +548,17 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "nodemanagerconfig" {
 			if configNodeMgr {
 				command := []string{"bash", "-c",
 					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-config"}
 
-				if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 				} else {
-					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 				}
 
 				volumeMountList := []corev1.VolumeMount{}
@@ -568,8 +571,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Images[container.Name]
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 			}
 
 		}
@@ -579,10 +582,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;/usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-analytics"}
 
 				//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-				if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+				if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 				} else {
-					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 				}
 				volumeMountList := []corev1.VolumeMount{}
 				if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -594,8 +597,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Images[container.Name]
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+				//(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Images[container.Name]
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 
 			}
 		}
@@ -619,51 +622,51 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 
 	// Configure InitContainers
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
-		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
-			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
+		if config.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
 	}
 
 	configChanged := false
-	if instance.Status.ConfigChanged != nil {
-		configChanged = *instance.Status.ConfigChanged
+	if config.Status.ConfigChanged != nil {
+		configChanged = *config.Status.ConfigChanged
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = config.CreateSTS(statefulSet, &config.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	strategy := "deleteFirst"
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if err = config.UpdateSTS(statefulSet, &config.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(request, r.Client)
+	podIPList, podIPMap, err := config.PodIPListAndIPMapFromInstance(request, r.Client)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 	if len(podIPMap) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+		if err = config.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+		if config.Spec.CommonConfiguration.HostNetwork != nil {
+			hostNetwork = *config.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, config, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 
-		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
+		if err = config.SetPodsToReady(podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 
-		if err = instance.WaitForPeerPods(request, r.Client); err != nil {
+		if err = config.WaitForPeerPods(request, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 
-		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
+		if err = config.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -676,30 +679,30 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		} else {
 			configChanged = false
 		}
-		instance.Status.ConfigChanged = &configChanged
+		config.Status.ConfigChanged = &configChanged
 	}
 
-	if instance.Status.Active == nil {
+	if config.Status.Active == nil {
 		active := false
-		instance.Status.Active = &active
+		config.Status.Active = &active
 	}
-	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
+	if err = config.SetInstanceActive(r.Client, config.Status.Active, statefulSet, request); err != nil {
 		return reconcile.Result{}, err
 	}
-	if instance.Status.ConfigChanged != nil {
-		if *instance.Status.ConfigChanged {
+	if config.Status.ConfigChanged != nil {
+		if *config.Status.ConfigChanged {
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
-	if *instance.Status.Active {
-		apiURL, err := apiURL(instance, podIPList)
+	if *config.Status.Active {
+		apiURL, err := apiURL(config, podIPList)
 		if err != nil {
 			log.Error(err, "Config API URL cannot be created")
 			return reconcile.Result{}, err
 		}
-		apiClient := NewApiClient(apiURL)
+		apiClient := NewApiClient(apiURL, r.httpClient)
 		configNode := ConfigNode{
-			UUID:     "86f38811-a892-4877-885f-be0fa05ea164",
+			Name:     config.Name,
 			Hostname: "localhost",
 			IP:       "localhost",
 		}
@@ -723,6 +726,6 @@ func apiURL(config *v1alpha1.Config, configPods *corev1.PodList) (string, error)
 	if apiPort == "" {
 		return "", fmt.Errorf("empty API port in Config.Status.Ports.APIPort")
 	}
-	url := fmt.Sprintf("http://%s:%s", podIP, apiPort)
+	url := fmt.Sprintf("https://%s:%s", podIP, apiPort)
 	return url, nil
 }
