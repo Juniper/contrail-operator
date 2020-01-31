@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/job"
 	"github.com/Juniper/contrail-operator/pkg/swift/ring"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
@@ -137,8 +138,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	result, err := r.reconcileRings(swift, ringsClaim.Name)
-	if result.Requeue || err != nil {
+	if result, err := r.reconcileRings(swift, ringsClaim.Name); err != nil || result.Requeue {
 		return result, err
 	}
 
@@ -232,11 +232,11 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	result, err := r.removeRingReconcilingJobs(types.NamespacedName{
+	swiftName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name,
-	})
-	if result.Requeue || err != nil {
+	}
+	if result, err := r.removeRingReconcilingJobs(swiftName); err != nil || result.Requeue {
 		return result, err
 	}
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
@@ -244,42 +244,43 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 		return reconcile.Result{}, err
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
-	if err = r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
-	if err = r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedName) (reconcile.Result, error) {
-	var removedAtLeastOneJob bool
+	var atLeastOneJobDeleted bool
 	ringTypes := []string{"account", "container", "object"}
 	for _, ringType := range ringTypes {
 		jobName := types.NamespacedName{
 			Namespace: swiftName.Namespace,
 			Name:      swiftName.Name + "-ring-" + ringType + "-job",
 		}
-		job := &batch.Job{}
-		err := r.client.Get(context.Background(), jobName, job)
+		ringJob := &batch.Job{}
+		err := r.client.Get(context.Background(), jobName, ringJob)
 		existingJob := err == nil
 		if existingJob {
-			pending := job.Status.CompletionTime == nil
-			if pending {
+			if job.Status(ringJob.Status).Pending() {
+				// Wait until job finish executing to avoid breaking the ongoing ring reconciliation
 				return reconcile.Result{
 					Requeue:      true,
 					RequeueAfter: time.Second * 5,
 				}, nil
 			}
-			removedAtLeastOneJob = true
-			if err := r.client.Delete(context.Background(), job, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
+			atLeastOneJobDeleted = true
+			if err := r.client.Delete(context.Background(), ringJob, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
 				return reconcile.Result{}, err
 			}
 		}
 	}
-	if removedAtLeastOneJob {
+	if atLeastOneJobDeleted {
+		// We have to wait for some time until job gets deleted because r.client.Delete does not delete job synchronously.
 		return reconcile.Result{
 			Requeue:      true,
 			RequeueAfter: time.Second * 5,
