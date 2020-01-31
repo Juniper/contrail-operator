@@ -34,7 +34,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Control{},
 	&v1alpha1.Rabbitmq{},
 	&v1alpha1.Postgres{},
-	&v1alpha1.ContrailCommand{},
+	&v1alpha1.Command{},
 	&v1alpha1.Keystone{},
 	&v1alpha1.Swift{},
 	&v1alpha1.Memcached{},
@@ -1402,7 +1402,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processContrailCommand(instance); err != nil {
+	if err := r.processCommand(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -1425,21 +1425,25 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileManager) processContrailCommand(manager *v1alpha1.Manager) error {
-	if manager.Spec.Services.ContrailCommand == nil {
+func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
+	log.Info("Test process command")
+	log.Info("Test ", "Manager Spec : ", manager.Spec.Services)
+	log.Info("Test ", "Manager Spec command : ", manager.Spec.Services.Command)
+	if manager.Spec.Services.Command == nil {
 		return nil
 	}
-
-	command := &v1alpha1.ContrailCommand{}
-	command.ObjectMeta = manager.Spec.Services.ContrailCommand.ObjectMeta
+	log.Info("Test ", "Spec : ", manager.Spec.Services.Command)
+	command := &v1alpha1.Command{}
+	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
-		command.Spec = manager.Spec.Services.ContrailCommand.Spec
+		command.Spec = manager.Spec.Services.Command.Spec
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
+	log.Info("Test ", "crete resource err: ", err)
 	status := &v1alpha1.ServiceStatus{}
 	status.Active = &command.Status.Active
-	manager.Status.ContrailCommand = status
+	manager.Status.Command = status
 	return err
 }
 

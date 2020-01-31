@@ -85,17 +85,17 @@ func TestCommandServices(t *testing.T) {
 				},
 			}
 
-			command := &contrail.ContrailCommand{
+			command := &contrail.Command{
 				ObjectMeta: meta.ObjectMeta{
 					Name: "commandtest",
 				},
-				Spec: contrail.ContrailCommandSpec{
+				Spec: contrail.CommandSpec{
 					CommonConfiguration: contrail.CommonConfiguration{
 						Activate:    &trueVal,
 						Create:      &trueVal,
 						HostNetwork: &trueVal,
 					},
-					ServiceConfiguration: contrail.ContrailCommandConfiguration{
+					ServiceConfiguration: contrail.CommandConfiguration{
 						PostgresInstance: "commandtest-psql",
 						AdminUsername:    "test",
 						AdminPassword:    "test123",
@@ -120,10 +120,10 @@ func TestCommandServices(t *testing.T) {
 						HostNetwork: &trueVal,
 					},
 					Services: contrail.Services{
-						Postgres:        psql,
-						Keystone:        keystone,
-						Memcached:       memcached,
-						ContrailCommand: command,
+						Postgres:  psql,
+						Keystone:  keystone,
+						Memcached: memcached,
+						Command:   command,
 					},
 				},
 			}
@@ -132,7 +132,7 @@ func TestCommandServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForDeployment("commandtest-contrailcommand-deployment"))
+				assert.NoError(t, wait.ForDeployment("commandtest-command-deployment"))
 			})
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestCommandServices(t *testing.T) {
 			var err error
 			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
 				pods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "contrailcommand=commandtest",
+					LabelSelector: "command=commandtest",
 				})
 				assert.NoError(t, err)
 				assert.NotEmpty(t, pods.Items)

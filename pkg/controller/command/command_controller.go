@@ -1,4 +1,4 @@
-package contrailcommand
+package command
 
 import (
 	"context"
@@ -23,9 +23,9 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
-var log = logf.Log.WithName("controller_contrailcommand")
+var log = logf.Log.WithName("controller_command")
 
-// Add creates a new ContrailCommand Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new Command Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -39,40 +39,38 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
+	log.Info("Test adding Command")
 	// Create a new controller
-	c, err := controller.New("contrailcommand-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("command-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
-
-	// Watch for changes to primary resource ContrailCommand
-	err = c.Watch(&source.Kind{Type: &contrail.ContrailCommand{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource Command
+	err = c.Watch(&source.Kind{Type: &contrail.Command{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
-
-	// Watch for changes to secondary resource Deployment and requeue the owner ContrailCommand
+	// Watch for changes to secondary resource Deployment and requeue the owner Command
 	err = c.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &contrail.ContrailCommand{},
+		OwnerType:    &contrail.Command{},
 	})
 	if err != nil {
 		return err
 	}
-
-	// Watch for changes to secondary resource Postgres and requeue the owner ContrailCommand
+	// Watch for changes to secondary resource Postgres and requeue the owner Command
 	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
-		OwnerType: &contrail.ContrailCommand{},
+		OwnerType: &contrail.Command{},
 	})
-
+	log.Info("Test Watch Command3", "Err", err)
 	return err
 }
 
-// blank assignment to verify that ReconcileContrailCommand implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileContrailCommand{}
+// blank assignment to verify that ReconcileCommand implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileCommand{}
 
-// ReconcileContrailCommand reconciles a ContrailCommand object
-type ReconcileContrailCommand struct {
+// ReconcileCommand reconciles a Command object
+type ReconcileCommand struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client     client.Client
@@ -80,18 +78,19 @@ type ReconcileContrailCommand struct {
 	kubernetes *k8s.Kubernetes
 }
 
-// NewReconciler is used to create contrail command reconciler
-func NewReconciler(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes) *ReconcileContrailCommand {
-	return &ReconcileContrailCommand{client: client, scheme: scheme, kubernetes: kubernetes}
+// NewReconciler is used to create command reconciler
+func NewReconciler(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes) *ReconcileCommand {
+	return &ReconcileCommand{client: client, scheme: scheme, kubernetes: kubernetes}
 }
 
-// Reconcile reads that state of the cluster for a ContrailCommand object and makes changes based on the state read
-func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+// Reconcile reads that state of the cluster for a Command object and makes changes based on the state read
+func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	log.Info("Test reconcile Command")
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling ContrailCommand")
-	instanceType := "contrailcommand"
-	// Fetch the ContrailCommand command
-	command := &contrail.ContrailCommand{}
+	reqLogger.Info("Reconciling Command")
+	instanceType := "command"
+	// Fetch the Command command
+	command := &contrail.Command{}
 	if err := r.client.Get(context.Background(), request.NamespacedName, command); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -103,8 +102,8 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 
-	commandConfigName := command.Name + "-contrailcommand-configmap"
-	if err := r.configMap(commandConfigName, "contrailcommand", command).ensureCommandConfigExist(); err != nil {
+	commandConfigName := command.Name + "-command-configmap"
+	if err := r.configMap(commandConfigName, "command", command).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -142,7 +141,7 @@ func (r *ReconcileContrailCommand) Reconcile(request reconcile.Request) (reconci
 	return reconcile.Result{}, r.updateStatus(command, deployment)
 }
 
-func (r *ReconcileContrailCommand) getPostgres(command *contrail.ContrailCommand) (*contrail.Postgres, error) {
+func (r *ReconcileCommand) getPostgres(command *contrail.Command) (*contrail.Postgres, error) {
 	psql := &contrail.Postgres{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Namespace: command.GetNamespace(),
@@ -226,8 +225,8 @@ func getCommand(containers map[string]*contrail.Container, containerName string)
 	return c.Command
 }
 
-func (r *ReconcileContrailCommand) updateStatus(
-	command *contrail.ContrailCommand,
+func (r *ReconcileCommand) updateStatus(
+	command *contrail.Command,
 	deployment *apps.Deployment,
 ) error {
 	command.Status.Active = false

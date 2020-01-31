@@ -31,7 +31,7 @@ type Services struct {
 	Zookeepers       []*Zookeeper      `json:"zookeepers,omitempty"`
 	Rabbitmq         *Rabbitmq         `json:"rabbitmq,omitempty"`
 	ProvisionManager *ProvisionManager `json:"provisionManager,omitempty"`
-	ContrailCommand  *ContrailCommand  `json:"contrailCommand,omitempty"`
+	Command          *Command          `json:"command,omitempty"`
 	Postgres         *Postgres         `json:"postgres,omitempty"`
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
@@ -57,7 +57,7 @@ type ManagerStatus struct {
 	Keystone         *ServiceStatus   `json:"keystone,omitempty"`
 	Postgres         *ServiceStatus   `json:"postgres,omitempty"`
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
-	ContrailCommand  *ServiceStatus   `json:"contrailCommand,omitempty"`
+	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
 }
 
@@ -166,7 +166,7 @@ func (m Manager) IsClusterReady() bool {
 	if m.Spec.Services.Postgres != nil && !*m.Status.Postgres.Active {
 		return false
 	}
-	if m.Spec.Services.ContrailCommand != nil && !*m.Status.ContrailCommand.Active {
+	if m.Spec.Services.Command != nil && !*m.Status.Command.Active {
 		return false
 	}
 	if m.Spec.Services.Keystone != nil && !*m.Status.Keystone.Active {

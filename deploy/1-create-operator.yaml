@@ -339,6 +339,146 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: commands.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Command
+    listKind: CommandList
+    plural: commands
+    singular: command
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Command is the Schema for the commands API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CommandSpec defines the desired state of Command
+          properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
+            serviceConfiguration:
+              description: CommandConfiguration is the Spec for the Command configuration
+              properties:
+                adminPassword:
+                  type: string
+                adminUsername:
+                  type: string
+                configAPIURL:
+                  type: string
+                containers: {}
+                postgresInstance:
+                  type: string
+                telemetryURL:
+                  type: string
+              type: object
+          required:
+          - commonConfiguration
+          - serviceConfiguration
+          type: object
+        status:
+          description: CommandStatus defines the observed state of Command
+          properties:
+            active:
+              type: boolean
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: configs.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -500,147 +640,6 @@ spec:
                 redisPort:
                   type: string
               type: object
-          type: object
-      type: object
-  version: v1alpha1
-  versions:
-  - name: v1alpha1
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  name: contrailcommands.contrail.juniper.net
-spec:
-  group: contrail.juniper.net
-  names:
-    kind: ContrailCommand
-    listKind: ContrailCommandList
-    plural: contrailcommands
-    singular: contrailcommand
-  scope: ""
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      description: ContrailCommand is the Schema for the contrailcommands API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: ContrailCommandSpec defines the desired state of ContrailCommand
-          properties:
-            commonConfiguration:
-              description: CommonConfiguration is the common services struct.
-              properties:
-                activate:
-                  description: Activate defines if the service will be activated by
-                    Manager.
-                  type: boolean
-                create:
-                  description: Create defines if the service will be created by Manager.
-                  type: boolean
-                hostNetwork:
-                  description: Host networking requested for this pod. Use the host's
-                    network namespace. If this option is set, the ports that will
-                    be used must be specified. Default to false.
-                  type: boolean
-                imagePullSecrets:
-                  description: ImagePullSecrets is an optional list of references
-                    to secrets in the same namespace to use for pulling any of the
-                    images used by this PodSpec.
-                  items:
-                    type: string
-                  type: array
-                nodeSelector:
-                  additionalProperties:
-                    type: string
-                  description: 'NodeSelector is a selector which must be true for
-                    the pod to fit on a node. Selector which must match a node''s
-                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
-                  type: object
-                replicas:
-                  description: Number of desired pods. This is a pointer to distinguish
-                    between explicit zero and not specified. Defaults to 1.
-                  format: int32
-                  type: integer
-                tolerations:
-                  description: If specified, the pod's tolerations.
-                  items:
-                    description: The pod this Toleration is attached to tolerates
-                      any taint that matches the triple <key,value,effect> using the
-                      matching operator <operator>.
-                    properties:
-                      effect:
-                        description: Effect indicates the taint effect to match. Empty
-                          means match all taint effects. When specified, allowed values
-                          are NoSchedule, PreferNoSchedule and NoExecute.
-                        type: string
-                      key:
-                        description: Key is the taint key that the toleration applies
-                          to. Empty means match all taint keys. If the key is empty,
-                          operator must be Exists; this combination means to match
-                          all values and all keys.
-                        type: string
-                      operator:
-                        description: Operator represents a key's relationship to the
-                          value. Valid operators are Exists and Equal. Defaults to
-                          Equal. Exists is equivalent to wildcard for value, so that
-                          a pod can tolerate all taints of a particular category.
-                        type: string
-                      tolerationSeconds:
-                        description: TolerationSeconds represents the period of time
-                          the toleration (which must be of effect NoExecute, otherwise
-                          this field is ignored) tolerates the taint. By default,
-                          it is not set, which means tolerate the taint forever (do
-                          not evict). Zero and negative values will be treated as
-                          0 (evict immediately) by the system.
-                        format: int64
-                        type: integer
-                      value:
-                        description: Value is the taint value the toleration matches
-                          to. If the operator is Exists, the value should be empty,
-                          otherwise just a regular string.
-                        type: string
-                    type: object
-                  type: array
-              type: object
-            serviceConfiguration:
-              description: ContrailCommandConfiguration is the Spec for the ContrailCommand
-                configuration
-              properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
-                configAPIURL:
-                  type: string
-                containers: {}
-                postgresInstance:
-                  type: string
-                telemetryURL:
-                  type: string
-              type: object
-          required:
-          - commonConfiguration
-          - serviceConfiguration
-          type: object
-        status:
-          description: ContrailCommandStatus defines the observed state of ContrailCommand
-          properties:
-            active:
-              type: boolean
           type: object
       type: object
   version: v1alpha1
@@ -1422,6 +1421,137 @@ spec:
                         type: object
                     type: object
                   type: array
+                command:
+                  description: Command is the Schema for the commands API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: CommandSpec defines the desired state of Command
+                      properties:
+                        commonConfiguration:
+                          description: CommonConfiguration is the common services
+                            struct.
+                          properties:
+                            activate:
+                              description: Activate defines if the service will be
+                                activated by Manager.
+                              type: boolean
+                            create:
+                              description: Create defines if the service will be created
+                                by Manager.
+                              type: boolean
+                            hostNetwork:
+                              description: Host networking requested for this pod.
+                                Use the host's network namespace. If this option is
+                                set, the ports that will be used must be specified.
+                                Default to false.
+                              type: boolean
+                            imagePullSecrets:
+                              description: ImagePullSecrets is an optional list of
+                                references to secrets in the same namespace to use
+                                for pulling any of the images used by this PodSpec.
+                              items:
+                                type: string
+                              type: array
+                            nodeSelector:
+                              additionalProperties:
+                                type: string
+                              description: 'NodeSelector is a selector which must
+                                be true for the pod to fit on a node. Selector which
+                                must match a node''s labels for the pod to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                              type: object
+                            replicas:
+                              description: Number of desired pods. This is a pointer
+                                to distinguish between explicit zero and not specified.
+                                Defaults to 1.
+                              format: int32
+                              type: integer
+                            tolerations:
+                              description: If specified, the pod's tolerations.
+                              items:
+                                description: The pod this Toleration is attached to
+                                  tolerates any taint that matches the triple <key,value,effect>
+                                  using the matching operator <operator>.
+                                properties:
+                                  effect:
+                                    description: Effect indicates the taint effect
+                                      to match. Empty means match all taint effects.
+                                      When specified, allowed values are NoSchedule,
+                                      PreferNoSchedule and NoExecute.
+                                    type: string
+                                  key:
+                                    description: Key is the taint key that the toleration
+                                      applies to. Empty means match all taint keys.
+                                      If the key is empty, operator must be Exists;
+                                      this combination means to match all values and
+                                      all keys.
+                                    type: string
+                                  operator:
+                                    description: Operator represents a key's relationship
+                                      to the value. Valid operators are Exists and
+                                      Equal. Defaults to Equal. Exists is equivalent
+                                      to wildcard for value, so that a pod can tolerate
+                                      all taints of a particular category.
+                                    type: string
+                                  tolerationSeconds:
+                                    description: TolerationSeconds represents the
+                                      period of time the toleration (which must be
+                                      of effect NoExecute, otherwise this field is
+                                      ignored) tolerates the taint. By default, it
+                                      is not set, which means tolerate the taint forever
+                                      (do not evict). Zero and negative values will
+                                      be treated as 0 (evict immediately) by the system.
+                                    format: int64
+                                    type: integer
+                                  value:
+                                    description: Value is the taint value the toleration
+                                      matches to. If the operator is Exists, the value
+                                      should be empty, otherwise just a regular string.
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                        serviceConfiguration:
+                          description: CommandConfiguration is the Spec for the Command
+                            configuration
+                          properties:
+                            adminPassword:
+                              type: string
+                            adminUsername:
+                              type: string
+                            configAPIURL:
+                              type: string
+                            containers: {}
+                            postgresInstance:
+                              type: string
+                            telemetryURL:
+                              type: string
+                          type: object
+                      required:
+                      - commonConfiguration
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: CommandStatus defines the observed state of Command
+                      properties:
+                        active:
+                          type: boolean
+                      type: object
+                  type: object
                 config:
                   description: Config is the Schema for the configs API.
                   properties:
@@ -1583,140 +1713,6 @@ spec:
                             redisPort:
                               type: string
                           type: object
-                      type: object
-                  type: object
-                contrailCommand:
-                  description: ContrailCommand is the Schema for the contrailcommands
-                    API
-                  properties:
-                    apiVersion:
-                      description: 'APIVersion defines the versioned schema of this
-                        representation of an object. Servers should convert recognized
-                        schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
-                      type: string
-                    kind:
-                      description: 'Kind is a string value representing the REST resource
-                        this object represents. Servers may infer this from the endpoint
-                        the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-                      type: string
-                    metadata:
-                      type: object
-                    spec:
-                      description: ContrailCommandSpec defines the desired state of
-                        ContrailCommand
-                      properties:
-                        commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
-                          properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
-                            hostNetwork:
-                              description: Host networking requested for this pod.
-                                Use the host's network namespace. If this option is
-                                set, the ports that will be used must be specified.
-                                Default to false.
-                              type: boolean
-                            imagePullSecrets:
-                              description: ImagePullSecrets is an optional list of
-                                references to secrets in the same namespace to use
-                                for pulling any of the images used by this PodSpec.
-                              items:
-                                type: string
-                              type: array
-                            nodeSelector:
-                              additionalProperties:
-                                type: string
-                              description: 'NodeSelector is a selector which must
-                                be true for the pod to fit on a node. Selector which
-                                must match a node''s labels for the pod to be scheduled
-                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
-                              type: object
-                            replicas:
-                              description: Number of desired pods. This is a pointer
-                                to distinguish between explicit zero and not specified.
-                                Defaults to 1.
-                              format: int32
-                              type: integer
-                            tolerations:
-                              description: If specified, the pod's tolerations.
-                              items:
-                                description: The pod this Toleration is attached to
-                                  tolerates any taint that matches the triple <key,value,effect>
-                                  using the matching operator <operator>.
-                                properties:
-                                  effect:
-                                    description: Effect indicates the taint effect
-                                      to match. Empty means match all taint effects.
-                                      When specified, allowed values are NoSchedule,
-                                      PreferNoSchedule and NoExecute.
-                                    type: string
-                                  key:
-                                    description: Key is the taint key that the toleration
-                                      applies to. Empty means match all taint keys.
-                                      If the key is empty, operator must be Exists;
-                                      this combination means to match all values and
-                                      all keys.
-                                    type: string
-                                  operator:
-                                    description: Operator represents a key's relationship
-                                      to the value. Valid operators are Exists and
-                                      Equal. Defaults to Equal. Exists is equivalent
-                                      to wildcard for value, so that a pod can tolerate
-                                      all taints of a particular category.
-                                    type: string
-                                  tolerationSeconds:
-                                    description: TolerationSeconds represents the
-                                      period of time the toleration (which must be
-                                      of effect NoExecute, otherwise this field is
-                                      ignored) tolerates the taint. By default, it
-                                      is not set, which means tolerate the taint forever
-                                      (do not evict). Zero and negative values will
-                                      be treated as 0 (evict immediately) by the system.
-                                    format: int64
-                                    type: integer
-                                  value:
-                                    description: Value is the taint value the toleration
-                                      matches to. If the operator is Exists, the value
-                                      should be empty, otherwise just a regular string.
-                                    type: string
-                                type: object
-                              type: array
-                          type: object
-                        serviceConfiguration:
-                          description: ContrailCommandConfiguration is the Spec for
-                            the ContrailCommand configuration
-                          properties:
-                            adminPassword:
-                              type: string
-                            adminUsername:
-                              type: string
-                            configAPIURL:
-                              type: string
-                            containers: {}
-                            postgresInstance:
-                              type: string
-                            telemetryURL:
-                              type: string
-                          type: object
-                      required:
-                      - commonConfiguration
-                      - serviceConfiguration
-                      type: object
-                    status:
-                      description: ContrailCommandStatus defines the observed state
-                        of ContrailCommand
-                      properties:
-                        active:
-                          type: boolean
                       type: object
                   type: object
                 controls:
@@ -3115,11 +3111,9 @@ spec:
                     type: string
                 type: object
               type: array
-            config:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
+            command:
+              description: ServiceStatus provides information on the current status
+                of the service.
               properties:
                 active:
                   type: boolean
@@ -3128,9 +3122,11 @@ spec:
                 name:
                   type: string
               type: object
-            contrailCommand:
-              description: ServiceStatus provides information on the current status
-                of the service.
+            config:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
                 active:
                   type: boolean

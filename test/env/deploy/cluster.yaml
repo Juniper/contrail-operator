@@ -202,7 +202,7 @@ spec:
               image: registry:5000/python:alpine
             zookeeper:
               image: registry:5000/zookeeper:3.5.5
-    contrailCommand:
+    command:
       metadata:
         name: command
       spec:

@@ -1,4 +1,4 @@
-package contrailcommand_test
+package command_test
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/contrailcommand"
+	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -27,56 +27,56 @@ func TestCommand(t *testing.T) {
 	tests := []struct {
 		name               string
 		initObjs           []runtime.Object
-		expectedStatus     contrail.ContrailCommandStatus
+		expectedStatus     contrail.CommandStatus
 		expectedDeployment *apps.Deployment
 		expectedPostgres   *contrail.Postgres
 	}{
 		{
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
-				newContrailCommand(),
+				newCommand(),
 				newPostgres(true),
 			},
-			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "remove tolerations from deployment",
 			initObjs: []runtime.Object{
-				newContrailCommandWithEmptyToleration(),
+				newCommandWithEmptyToleration(),
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
 			},
-			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "update command status to false",
 			initObjs: []runtime.Object{
-				newContrailCommand(),
+				newCommand(),
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
 			},
-			expectedStatus:     contrail.ContrailCommandStatus{},
+			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 			expectedPostgres:   newPostgresWithOwner(true),
 		},
 		{
 			name: "update command status to active",
 			initObjs: []runtime.Object{
-				newContrailCommand(),
+				newCommand(),
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
 				newPostgres(true),
 			},
-			expectedStatus: contrail.ContrailCommandStatus{
+			expectedStatus: contrail.CommandStatus{
 				Active: true,
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
@@ -88,7 +88,7 @@ func TestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := contrailcommand.NewReconciler(cl, scheme, k8s.New(cl, scheme))
+			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme))
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -101,8 +101,8 @@ func TestCommand(t *testing.T) {
 			assert.NoError(t, err)
 			assert.False(t, res.Requeue)
 
-			// Check contrail command status
-			cc := &contrail.ContrailCommand{}
+			// Check command status
+			cc := &contrail.Command{}
 			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      "command",
 				Namespace: "default",
@@ -122,7 +122,7 @@ func TestCommand(t *testing.T) {
 			// Check if config map has been created
 			configMap := &core.ConfigMap{}
 			err = cl.Get(context.Background(), types.NamespacedName{
-				Name:      "command-contrailcommand-configmap",
+				Name:      "command-command-configmap",
 				Namespace: "default",
 			}, configMap)
 			assert.NoError(t, err)
@@ -140,14 +140,14 @@ func TestCommand(t *testing.T) {
 	}
 }
 
-func newContrailCommand() *contrail.ContrailCommand {
+func newCommand() *contrail.Command {
 	trueVal := true
-	return &contrail.ContrailCommand{
+	return &contrail.Command{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command",
 			Namespace: "default",
 		},
-		Spec: contrail.ContrailCommandSpec{
+		Spec: contrail.CommandSpec{
 			CommonConfiguration: contrail.CommonConfiguration{
 				Activate:    &trueVal,
 				Create:      &trueVal,
@@ -164,7 +164,7 @@ func newContrailCommand() *contrail.ContrailCommand {
 				},
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
-			ServiceConfiguration: contrail.ContrailCommandConfiguration{
+			ServiceConfiguration: contrail.CommandConfiguration{
 				PostgresInstance: "command-db",
 				AdminUsername:    "test",
 				AdminPassword:    "test123",
@@ -193,14 +193,14 @@ func newPostgresWithOwner(active bool) *contrail.Postgres {
 	falseVal := false
 	psql := newPostgres(active)
 	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
-		{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &falseVal, &falseVal},
+		{"contrail.juniper.net/v1alpha1", "Command", "command", "", &falseVal, &falseVal},
 	}
 
 	return psql
 }
 
-func newContrailCommandWithEmptyToleration() *contrail.ContrailCommand {
-	cc := newContrailCommand()
+func newCommandWithEmptyToleration() *contrail.Command {
+	cc := newCommand()
 	cc.Spec.CommonConfiguration.Tolerations = []core.Toleration{{}}
 	return cc
 }
@@ -215,20 +215,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "command-contrailcommand-deployment",
+			Name:      "command-command-deployment",
 			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+			Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
 			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
+				{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
 			},
 		},
 		Spec: apps.DeploymentSpec{
 			Selector: &meta.LabelSelector{
-				MatchLabels: map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+				MatchLabels: map[string]string{"contrail_manager": "command", "command": "command"},
 			},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
-					Labels: map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
 				},
 				Spec: core.PodSpec{
 					HostNetwork:  true,
@@ -246,7 +246,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 							Command: []string{"bash", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
+								core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 							},
 						},
 					},
@@ -256,16 +256,16 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 						Image:           "registry:5000/contrail-command",
 						Command:         []string{"bash", "/etc/contrail/bootstrap.sh"},
 						VolumeMounts: []core.VolumeMount{
-							core.VolumeMount{Name: "command-contrailcommand-volume", MountPath: "/etc/contrail"},
+							core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 						},
 					}},
 					Volumes: []core.Volume{
 						{
-							Name: "command-contrailcommand-volume",
+							Name: "command-command-volume",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: "command-contrailcommand-configmap",
+										Name: "command-command-configmap",
 									},
 								},
 							},
@@ -285,11 +285,11 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 	trueVal := true
 	assert.Equal(t, meta.ObjectMeta{
-		Name:      "command-contrailcommand-configmap",
+		Name:      "command-command-configmap",
 		Namespace: "default",
-		Labels:    map[string]string{"contrail_manager": "contrailcommand", "contrailcommand": "command"},
+		Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
 		OwnerReferences: []meta.OwnerReference{
-			{"contrail.juniper.net/v1alpha1", "ContrailCommand", "command", "", &trueVal, &trueVal},
+			{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
 		},
 	}, actual.ObjectMeta)
 
