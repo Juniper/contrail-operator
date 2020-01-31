@@ -94,8 +94,9 @@ var targetVersionMap = map[string]string{
 
 func ManagerCluster(t *testing.T) {
 	t.Parallel()
+	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t); ctx.Cleanup() }()
+	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(v1alpha1.SchemeBuilder.AddToScheme, &v1alpha1.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -111,9 +112,6 @@ func ManagerCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// get global framework variables
-	f := test.Global
 
 	var replicas int32 = 1
 	var hostNetwork = false
@@ -335,8 +333,9 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 
 func RabbitmqCluster(t *testing.T) {
 	t.Parallel()
+	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t); ctx.Cleanup() }()
+	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
 	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
@@ -348,7 +347,6 @@ func RabbitmqCluster(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f := test.Global
 	var replicas int32 = 1
 	rabbitmq := &v1alpha1.Rabbitmq{
 		ObjectMeta: metav1.ObjectMeta{

@@ -21,7 +21,8 @@ import (
 
 func TestOpenstackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t); ctx.Cleanup() }()
+	f := test.Global
+	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -32,7 +33,6 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
-	f := test.Global
 	wait := wait.Wait{
 		Namespace:     namespace,
 		Timeout:       waitTimeout,
