@@ -15,12 +15,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestOpenstackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
-	defer ctx.Cleanup()
+	defer func() { logger.DumpPods(t); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
