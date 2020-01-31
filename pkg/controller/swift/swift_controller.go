@@ -299,13 +299,14 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 		return err
 	}
 	for _, ip := range ips {
-		if err := theRing.AddDevice(ring.Device{
+		device := ring.Device{
 			Region: "1",
 			Zone:   "1",
 			IP:     ip,
 			Port:   port,
 			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
-		}); err != nil {
+		}
+		if err := theRing.AddDevice(device); err != nil {
 			return err
 		}
 	}
