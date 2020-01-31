@@ -2,7 +2,6 @@ package swift
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	batch "k8s.io/api/batch/v1"
@@ -293,19 +292,6 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 	jobName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-ring-" + ringType + "-job",
-	}
-	existingJob := &batch.Job{}
-	err := r.client.Get(context.Background(), jobName, existingJob)
-	jobAlreadyExists := err == nil
-	if jobAlreadyExists {
-		jobCompleted := existingJob.Status.CompletionTime != nil
-		if !jobCompleted {
-			return fmt.Errorf("job %v is running", jobName)
-		}
-		if err := r.client.Delete(context.Background(), existingJob, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
-			return err
-		}
-		return fmt.Errorf("removing job %v", jobName)
 	}
 
 	theRing, err := ring.New(ringsClaimName, "/etc/rings", ringType)
