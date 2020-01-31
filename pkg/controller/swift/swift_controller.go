@@ -117,24 +117,24 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	swiftConfSecretName := "swift-conf"
-	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	ringsClaim := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-rings",
 	}
 	if err := r.claims.New(ringsClaim, swift).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	swiftConfSecretName := "swift-conf"
+	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -192,7 +192,7 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 	return nil
 }
 
-func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName string) error {
+func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
 	swiftStorage := &contrail.SwiftStorage{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-storage",
@@ -201,13 +201,14 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
+		swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftStorage, r.scheme)
 	})
 	return err
 }
 
-func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName string) error {
+func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-proxy",
@@ -216,6 +217,7 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConf
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
+		swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
