@@ -74,4 +74,11 @@ contrail-statusmonitor:debug
 contrail-provisioner:debug
 EOF
 
+while read line; do
+	pull_image kaweue "${line}"
+done <<EOF
+contrail-controller-config-devicemgr:dev-5
+contrail-controller-config-dnsmasq:dev
+EOF
+
 pull_image hub.juniper.net/contrail-nightly contrail-command:1912-latest

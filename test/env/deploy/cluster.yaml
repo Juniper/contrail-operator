@@ -84,9 +84,9 @@ spec:
             collector:
               image: registry:5000/contrail-analytics-collector:1912-latest
             devicemanager:
-              image: registry:5000/contrail-controller-config-devicemgr:1912-latest
+              image: registry:5000/contrail-controller-config-devicemgr:dev-5
             dnsmasq:
-              image: registry:5000/contrail-external-dnsmasq:1910-latest
+              image: registry:5000/contrail-controller-config-dnsmasq:dev
             init:
               image: registry:5000/python:alpine
             init2:

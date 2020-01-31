@@ -1186,6 +1186,7 @@ zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 dnsmasq_conf_dir=/var/lib/dnsmasq
 tftp_dir=/var/lib/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
+dnsmasq_reload_by_signal=True
 rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
 rabbit_vhost=vhost
 rabbit_user=user
@@ -1210,7 +1211,7 @@ log-facility=/dev/stdout
 bogus-priv
 log-dhcp
 enable-tftp
-tftp-root=/var/lib/tftp
+tftp-root=/etc/tftp
 dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
 conf-dir=/var/lib/dnsmasq/,*.conf
 `

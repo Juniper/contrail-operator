@@ -365,7 +365,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		if container.Name == "dnsmasq" {
 			container := &statefulSet.Spec.Template.Spec.Containers[idx]
-			container.Command = []string{"bash", "-c", "mkdir -p /etc/tftp; dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
+			container.Command = []string{"bash", "-c",
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini;ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;" +
+					"dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
+
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
 				container.Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
 			}
@@ -385,12 +388,23 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			})
 			volumeMountList = append(volumeMountList, corev1.VolumeMount{
 				Name:      "tftp",
-				MountPath: "/var/lib/tftp",
+				MountPath: "/etc/tftp",
 			})
 			volumeMountList = append(volumeMountList, corev1.VolumeMount{
 				Name:      "dnsmasq",
 				MountPath: "/var/lib/dnsmasq",
 			})
+			volumeMountList = append(volumeMountList, corev1.VolumeMount{
+				Name:      request.Name + "-secret-certificates",
+				MountPath: "/etc/certificates",
+			})
+			// DNSMasq container requires those variables to be set
+			// TODO: Pass keystone credentials
+			container.Env = append(container.Env, []corev1.EnvVar{
+				{Name: "KEYSTONE_AUTH_ADMIN_USER", Value: ""},
+				{Name: "KEYSTONE_AUTH_ADMIN_PASSWORD", Value: ""},
+				{Name: "KEYSTONE_AUTH_ADMIN_TENANT", Value: ""},
+			}...)
 			container.VolumeMounts = volumeMountList
 			container.Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}

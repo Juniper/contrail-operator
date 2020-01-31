@@ -56,8 +56,15 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: CONTROLLER_NODES
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         imagePullPolicy: Always
         name: dnsmasq
+        volumeMounts:
+        - mountPath: /var/log/contrail
+          name: config-logs
       - image: docker.io/michaelhenkel/contrail-controller-config-schema:5.2.0-dev1
         env:
         - name: POD_IP

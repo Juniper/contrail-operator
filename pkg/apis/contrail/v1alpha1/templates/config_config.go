@@ -99,6 +99,7 @@ zk_server_ip={{ .ZookeeperServerList }}
 dnsmasq_conf_dir=/var/lib/dnsmasq
 tftp_dir=/var/lib/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
+dnsmasq_reload_by_signal=True
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
 rabbit_user={{ .RabbitmqUser }}
@@ -124,7 +125,7 @@ log-facility=/dev/stdout
 bogus-priv
 log-dhcp
 enable-tftp
-tftp-root=/var/lib/tftp
+tftp-root=/etc/tftp
 dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
 conf-dir=/var/lib/dnsmasq/,*.conf
 `
