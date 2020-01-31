@@ -2623,6 +2623,8 @@ spec:
                                   type: string
                                 objectBindPort:
                                   type: integer
+                                ringPersistentVolumeClaim:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                               type: object
@@ -3845,6 +3847,8 @@ spec:
                       type: string
                     objectBindPort:
                       type: integer
+                    ringPersistentVolumeClaim:
+                      type: string
                     swiftConfSecretName:
                       type: string
                   type: object
@@ -3916,6 +3920,8 @@ spec:
                   type: string
                 objectBindPort:
                   type: integer
+                ringPersistentVolumeClaim:
+                  type: string
                 swiftConfSecretName:
                   type: string
               type: object

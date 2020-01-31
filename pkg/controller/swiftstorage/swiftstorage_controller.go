@@ -2,14 +2,10 @@ package swiftstorage
 
 import (
 	"context"
-	"fmt"
 	"strings"
-
-	v1 "k8s.io/api/batch/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/swift/ring"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	apps "k8s.io/api/apps/v1"
@@ -107,15 +103,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err := r.claims.New(claimNamespacedName, swiftStorage).EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
-	//
-	//ringsClaimName := types.NamespacedName{
-	//	Namespace: swiftStorage.Namespace,
-	//	Name: "swift-storage-rings",
-	//}
-
-	//if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
-	//	return reconcile.Result{}, err
-	//}
 
 	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
 		return reconcile.Result{}, err
@@ -129,8 +116,8 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// TODO This should be a swift proxy spec parameter
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, "swift-storage-rings")
+	ringsClaim := swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaim)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -140,18 +127,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err = r.client.List(context.Background(), &pods, labels); err != nil {
 		return reconcile.Result{}, err
 	}
-	//if len(pods.Items) != 0 {
-	//	swiftSpec := swiftStorage.Spec.ServiceConfiguration
-	//	if err := r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-	//		return reconcile.Result{Requeue: true}, err
-	//	}
-	//	if err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-	//		return reconcile.Result{Requeue: true}, err
-	//	}
-	//	if err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-	//		return reconcile.Result{Requeue: true}, err
-	//	}
-	//}
 	swiftStorage.Status.IPs = []string{}
 	for _, pod := range pods.Items {
 		if pod.Status.PodIP != "" {
@@ -169,47 +144,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
-}
-
-func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port int, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
-	jobName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-ring-" + ringType + "-job",
-	}
-	existingJob := &v1.Job{}
-	err := r.client.Get(context.Background(), jobName, existingJob)
-	jobAlreadyExists := err == nil
-	if jobAlreadyExists {
-		jobCompleted := existingJob.Status.CompletionTime != nil
-		if !jobCompleted {
-			return fmt.Errorf("job %v is running", jobName)
-		}
-		if err := r.client.Delete(context.Background(), existingJob); err != nil {
-			return err
-		}
-		return fmt.Errorf("job %v is beeing deleted", jobName)
-	}
-
-	theRing, err := ring.New(ringsClaimName.Name, "/etc/rings", ringType)
-	if err != nil {
-		return err
-	}
-	for _, pod := range pods.Items {
-		if err := theRing.AddDevice(ring.Device{
-			Region: "1",
-			Zone:   "1",
-			IP:     pod.Status.PodIP,
-			Port:   port,
-			Device: swiftStorage.Spec.ServiceConfiguration.Device,
-		}); err != nil {
-			return err
-		}
-	}
-	job, err := theRing.BuildJob(jobName)
-	if err != nil {
-		return err
-	}
-	return r.client.Create(context.Background(), &job)
 }
 
 func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
