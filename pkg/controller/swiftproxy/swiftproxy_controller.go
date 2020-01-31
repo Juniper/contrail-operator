@@ -152,8 +152,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
-		// TODO This should be a swift proxy spec parameter
-		ringsClaimName := "swift-storage-rings"
+		ringsClaimName := swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,

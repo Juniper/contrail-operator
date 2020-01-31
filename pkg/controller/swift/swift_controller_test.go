@@ -50,7 +50,8 @@ func TestSwiftController(t *testing.T) {
 						"container1": {Image: "image1"},
 						"container2": {Image: "image2"},
 					},
-					Device: "dev",
+					Device:                    "dev",
+					RingPersistentVolumeClaim: "test-rings-claim",
 				},
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 					ListenPort:            5070,
@@ -61,6 +62,7 @@ func TestSwiftController(t *testing.T) {
 						"container3": {Image: "image3"},
 						"container4": {Image: "image4"},
 					},
+					RingPersistentVolumeClaim: "test-rings-claim",
 				},
 			},
 		},
@@ -261,6 +263,7 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	require.Equal(t, expectedSwiftStorageConf.ContainerBindPort, swiftStorage.Spec.ServiceConfiguration.ContainerBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ObjectBindPort, swiftStorage.Spec.ServiceConfiguration.ObjectBindPort)
 	assert.Equal(t, expectedSwiftStorageConf.Containers, swiftStorage.Spec.ServiceConfiguration.Containers)
+	assert.Equal(t, expectedSwiftStorageConf.RingPersistentVolumeClaim, swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 
 }
 
@@ -283,6 +286,7 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
+	assert.Equal(t, expectedSwiftProxyConf.RingPersistentVolumeClaim, swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 }
 
 func assertClaimCreated(t *testing.T, fakeClient client.Client, claimName types.NamespacedName) {

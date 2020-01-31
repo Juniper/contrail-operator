@@ -284,6 +284,7 @@ spec:
             listenPort: 5080
             keystoneAdminPassword: "contrail123"
             swiftPassword: "swiftpass"
+            ringPersistentVolumeClaim: swift-rings
             containers:
               init:
                 image: registry:5000/centos-binary-kolla-toolbox:master

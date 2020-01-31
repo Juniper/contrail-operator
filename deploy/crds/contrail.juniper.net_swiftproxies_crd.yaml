@@ -41,6 +41,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                ringPersistentVolumeClaim:
+                  type: string
                 memcachedInstance:
                   type: string
                 swiftConfSecretName:

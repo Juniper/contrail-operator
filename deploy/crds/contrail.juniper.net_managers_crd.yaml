@@ -1462,6 +1462,8 @@ spec:
                                   type: integer
                                 memcachedInstance:
                                   type: string
+                                ringPersistentVolumeClaim:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                                 swiftPassword:

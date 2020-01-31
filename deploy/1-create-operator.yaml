@@ -2605,6 +2605,8 @@ spec:
                                   type: integer
                                 memcachedInstance:
                                   type: string
+                                ringPersistentVolumeClaim:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                                 swiftPassword:
@@ -3755,6 +3757,8 @@ spec:
                   type: string
                 listenPort:
                   type: integer
+                ringPersistentVolumeClaim:
+                  type: string
                 memcachedInstance:
                   type: string
                 swiftConfSecretName:
@@ -3827,6 +3831,8 @@ spec:
                       type: string
                     listenPort:
                       type: integer
+                    ringPersistentVolumeClaim:
+                      type: string
                     memcachedInstance:
                       type: string
                     swiftConfSecretName:

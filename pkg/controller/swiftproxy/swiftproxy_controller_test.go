@@ -209,6 +209,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				KeystoneAdminPassword: "c0ntrail123",
 				SwiftPassword:         "swiftpass",
 				SwiftConfSecretName:   "test-secret",
+				RingPersistentVolumeClaim: "test-rings-claim",
 			},
 		},
 		Status: status,
@@ -312,7 +313,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: "swift-storage-rings",
+									ClaimName: "test-rings-claim",
 									ReadOnly:  true,
 								},
 							},
