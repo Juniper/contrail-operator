@@ -2605,6 +2605,8 @@ spec:
                                   type: integer
                                 memcachedInstance:
                                   type: string
+                                ringPersistentVolumeClaim:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                                 swiftPassword:
@@ -2619,8 +2621,12 @@ spec:
                                 containerBindPort:
                                   type: integer
                                 containers: {}
+                                device:
+                                  type: string
                                 objectBindPort:
                                   type: integer
+                                ringPersistentVolumeClaim:
+                                  type: string
                                 swiftConfSecretName:
                                   type: string
                               type: object
@@ -3753,6 +3759,8 @@ spec:
                   type: integer
                 memcachedInstance:
                   type: string
+                ringPersistentVolumeClaim:
+                  type: string
                 swiftConfSecretName:
                   type: string
                 swiftPassword:
@@ -3825,6 +3833,8 @@ spec:
                       type: integer
                     memcachedInstance:
                       type: string
+                    ringPersistentVolumeClaim:
+                      type: string
                     swiftConfSecretName:
                       type: string
                     swiftPassword:
@@ -3839,8 +3849,12 @@ spec:
                     containerBindPort:
                       type: integer
                     containers: {}
+                    device:
+                      type: string
                     objectBindPort:
                       type: integer
+                    ringPersistentVolumeClaim:
+                      type: string
                     swiftConfSecretName:
                       type: string
                   type: object
@@ -3908,8 +3922,12 @@ spec:
                 containerBindPort:
                   type: integer
                 containers: {}
+                device:
+                  type: string
                 objectBindPort:
                   type: integer
+                ringPersistentVolumeClaim:
+                  type: string
                 swiftConfSecretName:
                   type: string
               type: object

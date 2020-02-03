@@ -148,6 +148,7 @@ func TestOpenstackServices(t *testing.T) {
 							AccountBindPort:   6001,
 							ContainerBindPort: 6002,
 							ObjectBindPort:    6000,
+							Device:            "d1",
 							Containers: map[string]*contrail.Container{
 								"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:master"},
 								"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:master"},

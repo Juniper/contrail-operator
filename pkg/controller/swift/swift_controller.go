@@ -2,10 +2,12 @@ package swift
 
 import (
 	"context"
+	"time"
 
+	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,6 +20,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/job"
+	"github.com/Juniper/contrail-operator/pkg/swift/ring"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swift")
@@ -30,12 +35,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme())
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()))
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcileSwift {
-	return &ReconcileSwift{client: client, scheme: scheme}
+func NewReconciler(client client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+	return &ReconcileSwift{client: client, scheme: scheme, claims: claims}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -91,6 +96,7 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	claims *volumeclaims.PersistentVolumeClaims
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -111,17 +117,29 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	ringsClaim := types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      swift.Name + "-rings",
+	}
+	if err := r.claims.New(ringsClaim, swift).EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	swiftConfSecretName := "swift-conf"
 	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName); err != nil {
+	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName); err != nil {
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if result, err := r.reconcileRings(swift, ringsClaim.Name); err != nil || result.Requeue {
+		return result, err
 	}
 
 	swiftProxyAndStorageActiveStatus := false
@@ -173,32 +191,132 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 	return nil
 }
 
-func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName string) error {
+func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
 	swiftStorage := &contrail.SwiftStorage{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-storage",
 			Namespace: swift.Namespace,
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
+		swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftStorage, r.scheme)
 	})
 	return err
 }
 
-func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName string) error {
+func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
 	swiftProxy := &contrail.SwiftProxy{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-proxy",
 			Namespace: swift.Namespace,
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
+		swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
 	return err
+}
+
+func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string) (reconcile.Result, error) {
+	swiftStorage := &contrail.SwiftStorage{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
+		return reconcile.Result{}, err
+	}
+	ips := swiftStorage.Status.IPs
+	if len(ips) == 0 {
+		ips = []string{"0.0.0.0"}
+	}
+	swiftName := types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      swift.Name,
+	}
+	if result, err := r.removeRingReconcilingJobs(swiftName); err != nil || result.Requeue {
+		return result, err
+	}
+	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
+	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, ips, swift); err != nil {
+		return reconcile.Result{}, err
+	}
+	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
+	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
+		return reconcile.Result{}, err
+	}
+	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
+	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedName) (reconcile.Result, error) {
+	var atLeastOneJobDeleted bool
+	ringTypes := []string{"account", "container", "object"}
+	for _, ringType := range ringTypes {
+		jobName := types.NamespacedName{
+			Namespace: swiftName.Namespace,
+			Name:      swiftName.Name + "-ring-" + ringType + "-job",
+		}
+		ringJob := &batch.Job{}
+		err := r.client.Get(context.Background(), jobName, ringJob)
+		existingJob := err == nil
+		if existingJob {
+			if job.Status(ringJob.Status).Pending() {
+				// Wait until job finish executing to avoid breaking the ongoing ring reconciliation
+				return reconcile.Result{
+					Requeue:      true,
+					RequeueAfter: time.Second * 5,
+				}, nil
+			}
+			atLeastOneJobDeleted = true
+			if err := r.client.Delete(context.Background(), ringJob, client.PropagationPolicy(meta.DeletePropagationForeground)); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+	if atLeastOneJobDeleted {
+		// We have to wait for some time until job gets deleted because r.client.Delete does not delete job synchronously.
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: time.Second * 5,
+		}, nil
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ips []string, swift *contrail.Swift) error {
+	jobName := types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      swift.Name + "-ring-" + ringType + "-job",
+	}
+
+	theRing, err := ring.New(ringsClaimName, "/etc/rings", ringType)
+	if err != nil {
+		return err
+	}
+	for _, ip := range ips {
+		device := ring.Device{
+			Region: "1",
+			Zone:   "1",
+			IP:     ip,
+			Port:   port,
+			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
+		}
+		if err := theRing.AddDevice(device); err != nil {
+			return err
+		}
+	}
+	job, err := theRing.BuildJob(jobName)
+	if err != nil {
+		return err
+	}
+	if err = controllerutil.SetControllerReference(swift, &job, r.scheme); err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), &job)
 }

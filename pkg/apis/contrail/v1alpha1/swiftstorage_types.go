@@ -19,19 +19,20 @@ type SwiftStorageSpec struct {
 // SwiftStorageConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftStorageConfiguration struct {
-	AccountBindPort     int                   `json:"accountBindPort,omitempty"`
-	ContainerBindPort   int                   `json:"containerBindPort,omitempty"`
-	ObjectBindPort      int                   `json:"objectBindPort,omitempty"`
-	SwiftConfSecretName string                `json:"swiftConfSecretName,omitempty"`
-	Containers          map[string]*Container `json:"containers,omitempty"`
+	AccountBindPort           int                   `json:"accountBindPort,omitempty"`
+	ContainerBindPort         int                   `json:"containerBindPort,omitempty"`
+	ObjectBindPort            int                   `json:"objectBindPort,omitempty"`
+	SwiftConfSecretName       string                `json:"swiftConfSecretName,omitempty"`
+	Device                    string                `json:"device,omitempty"`
+	Containers                map[string]*Container `json:"containers,omitempty"`
+	RingPersistentVolumeClaim string                `json:"ringPersistentVolumeClaim,omitempty"`
 }
 
 // SwiftStorageStatus defines the observed state of SwiftStorage
 // +k8s:openapi-gen=true
 type SwiftStorageStatus struct {
 	Active bool `json:"active"`
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	IPs    []string
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

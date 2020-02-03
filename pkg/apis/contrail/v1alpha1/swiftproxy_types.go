@@ -13,13 +13,14 @@ type SwiftProxySpec struct {
 // SwiftProxyConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftProxyConfiguration struct {
-	MemcachedInstance     string                `json:"memcachedInstance,omitempty"`
-	ListenPort            int                   `json:"listenPort,omitempty"`
-	KeystoneInstance      string                `json:"keystoneInstance,omitempty"`
-	KeystoneAdminPassword string                `json:"keystoneAdminPassword,omitempty"`
-	SwiftPassword         string                `json:"swiftPassword,omitempty"`
-	SwiftConfSecretName   string                `json:"swiftConfSecretName,omitempty"`
-	Containers            map[string]*Container `json:"containers,omitempty"`
+	MemcachedInstance         string                `json:"memcachedInstance,omitempty"`
+	ListenPort                int                   `json:"listenPort,omitempty"`
+	KeystoneInstance          string                `json:"keystoneInstance,omitempty"`
+	KeystoneAdminPassword     string                `json:"keystoneAdminPassword,omitempty"`
+	SwiftPassword             string                `json:"swiftPassword,omitempty"`
+	SwiftConfSecretName       string                `json:"swiftConfSecretName,omitempty"`
+	Containers                map[string]*Container `json:"containers,omitempty"`
+	RingPersistentVolumeClaim string                `json:"ringPersistentVolumeClaim,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy

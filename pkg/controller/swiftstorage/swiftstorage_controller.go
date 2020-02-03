@@ -2,14 +2,10 @@ package swiftstorage
 
 import (
 	"context"
-	"fmt"
 	"strings"
-
-	v1 "k8s.io/api/batch/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/swift/ring"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	apps "k8s.io/api/apps/v1"
@@ -108,16 +104,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	ringsClaimName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		// TODO This should be a swift proxy spec parameter
-		Name: "swift-storage-rings",
-	}
-
-	if err := r.claims.New(ringsClaimName, swiftStorage).EnsureExists(); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -130,7 +116,8 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaimName.Name)
+	ringsClaim := swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaim)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -140,16 +127,10 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err = r.client.List(context.Background(), &pods, labels); err != nil {
 		return reconcile.Result{}, err
 	}
-	if len(pods.Items) != 0 {
-		swiftSpec := swiftStorage.Spec.ServiceConfiguration
-		if err := r.startRingReconcilingJob("account", swiftSpec.AccountBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
-		}
-		if err = r.startRingReconcilingJob("object", swiftSpec.ObjectBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
-		}
-		if err = r.startRingReconcilingJob("container", swiftSpec.ContainerBindPort, ringsClaimName, pods, swiftStorage); err != nil {
-			return reconcile.Result{Requeue: true}, err
+	swiftStorage.Status.IPs = []string{}
+	for _, pod := range pods.Items {
+		if pod.Status.PodIP != "" {
+			swiftStorage.Status.IPs = append(swiftStorage.Status.IPs, pod.Status.PodIP)
 		}
 	}
 	swiftStorage.Status.Active = false
@@ -165,47 +146,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) startRingReconcilingJob(ringType string, port int, ringsClaimName types.NamespacedName, pods core.PodList, swiftStorage *contrail.SwiftStorage) error {
-	jobName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-ring-" + ringType + "-job",
-	}
-	existingJob := &v1.Job{}
-	err := r.client.Get(context.Background(), jobName, existingJob)
-	jobAlreadyExists := err == nil
-	if jobAlreadyExists {
-		jobCompleted := existingJob.Status.CompletionTime != nil
-		if !jobCompleted {
-			return fmt.Errorf("job %v is running", jobName)
-		}
-		if err := r.client.Delete(context.Background(), existingJob); err != nil {
-			return err
-		}
-		return fmt.Errorf("job %v is beeing deleted", jobName)
-	}
-
-	theRing, err := ring.New(ringsClaimName.Name, "/etc/rings", ringType)
-	if err != nil {
-		return err
-	}
-	for _, pod := range pods.Items {
-		if err := theRing.AddDevice(ring.Device{
-			Region: "1",
-			Zone:   "1",
-			IP:     pod.Status.PodIP,
-			Port:   port,
-			Device: "d1",
-		}); err != nil {
-			return err
-		}
-	}
-	job, err := theRing.BuildJob(jobName)
-	if err != nil {
-		return err
-	}
-	return r.client.Create(context.Background(), &job)
-}
-
 func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
@@ -214,7 +154,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
-		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers)
+		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Device)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		var swiftGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
@@ -267,35 +207,37 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	return statefulSet, err
 }
 
-func (r *ReconcileSwiftStorage) swiftContainers(containers map[string]*contrail.Container) []core.Container {
+func (r *ReconcileSwiftStorage) swiftContainers(containers map[string]*contrail.Container, device string) []core.Container {
 	cg := containerGenerator{
 		containersSpec: containers,
+		device:         device,
 	}
 	return []core.Container{
-		cg.swiftContainer("swift-account-server", "swift-account"),
-		cg.swiftContainer("swift-account-auditor", "swift-account"),
-		cg.swiftContainer("swift-account-replicator", "swift-account"),
-		cg.swiftContainer("swift-account-reaper", "swift-account"),
-		cg.swiftContainer("swift-container-server", "swift-container"),
-		cg.swiftContainer("swift-container-auditor", "swift-container"),
-		cg.swiftContainer("swift-container-replicator", "swift-container"),
-		cg.swiftContainer("swift-container-updater", "swift-container"),
-		cg.swiftContainer("swift-object-server", "swift-object"),
-		cg.swiftContainer("swift-object-auditor", "swift-object"),
-		cg.swiftContainer("swift-object-replicator", "swift-object"),
-		cg.swiftContainer("swift-object-updater", "swift-object"),
-		cg.swiftContainer("swift-object-expirer", "swift-object-expirer"),
+		cg.swiftContainer("swift-account-server"),
+		cg.swiftContainer("swift-account-auditor"),
+		cg.swiftContainer("swift-account-replicator"),
+		cg.swiftContainer("swift-account-reaper"),
+		cg.swiftContainer("swift-container-server"),
+		cg.swiftContainer("swift-container-auditor"),
+		cg.swiftContainer("swift-container-replicator"),
+		cg.swiftContainer("swift-container-updater"),
+		cg.swiftContainer("swift-object-server"),
+		cg.swiftContainer("swift-object-auditor"),
+		cg.swiftContainer("swift-object-replicator"),
+		cg.swiftContainer("swift-object-updater"),
+		cg.swiftContainer("swift-object-expirer"),
 	}
 }
 
 type containerGenerator struct {
 	containersSpec map[string]*contrail.Container
+	device         string
 }
 
-func (cg *containerGenerator) swiftContainer(name, image string) core.Container {
+func (cg *containerGenerator) swiftContainer(name string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
 		Name:      "devices-mount-point-volume",
-		MountPath: "/srv/node/d1",
+		MountPath: "/srv/node/" + cg.device,
 	}
 	serviceVolumeMount := core.VolumeMount{
 		Name:      name + "-config-volume",

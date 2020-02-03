@@ -2,8 +2,14 @@ package swift_test
 
 import (
 	"context"
+	"testing"
+
+	batch "k8s.io/api/batch/v1"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/swift"
+	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -13,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestSwiftController(t *testing.T) {
@@ -21,6 +26,7 @@ func TestSwiftController(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
 	trueVal := true
 
@@ -44,6 +50,7 @@ func TestSwiftController(t *testing.T) {
 						"container1": {Image: "image1"},
 						"container2": {Image: "image2"},
 					},
+					Device: "dev",
 				},
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 					ListenPort:            5070,
@@ -62,7 +69,8 @@ func TestSwiftController(t *testing.T) {
 	t.Run("when Swift CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -89,6 +97,14 @@ func TestSwiftController(t *testing.T) {
 
 		t.Run("should create SwiftProxy CR", func(t *testing.T) {
 			assertSwiftProxyCRExists(t, fakeClient, swiftCR)
+		})
+
+		t.Run("should create rings persistent volume claim", func(t *testing.T) {
+			claimName := types.NamespacedName{
+				Name:      "test-swift-rings",
+				Namespace: swiftName.Namespace,
+			}
+			assertClaimCreated(t, fakeClient, claimName)
 		})
 	})
 
@@ -131,7 +147,8 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSecret, existingSwiftProxy, existingSwiftStorage)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -193,7 +210,8 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSwiftProxy, existingSwiftStorage)
-		reconciler := swift.NewReconciler(fakeClient, scheme)
+		claims := volumeclaims.New(fakeClient, scheme)
+		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -206,7 +224,23 @@ func TestSwiftController(t *testing.T) {
 		t.Run("should update SwiftProxy CR", func(t *testing.T) {
 			assertSwiftProxyCRExists(t, fakeClient, swiftCR)
 		})
+
+		t.Run("should start rings reconciling jobs", func(t *testing.T) {
+			assertJobExists(t, fakeClient, types.NamespacedName{
+				Namespace: swiftCR.Namespace,
+				Name:      swiftCR.Name + "-ring-account-job",
+			})
+			assertJobExists(t, fakeClient, types.NamespacedName{
+				Namespace: swiftCR.Namespace,
+				Name:      swiftCR.Name + "-ring-container-job",
+			})
+			assertJobExists(t, fakeClient, types.NamespacedName{
+				Namespace: swiftCR.Namespace,
+				Name:      swiftCR.Name + "-ring-object-job",
+			})
+		})
 	})
+
 }
 
 func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail.Swift) {
@@ -227,6 +261,7 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	require.Equal(t, expectedSwiftStorageConf.ContainerBindPort, swiftStorage.Spec.ServiceConfiguration.ContainerBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ObjectBindPort, swiftStorage.Spec.ServiceConfiguration.ObjectBindPort)
 	assert.Equal(t, expectedSwiftStorageConf.Containers, swiftStorage.Spec.ServiceConfiguration.Containers)
+	assert.Equal(t, swiftCR.Name+"-rings", swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 
 }
 
@@ -249,4 +284,20 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
+	assert.Equal(t, swiftCR.Name+"-rings", swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
+}
+
+func assertClaimCreated(t *testing.T, fakeClient client.Client, claimName types.NamespacedName) {
+	claim := core.PersistentVolumeClaim{}
+	err := fakeClient.Get(context.Background(), claimName, &claim)
+	assert.NoError(t, err)
+}
+
+func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.NamespacedName) {
+	job := &batch.Job{}
+	err := fakeClient.Get(context.Background(), client.ObjectKey{
+		Name:      jobName.Name,
+		Namespace: jobName.Namespace,
+	}, job)
+	require.NoError(t, err, "job %v does not exist", jobName)
 }

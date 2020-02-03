@@ -45,9 +45,11 @@ func TestSwiftStorageController(t *testing.T) {
 		},
 		Spec: contrail.SwiftStorageSpec{
 			ServiceConfiguration: contrail.SwiftStorageConfiguration{
-				AccountBindPort:   6001,
-				ContainerBindPort: 6002,
-				ObjectBindPort:    6000,
+				AccountBindPort:           6001,
+				ContainerBindPort:         6002,
+				ObjectBindPort:            6000,
+				Device:                    "dev",
+				RingPersistentVolumeClaim: "test-rings-claim",
 			},
 		},
 	}
@@ -165,14 +167,6 @@ func TestSwiftStorageController(t *testing.T) {
 			assertClaimCreated(t, fakeClient, claimName)
 		})
 
-		t.Run("should create rings persistent volume claim", func(t *testing.T) {
-			claimName := types.NamespacedName{
-				Name:      "swift-storage-rings",
-				Namespace: name.Namespace,
-			}
-			assertClaimCreated(t, fakeClient, claimName)
-		})
-
 		t.Run("should add volume to StatefulSet", func(t *testing.T) {
 			expectedVolume := core.Volume{
 				Name: "devices-mount-point-volume",
@@ -190,7 +184,7 @@ func TestSwiftStorageController(t *testing.T) {
 				Name: "rings",
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: "swift-storage-rings",
+						ClaimName: "test-rings-claim",
 						ReadOnly:  true,
 					},
 				},
@@ -236,7 +230,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 		expectedMountPoint := core.VolumeMount{
 			Name:      "devices-mount-point-volume",
-			MountPath: "/srv/node/d1",
+			MountPath: "/srv/node/dev",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
@@ -277,79 +271,57 @@ func TestSwiftStorageController(t *testing.T) {
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
 	})
 
-	t.Run("should requeue until IP is assigned to pod", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// when
-		stsLabels := map[string]string{"app": name.Name}
-		deployPodWithoutIP(t, fakeClient, stsLabels)
-		result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.True(t, result.Requeue)
-		assert.Error(t, err)
-	})
-
-	t.Run("should create a jobs reconciling rings after Swift Storage Pod is deployed", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// when
-		stsLabels := map[string]string{"app": name.Name}
-		deployPodWithIP(t, fakeClient, stsLabels)
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		require.NoError(t, err)
-		assertJobExists(t, fakeClient, types.NamespacedName{
-			Namespace: name.Namespace,
-			Name:      swiftStorageCR.Name + "-ring-account-job",
-		})
-		assertJobExists(t, fakeClient, types.NamespacedName{
-			Namespace: name.Namespace,
-			Name:      swiftStorageCR.Name + "-ring-container-job",
-		})
-		assertJobExists(t, fakeClient, types.NamespacedName{
-			Namespace: name.Namespace,
-			Name:      swiftStorageCR.Name + "-ring-object-job",
-		})
+	t.Run("should update IPs of STS pods", func(t *testing.T) {
+		tests := map[string]struct {
+			podIPs            []string
+			expectedStatusIPs []string
+		}{
+			"no pods": {
+				podIPs:            []string{},
+				expectedStatusIPs: []string{},
+			},
+			"single pod without IP": {
+				podIPs:            []string{""},
+				expectedStatusIPs: []string{},
+			},
+			"single pod with IP": {
+				podIPs:            []string{"192.168.0.1"},
+				expectedStatusIPs: []string{"192.168.0.1"},
+			},
+		}
+		for testName, test := range tests {
+			t.Run(testName, func(t *testing.T) {
+				// given
+				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+				claims := volumeclaims.New(fakeClient, scheme)
+				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+				// when
+				for _, ip := range test.podIPs {
+					stsLabels := map[string]string{"app": name.Name}
+					deployPod(t, fakeClient, ip, stsLabels)
+				}
+				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+				// then
+				require.NoError(t, err)
+				actualSwiftStorage := lookupSwiftStorage(t, fakeClient, name)
+				assert.Equal(t, test.expectedStatusIPs, actualSwiftStorage.Status.IPs)
+			})
+		}
 	})
 
 }
 
-func deployPodWithIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
+func deployPod(t *testing.T, fakeClient client.Client, podIP string, labels map[string]string) {
 	pod := &core.Pod{
 		ObjectMeta: meta.ObjectMeta{Labels: labels},
 		Spec:       core.PodSpec{},
 		Status: core.PodStatus{
-			PodIP: "192.168.0.1",
+			PodIP: podIP,
 		},
 	}
 	err := fakeClient.Create(context.Background(), pod)
 	require.NoError(t, err)
-}
-func deployPodWithoutIP(t *testing.T, fakeClient client.Client, labels map[string]string) {
-	pod := &core.Pod{
-		ObjectMeta: meta.ObjectMeta{Labels: labels},
-		Spec:       core.PodSpec{},
-		Status: core.PodStatus{
-			PodIP: "",
-		},
-	}
-	err := fakeClient.Create(context.Background(), pod)
-	require.NoError(t, err)
-}
-
-func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.NamespacedName) {
-	job := &batch.Job{}
-	err := fakeClient.Get(context.Background(), client.ObjectKey{
-		Name:      jobName.Name,
-		Namespace: jobName.Namespace,
-	}, job)
-	require.NoError(t, err, "job %v does not exist", jobName)
 }
 
 func setCustomImages(cr contrail.SwiftStorage) *contrail.SwiftStorage {
