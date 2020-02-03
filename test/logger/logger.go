@@ -36,8 +36,9 @@ func DumpPods(t *testing.T, client test.FrameworkClient) {
 			podDetails, err := json.MarshalIndent(pod, "", "  ")
 			if err != nil {
 				logBuilder.WriteString(fmt.Sprintf("\nError: could not marshal pod %s to json\n", pod.Name))
+			} else {
+				logBuilder.WriteString(fmt.Sprintf("\nDetails of pod %s which is not Running:\n%s\n", pod.Name, podDetails))
 			}
-			logBuilder.WriteString(fmt.Sprintf("\nDetails of pod %s which is not Running:\n%s\n", pod.Name, podDetails))
 		}
 	}
 	t.Logf(logBuilder.String())
