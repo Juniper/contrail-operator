@@ -106,6 +106,7 @@ func TestMemcachedController(t *testing.T) {
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
 		// when
+		deployMemcachedPod(t, fakeClient, "127.0.0.1")
 		setMemcachedDeploymentStatus(t, fakeClient, apps.DeploymentStatus{ReadyReplicas: 1})
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
 		// then
@@ -141,6 +142,18 @@ func setMemcachedDeploymentStatus(t *testing.T, c client.Client, status apps.Dep
 	require.NoError(t, err)
 }
 
+func deployMemcachedPod(t *testing.T, fakeClient client.Client, podIP string) {
+	pod := &core.Pod{
+		ObjectMeta: meta.ObjectMeta{Labels: map[string]string{"Memcached": "test-memcached"}},
+		Spec:       core.PodSpec{},
+		Status: core.PodStatus{
+			PodIP: podIP,
+		},
+	}
+	err := fakeClient.Create(context.Background(), pod)
+	require.NoError(t, err)
+}
+
 func assertValidMemcachedDeploymentExists(t *testing.T, c client.Client) {
 	memcachedDeploymentName := types.NamespacedName{Namespace: "default", Name: "test-memcached-deployment"}
 	deployment := &apps.Deployment{}
@@ -165,7 +178,7 @@ func assertMemcachedIsActiveAndNodeStatusIsSet(t *testing.T, c client.Client) {
 	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
 	assert.NoError(t, err)
 	assert.True(t, memcachedCR.Status.Active)
-	assert.Equal(t, "localhost:11211", memcachedCR.Status.Node)
+	assert.Equal(t, "127.0.0.1:11211", memcachedCR.Status.Node)
 }
 
 func assertMemcachedIsInactive(t *testing.T, c client.Client) {
