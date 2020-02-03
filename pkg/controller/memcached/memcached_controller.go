@@ -121,8 +121,18 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 		expectedReplicas = *deployment.Spec.Replicas
 	}
 	if deployment.Status.ReadyReplicas == expectedReplicas {
+		pods := core.PodList{}
+		var labels client.MatchingLabels = deployment.Spec.Selector.MatchLabels
+		if err = r.client.List(context.Background(), &pods, labels); err != nil {
+			return err
+		}
+		if len(pods.Items) != 1 {
+			return fmt.Errorf("ReconcileMemchached.updateStatus: expected 1 pod with labels %v, got %d", labels, len(pods.Items))
+		}
+		ip := pods.Items[0].Status.PodIP
+		port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
+		memcachedCR.Status.Node = fmt.Sprintf("%s:%d", ip, port)
 		memcachedCR.Status.Active = true
-		memcachedCR.Status.Node = fmt.Sprintf("localhost:%v", memcachedCR.Spec.ServiceConfiguration.GetListenPort()) // TODO get pod by labels
 	} else {
 		memcachedCR.Status.Active = false
 	}
