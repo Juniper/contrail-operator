@@ -255,7 +255,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	if len(list.Items) > 0 {
-		if int(*list.Items[0].Spec.Replicas) == 1 && int(*statefulSet.Spec.Replicas) > 1 {
+		if int(*list.Items[0].Spec.Replicas) == 1 && int(*statefulSet.Spec.Replicas) > 1 || (int(*statefulSet.Spec.Replicas) == 1 && int(*list.Items[0].Spec.Replicas) > 1) {
 			strategy = "deleteFirst"
 		}
 	}
