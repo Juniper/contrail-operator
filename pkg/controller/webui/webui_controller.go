@@ -420,7 +420,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 
 	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType,
-		request, r.Scheme, r.Client, "rolling"); err != nil {
+		request, r.Scheme, r.Client, "rolling", nil); err != nil {
 		return reconcile.Result{}, err
 	}
 
