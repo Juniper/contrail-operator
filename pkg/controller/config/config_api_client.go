@@ -2,15 +2,15 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
-	"errors"
 )
 
-func NewApiClient(url string) *ApiClient {
+func NewApiClient(url string, client *http.Client) *ApiClient {
 	return &ApiClient{
 		url:    url,
-		client: &http.Client{},
+		client: client,
 	}
 }
 
@@ -29,12 +29,11 @@ func (c *ApiClient) EnsureConfigNodeExists(node ConfigNode) error {
          "default-global-system-config",
          "%s"
       ],
-      "uuid":"%s",
       "config_node_ip_address":"%s"
    }
 }
 `
-	body = fmt.Sprintf(body, node.Hostname, node.UUID, node.IP)
+	body = fmt.Sprintf(body, node.Name, node.IP)
 	response, err := c.client.Post(c.url+"/config-nodes", "application/json", bytes.NewBufferString(body))
 	if err != nil {
 		return err
@@ -49,7 +48,7 @@ func (c *ApiClient) EnsureConfigNodeExists(node ConfigNode) error {
 }
 
 type ConfigNode struct {
-	UUID     string
+	Name     string
 	Hostname string
 	IP       string
 }

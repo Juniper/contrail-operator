@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"k8s.io/client-go/rest"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -22,6 +26,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/controller"
+	configController "github.com/Juniper/contrail-operator/pkg/controller/config"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -101,12 +106,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup all Controllers.
+	// Setup all Controllers except Config-controller.
 	if err := controller.AddToManager(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-
+	// Setup Config controller
+	if err = rest.LoadTLSFiles(cfg); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(cfg.TLSClientConfig.CAData)
+	httpClient := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: caCertPool,
+		},
+	}}
+	configController.Add(mgr, httpClient)
 	// Create Service object to expose the metrics port.
 	//_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
 	//if err != nil {

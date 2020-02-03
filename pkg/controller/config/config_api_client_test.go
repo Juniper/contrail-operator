@@ -15,7 +15,7 @@ import (
 func TestEnsureConfigNodeExists(t *testing.T) {
 
 	t.Run("should create config API client", func(t *testing.T) {
-		client := config.NewApiClient("localhost:8082")
+		client := config.NewApiClient("localhost:8082", &http.Client{})
 		assert.NotNil(t, client)
 	})
 
@@ -26,7 +26,7 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 		}{
 			"localhost": {
 				configNode: config.ConfigNode{
-					UUID:     "520f1126-34cc-4d1f-bda8-4df1b5aeea7d",
+					Name:     "config1",
 					Hostname: "localhost",
 					IP:       "10.0.2.15",
 				},
@@ -36,16 +36,15 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 						  "parent_type":"global-system-config",
 						  "fq_name":[ 
 							 "default-global-system-config",
-							 "localhost"
+							 "config1"
 						  ],
-						  "uuid":"520f1126-34cc-4d1f-bda8-4df1b5aeea7d",
 						  "config_node_ip_address":"10.0.2.15"
 					   }
 					}`,
 			},
 			"juniper.net": {
 				configNode: config.ConfigNode{
-					UUID:     "86f38811-a892-4877-885f-be0fa05ea164",
+					Name:     "config1",
 					Hostname: "juniper.net",
 					IP:       "10.0.2.1",
 				},
@@ -55,9 +54,8 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 						  "parent_type":"global-system-config",
 						  "fq_name":[ 
 							 "default-global-system-config",
-							 "juniper.net"
+							 "config1"
 						  ],
-						  "uuid":"86f38811-a892-4877-885f-be0fa05ea164",
 						  "config_node_ip_address":"10.0.2.1"
 					   }
 					}`,
@@ -68,7 +66,7 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 				// given
 				server := startHTTPServerStub(200)
 				defer server.close()
-				client := config.NewApiClient(server.url())
+				client := config.NewApiClient(server.url(), &http.Client{})
 				// when
 				err := client.EnsureConfigNodeExists(test.configNode)
 				req := server.waitForRequest()
@@ -84,10 +82,10 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 
 	t.Run("should return err when server is down", func(t *testing.T) {
 		// given
-		client := config.NewApiClient("http://127.0.0.1:1")
+		client := config.NewApiClient("http://127.0.0.1:1", &http.Client{})
 		// when
 		err := client.EnsureConfigNodeExists(config.ConfigNode{
-			UUID:     "123-123-123-123",
+			Name:     "config1",
 			Hostname: "localhost",
 		})
 		// then
@@ -101,10 +99,10 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 				// given
 				server := startHTTPServerStub(statusCode)
 				defer server.close()
-				client := config.NewApiClient(server.url())
+				client := config.NewApiClient(server.url(), &http.Client{})
 				// when
 				err := client.EnsureConfigNodeExists(config.ConfigNode{
-					UUID:     "123-123-123-123",
+					Name:     "config1",
 					Hostname: "localhost",
 				})
 				// then
@@ -117,10 +115,10 @@ func TestEnsureConfigNodeExists(t *testing.T) {
 		// given
 		server := startHTTPServerStub(409)
 		defer server.close()
-		client := config.NewApiClient(server.url())
+		client := config.NewApiClient(server.url(), &http.Client{})
 		// when
 		err := client.EnsureConfigNodeExists(config.ConfigNode{
-			UUID:     "123-123-123-123",
+			Name:     "config1",
 			Hostname: "localhost",
 		})
 		// then
