@@ -135,12 +135,12 @@ func TestCommandServices(t *testing.T) {
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
-			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
-			})
-
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
 				assert.NoError(t, wait.ForDeployment("commandtest-contrailcommand-deployment"))
+			})
+
+			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
+				assert.NoError(t, wait.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
 			})
 
 			var pods *core.PodList
