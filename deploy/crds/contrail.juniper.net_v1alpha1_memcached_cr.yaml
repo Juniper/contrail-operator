@@ -6,4 +6,4 @@ metadata:
 spec:
   serviceConfiguration:
     container:
-      image: "registry:5000/centos-binary-memcached:master"
+      image: "localhost:5000/centos-binary-memcached:master"
