@@ -2,8 +2,6 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/keystone"
+	"github.com/Juniper/contrail-operator/test/kubeproxy"
 	"github.com/Juniper/contrail-operator/test/logger"
+	"github.com/Juniper/contrail-operator/test/swift"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
 
@@ -35,6 +36,7 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
+	proxy := kubeproxy.New(t, f.KubeConfig)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -63,7 +65,7 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
-		keystone := &contrail.Keystone{
+		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
@@ -94,7 +96,7 @@ func TestOpenstackServices(t *testing.T) {
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
-					Keystone:  keystone,
+					Keystone:  keystoneResource,
 					Memcached: memcached,
 				},
 			},
@@ -117,18 +119,9 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "admin"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "contrail123"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Get()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", keystone.Spec.ServiceConfiguration.ListenPort))
-				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
-
-				assert.NoError(t, res.Error())
+				keystoneProxy := proxy.ClientFor("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneClient := keystone.NewClient(t, keystoneProxy)
+				keystoneClient.GetAuthTokens("admin", "contrail123")
 			})
 		})
 
@@ -198,19 +191,25 @@ func TestOpenstackServices(t *testing.T) {
 				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
 			})
 
-			t.Run("then swift user should be registered in keystone", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "swift"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "swiftpass"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Get()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", 5555))
-				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
+			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
+				keystoneProxy := proxy.ClientFor("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneClient := keystone.NewClient(t, keystoneProxy)
+				keystoneClient.GetAuthTokens("swift", "swiftpass")
+			})
+		})
 
-				assert.NoError(t, res.Error())
+		t.Run("when swift file is uploaded", func(t *testing.T) {
+			keystoneClient := keystone.NewClient(t, proxy.ClientFor("contrail", "keystone-keystone-statefulset-0", 5555))
+			tokens := keystoneClient.GetAuthTokens("swift", "swiftpass")
+			swiftProxyClient := proxy.ClientFor("contrail", "swift-proxy-deployment-754f87448b-s84dl", 5080)
+			swiftURL := tokens.GetEndpointURL("swift", "public")
+			swiftClient := swift.NewClient(t, swiftProxyClient, tokens.XAuthTokenHeader, swiftURL)
+			swiftClient.PutContainer("test-container")
+			swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+
+			t.Run("then downloaded file has proper payload", func(t *testing.T) {
+				contents := swiftClient.GetFile("test-container", "test-file")
+				assert.Equal(t, "payload", string(contents))
 			})
 		})
 
@@ -231,21 +230,4 @@ func TestOpenstackServices(t *testing.T) {
 			})
 		})
 	})
-}
-
-type keystoneAuthRequest struct {
-	Auth struct {
-		Identity struct {
-			Methods  []string `json:"methods"`
-			Password struct {
-				User struct {
-					Name   string `json:"name"`
-					Domain struct {
-						ID string `json:"id"`
-					} `json:"domain"`
-					Password string `json:"password"`
-				} `json:"user"`
-			} `json:"password"`
-		} `json:"identity"`
-	} `json:"auth"`
 }
