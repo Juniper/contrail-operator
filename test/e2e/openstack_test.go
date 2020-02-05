@@ -105,13 +105,15 @@ func TestOpenstackServices(t *testing.T) {
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
+			wait := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
+				KubeClient:    f.KubeClient,
+			}
+
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.Wait{
-					Namespace:     namespace,
-					Timeout:       waitTimeout,
-					RetryInterval: retryInterval,
-					KubeClient:    f.KubeClient,
-				}.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
@@ -134,6 +136,13 @@ func TestOpenstackServices(t *testing.T) {
 			cluster := &contrail.Manager{}
 			err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, cluster)
 			assert.NoError(t, err)
+
+			wait := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
+				KubeClient:    f.KubeClient,
+			}
 
 			cluster.Spec.Services.Swift = &contrail.Swift{
 				ObjectMeta: v1.ObjectMeta{
@@ -182,21 +191,11 @@ func TestOpenstackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then a SwiftStorage StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.Wait{
-					Namespace:     namespace,
-					Timeout:       waitTimeout,
-					RetryInterval: retryInterval,
-					KubeClient:    f.KubeClient,
-				}.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
 			})
 
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.Wait{
-					Namespace:     namespace,
-					Timeout:       waitTimeout,
-					RetryInterval: retryInterval,
-					KubeClient:    f.KubeClient,
-				}.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
+				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
 			})
 
 			t.Run("then swift user should be registered in keystone", func(t *testing.T) {

@@ -37,10 +37,6 @@ func TestCluster(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
 		assert.NoError(t, err)
 
-		// TODO: ssh keys creations should be moved to keystone controller
-		err = f.Client.Create(context.TODO(), createKeystoneKeys(), &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-		assert.NoError(t, err)
-
 		manager := &contrail.Manager{}
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
 		require.NoError(t, err)
