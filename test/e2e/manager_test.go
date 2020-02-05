@@ -38,6 +38,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/test/logger"
+	contrailwait "github.com/Juniper/contrail-operator/test/wait"
 )
 
 /*
@@ -171,6 +172,15 @@ func ManagerCluster(t *testing.T) {
 	err = f.Client.Delete(context.TODO(), &manager, &client.DeleteOptions{
 		PropagationPolicy: &pp,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = contrailwait.Contrail{
+		Namespace:     namespace,
+		Timeout:       5 * time.Minute,
+		RetryInterval: retryInterval,
+		Client:        f.Client,
+	}.ForManagerDeletion(manager.Name)
 	if err != nil {
 		t.Fatal(err)
 	}

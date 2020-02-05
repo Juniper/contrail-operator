@@ -181,7 +181,7 @@ func (m Manager) IsClusterReady() bool {
 			}
 		}
 	}
-	if m.Spec.Services.Webui != nil && !m.Status.Config.ready() {
+	if m.Spec.Services.Webui != nil && !m.Status.Webui.ready() {
 		return false
 	}
 	if m.Spec.Services.ProvisionManager != nil && !m.Status.ProvisionManager.ready() {

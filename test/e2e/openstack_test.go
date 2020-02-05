@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +18,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/test/logger"
-	wait "github.com/Juniper/contrail-operator/test/wait"
+	"github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestOpenstackServices(t *testing.T) {
@@ -33,12 +35,6 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
-	wait := wait.Wait{
-		Namespace:     namespace,
-		Timeout:       waitTimeout,
-		RetryInterval: retryInterval,
-		KubeClient:    f.KubeClient,
-	}
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -110,7 +106,12 @@ func TestOpenstackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
+				assert.NoError(t, wait.Wait{
+					Namespace:     namespace,
+					Timeout:       waitTimeout,
+					RetryInterval: retryInterval,
+					KubeClient:    f.KubeClient,
+				}.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
@@ -181,11 +182,21 @@ func TestOpenstackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then a SwiftStorage StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
+				assert.NoError(t, wait.Wait{
+					Namespace:     namespace,
+					Timeout:       waitTimeout,
+					RetryInterval: retryInterval,
+					KubeClient:    f.KubeClient,
+				}.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
 			})
 
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
+				assert.NoError(t, wait.Wait{
+					Namespace:     namespace,
+					Timeout:       waitTimeout,
+					RetryInterval: retryInterval,
+					KubeClient:    f.KubeClient,
+				}.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
 			})
 
 			t.Run("then swift user should be registered in keystone", func(t *testing.T) {
@@ -210,6 +221,15 @@ func TestOpenstackServices(t *testing.T) {
 				PropagationPolicy: &pp,
 			})
 			assert.NoError(t, err)
+			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
+				err := wait.Contrail{
+					Namespace:     namespace,
+					Timeout:       5 * time.Minute,
+					RetryInterval: retryInterval,
+					Client:        f.Client,
+				}.ForManagerDeletion(cluster.Name)
+				require.NoError(t, err)
+			})
 		})
 	})
 }

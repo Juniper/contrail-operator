@@ -10,6 +10,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -42,12 +43,12 @@ func TestCluster(t *testing.T) {
 
 		manager := &contrail.Manager{}
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		t.Run("when reference cluster is created", func(t *testing.T) {
 
 			err = yaml.Unmarshal(yamlFile, manager)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
@@ -63,12 +64,22 @@ func TestCluster(t *testing.T) {
 			})
 		})
 
-		t.Run("when reference cluster is deleted then it is cleared", func(t *testing.T) {
+		t.Run("when reference cluster is deleted", func(t *testing.T) {
 			pp := meta.DeletePropagationForeground
 			err = f.Client.Delete(context.TODO(), manager, &client.DeleteOptions{
 				PropagationPolicy: &pp,
 			})
 			assert.NoError(t, err)
+
+			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
+				err := wait.Contrail{
+					Namespace:     namespace,
+					Timeout:       5 * time.Minute,
+					RetryInterval: retryInterval,
+					Client:        f.Client,
+				}.ForManagerDeletion(manager.Name)
+				require.NoError(t, err)
+			})
 		})
 	})
 }
