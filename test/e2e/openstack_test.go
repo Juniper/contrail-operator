@@ -15,12 +15,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestOpenstackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
-	defer ctx.Cleanup()
+	f := test.Global
+	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -31,7 +33,6 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
-	f := test.Global
 	wait := wait.Wait{
 		Namespace:     namespace,
 		Timeout:       waitTimeout,
