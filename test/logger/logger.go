@@ -12,26 +12,34 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func DumpPods(t *testing.T, client test.FrameworkClient) {
-	pods := k8score.PodList{}
-	namespace := k8sclient.InNamespace("contrail")
-	if err := client.List(context.TODO(), &pods, namespace); err != nil {
+func DumpPods(t *testing.T, ctx *test.TestCtx, client test.FrameworkClient) {
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		t.Logf("Error: failed to get namespace from test context - %s", err)
+		return
+	}
+	podList := k8score.PodList{}
+	if err := client.List(context.TODO(), &podList, k8sclient.InNamespace(namespace)); err != nil {
 		t.Logf("Error: failed to check pods status - %s", err)
 		return
 	}
 	var logBuilder strings.Builder
+	logPodStatuses(&logBuilder, podList.Items)
+	dumpPodsWhichAreNotRunning(&logBuilder, podList.Items)
+	t.Logf(logBuilder.String())
+}
+
+func logPodStatuses(logBuilder *strings.Builder, pods []k8score.Pod) {
 	logBuilder.WriteString("\nPods statuses at the end of the test\n")
-	maxLen := 0
-	for _, pod := range pods.Items {
-		if len(pod.Name) > maxLen {
-			maxLen = len(pod.Name)
-		}
-	}
+	maxLen := findMaxPodNameLength(pods)
 	logBuilder.WriteString(fmt.Sprintf("%-*s  STATUS\n", maxLen, "NAME"))
-	for _, pod := range pods.Items {
+	for _, pod := range pods {
 		logBuilder.WriteString(fmt.Sprintf("%-*s  %v\n", maxLen, pod.Name, pod.Status.Phase))
 	}
-	for _, pod := range pods.Items {
+}
+
+func dumpPodsWhichAreNotRunning(logBuilder *strings.Builder, pods []k8score.Pod) {
+	for _, pod := range pods {
 		if pod.Status.Phase != k8score.PodRunning {
 			podDetails, err := json.MarshalIndent(pod, "", "  ")
 			if err != nil {
@@ -41,5 +49,14 @@ func DumpPods(t *testing.T, client test.FrameworkClient) {
 			}
 		}
 	}
-	t.Logf(logBuilder.String())
+}
+
+func findMaxPodNameLength(pods []k8score.Pod) int {
+	maxLen := 0
+	for _, pod := range pods {
+		if len(pod.Name) > maxLen {
+			maxLen = len(pod.Name)
+		}
+	}
+	return maxLen
 }

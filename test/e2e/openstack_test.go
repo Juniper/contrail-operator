@@ -22,7 +22,7 @@ import (
 func TestOpenstackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	f := test.Global
-	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
+	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)

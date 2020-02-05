@@ -96,7 +96,7 @@ func ManagerCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
+	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
 
 	if err := test.AddToFrameworkScheme(v1alpha1.SchemeBuilder.AddToScheme, &v1alpha1.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -261,7 +261,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							Containers: map[string]*v1alpha1.Container{
 								"api":               &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-api:" + versionMap["config"]},
 								"devicemanager":     &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-devicemgr:dev-5"}, // Using custom dev version until required changes are merged upstream
-								"dnsmasq":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-dnsmasq:dev"},   // Using custom dev version until required changes are merged upstream
+								"dnsmasq":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-dnsmasq:dev"},     // Using custom dev version until required changes are merged upstream
 								"schematransformer": &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-schema:" + versionMap["config"]},
 								"servicemonitor":    &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-svcmonitor:" + versionMap["config"]},
 								"analyticsapi":      &v1alpha1.Container{Image: "registry:5000/contrail-analytics-api:" + versionMap["config"]},
@@ -335,7 +335,7 @@ func RabbitmqCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, f.Client); ctx.Cleanup() }()
+	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
 	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
