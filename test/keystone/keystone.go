@@ -3,37 +3,35 @@ package keystone
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"gotest.tools/assert"
 
 	"github.com/Juniper/contrail-operator/test/kubeproxy"
 )
 
-func NewClient(t *testing.T, client *kubeproxy.Client) *Client {
-	return &Client{client: client, t: t}
+func NewClient(client *kubeproxy.Client) *Client {
+	return &Client{client: client}
 }
 
 type Client struct {
 	client *kubeproxy.Client
-	t      *testing.T
 }
 
-func (c *Client) GetAuthTokens(username, password string) AuthTokens {
+func (c *Client) GetAuthTokens(username, password string) (AuthTokens, error) {
 	return c.GetAuthTokensWithHeaders(username, password, http.Header{})
 }
 
-func (c *Client) GetAuthTokensWithHeaders(username, password string, headers http.Header) AuthTokens {
+func (c *Client) GetAuthTokensWithHeaders(username, password string, headers http.Header) (AuthTokens, error) {
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username
 	kar.Auth.Identity.Password.User.Domain.ID = "default"
 	kar.Auth.Identity.Password.User.Password = password
 	karBody, err := json.Marshal(kar)
-	require.NoError(c.t, err)
+	if err != nil {
+		return AuthTokens{}, err
+	}
 	request := c.client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
 	request.Header.Set("Content-Type", "application/json")
 	for name, values := range headers {
@@ -42,14 +40,19 @@ func (c *Client) GetAuthTokensWithHeaders(username, password string, headers htt
 		}
 	}
 	response := c.client.Do(request)
-	assert.Equal(c.t, 201, response.StatusCode)
+	if response.StatusCode != 201 {
+		return AuthTokens{}, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+	}
 	authResponse := AuthTokens{}
 	bytesRead, err := ioutil.ReadAll(response.Body)
-	require.NoError(c.t, err)
-	err = json.Unmarshal(bytesRead, &authResponse)
-	require.NoError(c.t, err)
+	if err != nil {
+		return AuthTokens{}, err
+	}
+	if err := json.Unmarshal(bytesRead, &authResponse); err != nil {
+		return AuthTokens{}, err
+	}
 	authResponse.XAuthTokenHeader = response.Header.Get("X-Subject-Token")
-	return authResponse
+	return authResponse, nil
 }
 
 type keystoneAuthRequest struct {
