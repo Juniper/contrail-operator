@@ -39,6 +39,8 @@ func (c *Client) PutContainer(name string) error {
 		return err
 	}
 	if response.StatusCode != 201 {
+		all, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(all))
 		return fmt.Errorf("invalid status code returned: %d", response.StatusCode)
 	}
 	return nil

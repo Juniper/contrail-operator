@@ -92,7 +92,7 @@ type AuthTokens struct {
 	XAuthTokenHeader string
 }
 
-func (t AuthTokens) GetEndpointURL(serviceName string, endpointInterface string) string {
+func (t AuthTokens) EndpointURL(serviceName string, endpointInterface string) string {
 	for _, service := range t.Token.Catalog {
 		if service.Name == serviceName {
 			for _, endpoint := range service.Endpoints {

@@ -219,7 +219,7 @@ func TestOpenstackServices(t *testing.T) {
 				tokens, _        = keystoneClient.GetAuthTokens("swift", "swiftpass")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
 				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5080)
-				swiftURL         = tokens.GetEndpointURL("swift", "public")
+				swiftURL         = tokens.EndpointURL("swift", "public")
 				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
 			require.NoError(t, err)
