@@ -31,8 +31,12 @@ type HTTPProxy struct {
 	serverURL string
 }
 
-func (p *HTTPProxy) ClientFor(namespace, pod string, port int) *Client {
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s:%d/proxy", p.serverURL, namespace, pod, port)
+func (p *HTTPProxy) NewClient(namespace, pod string, port int) *Client {
+	return p.NewClientWithPath(namespace, pod, port, "")
+}
+
+func (p *HTTPProxy) NewClientWithPath(namespace, pod string, port int, path string) *Client {
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s:%d/proxy%s", p.serverURL, namespace, pod, port, path)
 	return &Client{
 		url:    url,
 		client: p.client,
