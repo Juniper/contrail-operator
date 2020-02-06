@@ -125,6 +125,8 @@ func TestOpenstackServices(t *testing.T) {
 			})
 		})
 
+		var swiftProxyPods core.PodList
+
 		t.Run("when manager is updated with swift service", func(t *testing.T) {
 			cluster := &contrail.Manager{}
 			err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, cluster)
@@ -191,6 +193,14 @@ func TestOpenstackServices(t *testing.T) {
 				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
 			})
 
+			t.Run("then a SwiftProxy pod should be created", func(t *testing.T) {
+				swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+					LabelSelector: "SwiftProxy=swift-proxy",
+				})
+				assert.NoError(t, err)
+				assert.NotEmpty(t, swiftProxyPods.Items)
+			})
+
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
 				keystoneProxy := proxy.ClientFor("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(t, keystoneProxy)
@@ -199,11 +209,15 @@ func TestOpenstackServices(t *testing.T) {
 		})
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
-			keystoneClient := keystone.NewClient(t, proxy.ClientFor("contrail", "keystone-keystone-statefulset-0", 5555))
-			tokens := keystoneClient.GetAuthTokens("swift", "swiftpass")
-			swiftProxyClient := proxy.ClientFor("contrail", "swift-proxy-deployment-754f87448b-s84dl", 5080)
-			swiftURL := tokens.GetEndpointURL("swift", "public")
-			swiftClient := swift.NewClient(t, swiftProxyClient, tokens.XAuthTokenHeader, swiftURL)
+			var (
+				keystoneProxy  = proxy.ClientFor("contrail", "keystone-keystone-statefulset-0", 5555)
+				keystoneClient = keystone.NewClient(t, keystoneProxy)
+				tokens         = keystoneClient.GetAuthTokens("swift", "swiftpass")
+				swiftProxyPod  = swiftProxyPods.Items[0].Name
+				swiftProxy     = proxy.ClientFor("contrail", swiftProxyPod, 5080)
+				swiftURL       = tokens.GetEndpointURL("swift", "public")
+				swiftClient    = swift.NewClient(t, swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+			)
 			swiftClient.PutContainer("test-container")
 			swiftClient.PutFile("test-container", "test-file", []byte("payload"))
 
