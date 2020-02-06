@@ -125,7 +125,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 		})
 
-		var swiftProxyPods core.PodList
+		var swiftProxyPods *core.PodList
 
 		t.Run("when manager is updated with swift service", func(t *testing.T) {
 			cluster := &contrail.Manager{}
