@@ -46,36 +46,36 @@ func (c *Client) GetAuthTokensWithHeaders(username, password string, headers htt
 	if err != nil {
 		return AuthTokens{}, err
 	}
-	if response.StatusCode != 201 {
+	if response.StatusCode != 201 && response.StatusCode != 200 {
 		return AuthTokens{}, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
 	}
-	authResponse := AuthTokens{}
+	authTokens := AuthTokens{}
 	bytesRead, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return AuthTokens{}, err
 	}
-	if err := json.Unmarshal(bytesRead, &authResponse); err != nil {
+	if err := json.Unmarshal(bytesRead, &authTokens); err != nil {
 		return AuthTokens{}, err
 	}
-	authResponse.XAuthTokenHeader = response.Header.Get("X-Subject-Token")
-	return authResponse, nil
+	authTokens.XAuthTokenHeader = response.Header.Get("X-Subject-Token")
+	return authTokens, nil
 }
 
 type keystoneAuthRequest struct {
 	Auth struct {
 		Identity struct {
-			Methods  []string `json:"methods"`
+			Methods  []string
 			Password struct {
 				User struct {
-					Name   string `json:"name"`
+					Name   string
 					Domain struct {
-						ID string `json:"id"`
-					} `json:"domain"`
-					Password string `json:"password"`
-				} `json:"user"`
-			} `json:"password"`
-		} `json:"identity"`
-	} `json:"auth"`
+						ID string
+					}
+					Password string
+				}
+			}
+		}
+	}
 }
 
 type AuthTokens struct {

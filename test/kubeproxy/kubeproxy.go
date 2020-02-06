@@ -19,7 +19,6 @@ func New(config *rest.Config) (*HTTPProxy, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &HTTPProxy{
 		client:    client,
 		serverURL: url.String() + s,
