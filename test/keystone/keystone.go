@@ -64,18 +64,18 @@ func (c *Client) GetAuthTokensWithHeaders(username, password string, headers htt
 type keystoneAuthRequest struct {
 	Auth struct {
 		Identity struct {
-			Methods  []string
+			Methods  []string `json:"methods"`
 			Password struct {
 				User struct {
-					Name   string
+					Name   string `json:"name"`
 					Domain struct {
-						ID string
-					}
-					Password string
-				}
-			}
-		}
-	}
+						ID string `json:"id"`
+					} `json:"domain"`
+					Password string `json:"password"`
+				} `json:"user"`
+			} `json:"password"`
+		} `json:"identity"`
+	} `json:"auth"`
 }
 
 type AuthTokens struct {
