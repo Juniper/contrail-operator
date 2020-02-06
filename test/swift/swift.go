@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
+	"net/url"
 
 	"github.com/Juniper/contrail-operator/test/kubeproxy"
 )
 
-func NewClient(client *kubeproxy.Client, token, endpointURL string) *Client {
+func NewClient(client *kubeproxy.Client, token, endpointURL string) (*Client, error) {
+	fullURL, err := url.Parse(endpointURL)
+	if err != nil {
+		return nil, err
+	}
 	return &Client{
 		proxy: client,
 		token: token,
-		path:  strings.TrimPrefix(endpointURL, "http://localhost:5080"),
-	}
+		path:  fullURL.Path,
+	}, nil
 }
 
 type Client struct {

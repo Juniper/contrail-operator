@@ -214,15 +214,16 @@ func TestOpenstackServices(t *testing.T) {
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
 			var (
-				keystoneProxy  = proxy.NewClient("contrail", "keystone-keystone-statefulset-0", 5555)
-				keystoneClient = keystone.NewClient(keystoneProxy)
-				tokens, _      = keystoneClient.GetAuthTokens("swift", "swiftpass")
-				swiftProxyPod  = swiftProxyPods.Items[0].Name
-				swiftProxy     = proxy.NewClient("contrail", swiftProxyPod, 5080)
-				swiftURL       = tokens.GetEndpointURL("swift", "public")
-				swiftClient    = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+				keystoneProxy    = proxy.NewClient("contrail", "keystone-keystone-statefulset-0", 5555)
+				keystoneClient   = keystone.NewClient(keystoneProxy)
+				tokens, _        = keystoneClient.GetAuthTokens("swift", "swiftpass")
+				swiftProxyPod    = swiftProxyPods.Items[0].Name
+				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5080)
+				swiftURL         = tokens.GetEndpointURL("swift", "public")
+				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
-			err := swiftClient.PutContainer("test-container")
+			require.NoError(t, err)
+			err = swiftClient.PutContainer("test-container")
 			require.NoError(t, err)
 			err = swiftClient.PutFile("test-container", "test-file", []byte("payload"))
 			require.NoError(t, err)
