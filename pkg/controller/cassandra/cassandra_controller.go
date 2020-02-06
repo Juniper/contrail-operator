@@ -176,6 +176,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	managerInstance, err := instance.OwnedByManager(r.Client, request)
 	if err != nil {
 		return reconcile.Result{}, err

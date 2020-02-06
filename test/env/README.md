@@ -34,4 +34,4 @@ It creates Kubernetes IN Docker cluster with a docker registry. This docker regi
     # From contrail-operator root directory
     # Use operator-sdk version >= v.0.13
     kubectl create namespace contrail
-    operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v" --up-local
+    operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local

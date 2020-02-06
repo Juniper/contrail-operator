@@ -184,6 +184,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	if err = r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
+
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
 	if !configActive {
 		return reconcile.Result{}, nil

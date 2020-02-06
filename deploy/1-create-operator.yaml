@@ -3122,6 +3122,21 @@ spec:
                 name:
                   type: string
               type: object
+            conditions:
+              items:
+                description: ManagerCondition is used to represent cluster condition
+                properties:
+                  status:
+                    description: Status of the condition, one of True or False.
+                    type: string
+                  type:
+                    description: Type of manager condition.
+                    type: string
+                required:
+                - status
+                - type
+                type: object
+              type: array
             config:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate

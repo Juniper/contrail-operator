@@ -107,6 +107,10 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	if !swiftProxy.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	keystone, err := r.getKeystone(swiftProxy)
 	if err != nil {
 		return reconcile.Result{}, err

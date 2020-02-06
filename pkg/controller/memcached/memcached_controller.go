@@ -87,6 +87,11 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		return reconcile.Result{}, err
 	}
+
+	if !memcachedCR.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	memcachedConfigMapName := memcachedCR.Name + "-config"
 	if err := r.configMap(memcachedConfigMapName, memcachedCR).ensureExists(); err != nil {
 		return reconcile.Result{}, err

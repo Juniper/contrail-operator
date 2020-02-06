@@ -110,6 +110,10 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	if !keystone.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	psql, err := r.getPostgres(keystone)
 	if err != nil {
 		return reconcile.Result{}, err

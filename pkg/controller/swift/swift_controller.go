@@ -117,6 +117,10 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	if !swift.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	ringsClaim := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-rings",
@@ -148,7 +152,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	swift.Status.Active = swiftProxyAndStorageActiveStatus
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), swift)
 }
 
 func (r *ReconcileSwift) checkSwiftProxyAndStorageActive(swift *contrail.Swift) (error, bool) {

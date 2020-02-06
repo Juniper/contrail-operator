@@ -5,17 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/test/logger"
-	wait "github.com/Juniper/contrail-operator/test/wait"
+	"github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestOpenstackServices(t *testing.T) {
@@ -32,81 +35,82 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
-	wait := wait.Wait{
-		Namespace:     namespace,
-		Timeout:       waitTimeout,
-		RetryInterval: retryInterval,
-		KubeClient:    f.KubeClient,
-	}
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
 		assert.NoError(t, err)
+		trueVal := true
+		oneVal := int32(1)
+
+		psql := &contrail.Postgres{
+			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
+			Spec: contrail.PostgresSpec{
+				Containers: map[string]*contrail.Container{
+					"postgres": {Image: "registry:5000/postgres"},
+				},
+			},
+		}
+
+		memcached := &contrail.Memcached{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "openstacktest-memcached",
+			},
+			Spec: contrail.MemcachedSpec{
+				ServiceConfiguration: contrail.MemcachedConfiguration{
+					Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:master"},
+				},
+			},
+		}
+
+		keystone := &contrail.Keystone{
+			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
+			Spec: contrail.KeystoneSpec{
+				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
+				ServiceConfiguration: contrail.KeystoneConfiguration{
+					MemcachedInstance: "openstacktest-memcached",
+					PostgresInstance:  "openstacktest-psql",
+					ListenPort:        5555,
+					Containers: map[string]*contrail.Container{
+						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
+						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
+						"keystone":       {Image: "registry:5000/centos-binary-keystone:master"},
+						"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:master"},
+						"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:master"},
+					},
+				},
+			},
+		}
+
+		cluster := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cluster1",
+				Namespace: namespace,
+			},
+			Spec: contrail.ManagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Replicas:    &oneVal,
+					HostNetwork: &trueVal,
+				},
+				Services: contrail.Services{
+					Postgres:  psql,
+					Keystone:  keystone,
+					Memcached: memcached,
+				},
+			},
+		}
 
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
-			trueVal := true
-			oneVal := int32(1)
-
-			psql := &contrail.Postgres{
-				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
-				Spec: contrail.PostgresSpec{
-					Containers: map[string]*contrail.Container{
-						"postgres": {Image: "registry:5000/postgres"},
-					},
-				},
-			}
-
-			memcached := &contrail.Memcached{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: namespace,
-					Name:      "openstacktest-memcached",
-				},
-				Spec: contrail.MemcachedSpec{
-					ServiceConfiguration: contrail.MemcachedConfiguration{
-						Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:master"},
-					},
-				},
-			}
-
-			keystone := &contrail.Keystone{
-				ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
-				Spec: contrail.KeystoneSpec{
-					CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
-					ServiceConfiguration: contrail.KeystoneConfiguration{
-						MemcachedInstance: "openstacktest-memcached",
-						PostgresInstance:  "openstacktest-psql",
-						ListenPort:        5555,
-						Containers: map[string]*contrail.Container{
-							"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
-							"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
-							"keystone":       {Image: "registry:5000/centos-binary-keystone:master"},
-							"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:master"},
-							"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:master"},
-						},
-					},
-				},
-			}
-
-			cluster := &contrail.Manager{
-				ObjectMeta: meta.ObjectMeta{
-					Name:      "cluster1",
-					Namespace: namespace,
-				},
-				Spec: contrail.ManagerSpec{
-					CommonConfiguration: contrail.CommonConfiguration{
-						Replicas:    &oneVal,
-						HostNetwork: &trueVal,
-					},
-					Services: contrail.Services{
-						Postgres:  psql,
-						Keystone:  keystone,
-						Memcached: memcached,
-					},
-				},
-			}
 
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
+
+			wait := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
+				KubeClient:    f.KubeClient,
+			}
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
@@ -132,6 +136,13 @@ func TestOpenstackServices(t *testing.T) {
 			cluster := &contrail.Manager{}
 			err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, cluster)
 			assert.NoError(t, err)
+
+			wait := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
+				KubeClient:    f.KubeClient,
+			}
 
 			cluster.Spec.Services.Swift = &contrail.Swift{
 				ObjectMeta: v1.ObjectMeta{
@@ -200,6 +211,23 @@ func TestOpenstackServices(t *testing.T) {
 				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
 
 				assert.NoError(t, res.Error())
+			})
+		})
+
+		t.Run("when cluster is deleted then it is cleared", func(t *testing.T) {
+			pp := meta.DeletePropagationForeground
+			err = f.Client.Delete(context.TODO(), cluster, &client.DeleteOptions{
+				PropagationPolicy: &pp,
+			})
+			assert.NoError(t, err)
+			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
+				err := wait.Contrail{
+					Namespace:     namespace,
+					Timeout:       5 * time.Minute,
+					RetryInterval: retryInterval,
+					Client:        f.Client,
+				}.ForManagerDeletion(cluster.Name)
+				require.NoError(t, err)
 			})
 		})
 	})

@@ -102,6 +102,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if !command.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	commandConfigName := command.Name + "-command-configmap"
 	if err := r.configMap(commandConfigName, "command", command).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
