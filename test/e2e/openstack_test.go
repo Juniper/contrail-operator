@@ -198,10 +198,10 @@ func TestOpenstackServices(t *testing.T) {
 
 			t.Run("then a SwiftProxy pod should be created", func(t *testing.T) {
 				swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "SwiftProxy=swift-proxy",
+					LabelSelector: "SwiftProxy=openstacktest-swift-proxy",
 				})
 				assert.NoError(t, err)
-				assert.NotEmpty(t, swiftProxyPods.Items)
+				require.NotEmpty(t, swiftProxyPods.Items)
 			})
 
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
