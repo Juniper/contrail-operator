@@ -41,10 +41,6 @@ func TestCommandServices(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
 		assert.NoError(t, err)
 
-		// TODO: ssh keys creations should be moved to keystone controller
-		err = f.Client.Create(context.TODO(), createKeystoneKeys(), &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-		assert.NoError(t, err)
-
 		t.Run("when manager resource with command and dependencies is created", func(t *testing.T) {
 			trueVal := true
 			oneVal := int32(1)

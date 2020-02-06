@@ -9,6 +9,7 @@ require (
 	github.com/operator-framework/operator-sdk v0.12.0
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0
+	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0

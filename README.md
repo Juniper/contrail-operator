@@ -4,7 +4,7 @@
 
 - An installed kubernetes cluster (>=1.15.0)
 
-## Create CRDs, Service Account, Role, Bindings, Persistent volumes, Secrets Operator
+## Create CRDs, Service Account, Role, Bindings, Persistent volumes
 
 ```bash
 for directory in $(seq 5); do
@@ -17,12 +17,6 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/0
 
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1-create-operator.yaml | kubectl apply -f -
-```
-
-```bash
-ssh-keygen -f id_rsa
-
-kubectl create -n contrail secret generic keystone-keys --from-file=ssh-privatekey=id_rsa --from-file=ssh-publickey=id_rsa.pub
 ```
 
 Wait for Contrail Operator deployment to run:    

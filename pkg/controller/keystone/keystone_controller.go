@@ -161,7 +161,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, claimName)
+	secretName := keystone.Name + "-keystone-keys"
+	if err := r.secret(secretName, "keystone", keystone).ensureSecretExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, secretName, claimName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -170,7 +175,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kfcName, kscName, kciName string,
+	kcName, kfcName, kscName, kciName, secretName string,
 	claimName types.NamespacedName,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
@@ -228,7 +233,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				Name: "keystone-keys-volume",
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
-						SecretName: "keystone-keys",
+						SecretName: secretName,
 					},
 				},
 			},

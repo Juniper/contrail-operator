@@ -40,3 +40,8 @@ func (k *Kubernetes) Owner(owner object) *Owner {
 func (k *Kubernetes) ConfigMap(name, ownerType string, owner v1.Object) *ConfigMap {
 	return &ConfigMap{name: name, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
 }
+
+// Secret is used to create Secret object
+func (k *Kubernetes) Secret(name, ownerType string, owner v1.Object) *Secret {
+	return &Secret{name: name, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
+}
