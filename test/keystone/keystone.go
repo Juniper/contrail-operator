@@ -23,6 +23,10 @@ type Client struct {
 }
 
 func (c *Client) GetAuthTokens(username, password string) AuthTokens {
+	return c.GetAuthTokensWithHeaders(username, password, http.Header{})
+}
+
+func (c *Client) GetAuthTokensWithHeaders(username, password string, headers http.Header) AuthTokens {
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username
@@ -32,6 +36,11 @@ func (c *Client) GetAuthTokens(username, password string) AuthTokens {
 	require.NoError(c.t, err)
 	request := c.client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
 	request.Header.Set("Content-Type", "application/json")
+	for name, values := range headers {
+		for _, value := range values {
+			request.Header.Add(name, value)
+		}
+	}
 	response := c.client.Do(request)
 	assert.Equal(c.t, 201, response.StatusCode)
 	authResponse := AuthTokens{}

@@ -9,6 +9,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,7 +36,7 @@ func TestOpenstackServices(t *testing.T) {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	proxy := kubeproxy.New(t, f.KubeConfig)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {

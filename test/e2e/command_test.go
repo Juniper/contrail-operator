@@ -2,8 +2,7 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/keystone"
+	"github.com/Juniper/contrail-operator/test/kubeproxy"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
 
@@ -33,6 +34,7 @@ func TestCommandServices(t *testing.T) {
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
 	f := test.Global
+	proxy := kubeproxy.New(t, f.KubeConfig)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -62,7 +64,7 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
-		keystone := &contrail.Keystone{
+		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-keystone"},
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
@@ -117,7 +119,7 @@ func TestCommandServices(t *testing.T) {
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
-					Keystone:  keystone,
+					Keystone:  keystoneResource,
 					Memcached: memcached,
 					Command:   command,
 				},
@@ -142,47 +144,27 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, wait.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
 			})
 
-			var pods *core.PodList
+			var commandPods *core.PodList
 			var err error
 			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
-				pods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				commandPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "command=commandtest",
 				})
 				assert.NoError(t, err)
-				assert.NotEmpty(t, pods.Items)
+				assert.NotEmpty(t, commandPods.Items)
 			})
 
-			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "test"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "test123"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Post()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", pods.Items[0].GetName(), 9091))
-				res := req.Suffix("/keystone/v3/auth/tokens").SetHeader("Content-Type", "application/json").Body(karBody).Do()
+			commandProxy := proxy.ClientFor("contrail", commandPods.Items[0].Name, 9091)
+			keystoneClient := keystone.NewClient(t, commandProxy)
 
-				assert.NoError(t, res.Error())
+			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
+				keystoneClient.GetAuthTokens("test", "test123")
 			})
 
 			t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "admin"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "contrail123"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Post()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", pods.Items[0].GetName(), 9091))
-				res := req.Suffix("/keystone/v3/auth/tokens").
-					SetHeader("Content-Type", "application/json").
-					SetHeader("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4").
-					Body(karBody).Do()
-
-				assert.NoError(t, res.Error())
+				headers := http.Header{}
+				headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
+				keystoneClient.GetAuthTokensWithHeaders("admin", "contrail123", headers)
 			})
 		})
 
