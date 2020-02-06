@@ -32,14 +32,20 @@ func (c *Client) GetAuthTokensWithHeaders(username, password string, headers htt
 	if err != nil {
 		return AuthTokens{}, err
 	}
-	request := c.client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
+	request, err := c.client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
+	if err != nil {
+		return AuthTokens{}, err
+	}
 	request.Header.Set("Content-Type", "application/json")
 	for name, values := range headers {
 		for _, value := range values {
 			request.Header.Add(name, value)
 		}
 	}
-	response := c.client.Do(request)
+	response, err := c.client.Do(request)
+	if err != nil {
+		return AuthTokens{}, err
+	}
 	if response.StatusCode != 201 {
 		return AuthTokens{}, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
 	}

@@ -37,7 +37,8 @@ func TestOpenstackServices(t *testing.T) {
 	}
 	namespace, err := ctx.GetNamespace()
 	require.NoError(t, err)
-	proxy := kubeproxy.New(t, f.KubeConfig)
+	proxy, err := kubeproxy.New(f.KubeConfig)
+	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -219,13 +220,16 @@ func TestOpenstackServices(t *testing.T) {
 				swiftProxyPod  = swiftProxyPods.Items[0].Name
 				swiftProxy     = proxy.ClientFor("contrail", swiftProxyPod, 5080)
 				swiftURL       = tokens.GetEndpointURL("swift", "public")
-				swiftClient    = swift.NewClient(t, swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+				swiftClient    = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
-			swiftClient.PutContainer("test-container")
-			swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+			err := swiftClient.PutContainer("test-container")
+			require.NoError(t, err)
+			err = swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+			require.NoError(t, err)
 
 			t.Run("then downloaded file has proper payload", func(t *testing.T) {
-				contents := swiftClient.GetFile("test-container", "test-file")
+				contents, err := swiftClient.GetFile("test-container", "test-file")
+				require.NoError(t, err)
 				assert.Equal(t, "payload", string(contents))
 			})
 		})

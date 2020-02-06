@@ -34,7 +34,8 @@ func TestCommandServices(t *testing.T) {
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
 	f := test.Global
-	proxy := kubeproxy.New(t, f.KubeConfig)
+	proxy, err := kubeproxy.New(f.KubeConfig)
+	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)

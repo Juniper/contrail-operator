@@ -2,20 +2,17 @@ package swift
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/require"
 
 	"github.com/Juniper/contrail-operator/test/kubeproxy"
 )
 
-func NewClient(t *testing.T, client *kubeproxy.Client, token, endpointURL string) *Client {
+func NewClient(client *kubeproxy.Client, token, endpointURL string) *Client {
 	return &Client{
 		proxy: client,
-		t:     t,
 		token: token,
 		path:  strings.TrimPrefix(endpointURL, "http://localhost:5080"),
 	}
@@ -23,31 +20,54 @@ func NewClient(t *testing.T, client *kubeproxy.Client, token, endpointURL string
 
 type Client struct {
 	proxy *kubeproxy.Client
-	t     *testing.T
 	token string
 	path  string
 }
 
-func (c *Client) PutContainer(name string) {
-	request := c.proxy.NewRequest(http.MethodPut, c.path+"/"+name, nil)
+func (c *Client) PutContainer(name string) error {
+	request, err := c.proxy.NewRequest(http.MethodPut, c.path+"/"+name, nil)
+	if err != nil {
+		return err
+	}
 	request.Header.Set("X-Auth-Token", c.token)
-	response := c.proxy.Do(request)
-	require.Equal(c.t, 201, response.StatusCode)
+	response, err := c.proxy.Do(request)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != 201 {
+		return fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+	}
+	return nil
 }
 
-func (c *Client) PutFile(container string, fileName string, content []byte) {
-	request := c.proxy.NewRequest(http.MethodPut, c.path+"/"+container+"/"+fileName, bytes.NewReader(content))
+func (c *Client) PutFile(container string, fileName string, content []byte) error {
+	request, err := c.proxy.NewRequest(http.MethodPut, c.path+"/"+container+"/"+fileName, bytes.NewReader(content))
+	if err != nil {
+		return err
+	}
 	request.Header.Set("X-Auth-Token", c.token)
-	response := c.proxy.Do(request)
-	require.Equal(c.t, 201, response.StatusCode)
+	response, err := c.proxy.Do(request)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != 201 {
+		return fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+	}
+	return nil
 }
 
-func (c *Client) GetFile(container string, fileName string) []byte {
-	request := c.proxy.NewRequest(http.MethodGet, c.path+"/"+container+"/"+fileName, nil)
+func (c *Client) GetFile(container string, fileName string) ([]byte, error) {
+	request, err := c.proxy.NewRequest(http.MethodGet, c.path+"/"+container+"/"+fileName, nil)
+	if err != nil {
+		return nil, err
+	}
 	request.Header.Set("X-Auth-Token", c.token)
-	response := c.proxy.Do(request)
-	require.Equal(c.t, 200, response.StatusCode)
-	content, err := ioutil.ReadAll(response.Body)
-	require.NoError(c.t, err)
-	return content
+	response, err := c.proxy.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+	}
+	return ioutil.ReadAll(response.Body)
 }
