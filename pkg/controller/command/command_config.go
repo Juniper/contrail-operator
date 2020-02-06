@@ -1,4 +1,4 @@
-package contrailcommand
+package command
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ type commandConf struct {
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
-	cm.Data["contrail.yml"] = c.executeTemplate(contrailCommandConfig)
+	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
 	cm.Data["entrypoint.sh"] = commandEntrypoint
 }
 
@@ -371,7 +371,7 @@ resources:
     kind: endpoint
 `))
 
-var contrailCommandConfig = template.Must(template.New("").Parse(`
+var commandConfig = template.Must(template.New("").Parse(`
 database:
   host: localhost
   user: root

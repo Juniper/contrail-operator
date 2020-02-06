@@ -1,20 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: contrailcommands.contrail.juniper.net
+  name: commands.contrail.juniper.net
 spec:
   group: contrail.juniper.net
   names:
-    kind: ContrailCommand
-    listKind: ContrailCommandList
-    plural: contrailcommands
-    singular: contrailcommand
+    kind: Command
+    listKind: CommandList
+    plural: commands
+    singular: command
   scope: ""
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: ContrailCommand is the Schema for the contrailcommands API
+      description: Command is the Schema for the commands API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,7 +29,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: ContrailCommandSpec defines the desired state of ContrailCommand
+          description: CommandSpec defines the desired state of Command
           properties:
             commonConfiguration:
               description: CommonConfiguration is the common services struct.
@@ -107,8 +107,7 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: ContrailCommandConfiguration is the Spec for the ContrailCommand
-                configuration
+              description: CommandConfiguration is the Spec for the Command configuration
               properties:
                 adminPassword:
                   type: string
@@ -127,7 +126,7 @@ spec:
           - serviceConfiguration
           type: object
         status:
-          description: ContrailCommandStatus defines the observed state of ContrailCommand
+          description: CommandStatus defines the observed state of Command
           properties:
             active:
               type: boolean

@@ -27,7 +27,7 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should create contrail command CR when manager is reconciled and command CR does not exist", func(t *testing.T) {
 		// given
-		command := contrail.ContrailCommand{
+		command := contrail.Command{
 			TypeMeta: meta.TypeMeta{},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -42,7 +42,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					ContrailCommand: &command,
+					Command: &command,
 				},
 			},
 		}
@@ -61,7 +61,7 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
-		expectedCommand := contrail.ContrailCommand{
+		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
@@ -82,7 +82,7 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should update contrail command CR when manager is reconciled and command CR already exists", func(t *testing.T) {
 		// given
-		command := contrail.ContrailCommand{
+		command := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
@@ -99,12 +99,12 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 
-		commandUpdate := contrail.ContrailCommand{
+		commandUpdate := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
 			},
-			Spec: contrail.ContrailCommandSpec{
+			Spec: contrail.CommandSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Activate: &trueVar,
 				},
@@ -118,7 +118,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					ContrailCommand: &commandUpdate,
+					Command: &commandUpdate,
 				},
 			},
 		}
@@ -137,7 +137,7 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
-		expectedCommand := contrail.ContrailCommand{
+		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
@@ -222,14 +222,14 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		// given
-		command := contrail.ContrailCommand{
+		command := contrail.Command{
 			TypeMeta: meta.TypeMeta{},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "other",
 			},
-			Spec: contrail.ContrailCommandSpec{
-				ServiceConfiguration: contrail.ContrailCommandConfiguration{
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
 					PostgresInstance: "psql",
 				},
 			},
@@ -242,8 +242,8 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Postgres:        &psql,
-					ContrailCommand: &command,
+					Postgres: &psql,
+					Command:  &command,
 				},
 			},
 		}
@@ -280,7 +280,7 @@ func TestManagerController(t *testing.T) {
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
-		expectedCommand := contrail.ContrailCommand{
+		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
@@ -295,8 +295,8 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
-			Spec: contrail.ContrailCommandSpec{
-				ServiceConfiguration: contrail.ContrailCommandConfiguration{
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
 					PostgresInstance: "psql",
 				},
 			},
@@ -397,8 +397,8 @@ func TestManagerController(t *testing.T) {
 	})
 }
 
-func assertCommandDeployed(t *testing.T, expected contrail.ContrailCommand, fakeClient client.Client) {
-	commandLoaded := contrail.ContrailCommand{}
+func assertCommandDeployed(t *testing.T, expected contrail.Command, fakeClient client.Client) {
+	commandLoaded := contrail.Command{}
 	err := fakeClient.Get(context.Background(), types.NamespacedName{
 		Name:      expected.Name,
 		Namespace: expected.Namespace,

@@ -9,27 +9,27 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ContrailCommand is the Schema for the contrailcommands API
+// Command is the Schema for the commands API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-type ContrailCommand struct {
+type Command struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ContrailCommandSpec   `json:"spec,omitempty"`
-	Status ContrailCommandStatus `json:"status,omitempty"`
+	Spec   CommandSpec   `json:"spec,omitempty"`
+	Status CommandStatus `json:"status,omitempty"`
 }
 
-// ContrailCommandSpec defines the desired state of ContrailCommand
+// CommandSpec defines the desired state of Command
 // +k8s:openapi-gen=true
-type ContrailCommandSpec struct {
-	CommonConfiguration  CommonConfiguration          `json:"commonConfiguration"`
-	ServiceConfiguration ContrailCommandConfiguration `json:"serviceConfiguration"`
+type CommandSpec struct {
+	CommonConfiguration  CommonConfiguration  `json:"commonConfiguration"`
+	ServiceConfiguration CommandConfiguration `json:"serviceConfiguration"`
 }
 
-// ContrailCommandConfiguration is the Spec for the ContrailCommand configuration
+// CommandConfiguration is the Spec for the Command configuration
 // +k8s:openapi-gen=true
-type ContrailCommandConfiguration struct {
+type CommandConfiguration struct {
 	ConfigAPIURL     string                `json:"configAPIURL,omitempty"`
 	TelemetryURL     string                `json:"telemetryURL,omitempty"`
 	PostgresInstance string                `json:"postgresInstance,omitempty"`
@@ -38,27 +38,27 @@ type ContrailCommandConfiguration struct {
 	Containers       map[string]*Container `json:"containers,omitempty"`
 }
 
-// ContrailCommandStatus defines the observed state of ContrailCommand
+// CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
-type ContrailCommandStatus struct {
+type CommandStatus struct {
 	Active bool `json:"active,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ContrailCommandList contains a list of ContrailCommand
-type ContrailCommandList struct {
+// CommandList contains a list of Command
+type CommandList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ContrailCommand `json:"items"`
+	Items           []Command `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ContrailCommand{}, &ContrailCommandList{})
+	SchemeBuilder.Register(&Command{}, &CommandList{})
 }
 
-func (c *ContrailCommand) PrepareIntendedDeployment(
+func (c *Command) PrepareIntendedDeployment(
 	instanceDeployment *appsv1.Deployment, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme,
 ) (*appsv1.Deployment, error) {
-	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "contrailcommand", request, scheme, c)
+	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "command", request, scheme, c)
 }

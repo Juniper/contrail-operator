@@ -1,4 +1,4 @@
-package contrailcommand
+package command
 
 import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -7,10 +7,10 @@ import (
 
 type configMaps struct {
 	cm     *k8s.ConfigMap
-	ccSpec contrail.ContrailCommandSpec
+	ccSpec contrail.CommandSpec
 }
 
-func (r *ReconcileContrailCommand) configMap(configMapName, ownerType string, cc *contrail.ContrailCommand) *configMaps {
+func (r *ReconcileCommand) configMap(configMapName, ownerType string, cc *contrail.Command) *configMaps {
 	return &configMaps{
 		cm:     r.kubernetes.ConfigMap(configMapName, ownerType, cc),
 		ccSpec: cc.Spec,

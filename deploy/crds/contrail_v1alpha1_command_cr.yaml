@@ -1,5 +1,5 @@
 apiVersion: contrail.juniper.net/v1alpha1
-kind: ContrailCommand
+kind: Command
 metadata:
   name: command
 spec:
