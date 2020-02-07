@@ -195,6 +195,10 @@ func newDeployment(name, namespace, configVolumeName string, containers map[stri
 						}},
 					}},
 					DNSPolicy: core.DNSClusterFirst,
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
 				},
 			},
 		},

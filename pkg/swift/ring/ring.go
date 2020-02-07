@@ -85,6 +85,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
 						{
@@ -100,7 +101,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					Containers: []core.Container{
 						{
 							Name:  "ring-reconciler",
-							Image: "registry:5000/centos-source-swift-base:master",
+							Image: "localhost:5000/centos-source-swift-base:master",
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "rings",
@@ -114,6 +115,10 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 							},
 							Args: r.args(),
 						},
+					},
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
 					},
 				},
 			},

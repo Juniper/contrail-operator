@@ -319,6 +319,18 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 	if err != nil {
 		return err
 	}
+
+	for idx, jc := range job.Spec.Template.Spec.Containers {
+		if c, ok := swift.Spec.ServiceConfiguration.Containers[jc.Name]; ok {
+			if len(c.Command) > 0 {
+				job.Spec.Template.Spec.Containers[idx].Command = c.Command
+			}
+			if c.Image != "" {
+				job.Spec.Template.Spec.Containers[idx].Image = c.Image
+			}
+		}
+	}
+
 	if err = controllerutil.SetControllerReference(swift, &job, r.scheme); err != nil {
 		return err
 	}

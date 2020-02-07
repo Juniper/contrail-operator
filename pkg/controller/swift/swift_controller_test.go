@@ -42,6 +42,9 @@ func TestSwiftController(t *testing.T) {
 		},
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
+				Containers: map[string]*contrail.Container{
+					"ring-reconciler": {Image: "ring-reconciler"},
+				},
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 					AccountBindPort:   6001,
 					ContainerBindPort: 6002,
@@ -300,4 +303,5 @@ func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.Names
 		Namespace: jobName.Namespace,
 	}, job)
 	require.NoError(t, err, "job %v does not exist", jobName)
+	assert.Equal(t, "ring-reconciler", job.Spec.Template.Spec.Containers[0].Image)
 }

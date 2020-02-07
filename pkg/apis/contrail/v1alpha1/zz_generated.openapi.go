@@ -2464,6 +2464,19 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 				Description: "SwiftConfiguration is the Spec for the keystone API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"containers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("./pkg/apis/contrail/v1alpha1.Container"),
+									},
+								},
+							},
+						},
+					},
 					"swiftStorageConfiguration": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"),
@@ -2479,7 +2492,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration", "./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration", "./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
 	}
 }
 

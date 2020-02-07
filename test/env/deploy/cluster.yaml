@@ -241,6 +241,9 @@ spec:
         name: swift
       spec:
         serviceConfiguration:
+          containers:
+            ring-reconciler:
+              image: registry:5000/centos-source-swift-base:master
           swiftProxyConfiguration:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"

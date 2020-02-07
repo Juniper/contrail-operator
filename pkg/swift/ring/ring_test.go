@@ -273,7 +273,7 @@ func TestRing_BuildJob(t *testing.T) {
 		containers := job.Spec.Template.Spec.Containers
 		require.NotEmpty(t, containers)
 		image := containers[0].Image
-		assert.True(t, strings.HasPrefix(image, "registry:5000/"))
+		assert.True(t, strings.HasPrefix(image, "localhost:5000/"))
 	})
 
 	t.Run("should specify restartPolicy (default Always is not supported in jobs)", func(t *testing.T) {
