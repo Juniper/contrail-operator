@@ -2,8 +2,6 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -11,13 +9,17 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/keystone"
+	"github.com/Juniper/contrail-operator/test/kubeproxy"
 	"github.com/Juniper/contrail-operator/test/logger"
+	"github.com/Juniper/contrail-operator/test/swift"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
 
@@ -34,7 +36,9 @@ func TestOpenstackServices(t *testing.T) {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	proxy, err := kubeproxy.New(f.KubeConfig)
+	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -63,7 +67,7 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
-		keystone := &contrail.Keystone{
+		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
@@ -94,7 +98,7 @@ func TestOpenstackServices(t *testing.T) {
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
-					Keystone:  keystone,
+					Keystone:  keystoneResource,
 					Memcached: memcached,
 				},
 			},
@@ -117,20 +121,14 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "admin"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "contrail123"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Get()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", keystone.Spec.ServiceConfiguration.ListenPort))
-				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
-
-				assert.NoError(t, res.Error())
+				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneClient := keystone.NewClient(keystoneProxy)
+				_, err := keystoneClient.PostAuthTokens("admin", "contrail123")
+				assert.NoError(t, err)
 			})
 		})
+
+		var swiftProxyPods *core.PodList
 
 		t.Run("when manager is updated with swift service", func(t *testing.T) {
 			cluster := &contrail.Manager{}
@@ -198,19 +196,42 @@ func TestOpenstackServices(t *testing.T) {
 				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
 			})
 
-			t.Run("then swift user should be registered in keystone", func(t *testing.T) {
-				kar := &keystoneAuthRequest{}
-				kar.Auth.Identity.Methods = []string{"password"}
-				kar.Auth.Identity.Password.User.Name = "swift"
-				kar.Auth.Identity.Password.User.Domain.ID = "default"
-				kar.Auth.Identity.Password.User.Password = "swiftpass"
-				karBody, _ := json.Marshal(kar)
-				req := f.KubeClient.CoreV1().RESTClient().Get()
-				req = req.Namespace("contrail").Resource("pods").SubResource("proxy").
-					Name(fmt.Sprintf("%s:%d", "openstacktest-keystone-keystone-statefulset-0", 5555))
-				res := req.Suffix("/v3").SetHeader("Content-Type", "application/json").Body(karBody).Do()
+			t.Run("then a SwiftProxy pod should be created", func(t *testing.T) {
+				swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+					LabelSelector: "SwiftProxy=openstacktest-swift-proxy",
+				})
+				assert.NoError(t, err)
+				require.NotEmpty(t, swiftProxyPods.Items)
+			})
 
-				assert.NoError(t, res.Error())
+			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
+				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneClient := keystone.NewClient(keystoneProxy)
+				_, err := keystoneClient.PostAuthTokens("swift", "swiftpass")
+				assert.NoError(t, err)
+			})
+		})
+
+		t.Run("when swift file is uploaded", func(t *testing.T) {
+			var (
+				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneClient   = keystone.NewClient(keystoneProxy)
+				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftpass")
+				swiftProxyPod    = swiftProxyPods.Items[0].Name
+				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
+				swiftURL         = tokens.EndpointURL("swift", "public")
+				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+			)
+			require.NoError(t, err)
+			err = swiftClient.PutContainer("test-container")
+			require.NoError(t, err)
+			err = swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+			require.NoError(t, err)
+
+			t.Run("then downloaded file has proper payload", func(t *testing.T) {
+				contents, err := swiftClient.GetFile("test-container", "test-file")
+				require.NoError(t, err)
+				assert.Equal(t, "payload", string(contents))
 			})
 		})
 
@@ -231,21 +252,4 @@ func TestOpenstackServices(t *testing.T) {
 			})
 		})
 	})
-}
-
-type keystoneAuthRequest struct {
-	Auth struct {
-		Identity struct {
-			Methods  []string `json:"methods"`
-			Password struct {
-				User struct {
-					Name   string `json:"name"`
-					Domain struct {
-						ID string `json:"id"`
-					} `json:"domain"`
-					Password string `json:"password"`
-				} `json:"user"`
-			} `json:"password"`
-		} `json:"identity"`
-	} `json:"auth"`
 }
