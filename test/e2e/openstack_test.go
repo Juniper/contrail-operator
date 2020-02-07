@@ -214,7 +214,7 @@ func TestOpenstackServices(t *testing.T) {
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
 			var (
-				keystoneProxy    = proxy.NewClient("contrail", "keystone-keystone-statefulset-0", 5555)
+				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
 				tokens, _        = keystoneClient.GetAuthTokens("swift", "swiftpass")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
