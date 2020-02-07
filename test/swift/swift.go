@@ -12,6 +12,7 @@ import (
 )
 
 func NewClient(client *kubeproxy.Client, token, endpointURL string) (*Client, error) {
+	fmt.Println("EndpointURL", endpointURL)
 	fullURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
