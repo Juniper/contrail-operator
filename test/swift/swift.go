@@ -39,15 +39,14 @@ func (c *Client) PutContainer(name string) error {
 		return err
 	}
 	if response.StatusCode != 201 {
-		c.printResponse(response)
-		return fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
 }
 
-func (c *Client) printResponse(response *http.Response) {
-	all, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(all))
+func (c *Client) response(response *http.Response) string {
+	bodyAsString, _ := ioutil.ReadAll(response.Body)
+	return string(bodyAsString)
 }
 
 func (c *Client) PutFile(container string, fileName string, content []byte) error {
@@ -61,8 +60,7 @@ func (c *Client) PutFile(container string, fileName string, content []byte) erro
 		return err
 	}
 	if response.StatusCode != 201 {
-		c.printResponse(response)
-		return fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
 }
@@ -78,8 +76,7 @@ func (c *Client) GetFile(container string, fileName string) ([]byte, error) {
 		return nil, err
 	}
 	if response.StatusCode != 200 {
-		c.printResponse(response)
-		return nil, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
+		return nil, fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return ioutil.ReadAll(response.Body)
 }
