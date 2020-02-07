@@ -18,11 +18,11 @@ type Client struct {
 	client *kubeproxy.Client
 }
 
-func (c *Client) GetAuthTokens(username, password string) (AuthTokens, error) {
-	return c.GetAuthTokensWithHeaders(username, password, http.Header{})
+func (c *Client) PostAuthTokens(username, password string) (AuthTokens, error) {
+	return c.PostAuthTokensWithHeaders(username, password, http.Header{})
 }
 
-func (c *Client) GetAuthTokensWithHeaders(username, password string, headers http.Header) (AuthTokens, error) {
+func (c *Client) PostAuthTokensWithHeaders(username, password string, headers http.Header) (AuthTokens, error) {
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username

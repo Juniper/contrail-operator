@@ -123,7 +123,7 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
 				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.GetAuthTokens("admin", "contrail123")
+				_, err := keystoneClient.PostAuthTokens("admin", "contrail123")
 				assert.NoError(t, err)
 			})
 		})
@@ -207,7 +207,7 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
 				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.GetAuthTokens("swift", "swiftpass")
+				_, err := keystoneClient.PostAuthTokens("swift", "swiftpass")
 				assert.NoError(t, err)
 			})
 		})
@@ -216,7 +216,7 @@ func TestOpenstackServices(t *testing.T) {
 			var (
 				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
-				tokens, _        = keystoneClient.GetAuthTokens("swift", "swiftpass")
+				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftpass")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
 				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")

@@ -159,14 +159,14 @@ func TestCommandServices(t *testing.T) {
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-				_, err := keystoneClient.GetAuthTokens("test", "test123")
+				_, err := keystoneClient.PostAuthTokens("test", "test123")
 				assert.NoError(t, err)
 			})
 
 			t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
 				headers := http.Header{}
 				headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-				_, err = keystoneClient.GetAuthTokensWithHeaders("admin", "contrail123", headers)
+				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "contrail123", headers)
 				assert.NoError(t, err)
 			})
 		})
