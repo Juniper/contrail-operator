@@ -12,7 +12,6 @@ import (
 )
 
 func NewClient(client *kubeproxy.Client, token, endpointURL string) (*Client, error) {
-	fmt.Println("EndpointURL", endpointURL)
 	fullURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
@@ -35,14 +34,12 @@ func (c *Client) PutContainer(name string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("TOKEN", c.token)
 	request.Header.Set("X-Auth-Token", c.token)
 	response, err := c.proxy.Do(request)
 	if err != nil {
 		return err
 	}
 	if response.StatusCode != 201 {
-		time.Sleep(30 * time.Minute)
 		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
@@ -64,7 +61,6 @@ func (c *Client) PutFile(container string, fileName string, content []byte) erro
 		return err
 	}
 	if response.StatusCode != 201 {
-		time.Sleep(30 * time.Minute)
 		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
