@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/Juniper/contrail-operator/test/kubeproxy"
 )
@@ -39,6 +40,7 @@ func (c *Client) PutContainer(name string) error {
 		return err
 	}
 	if response.StatusCode != 201 {
+		time.Sleep(30 * time.Minute)
 		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
