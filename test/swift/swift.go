@@ -64,6 +64,7 @@ func (c *Client) PutFile(container string, fileName string, content []byte) erro
 		return err
 	}
 	if response.StatusCode != 201 {
+		time.Sleep(30 * time.Minute)
 		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil
