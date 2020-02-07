@@ -55,5 +55,6 @@ func (c *Client) NewRequest(method, path string, body io.Reader) (*http.Request,
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	fmt.Println("DO URL:", req.URL)
 	return c.client.Do(req)
 }

@@ -34,6 +34,7 @@ func (c *Client) PutContainer(name string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("TOKEN", c.token)
 	request.Header.Set("X-Auth-Token", c.token)
 	response, err := c.proxy.Do(request)
 	if err != nil {
