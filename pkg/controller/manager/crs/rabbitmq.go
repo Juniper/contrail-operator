@@ -1,12 +1,12 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataRabbitmq= `
+var yamlDataRabbitmq = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Rabbitmq
 metadata:
@@ -16,7 +16,7 @@ spec:
   size: 3
 `
 
-func GetRabbitmqCr() *v1alpha1.Rabbitmq{
+func GetRabbitmqCr() *v1alpha1.Rabbitmq {
 	cr := v1alpha1.Rabbitmq{}
 	err := yaml.Unmarshal([]byte(yamlDataRabbitmq), &cr)
 	if err != nil {
@@ -32,4 +32,3 @@ func GetRabbitmqCr() *v1alpha1.Rabbitmq{
 	}
 	return &cr
 }
-	

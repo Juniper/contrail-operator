@@ -518,6 +518,10 @@ spec:
                           description: ConfigConfiguration is the Spec for the cassandras
                             API.
                           properties:
+                            adminPassword:
+                              type: string
+                            adminUsername:
+                              type: string
                             analyticsPort:
                               type: integer
                             apiPort:

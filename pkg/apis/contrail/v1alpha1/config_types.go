@@ -58,6 +58,8 @@ type ConfigConfiguration struct {
 	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
 	LogLevel          string                `json:"logLevel,omitempty"`
+	AdminUsername     string                `json:"adminUsername,omitempty"`
+	AdminPassword     string                `json:"adminPassword,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -227,6 +229,18 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
+		configAuth := c.AuthParameters()
+
+		var configKeystoneAuthConfBuffer bytes.Buffer
+		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
+			AdminUsername string
+			AdminPassword string
+		}{
+			AdminUsername: configAuth.AdminUsername,
+			AdminPassword: configAuth.AdminPassword,
+		})
+		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
+
 		data["dnsmasq."+podList.Items[idx].Status.PodIP] = configtemplates.ConfigDNSMasqConfig
 
 		var configSchematransformerConfigBuffer bytes.Buffer
@@ -393,6 +407,27 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	}
 
 	return nil
+}
+
+type ConfigAuthParameters struct {
+	AdminUsername string
+	AdminPassword string
+}
+
+func (c *Config) AuthParameters() *ConfigAuthParameters {
+	w := &ConfigAuthParameters{
+		AdminUsername: "admin",
+		AdminPassword: "contrail123",
+	}
+
+	if c.Spec.ServiceConfiguration.AdminUsername != "" {
+		w.AdminUsername = c.Spec.ServiceConfiguration.AdminUsername
+	}
+
+	if c.Spec.ServiceConfiguration.AdminPassword != "" {
+		w.AdminPassword = c.Spec.ServiceConfiguration.AdminPassword
+	}
+	return w
 }
 
 func (c *Config) CreateConfigMap(configMapName string,

@@ -203,12 +203,12 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 		},
 		Spec: contrail.SwiftProxySpec{
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
-				ListenPort:            5070,
-				KeystoneInstance:      "keystone",
-				MemcachedInstance:     "memcached-instance",
-				KeystoneAdminPassword: "c0ntrail123",
-				SwiftPassword:         "swiftpass",
-				SwiftConfSecretName:   "test-secret",
+				ListenPort:                5070,
+				KeystoneInstance:          "keystone",
+				MemcachedInstance:         "memcached-instance",
+				KeystoneAdminPassword:     "c0ntrail123",
+				SwiftPassword:             "swiftpass",
+				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 			},
 		},
@@ -520,7 +520,7 @@ user_domain_id = default
 project_name = service
 username = swift
 password = swiftpass
-delay_auth_decision = False
+delay_auth_decision = True
 memcache_security_strategy = None
 memcached_servers = localhost:11211
 

@@ -1,9 +1,8 @@
 package swiftstorage
 
-
 func (c *configMaps) ensureSwiftContainerAuditor() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "0.0.0.0", 
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-auditor.conf",
 		DestConfigFileName:         "container-auditor.conf",
@@ -16,7 +15,7 @@ func (c *configMaps) ensureSwiftContainerAuditor() error {
 
 func (c *configMaps) ensureSwiftContainerReplicationServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "0.0.0.0", 
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-replication-server.conf",
 		DestConfigFileName:         "container-server.conf",
@@ -29,7 +28,7 @@ func (c *configMaps) ensureSwiftContainerReplicationServer() error {
 
 func (c *configMaps) ensureSwiftContainerReplicator() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "0.0.0.0", 
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-replicator.conf",
 		DestConfigFileName:         "container-replicator.conf",
@@ -42,7 +41,7 @@ func (c *configMaps) ensureSwiftContainerReplicator() error {
 
 func (c *configMaps) ensureSwiftContainerServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "0.0.0.0", 
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-server.conf",
 		DestConfigFileName:         "container-server.conf",
@@ -55,7 +54,7 @@ func (c *configMaps) ensureSwiftContainerServer() error {
 
 func (c *configMaps) ensureSwiftContainerUpdater() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "0.0.0.0", 
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ContainerBindPort,
 		SrcConfigFileName:          "container-updater.conf",
 		DestConfigFileName:         "container-updater.conf",

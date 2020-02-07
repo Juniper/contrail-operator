@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	
+
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
