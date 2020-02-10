@@ -229,8 +229,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
+		// TODO: this config should be stored in secret.
 		configAuth := c.AuthParameters()
-
 		var configKeystoneAuthConfBuffer bytes.Buffer
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername string
