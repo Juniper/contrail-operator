@@ -21,13 +21,12 @@ type Wait struct {
 
 // ForReadyStatefulSet is used to wait until StatefulSet is ready
 func (w Wait) ForReadyStatefulSet(name string) error {
-	return wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		statefulSet, err := w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(name, meta.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			w.Logger.DumpPods()
 			return false, err
 		}
 		replicas := int32(1)
@@ -40,17 +39,18 @@ func (w Wait) ForReadyStatefulSet(name string) error {
 		}
 		return false, nil
 	})
+	w.dumpPodsOnError(err)
+	return err
 }
 
 // ForReadyDeployment is used to wait until Deployment is ready
 func (w Wait) ForReadyDeployment(name string) error {
-	return wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		deployment, err := w.KubeClient.AppsV1().Deployments(w.Namespace).Get(name, meta.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			w.Logger.DumpPods()
 			return false, err
 		}
 		replicas := int32(1)
@@ -63,11 +63,13 @@ func (w Wait) ForReadyDeployment(name string) error {
 		}
 		return false, nil
 	})
+	w.dumpPodsOnError(err)
+	return err
 }
 
 // ForStatefulSet is used to wait until StatefulSet is created
 func (w Wait) ForStatefulSet(name string) error {
-	return wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		_, err = w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(name, meta.GetOptions{})
 		if err == nil {
 			return true, nil
@@ -75,14 +77,15 @@ func (w Wait) ForStatefulSet(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		w.Logger.DumpPods()
 		return false, err
 	})
+	w.dumpPodsOnError(err)
+	return err
 }
 
 // ForDeployment is used to wait until Deployment is created
 func (w Wait) ForDeployment(name string) error {
-	return wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		_, err = w.KubeClient.AppsV1().Deployments(w.Namespace).Get(name, meta.GetOptions{})
 		if err == nil {
 			return true, nil
@@ -90,7 +93,14 @@ func (w Wait) ForDeployment(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		w.Logger.DumpPods()
 		return false, err
 	})
+	w.dumpPodsOnError(err)
+	return err
+}
+
+func (w Wait) dumpPodsOnError(err error) {
+	if err != nil {
+		w.Logger.DumpPods()
+	}
 }

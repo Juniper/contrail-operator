@@ -24,7 +24,7 @@ type Contrail struct {
 // ForManagerCondition is used to wait until manager has expected condition met
 func (c Contrail) ForManagerCondition(name string, expected contrail.ManagerConditionType) error {
 	m := &contrail.Manager{}
-	return wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
 		err = c.Client.Get(context.Background(), types.NamespacedName{
 			Namespace: c.Namespace,
 			Name:      name,
@@ -43,15 +43,16 @@ func (c Contrail) ForManagerCondition(name string, expected contrail.ManagerCond
 			}
 
 		}
-		c.Logger.DumpPods()
 		return false, err
 	})
+	c.dumpPodsOnError(err)
+	return err
 }
 
 // ForManagerDeletion is used to wait until manager is deleted
 func (c Contrail) ForManagerDeletion(name string) error {
 	m := &contrail.Manager{}
-	return wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
 		err = c.Client.Get(context.Background(), types.NamespacedName{
 			Namespace: c.Namespace,
 			Name:      name,
@@ -59,7 +60,14 @@ func (c Contrail) ForManagerDeletion(name string) error {
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
-		c.Logger.DumpPods()
 		return false, err
 	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
+func (c Contrail) dumpPodsOnError(err error) {
+	if err != nil {
+		c.Logger.DumpPods()
+	}
 }
