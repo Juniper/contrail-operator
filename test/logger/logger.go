@@ -39,7 +39,7 @@ func (l Logger) DumpPods() {
 }
 
 func logPodStatuses(logBuilder *strings.Builder, pods []k8score.Pod) {
-	logBuilder.WriteString("\nPods statuses at the end of the test\n")
+	logBuilder.WriteString("\nPods statuses\n")
 	maxLen := findMaxPodNameLength(pods)
 	logBuilder.WriteString(fmt.Sprintf("%-*s  STATUS\n", maxLen, "NAME"))
 	for _, pod := range pods {
