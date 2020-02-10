@@ -1450,6 +1450,7 @@ spec:
                           description: SwiftConfiguration is the Spec for the keystone
                             API.
                           properties:
+                            containers: {}
                             swiftProxyConfiguration:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.

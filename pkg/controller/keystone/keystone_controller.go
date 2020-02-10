@@ -364,6 +364,10 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							},
 						},
 					},
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
 				},
 			},
 		},

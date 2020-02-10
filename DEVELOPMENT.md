@@ -53,6 +53,11 @@ docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/doc
 $ cd /contrail-operator; operator-sdk build contrail-operator
 ```
 
+## E2e tests
+
+Test environment and e2e tests
+
+[Test guide](test/env/README.md)
 
 ## Building CAVA image
 

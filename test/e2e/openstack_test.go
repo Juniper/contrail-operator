@@ -149,6 +149,9 @@ func TestOpenstackServices(t *testing.T) {
 				},
 				Spec: contrail.SwiftSpec{
 					ServiceConfiguration: contrail.SwiftConfiguration{
+						Containers: map[string]*contrail.Container{
+							"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:master"},
+						},
 						SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 							AccountBindPort:   6001,
 							ContainerBindPort: 6002,

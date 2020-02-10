@@ -149,19 +149,9 @@ func newCommand() *contrail.Command {
 		},
 		Spec: contrail.CommandSpec{
 			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:    &trueVal,
-				Create:      &trueVal,
-				HostNetwork: &trueVal,
-				Tolerations: []core.Toleration{
-					{
-						Effect:   core.TaintEffectNoSchedule,
-						Operator: core.TolerationOpExists,
-					},
-					{
-						Effect:   core.TaintEffectNoExecute,
-						Operator: core.TolerationOpExists,
-					},
-				},
+				Activate:     &trueVal,
+				Create:       &trueVal,
+				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CommandConfiguration{
