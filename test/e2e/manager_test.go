@@ -37,7 +37,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/test/logger"
 	contrailwait "github.com/Juniper/contrail-operator/test/wait"
 )
 
@@ -99,7 +98,7 @@ func ManagerCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
+	defer ctx.Cleanup()
 
 	if err := test.AddToFrameworkScheme(v1alpha1.SchemeBuilder.AddToScheme, &v1alpha1.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -354,7 +353,8 @@ func RabbitmqCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
+	defer ctx.Cleanup()
+
 	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)

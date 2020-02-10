@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"github.com/Juniper/contrail-operator/test/logger"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,6 +16,7 @@ type Wait struct {
 	RetryInterval time.Duration
 	Timeout       time.Duration
 	KubeClient    kubernetes.Interface
+	Logger        logger.Logger
 }
 
 // ForReadyStatefulSet is used to wait until StatefulSet is ready
@@ -25,6 +27,7 @@ func (w Wait) ForReadyStatefulSet(name string) error {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
+			w.Logger.DumpPods()
 			return false, err
 		}
 		replicas := int32(1)
@@ -47,6 +50,7 @@ func (w Wait) ForReadyDeployment(name string) error {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
+			w.Logger.DumpPods()
 			return false, err
 		}
 		replicas := int32(1)
@@ -71,6 +75,7 @@ func (w Wait) ForStatefulSet(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
+		w.Logger.DumpPods()
 		return false, err
 	})
 }
@@ -85,6 +90,7 @@ func (w Wait) ForDeployment(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
+		w.Logger.DumpPods()
 		return false, err
 	})
 }

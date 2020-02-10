@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/test/logger"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 func TestCluster(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
+	log := logger.New(t, "contrail", test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -55,6 +57,7 @@ func TestCluster(t *testing.T) {
 					Timeout:       10 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForManagerCondition(manager.Name, contrail.ManagerReady)
 				assert.NoError(t, err)
 			})
@@ -73,6 +76,7 @@ func TestCluster(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForManagerDeletion(manager.Name)
 				require.NoError(t, err)
 			})

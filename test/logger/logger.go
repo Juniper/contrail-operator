@@ -12,21 +12,30 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func DumpPods(t *testing.T, ctx *test.TestCtx, client test.FrameworkClient) {
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Logf("Error: failed to get namespace from test context - %s", err)
-		return
+func New(t *testing.T, namespace string, client test.FrameworkClient) Logger {
+	return Logger{
+		t:         t,
+		namespace: namespace,
+		client:    client,
 	}
+}
+
+type Logger struct {
+	t         *testing.T
+	namespace string
+	client    test.FrameworkClient
+}
+
+func (l Logger) DumpPods() {
 	podList := k8score.PodList{}
-	if err := client.List(context.TODO(), &podList, k8sclient.InNamespace(namespace)); err != nil {
-		t.Logf("Error: failed to check pods status - %s", err)
+	if err := l.client.List(context.TODO(), &podList, k8sclient.InNamespace(l.namespace)); err != nil {
+		l.t.Logf("Error: failed to check pods status - %s", err)
 		return
 	}
 	var logBuilder strings.Builder
 	logPodStatuses(&logBuilder, podList.Items)
 	dumpPodsWhichAreNotRunning(&logBuilder, podList.Items)
-	t.Logf(logBuilder.String())
+	l.t.Logf(logBuilder.String())
 }
 
 func logPodStatuses(logBuilder *strings.Builder, pods []k8score.Pod) {

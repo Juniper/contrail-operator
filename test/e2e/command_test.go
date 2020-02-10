@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/test/logger"
 	"net/http"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 func TestCommandServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
+	log := logger.New(t, "contrail", test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -38,8 +40,10 @@ func TestCommandServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
-		assert.NoError(t, err)
+		if err := e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout); err != nil {
+			log.DumpPods()
+			panic(err)
+		}
 
 		trueVal := true
 		oneVal := int32(1)
@@ -135,6 +139,7 @@ func TestCommandServices(t *testing.T) {
 				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
+				Logger:        log,
 			}
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {

@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/test/logger"
 	"time"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -17,6 +18,7 @@ type Contrail struct {
 	RetryInterval time.Duration
 	Timeout       time.Duration
 	Client        test.FrameworkClient
+	Logger        logger.Logger
 }
 
 // ForManagerCondition is used to wait until manager has expected condition met
@@ -41,7 +43,7 @@ func (c Contrail) ForManagerCondition(name string, expected contrail.ManagerCond
 			}
 
 		}
-
+		c.Logger.DumpPods()
 		return false, err
 	})
 }
@@ -57,7 +59,7 @@ func (c Contrail) ForManagerDeletion(name string) error {
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
-
+		c.Logger.DumpPods()
 		return false, err
 	})
 }
