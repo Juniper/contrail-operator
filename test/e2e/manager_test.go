@@ -17,7 +17,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"github.com/Juniper/contrail-operator/test/logger"
 	"testing"
 	"time"
 
@@ -29,15 +28,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apis "github.com/Juniper/contrail-operator/pkg/apis"
-
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 	contrailwait "github.com/Juniper/contrail-operator/test/wait"
 )
 

@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/test/logger"
 	"net/http"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/test/keystone"
 	"github.com/Juniper/contrail-operator/test/kubeproxy"
+	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
 
