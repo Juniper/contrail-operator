@@ -43,6 +43,9 @@ func TestOpenstackServices(t *testing.T) {
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
+		if err != nil {
+			log.DumpPods()
+		}
 		assert.NoError(t, err)
 		trueVal := true
 		oneVal := int32(1)

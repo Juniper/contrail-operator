@@ -40,10 +40,11 @@ func TestCommandServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		if err := e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout); err != nil {
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
+		if err != nil {
 			log.DumpPods()
-			panic(err)
 		}
+		assert.NoError(t, err)
 
 		trueVal := true
 		oneVal := int32(1)
