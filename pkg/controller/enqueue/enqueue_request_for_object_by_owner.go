@@ -7,9 +7,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var logRequestForObjectByOwner = logf.Log.WithName("eventhandler").WithName("RequestForObjectByOwner")

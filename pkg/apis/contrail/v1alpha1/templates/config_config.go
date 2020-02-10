@@ -27,12 +27,13 @@ use_ssl = True
 cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 ; Authentication settings (optional)
 [auth]
-AUTHN_TYPE = noauth
-;AUTHN_TYPE = keystone
-;AUTHN_PROTOCOL = http
-;AUTHN_SERVER = 127.0.0.1
-;AUTHN_PORT = 35357
-;AUTHN_URL = /v2.0/tokens
+;AUTHN_TYPE = noauth
+AUTHN_TYPE = keystone
+AUTHN_PROTOCOL = http
+AUTHN_SERVER = localhost
+AUTHN_PORT = 5555
+AUTHN_URL = /v3/auth/tokens
+AUTHN_DOMAIN = Default
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
 
@@ -118,6 +119,21 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+
+// ConfigKeystoneAuthConf is the template of the DeviceManager keystone auth configuration.
+var ConfigKeystoneAuthConf = template.Must(template.New("").Parse(`[KEYSTONE]
+#memcache_servers=localhost:11211
+admin_password = {{ .AdminPassword }}
+admin_tenant_name = {{ .AdminUsername }}
+admin_user = {{ .AdminUsername }}
+auth_host = localhost
+auth_port = 5555
+auth_protocol = http
+auth_url = http://localhost:5555/v3
+auth_type = password
+user_domain_name = Default
+project_domain_name = Default
+region_name = RegionOne`))
 
 // ConfigDNSMasqConfig is the template of the DNSMasq service configuration.
 var ConfigDNSMasqConfig = `

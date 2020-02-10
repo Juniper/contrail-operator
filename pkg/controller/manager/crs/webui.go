@@ -1,19 +1,19 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataWebui= `
+var yamlDataWebui = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Webui
 metadata:
   name: cluster-1
 `
 
-func GetWebuiCr() *v1alpha1.Webui{
+func GetWebuiCr() *v1alpha1.Webui {
 	cr := v1alpha1.Webui{}
 	err := yaml.Unmarshal([]byte(yamlDataWebui), &cr)
 	if err != nil {
@@ -29,4 +29,3 @@ func GetWebuiCr() *v1alpha1.Webui{
 	}
 	return &cr
 }
-	

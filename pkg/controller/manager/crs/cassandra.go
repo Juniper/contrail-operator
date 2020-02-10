@@ -1,12 +1,12 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	
+
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataCassandra= `
+var yamlDataCassandra = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Cassandra
 metadata:
@@ -15,7 +15,7 @@ metadata:
     contrail_manager: cassandra
 `
 
-func GetCassandraCr() *v1alpha1.Cassandra{
+func GetCassandraCr() *v1alpha1.Cassandra {
 	cr := v1alpha1.Cassandra{}
 	err := yaml.Unmarshal([]byte(yamlDataCassandra), &cr)
 	if err != nil {
@@ -31,4 +31,3 @@ func GetCassandraCr() *v1alpha1.Cassandra{
 	}
 	return &cr
 }
-	

@@ -12,9 +12,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
-	
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var _ handler.EventHandler = &RequestForOwnerGroupKind{}

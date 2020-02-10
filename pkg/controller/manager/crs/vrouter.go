@@ -1,19 +1,19 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataVrouter= `
+var yamlDataVrouter = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Vrouter
 metadata:
   name: cluster-1
 `
 
-func GetVrouterCr() *v1alpha1.Vrouter{
+func GetVrouterCr() *v1alpha1.Vrouter {
 	cr := v1alpha1.Vrouter{}
 	err := yaml.Unmarshal([]byte(yamlDataVrouter), &cr)
 	if err != nil {
@@ -29,4 +29,3 @@ func GetVrouterCr() *v1alpha1.Vrouter{
 	}
 	return &cr
 }
-	

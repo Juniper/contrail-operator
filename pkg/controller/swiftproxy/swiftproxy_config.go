@@ -98,7 +98,7 @@ user_domain_id = default
 project_name = service
 username = swift
 password = {{ .SwiftPassword }}
-delay_auth_decision = False
+delay_auth_decision = True
 memcache_security_strategy = None
 memcached_servers = {{ .MemcachedServer }}
 
