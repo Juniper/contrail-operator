@@ -28,14 +28,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apis "github.com/Juniper/contrail-operator/pkg/apis"
-
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/test/logger"
 	contrailwait "github.com/Juniper/contrail-operator/test/wait"
@@ -99,7 +98,8 @@ func ManagerCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
+	defer ctx.Cleanup()
+	log := logger.New(t, "contrail", test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(v1alpha1.SchemeBuilder.AddToScheme, &v1alpha1.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -180,6 +180,7 @@ func ManagerCluster(t *testing.T) {
 		Timeout:       5 * time.Minute,
 		RetryInterval: retryInterval,
 		Client:        f.Client,
+		Logger:        log,
 	}.ForManagerDeletion(manager.Name)
 	if err != nil {
 		t.Fatal(err)
@@ -354,7 +355,8 @@ func RabbitmqCluster(t *testing.T) {
 	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
-	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
+	defer ctx.Cleanup()
+
 	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)

@@ -26,7 +26,8 @@ import (
 func TestOpenstackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	f := test.Global
-	defer func() { logger.DumpPods(t, ctx, f.Client); ctx.Cleanup() }()
+	defer ctx.Cleanup()
+	log := logger.New(t, "contrail", test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -42,6 +43,9 @@ func TestOpenstackServices(t *testing.T) {
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
+		if err != nil {
+			log.DumpPods()
+		}
 		assert.NoError(t, err)
 		trueVal := true
 		oneVal := int32(1)
@@ -114,6 +118,7 @@ func TestOpenstackServices(t *testing.T) {
 				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
+				Logger:        log,
 			}
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
@@ -140,6 +145,7 @@ func TestOpenstackServices(t *testing.T) {
 				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
+				Logger:        log,
 			}
 
 			cluster.Spec.Services.Swift = &contrail.Swift{
@@ -250,6 +256,7 @@ func TestOpenstackServices(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})

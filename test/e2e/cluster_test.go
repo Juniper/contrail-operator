@@ -15,12 +15,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestCluster(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
+	log := logger.New(t, "contrail", test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -35,6 +37,9 @@ func TestCluster(t *testing.T) {
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
+		if err != nil {
+			log.DumpPods()
+		}
 		assert.NoError(t, err)
 
 		manager := &contrail.Manager{}
@@ -55,6 +60,7 @@ func TestCluster(t *testing.T) {
 					Timeout:       10 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForManagerCondition(manager.Name, contrail.ManagerReady)
 				assert.NoError(t, err)
 			})
@@ -73,6 +79,7 @@ func TestCluster(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForManagerDeletion(manager.Name)
 				require.NoError(t, err)
 			})
