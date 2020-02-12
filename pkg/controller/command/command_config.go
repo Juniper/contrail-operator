@@ -2,12 +2,14 @@ package command
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	core "k8s.io/api/core/v1"
 )
 
 type commandConf struct {
+	ClusterName    string
 	ConfigAPIURL   string
 	TelemetryURL   string
 	AdminUsername  string
@@ -58,7 +60,11 @@ contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --out
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
 `))
 
-var commandInitCluster = template.Must(template.New("").Parse(`
+var funcMap = template.FuncMap{
+	"ToLower": strings.ToLower,
+}
+
+var commandInitCluster = template.Must(template.New("").Funcs(funcMap).Parse(`
 ---
 resources:
   - data:
@@ -107,10 +113,10 @@ resources:
           - key: UPGRADE_KERNEL
             value: 'no'
       contrail_version: latest
-      display_name: 534951a8-f40c-11e9-96be-38c986460fd4
+      display_name: {{ .ClusterName }}
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
       high_availability: false
       kubernetes_cluster_refs:
         - uuid: 534686a8-f40c-11e9-af57-38c986460fd4
@@ -147,6 +153,7 @@ resources:
   - data:
       name: 53495680-f40c-11e9-8520-38c986460fd4
       node_refs:
+        - to: ["default-domain", "k8s-default", "default-vm-k8"]
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
@@ -185,14 +192,14 @@ resources:
       uuid: 5349575c-f40c-11e9-999b-38c986460fd4
     kind: kubernetes_node
   - data:
-      name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      name: nodejs-{{ .ClusterName | ToLower }}
       uuid: 32dced10-efac-42f0-be7a-353ca163dca9
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+        - {{ .ClusterName | ToLower }}
+        - nodejs-{{ .ClusterName | ToLower }}
       id_perms:
         enable: true
         user_visible: true
@@ -205,7 +212,7 @@ resources:
         uuid:
           uuid_mslong: 3665064853769044500
           uuid_lslong: 13725341348886995000
-      display_name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      display_name: nodejs-{{ .ClusterName | ToLower }}
       annotations: {}
       perms2:
         owner: default-project
@@ -218,8 +225,8 @@ resources:
       public_url: https://localhost:8143
       to:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+        - {{ .ClusterName | ToLower }}
+        - nodejs-{{ .ClusterName | ToLower }}
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
@@ -228,7 +235,7 @@ resources:
       parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
       id_perms:
         enable: true
@@ -255,7 +262,7 @@ resources:
       public_url: {{ .TelemetryURL }}
       to:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
     kind: endpoint
   - data:
@@ -265,7 +272,7 @@ resources:
       parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
       id_perms:
         enable: true
@@ -292,7 +299,7 @@ resources:
       public_url: {{ .ConfigAPIURL }}
       to:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
     kind: endpoint
   - data:
@@ -302,7 +309,7 @@ resources:
       parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
       id_perms:
         enable: true
@@ -329,7 +336,7 @@ resources:
       public_url: "http://localhost:5555"
       to:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
     kind: endpoint
   - data:
@@ -339,7 +346,7 @@ resources:
       parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
       id_perms:
         enable: true
@@ -366,7 +373,7 @@ resources:
       public_url: "http://localhost:5080"
       to:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
     kind: endpoint
 `))

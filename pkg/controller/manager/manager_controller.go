@@ -1454,6 +1454,9 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	command.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.Command.Spec
+		if command.Spec.ServiceConfiguration.ClusterName == "" {
+			command.Spec.ServiceConfiguration.ClusterName = manager.GetName()
+		}
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
 	log.Info("Test ", "crete resource err: ", err)
