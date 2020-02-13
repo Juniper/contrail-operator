@@ -135,6 +135,22 @@ user_domain_name = Default
 project_domain_name = Default
 region_name = RegionOne`))
 
+// FabricAnsibleConf is the template of the DeviceManager configuration for fabric management.
+var FabricAnsibleConf = template.Must(template.New("").Parse(`[DEFAULTS]
+log_file = /var/log/contrail/contrail-fabric-ansible.log
+log_level={{ .LogLevel }}
+log_local=1
+collectors={{ .CollectorServerList }}
+
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+
+
 // ConfigDNSMasqConfig is the template of the DNSMasq service configuration.
 var ConfigDNSMasqConfig = `
 log-facility=/dev/stdout
