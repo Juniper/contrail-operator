@@ -451,6 +451,8 @@ spec:
                   type: string
                 adminUsername:
                   type: string
+                clusterName:
+                  type: string
                 configAPIURL:
                   type: string
                 containers: {}
@@ -587,6 +589,10 @@ spec:
             serviceConfiguration:
               description: ConfigConfiguration is the Spec for the cassandras API.
               properties:
+                adminPassword:
+                  type: string
+                adminUsername:
+                  type: string
                 analyticsPort:
                   type: integer
                 apiPort:
@@ -1533,6 +1539,8 @@ spec:
                               type: string
                             adminUsername:
                               type: string
+                            clusterName:
+                              type: string
                             configAPIURL:
                               type: string
                             containers: {}
@@ -1660,6 +1668,10 @@ spec:
                           description: ConfigConfiguration is the Spec for the cassandras
                             API.
                           properties:
+                            adminPassword:
+                              type: string
+                            adminUsername:
+                              type: string
                             analyticsPort:
                               type: integer
                             apiPort:
