@@ -64,8 +64,6 @@ spec:
         #  name: cassandra-data
       dnsPolicy: ClusterFirst
       hostNetwork: true
-      imagePullSecrets:
-      - name: contrail
       initContainers:
       - command:
         - sh
