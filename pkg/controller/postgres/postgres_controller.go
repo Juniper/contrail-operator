@@ -195,6 +195,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					VolumeMounts: []core.VolumeMount{{
 						Name:      cr.Name + "-volume",
 						MountPath: "/var/lib/postgresql/data",
+						SubPath: "postgres",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
