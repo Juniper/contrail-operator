@@ -192,7 +192,7 @@ resources:
       name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
       fq_name:
         - default-global-system-config
-        - cluster1
+        - {{ .ClusterName | ToLower }}
         - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
       uuid: 32dced10-efac-42f0-be7a-353ca163dca9
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
@@ -206,7 +206,7 @@ resources:
       name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
       fq_name:
         - default-global-system-config
-        - cluster1
+        - {{ .ClusterName | ToLower }}
         - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
@@ -219,7 +219,7 @@ resources:
       name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
       fq_name:
         - default-global-system-config
-        - cluster1
+        - {{ .ClusterName | ToLower }}
         - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
@@ -232,7 +232,7 @@ resources:
       name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
       fq_name:
         - default-global-system-config
-        - cluster1
+        - {{ .ClusterName | ToLower }}
         - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
@@ -245,7 +245,7 @@ resources:
       name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
       fq_name:
         - default-global-system-config
-        - cluster1
+        - {{ .ClusterName | ToLower }}
         - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
