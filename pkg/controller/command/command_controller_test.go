@@ -155,6 +155,7 @@ func newCommand() *contrail.Command {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CommandConfiguration{
+				ClusterName:      "cluster1",
 				PostgresInstance: "command-db",
 				AdminUsername:    "test",
 				AdminPassword:    "test123",
@@ -285,6 +286,7 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 
 	assert.Equal(t, expectedCommandConfig, actual.Data["contrail.yml"])
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
+	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
 
 const expectedCommandConfig = `
@@ -411,11 +413,11 @@ const expectedBootstrapScript = `
 
 QUERY_RESULT=$(psql -w -h localhost -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
-if [[ $QUERY_EXIT_CODE -eq 0 && $QUERY_RESULT -eq 't' ]]; then
+if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
 fi
 
-if [[ $QUERY_EXIT_CODE -eq 2 ]]; then
+if [[ $QUERY_EXIT_CODE == 2 ]]; then
     exit 1
 fi
 
@@ -423,4 +425,195 @@ set -e
 psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
 contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+`
+
+const expectedCommandInitCluster = `
+---
+resources:
+  - data:
+      fq_name:
+        - default-global-system-config
+        - 534965b0-f40c-11e9-8de6-38c986460fd4
+      hostname: cluster1
+      ip_address: localhost
+      isNode: 'false'
+      name: 5349662b-f40c-11e9-a57d-38c986460fd4
+      node_type: private
+      parent_type: global-system-config
+      type: private
+      uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+    kind: node
+  - data:
+      container_registry: localhost:5000
+      contrail_configuration:
+        key_value_pair:
+          - key: ssh_user
+            value: root
+          - key: ssh_pwd
+            value: contrail123
+          - key: UPDATE_IMAGES
+            value: 'no'
+          - key: UPGRADE_KERNEL
+            value: 'no'
+      contrail_version: latest
+      display_name: cluster1
+      high_availability: false
+      name: cluster1
+      fq_name:
+        - default-global-system-config
+        - cluster1
+      orchestrator: none
+      parent_type: global-system-configsd
+      provisioning_state: CREATED
+      uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+    kind: contrail_cluster
+  - data:
+      name: 53495bee-f40c-11e9-b88e-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 53495bee-f40c-11e9-b88e-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53495ab8-f40c-11e9-b3bf-38c986460fd4
+    kind: contrail_config_database_node
+  - data:
+      name: 53495680-f40c-11e9-8520-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 53495680-f40c-11e9-8520-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 534955ae-f40c-11e9-97df-38c986460fd4
+    kind: contrail_control_node
+  - data:
+      name: 53495d87-f40c-11e9-8a67-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 53495d87-f40c-11e9-8a67-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53495cca-f40c-11e9-a732-38c986460fd4
+    kind: contrail_webui_node
+  - data:
+      name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 53496300-f40c-11e9-8880-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+    kind: contrail_config_node
+  - data:
+      name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 53496300-f40c-11e9-8880-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+    kind: contrail_config_node
+  - data:
+      name: 4b49504f-7bea-4500-b83c-e16a8eccac77
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - 4b49504f-7bea-4500-b83c-e16a8eccac77
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 4b49504f-7bea-4500-b83c-e16a8eccac77
+    kind: contrail_ztp_dhcp_node
+  - data:
+      name: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - f7dda935-4a4a-477e-b0f8-ec0329ba887e 
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+    kind: contrail_ztp_tftp_node
+  - data:
+      name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      uuid: 32dced10-efac-42f0-be7a-353ca163dca9
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: nodejs
+      private_url: https://localhost:8143
+      public_url: https://localhost:8143
+    kind: endpoint
+  - data:
+      uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
+      name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: telemetry
+      private_url: http://localhost:8081
+      public_url: http://localhost:8081
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
+      name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: config
+      private_url: http://localhost:8082
+      public_url: http://localhost:8082
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
+      name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: keystone
+      private_url: "http://localhost:5555"
+      public_url: "http://localhost:5555"
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
+      name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: swift
+      private_url: "http://localhost:5080"
+      public_url: "http://localhost:5080"
+    kind: endpoint
 `

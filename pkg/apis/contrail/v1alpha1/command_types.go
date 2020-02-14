@@ -30,6 +30,7 @@ type CommandSpec struct {
 // CommandConfiguration is the Spec for the Command configuration
 // +k8s:openapi-gen=true
 type CommandConfiguration struct {
+	ClusterName      string                `json:"clusterName,omitempty"`
 	ConfigAPIURL     string                `json:"configAPIURL,omitempty"`
 	TelemetryURL     string                `json:"telemetryURL,omitempty"`
 	PostgresInstance string                `json:"postgresInstance,omitempty"`

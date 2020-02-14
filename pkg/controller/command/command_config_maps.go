@@ -19,12 +19,17 @@ func (r *ReconcileCommand) configMap(configMapName, ownerType string, cc *contra
 
 func (c *configMaps) ensureCommandConfigExist() error {
 	cc := &commandConf{
+		ClusterName:    "default",
 		AdminUsername:  "admin",
 		AdminPassword:  "contrail123",
 		ConfigAPIURL:   "http://localhost:8082",
 		TelemetryURL:   "http://localhost:8081",
 		PostgresUser:   "root",
 		PostgresDBName: "contrail_test",
+	}
+
+	if c.ccSpec.ServiceConfiguration.ClusterName != "" {
+		cc.ClusterName = c.ccSpec.ServiceConfiguration.ClusterName
 	}
 
 	if c.ccSpec.ServiceConfiguration.AdminUsername != "" {

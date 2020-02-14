@@ -2,12 +2,14 @@ package command
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	core "k8s.io/api/core/v1"
 )
 
 type commandConf struct {
+	ClusterName    string
 	ConfigAPIURL   string
 	TelemetryURL   string
 	AdminUsername  string
@@ -44,11 +46,11 @@ var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 
 QUERY_RESULT=$(psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
-if [[ $QUERY_EXIT_CODE -eq 0 && $QUERY_RESULT -eq 't' ]]; then
+if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
 fi
 
-if [[ $QUERY_EXIT_CODE -eq 2 ]]; then
+if [[ $QUERY_EXIT_CODE == 2 ]]; then
     exit 1
 fi
 
@@ -58,26 +60,18 @@ contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --out
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
 `))
 
-var commandInitCluster = template.Must(template.New("").Parse(`
+var funcMap = template.FuncMap{
+	"ToLower": strings.ToLower,
+}
+
+var commandInitCluster = template.Must(template.New("").Funcs(funcMap).Parse(`
 ---
 resources:
   - data:
       fq_name:
         - default-global-system-config
-        - 534953cc-f40c-11e9-baae-38c986460fd4
-      name: bms-5349543a-f40c-11e9-a042-38c986460fd4
-      parent_type: global-system-config
-      ssh_password: contrail123
-      ssh_user: root
-      uuid: 534954ab-f40c-11e9-ab05-38c986460fd4
-    kind: credential
-  - data:
-      credential_refs:
-        - uuid: 534954ab-f40c-11e9-ab05-38c986460fd4
-      fq_name:
-        - default-global-system-config
         - 534965b0-f40c-11e9-8de6-38c986460fd4
-      hostname: bms1
+      hostname: {{ .ClusterName | ToLower }}
       ip_address: localhost
       isNode: 'false'
       name: 5349662b-f40c-11e9-a57d-38c986460fd4
@@ -86,14 +80,6 @@ resources:
       type: private
       uuid: 5349552b-f40c-11e9-be04-38c986460fd4
     kind: node
-  - data:
-      fq_name:
-        - default-global-system-config
-        - 53494ac7-f40c-11e9-a729-38c986460fd4
-      name: 53494bc2-f40c-11e9-9082-38c986460fd4
-      parent_type: global-system-config
-      uuid: 534686a8-f40c-11e9-af57-38c986460fd4
-    kind: kubernetes_cluster
   - data:
       container_registry: localhost:5000
       contrail_configuration:
@@ -107,21 +93,23 @@ resources:
           - key: UPGRADE_KERNEL
             value: 'no'
       contrail_version: latest
-      display_name: 534951a8-f40c-11e9-96be-38c986460fd4
+      display_name: {{ .ClusterName }}
+      high_availability: false
+      name: {{ .ClusterName | ToLower }}
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-      high_availability: false
-      kubernetes_cluster_refs:
-        - uuid: 534686a8-f40c-11e9-af57-38c986460fd4
-      name: 53494dd4-f40c-11e9-b232-38c986460fd4
-      orchestrator: kubernetes
-      parent_type: global-system-config
+        - {{ .ClusterName | ToLower }}
+      orchestrator: none
+      parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
     kind: contrail_cluster
   - data:
       name: 53495bee-f40c-11e9-b88e-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495bee-f40c-11e9-b88e-38c986460fd4
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
@@ -129,23 +117,11 @@ resources:
       uuid: 53495ab8-f40c-11e9-b3bf-38c986460fd4
     kind: contrail_config_database_node
   - data:
-      name: 534959b5-f40c-11e9-abbc-38c986460fd4
-      node_refs:
-        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
-      parent_type: kubernetes-cluster
-      parent_uuid: 534686a8-f40c-11e9-af57-38c986460fd4
-      uuid: 534958eb-f40c-11e9-a559-38c986460fd4
-    kind: kubernetes_master_node
-  - data:
-      name: 53496485-f40c-11e9-a984-38c986460fd4
-      node_refs:
-        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
-      parent_type: kubernetes-cluster
-      parent_uuid: 534686a8-f40c-11e9-af57-38c986460fd4
-      uuid: 534963b3-f40c-11e9-9edd-38c986460fd4
-    kind: kubernetes_kubemanager_node
-  - data:
       name: 53495680-f40c-11e9-8520-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495680-f40c-11e9-8520-38c986460fd4
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
@@ -154,6 +130,10 @@ resources:
     kind: contrail_control_node
   - data:
       name: 53495d87-f40c-11e9-8a67-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495d87-f40c-11e9-8a67-38c986460fd4
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
@@ -162,6 +142,10 @@ resources:
     kind: contrail_webui_node
   - data:
       name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53496300-f40c-11e9-8880-38c986460fd4
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
@@ -169,205 +153,105 @@ resources:
       uuid: 53496238-f40c-11e9-8494-38c986460fd4
     kind: contrail_config_node
   - data:
-      name: 53496151-f40c-11e9-9b45-38c986460fd4
+      name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53496300-f40c-11e9-8880-38c986460fd4
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      uuid: 53495edc-f40c-11e9-afd0-38c986460fd4
-    kind: contrail_vrouter_node
+      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+    kind: contrail_config_node
   - data:
-      name: 5349582e-f40c-11e9-b7be-38c986460fd4
+      name: 4b49504f-7bea-4500-b83c-e16a8eccac77
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 4b49504f-7bea-4500-b83c-e16a8eccac77
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
-      parent_type: kubernetes-cluster
-      parent_uuid: 534686a8-f40c-11e9-af57-38c986460fd4
-      uuid: 5349575c-f40c-11e9-999b-38c986460fd4
-    kind: kubernetes_node
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 4b49504f-7bea-4500-b83c-e16a8eccac77
+    kind: contrail_ztp_dhcp_node
+  - data:
+      name: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - f7dda935-4a4a-477e-b0f8-ec0329ba887e 
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+    kind: contrail_ztp_tftp_node
   - data:
       name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
       uuid: 32dced10-efac-42f0-be7a-353ca163dca9
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
-      fq_name:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
-      id_perms:
-        enable: true
-        user_visible: true
-        permissions:
-          owner: cloud-admin
-          owner_access: 7
-          other_access: 7
-          group: cloud-admin-group
-          group_access: 7
-        uuid:
-          uuid_mslong: 3665064853769044500
-          uuid_lslong: 13725341348886995000
-      display_name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
-      annotations: {}
-      perms2:
-        owner: default-project
-        owner_access: 7
-        global_access: 0
-        share: []
-      href: http://localhost:9091/endpoint/32dced10-efac-42f0-be7a-353ca163dca9
       prefix: nodejs
       private_url: https://localhost:8143
       public_url: https://localhost:8143
-      to:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
       name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
-      id_perms:
-        enable: true
-        user_visible: true
-        permissions:
-          owner: cloud-admin
-          owner_access: 7
-          other_access: 7
-          group: cloud-admin-group
-          group_access: 7
-        uuid:
-          uuid_mslong: 12303597671722664000
-          uuid_lslong: 11374308741708718000
-      display_name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
-      annotations: {}
-      perms2:
-        owner: default-project
-        owner_access: 7
-        global_access: 0
-        share: []
-      href: http://localhost:9091/endpoint/aabf28e5-2a5a-409d-9dd9-a989732b208f
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
       prefix: telemetry
       private_url: {{ .TelemetryURL }}
       public_url: {{ .TelemetryURL }}
-      to:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
       name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
-      id_perms:
-        enable: true
-        user_visible: true
-        permissions:
-          owner: cloud-admin
-          owner_access: 7
-          other_access: 7
-          group: cloud-admin-group
-          group_access: 7
-        uuid:
-          uuid_mslong: 13126355967647631000
-          uuid_lslong: 12539414524672110000
-      display_name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
-      annotations: {}
-      perms2:
-        owner: default-project
-        owner_access: 7
-        global_access: 0
-        share: []
-      href: http://localhost:9091/endpoint/b62a2f34-c6f7-4a25-ae04-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
       prefix: config
       private_url: {{ .ConfigAPIURL }}
       public_url: {{ .ConfigAPIURL }}
-      to:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
       name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
-      id_perms:
-        enable: true
-        user_visible: true
-        permissions:
-          owner: cloud-admin
-          owner_access: 7
-          other_access: 7
-          group: cloud-admin-group
-          group_access: 7
-        uuid:
-          uuid_mslong: 13126355967647631000
-          uuid_lslong: 12539414524672110000
-      display_name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
-      annotations: {}
-      perms2:
-        owner: default-project
-        owner_access: 7
-        global_access: 0
-        share: []
-      href: http://localhost:9091/endpoint/b62a2f34-c6f7-4a25-eeee-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
       prefix: keystone
       private_url: "http://localhost:5555"
       public_url: "http://localhost:5555"
-      to:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
       fq_name:
         - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
+        - {{ .ClusterName | ToLower }}
         - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
-      id_perms:
-        enable: true
-        user_visible: true
-        permissions:
-          owner: cloud-admin
-          owner_access: 7
-          other_access: 7
-          group: cloud-admin-group
-          group_access: 7
-        uuid:
-          uuid_mslong: 13126355967647631000
-          uuid_lslong: 12539414524672110000
-      display_name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
-      annotations: {}
-      perms2:
-        owner: default-project
-        owner_access: 7
-        global_access: 0
-        share: []
-      href: http://localhost:9091/endpoint/b62a2f34-c6f7-4a25-efef-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
       prefix: swift
       private_url: "http://localhost:5080"
       public_url: "http://localhost:5080"
-      to:
-        - default-global-system-config
-        - 53494d5c-f40c-11e9-9c47-38c986460fd4
-        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
     kind: endpoint
 `))
 

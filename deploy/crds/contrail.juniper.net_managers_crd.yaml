@@ -391,6 +391,8 @@ spec:
                               type: string
                             adminUsername:
                               type: string
+                            clusterName:
+                              type: string
                             configAPIURL:
                               type: string
                             containers: {}

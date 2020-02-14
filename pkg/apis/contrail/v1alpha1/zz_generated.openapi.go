@@ -372,6 +372,12 @@ func schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref common.Reference
 				Description: "CommandConfiguration is the Spec for the Command configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"clusterName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"configAPIURL": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},

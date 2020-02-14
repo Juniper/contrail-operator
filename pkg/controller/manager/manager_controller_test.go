@@ -76,6 +76,11 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName: "test-manager",
+				},
+			},
 		}
 		assertCommandDeployed(t, expectedCommand, fakeClient)
 	})
@@ -107,6 +112,9 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.CommandSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Activate: &trueVar,
+				},
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName: "test-manager",
 				},
 			},
 		}
@@ -230,6 +238,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:      "test-manager",
 					PostgresInstance: "psql",
 				},
 			},
@@ -297,6 +306,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:      "test-manager",
 					PostgresInstance: "psql",
 				},
 			},
