@@ -2,8 +2,6 @@ package config
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -88,17 +86,16 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 }
 
 // Add adds the Config controller to the manager.
-func Add(mgr manager.Manager, httpClient *http.Client) error {
-	return add(mgr, newReconciler(mgr, httpClient))
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
-func newReconciler(mgr manager.Manager, httpClient *http.Client) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileConfig{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		Manager:    mgr,
-		claims:     volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
-		httpClient: httpClient,
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Manager: mgr,
+		claims:  volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
 	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -177,12 +174,11 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client     client.Client
-	Scheme     *runtime.Scheme
-	Manager    manager.Manager
-	claims     *volumeclaims.PersistentVolumeClaims
-	podsReady  *bool
-	httpClient *http.Client
+	Client    client.Client
+	Scheme    *runtime.Scheme
+	Manager   manager.Manager
+	claims    *volumeclaims.PersistentVolumeClaims
+	podsReady *bool
 }
 
 // Reconcile reconciles Config.
@@ -697,20 +693,4 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 	return reconcile.Result{}, nil
-}
-
-func apiURL(config *v1alpha1.Config, configPods *corev1.PodList) (string, error) {
-	if len(configPods.Items) == 0 {
-		return "", fmt.Errorf("no config pods")
-	}
-	podIP := configPods.Items[0].Status.PodIP
-	if podIP == "" {
-		return "", fmt.Errorf("empty PodIP in config pod Status")
-	}
-	apiPort := config.Status.Ports.APIPort
-	if apiPort == "" {
-		return "", fmt.Errorf("empty API port in Config.Status.Ports.APIPort")
-	}
-	url := fmt.Sprintf("https://%s:%s", podIP, apiPort)
-	return url, nil
 }

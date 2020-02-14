@@ -2,12 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"flag"
 	"fmt"
-	"k8s.io/client-go/rest"
-	"net/http"
 	"os"
 	"runtime"
 
@@ -112,18 +108,9 @@ func main() {
 		os.Exit(1)
 	}
 	// Setup Config controller
-	if err = rest.LoadTLSFiles(cfg); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
+	if err := configController.Add(mgr); err != nil {
+		log.Error(err, "config controller Add failed")
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(cfg.TLSClientConfig.CAData)
-	httpClient := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs: caCertPool,
-		},
-	}}
-	configController.Add(mgr, httpClient)
 	// Create Service object to expose the metrics port.
 	//_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
 	//if err != nil {
