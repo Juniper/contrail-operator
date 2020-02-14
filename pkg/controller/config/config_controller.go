@@ -696,23 +696,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
-	if *config.Status.Active {
-		apiURL, err := apiURL(config, podIPList)
-		if err != nil {
-			log.Error(err, "Config API URL cannot be created")
-			return reconcile.Result{}, err
-		}
-		apiClient := NewApiClient(apiURL, r.httpClient)
-		configNode := ConfigNode{
-			Name:     config.Name,
-			Hostname: "localhost",
-			IP:       "localhost",
-		}
-		if err = apiClient.EnsureConfigNodeExists(configNode); err != nil {
-			log.Error(err, "EnsureConfigNodeExists failed")
-			return reconcile.Result{}, err
-		}
-	}
 	return reconcile.Result{}, nil
 }
 
