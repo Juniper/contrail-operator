@@ -251,7 +251,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	sort.SliceStable(podIPList, func(i, j int) bool { return podIPList[i] < podIPList[j] })
-	var apiServerList []string
 	var apiPort string
 	var configNodeData = make(map[string]string)
 	var controlNodeData = make(map[string]string)
@@ -259,32 +258,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var vrouterNodeData = make(map[string]string)
 	var apiServerData = make(map[string]string)
 
-	if len(configList.Items) > 0 {
-		nodes := &Nodes{}
-		nodeList := []*ConfigNode{}
-		for _, configService := range configList.Items {
-			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				n := ConfigNode{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
-				}
-				nodeList = append(nodeList, &n)
-				apiServerList = append(apiServerList, ipAddress)
-			}
-			apiPort = configService.Status.Ports.APIPort
-		}
-		nodes.ConfigNodes = nodeList
-		nodeYaml, err := yaml.Marshal(nodes.ConfigNodes)
-		if err != nil {
-			return err
-		}
-		configNodeData["confignodes.yaml"] = string(nodeYaml)
-
-	}
 	if len(configList.Items) > 0 {
 		nodes := &Nodes{}
 		nodeList := []*AnalyticsNode{}
