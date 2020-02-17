@@ -229,6 +229,18 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
+		var fabricAnsibleConfigBuffer bytes.Buffer
+		configtemplates.FabricAnsibleConf.Execute(&fabricAnsibleConfigBuffer, struct {
+			HostIP              string
+			CollectorServerList string
+			LogLevel            string
+		}{
+			HostIP:              podList.Items[idx].Status.PodIP,
+			CollectorServerList: collectorServerList,
+			LogLevel:            configConfig.LogLevel,
+		})
+		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
+
 		// TODO: this config should be stored in secret.
 		configAuth := c.AuthParameters()
 		var configKeystoneAuthConfBuffer bytes.Buffer
