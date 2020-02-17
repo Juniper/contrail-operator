@@ -22,7 +22,6 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/controller"
-	configController "github.com/Juniper/contrail-operator/pkg/controller/config"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -102,20 +101,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup all Controllers except Config-controller.
+	// Setup all Controllers.
 	if err := controller.AddToManager(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-	// Setup Config controller
-	if err := configController.Add(mgr); err != nil {
-		log.Error(err, "config controller Add failed")
-	}
-	// Create Service object to expose the metrics port.
-	//_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
-	//if err != nil {
-	//		log.Info(err.Error())
-	//	}
 
 	log.Info("Starting the Cmd.")
 
