@@ -39,7 +39,6 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	log.Info("Test adding Command")
 	// Create a new controller
 	c, err := controller.New("command-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -62,7 +61,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Postgres{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Command{},
 	})
-	log.Info("Test Watch Command3", "Err", err)
 	return err
 }
 
@@ -85,7 +83,6 @@ func NewReconciler(client client.Client, scheme *runtime.Scheme, kubernetes *k8s
 
 // Reconcile reads that state of the cluster for a Command object and makes changes based on the state read
 func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	log.Info("Test reconcile Command")
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Command")
 	instanceType := "command"
