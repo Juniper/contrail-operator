@@ -1448,7 +1448,6 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	if manager.Spec.Services.Command == nil {
 		return nil
 	}
-	log.Info("Test ", "Spec : ", manager.Spec.Services.Command)
 	command := &v1alpha1.Command{}
 	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
@@ -1459,7 +1458,6 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 		}
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
-	log.Info("Test ", "crete resource err: ", err)
 	status := &v1alpha1.ServiceStatus{}
 	status.Active = &command.Status.Active
 	manager.Status.Command = status
