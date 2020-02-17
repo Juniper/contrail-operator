@@ -239,7 +239,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: collectorServerList,
 			LogLevel:            configConfig.LogLevel,
 		})
-		data["contrail-fabric-ansible.conf"] = fabricAnsibleConfigBuffer.String()
+		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
 
 		// TODO: this config should be stored in secret.
 		configAuth := c.AuthParameters()
