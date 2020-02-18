@@ -77,7 +77,7 @@ EOF
 while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
-contrail-controller-config-devicemgr:dev-5
+contrail-controller-config-devicemgr:1912-reload
 contrail-controller-config-dnsmasq:dev
 EOF
 

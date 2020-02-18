@@ -47,7 +47,7 @@ spec:
             collector:
               image: registry:5000/contrail-analytics-collector:1912-latest
             devicemanager:
-              image: registry:5000/contrail-controller-config-devicemgr:dev-5
+              image: registry:5000/contrail-controller-config-devicemgr:1912-reload
             dnsmasq:
               image: registry:5000/contrail-controller-config-dnsmasq:dev
             init:
