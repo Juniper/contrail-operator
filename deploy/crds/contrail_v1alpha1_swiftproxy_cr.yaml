@@ -8,5 +8,4 @@ spec:
     memcachedInstance: "memcached"
     keystoneInstance: "keystone"
     listenPort: 5080
-    keystoneAdminPassword: "contrail123"
     swiftPassword: "swiftpass"

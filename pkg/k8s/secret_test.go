@@ -50,6 +50,20 @@ func TestEnsureSecretExists(t *testing.T) {
 			},
 			expected: []*core.Secret{newSecret(map[string]string{"test": "1"}, "pod", ownerName.Name, "test-secret")},
 		},
+		{
+			name:       "Should not update secret if it exists and has some data",
+			owner:      newSecretOwner(ownerName),
+			testSecret: newTestSecret(map[string]string{"test": "1"}),
+			ownerType:  "pod",
+			secretName: "test-secret",
+			initDBState: []runtime.Object{
+				&core.Secret{
+					ObjectMeta: newSecretObjectMeta("pod", ownerName.Name, "test-secret"),
+					StringData: map[string]string{"test": "2"},
+				},
+			},
+			expected: []*core.Secret{newSecret(map[string]string{"test": "2"}, "pod", ownerName.Name, "test-secret")},
+		},
 	}
 
 	for _, test := range tests {
@@ -84,6 +98,9 @@ func newTestSecret(data map[string]string) testSecret {
 }
 
 func (ts testSecret) FillSecret(sc *core.Secret) error {
+	if sc.StringData != nil {
+		return nil
+	}
 	sc.StringData = ts.data
 	return nil
 }

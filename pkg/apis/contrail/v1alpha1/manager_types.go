@@ -15,8 +15,9 @@ type ManagerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	CommonConfiguration CommonConfiguration `json:"commonConfiguration,omitempty"`
-	Services            Services            `json:"services,omitempty"`
+	CommonConfiguration    CommonConfiguration `json:"commonConfiguration,omitempty"`
+	Services               Services            `json:"services,omitempty"`
+	KeystoneSecretInstance string              `json:"keystoneSecretInstance,omitempty"`
 }
 
 // Services defines the desired state of Services.

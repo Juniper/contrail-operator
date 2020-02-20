@@ -103,8 +103,14 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
+	adminPasswordSecretName := command.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecret := &core.Secret{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: command.Namespace}, adminPasswordSecret); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	commandConfigName := command.Name + "-command-configmap"
-	if err := r.configMap(commandConfigName, "command", command).ensureCommandConfigExist(); err != nil {
+	if err := r.configMap(commandConfigName, "command", command, adminPasswordSecret).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 

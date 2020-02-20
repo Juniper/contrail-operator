@@ -451,15 +451,13 @@ spec:
             serviceConfiguration:
               description: CommandConfiguration is the Spec for the Command configuration
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 clusterName:
                   type: string
                 configAPIURL:
                   type: string
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 postgresInstance:
                   type: string
                 telemetryURL:
@@ -593,10 +591,6 @@ spec:
             serviceConfiguration:
               description: ConfigConfiguration is the Spec for the cassandras API.
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 analyticsPort:
                   type: integer
                 apiPort:
@@ -606,6 +600,8 @@ spec:
                 collectorPort:
                   type: integer
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 logLevel:
                   type: string
                 nodeManager:
@@ -950,6 +946,8 @@ spec:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 listenPort:
                   type: integer
                 memcachedInstance:
@@ -1277,6 +1275,8 @@ spec:
                     type: object
                   type: array
               type: object
+            keystoneSecretInstance:
+              type: string
             services:
               description: Services defines the desired state of Services.
               properties:
@@ -1559,15 +1559,13 @@ spec:
                           description: CommandConfiguration is the Spec for the Command
                             configuration
                           properties:
-                            adminPassword:
-                              type: string
-                            adminUsername:
-                              type: string
                             clusterName:
                               type: string
                             configAPIURL:
                               type: string
                             containers: {}
+                            keystoneSecretInstance:
+                              type: string
                             postgresInstance:
                               type: string
                             telemetryURL:
@@ -1692,10 +1690,6 @@ spec:
                           description: ConfigConfiguration is the Spec for the cassandras
                             API.
                           properties:
-                            adminPassword:
-                              type: string
-                            adminUsername:
-                              type: string
                             analyticsPort:
                               type: integer
                             apiPort:
@@ -1705,6 +1699,8 @@ spec:
                             collectorPort:
                               type: integer
                             containers: {}
+                            keystoneSecretInstance:
+                              type: string
                             logLevel:
                               type: string
                             nodeManager:
@@ -2036,6 +2032,8 @@ spec:
                             API.
                           properties:
                             containers: {}
+                            keystoneSecretInstance:
+                              type: string
                             listenPort:
                               type: integer
                             memcachedInstance:
@@ -2662,9 +2660,9 @@ spec:
                                 the keystone API.
                               properties:
                                 containers: {}
-                                keystoneAdminPassword:
-                                  type: string
                                 keystoneInstance:
+                                  type: string
+                                keystoneSecretInstance:
                                   type: string
                                 listenPort:
                                   type: integer
@@ -2989,10 +2987,6 @@ spec:
                           description: WebuiConfiguration is the Spec for the cassandras
                             API.
                           properties:
-                            adminPassword:
-                              type: string
-                            adminUsername:
-                              type: string
                             cassandraInstance:
                               type: string
                             clusterRole:
@@ -3000,6 +2994,8 @@ spec:
                             clusterRoleBinding:
                               type: string
                             containers: {}
+                            keystoneSecretInstance:
+                              type: string
                             serviceAccount:
                               type: string
                           type: object
@@ -3847,9 +3843,9 @@ spec:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
-                keystoneAdminPassword:
-                  type: string
                 keystoneInstance:
+                  type: string
+                keystoneSecretInstance:
                   type: string
                 listenPort:
                   type: integer
@@ -3930,9 +3926,9 @@ spec:
                     API.
                   properties:
                     containers: {}
-                    keystoneAdminPassword:
-                      type: string
                     keystoneInstance:
+                      type: string
+                    keystoneSecretInstance:
                       type: string
                     listenPort:
                       type: integer
@@ -4349,10 +4345,6 @@ spec:
             serviceConfiguration:
               description: WebuiConfiguration is the Spec for the cassandras API.
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 cassandraInstance:
                   type: string
                 clusterRole:
@@ -4360,6 +4352,8 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 serviceAccount:
                   type: string
               type: object

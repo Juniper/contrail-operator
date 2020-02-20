@@ -110,6 +110,8 @@ spec:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 listenPort:
                   type: integer
                 memcachedInstance:

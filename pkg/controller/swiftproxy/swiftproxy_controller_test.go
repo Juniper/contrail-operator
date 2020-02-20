@@ -42,6 +42,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newMemcached(),
+				newAdminSecret(),
 			},
 
 			// then
@@ -68,6 +69,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
 				newMemcached(),
+				newAdminSecret(),
 			},
 
 			// then
@@ -91,6 +93,7 @@ func TestSwiftProxyController(t *testing.T) {
 					ReadyReplicas: 1,
 				}),
 				newMemcached(),
+				newAdminSecret(),
 			},
 
 			// then
@@ -111,6 +114,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
+				newAdminSecret(),
 			},
 
 			// then
@@ -127,6 +131,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newSwiftProxyWithCustomImages(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newMemcached(),
+				newAdminSecret(),
 			},
 
 			// then
@@ -206,10 +211,10 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				ListenPort:                5070,
 				KeystoneInstance:          "keystone",
 				MemcachedInstance:         "memcached-instance",
-				KeystoneAdminPassword:     "c0ntrail123",
 				SwiftPassword:             "swiftpass",
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
+				KeystoneSecretInstance:    "keystone-adminpass-secret",
 			},
 		},
 		Status: status,
@@ -392,6 +397,11 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 			Namespace:       "default",
 			OwnerReferences: ownersReferences,
 		},
+		Spec: contrail.KeystoneSpec{
+			ServiceConfiguration: contrail.KeystoneConfiguration{
+				KeystoneSecretInstance: "keystone-adminpass-secret",
+			},
+		},
 		Status: status,
 	}
 }
@@ -439,6 +449,23 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &trueVal, &trueVal},
 			},
+		},
+	}
+}
+
+func newAdminSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-adminpass-secret",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"password": []byte("test123"),
 		},
 	}
 }
@@ -616,7 +643,7 @@ var registerConfig = `
 openstack_auth:
   auth_url: "http://10.0.2.15:5555/v3"
   username: "admin"
-  password: "c0ntrail123"
+  password: "test123"
   project_name: "admin"
   domain_id: "default"
   user_domain_id: "default"

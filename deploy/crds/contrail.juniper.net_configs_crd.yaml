@@ -109,10 +109,6 @@ spec:
             serviceConfiguration:
               description: ConfigConfiguration is the Spec for the cassandras API.
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 analyticsPort:
                   type: integer
                 apiPort:
@@ -122,6 +118,8 @@ spec:
                 collectorPort:
                   type: integer
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 logLevel:
                   type: string
                 nodeManager:

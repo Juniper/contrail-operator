@@ -75,9 +75,10 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
-					MemcachedInstance: "commandtest-memcached",
-					PostgresInstance:  "commandtest-psql",
-					ListenPort:        5555,
+					MemcachedInstance:      "commandtest-memcached",
+					PostgresInstance:       "commandtest-psql",
+					ListenPort:             5555,
+					KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
 					Containers: map[string]*contrail.Container{
 						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
 						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
@@ -100,11 +101,10 @@ func TestCommandServices(t *testing.T) {
 					HostNetwork: &trueVal,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
-					PostgresInstance: "commandtest-psql",
-					AdminUsername:    "test",
-					AdminPassword:    "test123",
-					ConfigAPIURL:     "https://kind-control-plane:8082",
-					TelemetryURL:     "https://kind-control-plane:8081",
+					PostgresInstance:       "commandtest-psql",
+					KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+					ConfigAPIURL:           "https://kind-control-plane:8082",
+					TelemetryURL:           "https://kind-control-plane:8081",
 					Containers: map[string]*contrail.Container{
 						"init": {Image: "registry:5000/contrail-command:1912-latest"},
 						"api":  {Image: "registry:5000/contrail-command:1912-latest"},
@@ -129,12 +129,27 @@ func TestCommandServices(t *testing.T) {
 					Memcached: memcached,
 					Command:   command,
 				},
+				KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+			},
+		}
+
+		adminPassWordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-keystone-adminpass-secret",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"password": "test123",
 			},
 		}
 
 		t.Run("when manager resource with command and dependencies is created", func(t *testing.T) {
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
+
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
+
 			wait := wait.Wait{
 				Namespace:     namespace,
 				Timeout:       waitTimeout,
@@ -165,14 +180,14 @@ func TestCommandServices(t *testing.T) {
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-				_, err := keystoneClient.PostAuthTokens("test", "test123")
+				_, err := keystoneClient.PostAuthTokens("admin", "test123")
 				assert.NoError(t, err)
 			})
 
 			t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
 				headers := http.Header{}
 				headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "contrail123", headers)
+				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "test123", headers)
 				assert.NoError(t, err)
 			})
 		})

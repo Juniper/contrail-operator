@@ -109,10 +109,6 @@ spec:
             serviceConfiguration:
               description: WebuiConfiguration is the Spec for the cassandras API.
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 cassandraInstance:
                   type: string
                 clusterRole:
@@ -120,6 +116,8 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 serviceAccount:
                   type: string
               type: object

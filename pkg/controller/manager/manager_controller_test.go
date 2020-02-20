@@ -6,23 +6,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/core"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestManagerController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err)
-	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
-
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	trueVar := true
 
 	t.Run("should create contrail command CR when manager is reconciled and command CR does not exist", func(t *testing.T) {
@@ -44,12 +45,18 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Command: &command,
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR)
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client: fakeClient,
-			scheme: scheme,
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -78,7 +85,8 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName: "test-manager",
+					ClusterName:            "test-manager",
+					KeystoneSecretInstance: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -114,7 +122,8 @@ func TestManagerController(t *testing.T) {
 					Activate: &trueVar,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName: "test-manager",
+					ClusterName:            "test-manager",
+					KeystoneSecretInstance: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -128,12 +137,20 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Command: &commandUpdate,
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR, &command)
+
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+			&command,
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client: fakeClient,
-			scheme: scheme,
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -184,12 +201,20 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Postgres: &psql,
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR)
+
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client: fakeClient,
-			scheme: scheme,
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -254,12 +279,20 @@ func TestManagerController(t *testing.T) {
 					Postgres: &psql,
 					Command:  &command,
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR)
+
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client: fakeClient,
-			scheme: scheme,
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -306,8 +339,9 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName:      "test-manager",
-					PostgresInstance: "psql",
+					ClusterName:            "test-manager",
+					PostgresInstance:       "psql",
+					KeystoneSecretInstance: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -347,12 +381,20 @@ func TestManagerController(t *testing.T) {
 					Postgres: &psql,
 					Keystone: &keystone,
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, managerCR)
+
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client: fakeClient,
-			scheme: scheme,
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -399,11 +441,47 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.KeystoneSpec{
 				ServiceConfiguration: contrail.KeystoneConfiguration{
-					PostgresInstance: "psql",
+					PostgresInstance:       "psql",
+					KeystoneSecretInstance: "keystone-adminpass-secret",
 				},
 			},
 		}
 		assertKeystone(t, expectedKeystone, fakeClient)
+	})
+	t.Run("should not create keystone admin secret if already exists", func(t *testing.T) {
+		//given
+		initObjs := []runtime.Object{
+			newManager(),
+			newAdminSecret(),
+		}
+
+		expectedSecret := newAdminSecret()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+
+		secret := &core.Secret{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      expectedSecret.Name,
+			Namespace: expectedSecret.Namespace,
+		}, secret)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSecret.ObjectMeta, secret.ObjectMeta)
+		assert.Equal(t, expectedSecret.Data, secret.Data)
+
 	})
 }
 
@@ -435,4 +513,87 @@ func assertKeystone(t *testing.T, expected contrail.Keystone, fakeClient client.
 	}, &keystone)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, keystone)
+}
+func newKeystone() *contrail.Keystone {
+	trueVal := true
+	return &contrail.Keystone{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone",
+			Namespace: "default",
+		},
+		Spec: contrail.KeystoneSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:    &trueVal,
+				Create:      &trueVal,
+				HostNetwork: &trueVal,
+				Tolerations: []core.Toleration{
+					{
+						Effect:   core.TaintEffectNoSchedule,
+						Operator: core.TolerationOpExists,
+					},
+					{
+						Effect:   core.TaintEffectNoExecute,
+						Operator: core.TolerationOpExists,
+					},
+				},
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.KeystoneConfiguration{
+				PostgresInstance:       "psql",
+				ListenPort:             5555,
+				KeystoneSecretInstance: "keystone-adminpass-secret",
+			},
+		},
+	}
+}
+
+func newManager() *contrail.Manager {
+	trueVal := true
+	return &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cluster1",
+			Namespace: "default",
+		},
+		Spec: contrail.ManagerSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:    &trueVal,
+				Create:      &trueVal,
+				HostNetwork: &trueVal,
+				Tolerations: []core.Toleration{
+					{
+						Effect:   core.TaintEffectNoSchedule,
+						Operator: core.TolerationOpExists,
+					},
+					{
+						Effect:   core.TaintEffectNoExecute,
+						Operator: core.TolerationOpExists,
+					},
+				},
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			Services: contrail.Services{
+				Postgres: &contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
+					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				},
+				Keystone: newKeystone(),
+			},
+		},
+	}
+}
+
+func newAdminSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-adminpass-secret",
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "manager", "test-manager", "", &trueVal, &trueVal},
+			},
+		},
+		StringData: map[string]string{
+			"password": "test123",
+		},
+	}
 }

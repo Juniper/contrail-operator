@@ -46,21 +46,20 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers        map[string]*Container `json:"containers,omitempty"`
-	APIPort           *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort     *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort     *int                  `json:"collectorPort,omitempty"`
-	RedisPort         *int                  `json:"redisPort,omitempty"`
-	CassandraInstance string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
-	NodeManager       *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel          string                `json:"logLevel,omitempty"`
-	AdminUsername     string                `json:"adminUsername,omitempty"`
-	AdminPassword     string                `json:"adminPassword,omitempty"`
-	Storage           Storage               `json:"storage,omitempty"`
+	Containers             map[string]*Container `json:"containers,omitempty"`
+	APIPort                *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort          *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort          *int                  `json:"collectorPort,omitempty"`
+	RedisPort              *int                  `json:"redisPort,omitempty"`
+	CassandraInstance      string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance      string                `json:"zookeeperInstance,omitempty"`
+	NodeManager            *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser           string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword       string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost          string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel               string                `json:"logLevel,omitempty"`
+	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
+	Storage                Storage               `json:"storage,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -242,8 +241,11 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
 
-		// TODO: this config should be stored in secret.
-		configAuth := c.AuthParameters()
+		configAuth, err := c.AuthParameters(client)
+		if err != nil {
+			return err
+		}
+
 		var configKeystoneAuthConfBuffer bytes.Buffer
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername string
@@ -427,20 +429,17 @@ type ConfigAuthParameters struct {
 	AdminPassword string
 }
 
-func (c *Config) AuthParameters() *ConfigAuthParameters {
+func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, error) {
 	w := &ConfigAuthParameters{
 		AdminUsername: "admin",
-		AdminPassword: "contrail123",
 	}
-
-	if c.Spec.ServiceConfiguration.AdminUsername != "" {
-		w.AdminUsername = c.Spec.ServiceConfiguration.AdminUsername
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
+		return nil, err
 	}
-
-	if c.Spec.ServiceConfiguration.AdminPassword != "" {
-		w.AdminPassword = c.Spec.ServiceConfiguration.AdminPassword
-	}
-	return w
+	w.AdminPassword = string(adminPasswordSecret.Data["password"])
+	return w, nil
 }
 
 func (c *Config) CreateConfigMap(configMapName string,

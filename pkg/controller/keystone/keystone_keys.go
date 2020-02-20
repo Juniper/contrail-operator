@@ -18,7 +18,7 @@ type secret struct {
 }
 
 func (s *secret) FillSecret(sc *core.Secret) error {
-	if sc.StringData != nil {
+	if sc.Data != nil {
 		return nil
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
@@ -48,6 +48,6 @@ func (r *ReconcileKeystone) secret(secretName, ownerType string, keystone *contr
 	}
 }
 
-func (s *secret) ensureSecretExist() error {
+func (s *secret) ensureSecretKeyExist() error {
 	return s.sc.EnsureExists(s)
 }
