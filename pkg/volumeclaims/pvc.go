@@ -2,7 +2,7 @@ package volumeclaims
 
 import (
 	"context"
-
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,9 +31,30 @@ type PersistentVolumeClaim struct {
 	scheme *runtime.Scheme
 	name   types.NamespacedName
 	owner  meta.Object
+	dirPath string
 }
 
+func (c *PersistentVolumeClaim) SetVolumeDir(dirPath string)  {
+	c.dirPath = dirPath
+}
+
+func (c *PersistentVolumeClaim) SetCapacity(quantity resource.Quantity)  {
+}
+
+
 func (c *PersistentVolumeClaim) EnsureExists() error {
+	if c.dirPath != "" {
+		pv := &core.PersistentVolume{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      c.name.Name + "-pv",
+				Namespace: c.name.Namespace,
+			},
+		}
+		if err := c.client.Create(context.Background(), pv); !errors.IsAlreadyExists(err) {
+			return err
+		}
+
+	}
 	quantity, err := resource.ParseQuantity("5Gi")
 	if err != nil {
 		return err
@@ -59,4 +80,8 @@ func (c *PersistentVolumeClaim) EnsureExists() error {
 	})
 
 	return err
+}
+
+func (c *PersistentVolumeClaim) WithPV() {
+
 }

@@ -40,10 +40,12 @@ func TestEnsureExists(t *testing.T) {
 		},
 	}
 
+	operatorScheme := scheme(t)
+
 	t.Run("should return an error when there is a problem with client", func(t *testing.T) {
 		// given
 		cl := failingClient{}
-		claims := volumeclaims.New(cl, scheme(t))
+		claims := volumeclaims.New(cl, operatorScheme)
 		claim := claims.New(claimName, owner)
 		// when
 		err := claim.EnsureExists()
@@ -53,8 +55,8 @@ func TestEnsureExists(t *testing.T) {
 
 	t.Run("should create a persistent volume claim when it does not exist", func(t *testing.T) {
 		// given
-		cl := fake.NewFakeClient()
-		claims := volumeclaims.New(cl, scheme(t))
+		cl := fake.NewFakeClientWithScheme(operatorScheme)
+		claims := volumeclaims.New(cl, operatorScheme)
 		claim := claims.New(claimName, owner)
 		// when
 		err := claim.EnsureExists()
@@ -78,6 +80,118 @@ func TestEnsureExists(t *testing.T) {
 		}}
 		assert.Equal(t, expectedOwnerReferences, pvc.OwnerReferences)
 	})
+
+	t.Run("should create a persistent volume when path is given", func(t *testing.T) {
+		tests := map[string]struct {
+			namespace string
+			claimName string
+			pvName    string
+		}{
+			"default namespace": {
+				namespace: "default",
+				claimName: "test",
+				pvName:    "test-pv",
+			},
+			"other namespace": {
+				namespace: "other",
+				claimName: "test",
+				pvName:    "test-pv",
+			},
+			"other name": {
+				namespace: "default",
+				claimName: "other",
+				pvName:    "other-pv",
+			},
+		}
+		for name, test := range tests {
+			t.Run(name, func(t *testing.T) {
+				// given
+				claimName = types.NamespacedName{
+					Namespace: test.namespace,
+					Name:      test.claimName,
+				}
+				pvKey := client.ObjectKey{
+					Namespace: test.namespace,
+					Name:      test.pvName,
+				}
+				cl := fake.NewFakeClientWithScheme(operatorScheme)
+				claims := volumeclaims.New(cl, operatorScheme)
+				claim := claims.New(claimName, owner)
+				claim.SetVolumeDir("/path/to/dir")
+				// when
+				err := claim.EnsureExists()
+				// then
+				require.NoError(t, err)
+				// and
+				pv := &core.PersistentVolume{}
+				err = cl.Get(context.Background(), pvKey, pv)
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("should create a persistent volume with specified quantity", func(t *testing.T) {
+		// given
+		claimName = types.NamespacedName{
+			Namespace: test.namespace,
+			Name:      test.claimName,
+		}
+		pvKey := client.ObjectKey{
+			Namespace: test.namespace,
+			Name:      test.pvName,
+		}
+		cl := fake.NewFakeClientWithScheme(operatorScheme)
+		claims := volumeclaims.New(cl, operatorScheme)
+		claim := claims.New(claimName, owner)
+		claim.SetVolumeDir("/path/to/dir")
+		claim.SetCapacity("5Gi")
+		// when
+		err := claim.EnsureExists()
+		// then
+		require.NoError(t, err)
+		// and
+		pv := &core.PersistentVolume{}
+		err = cl.Get(context.Background(), pvKey, pv)
+		require.NoError(t, err)
+	})
+
+	t.Run("should create pvc when persistent volume exists and volume dir is given", func(t *testing.T) {
+		// given
+		claimName = types.NamespacedName{
+			Namespace: "default",
+			Name:      "test",
+		}
+		pv := &core.PersistentVolume{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-pv",
+				Namespace: "default",
+			},
+		}
+		cl := fake.NewFakeClientWithScheme(operatorScheme, pv)
+		claims := volumeclaims.New(cl, operatorScheme)
+		claim := claims.New(claimName, owner)
+		claim.SetVolumeDir("/path/to/dir")
+		// when
+		err := claim.EnsureExists()
+		// then
+		require.NoError(t, err)
+	})
+
+	t.Run("should return error when PV cannot be created", func(t *testing.T) {
+		// given
+		claimName = types.NamespacedName{
+			Namespace: "default",
+			Name:      "test",
+		}
+		claims := volumeclaims.New(failOnPVCreation{}, operatorScheme)
+		claim := claims.New(claimName, owner)
+		claim.SetVolumeDir("/path/to/dir")
+		// when
+		err := claim.EnsureExists()
+		// then
+		require.Error(t, err)
+	})
+
 }
 
 func scheme(t *testing.T) *runtime.Scheme {
@@ -86,6 +200,52 @@ func scheme(t *testing.T) *runtime.Scheme {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	return scheme
+}
+
+type failOnPVCreation struct {
+	clientStub
+}
+
+func (c failOnPVCreation) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	_, ok := obj.(*core.PersistentVolume)
+	if ok {
+		return errors.New("create PV failed")
+	}
+	return nil
+}
+
+type clientStub struct {}
+
+func (c clientStub) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+	return nil
+}
+
+func (c clientStub) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+	return nil
+}
+
+func (c clientStub) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+	return nil
+}
+
+func (c clientStub) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+	return nil
+}
+
+func (c clientStub) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+	return nil
+}
+
+func (c clientStub) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+	return nil
+}
+
+func (c clientStub) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+	return nil
+}
+
+func (c clientStub) Status() client.StatusWriter {
+	return nil
 }
 
 type failingClient struct{}
