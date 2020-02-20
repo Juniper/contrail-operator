@@ -614,6 +614,11 @@ spec:
                   type: string
                 redisPort:
                   type: integer
+                storagePath:
+                  type: string
+                storageSize:
+                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                  type: string
                 zookeeperInstance:
                   type: string
               type: object
@@ -1693,6 +1698,11 @@ spec:
                               type: string
                             redisPort:
                               type: integer
+                            storagePath:
+                              type: string
+                            storageSize:
+                              pattern: ^([0-9]+)([KMGTPE]i)?$
+                              type: string
                             zookeeperInstance:
                               type: string
                           type: object

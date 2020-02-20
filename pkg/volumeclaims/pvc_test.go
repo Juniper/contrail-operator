@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -117,7 +118,7 @@ func TestEnsureExists(t *testing.T) {
 				cl := fake.NewFakeClientWithScheme(operatorScheme)
 				claims := volumeclaims.New(cl, operatorScheme)
 				claim := claims.New(claimName, owner)
-				claim.SetVolumeDir("/path/to/dir")
+				claim.SetStoragePath("/path/to/dir")
 				// when
 				err := claim.EnsureExists()
 				// then
@@ -130,29 +131,53 @@ func TestEnsureExists(t *testing.T) {
 		}
 	})
 
-	t.Run("should create a persistent volume with specified quantity", func(t *testing.T) {
-		// given
-		claimName = types.NamespacedName{
-			Namespace: test.namespace,
-			Name:      test.claimName,
+	t.Run("when storage size is given", func(t *testing.T) {
+		tests := map[string]struct {
+			size resource.Quantity
+		}{
+			"5Gi": {
+				size: resource.MustParse("5Gi"),
+			},
+			"1500100900Mi": {
+				size: resource.MustParse("1500100900Mi"),
+			},
 		}
-		pvKey := client.ObjectKey{
-			Namespace: test.namespace,
-			Name:      test.pvName,
+		for name, test := range tests {
+			t.Run(name, func(t *testing.T) {
+				// given
+				claimName = types.NamespacedName{
+					Namespace: "default",
+					Name:      "test",
+				}
+				pvKey := client.ObjectKey{
+					Namespace: "default",
+					Name:      "test-pv",
+				}
+				cl := fake.NewFakeClientWithScheme(operatorScheme)
+				claims := volumeclaims.New(cl, operatorScheme)
+				claim := claims.New(claimName, owner)
+				claim.SetStoragePath("/path/to/dir")
+				claim.SetStorageSize(test.size)
+
+				// when
+				err := claim.EnsureExists()
+				require.NoError(t, err)
+
+				t.Run("should create pv with given capacity", func(t *testing.T) {
+					pv := &core.PersistentVolume{}
+					err = cl.Get(context.Background(), pvKey, pv)
+					require.NoError(t, err)
+					assert.Equal(t, test.size, pv.Spec.Capacity[core.ResourceStorage])
+				})
+
+				t.Run("should create pvc with given capacity", func(t *testing.T) {
+					pvc := &core.PersistentVolumeClaim{}
+					err = cl.Get(context.Background(), claimName, pvc)
+					require.NoError(t, err)
+					assert.Equal(t, test.size, pvc.Spec.Resources.Requests[core.ResourceStorage])
+				})
+			})
 		}
-		cl := fake.NewFakeClientWithScheme(operatorScheme)
-		claims := volumeclaims.New(cl, operatorScheme)
-		claim := claims.New(claimName, owner)
-		claim.SetVolumeDir("/path/to/dir")
-		claim.SetCapacity("5Gi")
-		// when
-		err := claim.EnsureExists()
-		// then
-		require.NoError(t, err)
-		// and
-		pv := &core.PersistentVolume{}
-		err = cl.Get(context.Background(), pvKey, pv)
-		require.NoError(t, err)
 	})
 
 	t.Run("should create pvc when persistent volume exists and volume dir is given", func(t *testing.T) {
@@ -170,7 +195,7 @@ func TestEnsureExists(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(operatorScheme, pv)
 		claims := volumeclaims.New(cl, operatorScheme)
 		claim := claims.New(claimName, owner)
-		claim.SetVolumeDir("/path/to/dir")
+		claim.SetStoragePath("/path/to/dir")
 		// when
 		err := claim.EnsureExists()
 		// then
@@ -185,7 +210,7 @@ func TestEnsureExists(t *testing.T) {
 		}
 		claims := volumeclaims.New(failOnPVCreation{}, operatorScheme)
 		claim := claims.New(claimName, owner)
-		claim.SetVolumeDir("/path/to/dir")
+		claim.SetStoragePath("/path/to/dir")
 		// when
 		err := claim.EnsureExists()
 		// then
@@ -214,7 +239,7 @@ func (c failOnPVCreation) Create(ctx context.Context, obj runtime.Object, opts .
 	return nil
 }
 
-type clientStub struct {}
+type clientStub struct{}
 
 func (c clientStub) Get(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 	return nil

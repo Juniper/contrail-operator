@@ -2,6 +2,7 @@ package volumeclaims
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,33 +32,35 @@ type PersistentVolumeClaim struct {
 	scheme *runtime.Scheme
 	name   types.NamespacedName
 	owner  meta.Object
-	dirPath string
+	path   string
+	size   resource.Quantity
 }
 
-func (c *PersistentVolumeClaim) SetVolumeDir(dirPath string)  {
-	c.dirPath = dirPath
+func (c *PersistentVolumeClaim) SetStoragePath(path string) {
+	c.path = path
 }
 
-func (c *PersistentVolumeClaim) SetCapacity(quantity resource.Quantity)  {
+func (c *PersistentVolumeClaim) SetStorageSize(quantity resource.Quantity) {
+	c.size = quantity
 }
-
 
 func (c *PersistentVolumeClaim) EnsureExists() error {
-	if c.dirPath != "" {
+	if c.path != "" {
 		pv := &core.PersistentVolume{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      c.name.Name + "-pv",
 				Namespace: c.name.Namespace,
 			},
+			Spec: core.PersistentVolumeSpec{
+				Capacity: map[core.ResourceName]resource.Quantity{
+					core.ResourceStorage: c.size,
+				},
+			},
 		}
-		if err := c.client.Create(context.Background(), pv); !errors.IsAlreadyExists(err) {
+		if err := c.client.Create(context.Background(), pv); err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
 
-	}
-	quantity, err := resource.ParseQuantity("5Gi")
-	if err != nil {
-		return err
 	}
 	pvc := &core.PersistentVolumeClaim{
 		ObjectMeta: meta.ObjectMeta{
@@ -70,12 +73,12 @@ func (c *PersistentVolumeClaim) EnsureExists() error {
 		AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
 		Resources: core.ResourceRequirements{
 			Requests: map[core.ResourceName]resource.Quantity{
-				core.ResourceStorage: quantity,
+				core.ResourceStorage: c.size,
 			},
 		},
 	}
 
-	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
 		return controllerutil.SetControllerReference(c.owner, pvc, c.scheme)
 	})
 

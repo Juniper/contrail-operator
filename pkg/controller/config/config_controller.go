@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
@@ -265,8 +267,14 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			continue
 		}
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		if err := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName},
-			config).EnsureExists(); err != nil {
+		quantity, err := resource.ParseQuantity(config.Spec.ServiceConfiguration.StorageSize)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		claim := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}, config)
+		claim.SetStoragePath(config.Spec.ServiceConfiguration.StoragePath)
+		claim.SetStorageSize(quantity)
+		if err := claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -331,7 +339,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 /usr/bin/rm -f /etc/contrail/contrail-fabric-ansible.conf; ln -s /etc/mycontrail/contrail-fabric-ansible.conf.${POD_IP} /etc/contrail/contrail-fabric-ansible.conf;
 /usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf
 `
-		command := []string{"bash", "-c", deviceManagerCommand}
+			command := []string{"bash", "-c", deviceManagerCommand}
 			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
