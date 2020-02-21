@@ -72,7 +72,7 @@ func TestSwiftController(t *testing.T) {
 	t.Run("when Swift CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
@@ -107,7 +107,7 @@ func TestSwiftController(t *testing.T) {
 				Name:      "test-swift-rings",
 				Namespace: swiftName.Namespace,
 			}
-			assertClaimCreated(t, fakeClient, claimName)
+			assert.True(t, claims.Contains(claimName))
 		})
 	})
 
@@ -150,7 +150,7 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSecret, existingSwiftProxy, existingSwiftStorage)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
@@ -213,7 +213,7 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSwiftProxy, existingSwiftStorage)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
@@ -288,12 +288,6 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
 	assert.Equal(t, swiftCR.Name+"-rings", swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
-}
-
-func assertClaimCreated(t *testing.T, fakeClient client.Client, claimName types.NamespacedName) {
-	claim := core.PersistentVolumeClaim{}
-	err := fakeClient.Get(context.Background(), claimName, &claim)
-	assert.NoError(t, err)
 }
 
 func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.NamespacedName) {

@@ -14,20 +14,30 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func New(client client.Client, scheme *runtime.Scheme) *PersistentVolumeClaims {
-	return &PersistentVolumeClaims{client: client, scheme: scheme}
+type PersistentVolumeClaim interface {
+	SetStoragePath(path string)
+	SetStorageSize(quantity resource.Quantity)
+	EnsureExists() error
 }
 
-type PersistentVolumeClaims struct {
+type PersistentVolumeClaims interface {
+	New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim
+}
+
+func New(client client.Client, scheme *runtime.Scheme) PersistentVolumeClaims {
+	return &claims{client: client, scheme: scheme}
+}
+
+type claims struct {
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-func (c *PersistentVolumeClaims) New(name types.NamespacedName, owner meta.Object) *PersistentVolumeClaim {
-	return &PersistentVolumeClaim{client: c.client, scheme: c.scheme, name: name, owner: owner}
+func (c *claims) New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim {
+	return &claim{client: c.client, scheme: c.scheme, name: name, owner: owner}
 }
 
-type PersistentVolumeClaim struct {
+type claim struct {
 	client client.Client
 	scheme *runtime.Scheme
 	name   types.NamespacedName
@@ -36,15 +46,15 @@ type PersistentVolumeClaim struct {
 	size   resource.Quantity
 }
 
-func (c *PersistentVolumeClaim) SetStoragePath(path string) {
+func (c *claim) SetStoragePath(path string) {
 	c.path = path
 }
 
-func (c *PersistentVolumeClaim) SetStorageSize(quantity resource.Quantity) {
+func (c *claim) SetStorageSize(quantity resource.Quantity) {
 	c.size = quantity
 }
 
-func (c *PersistentVolumeClaim) EnsureExists() error {
+func (c *claim) EnsureExists() error {
 	if c.path != "" {
 		pv := &core.PersistentVolume{
 			ObjectMeta: meta.ObjectMeta{
@@ -83,8 +93,4 @@ func (c *PersistentVolumeClaim) EnsureExists() error {
 	})
 
 	return err
-}
-
-func (c *PersistentVolumeClaim) WithPV() {
-
 }

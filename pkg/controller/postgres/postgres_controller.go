@@ -72,7 +72,7 @@ type ReconcilePostgres struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	claims *volumeclaims.PersistentVolumeClaims
+	claims volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a Postgres object and makes changes based on the state read
@@ -195,7 +195,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					VolumeMounts: []core.VolumeMount{{
 						Name:      cr.Name + "-volume",
 						MountPath: "/var/lib/postgresql/data",
-						SubPath: "postgres",
+						SubPath:   "postgres",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},

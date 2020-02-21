@@ -86,12 +86,12 @@ type ReconcileKeystone struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     *volumeclaims.PersistentVolumeClaims
+	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // NewReconciler is used to create a new ReconcileKeystone
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims,
 ) *ReconcileKeystone {
 	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }

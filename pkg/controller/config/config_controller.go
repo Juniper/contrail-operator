@@ -179,7 +179,7 @@ type ReconcileConfig struct {
 	Client    client.Client
 	Scheme    *runtime.Scheme
 	Manager   manager.Manager
-	claims    *volumeclaims.PersistentVolumeClaims
+	claims    volumeclaims.PersistentVolumeClaims
 	podsReady *bool
 }
 

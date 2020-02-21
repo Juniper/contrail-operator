@@ -39,7 +39,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
 	return &ReconcileSwift{client: client, scheme: scheme, claims: claims}
 }
 
@@ -96,7 +96,7 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	claims *volumeclaims.PersistentVolumeClaims
+	claims volumeclaims.PersistentVolumeClaims
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {

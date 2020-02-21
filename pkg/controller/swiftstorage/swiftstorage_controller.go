@@ -39,7 +39,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 }
 
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims,
 ) *ReconcileSwiftStorage {
 	return &ReconcileSwiftStorage{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
@@ -76,7 +76,7 @@ type ReconcileSwiftStorage struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     *volumeclaims.PersistentVolumeClaims
+	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read

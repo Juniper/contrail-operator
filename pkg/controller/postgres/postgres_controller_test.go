@@ -41,7 +41,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -69,7 +69,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -86,7 +86,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
@@ -106,10 +106,11 @@ func TestPostgresController(t *testing.T) {
 	t.Run("postgres persistent volume", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		claims := volumeclaims.NewFake()
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: claims,
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
@@ -128,7 +129,11 @@ func TestPostgresController(t *testing.T) {
 			assertVolumeMountedToContainer(t, fakeClient, name, podName)
 		})
 		t.Run("should create persistent volume claim", func(t *testing.T) {
-			assertClaimCreated(t, fakeClient, name)
+			claimName := types.NamespacedName{
+				Name:      name.Name + "-pv-claim",
+				Namespace: name.Namespace,
+			}
+			assert.True(t, claims.Contains(claimName))
 		})
 
 	})
@@ -221,19 +226,4 @@ func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.Na
 
 	assert.NoError(t, err)
 	assert.True(t, mounted)
-}
-
-func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
-	postgres := contrail.Postgres{}
-	err := fakeClient.Get(context.TODO(), name, &postgres)
-	assert.NoError(t, err)
-
-	claimName := types.NamespacedName{
-		Name:      name.Name + "-pv-claim",
-		Namespace: name.Namespace,
-	}
-
-	claim := core.PersistentVolumeClaim{}
-	err = fakeClient.Get(context.TODO(), claimName, &claim)
-	assert.NoError(t, err)
 }
