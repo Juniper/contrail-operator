@@ -131,6 +131,40 @@ func TestEnsureExists(t *testing.T) {
 		}
 	})
 
+	t.Run("when no storage size is given", func(t *testing.T) {
+		// given
+		claimName = types.NamespacedName{
+			Namespace: "default",
+			Name:      "test",
+		}
+		pvKey := client.ObjectKey{
+			Namespace: "default",
+			Name:      "test-pv",
+		}
+		defaultCapacity := resource.MustParse("5Gi")
+		cl := fake.NewFakeClientWithScheme(operatorScheme)
+		claims := volumeclaims.New(cl, operatorScheme)
+		claim := claims.New(claimName, owner)
+		claim.SetStoragePath("/path/to/dir")
+		// when
+		err := claim.EnsureExists()
+		require.NoError(t, err)
+
+		t.Run("should create pv with default capacity", func(t *testing.T) {
+			pv := &core.PersistentVolume{}
+			err = cl.Get(context.Background(), pvKey, pv)
+			require.NoError(t, err)
+			assert.Equal(t, defaultCapacity, pv.Spec.Capacity[core.ResourceStorage])
+		})
+
+		t.Run("should create pvc with default capacity", func(t *testing.T) {
+			pvc := &core.PersistentVolumeClaim{}
+			err = cl.Get(context.Background(), claimName, pvc)
+			require.NoError(t, err)
+			assert.Equal(t, defaultCapacity, pvc.Spec.Resources.Requests[core.ResourceStorage])
+		})
+	})
+
 	t.Run("when storage size is given", func(t *testing.T) {
 		tests := map[string]struct {
 			size resource.Quantity

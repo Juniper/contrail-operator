@@ -34,7 +34,13 @@ type claims struct {
 }
 
 func (c *claims) New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim {
-	return &claim{client: c.client, scheme: c.scheme, name: name, owner: owner}
+	return &claim{
+		client: c.client,
+		scheme: c.scheme,
+		name:   name,
+		owner:  owner,
+		size:   resource.MustParse("5Gi"),
+	}
 }
 
 type claim struct {
