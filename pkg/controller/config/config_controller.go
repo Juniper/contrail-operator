@@ -267,13 +267,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			continue
 		}
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		quantity, err := resource.ParseQuantity(config.Spec.ServiceConfiguration.StorageSize)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 		claim := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}, config)
 		claim.SetStoragePath(config.Spec.ServiceConfiguration.StoragePath)
-		claim.SetStorageSize(quantity)
+		if config.Spec.ServiceConfiguration.StorageSize != "" {
+			quantity, err := resource.ParseQuantity(config.Spec.ServiceConfiguration.StorageSize)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			claim.SetStorageSize(quantity)
+		}
 		if err := claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
