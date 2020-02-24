@@ -251,6 +251,99 @@ func TestEnsureExists(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("should create volume node affinity with given node selector", func(t *testing.T) {
+		// given
+		tests := map[string]struct {
+			nodeSelector               map[string]string
+			expectedVolumeNodeAffinity core.VolumeNodeAffinity
+		}{
+			"nil node selector": {
+				nodeSelector: nil,
+				expectedVolumeNodeAffinity: core.VolumeNodeAffinity{
+					Required: &core.NodeSelector{
+						NodeSelectorTerms: []core.NodeSelectorTerm{{
+							MatchExpressions: nil,
+						}},
+					},
+				},
+			},
+			"empty map": {
+				nodeSelector: map[string]string{},
+				expectedVolumeNodeAffinity: core.VolumeNodeAffinity{
+					Required: &core.NodeSelector{
+						NodeSelectorTerms: []core.NodeSelectorTerm{{
+							MatchExpressions: nil,
+						}},
+					},
+				},
+			},
+			"one selector": {
+				nodeSelector: map[string]string{
+					"key": "value",
+				},
+				expectedVolumeNodeAffinity: core.VolumeNodeAffinity{
+					Required: &core.NodeSelector{
+						NodeSelectorTerms: []core.NodeSelectorTerm{{
+							MatchExpressions: []core.NodeSelectorRequirement{{
+								Key:      "key",
+								Operator: "In",
+								Values:   []string{"value"},
+							}},
+						}},
+					},
+				},
+			},
+			"two selectors": {
+				nodeSelector: map[string]string{
+					"key":       "value",
+					"other_key": "other_value",
+				},
+				expectedVolumeNodeAffinity: core.VolumeNodeAffinity{
+					Required: &core.NodeSelector{
+						NodeSelectorTerms: []core.NodeSelectorTerm{{
+							MatchExpressions: []core.NodeSelectorRequirement{{
+								Key:      "key",
+								Operator: "In",
+								Values:   []string{"value"},
+							}, {
+								Key:      "other_key",
+								Operator: "In",
+								Values:   []string{"other_value"},
+							}},
+						}},
+					},
+				},
+			},
+		}
+
+		claimName = types.NamespacedName{
+			Namespace: "default",
+			Name:      "test",
+		}
+		pvKey := client.ObjectKey{
+			Namespace: "default",
+			Name:      "test-pv",
+		}
+		for name, test := range tests{
+			t.Run(name, func(t *testing.T) {
+				cl := fake.NewFakeClientWithScheme(operatorScheme)
+				claims := volumeclaims.New(cl, operatorScheme)
+				claim := claims.New(claimName, owner)
+				claim.SetStoragePath("/path/to/dir")
+				claim.SetNodeSelector(test.nodeSelector)
+				// when
+				err := claim.EnsureExists()
+				// then
+				require.NoError(t, err)
+				// and
+				pv := &core.PersistentVolume{}
+				err = cl.Get(context.Background(), pvKey, pv)
+				require.NoError(t, err)
+				assert.NotNil(t, pv.Spec.NodeAffinity)
+				assert.Equal(t, test.expectedVolumeNodeAffinity, *pv.Spec.NodeAffinity)
+			})
+		}
+	})
 }
 
 func scheme(t *testing.T) *runtime.Scheme {
