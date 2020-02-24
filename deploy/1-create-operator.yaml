@@ -614,11 +614,14 @@ spec:
                   type: string
                 redisPort:
                   type: integer
-                storagePath:
-                  type: string
-                storageSize:
-                  pattern: ^([0-9]+)([KMGTPE]i)?$
-                  type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 zookeeperInstance:
                   type: string
               type: object
@@ -1698,11 +1701,14 @@ spec:
                               type: string
                             redisPort:
                               type: integer
-                            storagePath:
-                              type: string
-                            storageSize:
-                              pattern: ^([0-9]+)([KMGTPE]i)?$
-                              type: string
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                             zookeeperInstance:
                               type: string
                           type: object
@@ -2611,6 +2617,14 @@ spec:
                             API.
                           properties:
                             containers: {}
+                            ringsStorage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                             swiftProxyConfiguration:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.
@@ -2646,6 +2660,14 @@ spec:
                                   type: integer
                                 ringPersistentVolumeClaim:
                                   type: string
+                                storage:
+                                  properties:
+                                    path:
+                                      type: string
+                                    size:
+                                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                                      type: string
+                                  type: object
                                 swiftConfSecretName:
                                   type: string
                               type: object
@@ -3855,6 +3877,14 @@ spec:
               description: SwiftConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                ringsStorage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 swiftProxyConfiguration:
                   description: SwiftProxyConfiguration is the Spec for the keystone
                     API.
@@ -3890,6 +3920,14 @@ spec:
                       type: integer
                     ringPersistentVolumeClaim:
                       type: string
+                    storage:
+                      properties:
+                        path:
+                          type: string
+                        size:
+                          pattern: ^([0-9]+)([KMGTPE]i)?$
+                          type: string
+                      type: object
                     swiftConfSecretName:
                       type: string
                   type: object
@@ -3963,6 +4001,14 @@ spec:
                   type: integer
                 ringPersistentVolumeClaim:
                   type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 swiftConfSecretName:
                   type: string
               type: object
