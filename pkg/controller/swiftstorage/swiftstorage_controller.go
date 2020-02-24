@@ -103,8 +103,16 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		Namespace: swiftStorage.Namespace,
 		Name:      swiftStorage.Name + "-pv-claim",
 	}
-
-	if err := r.claims.New(claimNamespacedName, swiftStorage).EnsureExists(); err != nil {
+	claim := r.claims.New(claimNamespacedName, swiftStorage)
+	if swiftStorage.Spec.ServiceConfiguration.Storage.Size != "" {
+		size, err := swiftStorage.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		claim.SetStorageSize(size)
+	}
+	claim.SetStoragePath(swiftStorage.Spec.ServiceConfiguration.Storage.Path)
+	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 

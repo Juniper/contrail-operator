@@ -112,6 +112,11 @@ func TestPostgresController(t *testing.T) {
 			path         string
 			expectedSize *resource.Quantity
 		}{
+			"no size and path given": {},
+			"only size given": {
+				size:         "1Gi",
+				expectedSize: &quantity1Gi,
+			},
 			"size and path given": {
 				size:         "5Gi",
 				path:         "/path",
@@ -122,11 +127,6 @@ func TestPostgresController(t *testing.T) {
 				path:         "/other",
 				expectedSize: &quantity1Gi,
 			},
-			"only size given": {
-				size:         "1Gi",
-				expectedSize: &quantity1Gi,
-			},
-			"no size and path given": {},
 		}
 		for testName, test := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -171,7 +171,7 @@ func TestPostgresController(t *testing.T) {
 						Namespace: name.Namespace,
 					}
 					claim, ok := claims.Claim(claimName)
-					assert.True(t, ok, "missing claim")
+					require.True(t, ok, "missing claim")
 					assert.Equal(t, test.path, claim.StoragePath())
 					assert.Equal(t, test.expectedSize, claim.StorageSize())
 				})

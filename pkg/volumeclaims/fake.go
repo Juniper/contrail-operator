@@ -16,6 +16,13 @@ func NewFake() *Fake {
 	}
 }
 
+func (f *Fake) New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim {
+	return &FakeClaim{
+		name:         name,
+		storedClaims: f.storedClaims,
+	}
+}
+
 func (f *Fake) Contains(name types.NamespacedName) bool {
 	_, ok := f.storedClaims[name]
 	return ok
@@ -38,26 +45,19 @@ func (c *FakeClaim) StoragePath() string {
 	return c.path
 }
 
-func (f *FakeClaim) SetStoragePath(path string) {
-	f.path = path
+func (c *FakeClaim) SetStoragePath(path string) {
+	c.path = path
 }
 
-func (f *FakeClaim) StorageSize() *resource.Quantity {
-	return f.quantity
+func (c *FakeClaim) StorageSize() *resource.Quantity {
+	return c.quantity
 }
 
-func (f *FakeClaim) SetStorageSize(quantity resource.Quantity) {
-	f.quantity = &quantity
+func (c *FakeClaim) SetStorageSize(quantity resource.Quantity) {
+	c.quantity = &quantity
 }
 
-func (f *FakeClaim) EnsureExists() error {
-	f.storedClaims[f.name] = f
+func (c *FakeClaim) EnsureExists() error {
+	c.storedClaims[c.name] = c
 	return nil
-}
-
-func (f *Fake) New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim {
-	return &FakeClaim{
-		name:         name,
-		storedClaims: f.storedClaims,
-	}
 }
