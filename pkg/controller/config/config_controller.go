@@ -265,7 +265,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			continue
 		}
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		claim := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}, config)
+		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
+		claim := r.claims.New(claimName, config)
 		claim.SetStoragePath(config.Spec.ServiceConfiguration.Storage.Path)
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
 			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()

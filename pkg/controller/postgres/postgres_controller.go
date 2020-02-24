@@ -102,17 +102,25 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	namespacedName := types.NamespacedName{
+	claimName := types.NamespacedName{
 		Namespace: instance.Namespace,
 		Name:      instance.Name + "-pv-claim",
 	}
-
-	if err = r.claims.New(namespacedName, instance).EnsureExists(); err != nil {
+	claim := r.claims.New(claimName, instance)
+	claim.SetStoragePath(instance.Spec.Storage.Path)
+	if instance.Spec.Storage.Size != "" {
+		quantity, err := instance.Spec.Storage.SizeAsQuantity()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		claim.SetStorageSize(quantity)
+	}
+	if err = claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Define a new Pod object
-	pod := newPodForCR(instance, namespacedName.Name)
+	pod := newPodForCR(instance, claimName.Name)
 
 	// Set Postgres instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
