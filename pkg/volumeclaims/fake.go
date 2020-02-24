@@ -39,6 +39,11 @@ type FakeClaim struct {
 
 	path     string
 	quantity *resource.Quantity
+	nodeSelectors map[string]string
+}
+
+func (c *FakeClaim) SetNodeSelector(nodeSelectors map[string]string) {
+	c.nodeSelectors = nodeSelectors
 }
 
 func (c *FakeClaim) StoragePath() string {
