@@ -870,6 +870,14 @@ spec:
                               type: string
                             postgresInstance:
                               type: string
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                           type: object
                       required:
                       - commonConfiguration
@@ -1139,6 +1147,14 @@ spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
                         containers: {}
+                        storage:
+                          properties:
+                            path:
+                              type: string
+                            size:
+                              pattern: ^([0-9]+)([KMGTPE]i)?$
+                              type: string
+                          type: object
                       type: object
                     status:
                       description: PostgresStatus defines the observed state of Postgres

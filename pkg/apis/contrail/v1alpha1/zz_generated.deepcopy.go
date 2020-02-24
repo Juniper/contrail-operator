@@ -1090,6 +1090,7 @@ func (in *KeystoneConfiguration) DeepCopyInto(out *KeystoneConfiguration) {
 			(*out)[key] = outVal
 		}
 	}
+	out.Storage = in.Storage
 	return
 }
 
@@ -1874,6 +1875,7 @@ func (in *PostgresSpec) DeepCopyInto(out *PostgresSpec) {
 			(*out)[key] = outVal
 		}
 	}
+	out.Storage = in.Storage
 	return
 }
 
