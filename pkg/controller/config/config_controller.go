@@ -4,8 +4,6 @@ import (
 	"context"
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
@@ -268,9 +266,9 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
 		claim := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}, config)
-		claim.SetStoragePath(config.Spec.ServiceConfiguration.StoragePath)
-		if config.Spec.ServiceConfiguration.StorageSize != "" {
-			quantity, err := resource.ParseQuantity(config.Spec.ServiceConfiguration.StorageSize)
+		claim.SetStoragePath(config.Spec.ServiceConfiguration.Storage.Path)
+		if config.Spec.ServiceConfiguration.Storage.Size != "" {
+			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
 			if err != nil {
 				return reconcile.Result{}, err
 			}

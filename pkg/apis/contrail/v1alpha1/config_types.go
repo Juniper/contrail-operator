@@ -60,9 +60,7 @@ type ConfigConfiguration struct {
 	LogLevel          string                `json:"logLevel,omitempty"`
 	AdminUsername     string                `json:"adminUsername,omitempty"`
 	AdminPassword     string                `json:"adminPassword,omitempty"`
-	// +kubebuilder:validation:Pattern=^([0-9]+)([KMGTPE]i)?$
-	StorageSize string `json:"storageSize,omitempty"`
-	StoragePath string `json:"storagePath,omitempty"`
+	Storage           Storage               `json:"storage,omitempty"`
 }
 
 // +k8s:openapi-gen=true
