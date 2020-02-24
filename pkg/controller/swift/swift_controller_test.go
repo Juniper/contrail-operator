@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	batch "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/swift"
@@ -70,45 +71,91 @@ func TestSwiftController(t *testing.T) {
 	}
 
 	t.Run("when Swift CR is reconciled", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
-		claims := volumeclaims.NewFake()
-		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
-		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
-		// then
-		assert.NoError(t, err)
+		quantity5Gi := resource.MustParse("5Gi")
+		quantity1Gi := resource.MustParse("1Gi")
+		tests := map[string]struct {
+			size         string
+			path         string
+			expectedSize *resource.Quantity
+		}{
+			"no size and path given": {},
+			"only size given": {
+				size:         "1Gi",
+				expectedSize: &quantity1Gi,
+			},
+			"size and path given": {
+				size:         "5Gi",
+				path:         "/path",
+				expectedSize: &quantity5Gi,
+			},
+			"size and path given 2": {
+				size:         "1Gi",
+				path:         "/other",
+				expectedSize: &quantity1Gi,
+			},
+		}
+		for testName, test := range tests {
+			t.Run(testName, func(t *testing.T) {
+				swiftCR := &contrail.Swift{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: swiftName.Namespace,
+						Name:      swiftName.Name,
+					},
+					Spec: contrail.SwiftSpec{
+						ServiceConfiguration: contrail.SwiftConfiguration{
+							RingsStorage: contrail.Storage{
+								Size: test.size,
+								Path: test.path,
+							},
+							SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+								Device: "dev",
+							},
+						},
+					},
+				}
+				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
+				claims := volumeclaims.NewFake()
+				reconciler := swift.NewReconciler(fakeClient, scheme, claims)
+				// when
+				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
+				// then
+				assert.NoError(t, err)
 
-		t.Run("should create secret for swift config", func(t *testing.T) {
-			secret := &core.Secret{}
-			err = fakeClient.Get(context.Background(), types.NamespacedName{
-				Name:      "swift-conf",
-				Namespace: "default",
-			}, secret)
+				t.Run("should create secret for swift config", func(t *testing.T) {
+					secret := &core.Secret{}
+					err = fakeClient.Get(context.Background(), types.NamespacedName{
+						Name:      "swift-conf",
+						Namespace: "default",
+					}, secret)
 
-			assert.NoError(t, err)
-			assert.NotEmpty(t, secret)
-			expectedOwnerRefs := []v1.OwnerReference{{
-				APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
-			}}
-			assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
-		})
+					assert.NoError(t, err)
+					assert.NotEmpty(t, secret)
+					expectedOwnerRefs := []v1.OwnerReference{{
+						APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+					}}
+					assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
+				})
 
-		t.Run("should create SwiftStorage CR", func(t *testing.T) {
-			assertSwiftStorageCRExists(t, fakeClient, swiftCR)
-		})
+				t.Run("should create SwiftStorage CR", func(t *testing.T) {
+					assertSwiftStorageCRExists(t, fakeClient, swiftCR)
+				})
 
-		t.Run("should create SwiftProxy CR", func(t *testing.T) {
-			assertSwiftProxyCRExists(t, fakeClient, swiftCR)
-		})
+				t.Run("should create SwiftProxy CR", func(t *testing.T) {
+					assertSwiftProxyCRExists(t, fakeClient, swiftCR)
+				})
 
-		t.Run("should create rings persistent volume claim", func(t *testing.T) {
-			claimName := types.NamespacedName{
-				Name:      "test-swift-rings",
-				Namespace: swiftName.Namespace,
-			}
-			assert.True(t, claims.Contains(claimName))
-		})
+				t.Run("should create rings persistent volume claim", func(t *testing.T) {
+					claimName := types.NamespacedName{
+						Name:      "test-swift-rings",
+						Namespace: swiftName.Namespace,
+					}
+					claim, ok := claims.Claim(claimName)
+					require.True(t, ok, "missing claim")
+					assert.Equal(t, test.path, claim.StoragePath())
+					assert.Equal(t, test.expectedSize, claim.StorageSize())
+				})
+			})
+		}
 	})
 
 	t.Run("when Swift CR was reconciled (secret, storage, proxy exist)", func(t *testing.T) {

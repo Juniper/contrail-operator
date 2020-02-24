@@ -184,10 +184,6 @@ func TestSwiftStorageController(t *testing.T) {
 					},
 					Spec: contrail.SwiftStorageSpec{
 						ServiceConfiguration: contrail.SwiftStorageConfiguration{
-							AccountBindPort:           6001,
-							ContainerBindPort:         6002,
-							ObjectBindPort:            6000,
-							Device:                    "dev",
 							RingPersistentVolumeClaim: "test-rings-claim",
 							Storage: contrail.Storage{
 								Size: test.size,
