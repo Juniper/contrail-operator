@@ -134,6 +134,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		ringsClaim.SetStorageSize(size)
 	}
 	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
+	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err := ringsClaim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}

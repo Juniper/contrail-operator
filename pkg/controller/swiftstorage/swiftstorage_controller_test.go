@@ -208,6 +208,7 @@ func TestSwiftStorageController(t *testing.T) {
 					require.True(t, ok, "missing claim")
 					assert.Equal(t, test.path, claim.StoragePath())
 					assert.Equal(t, test.expectedSize, claim.StorageSize())
+					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
 				})
 
 				t.Run("should add volume to StatefulSet", func(t *testing.T) {

@@ -115,6 +115,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 		claim.SetStorageSize(quantity)
 	}
+	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err = claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
