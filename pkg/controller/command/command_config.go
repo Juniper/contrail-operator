@@ -279,7 +279,7 @@ server:
   log_api: true
   log_body: true
   address: ":9091"
-  enable_vnc_replication: false
+  enable_vnc_replication: true
   enable_gzip: false
   tls:
     enabled: false

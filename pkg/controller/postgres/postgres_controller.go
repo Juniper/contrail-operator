@@ -159,7 +159,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	}
 
 	image := "localhost:5000/postgres"
-	var command []string
+	command := []string{"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical"}
 	if c := cr.Spec.Containers["postgres"]; c != nil {
 		if c.Image != "" {
 			image = c.Image
@@ -195,7 +195,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					VolumeMounts: []core.VolumeMount{{
 						Name:      cr.Name + "-volume",
 						MountPath: "/var/lib/postgresql/data",
-						SubPath: "postgres",
+						SubPath:   "postgres",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
