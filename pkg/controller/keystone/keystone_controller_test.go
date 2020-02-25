@@ -5,9 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -265,6 +267,67 @@ func TestKeystone(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, k.Status)
 		})
 	}
+
+	t.Run("should create pvc", func(t *testing.T) {
+		quantity5Gi := resource.MustParse("5Gi")
+		quantity1Gi := resource.MustParse("1Gi")
+		tests := map[string]struct {
+			size         string
+			path         string
+			expectedSize *resource.Quantity
+		}{
+			"no size and path given": {},
+			"only size given": {
+				size:         "1Gi",
+				expectedSize: &quantity1Gi,
+			},
+			"size and path given": {
+				size:         "5Gi",
+				path:         "/path",
+				expectedSize: &quantity5Gi,
+			},
+			"size and path given 2": {
+				size:         "1Gi",
+				path:         "/other",
+				expectedSize: &quantity1Gi,
+			},
+		}
+		for testName, test := range tests {
+			t.Run(testName, func(t *testing.T) {
+				k := newKeystone()
+				k.Spec.ServiceConfiguration.Storage.Path = test.path
+				k.Spec.ServiceConfiguration.Storage.Size = test.size
+				postgres := &contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
+					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				}
+				memcached := newMemcached()
+				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached)
+				claims := volumeclaims.NewFake()
+				r := keystone.NewReconciler(
+					cl, scheme, k8s.New(cl, scheme), claims,
+				)
+				// when
+				_, err := r.Reconcile(reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      "keystone",
+						Namespace: "default",
+					},
+				})
+				require.NoError(t, err)
+				// then
+				claimName := types.NamespacedName{
+					Name:      "keystone-pv-claim",
+					Namespace: "default",
+				}
+				claim, ok := claims.Claim(claimName)
+				require.True(t, ok, "missing claim")
+				assert.Equal(t, test.path, claim.StoragePath())
+				assert.Equal(t, test.expectedSize, claim.StorageSize())
+				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
+			})
+		}
+	})
 }
 
 func newKeystone() *contrail.Keystone {
