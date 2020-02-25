@@ -121,7 +121,6 @@ func (c *claim) EnsureExists() error {
 		},
 	}
 
-	storageClassName := ""
 	pvc.Spec = core.PersistentVolumeClaimSpec{
 		AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
 		Resources: core.ResourceRequirements{
@@ -129,7 +128,11 @@ func (c *claim) EnsureExists() error {
 				core.ResourceStorage: c.size,
 			},
 		},
-		StorageClassName: &storageClassName,
+	}
+
+	if c.path != "" {
+		storageClassName := ""
+		pvc.Spec.StorageClassName = &storageClassName
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
