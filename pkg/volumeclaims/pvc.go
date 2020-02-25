@@ -91,6 +91,9 @@ func (c *claim) EnsureExists() error {
 			ObjectMeta: meta.ObjectMeta{
 				Name:      c.name.Name + "-pv",
 				Namespace: c.name.Namespace,
+				Labels: map[string]string{
+					"claim-name": c.name.Name,
+				},
 			},
 			Spec: core.PersistentVolumeSpec{
 				Capacity: map[core.ResourceName]resource.Quantity{
@@ -133,6 +136,14 @@ func (c *claim) EnsureExists() error {
 	if c.path != "" {
 		storageClassName := ""
 		pvc.Spec.StorageClassName = &storageClassName
+
+		if pvc.Spec.Selector == nil {
+			pvc.Spec.Selector = &meta.LabelSelector{
+				MatchLabels: map[string]string{},
+			}
+		}
+
+		pvc.Spec.Selector.MatchLabels["claim-name"] = c.name.Name
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), c.client, pvc, func() error {
