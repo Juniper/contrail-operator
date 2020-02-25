@@ -37,9 +37,13 @@ type FakeClaim struct {
 	name         types.NamespacedName
 	storedClaims map[types.NamespacedName]*FakeClaim
 
-	path     string
-	quantity *resource.Quantity
+	path          string
+	quantity      *resource.Quantity
 	nodeSelectors map[string]string
+}
+
+func (c *FakeClaim) NodeSelector() map[string]string {
+	return c.nodeSelectors
 }
 
 func (c *FakeClaim) SetNodeSelector(nodeSelectors map[string]string) {

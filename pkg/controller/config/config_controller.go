@@ -275,6 +275,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			claim.SetStorageSize(quantity)
 		}
+		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
 		if err := claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
