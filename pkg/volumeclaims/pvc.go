@@ -87,6 +87,7 @@ func (c *claim) SetNodeSelector(nodeSelectors map[string]string) {
 func (c *claim) EnsureExists() error {
 	if c.path != "" {
 		volumeMode := core.PersistentVolumeFilesystem
+		hostPathType := core.HostPathDirectoryOrCreate
 		pv := &core.PersistentVolume{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      c.name.Name + "-pv",
@@ -106,8 +107,9 @@ func (c *claim) EnsureExists() error {
 				PersistentVolumeReclaimPolicy: core.PersistentVolumeReclaimDelete,
 				NodeAffinity:                  c.volumeNodeAffinity,
 				PersistentVolumeSource: core.PersistentVolumeSource{
-					Local: &core.LocalVolumeSource{
+					HostPath: &core.HostPathVolumeSource{
 						Path: c.path,
+						Type: &hostPathType,
 					},
 				},
 			},
