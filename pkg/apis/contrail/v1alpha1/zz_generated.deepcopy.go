@@ -176,6 +176,7 @@ func (in *CassandraConfiguration) DeepCopyInto(out *CassandraConfiguration) {
 		*out = new(bool)
 		**out = **in
 	}
+	out.Storage = in.Storage
 	return
 }
 

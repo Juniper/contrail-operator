@@ -297,12 +297,16 @@ spec:
                   type: integer
                 startRPC:
                   type: boolean
-                storagePath:
-                  type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 storagePort:
                   type: integer
-                storageSize:
-                  type: string
               type: object
           required:
           - commonConfiguration
@@ -1408,12 +1412,16 @@ spec:
                                 type: integer
                               startRPC:
                                 type: boolean
-                              storagePath:
-                                type: string
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                               storagePort:
                                 type: integer
-                              storageSize:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration

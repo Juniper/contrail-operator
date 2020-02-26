@@ -235,23 +235,16 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 							Format: "",
 						},
 					},
-					"storageSize": {
+					"storage": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"storagePath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 
