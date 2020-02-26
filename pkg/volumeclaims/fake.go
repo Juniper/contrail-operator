@@ -18,8 +18,10 @@ func NewFake() *Fake {
 
 func (f *Fake) New(name types.NamespacedName, owner meta.Object) PersistentVolumeClaim {
 	return &FakeClaim{
-		name:         name,
-		storedClaims: f.storedClaims,
+		name: name,
+		createUpdateClaim: func(name types.NamespacedName, fakeClaim *FakeClaim) {
+			f.storedClaims[name] = fakeClaim
+		},
 	}
 }
 
@@ -34,8 +36,8 @@ func (f *Fake) Claim(name types.NamespacedName) (*FakeClaim, bool) {
 }
 
 type FakeClaim struct {
-	name         types.NamespacedName
-	storedClaims map[types.NamespacedName]*FakeClaim
+	name              types.NamespacedName
+	createUpdateClaim func(name types.NamespacedName, claim *FakeClaim)
 
 	path          string
 	quantity      *resource.Quantity
@@ -67,6 +69,6 @@ func (c *FakeClaim) SetStorageSize(quantity resource.Quantity) {
 }
 
 func (c *FakeClaim) EnsureExists() error {
-	c.storedClaims[c.name] = c
+	c.createUpdateClaim(c.name, c)
 	return nil
 }
