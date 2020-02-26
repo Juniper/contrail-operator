@@ -11,6 +11,7 @@ import (
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
 	Containers map[string]*Container `json:"containers,omitempty"`
+	Storage    Storage               `json:"storage,omitempty"`
 }
 
 // PostgresStatus defines the observed state of Postgres

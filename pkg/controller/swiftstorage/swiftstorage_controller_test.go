@@ -10,6 +10,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,7 +58,7 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("when SwiftStorage CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -98,7 +99,7 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("reconciliation should be idempotent", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, newExpectedAccountAuditorConfigMap())
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -121,7 +122,7 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Name = statefulSetName.Name
 		existingStatefulSet.Namespace = statefulSetName.Namespace
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -140,7 +141,7 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Status.ReadyReplicas = 1
 		existingStatefulSet.Status.Replicas = 1
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -151,52 +152,97 @@ func TestSwiftStorageController(t *testing.T) {
 	})
 
 	t.Run("persistent volume claims", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
-		// when
-		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.NoError(t, err)
-		t.Run("should create persistent volume claim", func(t *testing.T) {
-			claimName := types.NamespacedName{
-				Name:      name.Name + "-pv-claim",
-				Namespace: name.Namespace,
-			}
-			assertClaimCreated(t, fakeClient, claimName)
-		})
-
-		t.Run("should add volume to StatefulSet", func(t *testing.T) {
-			expectedVolume := core.Volume{
-				Name: "devices-mount-point-volume",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: name.Name + "-pv-claim",
+		quantity5Gi := resource.MustParse("5Gi")
+		quantity1Gi := resource.MustParse("1Gi")
+		tests := map[string]struct {
+			size         string
+			path         string
+			expectedSize *resource.Quantity
+		}{
+			"no size and path given": {},
+			"only size given": {
+				size:         "1Gi",
+				expectedSize: &quantity1Gi,
+			},
+			"size and path given": {
+				size:         "5Gi",
+				path:         "/path",
+				expectedSize: &quantity5Gi,
+			},
+			"size and path given 2": {
+				size:         "1Gi",
+				path:         "/other",
+				expectedSize: &quantity1Gi,
+			},
+		}
+		for testName, test := range tests {
+			t.Run(testName, func(t *testing.T) {
+				swiftStorageCR := &contrail.SwiftStorage{
+					ObjectMeta: meta.ObjectMeta{
+						Namespace: name.Namespace,
+						Name:      name.Name,
 					},
-				},
-			}
-			assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
-		})
-
-		t.Run("should add rings volume to StatefulSet", func(t *testing.T) {
-			expectedVolume := core.Volume{
-				Name: "rings",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: "test-rings-claim",
-						ReadOnly:  true,
+					Spec: contrail.SwiftStorageSpec{
+						ServiceConfiguration: contrail.SwiftStorageConfiguration{
+							RingPersistentVolumeClaim: "test-rings-claim",
+							Storage: contrail.Storage{
+								Size: test.size,
+								Path: test.path,
+							},
+						},
 					},
-				},
-			}
-			assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
-		})
+				}
+				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+				claims := volumeclaims.NewFake()
+				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
+				// when
+				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+				// then
+				assert.NoError(t, err)
+				t.Run("should create persistent volume claim", func(t *testing.T) {
+					claimName := types.NamespacedName{
+						Name:      name.Name + "-pv-claim",
+						Namespace: name.Namespace,
+					}
+					claim, ok := claims.Claim(claimName)
+					require.True(t, ok, "missing claim")
+					assert.Equal(t, test.path, claim.StoragePath())
+					assert.Equal(t, test.expectedSize, claim.StorageSize())
+					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
+				})
+
+				t.Run("should add volume to StatefulSet", func(t *testing.T) {
+					expectedVolume := core.Volume{
+						Name: "devices-mount-point-volume",
+						VolumeSource: core.VolumeSource{
+							PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+								ClaimName: name.Name + "-pv-claim",
+							},
+						},
+					}
+					assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
+				})
+
+				t.Run("should add rings volume to StatefulSet", func(t *testing.T) {
+					expectedVolume := core.Volume{
+						Name: "rings",
+						VolumeSource: core.VolumeSource{
+							PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+								ClaimName: "test-rings-claim",
+								ReadOnly:  true,
+							},
+						},
+					}
+					assertVolumeMountedToSTS(t, fakeClient, statefulSetName, expectedVolume)
+				})
+			})
+		}
 	})
 
 	t.Run("should create all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -209,7 +255,7 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, setCustomImages(*swiftStorageCR))
 
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -221,7 +267,7 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount device mount point to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -238,7 +284,7 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount swift conf volume mount to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -256,7 +302,7 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount rings volume mount to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		claims := volumeclaims.New(fakeClient, scheme)
+		claims := volumeclaims.NewFake()
 		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
@@ -293,7 +339,7 @@ func TestSwiftStorageController(t *testing.T) {
 			t.Run(testName, func(t *testing.T) {
 				// given
 				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-				claims := volumeclaims.New(fakeClient, scheme)
+				claims := volumeclaims.NewFake()
 				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 				// when
@@ -451,12 +497,6 @@ use = egg:swift#account
 
 [account-auditor]
 `
-
-func assertClaimCreated(t *testing.T, fakeClient client.Client, claimName types.NamespacedName) {
-	claim := core.PersistentVolumeClaim{}
-	err := fakeClient.Get(context.Background(), claimName, &claim)
-	assert.NoError(t, err)
-}
 
 func assertVolumeMountedToSTS(t *testing.T, c client.Client, stsName types.NamespacedName, expectedVolume core.Volume) {
 	sts := apps.StatefulSet{}

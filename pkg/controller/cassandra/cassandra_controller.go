@@ -221,7 +221,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	cassandraDefaultConfiguration := cassandraDefaultConfigurationInterface.(v1alpha1.CassandraConfiguration)
 
 	storageResource := corev1.ResourceStorage
-	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.StorageSize)
+	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.Storage.Size)
 	storageClassName := "local-storage"
 	statefulSet.Spec.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -307,7 +307,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	initHostPathType := corev1.HostPathType("DirectoryOrCreate")
 	initHostPathSource := &corev1.HostPathVolumeSource{
-		Path: cassandraDefaultConfiguration.StoragePath,
+		Path: cassandraDefaultConfiguration.Storage.Path,
 		Type: &initHostPathType,
 	}
 	initVolume := corev1.Volume{
@@ -348,7 +348,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-init",
-				MountPath: cassandraDefaultConfiguration.StoragePath,
+				MountPath: cassandraDefaultConfiguration.Storage.Path,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
@@ -425,7 +425,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	localVolumeSource := corev1.LocalVolumeSource{
-		Path: cassandraDefaultConfiguration.StoragePath,
+		Path: cassandraDefaultConfiguration.Storage.Path,
 	}
 
 	replicasInt := int(*instance.Spec.CommonConfiguration.Replicas)

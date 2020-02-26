@@ -235,23 +235,16 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraConfiguration(ref common.Referen
 							Format: "",
 						},
 					},
-					"storageSize": {
+					"storage": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"storagePath": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 
@@ -701,11 +694,16 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 							Format: "",
 						},
 					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 
@@ -1235,11 +1233,16 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 							},
 						},
 					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 
@@ -1842,11 +1845,16 @@ func schema_pkg_apis_contrail_v1alpha1_PostgresSpec(ref common.ReferenceCallback
 							},
 						},
 					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 
@@ -2495,6 +2503,11 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 							},
 						},
 					},
+					"ringsStorage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
+						},
+					},
 					"swiftStorageConfiguration": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"),
@@ -2510,7 +2523,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration", "./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage", "./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration", "./pkg/apis/contrail/v1alpha1.SwiftStorageConfiguration"},
 	}
 }
 
@@ -2809,11 +2822,16 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStorageConfiguration(ref common.Refe
 							Format: "",
 						},
 					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/contrail/v1alpha1.Container"},
+			"./pkg/apis/contrail/v1alpha1.Container", "./pkg/apis/contrail/v1alpha1.Storage"},
 	}
 }
 

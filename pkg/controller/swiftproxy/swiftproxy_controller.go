@@ -88,7 +88,7 @@ type ReconcileSwiftProxy struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     *volumeclaims.PersistentVolumeClaims
+	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftProxy object and makes changes based on the state read

@@ -39,7 +39,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme, claims *volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
 	return &ReconcileSwift{client: client, scheme: scheme, claims: claims}
 }
 
@@ -96,7 +96,7 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	claims *volumeclaims.PersistentVolumeClaims
+	claims volumeclaims.PersistentVolumeClaims
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -121,11 +121,21 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, nil
 	}
 
-	ringsClaim := types.NamespacedName{
+	ringsClaimName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-rings",
 	}
-	if err := r.claims.New(ringsClaim, swift).EnsureExists(); err != nil {
+	ringsClaim := r.claims.New(ringsClaimName, swift)
+	if swift.Spec.ServiceConfiguration.RingsStorage.Size != "" {
+		size, err := swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		ringsClaim.SetStorageSize(size)
+	}
+	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
+	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
+	if err := ringsClaim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -134,15 +144,15 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
+	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, ringsClaim.Name); err != nil {
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if result, err := r.reconcileRings(swift, ringsClaim.Name); err != nil || result.Requeue {
+	if result, err := r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
 		return result, err
 	}
 

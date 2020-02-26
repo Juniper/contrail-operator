@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"os"
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -177,7 +178,7 @@ type ReconcileConfig struct {
 	Client    client.Client
 	Scheme    *runtime.Scheme
 	Manager   manager.Manager
-	claims    *volumeclaims.PersistentVolumeClaims
+	claims    volumeclaims.PersistentVolumeClaims
 	podsReady *bool
 }
 
@@ -265,8 +266,21 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			continue
 		}
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		if err := r.claims.New(types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName},
-			config).EnsureExists(); err != nil {
+		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
+		claim := r.claims.New(claimName, config)
+		if config.Spec.ServiceConfiguration.Storage.Path != "" {
+			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
+			claim.SetStoragePath(path)
+		}
+		if config.Spec.ServiceConfiguration.Storage.Size != "" {
+			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			claim.SetStorageSize(quantity)
+		}
+		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
+		if err := claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -331,7 +345,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 /usr/bin/rm -f /etc/contrail/contrail-fabric-ansible.conf; ln -s /etc/mycontrail/contrail-fabric-ansible.conf.${POD_IP} /etc/contrail/contrail-fabric-ansible.conf;
 /usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf
 `
-		command := []string{"bash", "-c", deviceManagerCommand}
+			command := []string{"bash", "-c", deviceManagerCommand}
 			if config.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {

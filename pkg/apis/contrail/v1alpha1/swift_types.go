@@ -14,6 +14,7 @@ type SwiftSpec struct {
 // +k8s:openapi-gen=true
 type SwiftConfiguration struct {
 	Containers                map[string]*Container     `json:"containers,omitempty"`
+	RingsStorage              Storage                   `json:"ringsStorage,omitempty"`
 	SwiftStorageConfiguration SwiftStorageConfiguration `json:"swiftStorageConfiguration"`
 	SwiftProxyConfiguration   SwiftProxyConfiguration   `json:"swiftProxyConfiguration"`
 }

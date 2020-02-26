@@ -26,6 +26,7 @@ type SwiftStorageConfiguration struct {
 	Device                    string                `json:"device,omitempty"`
 	Containers                map[string]*Container `json:"containers,omitempty"`
 	RingPersistentVolumeClaim string                `json:"ringPersistentVolumeClaim,omitempty"`
+	Storage                   Storage               `json:"storage,omitempty"`
 }
 
 // SwiftStorageStatus defines the observed state of SwiftStorage

@@ -39,7 +39,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 }
 
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims,
 ) *ReconcileSwiftStorage {
 	return &ReconcileSwiftStorage{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
@@ -76,7 +76,7 @@ type ReconcileSwiftStorage struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     *volumeclaims.PersistentVolumeClaims
+	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -103,8 +103,17 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		Namespace: swiftStorage.Namespace,
 		Name:      swiftStorage.Name + "-pv-claim",
 	}
-
-	if err := r.claims.New(claimNamespacedName, swiftStorage).EnsureExists(); err != nil {
+	claim := r.claims.New(claimNamespacedName, swiftStorage)
+	if swiftStorage.Spec.ServiceConfiguration.Storage.Size != "" {
+		size, err := swiftStorage.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		claim.SetStorageSize(size)
+	}
+	claim.SetStoragePath(swiftStorage.Spec.ServiceConfiguration.Storage.Path)
+	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
+	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 

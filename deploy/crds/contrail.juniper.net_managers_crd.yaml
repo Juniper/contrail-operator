@@ -244,12 +244,16 @@ spec:
                                 type: integer
                               startRPC:
                                 type: boolean
-                              storagePath:
-                                type: string
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                               storagePort:
                                 type: integer
-                              storageSize:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration
@@ -545,6 +549,14 @@ spec:
                               type: string
                             redisPort:
                               type: integer
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                             zookeeperInstance:
                               type: string
                           type: object
@@ -862,6 +874,14 @@ spec:
                               type: string
                             postgresInstance:
                               type: string
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                           type: object
                       required:
                       - commonConfiguration
@@ -1131,6 +1151,14 @@ spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
                         containers: {}
+                        storage:
+                          properties:
+                            path:
+                              type: string
+                            size:
+                              pattern: ^([0-9]+)([KMGTPE]i)?$
+                              type: string
+                          type: object
                       type: object
                     status:
                       description: PostgresStatus defines the observed state of Postgres
@@ -1453,6 +1481,14 @@ spec:
                             API.
                           properties:
                             containers: {}
+                            ringsStorage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                             swiftProxyConfiguration:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.
@@ -1488,6 +1524,14 @@ spec:
                                   type: integer
                                 ringPersistentVolumeClaim:
                                   type: string
+                                storage:
+                                  properties:
+                                    path:
+                                      type: string
+                                    size:
+                                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                                      type: string
+                                  type: object
                                 swiftConfSecretName:
                                   type: string
                               type: object

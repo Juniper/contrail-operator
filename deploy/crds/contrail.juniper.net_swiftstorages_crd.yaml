@@ -48,6 +48,14 @@ spec:
                   type: integer
                 ringPersistentVolumeClaim:
                   type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 swiftConfSecretName:
                   type: string
               type: object

@@ -86,12 +86,12 @@ type ReconcileKeystone struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     *volumeclaims.PersistentVolumeClaims
+	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // NewReconciler is used to create a new ReconcileKeystone
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims *volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims,
 ) *ReconcileKeystone {
 	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
 }
@@ -140,8 +140,17 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		Namespace: keystone.Namespace,
 		Name:      keystone.Name + "-pv-claim",
 	}
-
-	if err := r.claims.New(claimName, keystone).EnsureExists(); err != nil {
+	claim := r.claims.New(claimName, keystone)
+	if keystone.Spec.ServiceConfiguration.Storage.Size != "" {
+		size, err := keystone.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		claim.SetStorageSize(size)
+	}
+	claim.SetStoragePath(keystone.Spec.ServiceConfiguration.Storage.Path)
+	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
+	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -41,7 +42,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -69,7 +70,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -86,7 +87,7 @@ func TestPostgresController(t *testing.T) {
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+			claims: volumeclaims.NewFake(),
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
@@ -103,35 +104,82 @@ func TestPostgresController(t *testing.T) {
 		assertPostgresStatusNode(t, fakeClient, name, "1.1.1.1:5432")
 	})
 
-	t.Run("postgres persistent volume", func(t *testing.T) {
-		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-		reconcilePostgres := &ReconcilePostgres{
-			client: fakeClient,
-			scheme: scheme,
-			claims: volumeclaims.New(fakeClient, scheme),
+	t.Run("postgres persistent volume claim", func(t *testing.T) {
+		quantity5Gi := resource.MustParse("5Gi")
+		quantity1Gi := resource.MustParse("1Gi")
+		tests := map[string]struct {
+			size         string
+			path         string
+			expectedSize *resource.Quantity
+		}{
+			"no size and path given": {},
+			"only size given": {
+				size:         "1Gi",
+				expectedSize: &quantity1Gi,
+			},
+			"size and path given": {
+				size:         "5Gi",
+				path:         "/path",
+				expectedSize: &quantity5Gi,
+			},
+			"size and path given 2": {
+				size:         "1Gi",
+				path:         "/other",
+				expectedSize: &quantity1Gi,
+			},
 		}
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{
-			NamespacedName: name,
-		})
-		// when
-		makePodReady(t, fakeClient, podName)
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{
-			NamespacedName: name,
-		})
-		assert.NoError(t, err)
-		// then
-		t.Run("should add volume to pod", func(t *testing.T) {
-			assertVolumeMountedToPod(t, fakeClient, name, podName)
-		})
-		t.Run("should mount volume to container", func(t *testing.T) {
-			assertVolumeMountedToContainer(t, fakeClient, name, podName)
-		})
-		t.Run("should create persistent volume claim", func(t *testing.T) {
-			assertClaimCreated(t, fakeClient, name)
-		})
-
+		for testName, test := range tests {
+			t.Run(testName, func(t *testing.T) {
+				postgresCR := &contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{
+						Namespace: name.Namespace,
+						Name:      name.Name,
+					},
+					Spec: contrail.PostgresSpec{
+						Storage: contrail.Storage{
+							Size: test.size,
+							Path: test.path,
+						},
+					},
+				}
+				fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+				claims := volumeclaims.NewFake()
+				reconcilePostgres := &ReconcilePostgres{
+					client: fakeClient,
+					scheme: scheme,
+					claims: claims,
+				}
+				_, err = reconcilePostgres.Reconcile(reconcile.Request{
+					NamespacedName: name,
+				})
+				// when
+				makePodReady(t, fakeClient, podName)
+				_, err = reconcilePostgres.Reconcile(reconcile.Request{
+					NamespacedName: name,
+				})
+				assert.NoError(t, err)
+				// then
+				t.Run("should add volume to pod", func(t *testing.T) {
+					assertVolumeMountedToPod(t, fakeClient, name, podName)
+				})
+				t.Run("should mount volume to container", func(t *testing.T) {
+					assertVolumeMountedToContainer(t, fakeClient, name, podName)
+				})
+				t.Run("should create persistent volume claim", func(t *testing.T) {
+					claimName := types.NamespacedName{
+						Name:      name.Name + "-pv-claim",
+						Namespace: name.Namespace,
+					}
+					claim, ok := claims.Claim(claimName)
+					require.True(t, ok, "missing claim")
+					assert.Equal(t, test.path, claim.StoragePath())
+					assert.Equal(t, test.expectedSize, claim.StorageSize())
+					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
+				})
+			})
+		}
 	})
+
 }
 
 func assertPodExist(t *testing.T, c client.Client, name types.NamespacedName, containerImage string) {
@@ -221,19 +269,4 @@ func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.Na
 
 	assert.NoError(t, err)
 	assert.True(t, mounted)
-}
-
-func assertClaimCreated(t *testing.T, fakeClient client.Client, name types.NamespacedName) {
-	postgres := contrail.Postgres{}
-	err := fakeClient.Get(context.TODO(), name, &postgres)
-	assert.NoError(t, err)
-
-	claimName := types.NamespacedName{
-		Name:      name.Name + "-pv-claim",
-		Namespace: name.Namespace,
-	}
-
-	claim := core.PersistentVolumeClaim{}
-	err = fakeClient.Get(context.TODO(), claimName, &claim)
-	assert.NoError(t, err)
 }

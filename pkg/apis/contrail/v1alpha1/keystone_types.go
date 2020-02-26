@@ -18,6 +18,7 @@ type KeystoneConfiguration struct {
 	ListenPort        int                   `json:"listenPort,omitempty"`
 	PostgresInstance  string                `json:"postgresInstance,omitempty"`
 	Containers        map[string]*Container `json:"containers,omitempty"`
+	Storage           Storage               `json:"storage,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone

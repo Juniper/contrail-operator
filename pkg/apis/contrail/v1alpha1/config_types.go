@@ -60,6 +60,7 @@ type ConfigConfiguration struct {
 	LogLevel          string                `json:"logLevel,omitempty"`
 	AdminUsername     string                `json:"adminUsername,omitempty"`
 	AdminPassword     string                `json:"adminPassword,omitempty"`
+	Storage           Storage               `json:"storage,omitempty"`
 }
 
 // +k8s:openapi-gen=true

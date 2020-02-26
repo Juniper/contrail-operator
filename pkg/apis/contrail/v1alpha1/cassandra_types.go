@@ -53,8 +53,7 @@ type CassandraConfiguration struct {
 	MaxHeapSize    string                `json:"maxHeapSize,omitempty"`
 	MinHeapSize    string                `json:"minHeapSize,omitempty"`
 	StartRPC       *bool                 `json:"startRPC,omitempty"`
-	StorageSize    string                `json:"storageSize,omitempty"`
-	StoragePath    string                `json:"storagePath,omitempty"`
+	Storage        Storage               `json:"storage,omitempty"`
 }
 
 // CassandraStatus defines the status of the cassandra object.
@@ -301,15 +300,15 @@ func (c *Cassandra) ConfigurationParameters() interface{} {
 	var jmxPort int
 	var storagePort int
 	var sslStoragePort int
-	if c.Spec.ServiceConfiguration.StoragePath == "" {
-		cassandraConfiguration.StoragePath = "/var/lib/cassandra"
+	if c.Spec.ServiceConfiguration.Storage.Path == "" {
+		cassandraConfiguration.Storage.Path = "/var/lib/cassandra"
 	} else {
-		cassandraConfiguration.StoragePath = c.Spec.ServiceConfiguration.StoragePath
+		cassandraConfiguration.Storage.Path = c.Spec.ServiceConfiguration.Storage.Path
 	}
-	if c.Spec.ServiceConfiguration.StorageSize == "" {
-		cassandraConfiguration.StorageSize = "5Gi"
+	if c.Spec.ServiceConfiguration.Storage.Size == "" {
+		cassandraConfiguration.Storage.Size = "5Gi"
 	} else {
-		cassandraConfiguration.StorageSize = c.Spec.ServiceConfiguration.StorageSize
+		cassandraConfiguration.Storage.Size = c.Spec.ServiceConfiguration.Storage.Size
 	}
 	if c.Spec.ServiceConfiguration.Port != nil {
 		port = *c.Spec.ServiceConfiguration.Port
