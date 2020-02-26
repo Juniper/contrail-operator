@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"os"
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -267,7 +268,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
 		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
 		claim := r.claims.New(claimName, config)
-		claim.SetStoragePath(config.Spec.ServiceConfiguration.Storage.Path)
+		if config.Spec.ServiceConfiguration.Storage.Path != "" {
+			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
+			claim.SetStoragePath(path)
+		}
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
 			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
 			if err != nil {
