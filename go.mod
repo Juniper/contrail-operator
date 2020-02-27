@@ -7,6 +7,7 @@ require (
 	github.com/go-openapi/spec v0.19.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/operator-framework/operator-sdk v0.12.0
+	github.com/prometheus/common v0.4.1
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d

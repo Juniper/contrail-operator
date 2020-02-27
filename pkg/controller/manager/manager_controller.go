@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,7 +21,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_manager")
@@ -50,7 +51,7 @@ var resourcesList = []runtime.Object{
 func Add(mgr manager.Manager) error {
 	apiextensionsv1beta1.AddToScheme(scheme.Scheme)
 	var r reconcile.Reconciler
-	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache()}
+	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache(), kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -131,6 +132,7 @@ type ReconcileManager struct {
 	manager    manager.Manager
 	controller controller.Controller
 	cache      cache.Cache
+	kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reconciles the manager.
@@ -162,6 +164,18 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 		}
 	}
+
+	if instance.Spec.KeystoneSecretInstance == "" {
+		instance.Spec.KeystoneSecretInstance = instance.Name + "-admin-password"
+	}
+	adminPasswordSecretName := instance.Spec.KeystoneSecretInstance
+	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.client.Update(context.TODO(), instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Create CRDs
 	/*
 		cassandraCrdActive := false
@@ -510,7 +524,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
+		webuiService.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
 		cr.Labels = webuiService.ObjectMeta.Labels
@@ -538,6 +552,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			cr.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -751,6 +766,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		configService.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
 		cr.Labels = configService.ObjectMeta.Labels
@@ -780,6 +796,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			cr.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -790,7 +807,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					}
 				}
 			}
-
 			status := &v1alpha1.ServiceStatus{}
 			if instance.Status.Config != nil {
 				status = instance.Status.Config
@@ -1451,6 +1467,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	command := &v1alpha1.Command{}
 	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.Command.Spec
 		if command.Spec.ServiceConfiguration.ClusterName == "" {
@@ -1472,6 +1489,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 	keystone := &v1alpha1.Keystone{}
 	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta
 	keystone.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
@@ -1505,6 +1523,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	}
 	swift := &v1alpha1.Swift{}
 	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
+	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec

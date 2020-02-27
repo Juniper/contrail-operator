@@ -8,6 +8,7 @@ spec:
   commonConfiguration:
     hostNetwork: true
     replicas: 1
+  keystoneSecretInstance : cluster1-admin-password
   services:
     cassandras:
     - metadata:
@@ -184,8 +185,6 @@ spec:
           configAPIURL: https://kind-control-plane:8082
           telemetryURL: https://kind-control-plane:8081
           postgresInstance: postgres
-          adminUsername: admin
-          adminPassword: contrail123
           containers:
             api:
               image: registry:5000/contrail-command:1912-latest
@@ -248,7 +247,6 @@ spec:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
-            keystoneAdminPassword: "contrail123"
             swiftPassword: "swiftpass"
             containers:
               init:

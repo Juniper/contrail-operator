@@ -43,13 +43,12 @@ type WebuiSpec struct {
 // WebuiConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
-	ServiceAccount     string                `json:"serviceAccount,omitempty"`
-	ClusterRole        string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
-	AdminUsername      string                `json:"adminUsername,omitempty"`
-	AdminPassword      string                `json:"adminPassword,omitempty"`
+	Containers             map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance      string                `json:"cassandraInstance,omitempty"`
+	ServiceAccount         string                `json:"serviceAccount,omitempty"`
+	ClusterRole            string                `json:"clusterRole,omitempty"`
+	ClusterRoleBinding     string                `json:"clusterRoleBinding,omitempty"`
+	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -104,7 +103,10 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	webUIConfig := c.ConfigurationParameters()
+	webUIConfig, err := c.ConfigurationParameters(client)
+	if err != nil {
+		return err
+	}
 
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -178,20 +180,17 @@ func (c *Webui) CreateSecret(secretName string,
 		c)
 }
 
-func (c *Webui) ConfigurationParameters() *WebUIClusterConfiguration {
+func (c *Webui) ConfigurationParameters(client client.Client) (*WebUIClusterConfiguration, error) {
 	w := &WebUIClusterConfiguration{
 		AdminUsername: "admin",
-		AdminPassword: "contrail123",
 	}
-
-	if c.Spec.ServiceConfiguration.AdminUsername != "" {
-		w.AdminUsername = c.Spec.ServiceConfiguration.AdminUsername
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
+		return nil, err
 	}
-
-	if c.Spec.ServiceConfiguration.AdminPassword != "" {
-		w.AdminPassword = c.Spec.ServiceConfiguration.AdminPassword
-	}
-	return w
+	w.AdminPassword = string(adminPasswordSecret.Data["password"])
+	return w, nil
 }
 
 func (c *Webui) CreateConfigMap(configMapName string,

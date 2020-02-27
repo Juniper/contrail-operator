@@ -109,15 +109,13 @@ spec:
             serviceConfiguration:
               description: CommandConfiguration is the Spec for the Command configuration
               properties:
-                adminPassword:
-                  type: string
-                adminUsername:
-                  type: string
                 clusterName:
                   type: string
                 configAPIURL:
                   type: string
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 postgresInstance:
                   type: string
                 telemetryURL:

@@ -57,10 +57,9 @@ func TestSwiftController(t *testing.T) {
 					Device: "dev",
 				},
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-					ListenPort:            5070,
-					KeystoneInstance:      "keystone",
-					KeystoneAdminPassword: "c0ntrail123",
-					SwiftPassword:         "swiftpass",
+					ListenPort:       5070,
+					KeystoneInstance: "keystone",
+					SwiftPassword:    "swiftpass",
 					Containers: map[string]*contrail.Container{
 						"container3": {Image: "image3"},
 						"container4": {Image: "image4"},
@@ -235,10 +234,9 @@ func TestSwiftController(t *testing.T) {
 			},
 			Spec: contrail.SwiftProxySpec{
 				ServiceConfiguration: contrail.SwiftProxyConfiguration{
-					ListenPort:            0000,
-					KeystoneInstance:      "old",
-					KeystoneAdminPassword: "old",
-					SwiftPassword:         "old",
+					ListenPort:       0000,
+					KeystoneInstance: "old",
+					SwiftPassword:    "old",
 				},
 			},
 		}
@@ -330,7 +328,7 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	}}
 	assert.Equal(t, expectedOwnerRefs, swiftProxy.OwnerReferences)
 	expectedSwiftProxyConf := swiftCR.Spec.ServiceConfiguration.SwiftProxyConfiguration
-	assert.Equal(t, expectedSwiftProxyConf.KeystoneAdminPassword, swiftProxy.Spec.ServiceConfiguration.KeystoneAdminPassword)
+	assert.Equal(t, expectedSwiftProxyConf.KeystoneSecretInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneSecretInstance)
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)

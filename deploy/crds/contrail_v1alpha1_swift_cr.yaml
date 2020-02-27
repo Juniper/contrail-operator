@@ -8,7 +8,6 @@ spec:
     swiftProxyConfiguration:
       keystoneInstance: "keystone"
       listenPort: 5080
-      keystoneAdminPassword: "contrail123"
       swiftPassword: "swiftpass"
     swiftStorageConfiguration:
       accountBindPort: 6001

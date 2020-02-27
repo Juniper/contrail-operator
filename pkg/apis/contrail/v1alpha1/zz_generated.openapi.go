@@ -389,18 +389,6 @@ func schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref common.Reference
 							Format: "",
 						},
 					},
-					"adminUsername": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"adminPassword": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 					"containers": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
@@ -412,6 +400,12 @@ func schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref common.Reference
 									},
 								},
 							},
+						},
+					},
+					"keystoneSecretInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
@@ -682,13 +676,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 							Format: "",
 						},
 					},
-					"adminUsername": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"adminPassword": {
+					"keystoneSecretInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -1238,6 +1226,12 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
+					"keystoneSecretInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -1620,6 +1614,12 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref common.ReferenceCallback)
 					"services": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Services"),
+						},
+					},
+					"keystoneSecretInstance": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
@@ -2596,7 +2596,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 							Format: "",
 						},
 					},
-					"keystoneAdminPassword": {
+					"keystoneSecretInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -3176,13 +3176,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiConfiguration(ref common.ReferenceCa
 							Format: "",
 						},
 					},
-					"adminUsername": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"adminPassword": {
+					"keystoneSecretInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

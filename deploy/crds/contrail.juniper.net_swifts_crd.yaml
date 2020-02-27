@@ -48,9 +48,9 @@ spec:
                     API.
                   properties:
                     containers: {}
-                    keystoneAdminPassword:
-                      type: string
                     keystoneInstance:
+                      type: string
+                    keystoneSecretInstance:
                       type: string
                     listenPort:
                       type: integer

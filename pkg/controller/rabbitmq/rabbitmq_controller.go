@@ -3,10 +3,9 @@ package rabbitmq
 import (
 	"context"
 
-	"time"
-
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/randomstring"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,23 +19,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	mRand "math/rand"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var log = logf.Log.WithName("controller_rabbitmq")
-
-const (
-	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
-)
-
-var src = mRand.NewSource(time.Now().UnixNano())
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -168,31 +156,6 @@ type ReconcileRabbitmq struct {
 	Manager manager.Manager
 }
 
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[mRand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
-func randomString(size int) string {
-	b := make([]byte, size)
-	// A src.Int63() generates 63 random bits, enough for letterIdxMax letters!
-	for i, cache, remain := size-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-	return string(b)
-}
-
 // Reconcile reconciles the Rabbitmq resource.
 func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -311,18 +274,18 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 	if instance.Spec.ServiceConfiguration.Password != "" {
 		password = instance.Spec.ServiceConfiguration.Password
 	} else {
-		password = randomString(32)
+		password = randomstring.RandString{32}.Generate()
 	}
 
 	if instance.Spec.ServiceConfiguration.User != "" {
 		user = instance.Spec.ServiceConfiguration.User
 	} else {
-		user = randomString(8)
+		user = randomstring.RandString{8}.Generate()
 	}
 	if instance.Spec.ServiceConfiguration.Vhost != "" {
 		vhost = instance.Spec.ServiceConfiguration.Vhost
 	} else {
-		vhost = randomString(6)
+		vhost = randomstring.RandString{6}.Generate()
 	}
 
 	secretPassword := []byte(password)

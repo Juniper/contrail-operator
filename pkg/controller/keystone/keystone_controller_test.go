@@ -47,6 +47,7 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -71,6 +72,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "localhost:5555"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
@@ -101,6 +103,7 @@ func TestKeystone(t *testing.T) {
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -123,6 +126,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 				},
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedSTS:     &apps.StatefulSet{},
 			expectedConfigs: []*core.ConfigMap{},
@@ -143,6 +147,7 @@ func TestKeystone(t *testing.T) {
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
 			expectedConfigs: []*core.ConfigMap{},
@@ -162,6 +167,7 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newMemcached(),
+				newAdminSecret(),
 			},
 			expectedSTS:    newExpectedSTS(),
 			expectedStatus: contrail.KeystoneStatus{},
@@ -185,6 +191,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newExpectedSecretWithKeys(),
+				newAdminSecret(),
 			},
 			expectedSTS:    newExpectedSTS(),
 			expectedStatus: contrail.KeystoneStatus{},
@@ -302,7 +309,8 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				}
 				memcached := newMemcached()
-				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached)
+				adminSecret := newAdminSecret()
+				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached, adminSecret)
 				claims := volumeclaims.NewFake()
 				r := keystone.NewReconciler(
 					cl, scheme, k8s.New(cl, scheme), claims,
@@ -355,9 +363,10 @@ func newKeystone() *contrail.Keystone {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				MemcachedInstance: "memcached-instance",
-				PostgresInstance:  "psql",
-				ListenPort:        5555,
+				MemcachedInstance:      "memcached-instance",
+				PostgresInstance:       "psql",
+				ListenPort:             5555,
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		},
 	}
@@ -565,6 +574,23 @@ func newExpectedSecret() *core.Secret {
 			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
+		},
+	}
+}
+
+func newAdminSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-adminpass-secret",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"password": []byte("test123"),
 		},
 	}
 }

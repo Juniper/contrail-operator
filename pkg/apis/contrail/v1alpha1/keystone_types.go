@@ -14,11 +14,12 @@ type KeystoneSpec struct {
 // KeystoneConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type KeystoneConfiguration struct {
-	MemcachedInstance string                `json:"memcachedInstance,omitempty"`
-	ListenPort        int                   `json:"listenPort,omitempty"`
-	PostgresInstance  string                `json:"postgresInstance,omitempty"`
-	Containers        map[string]*Container `json:"containers,omitempty"`
-	Storage           Storage               `json:"storage,omitempty"`
+	MemcachedInstance      string                `json:"memcachedInstance,omitempty"`
+	ListenPort             int                   `json:"listenPort,omitempty"`
+	PostgresInstance       string                `json:"postgresInstance,omitempty"`
+	Containers             map[string]*Container `json:"containers,omitempty"`
+	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
+	Storage                Storage               `json:"storage,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone

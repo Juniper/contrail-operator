@@ -28,6 +28,11 @@ var config = &v1alpha1.Config{
 			"contrail_cluster": "cluster1",
 		},
 	},
+	Spec: v1alpha1.ConfigSpec{
+		ServiceConfiguration: v1alpha1.ConfigConfiguration{
+			KeystoneSecretInstance: "keystone-adminpass-secret",
+		},
+	},
 }
 
 var control = &v1alpha1.Control{
@@ -61,8 +66,7 @@ var webui = &v1alpha1.Webui{
 	},
 	Spec: v1alpha1.WebuiSpec{
 		ServiceConfiguration: v1alpha1.WebuiConfiguration{
-			AdminUsername: "test",
-			AdminPassword: "test123",
+			KeystoneSecretInstance: "keystone-adminpass-secret",
 		},
 	},
 }
@@ -171,6 +175,7 @@ func SetupEnv() Environment {
 	vrouterConfigMap := *configMap
 	vrouterConfigMap2 := *configMap
 	kubemanagerSecret := *secret
+	keystoneAdminSecret := *secret
 
 	kubemanagerSecret.Name = "kubemanagersecret"
 	kubemanagerSecret.Namespace = "default"
@@ -236,6 +241,13 @@ func SetupEnv() Environment {
 	vrouterConfigMap2.Name = "vrouter1-vrouter-configmap-1"
 	vrouterConfigMap2.Namespace = "default"
 
+	keystoneAdminSecret.Name = "keystone-adminpass-secret"
+	keystoneAdminSecret.Namespace = "default"
+	keystoneAdminSecret.Annotations = map[string]string{"kubernetes.io/service-account.name": "contrail-service-account"}
+	keystoneAdminSecret.Data = map[string][]byte{
+		"password": []byte("test123"),
+	}
+
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion,
 		config,
@@ -276,7 +288,8 @@ func SetupEnv() Environment {
 		&vrouterConfigMap2,
 		&rabbitmqSecret,
 		&cassandraSecret,
-		&kubemanagerSecret}
+		&kubemanagerSecret,
+		&keystoneAdminSecret}
 
 	cl := fake.NewFakeClient(objs...)
 
@@ -875,7 +888,7 @@ config.server_options.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-
 module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
-config.staticAuth[0].username = 'test';
+config.staticAuth[0].username = 'admin';
 config.staticAuth[0].password = 'test123';
 config.staticAuth[0].roles = ['cloudAdmin'];
 `
@@ -884,10 +897,10 @@ var webuiAuthConfig = `/*
 * Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
 */
 var auth = {};
-auth.admin_user = 'test';
+auth.admin_user = 'admin';
 auth.admin_password = 'test123';
 auth.admin_token = '';
-auth.admin_tenant_name = 'test';
+auth.admin_tenant_name = 'admin';
 module.exports = auth;
 `
 

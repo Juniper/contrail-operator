@@ -153,33 +153,38 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecret := &core.Secret{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	kcName := keystone.Name + "-keystone"
-	if err := r.configMap(kcName, "keystone", keystone).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err := r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kfcName := keystone.Name + "-keystone-fernet"
-	if err := r.configMap(kfcName, "keystone", keystone).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err := r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kscName := keystone.Name + "-keystone-ssh"
-	if err := r.configMap(kscName, "keystone", keystone).ensureKeystoneSSHConfigMap(); err != nil {
+	if err := r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err := r.configMap(kciName, "keystone", keystone).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err := r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	secretName := keystone.Name + "-keystone-keys"
-	if err := r.secret(secretName, "keystone", keystone).ensureSecretExist(); err != nil {
+	keySecretName := keystone.Name + "-keystone-keys"
+	if err := r.secret(keySecretName, "keystone", keystone).ensureSecretKeyExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, secretName, claimName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, keySecretName, claimName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

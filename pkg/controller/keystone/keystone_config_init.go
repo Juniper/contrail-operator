@@ -13,6 +13,7 @@ type keystoneInitConf struct {
 	RabbitMQServer   string
 	PostgreSQLServer string
 	MemcacheServer   string
+	AdminPassword    string
 }
 
 func (c *keystoneInitConf) FillConfigMap(cm *core.ConfigMap) {
@@ -69,7 +70,7 @@ var keystoneInitBootstrapScript = template.Must(template.New("").Parse(`
 keystone-manage db_sync
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
-keystone-manage bootstrap --bootstrap-password contrail123 \
+keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
   --bootstrap-admin-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-internal-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-public-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/

@@ -36,6 +36,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommand(),
 				newPostgres(true),
+				newAdminSecret(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -49,6 +50,7 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
+				newAdminSecret(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -62,6 +64,7 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
+				newAdminSecret(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -75,6 +78,7 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 1,
 				}),
 				newPostgres(true),
+				newAdminSecret(),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Active: true,
@@ -157,12 +161,11 @@ func newCommand() *contrail.Command {
 			ServiceConfiguration: contrail.CommandConfiguration{
 				ClusterName:      "cluster1",
 				PostgresInstance: "command-db",
-				AdminUsername:    "test",
-				AdminPassword:    "test123",
 				Containers: map[string]*contrail.Container{
 					"init": {Image: "registry:5000/contrail-command"},
 					"api":  {Image: "registry:5000/contrail-command"},
 				},
+				KeystoneSecretInstance: "keystone-adminpass-secret",
 			},
 		},
 	}
@@ -289,6 +292,22 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
 
+func newAdminSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-adminpass-secret",
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "command", "command", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"password": []byte("test123"),
+		},
+	}
+}
+
 const expectedCommandConfig = `
 database:
   host: localhost
@@ -351,12 +370,12 @@ keystone:
           name: demo
           domain: *default
       users:
-        test:
-          id: test
-          name: test
+        admin:
+          id: admin
+          name: admin
           domain: *default
           password: test123
-          email: test@juniper.nets
+          email: admin@juniper.nets
           roles:
           - id: admin
             name: admin
@@ -386,7 +405,7 @@ sync:
   enabled: false
 
 client:
-  id: test
+  id: admin
   password: test123
   project_id: admin
   domain_id: default
