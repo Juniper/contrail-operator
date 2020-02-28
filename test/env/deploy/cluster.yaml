@@ -185,6 +185,10 @@ spec:
           configAPIURL: https://kind-control-plane:8082
           telemetryURL: https://kind-control-plane:8081
           postgresInstance: postgres
+          swiftInstance: swift
+          swiftProxyPort: 5080
+          keystonePort: 5555
+          keystoneInstance: keystone
           containers:
             api:
               image: registry:5000/contrail-command:1912-latest

@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/Juniper/contrail-operator/test/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
 func NewClient(client *kubeproxy.Client) *Client {
@@ -18,16 +18,18 @@ type Client struct {
 	client *kubeproxy.Client
 }
 
-func (c *Client) PostAuthTokens(username, password string) (AuthTokens, error) {
-	return c.PostAuthTokensWithHeaders(username, password, http.Header{})
+func (c *Client) PostAuthTokens(username, password, project string) (AuthTokens, error) {
+	return c.PostAuthTokensWithHeaders(username, password, project, http.Header{})
 }
 
-func (c *Client) PostAuthTokensWithHeaders(username, password string, headers http.Header) (AuthTokens, error) {
+func (c *Client) PostAuthTokensWithHeaders(username, password, project string, headers http.Header) (AuthTokens, error) {
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username
 	kar.Auth.Identity.Password.User.Domain.ID = "default"
 	kar.Auth.Identity.Password.User.Password = password
+	kar.Auth.Scope.Project.Domain.ID = "default"
+	kar.Auth.Scope.Project.Name = project
 	karBody, err := json.Marshal(kar)
 	if err != nil {
 		return AuthTokens{}, err
@@ -75,6 +77,14 @@ type keystoneAuthRequest struct {
 				} `json:"user"`
 			} `json:"password"`
 		} `json:"identity"`
+		Scope struct {
+			Project struct {
+				Name   string `json:"name"`
+				Domain struct {
+					ID string `json:"id"`
+				} `json:"domain"`
+			} `json:"project"`
+		} `json:"scope"`
 	} `json:"auth"`
 }
 

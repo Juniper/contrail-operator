@@ -16,10 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/test/keystone"
-	"github.com/Juniper/contrail-operator/test/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/swift"
 	"github.com/Juniper/contrail-operator/test/logger"
-	"github.com/Juniper/contrail-operator/test/swift"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
 
@@ -144,7 +144,7 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
 				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.PostAuthTokens("admin", "contrail123")
+				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
 				assert.NoError(t, err)
 			})
 		})
@@ -232,7 +232,7 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
 				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.PostAuthTokens("swift", "swiftpass")
+				_, err := keystoneClient.PostAuthTokens("swift", "swiftpass", "service")
 				assert.NoError(t, err)
 			})
 		})
@@ -241,7 +241,7 @@ func TestOpenstackServices(t *testing.T) {
 			var (
 				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
-				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftpass")
+				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftpass","service")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
 				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")

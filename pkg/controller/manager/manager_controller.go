@@ -1467,7 +1467,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	command := &v1alpha1.Command{}
 	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
-	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
+	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretInstance
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.Command.Spec
 		if command.Spec.ServiceConfiguration.ClusterName == "" {
