@@ -46,23 +46,21 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers        map[string]*Container `json:"containers,omitempty"`
-	APIPort           *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort     *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort     *int                  `json:"collectorPort,omitempty"`
-	RedisPort         *int                  `json:"redisPort,omitempty"`
-	CassandraInstance string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
-	NodeManager       *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel          string                `json:"logLevel,omitempty"`
-	AdminUsername     string                `json:"adminUsername,omitempty"`
-	AdminPassword     string                `json:"adminPassword,omitempty"`
-	AdminPassword     string                `json:"adminPassword,omitempty"`
-	Storage           Storage               `json:"storage,omitempty"`
-	FabricIP          string                `json:"fabricIP,omitempty"`
+	Containers             map[string]*Container `json:"containers,omitempty"`
+	APIPort                *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort          *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort          *int                  `json:"collectorPort,omitempty"`
+	RedisPort              *int                  `json:"redisPort,omitempty"`
+	CassandraInstance      string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance      string                `json:"zookeeperInstance,omitempty"`
+	NodeManager            *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser           string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword       string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost          string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel               string                `json:"logLevel,omitempty"`
+	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
+	Storage                Storage               `json:"storage,omitempty"`
+	FabricIP               string                `json:"fabricIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
