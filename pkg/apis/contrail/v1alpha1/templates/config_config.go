@@ -80,7 +80,7 @@ sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigDeviceManagerConfig is the template of the DeviceManager service configuration.
 var ConfigDeviceManagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .HostIP }}
+host_ip={{ .FabricIP }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082
@@ -149,7 +149,6 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
-
 
 // ConfigDNSMasqConfig is the template of the DNSMasq service configuration.
 var ConfigDNSMasqConfig = `

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -472,67 +473,86 @@ func SetupEnv() Environment {
 func TestConfigConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
-	environment := SetupEnv()
-	cl := *environment.client
-	err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
-		&environment.configConfigMap)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
-		diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
-		t.Fatalf("get api config: \n%v\n", diff)
-	}
+	request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
+	configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
+	t.Run("default setup", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		err = cl.Get(context.TODO(),
+			types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
+			&environment.configConfigMap)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
+			diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
+			t.Fatalf("get api config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfig)
-		t.Fatalf("get devicemanager config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfig)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
-		t.Fatalf("get dnsmasq config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+			t.Fatalf("get dnsmasq config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
-		t.Fatalf("get schematransformer config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
+			t.Fatalf("get schematransformer config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
-		t.Fatalf("get servicemonitor config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
+			t.Fatalf("get servicemonitor config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
-		t.Fatalf("get analyticsapi config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
+			t.Fatalf("get analyticsapi config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
-		t.Fatalf("get queryengine config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+			t.Fatalf("get queryengine config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
-		t.Fatalf("get collector config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
+			t.Fatalf("get collector config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
-		t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
+			t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
-		diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
-		t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
+			t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
+		}
+	})
+
+	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		environment.configResource.Spec.ServiceConfiguration.FabricIP = "2.2.2.2"
+
+		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
+		assert.NoError(t, err, "cannot configure instance")
+
+		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
+		assert.NoError(t, err, "cannot get configmap:")
+
+		actual := environment.configConfigMap.Data["devicemanager.1.1.1.1"]
+		assert.Equal(t, actual, devicemanagerWithFabricConfig)
+	})
 }
 
 func TestControlConfig(t *testing.T) {
@@ -1729,3 +1749,44 @@ fabric_snat_hash_table_size = 4096
 [SESSION]
 slo_destination = collector
 sample_destination = collector`
+
+var devicemanagerWithFabricConfig = `[DEFAULTS]
+host_ip=2.2.2.2
+http_server_ip=0.0.0.0
+api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
+api_server_port=8082
+api_server_use_ssl=True
+analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
+analytics_server_port=8081
+push_mode=1
+log_file=/var/log/contrail/contrail-device-manager.log
+log_level=SYS_NOTICE
+log_local=1
+cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
+# configure directories for job manager
+# the same directories must be mounted to dnsmasq and DM container
+dnsmasq_conf_dir=/var/lib/dnsmasq
+tftp_dir=/var/lib/tftp
+dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
+dnsmasq_reload_by_signal=True
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
+rabbit_health_check_interval=10
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
