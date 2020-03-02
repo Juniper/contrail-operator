@@ -277,7 +277,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.ConfigConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
-
+							FabricIP: "1.1.1.1",
 							Containers: map[string]*v1alpha1.Container{
 								"api":               &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-api:" + versionMap["config"]},
 								"devicemanager":     &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-devicemgr:1912-reload"}, // Using custom dev version until required changes are merged upstream
