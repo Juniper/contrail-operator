@@ -687,6 +687,12 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
+					"fabricIP": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -1221,15 +1227,15 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneConfiguration(ref common.Referenc
 							},
 						},
 					},
-					"storage": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
-						},
-					},
 					"keystoneSecretInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
 				},
