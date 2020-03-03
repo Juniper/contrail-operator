@@ -107,6 +107,8 @@ func (c *claim) EnsureExists() error {
 				PersistentVolumeReclaimPolicy: core.PersistentVolumeReclaimDelete,
 				NodeAffinity:                  c.volumeNodeAffinity,
 				PersistentVolumeSource: core.PersistentVolumeSource{
+					// TODO: HostPath has to be changed to Local persistent volume with multi-node approach.
+					// TODO: We should create init container with hostPath volume and mount local pv to the same path.
 					HostPath: &core.HostPathVolumeSource{
 						Path: c.path,
 						Type: &hostPathType,
