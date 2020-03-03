@@ -490,6 +490,100 @@ func TestManagerController(t *testing.T) {
 		assert.Equal(t, expectedSecret.Data, secret.Data)
 
 	})
+
+	t.Run("should set secret's name in swift proxy's config, if the name is not specified", func(t *testing.T) {
+		//given
+		initObjs := []runtime.Object{
+			newManagerWithSwift(""),
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		_, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "cluster1",
+				Namespace: "default",
+			},
+		})
+		require.NoError(t, err)
+		// then
+		manager := contrail.Manager{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "cluster1",
+			Namespace: "default",
+		}, &manager)
+		swiftPtr := manager.Spec.Services.Swift
+		assert.NotNil(t, swiftPtr)
+		passwordSecretName := swiftPtr.Spec.ServiceConfiguration.SwiftProxyConfiguration.PasswordSecretName
+		assert.Equal(t, passwordSecretName, "swift-password-secret")
+	})
+
+	t.Run("should create secret, if doesn't exist, but its name is set", func(t *testing.T) {
+		//given
+		secretName := "secret-name"
+		initObjs := []runtime.Object{
+			newManagerWithSwift(secretName),
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "cluster1",
+				Namespace: "default",
+			},
+		})
+		require.NoError(t, err)
+		// then
+		actualSecret := core.Secret{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      secretName,
+			Namespace: "default",
+		}, &actualSecret)
+		assert.NoError(t, err)
+	})
+
+	t.Run("should not update swift password in existing secret", func(t *testing.T) {
+		//given
+		secretName := "swift-password-secret"
+		initialSecret := newSwiftSecret(secretName, "secretPassword")
+		initObjs := []runtime.Object{
+			newManagerWithSwift(secretName),
+			initialSecret,
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "cluster1",
+				Namespace: "default",
+			},
+		})
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		// then
+		actualSecret := core.Secret{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "swift-password-secret",
+			Namespace: "default",
+		}, &actualSecret)
+		assert.NoError(t, err)
+		assert.Equal(t, actualSecret, *initialSecret)
+	})
 }
 
 func assertCommandDeployed(t *testing.T, expected contrail.Command, fakeClient client.Client) {
@@ -557,6 +651,24 @@ func newKeystone() *contrail.Keystone {
 	}
 }
 
+func newManagerWithSwift(secretName string) *contrail.Manager {
+	m := newManager()
+	m.Spec.Services.Swift = &contrail.Swift{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift",
+			Namespace: "default",
+		},
+		Spec: contrail.SwiftSpec{
+			ServiceConfiguration: contrail.SwiftConfiguration{
+				SwiftProxyConfiguration:   contrail.SwiftProxyConfiguration{
+					PasswordSecretName:        secretName,
+				},
+			},
+		},
+	}
+	return m
+}
+
 func newManager() *contrail.Manager {
 	trueVal := true
 	return &contrail.Manager{
@@ -602,8 +714,24 @@ func newAdminSecret() *core.Secret {
 				{"contrail.juniper.net/v1alpha1", "manager", "test-manager", "", &trueVal, &trueVal},
 			},
 		},
-		StringData: map[string]string{
-			"password": "test123",
+		Data: map[string][]byte{
+			"password": []byte("test123"),
+		},
+	}
+}
+
+func newSwiftSecret(name string, password string) *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "manager", "test-manager", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"password": []byte(password),
 		},
 	}
 }

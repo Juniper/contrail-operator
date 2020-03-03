@@ -176,6 +176,24 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	swiftPasswordSecret := ""
+	swift := instance.Spec.Services.Swift
+	if swift != nil {
+		secretName := &swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.PasswordSecretName
+		if *secretName == "" {
+			*secretName = swift.Name + "-password-secret"
+		}
+		swiftPasswordSecret = *secretName
+	}
+
+	if err := r.secret(swiftPasswordSecret, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.client.Update(context.TODO(), instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+
 	// Create CRDs
 	/*
 		cassandraCrdActive := false
