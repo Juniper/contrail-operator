@@ -216,8 +216,6 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
 		swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
-		labels := map[string]string{"swift": swift.Name}
-		swiftStorage.SetLabels(labels)
 		return controllerutil.SetControllerReference(swift, swiftStorage, r.scheme)
 	})
 	return err
@@ -234,8 +232,6 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConf
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
 		swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
-		labels := map[string]string{"swift": swift.Name}
-		swiftProxy.SetLabels(labels)
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
 	return err
