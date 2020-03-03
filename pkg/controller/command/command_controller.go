@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 
@@ -331,7 +332,7 @@ func (r *ReconcileCommand) updateStatus(
 func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, adminPass *core.Secret) error {
 	proxy, err := kubeproxy.New(r.config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
 	keystonePort := command.Spec.ServiceConfiguration.KeystonePort
@@ -340,7 +341,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get keystone token: %v", err)
 	}
 	swiftProxyPods := &core.PodList{}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
@@ -348,10 +349,10 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
 	err = r.client.List(context.TODO(), swiftProxyPods, &listOpts)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list swift proxy pods: %v", err)
 	}
 	if swiftProxyPods == nil || len(swiftProxyPods.Items) == 0 {
-		return err
+		return fmt.Errorf("no swift proxy pod found")
 	}
 	swiftProxyPod := swiftProxyPods.Items[0].Name
 	swiftProxyPort := command.Spec.ServiceConfiguration.SwiftProxyPort
@@ -359,7 +360,11 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create swift client %v", err)
 	}
-	return swiftClient.PutContainer("contrail_container")
+	err = swiftClient.PutContainer("contrail_container")
+	if err != nil {
+		return fmt.Errorf("failed to create swift container (contrail_container): %v", err)
+	}
+	return nil
 }
