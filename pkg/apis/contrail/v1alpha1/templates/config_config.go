@@ -80,7 +80,7 @@ sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
 
 // ConfigDeviceManagerConfig is the template of the DeviceManager service configuration.
 var ConfigDeviceManagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
-host_ip={{ .FabricIP }}
+host_ip={{ .FabricMgmtIP }}
 http_server_ip=0.0.0.0
 api_server_ip={{ .ApiServerList}}
 api_server_port=8082

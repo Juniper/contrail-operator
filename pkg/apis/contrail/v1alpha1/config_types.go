@@ -202,9 +202,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
-		fabricIP := podList.Items[idx].Status.PodIP
+		fabricMgmtIP := podList.Items[idx].Status.PodIP
 		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
-			fabricIP = c.Spec.ServiceConfiguration.FabricMgmtIP
+			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
@@ -219,7 +219,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
-			FabricIP            string
+			FabricMgmtIP        string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -232,7 +232,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
-			FabricIP:            fabricIP,
+			FabricMgmtIP:        fabricMgmtIP,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
