@@ -60,6 +60,7 @@ type ConfigConfiguration struct {
 	LogLevel               string                `json:"logLevel,omitempty"`
 	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
 	Storage                Storage               `json:"storage,omitempty"`
+	FabricMgmtIP           string                `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -201,6 +202,10 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
+		fabricMgmtIP := podList.Items[idx].Status.PodIP
+		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
+			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
+		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
 			HostIP              string
@@ -214,6 +219,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			FabricMgmtIP        string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -226,6 +232,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			FabricMgmtIP:        fabricMgmtIP,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 

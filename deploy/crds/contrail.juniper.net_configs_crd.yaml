@@ -118,6 +118,8 @@ spec:
                 collectorPort:
                   type: integer
                 containers: {}
+                fabricMgmtIP:
+                  type: string
                 keystoneSecretInstance:
                   type: string
                 logLevel:
