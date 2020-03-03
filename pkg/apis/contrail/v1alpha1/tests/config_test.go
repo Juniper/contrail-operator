@@ -542,7 +542,7 @@ func TestConfigConfig(t *testing.T) {
 	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
 		environment := SetupEnv()
 		cl := *environment.client
-		environment.configResource.Spec.ServiceConfiguration.FabricIP = "2.2.2.2"
+		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
 
 		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
 		assert.NoError(t, err, "cannot configure instance")

@@ -687,7 +687,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref common.ReferenceC
 							Ref: ref("./pkg/apis/contrail/v1alpha1.Storage"),
 						},
 					},
-					"fabricIP": {
+					"fabricMgmtIP": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

@@ -60,7 +60,7 @@ type ConfigConfiguration struct {
 	LogLevel               string                `json:"logLevel,omitempty"`
 	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
 	Storage                Storage               `json:"storage,omitempty"`
-	FabricIP               string                `json:"fabricIP,omitempty"`
+	FabricMgmtIP           string                `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -203,8 +203,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
 		fabricIP := podList.Items[idx].Status.PodIP
-		if c.Spec.ServiceConfiguration.FabricIP != "" {
-			fabricIP = c.Spec.ServiceConfiguration.FabricIP
+		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
+			fabricIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
