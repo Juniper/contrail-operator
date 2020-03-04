@@ -121,9 +121,23 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
+		swiftPasswordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "swift-credentials-secret",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"user": "swift",
+				"password": "swiftPass",
+			},
+		}
+
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
+
+			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -196,10 +210,10 @@ func TestOpenstackServices(t *testing.T) {
 							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-							MemcachedInstance:  "openstacktest-memcached",
-							ListenPort:         5070,
-							KeystoneInstance:   "openstacktest-keystone",
-							SwiftPassword:      "swiftpass",
+							MemcachedInstance:      "openstacktest-memcached",
+							ListenPort:             5070,
+							KeystoneInstance:       "openstacktest-keystone",
+							CredentialsSecretName:  "swift-credentials-secret",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
 								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
