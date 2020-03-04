@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -37,6 +38,8 @@ func TestCommand(t *testing.T) {
 				newCommand(),
 				newPostgres(true),
 				newAdminSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -50,7 +53,9 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
+				newSwift(false),
 				newAdminSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -64,7 +69,9 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 0,
 				}),
 				newPostgres(true),
+				newSwift(false),
 				newAdminSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -78,7 +85,9 @@ func TestCommand(t *testing.T) {
 					ReadyReplicas: 1,
 				}),
 				newPostgres(true),
+				newSwift(false),
 				newAdminSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Active: true,
@@ -91,8 +100,8 @@ func TestCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
-
-			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme))
+			conf, _ := config.GetConfig()
+			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -161,11 +170,13 @@ func newCommand() *contrail.Command {
 			ServiceConfiguration: contrail.CommandConfiguration{
 				ClusterName:      "cluster1",
 				PostgresInstance: "command-db",
+				KeystoneInstance: "keystone",
+				SwiftInstance:    "swift",
 				Containers: map[string]*contrail.Container{
 					"init": {Image: "registry:5000/contrail-command"},
 					"api":  {Image: "registry:5000/contrail-command"},
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 	}
@@ -178,6 +189,18 @@ func newPostgres(active bool) *contrail.Postgres {
 			Namespace: "default",
 		},
 		Status: contrail.PostgresStatus{
+			Active: active,
+		},
+	}
+}
+
+func newSwift(active bool) *contrail.Swift {
+	return &contrail.Swift{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift",
+			Namespace: "default",
+		},
+		Status: contrail.SwiftStatus{
 			Active: active,
 		},
 	}
@@ -273,6 +296,22 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 			},
 		},
 		Status: s,
+	}
+}
+
+func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerReference) *contrail.Keystone {
+	return &contrail.Keystone{
+		ObjectMeta: meta.ObjectMeta{
+			Name:            "keystone",
+			Namespace:       "default",
+			OwnerReferences: ownersReferences,
+		},
+		Spec: contrail.KeystoneSpec{
+			ServiceConfiguration: contrail.KeystoneConfiguration{
+				KeystoneSecretInstance: "keystone-adminpass-secret",
+			},
+		},
+		Status: status,
 	}
 }
 

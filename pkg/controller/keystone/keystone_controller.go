@@ -279,6 +279,7 @@ func (r *ReconcileKeystone) updateStatus(
 		k.Status.Active = true
 		//TODO get ip from POD
 		k.Status.Node = fmt.Sprintf("localhost:%v", k.Spec.ServiceConfiguration.ListenPort)
+		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
 
 	return r.client.Status().Update(context.Background(), k)

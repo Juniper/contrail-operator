@@ -161,7 +161,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 	swift.Status.Active = swiftProxyAndStorageActiveStatus
-
+	swift.Status.SwiftProxyPort = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.ListenPort
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swift)
 }
 

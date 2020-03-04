@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/client/swift"
 	"net/http"
 	"testing"
 	"time"
@@ -15,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/test/keystone"
-	"github.com/Juniper/contrail-operator/test/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
@@ -90,6 +91,52 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
+		swiftInstance := &contrail.Swift{
+			ObjectMeta: meta.ObjectMeta{
+				Namespace: namespace,
+				Name:      "commandtest-swift",
+			},
+			Spec: contrail.SwiftSpec{
+				ServiceConfiguration: contrail.SwiftConfiguration{
+					Containers: map[string]*contrail.Container{
+						"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:master"},
+					},
+					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+						AccountBindPort:   6001,
+						ContainerBindPort: 6002,
+						ObjectBindPort:    6000,
+						Device:            "d1",
+						Containers: map[string]*contrail.Container{
+							"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:master"},
+							"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:master"},
+							"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:master"},
+							"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:master"},
+							"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:master"},
+							"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:master"},
+							"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:master"},
+							"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:master"},
+							"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:master"},
+							"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:master"},
+							"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:master"},
+							"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:master"},
+							"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:master"},
+						},
+					},
+					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+						MemcachedInstance:      "commandtest-memcached",
+						ListenPort:             5080,
+						KeystoneInstance:       "commandtest-keystone",
+						SwiftPassword:          "swiftpass",
+						KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+						Containers: map[string]*contrail.Container{
+							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
+							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},
+						},
+					},
+				},
+			},
+		}
+
 		command := &contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name: "commandtest",
@@ -101,10 +148,12 @@ func TestCommandServices(t *testing.T) {
 					HostNetwork: &trueVal,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
-					PostgresInstance:       "commandtest-psql",
-					KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
-					ConfigAPIURL:           "https://kind-control-plane:8082",
-					TelemetryURL:           "https://kind-control-plane:8081",
+					PostgresInstance:   "commandtest-psql",
+					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
+					ConfigAPIURL:       "https://kind-control-plane:8082",
+					TelemetryURL:       "https://kind-control-plane:8081",
+					KeystoneInstance:   "commandtest-keystone",
+					SwiftInstance:      "commandtest-swift",
 					Containers: map[string]*contrail.Container{
 						"init": {Image: "registry:5000/contrail-command:1912-latest"},
 						"api":  {Image: "registry:5000/contrail-command:1912-latest"},
@@ -128,6 +177,7 @@ func TestCommandServices(t *testing.T) {
 					Keystone:  keystoneResource,
 					Memcached: memcached,
 					Command:   command,
+					Swift:     swiftInstance,
 				},
 				KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
 			},
@@ -150,7 +200,7 @@ func TestCommandServices(t *testing.T) {
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
-			wait := wait.Wait{
+			w := wait.Wait{
 				Namespace:     namespace,
 				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
@@ -159,11 +209,21 @@ func TestCommandServices(t *testing.T) {
 			}
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForDeployment("commandtest-command-deployment"))
+				assert.NoError(t, w.ForDeployment("commandtest-command-deployment"))
 			})
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
+			})
+
+			t.Run("then Swift should become active", func(t *testing.T) {
+				err := wait.Contrail{
+					Namespace:     namespace,
+					Timeout:       5 * time.Minute,
+					RetryInterval: retryInterval,
+					Client:        f.Client,
+				}.ForSwiftActive(command.Spec.ServiceConfiguration.SwiftInstance)
+				require.NoError(t, err)
 			})
 
 			var commandPods *core.PodList
@@ -180,14 +240,35 @@ func TestCommandServices(t *testing.T) {
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-				_, err := keystoneClient.PostAuthTokens("admin", "test123")
+				_, err := keystoneClient.PostAuthTokens("admin", "test123", "admin")
 				assert.NoError(t, err)
 			})
 
 			t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
 				headers := http.Header{}
 				headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "test123", headers)
+				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
+				assert.NoError(t, err)
+			})
+			t.Run("then swift container should be created", func(t *testing.T) {
+				var swiftProxyPods *core.PodList
+				swiftProxyLabel := "SwiftProxy=" + command.Spec.ServiceConfiguration.SwiftInstance + "-proxy"
+				swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+					LabelSelector: swiftProxyLabel,
+				})
+				assert.NoError(t, err)
+				require.NotEmpty(t, swiftProxyPods.Items)
+				var (
+					keystoneProxy    = proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+					keystoneClient   = keystone.NewClient(keystoneProxy)
+					tokens, _        = keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+					swiftProxyPod    = swiftProxyPods.Items[0].Name
+					swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5080)
+					swiftURL         = tokens.EndpointURL("swift", "public")
+					swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+				)
+				require.NoError(t, err)
+				err = swiftClient.GetContainer("contrail_container")
 				assert.NoError(t, err)
 			})
 		})

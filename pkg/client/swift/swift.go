@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/Juniper/contrail-operator/test/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
 func NewClient(client *kubeproxy.Client, token, endpointURL string) (*Client, error) {
@@ -38,7 +38,23 @@ func (c *Client) PutContainer(name string) error {
 	if err != nil {
 		return err
 	}
-	if response.StatusCode != 201 {
+	if response.StatusCode >= 300 {
+		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
+	}
+	return nil
+}
+
+func (c *Client) GetContainer(name string) error {
+	request, err := c.proxy.NewRequest(http.MethodGet, c.path+"/"+name, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("X-Auth-Token", c.token)
+	response, err := c.proxy.Do(request)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode >= 300 {
 		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
 	return nil

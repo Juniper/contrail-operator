@@ -114,9 +114,13 @@ spec:
                 configAPIURL:
                   type: string
                 containers: {}
-                keystoneSecretInstance:
+                keystoneInstance:
+                  type: string
+                keystoneSecretName:
                   type: string
                 postgresInstance:
+                  type: string
+                swiftInstance:
                   type: string
                 telemetryURL:
                   type: string

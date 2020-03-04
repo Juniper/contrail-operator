@@ -85,8 +85,8 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName:            "test-manager",
-					KeystoneSecretInstance: "keystone-adminpass-secret",
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -122,8 +122,8 @@ func TestManagerController(t *testing.T) {
 					Activate: &trueVar,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName:            "test-manager",
-					KeystoneSecretInstance: "keystone-adminpass-secret",
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -339,9 +339,9 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
-					ClusterName:            "test-manager",
-					PostgresInstance:       "psql",
-					KeystoneSecretInstance: "keystone-adminpass-secret",
+					ClusterName:        "test-manager",
+					PostgresInstance:   "psql",
+					KeystoneSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}

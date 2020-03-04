@@ -324,7 +324,7 @@ func TestEnsureExists(t *testing.T) {
 			Namespace: "default",
 			Name:      "test-pv",
 		}
-		for name, test := range tests{
+		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
 				cl := fake.NewFakeClientWithScheme(operatorScheme)
 				claims := volumeclaims.New(cl, operatorScheme)

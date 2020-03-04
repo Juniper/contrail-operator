@@ -398,9 +398,13 @@ spec:
                             configAPIURL:
                               type: string
                             containers: {}
-                            keystoneSecretInstance:
+                            keystoneInstance:
+                              type: string
+                            keystoneSecretName:
                               type: string
                             postgresInstance:
+                              type: string
+                            swiftInstance:
                               type: string
                             telemetryURL:
                               type: string
@@ -896,6 +900,8 @@ spec:
                           type: boolean
                         node:
                           type: string
+                        port:
+                          type: integer
                       type: object
                   type: object
                 kubemanagers:
@@ -1549,6 +1555,8 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        swiftProxyPort:
+                          type: integer
                       type: object
                   type: object
                 vrouters:

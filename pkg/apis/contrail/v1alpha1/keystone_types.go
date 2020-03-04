@@ -27,6 +27,7 @@ type KeystoneConfiguration struct {
 type KeystoneStatus struct {
 	Active bool   `json:"active,omitempty"`
 	Node   string `json:"node,omitempty"`
+	Port   int    `json:"port,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
