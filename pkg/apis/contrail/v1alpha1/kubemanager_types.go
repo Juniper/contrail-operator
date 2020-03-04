@@ -171,18 +171,18 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		}
 
 		var cinfo = clusterInfo{}
-		if isItK8SCluster(clientset) {
+		if isK8SCluster(clientset) {
 			cinfo, err = k8sConfigClusterInfo(clientset)
 			if err != nil {
 				return err
 			}
-		} else if isItOpenshiftCluster(clientset) {
+		} else if isOpenshiftCluster(clientset) {
 			cinfo, err = openshiftConfigClusterInfo(clientset)
 			if err != nil {
 				return err
 			}
 		} else {
-			return errors.New("Cannot determine type of cluster [not k8s nor Openshift")
+			return errors.New("cannot determine type of cluster [not k8s nor Openshift")
 		}
 
 		kubemanagerConfig.KubernetesAPISSLPort = cinfo.KubernetesAPISSLPort
@@ -471,7 +471,7 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 }
 
 // Check whether there's config map specific for bare kubernetes cluster
-func isItK8SCluster (clientset *kubernetes.Clientset) bool {
+func isK8SCluster (clientset *kubernetes.Clientset) bool {
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
 	_, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
@@ -481,7 +481,7 @@ func isItK8SCluster (clientset *kubernetes.Clientset) bool {
 }
 
 // Check whether there're config maps specific for Openshift cluster
-func isItOpenshiftCluster (clientset *kubernetes.Clientset) bool {
+func isOpenshiftCluster (clientset *kubernetes.Clientset) bool {
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
 	_, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
