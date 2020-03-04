@@ -59,7 +59,7 @@ func TestSwiftController(t *testing.T) {
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
 					ListenPort:       5070,
 					KeystoneInstance: "keystone",
-					SwiftPassword:    "swiftpass",
+					CredentialsSecretName:    "proxy-secret",
 					Containers: map[string]*contrail.Container{
 						"container3": {Image: "image3"},
 						"container4": {Image: "image4"},
@@ -236,7 +236,7 @@ func TestSwiftController(t *testing.T) {
 				ServiceConfiguration: contrail.SwiftProxyConfiguration{
 					ListenPort:       0000,
 					KeystoneInstance: "old",
-					SwiftPassword:    "old",
+					CredentialsSecretName:    "old",
 				},
 			},
 		}
@@ -331,7 +331,7 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneSecretName, swiftProxy.Spec.ServiceConfiguration.KeystoneSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
-	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
+	assert.Equal(t, expectedSwiftProxyConf.CredentialsSecretName, swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
 	assert.Equal(t, swiftCR.Name+"-rings", swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 }

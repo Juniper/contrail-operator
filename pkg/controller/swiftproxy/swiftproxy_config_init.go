@@ -12,6 +12,7 @@ type swiftProxyInitConfig struct {
 	KeystoneAdminPassword string
 	SwiftEndpoint         string
 	SwiftPassword         string
+	SwiftUser             string
 }
 
 func (s *swiftProxyInitConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -58,7 +59,7 @@ const registerPlaybook = `
     - name: create swift user
       os_user:
         default_project: "service"
-        name: "swift"
+        name: "{{ swift_user }}"
         password: "{{ swift_password }}"
         domain: "default"
         interface: "admin"
@@ -92,4 +93,5 @@ openstack_auth:
 
 swift_endpoint: "{{ .SwiftEndpoint }}"
 swift_password: "{{ .SwiftPassword }}"
+swift_user: "{{ .SwiftUser }}"
 `))
