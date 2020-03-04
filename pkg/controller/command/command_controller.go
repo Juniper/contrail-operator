@@ -197,7 +197,9 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.ensureContrailSwiftContainerExists(command, adminPasswordSecret); err != nil {
+	kPort := keystone.Status.Port
+	sPort := swiftService.Status.SwiftProxyPort
+	if err := r.ensureContrailSwiftContainerExists(command, kPort, sPort, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -329,15 +331,13 @@ func (r *ReconcileCommand) updateStatus(
 	return r.client.Status().Update(context.Background(), command)
 }
 
-func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, adminPass *core.Secret) error {
+func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, kPort, sPort int, adminPass *core.Secret) error {
 	proxy, err := kubeproxy.New(r.config)
 	if err != nil {
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystonePort := command.Spec.ServiceConfiguration.KeystonePort
-	keystoneProxy := proxy.NewClient(command.Namespace, keystoneName+"-keystone-statefulset-0", keystonePort)
-
+	keystoneProxy := proxy.NewClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
@@ -355,8 +355,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("no swift proxy pod found")
 	}
 	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxyPort := command.Spec.ServiceConfiguration.SwiftProxyPort
-	swiftProxy := proxy.NewClient(command.Namespace, swiftProxyPod, swiftProxyPort)
+	swiftProxy := proxy.NewClient(command.Namespace, swiftProxyPod, sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

@@ -400,16 +400,12 @@ spec:
                             containers: {}
                             keystoneInstance:
                               type: string
-                            keystonePort:
-                              type: integer
                             keystoneSecretName:
                               type: string
                             postgresInstance:
                               type: string
                             swiftInstance:
                               type: string
-                            swiftProxyPort:
-                              type: integer
                             telemetryURL:
                               type: string
                           type: object
@@ -904,6 +900,8 @@ spec:
                           type: boolean
                         node:
                           type: string
+                        port:
+                          type: integer
                       type: object
                   type: object
                 kubemanagers:
@@ -1557,6 +1555,8 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        swiftProxyPort:
+                          type: integer
                       type: object
                   type: object
                 vrouters:

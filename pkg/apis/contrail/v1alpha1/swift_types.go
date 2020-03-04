@@ -22,7 +22,8 @@ type SwiftConfiguration struct {
 // SwiftStatus defines the observed state of Swift
 // +k8s:openapi-gen=true
 type SwiftStatus struct {
-	Active bool `json:"active,omitempty"`
+	Active         bool `json:"active,omitempty"`
+	SwiftProxyPort int  `json:"swiftProxyPort,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

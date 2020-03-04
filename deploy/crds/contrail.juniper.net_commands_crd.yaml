@@ -116,16 +116,12 @@ spec:
                 containers: {}
                 keystoneInstance:
                   type: string
-                keystonePort:
-                  type: integer
                 keystoneSecretName:
                   type: string
                 postgresInstance:
                   type: string
                 swiftInstance:
                   type: string
-                swiftProxyPort:
-                  type: integer
                 telemetryURL:
                   type: string
               type: object

@@ -395,22 +395,10 @@ func schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref common.Reference
 							Format: "",
 						},
 					},
-					"swiftProxyPort": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
 					"keystoneInstance": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
-						},
-					},
-					"keystonePort": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
 						},
 					},
 					"keystoneSecretName": {
@@ -1313,6 +1301,12 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
 						},
 					},
 				},
@@ -2744,6 +2738,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
 							Format: "",
+						},
+					},
+					"swiftProxyPort": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
 						},
 					},
 				},

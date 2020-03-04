@@ -35,9 +35,7 @@ type CommandConfiguration struct {
 	TelemetryURL       string                `json:"telemetryURL,omitempty"`
 	PostgresInstance   string                `json:"postgresInstance,omitempty"`
 	SwiftInstance      string                `json:"swiftInstance,omitempty"`
-	SwiftProxyPort      int                `json:"swiftProxyPort,omitempty"`
 	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
-	KeystonePort       int                   `json:"keystonePort,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
 	Containers         map[string]*Container `json:"containers,omitempty"`
 }

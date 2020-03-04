@@ -152,10 +152,8 @@ func TestCommandServices(t *testing.T) {
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					ConfigAPIURL:       "https://kind-control-plane:8082",
 					TelemetryURL:       "https://kind-control-plane:8081",
-					KeystoneInstance: "commandtest-keystone",
-					KeystonePort: 5555,
-					SwiftInstance: "commandtest-swift",
-					SwiftProxyPort: 5080,
+					KeystoneInstance:   "commandtest-keystone",
+					SwiftInstance:      "commandtest-swift",
 					Containers: map[string]*contrail.Container{
 						"init": {Image: "registry:5000/contrail-command:1912-latest"},
 						"api":  {Image: "registry:5000/contrail-command:1912-latest"},
@@ -179,7 +177,7 @@ func TestCommandServices(t *testing.T) {
 					Keystone:  keystoneResource,
 					Memcached: memcached,
 					Command:   command,
-					Swift: swiftInstance,
+					Swift:     swiftInstance,
 				},
 				KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
 			},
@@ -261,11 +259,11 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, err)
 				require.NotEmpty(t, swiftProxyPods.Items)
 				var (
-					keystoneProxy    = proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", command.Spec.ServiceConfiguration.KeystonePort)
+					keystoneProxy    = proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
 					keystoneClient   = keystone.NewClient(keystoneProxy)
-					tokens, _        = keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]),"admin")
+					tokens, _        = keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 					swiftProxyPod    = swiftProxyPods.Items[0].Name
-					swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, command.Spec.ServiceConfiguration.SwiftProxyPort)
+					swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5080)
 					swiftURL         = tokens.EndpointURL("swift", "public")
 					swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 				)

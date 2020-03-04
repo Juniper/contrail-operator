@@ -138,6 +138,8 @@ spec:
               type: boolean
             node:
               type: string
+            port:
+              type: integer
           type: object
       type: object
   version: v1alpha1

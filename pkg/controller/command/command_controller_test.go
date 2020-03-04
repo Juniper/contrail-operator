@@ -171,7 +171,7 @@ func newCommand() *contrail.Command {
 				ClusterName:      "cluster1",
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
-				SwiftInstance: "swift",
+				SwiftInstance:    "swift",
 				Containers: map[string]*contrail.Container{
 					"init": {Image: "registry:5000/contrail-command"},
 					"api":  {Image: "registry:5000/contrail-command"},
