@@ -169,7 +169,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
 	}
 	adminPasswordSecretName := instance.Spec.KeystoneSecretName
-	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+	if err := r.keystoneSecret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err = r.client.Update(context.TODO(), instance); err != nil {
@@ -179,14 +179,14 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	swiftPasswordSecret := ""
 	swift := instance.Spec.Services.Swift
 	if swift != nil {
-		secretName := &swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.PasswordSecretName
+		secretName := &swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.CredentialsSecretName
 		if *secretName == "" {
-			*secretName = swift.Name + "-password-secret"
+			*secretName = swift.Name + "-credentials-secret"
 		}
 		swiftPasswordSecret = *secretName
 	}
 
-	if err := r.secret(swiftPasswordSecret, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+	if err := r.swiftSecret(swiftPasswordSecret, "manager", instance).ensureSwiftSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err = r.client.Update(context.TODO(), instance); err != nil {
@@ -570,7 +570,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+			cr.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {

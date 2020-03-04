@@ -17,7 +17,7 @@ type SwiftProxyConfiguration struct {
 	ListenPort                int                   `json:"listenPort,omitempty"`
 	KeystoneInstance          string                `json:"keystoneInstance,omitempty"`
 	KeystoneSecretName        string                `json:"keystoneSecretName,omitempty"`
-	PasswordSecretName        string                `json:"swiftPasswordSecretName,omitempty"`
+	CredentialsSecretName     string                `json:"credentialsPasswordSecretName,omitempty"`
 	SwiftConfSecretName       string                `json:"swiftConfSecretName,omitempty"`
 	Containers                map[string]*Container `json:"containers,omitempty"`
 	RingPersistentVolumeClaim string                `json:"ringPersistentVolumeClaim,omitempty"`

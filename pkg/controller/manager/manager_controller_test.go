@@ -518,8 +518,8 @@ func TestManagerController(t *testing.T) {
 		}, &manager)
 		swiftPtr := manager.Spec.Services.Swift
 		assert.NotNil(t, swiftPtr)
-		passwordSecretName := swiftPtr.Spec.ServiceConfiguration.SwiftProxyConfiguration.PasswordSecretName
-		assert.Equal(t, passwordSecretName, "swift-password-secret")
+		passwordSecretName := swiftPtr.Spec.ServiceConfiguration.SwiftProxyConfiguration.CredentialsSecretName
+		assert.Equal(t, passwordSecretName, "swift-credentials-secret")
 	})
 
 	t.Run("should create secret, if doesn't exist, but its name is set", func(t *testing.T) {
@@ -553,7 +553,7 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should not update swift password in existing secret", func(t *testing.T) {
 		//given
-		secretName := "swift-password-secret"
+		secretName := "swift-credentials-secret"
 		initialSecret := newSwiftSecret(secretName, "secretPassword")
 		initObjs := []runtime.Object{
 			newManagerWithSwift(secretName),
@@ -578,7 +578,7 @@ func TestManagerController(t *testing.T) {
 		// then
 		actualSecret := core.Secret{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      "swift-password-secret",
+			Name:      "swift-credentials-secret",
 			Namespace: "default",
 		}, &actualSecret)
 		assert.NoError(t, err)
@@ -661,7 +661,7 @@ func newManagerWithSwift(secretName string) *contrail.Manager {
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				SwiftProxyConfiguration:   contrail.SwiftProxyConfiguration{
-					PasswordSecretName:        secretName,
+					CredentialsSecretName: secretName,
 				},
 			},
 		},
@@ -731,6 +731,7 @@ func newSwiftSecret(name string, password string) *core.Secret {
 			},
 		},
 		Data: map[string][]byte{
+			"user":	[]byte("user"),
 			"password": []byte(password),
 		},
 	}
