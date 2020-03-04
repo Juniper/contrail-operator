@@ -123,10 +123,10 @@ func TestCommandServices(t *testing.T) {
 						},
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-						MemcachedInstance:  "commandtest-memcached",
-						ListenPort:         5080,
-						KeystoneInstance:   "commandtest-keystone",
-						SwiftPassword:      "swiftpass",
+						MemcachedInstance:      "commandtest-memcached",
+						ListenPort:             5080,
+						KeystoneInstance:       "commandtest-keystone",
+						CredentialsSecretName:  "swift-credentials-secret",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
 							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},

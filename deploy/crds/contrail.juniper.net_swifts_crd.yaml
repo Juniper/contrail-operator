@@ -48,6 +48,8 @@ spec:
                     API.
                   properties:
                     containers: {}
+                    credentialsSecretName:
+                      type: string
                     keystoneInstance:
                       type: string
                     keystoneSecretInstance:
@@ -59,8 +61,6 @@ spec:
                     ringPersistentVolumeClaim:
                       type: string
                     swiftConfSecretName:
-                      type: string
-                    swiftPassword:
                       type: string
                   type: object
                 swiftStorageConfiguration:
