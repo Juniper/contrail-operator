@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/url"
 	"sort"
 	"strconv"
 
@@ -172,11 +173,18 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		var cinfo = clusterInfo{}
 		if isItK8SCluster(clientset) {
 			cinfo, err = k8sConfigClusterInfo(clientset)
+			if err != nil {
+				return err
+			}
 		} else if isItOpenshiftCluster(clientset) {
 			cinfo, err = openshiftConfigClusterInfo(clientset)
+			if err != nil {
+				return err
+			}
 		} else {
 			return errors.New("Cannot determine type of cluster [not k8s nor Openshift")
 		}
+
 		kubemanagerConfig.KubernetesAPISSLPort = cinfo.KubernetesAPISSLPort
 		kubemanagerConfig.KubernetesAPIServer = cinfo.KubernetesAPIServer
 		kubemanagerConfig.KubernetesClusterName = cinfo.KubernetesClusterName
@@ -462,6 +470,7 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 	return kubemanagerConfiguration
 }
 
+// Check whether there's config map specific for bare kubernetes cluster
 func isItK8SCluster (clientset *kubernetes.Clientset) bool {
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
 	_, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
@@ -471,6 +480,7 @@ func isItK8SCluster (clientset *kubernetes.Clientset) bool {
 	return true
 }
 
+// Check whether there're config maps specific for Openshift cluster
 func isItOpenshiftCluster (clientset *kubernetes.Clientset) bool {
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
 	_, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
@@ -485,6 +495,7 @@ func isItOpenshiftCluster (clientset *kubernetes.Clientset) bool {
 	return true
 }
 
+// Gather cluster information from config map for bare kubernetes cluster
 func k8sConfigClusterInfo (clientset *kubernetes.Clientset) (cinfo clusterInfo, err error) {
 	cinfo = clusterInfo{}
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
@@ -517,6 +528,7 @@ func k8sConfigClusterInfo (clientset *kubernetes.Clientset) (cinfo clusterInfo, 
 	return cinfo, nil
 }
 
+// Gather cluster information from config maps for Openshift cluster
 func openshiftConfigClusterInfo (clientset *kubernetes.Clientset) (cinfo clusterInfo, err error) {
 	cinfo = clusterInfo{}
 	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
@@ -554,9 +566,16 @@ func openshiftConfigClusterInfo (clientset *kubernetes.Clientset) (cinfo cluster
 	if err = yaml.Unmarshal(consoleConfigByte, &consoleConfigMap); err != nil {
 		return cinfo, err
 	}
-	clusterInfo := consoleConfigMap["clusterInfo"].(map[interface{}]interface{})
-	masterPublicURL := clusterInfo["masterPublicURL"].(string)
-	kubernetesAPIServer, kubernetesAPISSLPort, _ := net.SplitHostPort(masterPublicURL)
+	clusterInfoSection := consoleConfigMap["clusterInfo"].(map[interface{}]interface{})
+	masterPublicURL := clusterInfoSection["masterPublicURL"].(string)
+	parsedMasterPublicURL, err := url.Parse(masterPublicURL)
+	if err != nil {
+		return cinfo, err
+	}
+	kubernetesAPIServer, kubernetesAPISSLPort, err := net.SplitHostPort(parsedMasterPublicURL.Host)
+	if err != nil {
+		return cinfo, err
+	}
 	cinfo.KubernetesAPIServer = kubernetesAPIServer
 	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
 	if err != nil {
@@ -566,6 +585,7 @@ func openshiftConfigClusterInfo (clientset *kubernetes.Clientset) (cinfo cluster
 	return cinfo, nil
 }
 
+// basic cluster information necessary for kubemanagerConfiguration
 type clusterInfo struct {
 	KubernetesAPISSLPort *int
 	KubernetesAPIServer, KubernetesClusterName, PodSubnets, ServiceSubnets string
