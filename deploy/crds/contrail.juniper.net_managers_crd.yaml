@@ -109,7 +109,7 @@ spec:
                     type: object
                   type: array
               type: object
-            keystoneSecretInstance:
+            keystoneSecretName:
               type: string
             services:
               description: Services defines the desired state of Services.
@@ -539,7 +539,7 @@ spec:
                             containers: {}
                             fabricMgmtIP:
                               type: string
-                            keystoneSecretInstance:
+                            keystoneSecretName:
                               type: string
                             logLevel:
                               type: string
@@ -872,7 +872,7 @@ spec:
                             API.
                           properties:
                             containers: {}
-                            keystoneSecretInstance:
+                            keystoneSecretName:
                               type: string
                             listenPort:
                               type: integer
@@ -1502,9 +1502,11 @@ spec:
                                 the keystone API.
                               properties:
                                 containers: {}
+                                fabricMgmtIP:
+                                  type: string
                                 keystoneInstance:
                                   type: string
-                                keystoneSecretInstance:
+                                keystoneSecretName:
                                   type: string
                                 listenPort:
                                   type: integer
@@ -1838,7 +1840,7 @@ spec:
                             clusterRoleBinding:
                               type: string
                             containers: {}
-                            keystoneSecretInstance:
+                            keystoneSecretName:
                               type: string
                             serviceAccount:
                               type: string

@@ -43,7 +43,7 @@ func (c *configMaps) ensureInitExists() error {
 		KeystoneAuthURL:       "http://" + c.keystoneStatus.Node + "/v3",
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         c.swiftProxySpec.ServiceConfiguration.SwiftPassword,
-		SwiftEndpoint:         fmt.Sprintf("localhost:%v", c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftEndpoint:         fmt.Sprintf("%v:%v", c.swiftProxySpec.ServiceConfiguration.FabricMgmtIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 	}
 	return c.cm.EnsureExists(spc)
 }

@@ -116,7 +116,7 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
-                keystoneSecretInstance:
+                keystoneSecretName:
                   type: string
                 serviceAccount:
                   type: string

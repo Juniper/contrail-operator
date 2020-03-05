@@ -179,7 +179,21 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
+	if swiftProxy.Spec.ServiceConfiguration.FabricMgmtIP == "" {
+		pods := core.PodList{}
+		var labels client.MatchingLabels = map[string]string{"SwiftProxy": request.Name}
+		if err := r.client.List(context.Background(), &pods, labels); err != nil {
+			return reconcile.Result{}, err
+		}
+		if len(pods.Items) == 0 || pods.Items[0].Status.PodIP == "" {
+			return reconcile.Result{}, err
+		}
+		swiftProxy.Spec.ServiceConfiguration.FabricMgmtIP = pods.Items[0].Status.PodIP
+		err = r.client.Update(context.TODO(), swiftProxy)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment)
 }
 

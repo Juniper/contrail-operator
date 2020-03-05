@@ -35,9 +35,11 @@ spec:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                fabricMgmtIP:
+                  type: string
                 keystoneInstance:
                   type: string
-                keystoneSecretInstance:
+                keystoneSecretName:
                   type: string
                 listenPort:
                   type: integer
