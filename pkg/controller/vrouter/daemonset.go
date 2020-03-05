@@ -29,7 +29,7 @@ spec:
         - operator: Exists
           effect: NoExecute
       initContainers:
-        - name: init-wait-pod-ready
+        - name: init
           image: busybox
           command:
             - sh

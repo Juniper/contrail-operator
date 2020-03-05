@@ -29,7 +29,7 @@ spec:
       dnsPolicy: ClusterFirst
       hostNetwork: true
       initContainers:
-        - name: init-wait-pod-ready
+        - name: init
           image: busybox
           command:
             - sh
@@ -42,7 +42,7 @@ spec:
             - name: CONTRAIL_STATUS_IMAGE
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           imagePullPolicy: Always
-        - name: contrail-node-init
+        - name: nodeinit
           image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
           env:
             - name: CONTRAIL_STATUS_IMAGE
