@@ -251,7 +251,7 @@ spec:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
-            swiftPassword: "swiftpass"
+            credentialsSecretName: "swift-credentials-secret"
             containers:
               init:
                 image: registry:5000/centos-binary-kolla-toolbox:master
