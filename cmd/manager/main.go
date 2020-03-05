@@ -22,6 +22,9 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/controller"
+	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -101,8 +104,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	var cinfo kubemanager.ClusterInfo
+	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
+		cinfo = openshift.ClusterInfo{}
+	} else {
+		cinfo = k8s.ClusterInfo{}
+	}
+
 	// Setup all Controllers.
-	if err := controller.AddToManager(mgr); err != nil {
+	if err := controller.AddToManager(mgr, cinfo); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

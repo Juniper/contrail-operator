@@ -2,6 +2,8 @@ package controller
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	//mgr "github.com/Juniper/contrail-operator/pkg/controller/manager"
 )
 
@@ -21,6 +23,9 @@ func AddToManager(m manager.Manager) error {
 			return err
 		}
 	}
-
+	if err := kubemanager.Add(m, cinfo); err != nil {
+		return err
+	}
+}
 	return nil
 }

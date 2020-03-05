@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -89,13 +90,13 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Kubemanager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, ci ClusterInfo) error {
+	return add(mgr, newReconciler(mgr, ci))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+func newReconciler(mgr manager.Manager, ci ClusterInfo) reconcile.Reconciler {
+	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr, clusterInfo: ci}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -181,6 +182,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 // blank assignment to verify that ReconcileKubemanager implements reconcile.Reconciler.
 var _ reconcile.Reconciler = &ReconcileKubemanager{}
 
+//ClusterInfo is interface for gathering information about cluster
+type ClusterInfo interface {
+	ConfigClusterInfo(*kubernetes.Clientset) (v1alpha1.ClusterInfo, error)
+}
+
 // ReconcileKubemanager reconciles a Kubemanager object.
 type ReconcileKubemanager struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -188,6 +194,7 @@ type ReconcileKubemanager struct {
 	Client  client.Client
 	Scheme  *runtime.Scheme
 	Manager manager.Manager
+	clusterInfo ClusterInfo
 }
 
 // Reconcile reads that state of the cluster for a Kubemanager object and makes changes based on the state read
@@ -449,7 +456,15 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	if len(podIPList.Items) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+		config, err := v1alpha1.GetClientConfig()
+		if err != nil {
+			return err
+		}
+		clientset, err := v1alpha1.GetClientsetFromConfig(config)
+		if err != nil {
+			return err
+		}
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo.ConfigClusterInfo(clientset)); err != nil {
 			return reconcile.Result{}, err
 		}
 
