@@ -126,7 +126,7 @@ func TestCommandServices(t *testing.T) {
 						MemcachedInstance:      "commandtest-memcached",
 						ListenPort:             5080,
 						KeystoneInstance:       "commandtest-keystone",
-						CredentialsSecretName:  "swift-credentials-secret",
+						CredentialsSecretName:  "commandtest-swift-credentials-secret",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
 							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
@@ -193,8 +193,22 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
+		swiftCredentialsSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-swift-credentials-secret",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"user": "swift",
+				"password": "test321",
+			},
+		}
+
 		t.Run("when manager resource with command and dependencies is created", func(t *testing.T) {
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
+
+			err = f.Client.Create(context.TODO(), swiftCredentialsSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
