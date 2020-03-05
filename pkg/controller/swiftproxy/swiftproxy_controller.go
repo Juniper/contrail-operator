@@ -133,7 +133,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, nil
 	}
 
-	adminPasswordSecretName := swiftProxy.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecretName := swiftProxy.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: swiftProxy.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err

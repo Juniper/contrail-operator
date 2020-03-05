@@ -43,12 +43,12 @@ type WebuiSpec struct {
 // WebuiConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiConfiguration struct {
-	Containers             map[string]*Container `json:"containers,omitempty"`
-	CassandraInstance      string                `json:"cassandraInstance,omitempty"`
-	ServiceAccount         string                `json:"serviceAccount,omitempty"`
-	ClusterRole            string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding     string                `json:"clusterRoleBinding,omitempty"`
-	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
+	ServiceAccount     string                `json:"serviceAccount,omitempty"`
+	ClusterRole        string                `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
+	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -184,7 +184,7 @@ func (c *Webui) ConfigurationParameters(client client.Client) (*WebUIClusterConf
 	w := &WebUIClusterConfiguration{
 		AdminUsername: "admin",
 	}
-	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &corev1.Secret{}
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
 		return nil, err

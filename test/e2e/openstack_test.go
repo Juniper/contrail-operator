@@ -76,10 +76,10 @@ func TestOpenstackServices(t *testing.T) {
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
-					MemcachedInstance:      "openstacktest-memcached",
-					PostgresInstance:       "openstacktest-psql",
-					KeystoneSecretInstance: "openstacktest-keystone-adminpass-secret",
-					ListenPort:             5555,
+					MemcachedInstance:  "openstacktest-memcached",
+					PostgresInstance:   "openstacktest-psql",
+					KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
+					ListenPort:         5555,
 					Containers: map[string]*contrail.Container{
 						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
 						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
@@ -106,7 +106,7 @@ func TestOpenstackServices(t *testing.T) {
 					Keystone:  keystoneResource,
 					Memcached: memcached,
 				},
-				KeystoneSecretInstance: "openstacktest-keystone-adminpass-secret",
+				KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 			},
 		}
 
@@ -196,11 +196,11 @@ func TestOpenstackServices(t *testing.T) {
 							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-							MemcachedInstance:      "openstacktest-memcached",
-							ListenPort:             5070,
-							KeystoneInstance:       "openstacktest-keystone",
-							SwiftPassword:          "swiftpass",
-							KeystoneSecretInstance: "openstacktest-keystone-adminpass-secret",
+							MemcachedInstance:  "openstacktest-memcached",
+							ListenPort:         5070,
+							KeystoneInstance:   "openstacktest-keystone",
+							SwiftPassword:      "swiftpass",
+							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
 								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
 								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},

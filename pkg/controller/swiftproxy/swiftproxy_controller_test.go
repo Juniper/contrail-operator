@@ -214,7 +214,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftPassword:             "swiftpass",
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
-				KeystoneSecretInstance:    "keystone-adminpass-secret",
+				KeystoneSecretName:        "keystone-adminpass-secret",
 			},
 		},
 		Status: status,
@@ -399,7 +399,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 		},
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 		Status: status,

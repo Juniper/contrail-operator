@@ -328,7 +328,7 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	}}
 	assert.Equal(t, expectedOwnerRefs, swiftProxy.OwnerReferences)
 	expectedSwiftProxyConf := swiftCR.Spec.ServiceConfiguration.SwiftProxyConfiguration
-	assert.Equal(t, expectedSwiftProxyConf.KeystoneSecretInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneSecretInstance)
+	assert.Equal(t, expectedSwiftProxyConf.KeystoneSecretName, swiftProxy.Spec.ServiceConfiguration.KeystoneSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)

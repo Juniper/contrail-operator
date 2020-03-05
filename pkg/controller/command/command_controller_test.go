@@ -308,7 +308,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 		},
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 		Status: status,

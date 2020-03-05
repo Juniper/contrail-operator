@@ -363,10 +363,10 @@ func newKeystone() *contrail.Keystone {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				MemcachedInstance:      "memcached-instance",
-				PostgresInstance:       "psql",
-				ListenPort:             5555,
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				MemcachedInstance:  "memcached-instance",
+				PostgresInstance:   "psql",
+				ListenPort:         5555,
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 	}

@@ -76,10 +76,10 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
-					MemcachedInstance:      "commandtest-memcached",
-					PostgresInstance:       "commandtest-psql",
-					ListenPort:             5555,
-					KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+					MemcachedInstance:  "commandtest-memcached",
+					PostgresInstance:   "commandtest-psql",
+					ListenPort:         5555,
+					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					Containers: map[string]*contrail.Container{
 						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
 						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
@@ -123,11 +123,11 @@ func TestCommandServices(t *testing.T) {
 						},
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-						MemcachedInstance:      "commandtest-memcached",
-						ListenPort:             5080,
-						KeystoneInstance:       "commandtest-keystone",
-						SwiftPassword:          "swiftpass",
-						KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+						MemcachedInstance:  "commandtest-memcached",
+						ListenPort:         5080,
+						KeystoneInstance:   "commandtest-keystone",
+						SwiftPassword:      "swiftpass",
+						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
 							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
 							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},
@@ -179,7 +179,7 @@ func TestCommandServices(t *testing.T) {
 					Command:   command,
 					Swift:     swiftInstance,
 				},
-				KeystoneSecretInstance: "commandtest-keystone-adminpass-secret",
+				KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 			},
 		}
 

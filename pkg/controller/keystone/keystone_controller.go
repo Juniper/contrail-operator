@@ -153,7 +153,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
-	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
