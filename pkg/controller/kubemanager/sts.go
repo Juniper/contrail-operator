@@ -22,75 +22,75 @@ spec:
       app: kubemanager
       contrail_manager: kubemanager
     spec:
-      containers:
-      - image: docker.io/michaelhenkel/contrail-kubernetes-kube-manager:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: kubemanager
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: kubemanager-logs
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-        env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        image: busybox
-        imagePullPolicy: Always
-        name: init
-        volumeMounts:
-        - mountPath: /tmp/podinfo
-          name: status
-      - env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-        imagePullPolicy: Always
-        name: nodeinit
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /host/usr/bin
-          name: host-usr-bin
       nodeSelector:
         node-role.kubernetes.io/master: ""
       serviceAccount: contrail-service-account-kubemanager
       serviceAccountName: contrail-service-account-kubemanager
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      initContainers:
+        - name: init-wait-pod-ready
+          image: busybox
+          command:
+            - sh
+            - -c
+            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+          volumeMounts:
+            - mountPath: /tmp/podinfo
+              name: status
+          env:
+            - name: CONTRAIL_STATUS_IMAGE
+              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+          imagePullPolicy: Always
+        - name: contrail-node-init
+          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
+          env:
+            - name: CONTRAIL_STATUS_IMAGE
+              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+          volumeMounts:
+            - mountPath: /host/usr/bin
+              name: host-usr-bin
+          securityContext:
+            privileged: true
+          imagePullPolicy: Always
+      containers:
+        - name: kubemanager
+          image: docker.io/michaelhenkel/contrail-kubernetes-kube-manager:5.2.0-dev1
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: kubemanager-logs
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
       tolerations:
-      - effect: NoSchedule
-        operator: Exists
-      - effect: NoExecute
-        operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
       volumes:
-      - hostPath:
-          path: /var/log/contrail/kubemanager
-          type: ""
-        name: kubemanager-logs
-      - hostPath:
-          path: /usr/bin
-          type: ""
-        name: host-usr-bin
-      - downwardAPI:
-          defaultMode: 420
-          items:
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.labels
-            path: pod_labels
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.labels
-            path: pod_labelsx
-        name: status`
+        - hostPath:
+            path: /var/log/contrail/kubemanager
+            type: ""
+          name: kubemanager-logs
+        - hostPath:
+            path: /usr/bin
+            type: ""
+          name: host-usr-bin
+        - downwardAPI:
+            defaultMode: 420
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels
+              path: pod_labels
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels
+              path: pod_labelsx
+          name: status`
 
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}
