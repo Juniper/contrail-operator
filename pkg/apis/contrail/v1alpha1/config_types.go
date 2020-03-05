@@ -46,21 +46,21 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers             map[string]*Container `json:"containers,omitempty"`
-	APIPort                *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort          *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort          *int                  `json:"collectorPort,omitempty"`
-	RedisPort              *int                  `json:"redisPort,omitempty"`
-	CassandraInstance      string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance      string                `json:"zookeeperInstance,omitempty"`
-	NodeManager            *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser           string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword       string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost          string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel               string                `json:"logLevel,omitempty"`
-	KeystoneSecretInstance string                `json:"keystoneSecretInstance,omitempty"`
-	Storage                Storage               `json:"storage,omitempty"`
-	FabricMgmtIP           string                `json:"fabricMgmtIP,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	APIPort            *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort      *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort      *int                  `json:"collectorPort,omitempty"`
+	RedisPort          *int                  `json:"redisPort,omitempty"`
+	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance  string                `json:"zookeeperInstance,omitempty"`
+	NodeManager        *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser       string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword   string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel           string                `json:"logLevel,omitempty"`
+	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	Storage            Storage               `json:"storage,omitempty"`
+	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -440,7 +440,7 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 	w := &ConfigAuthParameters{
 		AdminUsername: "admin",
 	}
-	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretInstance
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &corev1.Secret{}
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
 		return nil, err

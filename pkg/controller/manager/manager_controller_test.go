@@ -45,7 +45,7 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Command: &command,
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		}
 		initObjs := []runtime.Object{
@@ -137,7 +137,7 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Command: &commandUpdate,
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		}
 
@@ -201,7 +201,7 @@ func TestManagerController(t *testing.T) {
 				Services: contrail.Services{
 					Postgres: &psql,
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		}
 
@@ -279,7 +279,7 @@ func TestManagerController(t *testing.T) {
 					Postgres: &psql,
 					Command:  &command,
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		}
 
@@ -381,7 +381,7 @@ func TestManagerController(t *testing.T) {
 					Postgres: &psql,
 					Keystone: &keystone,
 				},
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		}
 
@@ -441,8 +441,8 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.KeystoneSpec{
 				ServiceConfiguration: contrail.KeystoneConfiguration{
-					PostgresInstance:       "psql",
-					KeystoneSecretInstance: "keystone-adminpass-secret",
+					PostgresInstance:   "psql",
+					KeystoneSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -539,9 +539,9 @@ func newKeystone() *contrail.Keystone {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				PostgresInstance:       "psql",
-				ListenPort:             5555,
-				KeystoneSecretInstance: "keystone-adminpass-secret",
+				PostgresInstance:   "psql",
+				ListenPort:         5555,
+				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 	}

@@ -165,10 +165,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if instance.Spec.KeystoneSecretInstance == "" {
-		instance.Spec.KeystoneSecretInstance = instance.Name + "-admin-password"
+	if instance.Spec.KeystoneSecretName == "" {
+		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
 	}
-	adminPasswordSecretName := instance.Spec.KeystoneSecretInstance
+	adminPasswordSecretName := instance.Spec.KeystoneSecretName
 	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -524,7 +524,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-		webuiService.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
+		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
 		cr.Labels = webuiService.ObjectMeta.Labels
@@ -552,7 +552,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -766,7 +766,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		configService.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
+		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
 		cr.Labels = configService.ObjectMeta.Labels
@@ -796,7 +796,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretInstance = instance.Spec.KeystoneSecretInstance
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -1467,7 +1467,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	command := &v1alpha1.Command{}
 	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
-	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretInstance
+	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
 		command.Spec = manager.Spec.Services.Command.Spec
 		if command.Spec.ServiceConfiguration.ClusterName == "" {
@@ -1489,7 +1489,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 	keystone := &v1alpha1.Keystone{}
 	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta
 	keystone.ObjectMeta.Namespace = manager.Namespace
-	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
+	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
@@ -1523,7 +1523,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	}
 	swift := &v1alpha1.Swift{}
 	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
-	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretInstance = manager.Spec.KeystoneSecretInstance
+	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec

@@ -16,7 +16,7 @@ type SwiftProxyConfiguration struct {
 	MemcachedInstance         string                `json:"memcachedInstance,omitempty"`
 	ListenPort                int                   `json:"listenPort,omitempty"`
 	KeystoneInstance          string                `json:"keystoneInstance,omitempty"`
-	KeystoneSecretInstance    string                `json:"keystoneSecretInstance,omitempty"`
+	KeystoneSecretName        string                `json:"keystoneSecretName,omitempty"`
 	SwiftPassword             string                `json:"swiftPassword,omitempty"`
 	SwiftConfSecretName       string                `json:"swiftConfSecretName,omitempty"`
 	Containers                map[string]*Container `json:"containers,omitempty"`

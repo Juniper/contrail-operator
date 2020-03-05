@@ -31,7 +31,7 @@ var config = &v1alpha1.Config{
 	},
 	Spec: v1alpha1.ConfigSpec{
 		ServiceConfiguration: v1alpha1.ConfigConfiguration{
-			KeystoneSecretInstance: "keystone-adminpass-secret",
+			KeystoneSecretName: "keystone-adminpass-secret",
 		},
 	},
 }
@@ -67,7 +67,7 @@ var webui = &v1alpha1.Webui{
 	},
 	Spec: v1alpha1.WebuiSpec{
 		ServiceConfiguration: v1alpha1.WebuiConfiguration{
-			KeystoneSecretInstance: "keystone-adminpass-secret",
+			KeystoneSecretName: "keystone-adminpass-secret",
 		},
 	},
 }
