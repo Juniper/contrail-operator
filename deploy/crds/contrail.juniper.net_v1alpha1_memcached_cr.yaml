@@ -1,0 +1,9 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Memcached
+metadata:
+  name: example-memcached
+  namespace: contrail
+spec:
+  serviceConfiguration:
+    container:
+      image: "localhost:5000/centos-binary-memcached:master"

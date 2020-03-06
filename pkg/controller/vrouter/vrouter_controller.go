@@ -190,6 +190,10 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
 

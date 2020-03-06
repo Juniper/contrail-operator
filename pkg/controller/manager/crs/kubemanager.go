@@ -1,19 +1,19 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	
+
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataKubemanager= `
+var yamlDataKubemanager = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Kubemanager
 metadata:
   name: cluster-1
 `
 
-func GetKubemanagerCr() *v1alpha1.Kubemanager{
+func GetKubemanagerCr() *v1alpha1.Kubemanager {
 	cr := v1alpha1.Kubemanager{}
 	err := yaml.Unmarshal([]byte(yamlDataKubemanager), &cr)
 	if err != nil {
@@ -29,4 +29,3 @@ func GetKubemanagerCr() *v1alpha1.Kubemanager{
 	}
 	return &cr
 }
-	

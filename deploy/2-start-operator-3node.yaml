@@ -48,6 +48,8 @@ spec:
               image: opencontrailnightly/contrail-analytics-collector:1910-latest
             devicemanager:
               image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+            dnsmasq:
+              image: opencontrailnightly/contrail-external-dnsmasq:1910-latest
             init:
               image: python:alpine
             init2:
@@ -60,6 +62,8 @@ spec:
               image: opencontrailnightly/contrail-controller-config-schema:1910-latest
             servicemonitor:
               image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
+            queryengine:
+              image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -123,7 +127,7 @@ spec:
           create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
-          replicas: 1
+          replicas: 3
         serviceConfiguration:
           containers:
             init:

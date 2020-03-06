@@ -184,6 +184,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	if err = r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
+
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
 	if !configActive {
 		return reconcile.Result{}, nil
@@ -327,7 +332,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "webuiweb" {
 			command := []string{"bash", "-c",
-				"cp /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/contrail/config.global.js"}
+				"/usr/bin/rm -f /etc/contrail/config.global.js; ln -s /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; /usr/bin/rm -f /etc/contrail/contrail-webui-userauth.js; ln -s /etc/mycontrail/contrail-webui-userauth.js /etc/contrail/contrail-webui-userauth.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/contrail/config.global.js"}
 
 			//"/certs-init.sh && /usr/bin/node /usr/src/contrail/contrail-web-core/webServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
@@ -354,7 +359,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 		if container.Name == "webuijob" {
 			command := []string{"bash", "-c",
-				"cp /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/contrail/config.global.js"}
+				"/usr/bin/rm -f /etc/contrail/config.global.js; ln -s /etc/mycontrail/config.global.js.${POD_IP} /etc/contrail/config.global.js; /usr/bin/rm -f /etc/contrail/contrail-webui-userauth.js; ln -s /etc/mycontrail/contrail-webui-userauth.js /etc/contrail/contrail-webui-userauth.js; until ss -tulwn |grep LISTEN |grep 6380; do sleep 2; done;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/contrail/config.global.js"}
 
 			//"/certs-init.sh && sleep 10;/usr/bin/node /usr/src/contrail/contrail-web-core/jobServerStart.js --conf_file /etc/mycontrail/config.global.js.${POD_IP}"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {

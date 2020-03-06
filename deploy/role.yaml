@@ -54,11 +54,22 @@ rules:
   - webuis
   - vrouters
   - provisionmanagers
+  - contrailcommands
+  - swiftstorages
+  - keystones
+  - swifts
+  - memcacheds
   verbs:
   - '*'
 - apiGroups:
   - storage
   resources:
   - storageclasses
+  verbs:
+  - '*'
+- apiGroups:
+  - contrail
+  resources:
+  - '*'
   verbs:
   - '*'

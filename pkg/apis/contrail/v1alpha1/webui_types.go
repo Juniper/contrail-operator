@@ -48,6 +48,7 @@ type WebuiConfiguration struct {
 	ServiceAccount     string                `json:"serviceAccount,omitempty"`
 	ClusterRole        string                `json:"clusterRole,omitempty"`
 	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
+	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -101,6 +102,12 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+
+	webUIConfig, err := c.ConfigurationParameters(client)
+	if err != nil {
+		return err
+	}
+
 	var podIPList []string
 	for _, pod := range podList.Items {
 		podIPList = append(podIPList, pod.Status.PodIP)
@@ -110,7 +117,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var webuiWebConfigBuffer bytes.Buffer
 		configtemplates.WebuiWebConfig.Execute(&webuiWebConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			Hostname            string
 			APIServerList       string
 			APIServerPort       string
@@ -122,8 +129,10 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			CassandraPort       string
 			RedisServerList     string
 			RedisServerPort     string
+			AdminUsername       string
+			AdminPassword       string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
 			APIServerList:       configNodesInformation.APIServerListQuotedCommaSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
@@ -135,12 +144,19 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			RedisServerList:     "127.0.0.1",
 			RedisServerPort:     "6380",
+			AdminUsername:       webUIConfig.AdminUsername,
+			AdminPassword:       webUIConfig.AdminPassword,
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)
 		var webuiAuthConfigBuffer bytes.Buffer
 		configtemplates.WebuiAuthConfig.Execute(&webuiAuthConfigBuffer, struct {
-		}{})
+			AdminUsername string
+			AdminPassword string
+		}{
+			AdminUsername: webUIConfig.AdminUsername,
+			AdminPassword: webUIConfig.AdminPassword,
+		})
 		data["contrail-webui-userauth.js"] = webuiAuthConfigBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
@@ -162,6 +178,19 @@ func (c *Webui) CreateSecret(secretName string,
 		request,
 		"webui",
 		c)
+}
+
+func (c *Webui) ConfigurationParameters(client client.Client) (*WebUIClusterConfiguration, error) {
+	w := &WebUIClusterConfiguration{
+		AdminUsername: "admin",
+	}
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
+	adminPasswordSecret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
+		return nil, err
+	}
+	w.AdminPassword = string(adminPasswordSecret.Data["password"])
+	return w, nil
 }
 
 func (c *Webui) CreateConfigMap(configMapName string,
@@ -256,9 +285,4 @@ func (c *Webui) ManageNodeStatus(podNameIPMap map[string]string,
 		return err
 	}
 	return nil
-}
-
-func (c *Webui) ConfigurationParameters() interface{} {
-	var configurationMap = make(map[string]string)
-	return configurationMap
 }

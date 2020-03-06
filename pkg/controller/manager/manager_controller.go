@@ -3,8 +3,8 @@ package manager
 import (
 	"context"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
+	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,16 +16,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
-	corev1 "k8s.io/api/core/v1"
-
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_manager")
+
+var resourcesList = []runtime.Object{
+	&v1alpha1.Cassandra{},
+	&v1alpha1.Zookeeper{},
+	&v1alpha1.Webui{},
+	&v1alpha1.ProvisionManager{},
+	&v1alpha1.Config{},
+	&v1alpha1.Control{},
+	&v1alpha1.Rabbitmq{},
+	&v1alpha1.Postgres{},
+	&v1alpha1.Command{},
+	&v1alpha1.Keystone{},
+	&v1alpha1.Swift{},
+	&v1alpha1.Memcached{},
+}
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
@@ -37,7 +51,7 @@ var log = logf.Log.WithName("controller_manager")
 func Add(mgr manager.Manager) error {
 	apiextensionsv1beta1.AddToScheme(scheme.Scheme)
 	var r reconcile.Reconciler
-	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache()}
+	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache(), kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -56,10 +70,22 @@ func createController(mgr manager.Manager, r reconcile.Reconciler) (controller.C
 	return c, nil
 }
 
+func addResourcesToWatch(c controller.Controller, obj runtime.Object) error {
+	return c.Watch(&source.Kind{Type: obj}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Manager{},
+	})
+}
+
 func addManagerWatch(c controller.Controller) error {
 	err := c.Watch(&source.Kind{Type: &v1alpha1.Manager{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
+	}
+	for _, resource := range resourcesList {
+		if err = addResourcesToWatch(c, resource); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -106,6 +132,7 @@ type ReconcileManager struct {
 	manager    manager.Manager
 	controller controller.Controller
 	cache      cache.Cache
+	kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reconciles the manager.
@@ -120,6 +147,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 		return reconcile.Result{}, err
 	}
+
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	provisionConfigMap := &corev1.ConfigMap{}
 	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "provision-config", Namespace: request.Namespace}, provisionConfigMap); err != nil {
 		if errors.IsNotFound(err) {
@@ -132,6 +164,18 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 		}
 	}
+
+	if instance.Spec.KeystoneSecretName == "" {
+		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
+	}
+	adminPasswordSecretName := instance.Spec.KeystoneSecretName
+	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.client.Update(context.TODO(), instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Create CRDs
 	/*
 		cassandraCrdActive := false
@@ -249,20 +293,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if cassandraService.Name == *cassandraStatus.Name {
 						status = cassandraStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				cassandraStatusList = append(cassandraStatusList, status)
 				instance.Status.Cassandras = cassandraStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -294,6 +334,22 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			cassandraStatusList := []*v1alpha1.ServiceStatus{}
+			if instance.Status.Cassandras != nil {
+				for _, cassandraStatus := range instance.Status.Cassandras {
+					if cassandraService.Name == *cassandraStatus.Name {
+						status = cassandraStatus
+						status.Active = cr.Status.Active
+					}
+				}
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				cassandraStatusList = append(cassandraStatusList, status)
+				instance.Status.Cassandras = cassandraStatusList
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -311,20 +367,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if cassandraService.Name == *cassandraStatus.Name {
 						status = cassandraStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				cassandraStatusList = append(cassandraStatusList, status)
 				instance.Status.Cassandras = cassandraStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 	}
 
@@ -380,20 +432,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if zookeeperService.Name == *zookeeperStatus.Name {
 						status = zookeeperStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				zookeeperStatusList = append(zookeeperStatusList, status)
 				instance.Status.Zookeepers = zookeeperStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -425,6 +473,22 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			zookeeperStatusList := []*v1alpha1.ServiceStatus{}
+			if instance.Status.Zookeepers != nil {
+				for _, zookeeperStatus := range instance.Status.Zookeepers {
+					if zookeeperService.Name == *zookeeperStatus.Name {
+						status = zookeeperStatus
+						status.Active = cr.Status.Active
+					}
+				}
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				zookeeperStatusList = append(zookeeperStatusList, status)
+				instance.Status.Zookeepers = zookeeperStatusList
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -442,20 +506,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if zookeeperService.Name == *zookeeperStatus.Name {
 						status = zookeeperStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				zookeeperStatusList = append(zookeeperStatusList, status)
 				instance.Status.Zookeepers = zookeeperStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 	}
 
@@ -464,7 +524,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
+		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
 		cr.Labels = webuiService.ObjectMeta.Labels
@@ -492,6 +552,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -502,22 +563,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					}
 				}
 			}
-
 			status := &v1alpha1.ServiceStatus{}
 			if instance.Status.Webui != nil {
 				status = instance.Status.Webui
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Webui = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -549,6 +605,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.Webui != nil {
+				status = instance.Status.Webui
+				status.Active = cr.Status.Active
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				instance.Status.Webui = status
+			}
+
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -563,15 +630,12 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Webui != nil {
 				status = instance.Status.Webui
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Webui = status
-			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
 			}
 		}
 	}
@@ -624,17 +688,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.ProvisionManager != nil {
 				status = instance.Status.ProvisionManager
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.ProvisionManager = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -666,6 +726,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.ProvisionManager != nil {
+				status = instance.Status.ProvisionManager
+				status.Active = cr.Status.Active
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				instance.Status.ProvisionManager = status
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -680,15 +750,12 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.ProvisionManager != nil {
 				status = instance.Status.ProvisionManager
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.ProvisionManager = status
-			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
 			}
 		}
 	}
@@ -699,6 +766,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
 		cr.Labels = configService.ObjectMeta.Labels
@@ -728,6 +796,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -738,22 +807,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					}
 				}
 			}
-
 			status := &v1alpha1.ServiceStatus{}
 			if instance.Status.Config != nil {
 				status = instance.Status.Config
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Config = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -787,6 +851,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.Config != nil {
+				status = instance.Status.Config
+				status.Active = cr.Status.Active
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				instance.Status.Config = status
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -801,17 +875,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Config != nil {
 				status = instance.Status.Config
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Config = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 	}
 
@@ -867,20 +937,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if kubemanagerService.Name == *kubemanagerStatus.Name {
 						status = kubemanagerStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				kubemanagerStatusList = append(kubemanagerStatusList, status)
 				instance.Status.Kubemanagers = kubemanagerStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -912,6 +978,22 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			kubemanagerStatusList := []*v1alpha1.ServiceStatus{}
+			if instance.Status.Kubemanagers != nil {
+				for _, kubemanagerStatus := range instance.Status.Kubemanagers {
+					if kubemanagerService.Name == *kubemanagerStatus.Name {
+						status = kubemanagerStatus
+						status.Active = cr.Status.Active
+					}
+				}
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				kubemanagerStatusList = append(kubemanagerStatusList, status)
+				instance.Status.Kubemanagers = kubemanagerStatusList
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -929,20 +1011,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if kubemanagerService.Name == *kubemanagerStatus.Name {
 						status = kubemanagerStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				kubemanagerStatusList = append(kubemanagerStatusList, status)
 				instance.Status.Kubemanagers = kubemanagerStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 	}
 
@@ -998,20 +1076,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if controlService.Name == *controlStatus.Name {
 						status = controlStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				controlStatusList = append(controlStatusList, status)
 				instance.Status.Controls = controlStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1043,6 +1117,22 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			controlStatusList := []*v1alpha1.ServiceStatus{}
+			if instance.Status.Controls != nil {
+				for _, controlStatus := range instance.Status.Controls {
+					if controlService.Name == *controlStatus.Name {
+						status = controlStatus
+						status.Active = cr.Status.Active
+					}
+				}
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				controlStatusList = append(controlStatusList, status)
+				instance.Status.Controls = controlStatusList
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1060,18 +1150,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					if controlService.Name == *controlStatus.Name {
 						status = controlStatus
 						status.Created = &create
+						status.Active = cr.Status.Active
 					}
 				}
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				controlStatusList = append(controlStatusList, status)
 				instance.Status.Controls = controlStatusList
-			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
 			}
 
 		}
@@ -1125,17 +1212,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Rabbitmq != nil {
 				status = instance.Status.Rabbitmq
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Rabbitmq = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1167,6 +1250,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					return reconcile.Result{}, err
 				}
 			}
+			status := &v1alpha1.ServiceStatus{}
+			if instance.Status.Rabbitmq != nil {
+				status = instance.Status.Rabbitmq
+				status.Active = cr.Status.Active
+			} else {
+				status.Name = &cr.Name
+				status.Created = &create
+				status.Active = cr.Status.Active
+				instance.Status.Rabbitmq = status
+			}
 		}
 		if delete {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1181,17 +1274,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Rabbitmq != nil {
 				status = instance.Status.Rabbitmq
 				status.Created = &create
+				status.Active = cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
+				status.Active = cr.Status.Active
 				instance.Status.Rabbitmq = status
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 	}
 
@@ -1267,12 +1356,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				vrouterStatusList = append(vrouterStatusList, status)
 				instance.Status.Vrouters = vrouterStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
 		if update {
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1333,33 +1416,138 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				vrouterStatusList = append(vrouterStatusList, status)
 				instance.Status.Vrouters = vrouterStatusList
 			}
-
-			err = r.client.Status().Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
 		}
+	}
+
+	if err := r.processPostgres(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processCommand(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processKeystone(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processSwift(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processMemcached(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	r.setConditions(instance)
+
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileManager) createCrd(instance *v1alpha1.Manager, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
-	reqLogger := log.WithValues("Instance.Namespace", instance.Namespace, "Instance.Name", instance.Name)
-	reqLogger.Info("Creating CRD")
-	newCrd := apiextensionsv1beta1.CustomResourceDefinition{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crd.Spec.Names.Plural + "." + crd.Spec.Group, Namespace: newCrd.Namespace}, &newCrd)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " not found. Creating it.")
-		//controllerutil.SetControllerReference(&newCrd, crd, r.scheme)
-		err = r.client.Create(context.TODO(), crd)
-		if err != nil {
-			reqLogger.Error(err, "Failed to create new crd.", "crd.Namespace", crd.Namespace, "crd.Name", crd.Name)
-			return err
-		}
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " created.")
-	} else if err == nil {
-		reqLogger.Info("CRD " + crd.Spec.Names.Plural + "." + crd.Spec.Group + " already exists.")
+func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
+	readyStatus := v1alpha1.ConditionFalse
+	if manager.IsClusterReady() {
+		readyStatus = v1alpha1.ConditionTrue
 	}
-	return nil
+
+	manager.Status.Conditions = []v1alpha1.ManagerCondition{{
+		Type:   v1alpha1.ManagerReady,
+		Status: readyStatus,
+	}}
+}
+
+func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Command == nil {
+		return nil
+	}
+	command := &v1alpha1.Command{}
+	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
+	command.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
+		command.Spec = manager.Spec.Services.Command.Spec
+		if command.Spec.ServiceConfiguration.ClusterName == "" {
+			command.Spec.ServiceConfiguration.ClusterName = manager.GetName()
+		}
+		return controllerutil.SetControllerReference(manager, command, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &command.Status.Active
+	manager.Status.Command = status
+	return err
+}
+
+func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Keystone == nil {
+		return nil
+	}
+
+	keystone := &v1alpha1.Keystone{}
+	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta
+	keystone.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
+		keystone.Spec = manager.Spec.Services.Keystone.Spec
+		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &keystone.Status.Active
+	manager.Status.Keystone = status
+	return err
+}
+
+func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Postgres == nil {
+		return nil
+	}
+	psql := &v1alpha1.Postgres{}
+	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta
+	psql.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
+		psql.Spec = manager.Spec.Services.Postgres.Spec
+		return controllerutil.SetControllerReference(manager, psql, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &psql.Status.Active
+	manager.Status.Postgres = status
+	return err
+}
+
+func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Swift == nil {
+		return nil
+	}
+	swift := &v1alpha1.Swift{}
+	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
+	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	swift.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
+		swift.Spec = manager.Spec.Services.Swift.Spec
+		return controllerutil.SetControllerReference(manager, swift, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &swift.Status.Active
+	manager.Status.Swift = status
+	return err
+}
+
+func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Memcached == nil {
+		return nil
+	}
+	memcached := &v1alpha1.Memcached{}
+	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta
+	memcached.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
+		memcached.Spec = manager.Spec.Services.Memcached.Spec
+		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &memcached.Status.Active
+	manager.Status.Memcached = status
+	return err
 }

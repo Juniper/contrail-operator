@@ -428,3 +428,8 @@ func (c *ProvisionManager) PodIPListAndIPMapFromInstance(request reconcile.Reque
 func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)
 }
+
+// SetInstanceActive sets the ProvisionManager instance to active.
+func (c *ProvisionManager) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
+	return SetInstanceActive(client, activeStatus, sts, request, c)
+}

@@ -1,0 +1,376 @@
+package command
+
+import (
+	"bytes"
+	"strings"
+	"text/template"
+
+	core "k8s.io/api/core/v1"
+)
+
+type commandConf struct {
+	ClusterName    string
+	ConfigAPIURL   string
+	TelemetryURL   string
+	AdminUsername  string
+	AdminPassword  string
+	PostgresUser   string
+	PostgresDBName string
+}
+
+func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
+	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
+	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
+	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
+	cm.Data["entrypoint.sh"] = commandEntrypoint
+}
+
+func (c *commandConf) executeTemplate(t *template.Template) string {
+	var buffer bytes.Buffer
+	if err := t.Execute(&buffer, c); err != nil {
+		panic(err)
+	}
+	return buffer.String()
+}
+
+// TODO: Major HACK contrailgo doesn't support external CA certificates
+var commandEntrypoint = `
+#!/bin/bash
+cp /run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/pki/ca-trust/source/anchors/
+update-ca-trust
+/bin/contrailgo -c /etc/contrail/contrail.yml run
+`
+
+var commandInitBootstrapScript = template.Must(template.New("").Parse(`
+#!/bin/bash
+
+QUERY_RESULT=$(psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+QUERY_EXIT_CODE=$?
+if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
+    exit 0
+fi
+
+if [[ $QUERY_EXIT_CODE == 2 ]]; then
+    exit 1
+fi
+
+set -e
+psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
+contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
+contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+`))
+
+var funcMap = template.FuncMap{
+	"ToLower": strings.ToLower,
+}
+
+var commandInitCluster = template.Must(template.New("").Funcs(funcMap).Parse(`
+---
+resources:
+  - data:
+      fq_name:
+        - default-global-system-config
+        - 534965b0-f40c-11e9-8de6-38c986460fd4
+      hostname: {{ .ClusterName | ToLower }}
+      ip_address: localhost
+      isNode: 'false'
+      name: 5349662b-f40c-11e9-a57d-38c986460fd4
+      node_type: private
+      parent_type: global-system-config
+      type: private
+      uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+    kind: node
+  - data:
+      container_registry: localhost:5000
+      contrail_configuration:
+        key_value_pair:
+          - key: ssh_user
+            value: root
+          - key: ssh_pwd
+            value: contrail123
+          - key: UPDATE_IMAGES
+            value: 'no'
+          - key: UPGRADE_KERNEL
+            value: 'no'
+      contrail_version: latest
+      display_name: {{ .ClusterName }}
+      high_availability: false
+      name: {{ .ClusterName | ToLower }}
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+      orchestrator: none
+      parent_type: global-system-configsd
+      provisioning_state: CREATED
+      uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+    kind: contrail_cluster
+  - data:
+      name: 53495bee-f40c-11e9-b88e-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495bee-f40c-11e9-b88e-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53495ab8-f40c-11e9-b3bf-38c986460fd4
+    kind: contrail_config_database_node
+  - data:
+      name: 53495680-f40c-11e9-8520-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495680-f40c-11e9-8520-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 534955ae-f40c-11e9-97df-38c986460fd4
+    kind: contrail_control_node
+  - data:
+      name: 53495d87-f40c-11e9-8a67-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53495d87-f40c-11e9-8a67-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53495cca-f40c-11e9-a732-38c986460fd4
+    kind: contrail_webui_node
+  - data:
+      name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53496300-f40c-11e9-8880-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+    kind: contrail_config_node
+  - data:
+      name: 53496300-f40c-11e9-8880-38c986460fd4
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 53496300-f40c-11e9-8880-38c986460fd4
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+    kind: contrail_config_node
+  - data:
+      name: 4b49504f-7bea-4500-b83c-e16a8eccac77
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - 4b49504f-7bea-4500-b83c-e16a8eccac77
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: 4b49504f-7bea-4500-b83c-e16a8eccac77
+    kind: contrail_ztp_dhcp_node
+  - data:
+      name: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - f7dda935-4a4a-477e-b0f8-ec0329ba887e 
+      node_refs:
+        - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
+      parent_type: contrail-cluster
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      uuid: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+    kind: contrail_ztp_tftp_node
+  - data:
+      name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      uuid: 32dced10-efac-42f0-be7a-353ca163dca9
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: nodejs
+      private_url: https://localhost:8143
+      public_url: https://localhost:8143
+    kind: endpoint
+  - data:
+      uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
+      name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: telemetry
+      private_url: {{ .TelemetryURL }}
+      public_url: {{ .TelemetryURL }}
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
+      name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: config
+      private_url: {{ .ConfigAPIURL }}
+      public_url: {{ .ConfigAPIURL }}
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
+      name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: keystone
+      private_url: "http://localhost:5555"
+      public_url: "http://localhost:5555"
+    kind: endpoint
+  - data:
+      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
+      name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      fq_name:
+        - default-global-system-config
+        - {{ .ClusterName | ToLower }}
+        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: swift
+      private_url: "http://localhost:5080"
+      public_url: "http://localhost:5080"
+    kind: endpoint
+`))
+
+var commandConfig = template.Must(template.New("").Parse(`
+database:
+  host: localhost
+  user: root
+  password: contrail123
+  name: contrail_test
+  max_open_conn: 100
+  connection_retries: 10
+  retry_period: 3s
+  replication_status_timeout: 10s
+  debug: false
+
+log_level: debug
+
+homepage:
+  enabled: false # disable in order not to collide with server.static_files
+
+server:
+  enabled: true
+  read_timeout: 10
+  write_timeout: 5
+  log_api: true
+  log_body: true
+  address: ":9091"
+  enable_vnc_replication: true
+  enable_gzip: false
+  tls:
+    enabled: false
+    key_file: tools/server.key
+    cert_file: tools/server.crt
+  enable_grpc: false
+  enable_vnc_neutron: false
+  static_files:
+    /: /usr/share/contrail/public
+  dynamic_proxy_path: proxy
+  proxy:
+    /contrail:
+    - {{ .ConfigAPIURL }}
+  notify_etcd: false
+
+no_auth: false
+insecure: true
+
+keystone:
+  local: true
+  assignment:
+    type: static
+    data:
+      domains:
+        default: &default
+          id: default
+          name: default
+      projects:
+        admin: &admin
+          id: admin
+          name: admin
+          domain: *default
+        demo: &demo
+          id: demo
+          name: demo
+          domain: *default
+      users:
+        {{ .AdminUsername }}:
+          id: {{ .AdminUsername }}
+          name: {{ .AdminUsername }}
+          domain: *default
+          password: {{ .AdminPassword }}
+          email: {{ .AdminUsername }}@juniper.nets
+          roles:
+          - id: admin
+            name: admin
+            project: *admin
+        bob:
+          id: bob
+          name: Bob
+          domain: *default
+          password: bob_password
+          email: bob@juniper.net
+          roles:
+          - id: Member
+            name: Member
+            project: *demo
+  store:
+    type: memory
+    expire: 36000
+  insecure: true
+  authurl: http://localhost:9091/keystone/v3
+  service_user:
+    id: swift
+    password: swiftpass
+    project_name: service
+    domain_id: default
+
+sync:
+  enabled: false
+
+client:
+  id: {{ .AdminUsername }}
+  password: {{ .AdminPassword }}
+  project_id: admin
+  domain_id: default
+  schema_root: /
+  endpoint: http://localhost:9091
+
+agent:
+  enabled: false
+
+compilation:
+  enabled: false
+
+cache:
+  enabled: false
+
+replication:
+  cassandra:
+    enabled: false
+  amqp:
+    enabled: false
+`))

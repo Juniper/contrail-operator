@@ -176,6 +176,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
 	managerInstance, err := instance.OwnedByManager(r.Client, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -217,7 +221,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	cassandraDefaultConfiguration := cassandraDefaultConfigurationInterface.(v1alpha1.CassandraConfiguration)
 
 	storageResource := corev1.ResourceStorage
-	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.StorageSize)
+	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.Storage.Size)
 	storageClassName := "local-storage"
 	statefulSet.Spec.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -303,7 +307,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	initHostPathType := corev1.HostPathType("DirectoryOrCreate")
 	initHostPathSource := &corev1.HostPathVolumeSource{
-		Path: cassandraDefaultConfiguration.StoragePath,
+		Path: cassandraDefaultConfiguration.Storage.Path,
 		Type: &initHostPathType,
 	}
 	initVolume := corev1.Volume{
@@ -344,16 +348,16 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-init",
-				MountPath: cassandraDefaultConfiguration.StoragePath,
+				MountPath: cassandraDefaultConfiguration.Storage.Path,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
 		if container.Name == "init2" {
 			command := []string{"bash", "-c",
-				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file /run/secrets/kubernetes.io/serviceaccount/ca.crt;" +
-					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile /run/secrets/kubernetes.io/serviceaccount/ca.crt -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile;" +
-					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f)"}
-			//"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f);while true;do sleep 10;done"}
+				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -list -alias CARoot -noprompt;" +
+					"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file /run/secrets/kubernetes.io/serviceaccount/ca.crt; fi && " +
+					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile /run/secrets/kubernetes.io/serviceaccount/ca.crt -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile && " +
+					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"}
 
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
@@ -421,7 +425,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	localVolumeSource := corev1.LocalVolumeSource{
-		Path: cassandraDefaultConfiguration.StoragePath,
+		Path: cassandraDefaultConfiguration.Storage.Path,
 	}
 
 	replicasInt := int(*instance.Spec.CommonConfiguration.Replicas)

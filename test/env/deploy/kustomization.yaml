@@ -1,0 +1,4 @@
+
+images:
+  - name: michaelhenkel/contrail-operator:latest
+    newName: registry:5000/contrail-operator

@@ -59,12 +59,23 @@ rules:
   - webuis
   - vrouters
   - provisionmanagers
+  - contrailcommands
+  - swiftstorages
+  - keystones
+  - swifts
+  - memcacheds
   verbs:
   - '*'
 - apiGroups:
   - storage
   resources:
   - storageclasses
+  verbs:
+  - '*'
+- apiGroups:
+  - contrail
+  resources:
+  - '*'
   verbs:
   - '*'
 ---
@@ -177,12 +188,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -286,12 +297,16 @@ spec:
                   type: integer
                 startRPC:
                   type: boolean
-                storagePath:
-                  type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 storagePort:
                   type: integer
-                storageSize:
-                  type: string
               type: object
           required:
           - commonConfiguration
@@ -328,6 +343,150 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: commands.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Command
+    listKind: CommandList
+    plural: commands
+    singular: command
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Command is the Schema for the commands API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CommandSpec defines the desired state of Command
+          properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
+            serviceConfiguration:
+              description: CommandConfiguration is the Spec for the Command configuration
+              properties:
+                clusterName:
+                  type: string
+                configAPIURL:
+                  type: string
+                containers: {}
+                keystoneInstance:
+                  type: string
+                keystoneSecretName:
+                  type: string
+                postgresInstance:
+                  type: string
+                swiftInstance:
+                  type: string
+                telemetryURL:
+                  type: string
+              type: object
+          required:
+          - commonConfiguration
+          - serviceConfiguration
+          type: object
+        status:
+          description: CommandStatus defines the observed state of Command
+          properties:
+            active:
+              type: boolean
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: configs.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -346,12 +505,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -445,6 +604,12 @@ spec:
                 collectorPort:
                   type: integer
                 containers: {}
+                fabricMgmtIP:
+                  type: string
+                keystoneSecretInstance:
+                  type: string
+                logLevel:
+                  type: string
                 nodeManager:
                   type: boolean
                 rabbitmqPassword:
@@ -455,6 +620,14 @@ spec:
                   type: string
                 redisPort:
                   type: integer
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
                 zookeeperInstance:
                   type: string
               type: object
@@ -516,12 +689,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -670,6 +843,156 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: keystones.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Keystone
+    listKind: KeystoneList
+    plural: keystones
+    singular: keystone
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Keystone is the Schema for the keystones API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: KeystoneSpec defines the desired state of Keystone
+          properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
+            serviceConfiguration:
+              description: KeystoneConfiguration is the Spec for the keystone API.
+              properties:
+                containers: {}
+                keystoneSecretInstance:
+                  type: string
+                listenPort:
+                  type: integer
+                memcachedInstance:
+                  type: string
+                postgresInstance:
+                  type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
+              type: object
+          required:
+          - commonConfiguration
+          - serviceConfiguration
+          type: object
+        status:
+          description: KeystoneStatus defines the observed state of Keystone
+          properties:
+            active:
+              type: boolean
+            node:
+              type: string
+            port:
+              type: integer
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: kubemanagers.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -688,12 +1011,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -870,12 +1193,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -960,6 +1283,8 @@ spec:
                     type: object
                   type: array
               type: object
+            keystoneSecretInstance:
+              type: string
             services:
               description: Services defines the desired state of Services.
               properties:
@@ -971,13 +1296,13 @@ spec:
                         description: 'APIVersion defines the versioned schema of this
                           representation of an object. Servers should convert recognized
                           schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                         type: string
                       kind:
                         description: 'Kind is a string value representing the REST
                           resource this object represents. Servers may infer this
                           from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                         type: string
                       metadata:
                         type: object
@@ -1095,12 +1420,16 @@ spec:
                                 type: integer
                               startRPC:
                                 type: boolean
-                              storagePath:
-                                type: string
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                               storagePort:
                                 type: integer
-                              storageSize:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration
@@ -1130,6 +1459,141 @@ spec:
                         type: object
                     type: object
                   type: array
+                command:
+                  description: Command is the Schema for the commands API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: CommandSpec defines the desired state of Command
+                      properties:
+                        commonConfiguration:
+                          description: CommonConfiguration is the common services
+                            struct.
+                          properties:
+                            activate:
+                              description: Activate defines if the service will be
+                                activated by Manager.
+                              type: boolean
+                            create:
+                              description: Create defines if the service will be created
+                                by Manager.
+                              type: boolean
+                            hostNetwork:
+                              description: Host networking requested for this pod.
+                                Use the host's network namespace. If this option is
+                                set, the ports that will be used must be specified.
+                                Default to false.
+                              type: boolean
+                            imagePullSecrets:
+                              description: ImagePullSecrets is an optional list of
+                                references to secrets in the same namespace to use
+                                for pulling any of the images used by this PodSpec.
+                              items:
+                                type: string
+                              type: array
+                            nodeSelector:
+                              additionalProperties:
+                                type: string
+                              description: 'NodeSelector is a selector which must
+                                be true for the pod to fit on a node. Selector which
+                                must match a node''s labels for the pod to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                              type: object
+                            replicas:
+                              description: Number of desired pods. This is a pointer
+                                to distinguish between explicit zero and not specified.
+                                Defaults to 1.
+                              format: int32
+                              type: integer
+                            tolerations:
+                              description: If specified, the pod's tolerations.
+                              items:
+                                description: The pod this Toleration is attached to
+                                  tolerates any taint that matches the triple <key,value,effect>
+                                  using the matching operator <operator>.
+                                properties:
+                                  effect:
+                                    description: Effect indicates the taint effect
+                                      to match. Empty means match all taint effects.
+                                      When specified, allowed values are NoSchedule,
+                                      PreferNoSchedule and NoExecute.
+                                    type: string
+                                  key:
+                                    description: Key is the taint key that the toleration
+                                      applies to. Empty means match all taint keys.
+                                      If the key is empty, operator must be Exists;
+                                      this combination means to match all values and
+                                      all keys.
+                                    type: string
+                                  operator:
+                                    description: Operator represents a key's relationship
+                                      to the value. Valid operators are Exists and
+                                      Equal. Defaults to Equal. Exists is equivalent
+                                      to wildcard for value, so that a pod can tolerate
+                                      all taints of a particular category.
+                                    type: string
+                                  tolerationSeconds:
+                                    description: TolerationSeconds represents the
+                                      period of time the toleration (which must be
+                                      of effect NoExecute, otherwise this field is
+                                      ignored) tolerates the taint. By default, it
+                                      is not set, which means tolerate the taint forever
+                                      (do not evict). Zero and negative values will
+                                      be treated as 0 (evict immediately) by the system.
+                                    format: int64
+                                    type: integer
+                                  value:
+                                    description: Value is the taint value the toleration
+                                      matches to. If the operator is Exists, the value
+                                      should be empty, otherwise just a regular string.
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                        serviceConfiguration:
+                          description: CommandConfiguration is the Spec for the Command
+                            configuration
+                          properties:
+                            clusterName:
+                              type: string
+                            configAPIURL:
+                              type: string
+                            containers: {}
+                            keystoneInstance:
+                              type: string
+                            keystoneSecretName:
+                              type: string
+                            postgresInstance:
+                              type: string
+                            swiftInstance:
+                              type: string
+                            telemetryURL:
+                              type: string
+                          type: object
+                      required:
+                      - commonConfiguration
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: CommandStatus defines the observed state of Command
+                      properties:
+                        active:
+                          type: boolean
+                      type: object
+                  type: object
                 config:
                   description: Config is the Schema for the configs API.
                   properties:
@@ -1137,13 +1601,13 @@ spec:
                       description: 'APIVersion defines the versioned schema of this
                         representation of an object. Servers should convert recognized
                         schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                       type: string
                     kind:
                       description: 'Kind is a string value representing the REST resource
                         this object represents. Servers may infer this from the endpoint
                         the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                       type: string
                     metadata:
                       type: object
@@ -1247,6 +1711,12 @@ spec:
                             collectorPort:
                               type: integer
                             containers: {}
+                            fabricMgmtIP:
+                              type: string
+                            keystoneSecretInstance:
+                              type: string
+                            logLevel:
+                              type: string
                             nodeManager:
                               type: boolean
                             rabbitmqPassword:
@@ -1257,6 +1727,14 @@ spec:
                               type: string
                             redisPort:
                               type: integer
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
                             zookeeperInstance:
                               type: string
                           type: object
@@ -1299,13 +1777,13 @@ spec:
                         description: 'APIVersion defines the versioned schema of this
                           representation of an object. Servers should convert recognized
                           schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                         type: string
                       kind:
                         description: 'Kind is a string value representing the REST
                           resource this object represents. Servers may infer this
                           from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                         type: string
                       metadata:
                         type: object
@@ -1459,6 +1937,147 @@ spec:
                         type: object
                     type: object
                   type: array
+                keystone:
+                  description: Keystone is the Schema for the keystones API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: KeystoneSpec defines the desired state of Keystone
+                      properties:
+                        commonConfiguration:
+                          description: CommonConfiguration is the common services
+                            struct.
+                          properties:
+                            activate:
+                              description: Activate defines if the service will be
+                                activated by Manager.
+                              type: boolean
+                            create:
+                              description: Create defines if the service will be created
+                                by Manager.
+                              type: boolean
+                            hostNetwork:
+                              description: Host networking requested for this pod.
+                                Use the host's network namespace. If this option is
+                                set, the ports that will be used must be specified.
+                                Default to false.
+                              type: boolean
+                            imagePullSecrets:
+                              description: ImagePullSecrets is an optional list of
+                                references to secrets in the same namespace to use
+                                for pulling any of the images used by this PodSpec.
+                              items:
+                                type: string
+                              type: array
+                            nodeSelector:
+                              additionalProperties:
+                                type: string
+                              description: 'NodeSelector is a selector which must
+                                be true for the pod to fit on a node. Selector which
+                                must match a node''s labels for the pod to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                              type: object
+                            replicas:
+                              description: Number of desired pods. This is a pointer
+                                to distinguish between explicit zero and not specified.
+                                Defaults to 1.
+                              format: int32
+                              type: integer
+                            tolerations:
+                              description: If specified, the pod's tolerations.
+                              items:
+                                description: The pod this Toleration is attached to
+                                  tolerates any taint that matches the triple <key,value,effect>
+                                  using the matching operator <operator>.
+                                properties:
+                                  effect:
+                                    description: Effect indicates the taint effect
+                                      to match. Empty means match all taint effects.
+                                      When specified, allowed values are NoSchedule,
+                                      PreferNoSchedule and NoExecute.
+                                    type: string
+                                  key:
+                                    description: Key is the taint key that the toleration
+                                      applies to. Empty means match all taint keys.
+                                      If the key is empty, operator must be Exists;
+                                      this combination means to match all values and
+                                      all keys.
+                                    type: string
+                                  operator:
+                                    description: Operator represents a key's relationship
+                                      to the value. Valid operators are Exists and
+                                      Equal. Defaults to Equal. Exists is equivalent
+                                      to wildcard for value, so that a pod can tolerate
+                                      all taints of a particular category.
+                                    type: string
+                                  tolerationSeconds:
+                                    description: TolerationSeconds represents the
+                                      period of time the toleration (which must be
+                                      of effect NoExecute, otherwise this field is
+                                      ignored) tolerates the taint. By default, it
+                                      is not set, which means tolerate the taint forever
+                                      (do not evict). Zero and negative values will
+                                      be treated as 0 (evict immediately) by the system.
+                                    format: int64
+                                    type: integer
+                                  value:
+                                    description: Value is the taint value the toleration
+                                      matches to. If the operator is Exists, the value
+                                      should be empty, otherwise just a regular string.
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                        serviceConfiguration:
+                          description: KeystoneConfiguration is the Spec for the keystone
+                            API.
+                          properties:
+                            containers: {}
+                            keystoneSecretInstance:
+                              type: string
+                            listenPort:
+                              type: integer
+                            memcachedInstance:
+                              type: string
+                            postgresInstance:
+                              type: string
+                            storage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
+                          type: object
+                      required:
+                      - commonConfiguration
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: KeystoneStatus defines the observed state of Keystone
+                      properties:
+                        active:
+                          type: boolean
+                        node:
+                          type: string
+                        port:
+                          type: integer
+                      type: object
+                  type: object
                 kubemanagers:
                   items:
                     description: Kubemanager is the Schema for the kubemanagers API.
@@ -1467,13 +2086,13 @@ spec:
                         description: 'APIVersion defines the versioned schema of this
                           representation of an object. Servers should convert recognized
                           schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                         type: string
                       kind:
                         description: 'Kind is a string value representing the REST
                           resource this object represents. Servers may infer this
                           from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                         type: string
                       metadata:
                         type: object
@@ -1637,6 +2256,101 @@ spec:
                         type: object
                     type: object
                   type: array
+                memcached:
+                  description: Memcached is the Schema for the memcacheds API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: MemcachedSpec defines the desired state of Memcached
+                      properties:
+                        serviceConfiguration:
+                          properties:
+                            connectionLimit:
+                              format: int32
+                              type: integer
+                            container:
+                              description: Container defines name, image and command.
+                              properties:
+                                command:
+                                  items:
+                                    type: string
+                                  type: array
+                                image:
+                                  type: string
+                              type: object
+                            listenPort:
+                              format: int32
+                              type: integer
+                            maxMemory:
+                              format: int32
+                              type: integer
+                          required:
+                          - container
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: MemcachedStatus defines the observed state of Memcached
+                      properties:
+                        active:
+                          type: boolean
+                        node:
+                          type: string
+                      type: object
+                  type: object
+                postgres:
+                  description: Postgres is the Schema for the postgres API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: PostgresSpec defines the desired state of Postgres
+                      properties:
+                        containers: {}
+                        storage:
+                          properties:
+                            path:
+                              type: string
+                            size:
+                              pattern: ^([0-9]+)([KMGTPE]i)?$
+                              type: string
+                          type: object
+                      type: object
+                    status:
+                      description: PostgresStatus defines the observed state of Postgres
+                      properties:
+                        active:
+                          type: boolean
+                        node:
+                          type: string
+                      type: object
+                  type: object
                 provisionManager:
                   description: ProvisionManager is the Schema for the provisionmanagers
                     API
@@ -1645,13 +2359,13 @@ spec:
                       description: 'APIVersion defines the versioned schema of this
                         representation of an object. Servers should convert recognized
                         schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                       type: string
                     kind:
                       description: 'Kind is a string value representing the REST resource
                         this object represents. Servers may infer this from the endpoint
                         the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                       type: string
                     metadata:
                       type: object
@@ -1780,13 +2494,13 @@ spec:
                       description: 'APIVersion defines the versioned schema of this
                         representation of an object. Servers should convert recognized
                         schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                       type: string
                     kind:
                       description: 'Kind is a string value representing the REST resource
                         this object represents. Servers may infer this from the endpoint
                         the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                       type: string
                     metadata:
                       type: object
@@ -1924,6 +2638,101 @@ spec:
                           type: string
                       type: object
                   type: object
+                swift:
+                  description: Swift is the Schema for the swifts API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: SwiftSpec defines the desired state of Swift
+                      properties:
+                        serviceConfiguration:
+                          description: SwiftConfiguration is the Spec for the keystone
+                            API.
+                          properties:
+                            containers: {}
+                            ringsStorage:
+                              properties:
+                                path:
+                                  type: string
+                                size:
+                                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                                  type: string
+                              type: object
+                            swiftProxyConfiguration:
+                              description: SwiftProxyConfiguration is the Spec for
+                                the keystone API.
+                              properties:
+                                containers: {}
+                                keystoneInstance:
+                                  type: string
+                                keystoneSecretInstance:
+                                  type: string
+                                listenPort:
+                                  type: integer
+                                memcachedInstance:
+                                  type: string
+                                ringPersistentVolumeClaim:
+                                  type: string
+                                swiftConfSecretName:
+                                  type: string
+                                swiftPassword:
+                                  type: string
+                              type: object
+                            swiftStorageConfiguration:
+                              description: SwiftStorageConfiguration is the Spec for
+                                the keystone API.
+                              properties:
+                                accountBindPort:
+                                  type: integer
+                                containerBindPort:
+                                  type: integer
+                                containers: {}
+                                device:
+                                  type: string
+                                objectBindPort:
+                                  type: integer
+                                ringPersistentVolumeClaim:
+                                  type: string
+                                storage:
+                                  properties:
+                                    path:
+                                      type: string
+                                    size:
+                                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                                      type: string
+                                  type: object
+                                swiftConfSecretName:
+                                  type: string
+                              type: object
+                          required:
+                          - swiftProxyConfiguration
+                          - swiftStorageConfiguration
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: SwiftStatus defines the observed state of Swift
+                      properties:
+                        active:
+                          type: boolean
+                        swiftProxyPort:
+                          type: integer
+                      type: object
+                  type: object
                 vrouters:
                   items:
                     description: Vrouter is the Schema for the vrouters API.
@@ -1932,13 +2741,13 @@ spec:
                         description: 'APIVersion defines the versioned schema of this
                           representation of an object. Servers should convert recognized
                           schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                         type: string
                       kind:
                         description: 'Kind is a string value representing the REST
                           resource this object represents. Servers may infer this
                           from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                         type: string
                       metadata:
                         type: object
@@ -2095,13 +2904,13 @@ spec:
                       description: 'APIVersion defines the versioned schema of this
                         representation of an object. Servers should convert recognized
                         schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                        values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                       type: string
                     kind:
                       description: 'Kind is a string value representing the REST resource
                         this object represents. Servers may infer this from the endpoint
                         the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                       type: string
                     metadata:
                       type: object
@@ -2203,6 +3012,8 @@ spec:
                             clusterRoleBinding:
                               type: string
                             containers: {}
+                            keystoneSecretInstance:
+                              type: string
                             serviceAccount:
                               type: string
                           type: object
@@ -2232,13 +3043,13 @@ spec:
                         description: 'APIVersion defines the versioned schema of this
                           representation of an object. Servers should convert recognized
                           schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
                         type: string
                       kind:
                         description: 'Kind is a string value representing the REST
                           resource this object represents. Servers may infer this
                           from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
                         type: string
                       metadata:
                         type: object
@@ -2385,12 +3196,36 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
                     type: string
+                type: object
+              type: array
+            command:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            conditions:
+              items:
+                description: ManagerCondition is used to represent cluster condition
+                properties:
+                  status:
+                    description: Status of the condition, one of True or False.
+                    type: string
+                  type:
+                    description: Type of manager condition.
+                    type: string
+                required:
+                - status
+                - type
                 type: object
               type: array
             config:
@@ -2400,8 +3235,6 @@ spec:
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -2414,8 +3247,6 @@ spec:
                   of the service.
                 properties:
                   active:
-                    type: boolean
-                  controllerRunning:
                     type: boolean
                   created:
                     type: boolean
@@ -2433,6 +3264,17 @@ spec:
                     type: string
                 type: object
               type: array
+            keystone:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
             kubemanagers:
               items:
                 description: ServiceStatus provides information on the current status
@@ -2440,21 +3282,39 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
                     type: string
                 type: object
               type: array
-            provisionManager:
+            memcached:
               description: ServiceStatus provides information on the current status
                 of the service.
               properties:
                 active:
                   type: boolean
-                controllerRunning:
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            postgres:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            provisionManager:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
                   type: boolean
                 created:
                   type: boolean
@@ -2467,7 +3327,16 @@ spec:
               properties:
                 active:
                   type: boolean
-                controllerRunning:
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            swift:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
                   type: boolean
                 created:
                   type: boolean
@@ -2481,8 +3350,6 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
@@ -2494,8 +3361,6 @@ spec:
                 of the service.
               properties:
                 active:
-                  type: boolean
-                controllerRunning:
                   type: boolean
                 created:
                   type: boolean
@@ -2509,14 +3374,145 @@ spec:
                 properties:
                   active:
                     type: boolean
-                  controllerRunning:
-                    type: boolean
                   created:
                     type: boolean
                   name:
                     type: string
                 type: object
               type: array
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: memcacheds.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Memcached
+    listKind: MemcachedList
+    plural: memcacheds
+    singular: memcached
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Memcached is the Schema for the memcacheds API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: MemcachedSpec defines the desired state of Memcached
+          properties:
+            serviceConfiguration:
+              properties:
+                connectionLimit:
+                  format: int32
+                  type: integer
+                container:
+                  description: Container defines name, image and command.
+                  properties:
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    image:
+                      type: string
+                  type: object
+                listenPort:
+                  format: int32
+                  type: integer
+                maxMemory:
+                  format: int32
+                  type: integer
+              required:
+              - container
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: MemcachedStatus defines the observed state of Memcached
+          properties:
+            active:
+              type: boolean
+            node:
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: postgres.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Postgres
+    listKind: PostgresList
+    plural: postgres
+    singular: postgres
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Postgres is the Schema for the postgres API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: PostgresSpec defines the desired state of Postgres
+          properties:
+            containers: {}
+            storage:
+              properties:
+                path:
+                  type: string
+                size:
+                  pattern: ^([0-9]+)([KMGTPE]i)?$
+                  type: string
+              type: object
+          type: object
+        status:
+          description: PostgresStatus defines the observed state of Postgres
+          properties:
+            active:
+              type: boolean
+            node:
+              type: string
           type: object
       type: object
   version: v1alpha1
@@ -2546,12 +3542,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -2689,12 +3685,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -2831,6 +3827,268 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: swiftproxies.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: SwiftProxy
+    listKind: SwiftProxyList
+    plural: swiftproxies
+    singular: swiftproxy
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: SwiftProxy is the Schema for the swiftproxies API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SwiftProxySpec defines the desired state of SwiftProxy
+          properties:
+            serviceConfiguration:
+              description: SwiftProxyConfiguration is the Spec for the keystone API.
+              properties:
+                containers: {}
+                keystoneInstance:
+                  type: string
+                keystoneSecretInstance:
+                  type: string
+                listenPort:
+                  type: integer
+                memcachedInstance:
+                  type: string
+                ringPersistentVolumeClaim:
+                  type: string
+                swiftConfSecretName:
+                  type: string
+                swiftPassword:
+                  type: string
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: SwiftProxyStatus defines the observed state of SwiftProxy
+          properties:
+            active:
+              type: boolean
+          required:
+          - active
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: swifts.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Swift
+    listKind: SwiftList
+    plural: swifts
+    singular: swift
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Swift is the Schema for the swifts API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SwiftSpec defines the desired state of Swift
+          properties:
+            serviceConfiguration:
+              description: SwiftConfiguration is the Spec for the keystone API.
+              properties:
+                containers: {}
+                ringsStorage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
+                swiftProxyConfiguration:
+                  description: SwiftProxyConfiguration is the Spec for the keystone
+                    API.
+                  properties:
+                    containers: {}
+                    keystoneInstance:
+                      type: string
+                    keystoneSecretInstance:
+                      type: string
+                    listenPort:
+                      type: integer
+                    memcachedInstance:
+                      type: string
+                    ringPersistentVolumeClaim:
+                      type: string
+                    swiftConfSecretName:
+                      type: string
+                    swiftPassword:
+                      type: string
+                  type: object
+                swiftStorageConfiguration:
+                  description: SwiftStorageConfiguration is the Spec for the keystone
+                    API.
+                  properties:
+                    accountBindPort:
+                      type: integer
+                    containerBindPort:
+                      type: integer
+                    containers: {}
+                    device:
+                      type: string
+                    objectBindPort:
+                      type: integer
+                    ringPersistentVolumeClaim:
+                      type: string
+                    storage:
+                      properties:
+                        path:
+                          type: string
+                        size:
+                          pattern: ^([0-9]+)([KMGTPE]i)?$
+                          type: string
+                      type: object
+                    swiftConfSecretName:
+                      type: string
+                  type: object
+              required:
+              - swiftProxyConfiguration
+              - swiftStorageConfiguration
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: SwiftStatus defines the observed state of Swift
+          properties:
+            active:
+              type: boolean
+            swiftProxyPort:
+              type: integer
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: swiftstorages.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: SwiftStorage
+    listKind: SwiftStorageList
+    plural: swiftstorages
+    singular: swiftstorage
+  scope: ""
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: SwiftStorage is the Schema for the swiftstorages API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SwiftStorageSpec defines the desired state of SwiftStorage
+          properties:
+            serviceConfiguration:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              properties:
+                accountBindPort:
+                  type: integer
+                containerBindPort:
+                  type: integer
+                containers: {}
+                device:
+                  type: string
+                objectBindPort:
+                  type: integer
+                ringPersistentVolumeClaim:
+                  type: string
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
+                swiftConfSecretName:
+                  type: string
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: SwiftStorageStatus defines the observed state of SwiftStorage
+          properties:
+            active:
+              type: boolean
+          required:
+          - active
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: vrouters.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -2849,12 +4107,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -3017,12 +4275,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -3114,6 +4372,8 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
+                keystoneSecretInstance:
+                  type: string
                 serviceAccount:
                   type: string
               type: object
@@ -3162,12 +4422,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -3310,10 +4570,9 @@ spec:
       serviceAccountName: contrail-operator
       hostNetwork: true
       tolerations:
-      - operator: Exists
-        effect: NoSchedule
-      - operator: Exists
-        effect: NoExecute
+      - key: node.kubernetes.io/not-ready
+        operator: "Exists"
+        effect: "NoSchedule"
       containers:
         - name: contrail-operator
           # Replace this with the built image name

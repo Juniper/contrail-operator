@@ -1,19 +1,19 @@
 package cr
-	
-import(
+
+import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	
+
 	"github.com/ghodss/yaml"
 )
 
-var yamlDataZookeeper= `
+var yamlDataZookeeper = `
 apiVersion: contrail.juniper.net/v1alpha1
 kind: Zookeeper
 metadata:
   name: cluster-1
 `
 
-func GetZookeeperCr() *v1alpha1.Zookeeper{
+func GetZookeeperCr() *v1alpha1.Zookeeper {
 	cr := v1alpha1.Zookeeper{}
 	err := yaml.Unmarshal([]byte(yamlDataZookeeper), &cr)
 	if err != nil {
@@ -29,4 +29,3 @@ func GetZookeeperCr() *v1alpha1.Zookeeper{
 	}
 	return &cr
 }
-	

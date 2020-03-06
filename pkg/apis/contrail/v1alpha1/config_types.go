@@ -46,18 +46,21 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers        map[string]*Container `json:"containers,omitempty"`
-	APIPort           *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort     *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort     *int                  `json:"collectorPort,omitempty"`
-	RedisPort         *int                  `json:"redisPort,omitempty"`
-	CassandraInstance string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
-	NodeManager       *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel          string                `json:"logLevel,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	APIPort            *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort      *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort      *int                  `json:"collectorPort,omitempty"`
+	RedisPort          *int                  `json:"redisPort,omitempty"`
+	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance  string                `json:"zookeeperInstance,omitempty"`
+	NodeManager        *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser       string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword   string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel           string                `json:"logLevel,omitempty"`
+	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	Storage            Storage               `json:"storage,omitempty"`
+	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -165,7 +168,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var configApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIConfig.Execute(&configApiConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ListenPort          string
 			CassandraServerList string
 			ZookeeperServerList string
@@ -176,7 +179,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			LogLevel            string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
@@ -191,17 +194,21 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var vncApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
-			ListenAddress string
-			ListenPort    string
+			HostIP     string
+			ListenPort string
 		}{
-			ListenAddress: podList.Items[idx].Status.PodIP,
-			ListenPort:    strconv.Itoa(*configConfig.APIPort),
+			HostIP:     podList.Items[idx].Status.PodIP,
+			ListenPort: strconv.Itoa(*configConfig.APIPort),
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
+		fabricMgmtIP := podList.Items[idx].Status.PodIP
+		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
+			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
+		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -212,8 +219,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			FabricMgmtIP        string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -224,12 +232,42 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			FabricMgmtIP:        fabricMgmtIP,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
+		var fabricAnsibleConfigBuffer bytes.Buffer
+		configtemplates.FabricAnsibleConf.Execute(&fabricAnsibleConfigBuffer, struct {
+			HostIP              string
+			CollectorServerList string
+			LogLevel            string
+		}{
+			HostIP:              podList.Items[idx].Status.PodIP,
+			CollectorServerList: collectorServerList,
+			LogLevel:            configConfig.LogLevel,
+		})
+		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
+
+		configAuth, err := c.AuthParameters(client)
+		if err != nil {
+			return err
+		}
+
+		var configKeystoneAuthConfBuffer bytes.Buffer
+		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
+			AdminUsername string
+			AdminPassword string
+		}{
+			AdminUsername: configAuth.AdminUsername,
+			AdminPassword: configAuth.AdminPassword,
+		})
+		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
+
+		data["dnsmasq."+podList.Items[idx].Status.PodIP] = configtemplates.ConfigDNSMasqConfig
+
 		var configSchematransformerConfigBuffer bytes.Buffer
 		configtemplates.ConfigSchematransformerConfig.Execute(&configSchematransformerConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -241,7 +279,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			LogLevel            string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -257,7 +295,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configServicemonitorConfigBuffer bytes.Buffer
 		configtemplates.ConfigServicemonitorConfig.Execute(&configServicemonitorConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -269,7 +307,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			LogLevel            string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -285,7 +323,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configAnalyticsapiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAnalyticsapiConfig.Execute(&configAnalyticsapiConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			AnalyticsServerList string
 			CassandraServerList string
@@ -298,7 +336,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			//LogLevel            string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			AnalyticsServerList: analyticsServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
@@ -323,7 +361,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		var configCollectorConfigBuffer bytes.Buffer
 		configtemplates.ConfigCollectorConfig.Execute(&configCollectorConfigBuffer, struct {
 			Hostname            string
-			ListenAddress       string
+			HostIP              string
 			ApiServerList       string
 			CassandraServerList string
 			ZookeeperServerList string
@@ -334,7 +372,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel            string
 		}{
 			Hostname:            hostname,
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
@@ -346,14 +384,24 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
+		var configQueryEngineConfigBuffer bytes.Buffer
+		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, map[string]string{
+			"Hostname":            hostname,
+			"HostIP":              podList.Items[idx].Status.PodIP,
+			"CassandraServerList": cassandraNodesInformation.ServerListCQLSpaceSeparated,
+			"CollectorServerList": collectorServerList,
+			"RedisServerList":     redisServerSpaceSeparatedList,
+		})
+		data["queryengine."+podList.Items[idx].Status.PodIP] = configQueryEngineConfigBuffer.String()
+
 		var configNodemanagerconfigConfigBuffer bytes.Buffer
 		configtemplates.ConfigNodemanagerConfigConfig.Execute(&configNodemanagerconfigConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
@@ -362,12 +410,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configNodemanageranalyticsConfigBuffer bytes.Buffer
 		configtemplates.ConfigNodemanagerAnalyticsConfig.Execute(&configNodemanageranalyticsConfigBuffer, struct {
-			ListenAddress       string
+			HostIP              string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
@@ -381,6 +429,24 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	}
 
 	return nil
+}
+
+type ConfigAuthParameters struct {
+	AdminUsername string
+	AdminPassword string
+}
+
+func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, error) {
+	w := &ConfigAuthParameters{
+		AdminUsername: "admin",
+	}
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
+	adminPasswordSecret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
+		return nil, err
+	}
+	w.AdminPassword = string(adminPasswordSecret.Data["password"])
+	return w, nil
 }
 
 func (c *Config) CreateConfigMap(configMapName string,

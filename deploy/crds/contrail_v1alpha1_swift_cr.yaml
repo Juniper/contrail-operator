@@ -1,0 +1,15 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Swift
+metadata:
+  name: swift
+  namespace: contrail
+spec:
+  serviceConfiguration:
+    swiftProxyConfiguration:
+      keystoneInstance: "keystone"
+      listenPort: 5080
+      swiftPassword: "swiftpass"
+    swiftStorageConfiguration:
+      accountBindPort: 6001
+      containerBindPort: 6002
+      objectBindPort: 6000

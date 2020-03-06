@@ -2,9 +2,18 @@
 
 ## Prerequisites
 
-- An installed kubernetes cluster (>=1.15.0)    
+- An installed kubernetes cluster (>=1.15.0)
 
-## Create CRDs, Service Account, Role, Bindings and Operator
+## Create CRDs, Service Account, Role, Bindings, Persistent volumes
+
+```bash
+for directory in $(seq 5); do
+  mkdir -p /mnt/volumes/$directory
+  rm -rf /mnt/volumes/$directory/*
+done
+
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/0-create-persistent-volumes.yaml | kubectl apply -f -
+```
 
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1-create-operator.yaml | kubectl apply -f -

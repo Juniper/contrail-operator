@@ -75,10 +75,9 @@ type Container struct {
 // ServiceStatus provides information on the current status of the service.
 // +k8s:openapi-gen=true
 type ServiceStatus struct {
-	Name              *string `json:"name,omitempty"`
-	Active            *bool   `json:"active,omitempty"`
-	Created           *bool   `json:"created,omitempty"`
-	ControllerRunning *bool   `json:"controllerRunning,omitempty"`
+	Name    *string `json:"name,omitempty"`
+	Active  *bool   `json:"active,omitempty"`
+	Created *bool   `json:"created,omitempty"`
 }
 
 // Status is the status of the service.
@@ -132,6 +131,18 @@ type CommonConfiguration struct {
 	// zero and not specified. Defaults to 1.
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
+}
+
+func (ss *ServiceStatus) ready() bool {
+	if ss == nil {
+		return false
+	}
+	if ss.Active == nil {
+		return false
+	}
+
+	return *ss.Active
+
 }
 
 func CreateAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
@@ -530,6 +541,7 @@ func CreateConfigMap(configMapName string,
 	object v1.Object) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: request.Namespace}, configMap)
+	// TODO: Bug. If config map exists without labels and references, they won't be updated
 	if err != nil {
 		if errors.IsNotFound(err) {
 			configMap.SetName(configMapName)
@@ -1338,6 +1350,18 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		RedisPort:                               redisServerPort,
 	}
 	return &configCluster, nil
+}
+
+// WebUIClusterConfiguration defines all configuration knobs used to write the config file.
+type WebUIClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
+}
+
+// CommandClusterConfiguration defines all configuration knobs used to write the config file.
+type CommandClusterConfiguration struct {
+	AdminUsername string
+	AdminPassword string
 }
 
 // ConfigClusterConfiguration defines all configuration knobs used to write the config file.

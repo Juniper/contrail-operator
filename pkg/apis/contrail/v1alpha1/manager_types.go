@@ -17,6 +17,7 @@ type ManagerSpec struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	CommonConfiguration CommonConfiguration `json:"commonConfiguration,omitempty"`
 	Services            Services            `json:"services,omitempty"`
+	KeystoneSecretName  string              `json:"keystoneSecretName,omitempty"`
 }
 
 // Services defines the desired state of Services.
@@ -31,6 +32,11 @@ type Services struct {
 	Zookeepers       []*Zookeeper      `json:"zookeepers,omitempty"`
 	Rabbitmq         *Rabbitmq         `json:"rabbitmq,omitempty"`
 	ProvisionManager *ProvisionManager `json:"provisionManager,omitempty"`
+	Command          *Command          `json:"command,omitempty"`
+	Postgres         *Postgres         `json:"postgres,omitempty"`
+	Keystone         *Keystone         `json:"keystone,omitempty"`
+	Swift            *Swift            `json:"swift,omitempty"`
+	Memcached        *Memcached        `json:"memcached,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
@@ -49,6 +55,41 @@ type ManagerStatus struct {
 	Rabbitmq         *ServiceStatus   `json:"rabbitmq,omitempty"`
 	ProvisionManager *ServiceStatus   `json:"provisionManager,omitempty"`
 	CrdStatus        []CrdStatus      `json:"crdStatus,omitempty"`
+	Keystone         *ServiceStatus   `json:"keystone,omitempty"`
+	Postgres         *ServiceStatus   `json:"postgres,omitempty"`
+	Swift            *ServiceStatus   `json:"swift,omitempty"`
+	Command          *ServiceStatus   `json:"command,omitempty"`
+	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	Conditions []ManagerCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+}
+
+// ManagerConditionType is used to represent condition of manager.
+type ManagerConditionType string
+
+// These are valid conditions of manager.
+const (
+	ManagerReady ManagerConditionType = "Ready"
+)
+
+// ConditionStatus is used to indicate state of condition.
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition.
+const (
+	ConditionTrue  ConditionStatus = "True"
+	ConditionFalse ConditionStatus = "False"
+)
+
+// ManagerCondition is used to represent cluster condition
+type ManagerCondition struct {
+	// Type of manager condition.
+	Type ManagerConditionType `json:"type"`
+	// Status of the condition, one of True or False.
+	Status ConditionStatus `json:"status"`
 }
 
 // CrdStatus tracks status of CRD.
@@ -117,6 +158,55 @@ func (m *Manager) Delete(client client.Client) error {
 
 func (m *Manager) GetObjectFromObjectList(objectList *[]*interface{}, request reconcile.Request) interface{} {
 	return nil
+}
+
+func (m Manager) IsClusterReady() bool {
+	for _, cassandraService := range m.Spec.Services.Cassandras {
+		for _, cassandraStatus := range m.Status.Cassandras {
+			if cassandraService.Name == *cassandraStatus.Name && !cassandraStatus.ready() {
+				return false
+			}
+		}
+	}
+	for _, zookeeperService := range m.Spec.Services.Zookeepers {
+		for _, zookeeperStatus := range m.Status.Zookeepers {
+			if zookeeperService.Name == *zookeeperStatus.Name && !zookeeperStatus.ready() {
+				return false
+			}
+		}
+	}
+	for _, controlService := range m.Spec.Services.Controls {
+		for _, controlStatus := range m.Status.Controls {
+			if controlService.Name == *controlStatus.Name && !controlStatus.ready() {
+				return false
+			}
+		}
+	}
+	if m.Spec.Services.Webui != nil && !m.Status.Webui.ready() {
+		return false
+	}
+	if m.Spec.Services.ProvisionManager != nil && !m.Status.ProvisionManager.ready() {
+		return false
+	}
+	if m.Spec.Services.Config != nil && !m.Status.Config.ready() {
+		return false
+	}
+	if m.Spec.Services.Rabbitmq != nil && !m.Status.Rabbitmq.ready() {
+		return false
+	}
+	if m.Spec.Services.Postgres != nil && !m.Status.Postgres.ready() {
+		return false
+	}
+	if m.Spec.Services.Command != nil && !m.Status.Command.ready() {
+		return false
+	}
+	if m.Spec.Services.Keystone != nil && !m.Status.Keystone.ready() {
+		return false
+	}
+	if m.Spec.Services.Swift != nil && !m.Status.Swift.ready() {
+		return false
+	}
+	return true
 }
 
 func init() {

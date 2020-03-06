@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
 	"github.com/kylelemons/godebug/diff"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -18,6 +17,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var config = &v1alpha1.Config{
@@ -26,6 +27,11 @@ var config = &v1alpha1.Config{
 		Namespace: "default",
 		Labels: map[string]string{
 			"contrail_cluster": "cluster1",
+		},
+	},
+	Spec: v1alpha1.ConfigSpec{
+		ServiceConfiguration: v1alpha1.ConfigConfiguration{
+			KeystoneSecretName: "keystone-adminpass-secret",
 		},
 	},
 }
@@ -57,6 +63,11 @@ var webui = &v1alpha1.Webui{
 		Namespace: "default",
 		Labels: map[string]string{
 			"contrail_cluster": "cluster1",
+		},
+	},
+	Spec: v1alpha1.WebuiSpec{
+		ServiceConfiguration: v1alpha1.WebuiConfiguration{
+			KeystoneSecretName: "keystone-adminpass-secret",
 		},
 	},
 }
@@ -165,6 +176,7 @@ func SetupEnv() Environment {
 	vrouterConfigMap := *configMap
 	vrouterConfigMap2 := *configMap
 	kubemanagerSecret := *secret
+	keystoneAdminSecret := *secret
 
 	kubemanagerSecret.Name = "kubemanagersecret"
 	kubemanagerSecret.Namespace = "default"
@@ -230,6 +242,13 @@ func SetupEnv() Environment {
 	vrouterConfigMap2.Name = "vrouter1-vrouter-configmap-1"
 	vrouterConfigMap2.Namespace = "default"
 
+	keystoneAdminSecret.Name = "keystone-adminpass-secret"
+	keystoneAdminSecret.Namespace = "default"
+	keystoneAdminSecret.Annotations = map[string]string{"kubernetes.io/service-account.name": "contrail-service-account"}
+	keystoneAdminSecret.Data = map[string][]byte{
+		"password": []byte("test123"),
+	}
+
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion,
 		config,
@@ -270,7 +289,8 @@ func SetupEnv() Environment {
 		&vrouterConfigMap2,
 		&rabbitmqSecret,
 		&cassandraSecret,
-		&kubemanagerSecret}
+		&kubemanagerSecret,
+		&keystoneAdminSecret}
 
 	cl := fake.NewFakeClient(objs...)
 
@@ -453,57 +473,86 @@ func SetupEnv() Environment {
 func TestConfigConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
-	environment := SetupEnv()
-	cl := *environment.client
-	err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
-		&environment.configConfigMap)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
-		diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
-		t.Fatalf("get api config: \n%v\n", diff)
-	}
+	request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
+	configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
+	t.Run("default setup", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		err = cl.Get(context.TODO(),
+			types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
+			&environment.configConfigMap)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
+			diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
+			t.Fatalf("get api config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfig)
-		t.Fatalf("get devicemanager config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfig)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
-		t.Fatalf("get schematransformer config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+			t.Fatalf("get dnsmasq config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
-		t.Fatalf("get servicemonitor config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
+			t.Fatalf("get schematransformer config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
-		t.Fatalf("get analyticsapi config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
+			t.Fatalf("get servicemonitor config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
-		t.Fatalf("get collector config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
+			t.Fatalf("get analyticsapi config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
-		diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
-		t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+			t.Fatalf("get queryengine config: \n%v\n", diff)
+		}
 
-	if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
-		diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
-		t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
-	}
+		if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
+			t.Fatalf("get collector config: \n%v\n", diff)
+		}
+
+		if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
+			t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
+		}
+
+		if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
+			t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
+		}
+	})
+
+	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
+
+		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
+		assert.NoError(t, err, "cannot configure instance")
+
+		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
+		assert.NoError(t, err, "cannot get configmap:")
+
+		actual := environment.configConfigMap.Data["devicemanager.1.1.1.1"]
+		assert.Equal(t, actual, devicemanagerWithFabricConfig)
+	})
 }
 
 func TestControlConfig(t *testing.T) {
@@ -630,6 +679,11 @@ func TestWebuiConfig(t *testing.T) {
 		configDiff := diff.Diff(environment.webuiConfigMap.Data["config.global.js.1.1.7.1"], webuiConfigHa)
 		t.Fatalf("get webui config: \n%v\n", configDiff)
 	}
+
+	if environment.webuiConfigMap.Data["contrail-webui-userauth.js"] != webuiAuthConfig {
+		configDiff := diff.Diff(environment.webuiConfigMap.Data["contrail-webui-userauth.js"], webuiAuthConfig)
+		t.Fatalf("get webui auth config: \n%v\n", configDiff)
+	}
 }
 
 func TestVrouterConfig(t *testing.T) {
@@ -734,7 +788,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "http://127.0.0.1:5000/v2.0";
+config.regions.RegionOne = "http://localhost:5555/v2.0";
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -758,11 +812,12 @@ config.computeManager.apiVersion = ['v1.1', 'v2'];
 config.computeManager.strictSSL = false;
 config.computeManager.ca = "";
 config.identityManager = {};
-config.identityManager.ip = "127.0.0.1";
-config.identityManager.port = "5000";
+config.identityManager.ip = "localhost";
+config.identityManager.port = "5555";
 config.identityManager.authProtocol = "http";
 config.identityManager.apiVersion = ['v3'];
 config.identityManager.strictSSL = false;
+config.identityManager.defaultDomain = "Default";
 config.identityManager.ca = "";
 config.storageManager = {};
 config.storageManager.ip = "127.0.0.1";
@@ -818,7 +873,7 @@ config.cassandra.use_ssl = true;
 config.cassandra.ca_certs = '/run/secrets/kubernetes.io/serviceaccount/ca.crt';
 config.kue = {};
 config.kue.ui_port = '3002'
-config.webui_addresses = ['1.1.7.1'];
+config.webui_addresses = {};
 config.insecure_access = false;
 config.http_port = '8180';
 config.https_port = '8143';
@@ -854,12 +909,23 @@ module.exports = config;
 config.staticAuth = [];
 config.staticAuth[0] = {};
 config.staticAuth[0].username = 'admin';
-config.staticAuth[0].password = 'contrail123';
+config.staticAuth[0].password = 'test123';
 config.staticAuth[0].roles = ['cloudAdmin'];
 `
 
+var webuiAuthConfig = `/*
+* Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
+*/
+var auth = {};
+auth.admin_user = 'admin';
+auth.admin_password = 'test123';
+auth.admin_token = '';
+auth.admin_tenant_name = 'admin';
+module.exports = auth;
+`
+
 var configConfigHa = `[DEFAULTS]
-listen_ip_addr=1.1.1.1
+listen_ip_addr=0.0.0.0
 listen_port=8082
 http_server_port=8084
 http_server_ip=0.0.0.0
@@ -1151,9 +1217,10 @@ cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
-dnsmasq_conf_dir=/etc/dnsmasq
-tftp_dir=/etc/tftp
+dnsmasq_conf_dir=/var/lib/dnsmasq
+tftp_dir=/var/lib/tftp
 dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
+dnsmasq_reload_by_signal=True
 rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
 rabbit_vhost=vhost
 rabbit_user=user
@@ -1173,6 +1240,15 @@ sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
+var dnsmasqConfig = `
+log-facility=/dev/stdout
+bogus-priv
+log-dhcp
+enable-tftp
+tftp-root=/etc/tftp
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+conf-dir=/var/lib/dnsmasq/,*.conf
+`
 var schematransformerConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_ip=0.0.0.0
@@ -1256,12 +1332,43 @@ sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
 sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 
+var queryengineConfig = `[DEFAULT]
+analytics_data_ttl=48
+hostip=1.1.1.1
+hostname=host1
+http_server_ip=0.0.0.0
+http_server_port=8091
+log_file=/var/log/contrail/contrail-query-engine.log
+log_level=SYS_DEBUG
+log_local=1
+max_slice=100
+max_tasks=16
+start_time=0
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[CASSANDRA]
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+[REDIS]
+server_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
+password=
+redis_ssl_enable=False
+[SANDESH]
+introspect_ssl_enable=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
+
 var analyticsapiConfig = `[DEFAULTS]
 host_ip=1.1.1.1
 http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
-rest_api_ip=1.1.1.1
+rest_api_ip=0.0.0.0
 aaa_mode=no-auth
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
@@ -1309,13 +1416,14 @@ log_file_size=1048576
 log_level=SYS_NOTICE
 log_local=1
 # sandesh_send_rate_limit=
+cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 zookeeper_server_list=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [CASSANDRA]
 cassandra_use_ssl=true
 cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [COLLECTOR]
 port=8086
-server=1.1.1.1
+server=0.0.0.0
 protobuf_port=3333
 [STRUCTURED_SYSLOG_COLLECTOR]
 # TCP & UDP port to listen on for receiving structured syslog messages
@@ -1519,7 +1627,7 @@ sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /et
 servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
-  --api_server_use_ssl true
+  --api_server_use_ssl true \
   --host_ip 1.1.5.1 \
   --router_asn 64512 \
   --bgp_server_port 179 \
@@ -1641,3 +1749,44 @@ fabric_snat_hash_table_size = 4096
 [SESSION]
 slo_destination = collector
 sample_destination = collector`
+
+var devicemanagerWithFabricConfig = `[DEFAULTS]
+host_ip=2.2.2.2
+http_server_ip=0.0.0.0
+api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
+api_server_port=8082
+api_server_use_ssl=True
+analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
+analytics_server_port=8081
+push_mode=1
+log_file=/var/log/contrail/contrail-device-manager.log
+log_level=SYS_NOTICE
+log_local=1
+cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_use_ssl=true
+cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
+# configure directories for job manager
+# the same directories must be mounted to dnsmasq and DM container
+dnsmasq_conf_dir=/var/lib/dnsmasq
+tftp_dir=/var/lib/tftp
+dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
+dnsmasq_reload_by_signal=True
+rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
+rabbit_vhost=vhost
+rabbit_user=user
+rabbit_password=password
+rabbit_use_ssl=True
+kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
+kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_version=sslv23
+rabbit_health_check_interval=10
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=False
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
+sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`
