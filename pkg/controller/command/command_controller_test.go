@@ -131,6 +131,7 @@ func TestCommand(t *testing.T) {
 			}, dep)
 
 			assert.NoError(t, err)
+			dep.SetResourceVersion("")
 			assert.Equal(t, exDep, dep)
 			// Check if config map has been created
 			configMap := &core.ConfigMap{}
@@ -139,8 +140,8 @@ func TestCommand(t *testing.T) {
 				Namespace: "default",
 			}, configMap)
 			assert.NoError(t, err)
+			configMap.SetResourceVersion("")
 			assertConfigMap(t, configMap)
-
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
 			err = cl.Get(context.Background(), types.NamespacedName{
@@ -148,6 +149,7 @@ func TestCommand(t *testing.T) {
 				Namespace: tt.expectedPostgres.GetNamespace(),
 			}, psql)
 			assert.NoError(t, err)
+			psql.SetResourceVersion("")
 			assert.Equal(t, tt.expectedPostgres, psql)
 		})
 	}
@@ -188,6 +190,7 @@ func newPostgres(active bool) *contrail.Postgres {
 			Name:      "command-db",
 			Namespace: "default",
 		},
+		TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 		Status: contrail.PostgresStatus{
 			Active: active,
 		},
@@ -239,6 +242,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 				{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
 		Spec: apps.DeploymentSpec{
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "command", "command": "command"},

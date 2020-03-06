@@ -83,6 +83,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
@@ -177,7 +178,8 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
-			Spec: commandUpdate.Spec,
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec:     commandUpdate.Spec,
 		}
 		assertCommandDeployed(t, expectedCommand, fakeClient)
 	})
@@ -241,6 +243,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 	})
@@ -319,6 +322,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
@@ -337,6 +341,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
@@ -421,6 +426,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
@@ -439,6 +445,7 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
+			TypeMeta: meta.TypeMeta{Kind: "Keystone", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.KeystoneSpec{
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					PostgresInstance:   "psql",
@@ -492,6 +499,7 @@ func assertCommandDeployed(t *testing.T, expected contrail.Command, fakeClient c
 		Namespace: expected.Namespace,
 	}, &commandLoaded)
 	assert.NoError(t, err)
+	commandLoaded.SetResourceVersion("")
 	assert.Equal(t, expected, commandLoaded)
 }
 
@@ -502,6 +510,7 @@ func assertPostgres(t *testing.T, expected contrail.Postgres, fakeClient client.
 		Namespace: expected.Namespace,
 	}, &psql)
 	assert.NoError(t, err)
+	psql.SetResourceVersion("")
 	assert.Equal(t, expected, psql)
 }
 
@@ -512,6 +521,7 @@ func assertKeystone(t *testing.T, expected contrail.Keystone, fakeClient client.
 		Namespace: expected.Namespace,
 	}, &keystone)
 	assert.NoError(t, err)
+	keystone.SetResourceVersion("")
 	assert.Equal(t, expected, keystone)
 }
 func newKeystone() *contrail.Keystone {

@@ -160,6 +160,7 @@ func assertValidMemcachedDeploymentExists(t *testing.T, c client.Client) {
 	err := c.Get(context.TODO(), memcachedDeploymentName, deployment)
 	assert.NoError(t, err)
 	expectedDeployment := newExpectedDeployment()
+	deployment.SetResourceVersion("")
 	assert.Equal(t, expectedDeployment, deployment)
 }
 
@@ -170,6 +171,7 @@ func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
 		Namespace: "default",
 	}, configMap)
 	assert.NoError(t, err)
+	configMap.SetResourceVersion("")
 	assert.Equal(t, newExpectedMemcachedConfigMap(), configMap)
 }
 
@@ -199,6 +201,7 @@ func newExpectedDeployment() *apps.Deployment {
 			},
 			Labels: map[string]string{"Memcached": "test-memcached"},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
 		Spec: apps.DeploymentSpec{
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
@@ -278,6 +281,7 @@ func newExpectedMemcachedConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "Memcached", "test-memcached", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 

@@ -169,6 +169,7 @@ func TestSwiftProxyController(t *testing.T) {
 			}, dep)
 
 			assert.NoError(t, err)
+			dep.SetResourceVersion("")
 			assert.Equal(t, exDep, dep)
 
 			// then expected SwiftProxy status is set
@@ -185,6 +186,7 @@ func TestSwiftProxyController(t *testing.T) {
 				}, configMap)
 
 				assert.NoError(t, err)
+				configMap.SetResourceVersion("")
 				assert.Equal(t, expConfig, configMap)
 			}
 
@@ -195,6 +197,7 @@ func TestSwiftProxyController(t *testing.T) {
 				Namespace: k.Namespace,
 			}, k)
 			assert.NoError(t, err)
+			k.SetResourceVersion("")
 			assert.Equal(t, tt.expectedKeystone, k)
 		})
 	}
@@ -232,6 +235,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 			},
 			Labels: map[string]string{"SwiftProxy": "swiftproxy"},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
 		Spec: apps.DeploymentSpec{
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
@@ -397,6 +401,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 			Namespace:       "default",
 			OwnerReferences: ownersReferences,
 		},
+		TypeMeta: meta.TypeMeta{Kind: "Keystone", APIVersion: "contrail.juniper.net/v1alpha1"},
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -432,6 +437,7 @@ func newExpectedSwiftProxyConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 
@@ -450,6 +456,7 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 

@@ -59,7 +59,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -85,7 +86,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -115,7 +117,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -134,6 +137,7 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 			},
 		},
 		{
@@ -155,7 +159,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 		},
 		{
@@ -175,7 +180,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 			expectedSecrets: []*core.Secret{
 				newExpectedSecret(),
@@ -199,7 +205,8 @@ func TestKeystone(t *testing.T) {
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
-				Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
 			expectedSecrets: []*core.Secret{
 				newExpectedSecretWithKeys(),
@@ -236,6 +243,7 @@ func TestKeystone(t *testing.T) {
 				err = nil
 			}
 			assert.NoError(t, err)
+			sts.SetResourceVersion("")
 			assert.Equal(t, exSTS, sts)
 
 			for _, expConfig := range tt.expectedConfigs {
@@ -246,6 +254,7 @@ func TestKeystone(t *testing.T) {
 				}, configMap)
 
 				assert.NoError(t, err)
+				configMap.SetResourceVersion("")
 				assert.Equal(t, expConfig, configMap)
 			}
 
@@ -257,6 +266,7 @@ func TestKeystone(t *testing.T) {
 				}, secret)
 
 				assert.NoError(t, err)
+				secret.SetResourceVersion("")
 				assert.Equal(t, expSecret.ObjectMeta, secret.ObjectMeta)
 			}
 
@@ -266,6 +276,7 @@ func TestKeystone(t *testing.T) {
 				Namespace: tt.expectedPostgres.GetNamespace(),
 			}, psql)
 			assert.NoError(t, err)
+			psql.SetResourceVersion("")
 			assert.Equal(t, tt.expectedPostgres, psql)
 
 			k := &contrail.Keystone{}
@@ -399,6 +410,7 @@ func newExpectedSTS() *apps.StatefulSet {
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
@@ -648,6 +660,7 @@ func newExpectedKeystoneConfigMap() *core.ConfigMap {
 			"keystone.conf":      expectedKeystoneConfig,
 			"wsgi-keystone.conf": expectedWSGIKeystoneConfig,
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone",
 			Namespace: "default",
@@ -679,6 +692,7 @@ func newExpectedKeystoneFernetConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 
@@ -697,6 +711,7 @@ func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 
@@ -716,6 +731,7 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 

@@ -78,6 +78,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 			expConfig := newExpectedAccountAuditorConfigMap()
 			assert.NoError(t, err)
+			configMap.SetResourceVersion("")
 			assert.Equal(t, expConfig, configMap)
 		})
 
@@ -426,6 +427,7 @@ func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
 				{"contrail.juniper.net/v1alpha1", "SwiftStorage", "test", "", &trueVal, &trueVal},
 			},
 		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 }
 

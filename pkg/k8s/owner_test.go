@@ -97,6 +97,8 @@ func TestSetOwnerReference(t *testing.T) {
 			}, pod)
 
 			assert.NoError(t, err)
+			pod.SetResourceVersion("")
+			pod.TypeMeta = meta.TypeMeta{}
 			assert.Equal(t, tt.expected, pod)
 		})
 	}

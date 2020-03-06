@@ -83,6 +83,8 @@ func TestEnsureSecretExists(t *testing.T) {
 				}, secret)
 
 				assert.NoError(t, err)
+				secret.SetResourceVersion("")
+				secret.TypeMeta = meta.TypeMeta{}
 				assert.Equal(t, e, secret)
 			}
 		})

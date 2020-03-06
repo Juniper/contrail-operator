@@ -180,9 +180,6 @@ func (r *ReconcileSwift) checkSwiftProxyAndStorageActive(swift *contrail.Swift) 
 func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swiftConfSecretName string) error {
 	swiftSecret := &corev1.Secret{}
 	secretNamespacedName := types.NamespacedName{Name: swiftConfSecretName, Namespace: swift.Namespace}
-	if err := controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
-		return err
-	}
 
 	err := r.client.Get(context.TODO(), secretNamespacedName, swiftSecret)
 	if err == nil || !errors.IsNotFound(err) {
@@ -199,6 +196,11 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 	swiftSecret.StringData = map[string]string{
 		"swift.conf": swiftConfig,
 	}
+
+	if err := controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
+		return err
+	}
+
 	if err = r.client.Create(context.TODO(), swiftSecret); err != nil {
 		return err
 	}

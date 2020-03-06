@@ -75,6 +75,7 @@ func TestEnsureExists(t *testing.T) {
 			expected: []*core.ConfigMap{
 				{
 					ObjectMeta: newConfigMapObjectMeta("pod", ownerName.Name, "existing-cm"),
+					TypeMeta:   meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 				},
 				newConfigMap("test", "pod", ownerName.Name, "test-cm"),
 			},
@@ -102,6 +103,7 @@ func TestEnsureExists(t *testing.T) {
 				}, configMap)
 
 				assert.NoError(t, err)
+				configMap.SetResourceVersion("")
 				assert.Equal(t, e, configMap)
 			}
 		})
@@ -133,6 +135,7 @@ func (tc testConfig) FillConfigMap(cm *core.ConfigMap) {
 func newConfigMap(data, ownerType, ownerName, configMapName string) *core.ConfigMap {
 	cm := &core.ConfigMap{
 		ObjectMeta: newConfigMapObjectMeta(ownerType, ownerName, configMapName),
+		TypeMeta:   meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 	}
 	cm.Data = map[string]string{
 		"name": data,
