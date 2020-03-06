@@ -1,0 +1,18 @@
+---
+apiVersion: console.openshift.io/v1
+auth:
+  clientID: console
+  clientSecretFile: /var/oauth-config/clientSecret
+  oauthEndpointCAFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+clusterInfo:
+  consoleBaseAddress: https://console-openshift-console.apps.test.user.test.com
+  masterPublicURL: https://api.test.user.test.com:6443
+customization:
+  branding: ocp
+  documentationBaseURL: https://docs.openshift.com/container-platform/4.3/
+kind: ConsoleConfig
+providers: {}
+servingInfo:
+  bindAddress: https://0.0.0.0:8443
+  certFile: /var/serving-cert/tls.crt
+  keyFile: /var/serving-cert/tls.key

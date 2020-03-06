@@ -5,10 +5,10 @@ import (
 	"strconv"
 
 	"gopkg.in/yaml.v2"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
@@ -20,9 +20,9 @@ type ClusterInfo struct {
 }
 
 // ConfigClusterInfo is used for gathering cluster information from config map
-func (ci ClusterInfo) ConfigClusterInfo (clientset *kubernetes.Clientset) (v1alpha1.ClusterInfo, error) {
+func (ci ClusterInfo) ConfigClusterInfo (client corev1.CoreV1Interface) (v1alpha1.ClusterInfo, error) {
 	cinfo := v1alpha1.ClusterInfo{}
-	kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
+	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return cinfo, err

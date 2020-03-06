@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -25,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -184,7 +184,7 @@ var _ reconcile.Reconciler = &ReconcileKubemanager{}
 
 //ClusterInfo is interface for gathering information about cluster
 type ClusterInfo interface {
-	ConfigClusterInfo(*kubernetes.Clientset) (v1alpha1.ClusterInfo, error)
+	ConfigClusterInfo(typedCorev1.CoreV1Interface) (v1alpha1.ClusterInfo, error)
 }
 
 // ReconcileKubemanager reconciles a Kubemanager object.
@@ -464,7 +464,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		cci, err := r.clusterInfo.ConfigClusterInfo(clientset)
+		cci, err := r.clusterInfo.ConfigClusterInfo(clientset.CoreV1())
 		if err != nil {
 			return reconcile.Result{}, err
 		}
