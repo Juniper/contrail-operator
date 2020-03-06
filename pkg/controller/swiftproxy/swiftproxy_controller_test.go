@@ -218,6 +218,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 				KeystoneSecretName:        "keystone-adminpass-secret",
+				FabricMgmtIP:              "10.255.254.4",
 			},
 		},
 		Status: status,
@@ -655,6 +656,6 @@ openstack_auth:
   domain_id: "default"
   user_domain_id: "default"
 
-swift_endpoint: "localhost:5070"
+swift_endpoint: "10.255.254.4:5070"
 swift_password: "swiftpass"
 `
