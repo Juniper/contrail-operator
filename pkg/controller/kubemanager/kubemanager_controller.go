@@ -458,13 +458,17 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	if len(podIPList.Items) > 0 {
 		config, err := v1alpha1.GetClientConfig()
 		if err != nil {
-			return err
+			return reconcile.Result{}, err
 		}
 		clientset, err := v1alpha1.GetClientsetFromConfig(config)
 		if err != nil {
-			return err
+			return reconcile.Result{}, err
 		}
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo.ConfigClusterInfo(clientset)); err != nil {
+		cci, err := r.clusterInfo.ConfigClusterInfo(clientset)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, cci); err != nil {
 			return reconcile.Result{}, err
 		}
 

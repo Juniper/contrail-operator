@@ -11,7 +11,7 @@ import (
 var AddToManagerFuncs []func(manager.Manager) error
 
 // AddToManager adds all Controllers to the Manager
-func AddToManager(m manager.Manager) error {
+func AddToManager(m manager.Manager, cinfo kubemanager.ClusterInfo) error {
 	/*
 		if err := mgr.Add(m); err != nil {
 			return err
@@ -26,6 +26,5 @@ func AddToManager(m manager.Manager) error {
 	if err := kubemanager.Add(m, cinfo); err != nil {
 		return err
 	}
-}
 	return nil
 }
