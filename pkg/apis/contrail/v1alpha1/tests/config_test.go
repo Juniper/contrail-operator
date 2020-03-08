@@ -605,7 +605,7 @@ func TestKubemanagerConfig(t *testing.T) {
 
 	environment := SetupEnv()
 	cl := *environment.client
-	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}}, &environment.kubemanbagerPodList, cl)
+	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}}, &environment.kubemanbagerPodList, cl, v1alpha1.ClusterInfo{})
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
