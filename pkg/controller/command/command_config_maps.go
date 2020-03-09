@@ -37,7 +37,7 @@ func (c *configMaps) ensureCommandConfigExist() error {
 
 	if c.swiftCredentialsSecret != nil {
 		swiftUser = string(c.swiftCredentialsSecret.Data["user"])
-		swiftPass = string(c.swiftCredentialsSecret.Data["pass"])
+		swiftPass = string(c.swiftCredentialsSecret.Data["password"])
 	}
 
 	cc := &commandConf{
