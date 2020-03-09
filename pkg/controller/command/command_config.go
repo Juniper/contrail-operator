@@ -14,6 +14,8 @@ type commandConf struct {
 	TelemetryURL   string
 	AdminUsername  string
 	AdminPassword  string
+	SwiftUsername string
+	SwiftPassword  string
 	PostgresUser   string
 	PostgresDBName string
 }
@@ -343,8 +345,8 @@ keystone:
   insecure: true
   authurl: http://localhost:9091/keystone/v3
   service_user:
-    id: swift
-    password: swiftpass
+    id: {{ .SwiftUsername }}
+    password: {{ .SwiftPassword }}
     project_name: service
     domain_id: default
 

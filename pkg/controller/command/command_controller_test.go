@@ -38,6 +38,7 @@ func TestCommand(t *testing.T) {
 				newCommand(),
 				newPostgres(true),
 				newAdminSecret(),
+				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
@@ -55,6 +56,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
+				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -71,6 +73,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
+				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -87,6 +90,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
+				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
@@ -179,6 +183,7 @@ func newCommand() *contrail.Command {
 					"api":  {Image: "registry:5000/contrail-command"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
+				SwiftSecretName: "swift-credentials-secret",
 			},
 		},
 	}
@@ -351,6 +356,23 @@ func newAdminSecret() *core.Secret {
 	}
 }
 
+func newSwiftSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift-credentials-secret",
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "command", "command", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"user": []byte("username"),
+			"password": []byte("password123"),
+		},
+	}
+}
+
 const expectedCommandConfig = `
 database:
   host: localhost
@@ -439,8 +461,8 @@ keystone:
   insecure: true
   authurl: http://localhost:9091/keystone/v3
   service_user:
-    id: swift
-    password: swiftpass
+    id: username
+    password: password123
     project_name: service
     domain_id: default
 

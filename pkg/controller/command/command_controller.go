@@ -131,8 +131,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	swiftSecretName := command.Spec.ServiceConfiguration.SwiftSecretName
+	swiftSecret := &core.Secret{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret)
+	if err != nil && errors.IsNotFound(err) {
+		return reconcile.Result{}, err
+	}
+
 	commandConfigName := command.Name + "-command-configmap"
-	if err := r.configMap(commandConfigName, "command", command, adminPasswordSecret).ensureCommandConfigExist(); err != nil {
+	if err := r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
