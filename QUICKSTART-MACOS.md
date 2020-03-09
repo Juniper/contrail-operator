@@ -8,7 +8,7 @@ https://golang.org/doc/install?download=go1.13.8.darwin-amd64.pkg
 
 Go executable binaries will be compiled and put into $GOPATH/bin directory. We want to run them using terminal, therefore we have to add this folder to $PATH environment variable.
 
-- edit ~/.zshrc 
+- edit `~/.zshrc`
 - insert on the bottom of the file:
 
 		export PATH=$PATH:~/go/bin
@@ -39,7 +39,7 @@ We use Goland and Visual Studio Code. Install your favourite one.
 
 ## Install Kind
 
-Kind is used as lightweight Kubernetes cluster for development purposes
+Kind is used as a lightweight Kubernetes cluster for development purposes
 
 	GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
 
@@ -91,7 +91,7 @@ Verify if it works:
 	cd test/env
 	./update_local_registry.sh
 
-In case when you recieve timeouts disable VPN and retry.
+In case when you receive timeouts disable VPN and retry.
 
 ## Install operator-sdk
 
@@ -101,6 +101,7 @@ Operator-SDK is a set of tools for developing Kubernates Operators. It is needed
 - K8s Custom Resource Definitions generation
 - building contrail-operator image
 - running e2e tests (aka system tests)
+
 
 	curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-apple-darwin
 	chmod u+x ./operator-sdk-v0.13.0-x86_64-apple-darwin
