@@ -578,11 +578,11 @@ func TestManagerController(t *testing.T) {
 		// then
 		actualSecret := core.Secret{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      "swift-credentials-secret",
+			Name:      secretName,
 			Namespace: "default",
 		}, &actualSecret)
 		assert.NoError(t, err)
-		assert.Equal(t, actualSecret, *initialSecret)
+		assert.Equal(t, actualSecret.Data, initialSecret.Data)
 	})
 }
 
