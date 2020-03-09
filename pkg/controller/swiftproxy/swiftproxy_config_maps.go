@@ -14,16 +14,18 @@ type configMaps struct {
 	swiftProxySpec          contrail.SwiftProxySpec
 	keystoneStatus          contrail.KeystoneStatus
 	keystoneAdminPassSecret *core.Secret
+	endpoint                string
 }
 
 func (r *ReconcileSwiftProxy) configMap(
-	configMapName string, swiftProxy *contrail.SwiftProxy, keystone *contrail.Keystone, secret *core.Secret,
+	configMapName string, swiftProxy *contrail.SwiftProxy, keystone *contrail.Keystone, secret *core.Secret, endpoint string,
 ) *configMaps {
 	return &configMaps{
 		cm:                      r.kubernetes.ConfigMap(configMapName, "SwiftProxy", swiftProxy),
 		swiftProxySpec:          swiftProxy.Spec,
 		keystoneStatus:          keystone.Status,
 		keystoneAdminPassSecret: secret,
+		endpoint:                endpoint,
 	}
 }
 
@@ -43,7 +45,7 @@ func (c *configMaps) ensureInitExists() error {
 		KeystoneAuthURL:       "http://" + c.keystoneStatus.Node + "/v3",
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         c.swiftProxySpec.ServiceConfiguration.SwiftPassword,
-		SwiftEndpoint:         fmt.Sprintf("%v:%v", c.swiftProxySpec.ServiceConfiguration.Endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftEndpoint:         fmt.Sprintf("%v:%v", c.endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 	}
 	return c.cm.EnsureExists(spc)
 }

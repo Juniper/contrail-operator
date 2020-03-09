@@ -139,13 +139,18 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	endpoint, err := r.getEndpoint(swiftProxy, request.Name)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
-	if err := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret).ensureExists(memcached.Status.Node); err != nil {
+	if err := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret, endpoint).ensureExists(memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret).ensureInitExists(); err != nil {
+	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret, endpoint).ensureInitExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -179,21 +184,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if swiftProxy.Spec.ServiceConfiguration.Endpoint == "" {
-		pods := core.PodList{}
-		var labels client.MatchingLabels = map[string]string{"SwiftProxy": request.Name}
-		if err := r.client.List(context.Background(), &pods, labels); err != nil {
-			return reconcile.Result{}, err
-		}
-		if len(pods.Items) == 0 || pods.Items[0].Status.PodIP == "" {
-			return reconcile.Result{}, err
-		}
-		swiftProxy.Spec.ServiceConfiguration.Endpoint = pods.Items[0].Status.PodIP
-		err = r.client.Update(context.TODO(), swiftProxy)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
+
 	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment)
 }
 
@@ -213,6 +204,21 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
 	err := r.client.Get(context.Background(), name, key)
 	return key, err
+}
+
+func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy, name string) (string, error) {
+	endpoint := cr.Spec.ServiceConfiguration.Endpoint
+	if endpoint == "" {
+		pods := core.PodList{}
+		labels := client.MatchingLabels{"SwiftProxy": name}
+		if err := r.client.List(context.Background(), &pods, labels); err != nil {
+			return "", err
+		}
+		if len(pods.Items) != 0 {
+			endpoint = pods.Items[0].Status.PodIP
+		}
+	}
+	return endpoint, nil
 }
 
 func (r *ReconcileSwiftProxy) updateStatus(
