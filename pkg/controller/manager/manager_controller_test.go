@@ -491,6 +491,33 @@ func TestManagerController(t *testing.T) {
 
 	})
 
+	t.Run("should not create swift secret, when swift is not in services", func(t *testing.T) {
+		//given
+		initObjs := []runtime.Object{
+			newManager(),
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		_, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "cluster1",
+				Namespace: "default",
+			},
+		})
+		require.NoError(t, err)
+		// then
+		secretList := core.SecretList{}
+		err = fakeClient.List(context.Background(), &secretList)
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(secretList.Items))
+	})
+
+
 	t.Run("should set secret's name in swift proxy's config, if the name is not specified", func(t *testing.T) {
 		//given
 		initObjs := []runtime.Object{
