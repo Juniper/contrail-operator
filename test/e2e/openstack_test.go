@@ -123,7 +123,7 @@ func TestOpenstackServices(t *testing.T) {
 
 		swiftPasswordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "swift-credentials-secret",
+				Name:      "openstacktest-swift-credentials-secret",
 				Namespace: namespace,
 			},
 			StringData: map[string]string{
@@ -213,7 +213,7 @@ func TestOpenstackServices(t *testing.T) {
 							MemcachedInstance:      "openstacktest-memcached",
 							ListenPort:             5070,
 							KeystoneInstance:       "openstacktest-keystone",
-							CredentialsSecretName:  "swift-credentials-secret",
+							CredentialsSecretName:  "openstacktest-swift-credentials-secret",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
 								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
