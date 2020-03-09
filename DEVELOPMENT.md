@@ -6,11 +6,6 @@
 snap install go --classic --channel 1.13/stable
 ```
 
-## Atom repository can be everywhere because go modules are used (outside GOPATH)
-
-Keep in mind that for Goland you have to have atom folder inside another atom folder.
-Open the parent atom folder in Goland.
-
 ## Add new API and controller
 
 ```
