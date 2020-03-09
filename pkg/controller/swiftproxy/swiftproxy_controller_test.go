@@ -218,7 +218,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 				KeystoneSecretName:        "keystone-adminpass-secret",
-				FabricMgmtIP:              "10.255.254.4",
+				Endpoint:                  "10.255.254.4",
 			},
 		},
 		Status: status,
