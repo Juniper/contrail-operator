@@ -37,7 +37,6 @@ type CommandConfiguration struct {
 	SwiftInstance      string                `json:"swiftInstance,omitempty"`
 	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
-	SwiftSecretName    string                `json:"swiftSecretName,omitempty"`
 	Containers         map[string]*Container `json:"containers,omitempty"`
 }
 

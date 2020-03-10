@@ -131,9 +131,18 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	swiftSecretName := command.Spec.ServiceConfiguration.SwiftSecretName
+	swiftService, err := r.getSwift(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	swiftSecretName := swiftService.Status.CredentialsSecretName
 	swiftSecret := &core.Secret{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret)
 	if err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, err
 	}
@@ -189,15 +198,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
-	}
-
-	swiftService, err := r.getSwift(command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err := r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	if !swiftService.Status.Active {

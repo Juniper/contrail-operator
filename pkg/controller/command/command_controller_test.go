@@ -183,7 +183,6 @@ func newCommand() *contrail.Command {
 					"api":  {Image: "registry:5000/contrail-command"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
-				SwiftSecretName: "swift-credentials-secret",
 			},
 		},
 	}
@@ -209,7 +208,8 @@ func newSwift(active bool) *contrail.Swift {
 			Namespace: "default",
 		},
 		Status: contrail.SwiftStatus{
-			Active: active,
+			Active:                active,
+			CredentialsSecretName: "swift-credentials-secret",
 		},
 	}
 }
