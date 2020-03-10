@@ -70,7 +70,6 @@ This is needed for downloading Contrail Command Docker image.
 
 	docker login hub.juniper.net/contrail-nightly
 
-
 ## Create Kind test environment
 
 Following commands will create Kubernetes cluster.
