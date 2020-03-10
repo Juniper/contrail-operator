@@ -276,8 +276,10 @@ func TestCommandServices(t *testing.T) {
 				err = swiftClient.PutFile("contrail_container", "test-file", []byte("payload"))
 				require.NoError(t, err)
 
-				t.Run("then file can be downloaded without authentication and has proper payload", func(t *testing.T) {
-					contents, err := swiftClient.GetFileWithoutAuth("contrail_container", "test-file")
+				t.Run("then the file can be downloaded without authentication and has proper payload", func(t *testing.T) {
+					swiftNoAuthClient, err := swift.NewClient(swiftProxy, "", swiftURL)
+					require.NoError(t, err)
+					contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
 					require.NoError(t, err)
 					assert.Equal(t, "payload", string(contents))
 				})
