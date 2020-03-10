@@ -139,18 +139,18 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
+	if err := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret).ensureExists(memcached.Status.Node); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	endpoint, err := r.getEndpoint(swiftProxy)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
-	if err := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret, endpoint).ensureExists(memcached.Status.Node); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret, endpoint).ensureInitExists(); err != nil {
+	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret).ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
