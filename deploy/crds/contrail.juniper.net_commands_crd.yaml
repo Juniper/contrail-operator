@@ -122,8 +122,6 @@ spec:
                   type: string
                 swiftInstance:
                   type: string
-                swiftSecretName:
-                  type: string
                 telemetryURL:
                   type: string
               type: object
