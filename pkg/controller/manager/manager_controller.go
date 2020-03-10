@@ -2,7 +2,6 @@ package manager
 
 import (
 	"context"
-	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -170,28 +169,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
 	}
 	adminPasswordSecretName := instance.Spec.KeystoneSecretName
-	if err := r.keystoneSecret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err = r.client.Update(context.TODO(), instance); err != nil {
 		return reconcile.Result{}, err
-	}
-
-	swift := instance.Spec.Services.Swift
-	if swift != nil {
-		swiftPasswordSecret := ""
-		secretName := &swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.CredentialsSecretName
-		if *secretName == "" {
-			*secretName = swift.Name + "-credentials-secret"
-		}
-		swiftPasswordSecret = *secretName
-
-		if err := r.swiftSecret(swiftPasswordSecret, "manager", instance).ensureSwiftSecretExist(); err != nil {
-			return reconcile.Result{}, fmt.Errorf("swift error: %w", err)
-		}
-		if err = r.client.Update(context.TODO(), instance); err != nil {
-			return reconcile.Result{}, err
-		}
 	}
 
 	// Create CRDs

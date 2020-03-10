@@ -8,11 +8,11 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/randomstring"
 )
 
-type keystoneSecret struct {
+type secret struct {
 	sc *k8s.Secret
 }
 
-func (s *keystoneSecret) FillSecret(sc *core.Secret) error {
+func (s *secret) FillSecret(sc *core.Secret) error {
 	if sc.Data != nil {
 		return nil
 	}
@@ -25,12 +25,12 @@ func (s *keystoneSecret) FillSecret(sc *core.Secret) error {
 	return nil
 }
 
-func (r *ReconcileManager) keystoneSecret(secretName, ownerType string, manager *contrail.Manager) *keystoneSecret {
-	return &keystoneSecret{
+func (r *ReconcileManager) secret(secretName, ownerType string, manager *contrail.Manager) *secret {
+	return &secret{
 		sc: r.kubernetes.Secret(secretName, ownerType, manager),
 	}
 }
 
-func (s *keystoneSecret) ensureAdminPassSecretExist() error {
+func (s *secret) ensureAdminPassSecretExist() error {
 	return s.sc.EnsureExists(s)
 }
