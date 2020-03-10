@@ -160,7 +160,7 @@ Eventually all pods should be Running:
 
 ### Verify if Contrail Commmand is working
 
-You can access Contrail Command application via web browser. Before that you have to forward the networkic traffic from localhost to Command's pod.
+You can access Contrail Command application via web browser. Before that you have to forward the network traffic from localhost to Command's pod.
 
 	kubectl port-forward $(kubectl get pods -l command=command -n contrail -o name) -n contrail 9091:9091
 
