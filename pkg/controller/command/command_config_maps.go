@@ -11,7 +11,7 @@ type configMaps struct {
 	cm                      *k8s.ConfigMap
 	ccSpec                  contrail.CommandSpec
 	keystoneAdminPassSecret *corev1.Secret
-	swiftCredentialsSecret *corev1.Secret
+	swiftCredentialsSecret  *corev1.Secret
 }
 
 func (r *ReconcileCommand) configMap(
@@ -20,32 +20,22 @@ func (r *ReconcileCommand) configMap(
 	cc *contrail.Command,
 	keystoneSecret *corev1.Secret,
 	swiftSecret *corev1.Secret,
-	) *configMaps {
+) *configMaps {
 	return &configMaps{
 		cm:                      r.kubernetes.ConfigMap(configMapName, ownerType, cc),
 		ccSpec:                  cc.Spec,
 		keystoneAdminPassSecret: keystoneSecret,
-		swiftCredentialsSecret: swiftSecret,
+		swiftCredentialsSecret:  swiftSecret,
 	}
 }
 
 func (c *configMaps) ensureCommandConfigExist() error {
-	var (
-		swiftUser = "swift"
-		swiftPass = "swiftpass"
-	)
-
-	if c.swiftCredentialsSecret != nil {
-		swiftUser = string(c.swiftCredentialsSecret.Data["user"])
-		swiftPass = string(c.swiftCredentialsSecret.Data["password"])
-	}
-
 	cc := &commandConf{
 		ClusterName:    "default",
 		AdminUsername:  "admin",
 		AdminPassword:  string(c.keystoneAdminPassSecret.Data["password"]),
-		SwiftUsername:  swiftUser,
-		SwiftPassword: swiftPass,
+		SwiftUsername:  string(c.swiftCredentialsSecret.Data["user"]),
+		SwiftPassword:  string(c.swiftCredentialsSecret.Data["password"]),
 		ConfigAPIURL:   "http://localhost:8082",
 		TelemetryURL:   "http://localhost:8081",
 		PostgresUser:   "root",

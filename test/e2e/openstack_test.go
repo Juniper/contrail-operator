@@ -127,7 +127,7 @@ func TestOpenstackServices(t *testing.T) {
 				Namespace: namespace,
 			},
 			StringData: map[string]string{
-				"user": "swift",
+				"user":     "swift",
 				"password": "swiftPass",
 			},
 		}
@@ -188,6 +188,7 @@ func TestOpenstackServices(t *testing.T) {
 						Containers: map[string]*contrail.Container{
 							"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:master"},
 						},
+						CredentialsSecretName: "openstacktest-swift-credentials-secret",
 						SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 							AccountBindPort:   6001,
 							ContainerBindPort: 6002,
@@ -210,10 +211,9 @@ func TestOpenstackServices(t *testing.T) {
 							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-							MemcachedInstance:      "openstacktest-memcached",
-							ListenPort:             5070,
-							KeystoneInstance:       "openstacktest-keystone",
-							CredentialsSecretName:  "openstacktest-swift-credentials-secret",
+							MemcachedInstance:  "openstacktest-memcached",
+							ListenPort:         5070,
+							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
 								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},

@@ -101,6 +101,7 @@ func TestCommandServices(t *testing.T) {
 					Containers: map[string]*contrail.Container{
 						"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:master"},
 					},
+					CredentialsSecretName: "commandtest-swift-credentials-secret",
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 						AccountBindPort:   6001,
 						ContainerBindPort: 6002,
@@ -123,10 +124,9 @@ func TestCommandServices(t *testing.T) {
 						},
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-						MemcachedInstance:      "commandtest-memcached",
-						ListenPort:             5080,
-						KeystoneInstance:       "commandtest-keystone",
-						CredentialsSecretName:  "commandtest-swift-credentials-secret",
+						MemcachedInstance:  "commandtest-memcached",
+						ListenPort:         5080,
+						KeystoneInstance:   "commandtest-keystone",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
 							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
@@ -199,7 +199,7 @@ func TestCommandServices(t *testing.T) {
 				Namespace: namespace,
 			},
 			StringData: map[string]string{
-				"user": "swift",
+				"user":     "swift",
 				"password": "test321",
 			},
 		}
