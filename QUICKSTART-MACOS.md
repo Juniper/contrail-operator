@@ -229,6 +229,6 @@ Then you have to create a new one plus a `contrail` namespace:
 
 System tests can be run using operator-sdk tool
 
-	cd ../..
+    # From contrail-operator root directory
 	operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
 
