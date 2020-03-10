@@ -29,11 +29,26 @@ type Client struct {
 }
 
 func (c *Client) PutContainer(name string) error {
+	return c.PutContainerWithHeaders(name, http.Header{})
+}
+
+func (c *Client) PutReadAllContainer(name string) error {
+	headers := http.Header{}
+	headers.Add("X-Container-Read", ".r:*")
+	return c.PutContainerWithHeaders(name, headers)
+}
+
+func (c *Client) PutContainerWithHeaders(name string, headers http.Header) error {
 	request, err := c.proxy.NewRequest(http.MethodPut, c.path+"/"+name, nil)
 	if err != nil {
 		return err
 	}
 	request.Header.Set("X-Auth-Token", c.token)
+	for name, values := range headers {
+		for _, value := range values {
+			request.Header.Add(name, value)
+		}
+	}
 	response, err := c.proxy.Do(request)
 	if err != nil {
 		return err
@@ -87,6 +102,21 @@ func (c *Client) GetFile(container string, fileName string) ([]byte, error) {
 		return nil, err
 	}
 	request.Header.Set("X-Auth-Token", c.token)
+	response, err := c.proxy.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
+	}
+	return ioutil.ReadAll(response.Body)
+}
+
+func (c *Client) GetFileWithoutAuth(container string, fileName string) ([]byte, error) {
+	request, err := c.proxy.NewRequest(http.MethodGet, c.path+"/"+container+"/"+fileName, nil)
+	if err != nil {
+		return nil, err
+	}
 	response, err := c.proxy.Do(request)
 	if err != nil {
 		return nil, err
