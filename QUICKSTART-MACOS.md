@@ -151,9 +151,9 @@ Eventually all pods should be Running:
 	provmanager1-provisionmanager-statefulset-0   1/1     Running     0          2m57s
 	rabbitmq1-rabbitmq-statefulset-0              1/1     Running     0          8m15s
 	swift-proxy-deployment-754f87448b-6l5nc       1/1     Running     0          4m32s
-	swift-ring-account-job-rnsxs                  1/1     Running     0          7s
+	swift-ring-account-job-rnsxs                  0/1     Completed   0          7s
 	swift-ring-container-job-pkb2k                0/1     Completed   0          7s
-	swift-ring-object-job-7nn44                   1/1     Running     0          7s
+	swift-ring-object-job-7nn44                   0/1     Completed   0          7s
 	swift-storage-statefulset-0                   13/13   Running     0          8m11s
 	webui1-webui-statefulset-0                    3/3     Running     0          2m56s
 	zookeeper1-zookeeper-statefulset-0            1/1     Running     0          8m16s
