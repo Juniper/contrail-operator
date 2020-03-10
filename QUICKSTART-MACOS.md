@@ -114,7 +114,7 @@ Verify if it works:
 
 In order to run Contrail-operator in the Kubernetes cluster we have to build Docker Image.
 
-	operator-sdk build contrail-operator
+	operator-sdk build localhost:5000/contrail-operator:latest
 
 Verify:
 
@@ -123,7 +123,6 @@ Verify:
 
 After image is created we have to push it into local Docker registry.
 
-	docker tag contrail-operator:latest localhost:5000/contrail-operator:latest
 	docker push localhost:5000/contrail-operator:latest
 
 ## Run Contrail-Operator with sample Contrail configuration
