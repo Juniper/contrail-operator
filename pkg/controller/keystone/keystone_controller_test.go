@@ -434,7 +434,7 @@ func newExpectedSTS() *apps.StatefulSet {
 						},
 						{
 							Name:            "keystone-init",
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           "localhost:5000/centos-binary-keystone:train",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
@@ -451,7 +451,7 @@ func newExpectedSTS() *apps.StatefulSet {
 					},
 					Containers: []core.Container{
 						{
-							Image:           "localhost:5000/centos-binary-keystone:master",
+							Image:           "localhost:5000/centos-binary-keystone:train",
 							Name:            "keystone",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -474,7 +474,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "localhost:5000/centos-binary-keystone-ssh:master",
+							Image:           "localhost:5000/centos-binary-keystone-ssh:train",
 							Name:            "keystone-ssh",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{
@@ -491,7 +491,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Image:           "localhost:5000/centos-binary-keystone-fernet:master",
+							Image:           "localhost:5000/centos-binary-keystone-fernet:train",
 							Name:            "keystone-fernet",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{{

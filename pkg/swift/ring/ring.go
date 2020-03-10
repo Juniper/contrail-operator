@@ -101,7 +101,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					Containers: []core.Container{
 						{
 							Name:  "ring-reconciler",
-							Image: "localhost:5000/centos-source-swift-base:master",
+							Image: "localhost:5000/centos-source-swift-base:train",
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "rings",

@@ -36,18 +36,18 @@ EOF
 while read line; do
 	pull_image kolla "${line}"
 done <<EOF
-centos-binary-keystone-fernet:master
-centos-binary-keystone:master
-centos-binary-keystone-ssh:master
-centos-binary-swift-account:master
-centos-binary-swift-container:master
-centos-binary-swift-object-expirer:master
-centos-binary-swift-object:master
-centos-binary-swift-proxy-server:master
-centos-binary-swift-rsyncd:master
-centos-binary-kolla-toolbox:master
-centos-source-swift-base:master
-centos-binary-memcached:master
+centos-binary-keystone-fernet:train
+centos-binary-keystone:train
+centos-binary-keystone-ssh:train
+centos-binary-swift-account:train
+centos-binary-swift-container:train
+centos-binary-swift-object-expirer:train
+centos-binary-swift-object:train
+centos-binary-swift-proxy-server:train
+centos-binary-swift-rsyncd:train
+centos-binary-kolla-toolbox:train
+centos-source-swift-base:train
+centos-binary-memcached:train
 EOF
 
 while read line; do
