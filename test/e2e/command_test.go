@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/client/swift"
 	"net/http"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/client/swift"
 	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
@@ -66,7 +66,7 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.MemcachedSpec{
 				ServiceConfiguration: contrail.MemcachedConfiguration{
-					Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:master"},
+					Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:train"},
 				},
 			},
 		}
@@ -82,10 +82,10 @@ func TestCommandServices(t *testing.T) {
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					Containers: map[string]*contrail.Container{
 						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
-						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:master"},
-						"keystone":       {Image: "registry:5000/centos-binary-keystone:master"},
-						"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:master"},
-						"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:master"},
+						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystone":       {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:train"},
+						"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:train"},
 					},
 				},
 			},
@@ -99,7 +99,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.SwiftSpec{
 				ServiceConfiguration: contrail.SwiftConfiguration{
 					Containers: map[string]*contrail.Container{
-						"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:master"},
+						"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:train"},
 					},
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 						AccountBindPort:   6001,
@@ -107,19 +107,19 @@ func TestCommandServices(t *testing.T) {
 						ObjectBindPort:    6000,
 						Device:            "d1",
 						Containers: map[string]*contrail.Container{
-							"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:master"},
-							"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:master"},
-							"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:master"},
-							"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:master"},
-							"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:master"},
-							"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:master"},
-							"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:master"},
-							"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:master"},
-							"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:master"},
-							"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:master"},
-							"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:master"},
-							"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:master"},
-							"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:master"},
+							"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:train"},
+							"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:train"},
+							"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:train"},
+							"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:train"},
+							"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:train"},
+							"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:train"},
+							"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:train"},
+							"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:train"},
+							"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:train"},
+							"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:train"},
+							"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:train"},
+							"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:train"},
+							"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:train"},
 						},
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
@@ -129,8 +129,8 @@ func TestCommandServices(t *testing.T) {
 						SwiftPassword:      "swiftpass",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
-							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:master"},
-							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:master"},
+							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 						},
 					},
 				},

@@ -319,8 +319,8 @@ func updatePodTemplate(
 
 func getImage(containers map[string]*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"init": "localhost:5000/centos-binary-kolla-toolbox:master",
-		"api":  "localhost:5000/centos-binary-swift-proxy-server:master",
+		"init": "localhost:5000/centos-binary-kolla-toolbox:train",
+		"api":  "localhost:5000/centos-binary-swift-proxy-server:train",
 	}
 
 	c, ok := containers[containerName]
