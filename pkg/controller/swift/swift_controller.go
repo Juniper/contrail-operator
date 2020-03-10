@@ -2,6 +2,7 @@ package swift
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"time"
 
 	batch "k8s.io/api/batch/v1"
@@ -40,7 +41,12 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
 func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
-	return &ReconcileSwift{client: client, scheme: scheme, claims: claims}
+	return &ReconcileSwift{
+		client: client,
+		scheme: scheme,
+		claims: claims,
+		kubernetes: k8s.New(client, scheme),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -97,6 +103,7 @@ type ReconcileSwift struct {
 	client client.Client
 	scheme *runtime.Scheme
 	claims volumeclaims.PersistentVolumeClaims
+	kubernetes *k8s.Kubernetes
 }
 
 func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -144,11 +151,25 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	credentialsSecretName := swift.Status.CredentialsSecretName
+	if credentialsSecretName == "" {
+		credentialsSecretName = swift.Name + "-swift-credentials-secret"
+		if swift.Spec.ServiceConfiguration.CredentialsSecretName != "" {
+			credentialsSecretName = swift.Spec.ServiceConfiguration.CredentialsSecretName
+		}
+
+		if err := r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		swift.Status.CredentialsSecretName = credentialsSecretName
+	}
+
 	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, credentialsSecretName, ringsClaimName.Name); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -223,7 +244,12 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 	return err
 }
 
-func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
+func (r *ReconcileSwift) ensureSwiftProxyExists(
+	swift *contrail.Swift,
+	swiftConfSecretName,
+	credentialsSecretName,
+	ringsClaim string,
+	) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-proxy",
@@ -234,6 +260,7 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(swift *contrail.Swift, swiftConf
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
 		swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
+		swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName = credentialsSecretName
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
 	return err

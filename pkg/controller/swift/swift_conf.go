@@ -4,8 +4,41 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/randomstring"
+	core "k8s.io/api/core/v1"
 	"text/template"
 )
+
+type swiftSecret struct {
+	sc *k8s.Secret
+}
+
+func (s *swiftSecret) FillSecret(sc *core.Secret) error {
+	if sc.Data != nil {
+		return nil
+	}
+
+	pass := randomstring.RandString{10}.Generate()
+
+	sc.StringData = map[string]string{
+		"user": 	"swift",
+		"password": pass,
+	}
+	return nil
+}
+
+func (r *ReconcileSwift) swiftSecret(secretName, ownerType string, swift *contrail.Swift) *swiftSecret {
+	return &swiftSecret{
+		sc: r.kubernetes.Secret(secretName, ownerType, swift),
+	}
+}
+
+func (s *swiftSecret) ensureSwiftSecretExist() error {
+	return s.sc.EnsureExists(s)
+}
+
 
 func generateSwiftConfig() (string, error) {
 	genSuffix, err := randomHex(10)
