@@ -250,26 +250,39 @@ func TestCommandServices(t *testing.T) {
 				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
 				assert.NoError(t, err)
 			})
+
+			var swiftProxyPods *core.PodList
+			swiftProxyLabel := "SwiftProxy=" + command.Spec.ServiceConfiguration.SwiftInstance + "-proxy"
+			swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				LabelSelector: swiftProxyLabel,
+			})
+			assert.NoError(t, err)
+			require.NotEmpty(t, swiftProxyPods.Items)
+			keystoneProxy := proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+			keystoneClient = keystone.NewClient(keystoneProxy)
+			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+			swiftProxyPod := swiftProxyPods.Items[0].Name
+			swiftProxy := proxy.NewClient("contrail", swiftProxyPod, 5080)
+			swiftURL := tokens.EndpointURL("swift", "public")
+			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+			require.NoError(t, err)
+
 			t.Run("then swift container should be created", func(t *testing.T) {
-				var swiftProxyPods *core.PodList
-				swiftProxyLabel := "SwiftProxy=" + command.Spec.ServiceConfiguration.SwiftInstance + "-proxy"
-				swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: swiftProxyLabel,
-				})
-				assert.NoError(t, err)
-				require.NotEmpty(t, swiftProxyPods.Items)
-				var (
-					keystoneProxy    = proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
-					keystoneClient   = keystone.NewClient(keystoneProxy)
-					tokens, _        = keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-					swiftProxyPod    = swiftProxyPods.Items[0].Name
-					swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5080)
-					swiftURL         = tokens.EndpointURL("swift", "public")
-					swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
-				)
-				require.NoError(t, err)
 				err = swiftClient.GetContainer("contrail_container")
 				assert.NoError(t, err)
+			})
+
+			t.Run("and when a file is put to the created container", func(t *testing.T) {
+				err = swiftClient.PutFile("contrail_container", "test-file", []byte("payload"))
+				require.NoError(t, err)
+
+				t.Run("then the file can be downloaded without authentication and has proper payload", func(t *testing.T) {
+					swiftNoAuthClient, err := swift.NewClient(swiftProxy, "", swiftURL)
+					require.NoError(t, err)
+					contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
+					require.NoError(t, err)
+					assert.Equal(t, "payload", string(contents))
+				})
 			})
 		})
 
