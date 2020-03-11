@@ -44,13 +44,13 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 	return c.cm.EnsureExists(spc)
 }
 
-func (c *configMaps) ensureInitExists() error {
+func (c *configMaps) ensureInitExists(endpoint string) error {
 	spc := &swiftProxyInitConfig{
 		KeystoneAuthURL:       "http://" + c.keystoneStatus.Node + "/v3",
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
-		SwiftEndpoint:         fmt.Sprintf("localhost:%v", c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftEndpoint:         fmt.Sprintf("%v:%v", endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 	}
 	return c.cm.EnsureExists(spc)
 }

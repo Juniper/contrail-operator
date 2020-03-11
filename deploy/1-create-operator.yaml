@@ -2680,6 +2680,8 @@ spec:
                                 containers: {}
                                 credentialsSecretName:
                                   type: string
+                                endpoint:
+                                  type: string
                                 keystoneInstance:
                                   type: string
                                 keystoneSecretName:
@@ -3867,6 +3869,8 @@ spec:
                 containers: {}
                 credentialsSecretName:
                   type: string
+                endpoint:
+                  type: string
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -3951,6 +3955,8 @@ spec:
                   properties:
                     containers: {}
                     credentialsSecretName:
+                      type: string
+                    endpoint:
                       type: string
                     keystoneInstance:
                       type: string

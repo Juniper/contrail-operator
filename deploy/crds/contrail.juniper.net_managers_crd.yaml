@@ -1506,6 +1506,8 @@ spec:
                                 containers: {}
                                 credentialsSecretName:
                                   type: string
+                                endpoint:
+                                  type: string
                                 keystoneInstance:
                                   type: string
                                 keystoneSecretName:

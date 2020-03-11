@@ -3,16 +3,15 @@ package command
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/rest"
-
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -368,7 +367,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	if err != nil {
 		return fmt.Errorf("failed to create swift client %v", err)
 	}
-	err = swiftClient.PutContainer("contrail_container")
+	err = swiftClient.PutReadAllContainer("contrail_container")
 	if err != nil {
 		return fmt.Errorf("failed to create swift container (contrail_container): %v", err)
 	}

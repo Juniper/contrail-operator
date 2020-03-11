@@ -223,6 +223,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 				KeystoneSecretName:        "keystone-adminpass-secret",
+				Endpoint:                  "10.255.254.4",
 			},
 		},
 		Status: status,
@@ -250,7 +251,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					InitContainers: []core.Container{
 						{
 							Name:            "init",
-							Image:           "localhost:5000/centos-binary-kolla-toolbox:master",
+							Image:           "localhost:5000/centos-binary-kolla-toolbox:train",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
@@ -261,7 +262,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					},
 					Containers: []core.Container{{
 						Name:  "api",
-						Image: "localhost:5000/centos-binary-swift-proxy-server:master",
+						Image: "localhost:5000/centos-binary-swift-proxy-server:train",
 						VolumeMounts: []core.VolumeMount{
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
@@ -673,7 +674,7 @@ openstack_auth:
   domain_id: "default"
   user_domain_id: "default"
 
-swift_endpoint: "localhost:5070"
+swift_endpoint: "10.255.254.4:5070"
 swift_password: "password2"
 swift_user: "otherUser"
 `

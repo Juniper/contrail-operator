@@ -21,6 +21,7 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName       string                `json:"swiftConfSecretName,omitempty"`
 	Containers                map[string]*Container `json:"containers,omitempty"`
 	RingPersistentVolumeClaim string                `json:"ringPersistentVolumeClaim,omitempty"`
+	Endpoint                  string                `json:"endpoint,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy
