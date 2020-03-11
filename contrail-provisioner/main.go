@@ -84,7 +84,14 @@ func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Cli
 			panic(err)
 		}
 	case "databse":
-		// TODO
+		var nodeList []*types.DatabaseNode
+		err = yaml.Unmarshal(nodeYaml, &nodeList)
+		if err != nil {
+			panic(err)
+		}
+		if err = databaseNodes(contrailClient, nodeList); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -246,11 +253,11 @@ func main() {
 			if !os.IsNotExist(err) {
 				nodeManager(databaseNodesPtr, "database", contrailClient)
 			} else if os.IsNotExist(err) {
-				databaseNodes(contrailClient, []*types.ConfigNode{})
+				databaseNodes(contrailClient, []*types.DatabaseNode{})
 			}
 			fmt.Println("setting up database node watcher")
 			watchFile := strings.Split(*databaseNodesPtr, "/")
-			watchPath := strings.TrimSuffix(*configNodesPtr, watchFile[len(watchFile)-1])
+			watchPath := strings.TrimSuffix(*databaseNodesPtr, watchFile[len(watchFile)-1])
 			nodeWatcher, err := WatchFile(watchPath, time.Second, func() {
 				fmt.Println("database node event")
 				_, err := os.Stat(*databaseNodesPtr)
