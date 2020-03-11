@@ -341,14 +341,10 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 }
 
 func newAdminSecret() *core.Secret {
-	trueVal := true
 	return &core.Secret{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-adminpass-secret",
 			Namespace: "default",
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "command", "command", "", &trueVal, &trueVal},
-			},
 		},
 		Data: map[string][]byte{
 			"password": []byte("test123"),
@@ -357,14 +353,10 @@ func newAdminSecret() *core.Secret {
 }
 
 func newSwiftSecret() *core.Secret {
-	trueVal := true
 	return &core.Secret{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swift-credentials-secret",
 			Namespace: "default",
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "command", "command", "", &trueVal, &trueVal},
-			},
 		},
 		Data: map[string][]byte{
 			"user": []byte("username"),

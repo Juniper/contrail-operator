@@ -245,10 +245,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 }
 
 func (r *ReconcileSwift) ensureSwiftProxyExists(
-	swift *contrail.Swift,
-	swiftConfSecretName,
-	credentialsSecretName,
-	ringsClaim string,
+	swift *contrail.Swift, swiftConfSecretName, credentialsSecretName, ringsClaim string,
 	) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{

@@ -15,12 +15,8 @@ type configMaps struct {
 }
 
 func (r *ReconcileCommand) configMap(
-	configMapName string,
-	ownerType string,
-	cc *contrail.Command,
-	keystoneSecret *corev1.Secret,
-	swiftSecret *corev1.Secret,
-) *configMaps {
+	configMapName string, ownerType string, cc *contrail.Command, keystoneSecret *corev1.Secret,  swiftSecret *corev1.Secret,
+	) *configMaps {
 	return &configMaps{
 		cm:                      r.kubernetes.ConfigMap(configMapName, ownerType, cc),
 		ccSpec:                  cc.Spec,
