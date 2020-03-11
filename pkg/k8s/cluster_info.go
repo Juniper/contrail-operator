@@ -6,47 +6,115 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-var log = logf.Log.WithName("types_kubemanager")
 
-// ClusterInfo is struct of information about cluster
-type ClusterInfo struct {
+// Cluster is a struct that incorporates kubemanager.ClusterInfo interface
+type Cluster struct {
 }
 
-// ConfigClusterInfo is used for gathering cluster information from config map
-func (ci ClusterInfo) ConfigClusterInfo (client corev1.CoreV1Interface) (v1alpha1.ClusterInfo, error) {
-	cinfo := v1alpha1.ClusterInfo{}
+
+// KubernetesAPISSLPort gathers SSL Port from Kubernetes Cluster via kubeadm-config ConfigMap
+func (c Cluster) KubernetesAPISSLPort(client typedCorev1.CoreV1Interface) (int, error) {
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
-		return cinfo, err
+		return 0, err
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
 	clusterConfigMap := make(map[interface{}]interface{})
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
-		return cinfo, err
+		return 0, err
 	}
 	controlPlaneEndpoint := clusterConfigMap["controlPlaneEndpoint"].(string)
-	kubernetesAPIServer, kubernetesAPISSLPort, err := net.SplitHostPort(controlPlaneEndpoint)
+	_, kubernetesAPISSLPort, err := net.SplitHostPort(controlPlaneEndpoint)
 	if err != nil {
-		return cinfo, err
+		return 0, err
 	}
-	cinfo.KubernetesAPIServer = kubernetesAPIServer
 	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
 	if err != nil {
-		return cinfo, err
+		return 0, err
 	}
-	cinfo.KubernetesAPISSLPort = kubernetesAPISSLPortInt
-	cinfo.KubernetesClusterName = clusterConfigMap["clusterName"].(string)
+	return kubernetesAPISSLPortInt, nil
+}
+
+
+// KubernetesAPIServer gathers SPI Server from Kubernetes Cluster via kubeadm-config ConfigMap
+func (c Cluster) KubernetesAPIServer(client typedCorev1.CoreV1Interface) (string, error) {
+	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	clusterConfig := kcm.Data["ClusterConfiguration"]
+	clusterConfigByte := []byte(clusterConfig)
+	clusterConfigMap := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+		return "", err
+	}
+	controlPlaneEndpoint := clusterConfigMap["controlPlaneEndpoint"].(string)
+	kubernetesAPIServer, _, err := net.SplitHostPort(controlPlaneEndpoint)
+	if err != nil {
+		return "", err
+	}
+	return kubernetesAPIServer, nil
+}
+
+
+// KubernetesClusterName gathers cluster name from Kubernetes Cluster via kubeadm-config ConfigMap
+func (c Cluster) KubernetesClusterName(client typedCorev1.CoreV1Interface) (string, error) {
+	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	clusterConfig := kcm.Data["ClusterConfiguration"]
+	clusterConfigByte := []byte(clusterConfig)
+	clusterConfigMap := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+		return "", err
+	}
+	kubernetesClusterName := clusterConfigMap["clusterName"].(string)
+	return kubernetesClusterName, nil
+}
+
+
+// PodSubnets gathers pods' subnet from Kubernetes Cluster via kubeadm-config ConfigMap
+func (c Cluster) PodSubnets(client typedCorev1.CoreV1Interface) (string, error) {
+	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	clusterConfig := kcm.Data["ClusterConfiguration"]
+	clusterConfigByte := []byte(clusterConfig)
+	clusterConfigMap := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+		return "", err
+	}
 	networkConfig := clusterConfigMap["networking"].(map[interface{}]interface{})
-	cinfo.PodSubnets = networkConfig["podSubnet"].(string)
-	cinfo.ServiceSubnets = networkConfig["serviceSubnet"].(string)
-	return cinfo, nil
+	podSubnets := networkConfig["podSubnet"].(string)
+	return podSubnets, nil
+}
+
+
+// ServiceSubnets gathers service subnet from Kubernetes Cluster via kubeadm-config ConfigMap
+func (c Cluster) ServiceSubnets(client typedCorev1.CoreV1Interface) (string, error) {
+	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	clusterConfig := kcm.Data["ClusterConfiguration"]
+	clusterConfigByte := []byte(clusterConfig)
+	clusterConfigMap := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+		return "", err
+	}
+	networkConfig := clusterConfigMap["networking"].(map[interface{}]interface{})
+	serviceSubnets := networkConfig["serviceSubnet"].(string)
+	return serviceSubnets, nil
 }

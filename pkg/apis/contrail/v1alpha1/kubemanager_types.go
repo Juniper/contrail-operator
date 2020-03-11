@@ -16,6 +16,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -94,7 +95,9 @@ func init() {
 
 func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
-	client client.Client, cinfo ClusterInfo) error {
+	client client.Client,
+	cinfo KubemanagerClusterInfo,
+	coreV1Interface typedCorev1.CoreV1Interface) error {
 	instanceConfigMapName := request.Name + "-" + "kubemanager" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	if err := client.Get(
@@ -155,11 +158,31 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
-		kubemanagerConfig.KubernetesAPISSLPort = &cinfo.KubernetesAPISSLPort
-		kubemanagerConfig.KubernetesAPIServer = cinfo.KubernetesAPIServer
-		kubemanagerConfig.KubernetesClusterName = cinfo.KubernetesClusterName
-		kubemanagerConfig.PodSubnets = cinfo.PodSubnets
-		kubemanagerConfig.ServiceSubnets = cinfo.ServiceSubnets
+		apiSSLPort, err := cinfo.KubernetesAPISSLPort(coreV1Interface)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.KubernetesAPISSLPort = &apiSSLPort
+		APIServer, err := cinfo.KubernetesAPIServer(coreV1Interface)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.KubernetesAPIServer = APIServer
+		clusterName, err := cinfo.KubernetesClusterName(coreV1Interface)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.KubernetesClusterName = clusterName
+		podSubnets, err := cinfo.PodSubnets(coreV1Interface)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.PodSubnets = podSubnets
+		serviceSubnets, err := cinfo.ServiceSubnets(coreV1Interface)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.ServiceSubnets = serviceSubnets
 	}
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
@@ -439,7 +462,12 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 	return kubemanagerConfiguration
 }
 
-type ClusterInfo struct {
-	KubernetesAPISSLPort int
-	KubernetesAPIServer, KubernetesClusterName, PodSubnets, ServiceSubnets string
+
+//ClusterInfo is interface for gathering information about cluster
+type KubemanagerClusterInfo interface {
+    KubernetesAPISSLPort(typedCorev1.CoreV1Interface) (int, error)
+	KubernetesAPIServer(typedCorev1.CoreV1Interface) (string, error)
+    KubernetesClusterName(typedCorev1.CoreV1Interface) (string, error)
+	PodSubnets(typedCorev1.CoreV1Interface) (string, error)
+    ServiceSubnets(typedCorev1.CoreV1Interface) (string, error)
 }

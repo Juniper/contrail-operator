@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -18,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
@@ -605,7 +607,9 @@ func TestKubemanagerConfig(t *testing.T) {
 
 	environment := SetupEnv()
 	cl := *environment.client
-	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}}, &environment.kubemanbagerPodList, cl, v1alpha1.ClusterInfo{})
+	clientset := kubernetes.Clientset{}
+	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}},
+	                                                             &environment.kubemanbagerPodList, cl, k8s.Cluster{}, clientset.CoreV1())
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}

@@ -3,7 +3,6 @@ package controller
 import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	//mgr "github.com/Juniper/contrail-operator/pkg/controller/manager"
 )
 
@@ -11,7 +10,7 @@ import (
 var AddToManagerFuncs []func(manager.Manager) error
 
 // AddToManager adds all Controllers to the Manager
-func AddToManager(m manager.Manager, cinfo kubemanager.ClusterInfo) error {
+func AddToManager(m manager.Manager) error {
 	/*
 		if err := mgr.Add(m); err != nil {
 			return err
@@ -22,9 +21,6 @@ func AddToManager(m manager.Manager, cinfo kubemanager.ClusterInfo) error {
 		if err := f(m); err != nil {
 			return err
 		}
-	}
-	if err := kubemanager.Add(m, cinfo); err != nil {
-		return err
 	}
 	return nil
 }

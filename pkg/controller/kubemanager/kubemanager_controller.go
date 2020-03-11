@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -90,13 +89,14 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Kubemanager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, ci ClusterInfo) error {
+func Add(mgr manager.Manager, ci v1alpha1.KubemanagerClusterInfo) error {
 	return add(mgr, newReconciler(mgr, ci))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager, ci ClusterInfo) reconcile.Reconciler {
-	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr, clusterInfo: ci}
+func newReconciler(mgr manager.Manager, ci v1alpha1.KubemanagerClusterInfo) reconcile.Reconciler {
+	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(),
+		                         Manager: mgr, clusterInfo: ci}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -182,11 +182,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 // blank assignment to verify that ReconcileKubemanager implements reconcile.Reconciler.
 var _ reconcile.Reconciler = &ReconcileKubemanager{}
 
-//ClusterInfo is interface for gathering information about cluster
-type ClusterInfo interface {
-	ConfigClusterInfo(typedCorev1.CoreV1Interface) (v1alpha1.ClusterInfo, error)
-}
-
 // ReconcileKubemanager reconciles a Kubemanager object.
 type ReconcileKubemanager struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -194,7 +189,7 @@ type ReconcileKubemanager struct {
 	Client  client.Client
 	Scheme  *runtime.Scheme
 	Manager manager.Manager
-	clusterInfo ClusterInfo
+	clusterInfo v1alpha1.KubemanagerClusterInfo
 }
 
 // Reconcile reads that state of the cluster for a Kubemanager object and makes changes based on the state read
@@ -464,11 +459,8 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		cci, err := r.clusterInfo.ConfigClusterInfo(clientset.CoreV1())
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client, cci); err != nil {
+		coreV1Interface := clientset.CoreV1()
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo, coreV1Interface); err != nil {
 			return reconcile.Result{}, err
 		}
 
