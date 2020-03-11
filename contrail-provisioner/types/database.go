@@ -1,0 +1,69 @@
+package types
+
+import (
+	"github.com/Juniper/contrail-go-api"
+	contrailTypes "github.com/Juniper/contrail-go-api/types"
+)
+
+// ConfigNode struct defines Contrail config node
+type DatabaseNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+}
+
+// Create creates a ConfigNode instance
+func (c *DatabaseNode) Create(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
+	// TODO
+}
+
+// Update updates a ConfigNode instance
+func (c *DatabaseNode) Update(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
+	// TODO check if there is a need to add something more like in control
+	for _, node := range nodeList {
+		if node.Hostname == nodeName {
+			vncNodeList, err := contrailClient.List("database-node")
+			if err != nil {
+				return err
+			}
+			for _, vncNode := range vncNodeList {
+				obj, err := contrailClient.ReadListResult("database-node", &vncNode)
+				if err != nil {
+					return err
+				}
+				typedNode := obj.(*contrailTypes.DatabaseNode)
+				if typedNode.GetName() == nodeName {
+					typedNode.SetFQName("", []string{"default-global-system-config", nodeName})
+					typedNode.SetDatabaseNodeIpAddress(node.IPAddress)
+					err := contrailClient.Update(typedNode)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// Delete deletes a ConfigNode instance
+func (c *DatabaseNode) Delete(nodeName string, contrailClient *contrail.Client) error {
+	vncNodeList, err := contrailClient.List("database-node")
+	if err != nil {
+		return err
+	}
+	for _, vncNode := range vncNodeList {
+		obj, err := contrailClient.ReadListResult("database-node", &vncNode)
+		if err != nil {
+			return err
+		}
+		if obj.GetName() == nodeName {
+			err = contrailClient.Delete(obj)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+	return nil
+}
+

@@ -83,11 +83,9 @@ func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Cli
 		if err = vrouterNodes(contrailClient, nodeList); err != nil {
 			panic(err)
 		}
+	case "databse":
+		// TODO
 	}
-}
-
-func globalConfigManager(globalConfigPtr *string, contrailClient *contrail.Client) {
-
 }
 
 func check(err error) {
@@ -102,6 +100,7 @@ func main() {
 	configNodesPtr := flag.String("configNodes", "/provision.yaml", "path to config nodes yaml file")
 	analyticsNodesPtr := flag.String("analyticsNodes", "/provision.yaml", "path to analytics nodes yaml file")
 	vrouterNodesPtr := flag.String("vrouterNodes", "/provision.yaml", "path to vrouter nodes yaml file")
+	databaseNodesPtr := flag.String("databaseNodes", "/provision.yaml", "path to database nodes yaml file")
 	apiserverPtr := flag.String("apiserver", "/provision.yaml", "path to apiserver yaml file")
 	modePtr := flag.String("mode", "watch", "watch/run")
 	flag.Parse()
@@ -239,6 +238,35 @@ func main() {
 				nodeWatcher.Close()
 			}()
 		}
+
+		if databaseNodesPtr != nil {
+			// TODO
+			fmt.Println("intial database node run")
+			_, err := os.Stat(*databaseNodesPtr)
+			if !os.IsNotExist(err) {
+				nodeManager(databaseNodesPtr, "database", contrailClient)
+			} else if os.IsNotExist(err) {
+				databaseNodes(contrailClient, []*types.ConfigNode{})
+			}
+			fmt.Println("setting up database node watcher")
+			watchFile := strings.Split(*databaseNodesPtr, "/")
+			watchPath := strings.TrimSuffix(*configNodesPtr, watchFile[len(watchFile)-1])
+			nodeWatcher, err := WatchFile(watchPath, time.Second, func() {
+				fmt.Println("database node event")
+				_, err := os.Stat(*databaseNodesPtr)
+				if !os.IsNotExist(err) {
+					nodeManager(databaseNodesPtr, "database", contrailClient)
+				} else if os.IsNotExist(err) {
+					databaseNodes(contrailClient, []*types.DatabaseNode{})
+				}
+			})
+			check(err)
+
+			defer func() {
+				nodeWatcher.Close()
+			}()
+		}
+
 		<-done
 	}
 
@@ -319,6 +347,21 @@ func main() {
 				panic(err)
 			}
 			if err = vrouterNodes(contrailClient, vrouterNodeList); err != nil {
+				panic(err)
+			}
+		}
+
+		if databaseNodesPtr != nil {
+			var databaseNodeList []*types.DatabaseNode
+			databaseNodeYaml, err := ioutil.ReadFile(*databaseNodesPtr)
+			if err != nil {
+				panic(err)
+			}
+			err = yaml.Unmarshal(databaseNodeYaml, &databaseNodeList)
+			if err != nil {
+				panic(err)
+			}
+			if err = databaseNodes(contrailClient, databaseNodeList); err != nil {
 				panic(err)
 			}
 		}
@@ -690,6 +733,78 @@ func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode
 			}
 		case "delete":
 			node := &types.VrouterNode{}
+			err = node.Delete(k, contrailClient)
+			if err != nil {
+				return err
+			}
+			fmt.Println("deleting node ", k)
+		}
+	}
+	return nil
+}
+
+func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNode) error {
+	var actionMap = make(map[string]string)
+	nodeType := "database-node"
+	vncNodes := []*types.DatabaseNode{}
+	vncNodeList, err := contrailClient.List(nodeType)
+	if err != nil {
+		return err
+	}
+	for _, vncNode := range vncNodeList {
+		obj, err := contrailClient.ReadListResult(nodeType, &vncNode)
+		if err != nil {
+			return err
+		}
+		typedNode := obj.(*contrailTypes.DatabaseNode)
+
+		node := &types.DatabaseNode{
+			IPAddress: typedNode.GetDatabaseNodeIpAddress(),
+			Hostname:  typedNode.GetName(),
+		}
+		vncNodes = append(vncNodes, node)
+	}
+	for _, node := range nodeList {
+		actionMap[node.Hostname] = "create"
+	}
+	for _, vncNode := range vncNodes {
+		if _, ok := actionMap[vncNode.Hostname]; ok {
+			for _, node := range nodeList {
+				if node.Hostname == vncNode.Hostname {
+					actionMap[node.Hostname] = "noop"
+					if node.IPAddress != vncNode.IPAddress {
+						actionMap[node.Hostname] = "update"
+					}
+				}
+			}
+		} else {
+			actionMap[vncNode.Hostname] = "delete"
+		}
+	}
+	for k, v := range actionMap {
+		switch v {
+		case "update":
+			for _, node := range nodeList {
+				if node.Hostname == k {
+					fmt.Println("updating node ", node.Hostname)
+					err = node.Update(nodeList, k, contrailClient)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		case "create":
+			for _, node := range nodeList {
+				if node.Hostname == k {
+					fmt.Println("creating node ", node.Hostname)
+					err = node.Create(nodeList, node.Hostname, contrailClient)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		case "delete":
+			node := &types.DatabaseNode{}
 			err = node.Delete(k, contrailClient)
 			if err != nil {
 				return err
