@@ -528,10 +528,20 @@ spec:
                           description: ConfigConfiguration is the Spec for the cassandras
                             API.
                           properties:
+                            aaaMode:
+                              enum:
+                              - noauth
+                              - rbac
+                              type: string
                             analyticsPort:
                               type: integer
                             apiPort:
                               type: integer
+                            authMode:
+                              enum:
+                              - noauth
+                              - keystone
+                              type: string
                             cassandraInstance:
                               type: string
                             collectorPort:

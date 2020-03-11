@@ -118,13 +118,10 @@ allow_expired_window = 172800
 max_active_keys = 3
 
 [cache]
-backend = oslo_cache.memcache_pool
+backend = dogpile.cache.memcached
 enabled = True
 memcache_servers = localhost:11211
 
-[oslo_messaging_notifications]
-transport_url = rabbit://guest:guest@localhost:5672//
-driver = noop
 `
 
 const expectedWSGIKeystoneConfig = `
@@ -145,7 +142,7 @@ TraceEnable off
 
 
 <VirtualHost *:5555>
-    WSGIDaemonProcess keystone-public processes=2 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
+    WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
     WSGIApplicationGroup %{GLOBAL}
@@ -223,4 +220,51 @@ ListenAddress 0.0.0.0
 
 SyslogFacility AUTHPRIV
 UsePAM yes
+`
+
+const expectedKeystoneInitKollaServiceConfig = `{
+    "command": "/usr/bin/bootstrap.sh",
+    "config_files": [
+        {
+            "source": "/var/lib/kolla/config_files/keystone.conf",
+            "dest": "/etc/keystone/keystone.conf",
+            "owner": "keystone",
+            "perm": "0600"
+        },
+        {
+			"source": "/var/lib/kolla/config_files/bootstrap.sh",
+			"dest": "/usr/bin/bootstrap.sh",
+			"owner": "root",
+			"perm": "0755"
+		}
+    ],
+    "permissions": [
+        {
+            "path": "/var/log/kolla",
+            "owner": "keystone:kolla"
+        },
+        {
+            "path": "/etc/keystone/fernet-keys",
+            "owner": "keystone:keystone",
+            "perm": "0770"
+        },
+        {
+            "path": "/etc/keystone/domains",
+            "owner": "keystone:keystone",
+            "perm": "0700"
+        }
+    ]
+}`
+
+const expectedkeystoneInitBootstrapScript = `
+#!/bin/bash
+
+keystone-manage db_sync
+keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+keystone-manage bootstrap --bootstrap-password test123 \
+  --bootstrap-region-id RegionOne \
+  --bootstrap-admin-url http://0.0.0.0:5555/v3/ \
+  --bootstrap-internal-url http://0.0.0.0:5555/v3/ \
+  --bootstrap-public-url http://0.0.0.0:5555/v3/
 `

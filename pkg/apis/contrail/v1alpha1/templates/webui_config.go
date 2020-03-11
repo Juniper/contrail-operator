@@ -8,7 +8,7 @@ var WebuiWebConfig = template.Must(template.New("").Parse(`/*
 */
 var config = {};
 config.orchestration = {};
-config.orchestration.Manager = "none";
+config.orchestration.Manager = "{{ .Manager }}";
 config.orchestrationModuleEndPointFromConfig = false;
 config.contrailEndPointFromConfig = true;
 config.regionsFromConfig = false;
@@ -16,7 +16,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "http://localhost:5555/v2.0";
+config.regions.RegionOne = "http://localhost:5555/v3";
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -150,5 +150,7 @@ auth.admin_user = '{{ .AdminUsername }}';
 auth.admin_password = '{{ .AdminPassword }}';
 auth.admin_token = '';
 auth.admin_tenant_name = '{{ .AdminUsername }}';
+auth.project_domain_name = 'Default';
+auth.user_domain_name = 'Default';
 module.exports = auth;
 `))

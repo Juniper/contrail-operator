@@ -67,6 +67,7 @@ spec:
               image: registry:5000/contrail-analytics-query-engine:master.1115
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
+          authMode: keystone
     controls:
     - metadata:
         labels:

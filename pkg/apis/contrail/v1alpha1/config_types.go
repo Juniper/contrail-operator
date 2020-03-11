@@ -20,6 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:validation:Enum=noauth;keystone
+type AuthenticationMode string
+
+const (
+	AuthenticationModeNoAuth   AuthenticationMode = "noauth"
+	AuthenticationModeKeystone AuthenticationMode = "keystone"
+)
+
+// +kubebuilder:validation:Enum=noauth;rbac
+type AAAMode string
+
+const (
+	AAAModeNoAuth AAAMode = "no-auth"
+	AAAModeRBAC   AAAMode = "rbac"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -59,6 +75,8 @@ type ConfigConfiguration struct {
 	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
 	LogLevel           string                `json:"logLevel,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	AuthMode           AuthenticationMode    `json:"authMode,omitempty"`
+	AAAMode            AAAMode               `json:"aaaMode,omitempty"`
 	Storage            Storage               `json:"storage,omitempty"`
 	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
 }
@@ -177,6 +195,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			AuthMode            AuthenticationMode
+			AAAMode             AAAMode
 			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -188,6 +208,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			AuthMode:            configConfig.AuthMode,
+			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
@@ -196,9 +218,11 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
 			HostIP     string
 			ListenPort string
+			AuthMode   AuthenticationMode
 		}{
 			HostIP:     podList.Items[idx].Status.PodIP,
 			ListenPort: strconv.Itoa(*configConfig.APIPort),
+			AuthMode:   configConfig.AuthMode,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
@@ -305,6 +329,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			AAAMode             AAAMode
 			LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -317,6 +342,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
@@ -334,6 +360,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			AuthMode            string
+			AAAMode             AAAMode
 			//LogLevel            string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -347,6 +375,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			AAAMode:             configConfig.AAAMode,
 			//LogLevel:            configConfig.LogLevel,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
@@ -682,6 +711,20 @@ func (c *Config) ConfigurationParameters() interface{} {
 		rabbitmqVhost = RabbitmqVhost
 	}
 	configConfiguration.RabbitmqVhost = rabbitmqVhost
+
+	configConfiguration.AuthMode = c.Spec.ServiceConfiguration.AuthMode
+	if configConfiguration.AuthMode == "" {
+		configConfiguration.AuthMode = AuthenticationModeNoAuth
+	}
+
+	configConfiguration.AAAMode = c.Spec.ServiceConfiguration.AAAMode
+	if configConfiguration.AAAMode == "" {
+		configConfiguration.AAAMode = AAAModeNoAuth
+		if configConfiguration.AuthMode == AuthenticationModeKeystone {
+			configConfiguration.AAAMode = AAAModeRBAC
+		}
+	}
+
 	return configConfiguration
 
 }

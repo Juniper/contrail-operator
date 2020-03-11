@@ -355,6 +355,11 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 									}},
 								},
 							},
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									"cpu": resource.MustParse("2"),
+								},
+							},
 						},
 						{
 							Name:            "keystone-ssh",
