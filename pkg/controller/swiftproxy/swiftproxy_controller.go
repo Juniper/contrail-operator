@@ -144,8 +144,13 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	endpoint, err := r.getEndpoint(swiftProxy)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret).ensureInitExists(); err != nil {
+	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret).ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -199,6 +204,21 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
 	err := r.client.Get(context.Background(), name, key)
 	return key, err
+}
+
+func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy) (string, error) {
+	endpoint := cr.Spec.ServiceConfiguration.Endpoint
+	if endpoint == "" {
+		pods := core.PodList{}
+		labels := client.MatchingLabels{"SwiftProxy": cr.Name}
+		if err := r.client.List(context.Background(), &pods, labels); err != nil {
+			return "", err
+		}
+		if len(pods.Items) != 0 {
+			endpoint = pods.Items[0].Status.PodIP
+		}
+	}
+	return endpoint, nil
 }
 
 func (r *ReconcileSwiftProxy) updateStatus(
