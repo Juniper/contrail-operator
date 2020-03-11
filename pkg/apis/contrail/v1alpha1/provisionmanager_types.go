@@ -79,6 +79,7 @@ type Nodes struct {
 	AnalyticsNodes []*AnalyticsNode `yaml:"analyticsNodes,omitempty"`
 	VrouterNodes   []*VrouterNode   `yaml:"vrouterNodes,omitempty"`
 	ConfigNodes    []*ConfigNode    `yaml:"configNodes,omitempty"`
+	DatabaseNodes  []*DatabaseNode  `yaml:"databaseNodes,omitempty"`
 }
 
 type APIServer struct {
@@ -111,6 +112,11 @@ type AnalyticsNode struct {
 }
 
 type VrouterNode struct {
+	IPAddress string `yaml:"ipAddress,omitempty"`
+	Hostname  string `yaml:"hostname,omitempty"`
+}
+
+type DatabaseNode struct {
 	IPAddress string `yaml:"ipAddress,omitempty"`
 	Hostname  string `yaml:"hostname,omitempty"`
 }
