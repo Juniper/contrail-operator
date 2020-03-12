@@ -440,7 +440,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	strategy := "rolling"
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if configChanged {
+		strategy = "deleteFirst"
+	}
+	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy, &configChanged); err != nil {
 		return reconcile.Result{}, err
 	}
 
