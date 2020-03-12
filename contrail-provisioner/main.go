@@ -83,7 +83,7 @@ func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Cli
 		if err = vrouterNodes(contrailClient, nodeList); err != nil {
 			panic(err)
 		}
-	case "databse":
+	case "database":
 		var nodeList []*types.DatabaseNode
 		err = yaml.Unmarshal(nodeYaml, &nodeList)
 		if err != nil {
@@ -139,7 +139,7 @@ func main() {
 		done := make(chan bool)
 
 		if controlNodesPtr != nil {
-			fmt.Println("intial control node run")
+			fmt.Println("initial control node run")
 			_, err := os.Stat(*controlNodesPtr)
 			if !os.IsNotExist(err) {
 				nodeManager(controlNodesPtr, "control", contrailClient)
@@ -166,7 +166,7 @@ func main() {
 		}
 
 		if vrouterNodesPtr != nil {
-			fmt.Println("intial vrouter node run")
+			fmt.Println("initial vrouter node run")
 			_, err := os.Stat(*vrouterNodesPtr)
 			if !os.IsNotExist(err) {
 				nodeManager(vrouterNodesPtr, "vrouter", contrailClient)
@@ -193,7 +193,7 @@ func main() {
 		}
 
 		if analyticsNodesPtr != nil {
-			fmt.Println("intial analytics node run")
+			fmt.Println("initial analytics node run")
 			_, err := os.Stat(*analyticsNodesPtr)
 			if !os.IsNotExist(err) {
 				nodeManager(analyticsNodesPtr, "analytics", contrailClient)
@@ -220,7 +220,7 @@ func main() {
 		}
 
 		if configNodesPtr != nil {
-			fmt.Println("intial config node run")
+			fmt.Println("initial config node run")
 			_, err := os.Stat(*configNodesPtr)
 			if !os.IsNotExist(err) {
 				nodeManager(configNodesPtr, "config", contrailClient)
@@ -247,8 +247,7 @@ func main() {
 		}
 
 		if databaseNodesPtr != nil {
-			// TODO
-			fmt.Println("intial database node run")
+			fmt.Println("initial database node run")
 			_, err := os.Stat(*databaseNodesPtr)
 			if !os.IsNotExist(err) {
 				nodeManager(databaseNodesPtr, "database", contrailClient)
@@ -734,6 +733,7 @@ func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode
 					fmt.Println("creating node ", node.Hostname)
 					err = node.Create(nodeList, node.Hostname, contrailClient)
 					if err != nil {
+
 						return err
 					}
 				}
@@ -758,6 +758,7 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 	if err != nil {
 		return err
 	}
+	log.Printf("VncNodeList: %v\n", vncNodeList)
 	for _, vncNode := range vncNodeList {
 		obj, err := contrailClient.ReadListResult(nodeType, &vncNode)
 		if err != nil {
@@ -774,6 +775,8 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 	for _, node := range nodeList {
 		actionMap[node.Hostname] = "create"
 	}
+	log.Printf("VncNodes: %v\n", vncNodes)
+
 	for _, vncNode := range vncNodes {
 		if _, ok := actionMap[vncNode.Hostname]; ok {
 			for _, node := range nodeList {
@@ -789,11 +792,12 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 		}
 	}
 	for k, v := range actionMap {
+		log.Printf("actionMapValue: %v\n", v)
 		switch v {
 		case "update":
 			for _, node := range nodeList {
 				if node.Hostname == k {
-					fmt.Println("updating node ", node.Hostname)
+					log.Println("updating node ", node.Hostname)
 					err = node.Update(nodeList, k, contrailClient)
 					if err != nil {
 						return err
@@ -803,7 +807,7 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 		case "create":
 			for _, node := range nodeList {
 				if node.Hostname == k {
-					fmt.Println("creating node ", node.Hostname)
+					log.Println("creating node ", node.Hostname)
 					err = node.Create(nodeList, node.Hostname, contrailClient)
 					if err != nil {
 						return err
@@ -816,7 +820,7 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 			if err != nil {
 				return err
 			}
-			fmt.Println("deleting node ", k)
+			log.Println("deleting node ", k)
 		}
 	}
 	return nil

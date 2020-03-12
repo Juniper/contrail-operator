@@ -29,7 +29,6 @@ func (c *DatabaseNode) Create(nodeList []*DatabaseNode, nodeName string, contrai
 
 // Update updates a ConfigNode instance
 func (c *DatabaseNode) Update(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
-	// TODO check if there is a need to add something more like in control
 	for _, node := range nodeList {
 		if node.Hostname == nodeName {
 			vncNodeList, err := contrailClient.List("database-node")
