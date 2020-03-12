@@ -13,7 +13,18 @@ type DatabaseNode struct {
 
 // Create creates a ConfigNode instance
 func (c *DatabaseNode) Create(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
-	// TODO
+	for _, node := range nodeList {
+		if node.Hostname == nodeName {
+			vncNode := &contrailTypes.DatabaseNode{}
+			vncNode.SetFQName("", []string{"default-global-system-config", nodeName})
+			vncNode.SetDatabaseNodeIpAddress(node.IPAddress)
+			err := contrailClient.Create(vncNode)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Update updates a ConfigNode instance
@@ -66,4 +77,3 @@ func (c *DatabaseNode) Delete(nodeName string, contrailClient *contrail.Client) 
 	}
 	return nil
 }
-
