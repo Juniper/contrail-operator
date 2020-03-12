@@ -11,7 +11,7 @@ import (
 )
 
 
-// Cluster is a struct that incorporates kubemanager.ClusterInfo interface
+// Cluster is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type Cluster struct {
 }
 
