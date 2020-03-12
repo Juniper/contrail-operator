@@ -449,6 +449,12 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	configMapDatabaseNodes.Data = databaseNodeData
+	err = client.Update(context.TODO(), configMapDatabaseNodes)
+	if err != nil {
+		return err
+	}
+
 	configMapAPIServer.Data = apiServerData
 	err = client.Update(context.TODO(), configMapAPIServer)
 	if err != nil {
