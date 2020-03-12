@@ -234,6 +234,12 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	configMapDatabaseNodes := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-databasenodes", Namespace: request.Namespace}, configMapDatabaseNodes)
+	if err != nil {
+		return err
+	}
+
 	configMapAPIServer := &corev1.ConfigMap{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-apiserver", Namespace: request.Namespace}, configMapAPIServer)
 	if err != nil {
@@ -263,6 +269,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var controlNodeData = make(map[string]string)
 	var analyticsNodeData = make(map[string]string)
 	var vrouterNodeData = make(map[string]string)
+	var databaseNodeData = make(map[string]string)
 	var apiServerData = make(map[string]string)
 
 	if len(configList.Items) > 0 {
@@ -289,7 +296,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			return err
 		}
 		configNodeData["confignodes.yaml"] = string(nodeYaml)
-
 	}
 	if len(configList.Items) > 0 {
 		nodes := &Nodes{}
@@ -391,6 +397,32 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			return err
 		}
 		apiServerData["apiserver-"+pod.Status.PodIP+".yaml"] = string(apiServerYaml)
+	}
+
+	cassandras := &CassandraList{}
+	if err = client.List(context.TODO(), cassandras, listOps); err != nil {
+		return err
+	}
+	if len(cassandras.Items) > 0 {
+		databaseNodeList := []DatabaseNode{}
+		for _, db := range cassandras.Items {
+			for podName, ipAddress := range db.Status.Nodes {
+				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				n := DatabaseNode{
+					IPAddress: ipAddress,
+					Hostname:  hostname,
+				}
+				databaseNodeList = append(databaseNodeList, n)
+			}
+		}
+		databaseNodeYaml, err := yaml.Marshal(databaseNodeList)
+		if err != nil {
+			return err
+		}
+		databaseNodeData["databasenodes.yaml"] = string(databaseNodeYaml)
 	}
 
 	configMapConfigNodes.Data = configNodeData
