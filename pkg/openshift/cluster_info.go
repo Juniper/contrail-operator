@@ -59,8 +59,7 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	metadataInstallConfigMap := installConfigMap["metadata"].(map[interface{}]interface{})
-	kubernetesClusterName := metadataInstallConfigMap["name"].(string)
+	kubernetesClusterName := installConfigMap.Metadata.Name
 	return kubernetesClusterName, nil
 }
 
@@ -71,14 +70,12 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	networkConfig := installConfigMap["networking"].(map[interface{}]interface{})
-	clusterNetwork := networkConfig["clusterNetwork"].([]interface{})
+	clusterNetwork := installConfigMap.Networking.ClusterNetwork
 	if len(clusterNetwork) > 1 {
 		netLogger := log.WithValues("clusterNetwork", clusterNetwork)
 		netLogger.Info("Found more than one cluster networks.")
 	}
-	podNetwork := clusterNetwork[0].(map[interface{}]interface{})
-	podSubnets := podNetwork["cidr"].(string)
+	podSubnets := clusterNetwork[0].CIDR
 	return podSubnets, nil
 }
 
@@ -89,13 +86,12 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	networkConfig := installConfigMap["networking"].(map[interface{}]interface{})
-	serviceNetwork := networkConfig["serviceNetwork"].([]interface{})
+	serviceNetwork := installConfigMap.Networking.ServiceNetwork
 	if len(serviceNetwork) > 1 {
 		netLogger := log.WithValues("serviceNetwork", serviceNetwork)
 		netLogger.Info("Found more than one service networks.")
 	}
-	serviceSubnets := serviceNetwork[0].(string)
+	serviceSubnets := serviceNetwork[0]
 	return serviceSubnets, nil
 }
 
@@ -105,12 +101,11 @@ func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	consoleCM, _ := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
 	consoleConfig := consoleCM.Data["console-config.yaml"]
 	consoleConfigByte := []byte(consoleConfig)
-	consoleConfigMap := make(map[interface{}]interface{})
+	consoleConfigMap := consoleConfigSctruct{}
 	if err := yaml.Unmarshal(consoleConfigByte, &consoleConfigMap); err != nil {
 		return &url.URL{}, err
 	}
-	clusterInfoSection := consoleConfigMap["clusterInfo"].(map[interface{}]interface{})
-	masterPublicURL := clusterInfoSection["masterPublicURL"].(string)
+	masterPublicURL := consoleConfigMap.ClusterInfo.MasterPublicURL
 	parsedMasterPublicURL, err := url.Parse(masterPublicURL)
 	if err != nil {
 		return &url.URL{}, err
@@ -119,17 +114,43 @@ func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 }
 
 
-func getInstallConfig(client typedCorev1.CoreV1Interface) (map[interface{}]interface{}, error){
+func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfigStruct, error){
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	ccm, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return installConfigStruct{}, err
 	}
 	installConfig := ccm.Data["install-config"]
 	installConfigByte := []byte(installConfig)
-	installConfigMap := make(map[interface{}]interface{})
+	installConfigMap := installConfigStruct{}
 	if err = yaml.Unmarshal(installConfigByte, &installConfigMap); err != nil {
-		return nil, err
+		return installConfigStruct{}, err
 	}
 	return installConfigMap, nil
+}
+
+type consoleConfigSctruct struct {
+	ClusterInfo clusterInfoStruct `yaml:"clusterInfo"`
+}
+
+type clusterInfoStruct struct {
+	MasterPublicURL string `yaml:"masterPublicURL"`
+}
+
+type installConfigStruct struct {
+	Metadata metadataStruct `yaml:"metadata"`
+	Networking networkingStruct `yaml:"networking"`
+}
+
+type metadataStruct struct {
+	Name string `yaml:"name"`
+}
+
+type networkingStruct struct {
+	ClusterNetwork []clusterNetworkStruct `yaml:"clusterNetwork"`
+	ServiceNetwork []string `yaml:"serviceNetwork"`
+}
+
+type clusterNetworkStruct struct {
+	CIDR string `yaml:"cidr"`
 }

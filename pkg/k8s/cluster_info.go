@@ -26,11 +26,11 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := make(map[interface{}]interface{})
+	clusterConfigMap := configMapStruct{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return 0, err
 	}
-	controlPlaneEndpoint := clusterConfigMap["controlPlaneEndpoint"].(string)
+	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint
 	_, kubernetesAPISSLPort, err := net.SplitHostPort(controlPlaneEndpoint)
 	if err != nil {
 		return 0, err
@@ -52,11 +52,11 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := make(map[interface{}]interface{})
+	clusterConfigMap := configMapStruct{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
-	controlPlaneEndpoint := clusterConfigMap["controlPlaneEndpoint"].(string)
+	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint
 	kubernetesAPIServer, _, err := net.SplitHostPort(controlPlaneEndpoint)
 	if err != nil {
 		return "", err
@@ -74,11 +74,11 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := make(map[interface{}]interface{})
+	clusterConfigMap := configMapStruct{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
-	kubernetesClusterName := clusterConfigMap["clusterName"].(string)
+	kubernetesClusterName := clusterConfigMap.ClusterName
 	return kubernetesClusterName, nil
 }
 
@@ -92,12 +92,11 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := make(map[interface{}]interface{})
+	clusterConfigMap := configMapStruct{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
-	networkConfig := clusterConfigMap["networking"].(map[interface{}]interface{})
-	podSubnets := networkConfig["podSubnet"].(string)
+	podSubnets := clusterConfigMap.Networking.PodNetwork
 	return podSubnets, nil
 }
 
@@ -111,11 +110,21 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := make(map[interface{}]interface{})
+	clusterConfigMap := configMapStruct{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
-	networkConfig := clusterConfigMap["networking"].(map[interface{}]interface{})
-	serviceSubnets := networkConfig["serviceSubnet"].(string)
+	serviceSubnets := clusterConfigMap.Networking.ServiceSubnet
 	return serviceSubnets, nil
+}
+
+type configMapStruct struct {
+	ControlPlaneEndpoint string `yaml:"controlPlaneEndpoint"`
+	ClusterName string `yaml:"clusterName"`
+	Networking networkingStruct `yaml:"networking"`
+}
+
+type networkingStruct struct {
+	PodNetwork string `yaml:"podSubnet"`
+	ServiceSubnet string `yaml:"serviceSubnet"`
 }
