@@ -19,7 +19,7 @@ ifeq ($(GENERATE_DS_REPO_DIR),"")
 	git clone -b $(GENERATE_DS_BRANCH) https://github.com/michaelhenkel/$(GO_API_CLIENT_REPO).git $(BUILD_DIR)/$(GO_API_CLIENT_REPO)
 	git clone -b $(GENERATE_DS_BRANCH) https://github.com/Juniper/$(GENERATE_DS_REPO).git $(BUILD_DIR)/$(GENERATE_DS_REPO)
 	cd $(BUILD_DIR)/$(GENERATE_DS_REPO) && git checkout $(GENERATE_DS_REVISION) && git fetch https://github.com/Juniper/$(GENERATE_DS_REPO).git refs/changes/19/56219/1 && git cherry-pick FETCH_HEAD
-	cd  $(BUILD_DIR)/$(GO_API_CLIENT_REPO) && go mod init
+	cd  $(BUILD_DIR)/$(GO_API_CLIENT_REPO) && go mod init github.com/Juniper/contrail-api-client
 else
 	cp -r $(GENERATE_DS_REPO_DIR) $(BUILD_DIR)/$(GENERATE_DS_REPO)
 endif

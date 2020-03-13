@@ -419,14 +419,15 @@ func controlNodes(contrailClient *contrail.Client, nodeList []*types.ControlNode
 			return err
 		}
 		typedNode := obj.(*contrailTypes.BgpRouter)
-
 		bgpRouterParamters := typedNode.GetBgpRouterParameters()
-		node := &types.ControlNode{
-			IPAddress: bgpRouterParamters.Address,
-			Hostname:  typedNode.GetName(),
-			ASN:       bgpRouterParamters.AutonomousSystem,
+		if bgpRouterParamters.RouterType == "control-node" {
+			node := &types.ControlNode{
+				IPAddress: bgpRouterParamters.Address,
+				Hostname:  typedNode.GetName(),
+				ASN:       bgpRouterParamters.AutonomousSystem,
+			}
+			vncNodes = append(vncNodes, node)
 		}
-		vncNodes = append(vncNodes, node)
 	}
 	for _, node := range nodeList {
 		actionMap[node.Hostname] = "create"
@@ -445,6 +446,7 @@ func controlNodes(contrailClient *contrail.Client, nodeList []*types.ControlNode
 				}
 			}
 		} else {
+
 			actionMap[vncNode.Hostname] = "delete"
 		}
 	}
