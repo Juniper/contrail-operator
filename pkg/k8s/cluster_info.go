@@ -11,14 +11,15 @@ import (
 )
 
 
-// Cluster is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
-type Cluster struct {
+// ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
+type ClusterConfig struct {
+	Client typedCorev1.CoreV1Interface
 }
 
 
 // KubernetesAPISSLPort gathers SSL Port from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c Cluster) KubernetesAPISSLPort(client typedCorev1.CoreV1Interface) (int, error) {
-	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
+	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
@@ -43,8 +44,8 @@ func (c Cluster) KubernetesAPISSLPort(client typedCorev1.CoreV1Interface) (int, 
 
 
 // KubernetesAPIServer gathers SPI Server from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c Cluster) KubernetesAPIServer(client typedCorev1.CoreV1Interface) (string, error) {
-	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+func (c ClusterConfig) KubernetesAPIServer() (string, error) {
+	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -65,8 +66,8 @@ func (c Cluster) KubernetesAPIServer(client typedCorev1.CoreV1Interface) (string
 
 
 // KubernetesClusterName gathers cluster name from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c Cluster) KubernetesClusterName(client typedCorev1.CoreV1Interface) (string, error) {
-	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+func (c ClusterConfig) KubernetesClusterName() (string, error) {
+	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -83,8 +84,8 @@ func (c Cluster) KubernetesClusterName(client typedCorev1.CoreV1Interface) (stri
 
 
 // PodSubnets gathers pods' subnet from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c Cluster) PodSubnets(client typedCorev1.CoreV1Interface) (string, error) {
-	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+func (c ClusterConfig) PodSubnets() (string, error) {
+	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -102,8 +103,8 @@ func (c Cluster) PodSubnets(client typedCorev1.CoreV1Interface) (string, error) 
 
 
 // ServiceSubnets gathers service subnet from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c Cluster) ServiceSubnets(client typedCorev1.CoreV1Interface) (string, error) {
-	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
+func (c ClusterConfig) ServiceSubnets() (string, error) {
+	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err

@@ -456,16 +456,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	if len(podIPList.Items) > 0 {
-		config, err := v1alpha1.GetClientConfig()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		clientset, err := v1alpha1.GetClientsetFromConfig(config)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		coreV1Interface := clientset.CoreV1()
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo, coreV1Interface); err != nil {
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo); err != nil {
 			return reconcile.Result{}, err
 		}
 

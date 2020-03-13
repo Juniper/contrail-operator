@@ -105,11 +105,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	clientset, err := v1alpha1.GetClientset
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
 	var cinfo v1alpha1.KubemanagerClusterInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
-		cinfo = openshift.Cluster{}
+		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
 	} else {
-		cinfo = k8s.Cluster{}
+		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.

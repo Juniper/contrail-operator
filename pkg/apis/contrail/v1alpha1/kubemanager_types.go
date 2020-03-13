@@ -16,7 +16,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -96,8 +95,7 @@ func init() {
 func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client,
-	cinfo KubemanagerClusterInfo,
-	coreV1Interface typedCorev1.CoreV1Interface) error {
+	cinfo KubemanagerClusterInfo) error {
 	instanceConfigMapName := request.Name + "-" + "kubemanager" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	if err := client.Get(
@@ -158,27 +156,27 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
-		apiSSLPort, err := cinfo.KubernetesAPISSLPort(coreV1Interface)
+		apiSSLPort, err := cinfo.KubernetesAPISSLPort()
 		if err != nil {
 			return err
 		}
 		kubemanagerConfig.KubernetesAPISSLPort = &apiSSLPort
-		APIServer, err := cinfo.KubernetesAPIServer(coreV1Interface)
+		APIServer, err := cinfo.KubernetesAPIServer()
 		if err != nil {
 			return err
 		}
 		kubemanagerConfig.KubernetesAPIServer = APIServer
-		clusterName, err := cinfo.KubernetesClusterName(coreV1Interface)
+		clusterName, err := cinfo.KubernetesClusterName()
 		if err != nil {
 			return err
 		}
 		kubemanagerConfig.KubernetesClusterName = clusterName
-		podSubnets, err := cinfo.PodSubnets(coreV1Interface)
+		podSubnets, err := cinfo.PodSubnets()
 		if err != nil {
 			return err
 		}
 		kubemanagerConfig.PodSubnets = podSubnets
-		serviceSubnets, err := cinfo.ServiceSubnets(coreV1Interface)
+		serviceSubnets, err := cinfo.ServiceSubnets()
 		if err != nil {
 			return err
 		}
@@ -463,11 +461,11 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 }
 
 
-//ClusterInfo is interface for gathering information about cluster
+//KubemanagerClusterInfo is interface for gathering information about cluster
 type KubemanagerClusterInfo interface {
-    KubernetesAPISSLPort(typedCorev1.CoreV1Interface) (int, error)
-	KubernetesAPIServer(typedCorev1.CoreV1Interface) (string, error)
-    KubernetesClusterName(typedCorev1.CoreV1Interface) (string, error)
-	PodSubnets(typedCorev1.CoreV1Interface) (string, error)
-    ServiceSubnets(typedCorev1.CoreV1Interface) (string, error)
+    KubernetesAPISSLPort() (int, error)
+	KubernetesAPIServer() (string, error)
+    KubernetesClusterName() (string, error)
+	PodSubnets() (string, error)
+    ServiceSubnets() (string, error)
 }

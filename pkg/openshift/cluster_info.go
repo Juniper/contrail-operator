@@ -15,14 +15,15 @@ import (
 var log = logf.Log.WithName("types_kubemanager")
 
 
-// Cluster is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
-type Cluster struct {
+// ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
+type ClusterConfig struct {
+	Client typedCorev1.CoreV1Interface
 }
 
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
-func (c Cluster) KubernetesAPISSLPort(client typedCorev1.CoreV1Interface) (int, error) {
-	masterPublicURL, err := getMasterPublicURL(client)
+func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
+	masterPublicURL, err := getMasterPublicURL(c.Client)
 	if err != nil {
 		return 0, err
 	}
@@ -39,8 +40,8 @@ func (c Cluster) KubernetesAPISSLPort(client typedCorev1.CoreV1Interface) (int, 
 
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
-func (c Cluster) KubernetesAPIServer(client typedCorev1.CoreV1Interface) (string, error) {
-	masterPublicURL, err := getMasterPublicURL(client)
+func (c ClusterConfig) KubernetesAPIServer() (string, error) {
+	masterPublicURL, err := getMasterPublicURL(c.Client)
 	if err != nil {
 		return "", err
 	}
@@ -53,8 +54,8 @@ func (c Cluster) KubernetesAPIServer(client typedCorev1.CoreV1Interface) (string
 
 
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap
-func (c Cluster) KubernetesClusterName(client typedCorev1.CoreV1Interface) (string, error) {
-	installConfigMap, err := getInstallConfig(client)
+func (c ClusterConfig) KubernetesClusterName() (string, error) {
+	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
 		return "", nil
 	}
@@ -65,8 +66,8 @@ func (c Cluster) KubernetesClusterName(client typedCorev1.CoreV1Interface) (stri
 
 
 // PodSubnets gathers pods' subnet from Openshift Cluster via cluster-config-v1 ConfigMap
-func (c Cluster) PodSubnets(client typedCorev1.CoreV1Interface) (string, error) {
-	installConfigMap, err := getInstallConfig(client)
+func (c ClusterConfig) PodSubnets() (string, error) {
+	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
 		return "", nil
 	}
@@ -83,8 +84,8 @@ func (c Cluster) PodSubnets(client typedCorev1.CoreV1Interface) (string, error) 
 
 
 // ServiceSubnets gathers service subnet from Openshift Cluster via cluster-config-v1 ConfigMap
-func (c Cluster) ServiceSubnets(client typedCorev1.CoreV1Interface) (string, error) {
-	installConfigMap, err := getInstallConfig(client)
+func (c ClusterConfig) ServiceSubnets() (string, error) {
+	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
 		return "", nil
 	}
