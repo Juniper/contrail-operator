@@ -101,7 +101,7 @@ func newReconciler(mgr manager.Manager, ci v1alpha1.KubemanagerClusterInfo) reco
 // NewReconciler returns a new reconcile.Reconciler.
 func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, ci v1alpha1.KubemanagerClusterInfo) reconcile.Reconciler {
 	return &ReconcileKubemanager{Client: client, Scheme: scheme,
-		                         Config: cfg, clusterInfo: ci}
+		Config: cfg, clusterInfo: ci}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -191,9 +191,9 @@ var _ reconcile.Reconciler = &ReconcileKubemanager{}
 type ReconcileKubemanager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Config *rest.Config
+	Client      client.Client
+	Scheme      *runtime.Scheme
+	Config      *rest.Config
 	clusterInfo v1alpha1.KubemanagerClusterInfo
 }
 

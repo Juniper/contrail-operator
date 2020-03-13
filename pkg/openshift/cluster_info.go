@@ -14,12 +14,10 @@ import (
 
 var log = logf.Log.WithName("types_kubemanager")
 
-
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
 	Client typedCorev1.CoreV1Interface
 }
-
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
@@ -38,7 +36,6 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	return kubernetesAPISSLPortInt, nil
 }
 
-
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	masterPublicURL, err := getMasterPublicURL(c.Client)
@@ -52,7 +49,6 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	return kubernetesAPIServer, nil
 }
 
-
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap
 func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
@@ -63,7 +59,6 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	kubernetesClusterName := metadataInstallConfigMap["name"].(string)
 	return kubernetesClusterName, nil
 }
-
 
 // PodSubnets gathers pods' subnet from Openshift Cluster via cluster-config-v1 ConfigMap
 func (c ClusterConfig) PodSubnets() (string, error) {
@@ -82,7 +77,6 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 	return podSubnets, nil
 }
 
-
 // ServiceSubnets gathers service subnet from Openshift Cluster via cluster-config-v1 ConfigMap
 func (c ClusterConfig) ServiceSubnets() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
@@ -98,7 +92,6 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	serviceSubnets := serviceNetwork[0].(string)
 	return serviceSubnets, nil
 }
-
 
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
@@ -118,8 +111,7 @@ func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	return parsedMasterPublicURL, nil
 }
 
-
-func getInstallConfig(client typedCorev1.CoreV1Interface) (map[interface{}]interface{}, error){
+func getInstallConfig(client typedCorev1.CoreV1Interface) (map[interface{}]interface{}, error) {
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	ccm, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
 	if err != nil {

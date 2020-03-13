@@ -40,7 +40,7 @@ func TestKubemanagerController(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: kubemanagerName.Namespace,
 			Name:      kubemanagerName.Name,
-			Labels:	   map[string]string{
+			Labels: map[string]string{
 				"contrail_cluster": "test",
 			},
 		},
@@ -61,7 +61,7 @@ func TestKubemanagerController(t *testing.T) {
 			CommonConfiguration: contrail.CommonConfiguration{
 				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				Replicas: &replicas,
+				Replicas:     &replicas,
 			},
 		},
 	}
@@ -69,7 +69,7 @@ func TestKubemanagerController(t *testing.T) {
 	cassandraCR := &contrail.Cassandra{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "default",
-			Name: "cassandra1",
+			Name:      "cassandra1",
 		},
 		Status: contrail.CassandraStatus{
 			Active: &trueVal,
@@ -79,7 +79,7 @@ func TestKubemanagerController(t *testing.T) {
 	zookeeperCR := &contrail.Zookeeper{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "default",
-			Name: "zookeeper1",
+			Name:      "zookeeper1",
 		},
 		Status: contrail.ZookeeperStatus{
 			Active: &trueVal,
@@ -89,8 +89,8 @@ func TestKubemanagerController(t *testing.T) {
 	rabbitmqCR := &contrail.Rabbitmq{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "default",
-			Name: "rabbitmq1",
-			Labels:	   map[string]string{
+			Name:      "rabbitmq1",
+			Labels: map[string]string{
 				"contrail_cluster": "test",
 			},
 		},
@@ -102,8 +102,8 @@ func TestKubemanagerController(t *testing.T) {
 	configCR := &contrail.Config{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "default",
-			Name: "config1",
-			Labels:	   map[string]string{
+			Name:      "config1",
+			Labels: map[string]string{
 				"contrail_cluster": "test",
 			},
 		},
@@ -115,7 +115,7 @@ func TestKubemanagerController(t *testing.T) {
 	stsCD := &apps.StatefulSet{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "default",
-			Name: "test-kubemanager-kubemanager-statefulset",
+			Name:      "test-kubemanager-kubemanager-statefulset",
 		},
 		Spec: apps.StatefulSetSpec{
 			Replicas: &replicas,
@@ -123,7 +123,7 @@ func TestKubemanagerController(t *testing.T) {
 	}
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, kubemanagerCR, cassandraCR, zookeeperCR,
-		                                       rabbitmqCR, configCR, stsCD)
+		rabbitmqCR, configCR, stsCD)
 	reconciler := kubemanager.NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo.Cluster{})
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: kubemanagerName})
@@ -159,7 +159,6 @@ func TestKubemanagerController(t *testing.T) {
 		}}
 		assert.Equal(t, expectedOwnerRefs, secret2.OwnerReferences)
 	})
-
 
 	t.Run("should create configMap for kubemanager", func(t *testing.T) {
 		cm := &core.ConfigMap{}

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,8 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var config = &v1alpha1.Config{
@@ -609,7 +609,7 @@ func TestKubemanagerConfig(t *testing.T) {
 	cl := *environment.client
 	clientset := kubernetes.Clientset{}
 	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}},
-	                                                             &environment.kubemanbagerPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()})
+		&environment.kubemanbagerPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()})
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
