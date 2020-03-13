@@ -219,7 +219,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				ListenPort:                5070,
 				KeystoneInstance:          "keystone",
 				MemcachedInstance:         "memcached-instance",
-				CredentialsSecretName:	"swift-secret",
+				CredentialsSecretName:     "swift-secret",
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 				KeystoneSecretName:        "keystone-adminpass-secret",

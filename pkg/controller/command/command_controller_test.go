@@ -359,7 +359,7 @@ func newSwiftSecret() *core.Secret {
 			Namespace: "default",
 		},
 		Data: map[string][]byte{
-			"user": []byte("username"),
+			"user":     []byte("username"),
 			"password": []byte("password123"),
 		},
 	}

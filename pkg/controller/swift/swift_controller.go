@@ -2,7 +2,6 @@ package swift
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"time"
 
 	batch "k8s.io/api/batch/v1"
@@ -22,6 +21,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/job"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/swift/ring"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
@@ -42,9 +42,9 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // NewReconciler is used to create a new ReconcileSwiftProxy
 func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
 	return &ReconcileSwift{
-		client: client,
-		scheme: scheme,
-		claims: claims,
+		client:     client,
+		scheme:     scheme,
+		claims:     claims,
 		kubernetes: k8s.New(client, scheme),
 	}
 }
@@ -100,9 +100,9 @@ var _ reconcile.Reconciler = &ReconcileSwift{}
 type ReconcileSwift struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-	claims volumeclaims.PersistentVolumeClaims
+	client     client.Client
+	scheme     *runtime.Scheme
+	claims     volumeclaims.PersistentVolumeClaims
 	kubernetes *k8s.Kubernetes
 }
 
@@ -151,6 +151,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	// TODO change
 	credentialsSecretName := swift.Status.CredentialsSecretName
 	if credentialsSecretName == "" {
 		credentialsSecretName = swift.Name + "-swift-credentials-secret"
@@ -246,7 +247,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 
 func (r *ReconcileSwift) ensureSwiftProxyExists(
 	swift *contrail.Swift, swiftConfSecretName, credentialsSecretName, ringsClaim string,
-	) error {
+) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-proxy",

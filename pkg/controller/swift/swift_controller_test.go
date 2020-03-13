@@ -120,7 +120,7 @@ func TestSwiftController(t *testing.T) {
 					}}
 					assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
 
-					swiftCR, err := getReconciledSwift(fakeClient, swiftCR)
+					swiftCR, err := getSwift(fakeClient, swiftCR)
 					assert.NoError(t, err)
 					assert.Equal(t, credentialsSecretName, swiftCR.Status.CredentialsSecretName)
 				})
@@ -317,7 +317,7 @@ func TestSwiftController(t *testing.T) {
 
 }
 
-func getReconciledSwift(fakeClient client.Client, unreconciled *contrail.Swift) (*contrail.Swift, error) {
+func getSwift(fakeClient client.Client, unreconciled *contrail.Swift) (*contrail.Swift, error) {
 	swift := &contrail.Swift{}
 	swiftName := types.NamespacedName{
 		Name:      unreconciled.Name,
@@ -396,7 +396,7 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 }
 
 func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.Swift) {
-	swiftCR, err := getReconciledSwift(c, swiftCR)
+	swiftCR, err := getSwift(c, swiftCR)
 	assert.NoError(t, err)
 	swiftProxyList := contrail.SwiftProxyList{}
 	err = c.List(context.Background(), &swiftProxyList)

@@ -14,7 +14,7 @@ type commandConf struct {
 	TelemetryURL   string
 	AdminUsername  string
 	AdminPassword  string
-	SwiftUsername string
+	SwiftUsername  string
 	SwiftPassword  string
 	PostgresUser   string
 	PostgresDBName string

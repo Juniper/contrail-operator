@@ -141,8 +141,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	swiftSecretName := swiftService.Status.CredentialsSecretName
 	swiftSecret := &core.Secret{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret)
-	if err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
