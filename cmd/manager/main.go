@@ -105,7 +105,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clientset, err := v1alpha1.GetClientset
+	clientset, err := v1alpha1.GetClientset()
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
