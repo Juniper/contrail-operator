@@ -460,11 +460,12 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 	return kubemanagerConfiguration
 }
 
+
 //KubemanagerClusterInfo is interface for gathering information about cluster
 type KubemanagerClusterInfo interface {
-	KubernetesAPISSLPort() (int, error)
+    KubernetesAPISSLPort() (int, error)
 	KubernetesAPIServer() (string, error)
-	KubernetesClusterName() (string, error)
+    KubernetesClusterName() (string, error)
 	PodSubnets() (string, error)
-	ServiceSubnets() (string, error)
+    ServiceSubnets() (string, error)
 }

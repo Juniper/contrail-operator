@@ -2,6 +2,7 @@ package controller
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	//mgr "github.com/Juniper/contrail-operator/pkg/controller/manager"
 )
 
