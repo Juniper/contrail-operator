@@ -151,20 +151,16 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	// TODO change
-	credentialsSecretName := swift.Status.CredentialsSecretName
-	if credentialsSecretName == "" {
-		credentialsSecretName = swift.Name + "-swift-credentials-secret"
-		if swift.Spec.ServiceConfiguration.CredentialsSecretName != "" {
-			credentialsSecretName = swift.Spec.ServiceConfiguration.CredentialsSecretName
-		}
-
-		if err := r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
-			return reconcile.Result{}, err
-		}
-
-		swift.Status.CredentialsSecretName = credentialsSecretName
+	//TODO disallow to change secret and set error in Conditions in that case
+	credentialsSecretName := swift.Name + "-swift-credentials-secret"
+	if swift.Spec.ServiceConfiguration.CredentialsSecretName != "" {
+		credentialsSecretName = swift.Spec.ServiceConfiguration.CredentialsSecretName
 	}
+
+	if err := r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+	swift.Status.CredentialsSecretName = credentialsSecretName
 
 	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
 		return reconcile.Result{}, err
