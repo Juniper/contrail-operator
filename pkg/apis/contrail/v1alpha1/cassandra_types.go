@@ -229,8 +229,8 @@ func (c *Cassandra) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *Comm
 }
 
 // UpdateSTS updates the STS.
-func (c *Cassandra) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string, configChanged *bool) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy, configChanged)
+func (c *Cassandra) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

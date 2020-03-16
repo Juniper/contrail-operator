@@ -7,7 +7,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -168,6 +167,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
+	currentZookeeperInstance := *instance
 	managerInstance, err := instance.OwnedByManager(r.Client, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -244,23 +244,13 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	strategy := "rolling"
-	labelSelector := labels.SelectorFromSet(map[string]string{"zookeeper": request.Name})
-	listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
-	list := &appsv1.StatefulSetList{}
-	err = r.Client.List(context.TODO(), list, listOps)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if len(list.Items) > 0 {
-		if int(*list.Items[0].Spec.Replicas) == 1 && int(*statefulSet.Spec.Replicas) > 1 || (int(*statefulSet.Spec.Replicas) == 1 && int(*list.Items[0].Spec.Replicas) > 1) {
+	if currentZookeeperInstance.Spec.CommonConfiguration.Replicas != nil {
+		if int(*currentZookeeperInstance.Spec.CommonConfiguration.Replicas) == 1 && int(*instance.Spec.CommonConfiguration.Replicas) > 1 {
 			strategy = "deleteFirst"
 		}
 	}
-
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy, nil); err != nil {
+	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(instanceType, request, r.Client)

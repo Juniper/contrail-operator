@@ -868,8 +868,7 @@ func UpdateSTS(sts *appsv1.StatefulSet,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
 	reconcileClient client.Client,
-	strategy string,
-	configChanged *bool) error {
+	strategy string) error {
 	currentSTS := &appsv1.StatefulSet{}
 	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-statefulset", Namespace: request.Namespace}, currentSTS)
 	if err != nil {
@@ -892,8 +891,7 @@ func UpdateSTS(sts *appsv1.StatefulSet,
 			}
 		}
 	}
-
-	if imagesChanged || replicasChanged || (configChanged != nil && *configChanged) {
+	if imagesChanged || replicasChanged {
 		if strategy == "deleteFirst" {
 			versionInt, _ := strconv.Atoi(currentSTS.Spec.Template.ObjectMeta.Labels["version"])
 			newVersion := versionInt + 1
