@@ -20,8 +20,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
-          maxHeapSize: 1024M
-          minHeapSize: 100M
           containers:
             cassandra:
               image: cassandra:3.11.4
@@ -36,7 +34,7 @@ spec:
         name: config1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -76,7 +74,7 @@ spec:
         name: control1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -102,7 +100,7 @@ spec:
         name: kubemanager1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -126,7 +124,7 @@ spec:
         name: provmanager1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
           replicas: 1
@@ -143,7 +141,7 @@ spec:
         name: rabbitmq1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -159,7 +157,7 @@ spec:
         name: vroutermaster
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -186,7 +184,7 @@ spec:
         name: vrouternodes
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.opencontrail.org: vrouter
         serviceConfiguration:
@@ -214,7 +212,7 @@ spec:
         name: webui1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -237,7 +235,7 @@ spec:
         name: zookeeper1
       spec:
         commonConfiguration:
-          create: false
+          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:

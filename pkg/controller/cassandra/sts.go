@@ -47,7 +47,7 @@ spec:
             - -c
             - "seeds=$(for i in $(ls /mydata/*.yaml); do echo $(basename $i .yaml); done) &&  for seed in $(echo $seeds); do if [[ $(nodetool status | grep $seed |awk '{print $1}') != 'UN' ]]; then exit -1; fi; done"
           initialDelaySeconds: 15
-          timeoutSeconds: 20
+          timeoutSeconds: 5
         name: cassandra
         securityContext:
           capabilities:
