@@ -1,3 +1,3 @@
-FROM gcr.io/distroless/base-debian10
+FROM alpine
 COPY contrail-provisioner /contrail-provisioner
 CMD ["/contrail-provisioner"]

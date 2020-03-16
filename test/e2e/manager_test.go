@@ -77,12 +77,13 @@ func TestManager(t *testing.T) {
 }
 
 var initialVersionMap = map[string]string{
-	"rabbitmq":    "3.7.16",
-	"cassandra":   "3.11.3",
-	"zookeeper":   "3.5.4-beta",
-	"config":      "1912-latest",
-	"control":     "1912-latest",
-	"kubemanager": "1912-latest",
+	"rabbitmq":             "3.7.16",
+	"cassandra":            "3.11.3",
+	"zookeeper":            "3.5.4-beta",
+	"config":               "1912-latest",
+	"control":              "1912-latest",
+	"kubemanager":          "1912-latest",
+	"contrail-provisioner": "1912-20200315",
 }
 
 var targetVersionMap = map[string]string{
@@ -323,6 +324,26 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				}},
+				ProvisionManager: &v1alpha1.ProvisionManager{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "provmanager1",
+						Namespace: namespace,
+						Labels:    map[string]string{"contrail_cluster": "cluster1"},
+					},
+					Spec: v1alpha1.ProvisionManagerSpec{
+						CommonConfiguration: v1alpha1.CommonConfiguration{
+							Create:       &create,
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+							Replicas:     &replicas,
+						},
+						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
+							Containers: map[string]*v1alpha1.Container{
+								"init":        &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+								"provisioner": &v1alpha1.Container{Image: "registry:5000/contrail-provisioner:" + versionMap["contrail-provisioner"]},
+							},
+						},
+					},
+				},
 				Kubemanagers: []*v1alpha1.Kubemanager{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "kubemanager1",

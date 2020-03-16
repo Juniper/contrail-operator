@@ -71,7 +71,12 @@ while read line; do
 	pull_image michaelhenkel "${line}"
 done <<EOF
 contrail-statusmonitor:debug
-contrail-provisioner:debug
+EOF
+
+while read line; do
+	pull_image 10.84.18.17:5000 "${line}"
+done <<EOF
+contrail-provisioner:1912-20200315
 EOF
 
 while read line; do
