@@ -81,8 +81,6 @@ spec:
               name: usr-src
             - mountPath: /lib/modules
               name: lib-modules
-            - mountPath: /proc/pid/ns
-              name: proc-pid-ns
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -155,6 +153,8 @@ spec:
               mountPropagation: HostToContainer
             - mountPath: /var/log/contrail/cni
               name: var-log-contrail-cni
+            - mountPath: /proc
+              name: proc
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -165,9 +165,9 @@ spec:
             type: ""
           name: vrouter-logs
         - hostPath:
-            path: /proc/pid/ns
+            path: /proc
             type: ""
-          name: proc-pid-ns
+          name: proc
         - hostPath:
             path: /var/run
             type: ""
