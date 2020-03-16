@@ -40,7 +40,7 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	return kubernetesAPISSLPortInt, nil
 }
 
-// KubernetesAPIServer gathers SPI Server from Kubernetes Cluster via kubeadm-config ConfigMap
+// KubernetesAPIServer gathers API Server from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
 	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
