@@ -92,9 +92,9 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
 	consoleCM, _ := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
-	consoleConfig := consoleCM.Data["console-config.yaml"]
-	consoleConfigByte := []byte(consoleConfig)
-	consoleConfigMap := consoleConfigSctruct{}
+	consoleConfigSection := consoleCM.Data["console-config.yaml"]
+	consoleConfigByte := []byte(consoleConfigSection)
+	consoleConfigMap := consoleConfig{}
 	if err := yaml.Unmarshal(consoleConfigByte, &consoleConfigMap); err != nil {
 		return &url.URL{}, err
 	}
@@ -106,43 +106,43 @@ func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	return parsedMasterPublicURL, nil
 }
 
-func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfigStruct, error) {
+func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	ccm, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
-		return installConfigStruct{}, err
+		return installConfig{}, err
 	}
-	installConfig := ccm.Data["install-config"]
-	installConfigByte := []byte(installConfig)
-	installConfigMap := installConfigStruct{}
+	installConfigSection := ccm.Data["install-config"]
+	installConfigByte := []byte(installConfigSection)
+	installConfigMap := installConfig{}
 	if err = yaml.Unmarshal(installConfigByte, &installConfigMap); err != nil {
-		return installConfigStruct{}, err
+		return installConfig{}, err
 	}
 	return installConfigMap, nil
 }
 
-type consoleConfigSctruct struct {
-	ClusterInfo clusterInfoStruct `yaml:"clusterInfo"`
+type consoleConfig struct {
+	ClusterInfo clusterInfo `yaml:"clusterInfo"`
 }
 
-type clusterInfoStruct struct {
+type clusterInfo struct {
 	MasterPublicURL string `yaml:"masterPublicURL"`
 }
 
-type installConfigStruct struct {
-	Metadata   metadataStruct   `yaml:"metadata"`
-	Networking networkingStruct `yaml:"networking"`
+type installConfig struct {
+	Metadata   metadata   `yaml:"metadata"`
+	Networking networking `yaml:"networking"`
 }
 
-type metadataStruct struct {
+type metadata struct {
 	Name string `yaml:"name"`
 }
 
-type networkingStruct struct {
-	ClusterNetwork []clusterNetworkStruct `yaml:"clusterNetwork"`
+type networking struct {
+	ClusterNetwork []clusterNetwork `yaml:"clusterNetwork"`
 	ServiceNetwork []string               `yaml:"serviceNetwork"`
 }
 
-type clusterNetworkStruct struct {
+type clusterNetwork struct {
 	CIDR string `yaml:"cidr"`
 }

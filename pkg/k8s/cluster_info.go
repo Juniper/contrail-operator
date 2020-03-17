@@ -24,7 +24,7 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMapStruct{}
+	clusterConfigMap := configMap{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return 0, err
 	}
@@ -49,7 +49,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMapStruct{}
+	clusterConfigMap := configMap{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
@@ -70,7 +70,7 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMapStruct{}
+	clusterConfigMap := configMap{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
@@ -87,7 +87,7 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMapStruct{}
+	clusterConfigMap := configMap{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
@@ -104,7 +104,7 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	}
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMapStruct{}
+	clusterConfigMap := configMap{}
 	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
@@ -112,13 +112,13 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	return serviceSubnets, nil
 }
 
-type configMapStruct struct {
+type configMap struct {
 	ControlPlaneEndpoint string           `yaml:"controlPlaneEndpoint"`
 	ClusterName          string           `yaml:"clusterName"`
-	Networking           networkingStruct `yaml:"networking"`
+	Networking           networking `yaml:"networking"`
 }
 
-type networkingStruct struct {
+type networking struct {
 	PodNetwork    string `yaml:"podSubnet"`
 	ServiceSubnet string `yaml:"serviceSubnet"`
 }
