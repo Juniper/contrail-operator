@@ -68,20 +68,6 @@ type ProvisionManagerList struct {
 	Items           []ProvisionManager `json:"items"`
 }
 
-// ProvisionConfig defines the structure of the provison config
-type ProvisionConfig struct {
-	Nodes     *Nodes     `yaml:"nodes,omitempty"`
-	APIServer *APIServer `yaml:"apiServer,omitempty"`
-}
-
-type Nodes struct {
-	ControlNodes   []*ControlNode   `yaml:"controlNodes,omitempty"`
-	AnalyticsNodes []*AnalyticsNode `yaml:"analyticsNodes,omitempty"`
-	VrouterNodes   []*VrouterNode   `yaml:"vrouterNodes,omitempty"`
-	ConfigNodes    []*ConfigNode    `yaml:"configNodes,omitempty"`
-	DatabaseNodes  []*DatabaseNode  `yaml:"databaseNodes,omitempty"`
-}
-
 type APIServer struct {
 	APIPort       string     `yaml:"apiPort,omitempty"`
 	APIServerList []string   `yaml:"apiServerList,omitempty"`
@@ -273,7 +259,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var apiServerData = make(map[string]string)
 
 	if len(configList.Items) > 0 {
-		nodes := &Nodes{}
 		nodeList := []*ConfigNode{}
 		for _, configService := range configList.Items {
 			for podName, ipAddress := range configService.Status.Nodes {
@@ -290,15 +275,13 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			}
 			apiPort = configService.Status.Ports.APIPort
 		}
-		nodes.ConfigNodes = nodeList
-		nodeYaml, err := yaml.Marshal(nodes.ConfigNodes)
+		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
 		}
 		configNodeData["confignodes.yaml"] = string(nodeYaml)
 	}
 	if len(configList.Items) > 0 {
-		nodes := &Nodes{}
 		nodeList := []*AnalyticsNode{}
 		for _, configService := range configList.Items {
 			for podName, ipAddress := range configService.Status.Nodes {
@@ -313,8 +296,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
-		nodes.AnalyticsNodes = nodeList
-		nodeYaml, err := yaml.Marshal(nodes.AnalyticsNodes)
+		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
 		}
@@ -326,7 +308,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 	if len(controlList.Items) > 0 {
-		nodes := &Nodes{}
 		nodeList := []*ControlNode{}
 		for _, controlService := range controlList.Items {
 			for podName, ipAddress := range controlService.Status.Nodes {
@@ -346,8 +327,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
-		nodes.ControlNodes = nodeList
-		nodeYaml, err := yaml.Marshal(nodes.ControlNodes)
+		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
 		}
@@ -359,7 +339,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 	if len(vrouterList.Items) > 0 {
-		nodes := &Nodes{}
 		nodeList := []*VrouterNode{}
 		for _, vrouterService := range vrouterList.Items {
 			for podName, ipAddress := range vrouterService.Status.Nodes {
@@ -374,8 +353,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
-		nodes.VrouterNodes = nodeList
-		nodeYaml, err := yaml.Marshal(nodes.VrouterNodes)
+		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
 		}
