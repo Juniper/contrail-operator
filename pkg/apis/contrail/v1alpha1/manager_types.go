@@ -124,6 +124,13 @@ type ManagerList struct {
 	Items           []Manager `json:"items"`
 }
 
+// ManagerCSRSignerCA is an interface for gathering the
+// Certificate Authorities' certificates that sign the
+// CertificateSigningRequests
+type ManagerCSRSignerCA interface {
+	CSRSignerCA() (string, error)
+}
+
 func (m *Manager) Get(client client.Client, request reconcile.Request) error {
 	err := client.Get(context.TODO(), request.NamespacedName, m)
 	if err != nil {
@@ -212,3 +219,4 @@ func (m Manager) IsClusterReady() bool {
 func init() {
 	SchemeBuilder.Register(&Manager{}, &ManagerList{})
 }
+
