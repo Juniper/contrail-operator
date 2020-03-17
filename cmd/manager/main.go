@@ -21,11 +21,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
+	"github.com/Juniper/contrail-operator/pkg/controller/manager"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -112,10 +113,13 @@ func main() {
 	}
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
+	var signerCa v1alpha1.ManagerCSRSignerCA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
+		signerCa = openshift.CSRSignerCAGetter{Client: clientset.CoreV1()}
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
+		signerCa = k8s.CSRSignerCAGetter{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.
