@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -89,13 +90,18 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Kubemanager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, ci v1alpha1.KubemanagerClusterInfo) error {
+	return add(mgr, newReconciler(mgr, ci))
 }
 
-// newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKubemanager{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+func newReconciler(mgr manager.Manager, ci v1alpha1.KubemanagerClusterInfo) reconcile.Reconciler {
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), ci)
+}
+
+// NewReconciler returns a new reconcile.Reconciler.
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, ci v1alpha1.KubemanagerClusterInfo) reconcile.Reconciler {
+	return &ReconcileKubemanager{Client: client, Scheme: scheme,
+		Config: cfg, clusterInfo: ci}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -185,9 +191,10 @@ var _ reconcile.Reconciler = &ReconcileKubemanager{}
 type ReconcileKubemanager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client      client.Client
+	Scheme      *runtime.Scheme
+	Config      *rest.Config
+	clusterInfo v1alpha1.KubemanagerClusterInfo
 }
 
 // Reconcile reads that state of the cluster for a Kubemanager object and makes changes based on the state read
@@ -449,7 +456,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	if len(podIPList.Items) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -457,7 +464,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 

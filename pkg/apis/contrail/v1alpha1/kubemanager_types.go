@@ -3,11 +3,9 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
-	"net"
 	"sort"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +16,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
+
+var log = logf.Log.WithName("types_kubemanager")
 
 // KubemanagerStatus defines the observed state of Kubemanager.
 
@@ -93,7 +94,8 @@ func init() {
 
 func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
-	client client.Client) error {
+	client client.Client,
+	cinfo KubemanagerClusterInfo) error {
 	instanceConfigMapName := request.Name + "-" + "kubemanager" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	if err := client.Get(
@@ -154,39 +156,31 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
-		controlPlaneEndpoint := ""
-		config, err := GetClientConfig()
+		apiSSLPort, err := cinfo.KubernetesAPISSLPort()
 		if err != nil {
 			return err
 		}
-
-		clientset, err := GetClientsetFromConfig(config)
+		kubemanagerConfig.KubernetesAPISSLPort = &apiSSLPort
+		APIServer, err := cinfo.KubernetesAPIServer()
 		if err != nil {
 			return err
 		}
-
-		kubeadmConfigMapClient := clientset.CoreV1().ConfigMaps("kube-system")
-		kcm, _ := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
-		clusterConfig := kcm.Data["ClusterConfiguration"]
-		clusterConfigByte := []byte(clusterConfig)
-		clusterConfigMap := make(map[interface{}]interface{})
-		if err = yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
-			return err
-		}
-		controlPlaneEndpoint = clusterConfigMap["controlPlaneEndpoint"].(string)
-		kubernetesAPIServer, kubernetesAPISSLPort, _ := net.SplitHostPort(controlPlaneEndpoint)
-		kubemanagerConfig.KubernetesAPIServer = kubernetesAPIServer
-		kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
+		kubemanagerConfig.KubernetesAPIServer = APIServer
+		clusterName, err := cinfo.KubernetesClusterName()
 		if err != nil {
 			return err
 		}
-		kubemanagerConfig.KubernetesAPISSLPort = &kubernetesAPISSLPortInt
-		kubemanagerConfig.KubernetesClusterName = clusterConfigMap["clusterName"].(string)
-		networkConfig := make(map[interface{}]interface{})
-		networkConfig = clusterConfigMap["networking"].(map[interface{}]interface{})
-		kubemanagerConfig.PodSubnets = networkConfig["podSubnet"].(string)
-		kubemanagerConfig.ServiceSubnets = networkConfig["serviceSubnet"].(string)
-
+		kubemanagerConfig.KubernetesClusterName = clusterName
+		podSubnets, err := cinfo.PodSubnets()
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.PodSubnets = podSubnets
+		serviceSubnets, err := cinfo.ServiceSubnets()
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.ServiceSubnets = serviceSubnets
 	}
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
@@ -464,4 +458,13 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 	kubemanagerConfiguration.IPFabricSnat = &ipFabricSnat
 
 	return kubemanagerConfiguration
+}
+
+//KubemanagerClusterInfo is interface for gathering information about cluster
+type KubemanagerClusterInfo interface {
+	KubernetesAPISSLPort() (int, error)
+	KubernetesAPIServer() (string, error)
+	KubernetesClusterName() (string, error)
+	PodSubnets() (string, error)
+	ServiceSubnets() (string, error)
 }
