@@ -12,6 +12,7 @@ type swiftProxyConfig struct {
 	KeystoneServer        string
 	MemcachedServer       string
 	KeystoneAdminPassword string
+	SwiftUser             string
 	SwiftPassword         string
 }
 
@@ -96,7 +97,7 @@ auth_type = password
 project_domain_id = default
 user_domain_id = default
 project_name = service
-username = swift
+username = {{ .SwiftUser }}
 password = {{ .SwiftPassword }}
 delay_auth_decision = True
 memcache_security_strategy = None

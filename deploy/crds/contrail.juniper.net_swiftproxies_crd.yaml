@@ -35,6 +35,8 @@ spec:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                credentialsSecretName:
+                  type: string
                 endpoint:
                   type: string
                 keystoneInstance:
@@ -48,8 +50,6 @@ spec:
                 ringPersistentVolumeClaim:
                   type: string
                 swiftConfSecretName:
-                  type: string
-                swiftPassword:
                   type: string
               type: object
           required:

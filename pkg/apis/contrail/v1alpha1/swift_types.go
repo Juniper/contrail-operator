@@ -17,13 +17,15 @@ type SwiftConfiguration struct {
 	RingsStorage              Storage                   `json:"ringsStorage,omitempty"`
 	SwiftStorageConfiguration SwiftStorageConfiguration `json:"swiftStorageConfiguration"`
 	SwiftProxyConfiguration   SwiftProxyConfiguration   `json:"swiftProxyConfiguration"`
+	CredentialsSecretName     string                    `json:"credentialsSecretName,omitempty"`
 }
 
 // SwiftStatus defines the observed state of Swift
 // +k8s:openapi-gen=true
 type SwiftStatus struct {
-	Active         bool `json:"active,omitempty"`
-	SwiftProxyPort int  `json:"swiftProxyPort,omitempty"`
+	Active                bool   `json:"active,omitempty"`
+	SwiftProxyPort        int    `json:"swiftProxyPort,omitempty"`
+	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

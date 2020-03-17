@@ -121,9 +121,23 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
+		swiftPasswordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "openstacktest-swift-credentials-secret",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"user":     "swift",
+				"password": "swiftPass",
+			},
+		}
+
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
+
+			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -174,6 +188,7 @@ func TestOpenstackServices(t *testing.T) {
 						Containers: map[string]*contrail.Container{
 							"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:train"},
 						},
+						CredentialsSecretName: "openstacktest-swift-credentials-secret",
 						SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 							AccountBindPort:   6001,
 							ContainerBindPort: 6002,
@@ -199,7 +214,6 @@ func TestOpenstackServices(t *testing.T) {
 							MemcachedInstance:  "openstacktest-memcached",
 							ListenPort:         5070,
 							KeystoneInstance:   "openstacktest-keystone",
-							SwiftPassword:      "swiftpass",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
 								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
@@ -232,7 +246,7 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
 				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.PostAuthTokens("swift", "swiftpass", "service")
+				_, err := keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				assert.NoError(t, err)
 			})
 		})
@@ -241,7 +255,7 @@ func TestOpenstackServices(t *testing.T) {
 			var (
 				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
-				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftpass", "service")
+				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
 				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")

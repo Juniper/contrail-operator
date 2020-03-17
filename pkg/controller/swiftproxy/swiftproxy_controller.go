@@ -139,8 +139,15 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	passwordSecretName := swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName
+	passwordSecret := &core.Secret{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: passwordSecretName, Namespace: swiftProxy.Namespace}, passwordSecret); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
-	if err := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret).ensureExists(memcached.Status.Node); err != nil {
+	cm := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
+	if err := cm.ensureExists(memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -150,7 +157,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	if err := r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret).ensureInitExists(endpoint); err != nil {
+	cm = r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
+	if err := cm.ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 

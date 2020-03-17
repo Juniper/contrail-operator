@@ -35,6 +35,8 @@ spec:
               description: SwiftConfiguration is the Spec for the keystone API.
               properties:
                 containers: {}
+                credentialsSecretName:
+                  type: string
                 ringsStorage:
                   properties:
                     path:
@@ -48,6 +50,8 @@ spec:
                     API.
                   properties:
                     containers: {}
+                    credentialsSecretName:
+                      type: string
                     endpoint:
                       type: string
                     keystoneInstance:
@@ -61,8 +65,6 @@ spec:
                     ringPersistentVolumeClaim:
                       type: string
                     swiftConfSecretName:
-                      type: string
-                    swiftPassword:
                       type: string
                   type: object
                 swiftStorageConfiguration:
@@ -103,6 +105,8 @@ spec:
           properties:
             active:
               type: boolean
+            credentialsSecretName:
+              type: string
             swiftProxyPort:
               type: integer
           type: object

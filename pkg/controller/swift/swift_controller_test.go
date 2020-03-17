@@ -2,6 +2,7 @@ package swift_test
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
 	batch "k8s.io/api/batch/v1"
@@ -22,6 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+const credentialsSecretName = "credentials-secret"
+
 func TestSwiftController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err)
@@ -34,39 +37,6 @@ func TestSwiftController(t *testing.T) {
 	swiftName := types.NamespacedName{
 		Namespace: "default",
 		Name:      "test-swift",
-	}
-
-	swiftCR := &contrail.Swift{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: swiftName.Namespace,
-			Name:      swiftName.Name,
-		},
-		Spec: contrail.SwiftSpec{
-			ServiceConfiguration: contrail.SwiftConfiguration{
-				Containers: map[string]*contrail.Container{
-					"ring-reconciler": {Image: "ring-reconciler"},
-				},
-				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
-					AccountBindPort:   6001,
-					ContainerBindPort: 6002,
-					ObjectBindPort:    6000,
-					Containers: map[string]*contrail.Container{
-						"container1": {Image: "image1"},
-						"container2": {Image: "image2"},
-					},
-					Device: "dev",
-				},
-				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-					ListenPort:       5070,
-					KeystoneInstance: "keystone",
-					SwiftPassword:    "swiftpass",
-					Containers: map[string]*contrail.Container{
-						"container3": {Image: "image3"},
-						"container4": {Image: "image4"},
-					},
-				},
-			},
-		},
 	}
 
 	t.Run("when Swift CR is reconciled", func(t *testing.T) {
@@ -109,6 +79,7 @@ func TestSwiftController(t *testing.T) {
 							SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 								Device: "dev",
 							},
+							CredentialsSecretName: credentialsSecretName,
 						},
 					},
 				}
@@ -133,6 +104,29 @@ func TestSwiftController(t *testing.T) {
 						APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 					}}
 					assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
+				})
+
+				t.Run("should create secret for swift credentials and set swift status", func(t *testing.T) {
+					secret := &core.Secret{}
+					err = fakeClient.Get(context.Background(), types.NamespacedName{
+						Name:      credentialsSecretName,
+						Namespace: "default",
+					}, secret)
+
+					assert.NoError(t, err)
+					assert.NotEmpty(t, secret)
+					expectedOwnerRefs := []v1.OwnerReference{{
+						APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+					}}
+					assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
+
+					swiftName := types.NamespacedName{
+						Name:      swiftCR.Name,
+						Namespace: swiftCR.Namespace,
+					}
+					err := fakeClient.Get(context.Background(), swiftName, swiftCR)
+					assert.NoError(t, err)
+					assert.Equal(t, credentialsSecretName, swiftCR.Status.CredentialsSecretName)
 				})
 
 				t.Run("should create SwiftStorage CR", func(t *testing.T) {
@@ -160,7 +154,11 @@ func TestSwiftController(t *testing.T) {
 
 	t.Run("when Swift CR was reconciled (secret, storage, proxy exist)", func(t *testing.T) {
 		// given
-		existingSecret := &core.Secret{
+		confSecret := core.Secret{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "swift-conf",
 				Namespace: "default",
@@ -170,7 +168,31 @@ func TestSwiftController(t *testing.T) {
 			},
 		}
 
-		existingSwiftProxy := &contrail.SwiftProxy{
+		credentialsSecret := core.Secret{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name:      swiftName.Name + "-swift-credentials-secret",
+				Namespace: "default",
+				OwnerReferences: []v1.OwnerReference{{
+					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+				}},
+			},
+			Data: map[string][]byte{
+				"user":     []byte("user"),
+				"password": []byte("secret"),
+			},
+		}
+
+		expectedSecrets := []core.Secret{
+			confSecret,
+			credentialsSecret,
+		}
+
+		reconciledSwift := newReconciledSwift()
+		swiftProxy := contrail.SwiftProxy{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      swiftName.Name + "-proxy",
 				Namespace: swiftName.Namespace,
@@ -179,24 +201,30 @@ func TestSwiftController(t *testing.T) {
 				}},
 			},
 			Spec: contrail.SwiftProxySpec{
-				ServiceConfiguration: swiftCR.Spec.ServiceConfiguration.SwiftProxyConfiguration,
+				ServiceConfiguration: reconciledSwift.Spec.ServiceConfiguration.SwiftProxyConfiguration,
 			},
 		}
+		swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName = credentialsSecretName
 
-		existingSwiftStorage := &contrail.SwiftStorage{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      swiftName.Name + "-storage",
-				Namespace: swiftName.Namespace,
-				OwnerReferences: []v1.OwnerReference{{
-					APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
-				}},
-			},
-			Spec: contrail.SwiftStorageSpec{
-				ServiceConfiguration: swiftCR.Spec.ServiceConfiguration.SwiftStorageConfiguration,
-			},
-		}
+		initObjs := []runtime.Object{
+			reconciledSwift,
+			&confSecret,
+			&credentialsSecret,
+			&swiftProxy,
+			&contrail.SwiftStorage{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      swiftName.Name + "-storage",
+					Namespace: swiftName.Namespace,
+					OwnerReferences: []v1.OwnerReference{{
+						APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+					}},
+				},
+				Spec: contrail.SwiftStorageSpec{
+					ServiceConfiguration: reconciledSwift.Spec.ServiceConfiguration.SwiftStorageConfiguration,
+				},
+			}}
 
-		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSecret, existingSwiftProxy, existingSwiftStorage)
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		claims := volumeclaims.NewFake()
 		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
 		// when
@@ -209,21 +237,22 @@ func TestSwiftController(t *testing.T) {
 			err = fakeClient.List(context.Background(), secrets)
 
 			assert.NoError(t, err)
-			require.Len(t, secrets.Items, 1)
-			assert.Equal(t, *existingSecret, secrets.Items[0])
+			require.Len(t, secrets.Items, 2)
+			assert.ElementsMatch(t, expectedSecrets, secrets.Items)
 		})
 
 		t.Run("should not create nor update SwiftStorage CR", func(t *testing.T) {
-			assertSwiftStorageCRExists(t, fakeClient, swiftCR)
+			assertSwiftStorageCRExists(t, fakeClient, reconciledSwift)
 		})
 
 		t.Run("should not create nor update SwiftProxy CR", func(t *testing.T) {
-			assertSwiftProxyCRExists(t, fakeClient, swiftCR)
+			assertSwiftProxyCRExists(t, fakeClient, reconciledSwift)
 		})
 	})
 
 	t.Run("when Swift CR, Swift Storage, Swift Proxy exist and is reconciled", func(t *testing.T) {
 		// given
+		swiftCR := newReconciledSwift()
 		existingSwiftProxy := &contrail.SwiftProxy{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      swiftName.Name + "-proxy",
@@ -234,9 +263,9 @@ func TestSwiftController(t *testing.T) {
 			},
 			Spec: contrail.SwiftProxySpec{
 				ServiceConfiguration: contrail.SwiftProxyConfiguration{
-					ListenPort:       0000,
-					KeystoneInstance: "old",
-					SwiftPassword:    "old",
+					ListenPort:            0000,
+					KeystoneInstance:      "old",
+					CredentialsSecretName: credentialsSecretName,
 				},
 			},
 		}
@@ -292,6 +321,52 @@ func TestSwiftController(t *testing.T) {
 
 }
 
+func newSwift(swiftName types.NamespacedName) *contrail.Swift {
+	return &contrail.Swift{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: swiftName.Namespace,
+			Name:      swiftName.Name,
+		},
+		Spec: contrail.SwiftSpec{
+			ServiceConfiguration: contrail.SwiftConfiguration{
+				Containers: map[string]*contrail.Container{
+					"ring-reconciler": {Image: "ring-reconciler"},
+				},
+				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+					AccountBindPort:   6001,
+					ContainerBindPort: 6002,
+					ObjectBindPort:    6000,
+					Containers: map[string]*contrail.Container{
+						"container1": {Image: "image1"},
+						"container2": {Image: "image2"},
+					},
+					Device: "dev",
+				},
+				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+					ListenPort:            5070,
+					KeystoneInstance:      "keystone",
+					CredentialsSecretName: credentialsSecretName,
+					Containers: map[string]*contrail.Container{
+						"container3": {Image: "image3"},
+						"container4": {Image: "image4"},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newReconciledSwift() *contrail.Swift {
+	swiftName := types.NamespacedName{
+		Namespace: "default",
+		Name:      "test-swift",
+	}
+
+	swift := newSwift(swiftName)
+	swift.Status.CredentialsSecretName = credentialsSecretName
+	return swift
+}
+
 func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail.Swift) {
 	swiftStorageList := contrail.SwiftStorageList{}
 	err := c.List(context.Background(), &swiftStorageList)
@@ -315,8 +390,14 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 }
 
 func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.Swift) {
+	swiftName := types.NamespacedName{
+		Name:      swiftCR.Name,
+		Namespace: swiftCR.Namespace,
+	}
+	err := c.Get(context.Background(), swiftName, swiftCR)
+	assert.NoError(t, err)
 	swiftProxyList := contrail.SwiftProxyList{}
-	err := c.List(context.Background(), &swiftProxyList)
+	err = c.List(context.Background(), &swiftProxyList)
 	assert.NoError(t, err)
 	require.Len(t, swiftProxyList.Items, 1, "Only one Swift Proxy CR is expected")
 	swiftProxy := swiftProxyList.Items[0]
@@ -331,7 +412,7 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneSecretName, swiftProxy.Spec.ServiceConfiguration.KeystoneSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.KeystoneInstance, swiftProxy.Spec.ServiceConfiguration.KeystoneInstance)
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
-	assert.Equal(t, expectedSwiftProxyConf.SwiftPassword, swiftProxy.Spec.ServiceConfiguration.SwiftPassword)
+	assert.Equal(t, swiftCR.Status.CredentialsSecretName, swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
 	assert.Equal(t, swiftCR.Name+"-rings", swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 }

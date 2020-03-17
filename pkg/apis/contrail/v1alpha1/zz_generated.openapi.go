@@ -2542,6 +2542,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftConfiguration(ref common.ReferenceCa
 							Ref: ref("./pkg/apis/contrail/v1alpha1.SwiftProxyConfiguration"),
 						},
 					},
+					"credentialsSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"swiftStorageConfiguration", "swiftProxyConfiguration"},
 			},
@@ -2626,7 +2632,7 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftProxyConfiguration(ref common.Refere
 							Format: "",
 						},
 					},
-					"swiftPassword": {
+					"credentialsSecretName": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -2750,6 +2756,12 @@ func schema_pkg_apis_contrail_v1alpha1_SwiftStatus(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int32",
+						},
+					},
+					"credentialsSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},

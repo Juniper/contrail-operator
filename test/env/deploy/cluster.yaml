@@ -244,6 +244,7 @@ spec:
         name: swift
       spec:
         serviceConfiguration:
+          credentialsSecretName: "swift-credentials-secret"
           containers:
             ring-reconciler:
               image: registry:5000/centos-source-swift-base:train
@@ -251,7 +252,6 @@ spec:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
-            swiftPassword: "swiftpass"
             containers:
               init:
                 image: registry:5000/centos-binary-kolla-toolbox:train

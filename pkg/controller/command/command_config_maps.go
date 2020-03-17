@@ -11,13 +11,17 @@ type configMaps struct {
 	cm                      *k8s.ConfigMap
 	ccSpec                  contrail.CommandSpec
 	keystoneAdminPassSecret *corev1.Secret
+	swiftCredentialsSecret  *corev1.Secret
 }
 
-func (r *ReconcileCommand) configMap(configMapName, ownerType string, cc *contrail.Command, secret *corev1.Secret) *configMaps {
+func (r *ReconcileCommand) configMap(
+	configMapName string, ownerType string, cc *contrail.Command, keystoneSecret *corev1.Secret, swiftSecret *corev1.Secret,
+) *configMaps {
 	return &configMaps{
 		cm:                      r.kubernetes.ConfigMap(configMapName, ownerType, cc),
 		ccSpec:                  cc.Spec,
-		keystoneAdminPassSecret: secret,
+		keystoneAdminPassSecret: keystoneSecret,
+		swiftCredentialsSecret:  swiftSecret,
 	}
 }
 
@@ -26,6 +30,8 @@ func (c *configMaps) ensureCommandConfigExist() error {
 		ClusterName:    "default",
 		AdminUsername:  "admin",
 		AdminPassword:  string(c.keystoneAdminPassSecret.Data["password"]),
+		SwiftUsername:  string(c.swiftCredentialsSecret.Data["user"]),
+		SwiftPassword:  string(c.swiftCredentialsSecret.Data["password"]),
 		ConfigAPIURL:   "http://localhost:8082",
 		TelemetryURL:   "http://localhost:8081",
 		PostgresUser:   "root",

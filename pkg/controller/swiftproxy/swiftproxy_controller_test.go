@@ -43,6 +43,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newMemcached(),
 				newAdminSecret(),
+				newSwiftSecret(),
 			},
 
 			// then
@@ -70,6 +71,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyInitConfigMap(),
 				newMemcached(),
 				newAdminSecret(),
+				newSwiftSecret(),
 			},
 
 			// then
@@ -94,6 +96,7 @@ func TestSwiftProxyController(t *testing.T) {
 				}),
 				newMemcached(),
 				newAdminSecret(),
+				newSwiftSecret(),
 			},
 
 			// then
@@ -115,6 +118,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
 				newAdminSecret(),
+				newSwiftSecret(),
 			},
 
 			// then
@@ -132,6 +136,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
 				newMemcached(),
 				newAdminSecret(),
+				newSwiftSecret(),
 			},
 
 			// then
@@ -214,7 +219,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				ListenPort:                5070,
 				KeystoneInstance:          "keystone",
 				MemcachedInstance:         "memcached-instance",
-				SwiftPassword:             "swiftpass",
+				CredentialsSecretName:     "swift-secret",
 				SwiftConfSecretName:       "test-secret",
 				RingPersistentVolumeClaim: "test-rings-claim",
 				KeystoneSecretName:        "keystone-adminpass-secret",
@@ -478,6 +483,19 @@ func newAdminSecret() *core.Secret {
 	}
 }
 
+func newSwiftSecret() *core.Secret {
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift-secret",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"user":     []byte("otherUser"),
+			"password": []byte("password2"),
+		},
+	}
+}
+
 const boostrapScript = `
 #!/bin/bash
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
@@ -553,8 +571,8 @@ auth_type = password
 project_domain_id = default
 user_domain_id = default
 project_name = service
-username = swift
-password = swiftpass
+username = otherUser
+password = password2
 delay_auth_decision = True
 memcache_security_strategy = None
 memcached_servers = localhost:11211
@@ -624,7 +642,7 @@ const registerPlaybook = `
     - name: create swift user
       os_user:
         default_project: "service"
-        name: "swift"
+        name: "{{ swift_user }}"
         password: "{{ swift_password }}"
         domain: "default"
         interface: "admin"
@@ -657,5 +675,6 @@ openstack_auth:
   user_domain_id: "default"
 
 swift_endpoint: "10.255.254.4:5070"
-swift_password: "swiftpass"
+swift_password: "password2"
+swift_user: "otherUser"
 `
