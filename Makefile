@@ -28,4 +28,4 @@ endif
 monitor: ## make statusmonitor
 	cd $(ROOT_DIR)/statusmonitor && go build -o statusmonitor && docker build . -f Dockerfile.debug -t contrail-statusmonitor:debug
 provisioner: ## make provisioner
-	cd $(ROOT_DIR)/contrail-provisioner && go build -o contrail-provisioner && docker build . -t contrail-provisioner:debug
+	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:debug
