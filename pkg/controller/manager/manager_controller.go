@@ -53,7 +53,12 @@ func Add(mgr manager.Manager) error {
 		return err
 	}
 	var r reconcile.Reconciler
-	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache(), kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
+	reconcileManager := ReconcileManager{client: mgr.GetClient(),
+		scheme:      mgr.GetScheme(),
+		manager:     mgr,
+		cache:       mgr.GetCache(),
+		kubernetes:  k8s.New(mgr.GetClient(), mgr.GetScheme()),
+		csrSignerCa: csrca}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -99,12 +104,13 @@ var _ reconcile.Reconciler = &ReconcileManager{}
 type ReconcileManager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	client     client.Client
-	scheme     *runtime.Scheme
-	manager    manager.Manager
-	controller controller.Controller
-	cache      cache.Cache
-	kubernetes *k8s.Kubernetes
+	client      client.Client
+	scheme      *runtime.Scheme
+	manager     manager.Manager
+	controller  controller.Controller
+	cache       cache.Cache
+	kubernetes  *k8s.Kubernetes
+	csrSignerCa v1alpha1.ManagerCSRSignerCA
 }
 
 // Reconcile reconciles the manager.
@@ -136,6 +142,24 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 		}
 	}
+
+	_, err = r.csrSignerCa.CSRSignerCA()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// csrSignerCaConfigMap := &corev1.ConfigMap{}
+	// if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "csr-signer-ca", Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
+	// 	if errors.IsNotFound(err) {
+	// 		csrSignerCaConfigMap.Name = "csr-signer-ca"
+	// 		csrSignerCaConfigMap.Namespace = request.Namespace
+	// 		data := map[string]string{"csr-signer-ca.crt": csrSignerCAValue}
+	// 		csrSignerCaConfigMap.Data = data
+	// 		if err = controllerutil.SetControllerReference(instance, csrSignerCaConfigMap, r.scheme); err != nil {
+	// 			return reconcile.Result{}, err
+	// 		}
+	// 	}
+	// }
 
 	if instance.Spec.KeystoneSecretName == "" {
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"

@@ -24,7 +24,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
-	"github.com/Juniper/contrail-operator/pkg/controller/manager"
+	managerController "github.com/Juniper/contrail-operator/pkg/controller/manager"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
@@ -113,13 +113,13 @@ func main() {
 	}
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
-	var signerCa v1alpha1.ManagerCSRSignerCA
+	var csrSignerCa v1alpha1.ManagerCSRSignerCA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
-		signerCa = openshift.CSRSignerCAGetter{Client: clientset.CoreV1()}
+		csrSignerCa = openshift.CSRSignerCAGetter{Client: clientset.CoreV1()}
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
-		signerCa = k8s.CSRSignerCAGetter{Client: clientset.CoreV1()}
+		csrSignerCa = k8s.CSRSignerCAGetter{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.
@@ -129,6 +129,11 @@ func main() {
 	}
 
 	if err := kubemanager.Add(mgr, cinfo); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := managerController.Add(mgr, csrSignerCa); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
