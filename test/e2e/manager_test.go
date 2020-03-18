@@ -83,7 +83,7 @@ var initialVersionMap = map[string]string{
 	"config":               "1912-latest",
 	"control":              "1912-latest",
 	"kubemanager":          "1912-latest",
-	"contrail-provisioner": "1912-20200315",
+	"contrail-provisioner": "latest",
 }
 
 var targetVersionMap = map[string]string{
