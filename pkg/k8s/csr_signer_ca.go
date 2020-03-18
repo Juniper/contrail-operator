@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"errors"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -12,5 +13,5 @@ type CSRSignerCAGetter struct {
 // TODO
 func (c CSRSignerCAGetter) CSRSignerCA() (string, error) {
 	_ = c
-	return "", nil
+	return "", errors.New("used empty k8s implementation")
 }

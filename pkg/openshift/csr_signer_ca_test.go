@@ -21,16 +21,16 @@ func TestCSRSignerCA(t *testing.T) {
 		errorExpected      bool
 	}{
 		{
-			name:               "Data retrieved from the the client-ca ConfigMap",
-			configMapName:      "client-ca",
-			configMapNamespace: "openshift-kube-controller-manager",
+			name:               "Data retrieved from the the csr-signer-ca ConfigMap",
+			configMapName:      "csr-signer-ca",
+			configMapNamespace: "openshift-kube-controller-manager-operator",
 			configMapData:      map[string]string{"ca-bundle.crt": "test-ca-data"},
 			expected:           "test-ca-data",
 			errorExpected:      false,
 		},
 		{
 			name:               "Empty string and error returned when the required ConfigMap does not exist",
-			configMapName:      "client-ca",
+			configMapName:      "csr-signer-ca",
 			configMapNamespace: "other-namespace",
 			configMapData:      map[string]string{"ca-bundle.crt": "test-ca-data"},
 			expected:           "",
@@ -38,8 +38,8 @@ func TestCSRSignerCA(t *testing.T) {
 		},
 		{
 			name:               "Empty string and error returned when the required field in the ConfigMap does not exist",
-			configMapName:      "client-ca",
-			configMapNamespace: "openshift-kube-controller-manager",
+			configMapName:      "csr-signer-ca",
+			configMapNamespace: "openshift-kube-controller-manager-operator",
 			configMapData:      map[string]string{"test-field-name": "test-ca-data"},
 			expected:           "",
 			errorExpected:      true,

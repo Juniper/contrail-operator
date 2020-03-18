@@ -14,8 +14,8 @@ type CSRSignerCAGetter struct {
 
 // TODO
 func (c CSRSignerCAGetter) CSRSignerCA() (string, error) {
-	kubeControllerMgrCMClient := c.Client.ConfigMaps("openshift-kube-controller-manager")
-	clientCaCM, err := kubeControllerMgrCMClient.Get("client-ca", metav1.GetOptions{})
+	kubeControllerMgrCMClient := c.Client.ConfigMaps("openshift-kube-controller-manager-operator")
+	clientCaCM, err := kubeControllerMgrCMClient.Get("csr-signer-ca", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

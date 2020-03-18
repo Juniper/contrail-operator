@@ -143,23 +143,24 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	_, err = r.csrSignerCa.CSRSignerCA()
+	csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// csrSignerCaConfigMap := &corev1.ConfigMap{}
-	// if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "csr-signer-ca", Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
-	// 	if errors.IsNotFound(err) {
-	// 		csrSignerCaConfigMap.Name = "csr-signer-ca"
-	// 		csrSignerCaConfigMap.Namespace = request.Namespace
-	// 		data := map[string]string{"csr-signer-ca.crt": csrSignerCAValue}
-	// 		csrSignerCaConfigMap.Data = data
-	// 		if err = controllerutil.SetControllerReference(instance, csrSignerCaConfigMap, r.scheme); err != nil {
-	// 			return reconcile.Result{}, err
-	// 		}
-	// 	}
-	// }
+	csrSignerCaConfigMap := &corev1.ConfigMap{}
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "csr-signer-ca", Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
+		if errors.IsNotFound(err) {
+			csrSignerCaConfigMap.Name = "csr-signer-ca"
+			csrSignerCaConfigMap.Namespace = request.Namespace
+			data := map[string]string{"ca-bundle.crt": csrSignerCAValue}
+			csrSignerCaConfigMap.Data = data
+			controllerutil.SetControllerReference(instance, csrSignerCaConfigMap, r.scheme)
+			if err = r.client.Create(context.TODO(), csrSignerCaConfigMap); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
 
 	if instance.Spec.KeystoneSecretName == "" {
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
