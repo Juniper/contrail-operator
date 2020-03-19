@@ -5,13 +5,13 @@ import (
 	contrailTypes "github.com/Juniper/contrail-go-api/types"
 )
 
-// ConfigNode struct defines Contrail config node
+// DatabaseNode struct defines Contrail database node
 type DatabaseNode struct {
 	IPAddress string `yaml:"ipAddress,omitempty"`
 	Hostname  string `yaml:"hostname,omitempty"`
 }
 
-// Create creates a ConfigNode instance
+// Create creates a DatabaseNode instance
 func (c *DatabaseNode) Create(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
 	for _, node := range nodeList {
 		if node.Hostname == nodeName {
@@ -27,7 +27,7 @@ func (c *DatabaseNode) Create(nodeList []*DatabaseNode, nodeName string, contrai
 	return nil
 }
 
-// Update updates a ConfigNode instance
+// Update updates a DatabaseNode instance
 func (c *DatabaseNode) Update(nodeList []*DatabaseNode, nodeName string, contrailClient *contrail.Client) error {
 	for _, node := range nodeList {
 		if node.Hostname == nodeName {
@@ -55,7 +55,7 @@ func (c *DatabaseNode) Update(nodeList []*DatabaseNode, nodeName string, contrai
 	return nil
 }
 
-// Delete deletes a ConfigNode instance
+// Delete deletes a DatabaseNode instance
 func (c *DatabaseNode) Delete(nodeName string, contrailClient *contrail.Client) error {
 	vncNodeList, err := contrailClient.List("database-node")
 	if err != nil {
