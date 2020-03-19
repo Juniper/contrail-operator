@@ -212,9 +212,13 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet,
-		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume",
-			configMap2.Name: request.Name + "-" + instanceType + "-runner"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
+		configMap2.Name:                       request.Name + "-" + instanceType + "-runner",
+		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+	},
+	)
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
@@ -242,6 +246,11 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
