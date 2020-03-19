@@ -21,6 +21,8 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
+          storage:
+            path: "/mnt/volumes/cassandra"
           containers:
             cassandra:
               image: registry:5000/cassandra:3.11.4
@@ -40,6 +42,8 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
+          storage:
+            path: "/mnt/volumes/config"
           containers:
             analyticsapi:
               image: registry:5000/contrail-analytics-api:master.1115
@@ -213,6 +217,8 @@ spec:
           memcachedInstance: "memcached"
           postgresInstance: postgres
           listenPort: 5555
+          storage:
+            path: "/mnt/volumes/keystone"
           containers:
             keystoneDbInit:
               image: registry:5000/postgresql-client
@@ -228,6 +234,8 @@ spec:
       metadata:
         name: postgres
       spec:
+        storage:
+          path: "/mnt/volumes/postgres"
         containers:
           postgres: 
             image: registry:5000/postgres
@@ -245,6 +253,8 @@ spec:
       spec:
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
+          ringsStorage:
+            path: "/mnt/volumes/swift-rings"
           containers:
             ring-reconciler:
               image: registry:5000/centos-source-swift-base:train
@@ -262,6 +272,8 @@ spec:
             containerBindPort: 6002
             objectBindPort: 6000
             device: d1
+            storage:
+              path: "/mnt/volumes/swift-storage"
             containers:
               swiftObjectExpirer:
                 image: registry:5000/centos-binary-swift-object-expirer:train
