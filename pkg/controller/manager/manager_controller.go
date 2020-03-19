@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -143,18 +144,16 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	csrSignerCaConfigMap := &corev1.ConfigMap{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "csr-signer-ca", Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: certificates.CsrSignerCaConfigMapName, Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
 		if errors.IsNotFound(err) {
-			csrSignerCaConfigMap.Name = "csr-signer-ca"
+			csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			csrSignerCaConfigMap.Name = certificates.CsrSignerCaConfigMapName
 			csrSignerCaConfigMap.Namespace = request.Namespace
-			data := map[string]string{"ca-bundle.crt": csrSignerCAValue}
-			csrSignerCaConfigMap.Data = data
+			csrSignerCaConfigMap.Data = map[string]string{certificates.CsrSignerCaFilename: csrSignerCAValue}
 			controllerutil.SetControllerReference(instance, csrSignerCaConfigMap, r.scheme)
 			if err = r.client.Create(context.TODO(), csrSignerCaConfigMap); err != nil {
 				return reconcile.Result{}, err

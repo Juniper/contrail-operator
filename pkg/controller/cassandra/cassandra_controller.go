@@ -214,9 +214,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:  request.Name + "-" + instanceType + "-volume",
-		"csr-signer-ca": request.Name + "-" + "csr-signer-ca",
+		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
+		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -288,8 +289,8 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
-				Name:      request.Name + "-" + "csr-signer-ca",
-				MountPath: "/etc/ssl/certs",
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
@@ -367,7 +368,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			command := []string{"bash", "-c",
 				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -list -alias CARoot -noprompt;" +
 					"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file /run/secrets/kubernetes.io/serviceaccount/ca.crt; fi && " +
-					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile /etc/ssl/certs/ca-bundle.crt -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile && " +
+					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile " + certificates.CsrSignerCaFilepath + " -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile && " +
 					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"}
 
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
@@ -388,8 +389,8 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 			volumeMount = corev1.VolumeMount{
-				Name:      request.Name + "-" + "csr-signer-ca",
-				MountPath: "/etc/ssl/certs",
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
