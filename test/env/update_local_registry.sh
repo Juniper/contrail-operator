@@ -14,23 +14,23 @@ pull_image()
 while read line; do
 	pull_image opencontrailnightly "${line}"
 done <<EOF
-contrail-controller-config-api:1912-latest
-contrail-controller-config-devicemgr:1912-latest
-contrail-controller-config-schema:1912-latest
-contrail-controller-config-svcmonitor:1912-latest
-contrail-controller-control-control:1912-latest
-contrail-controller-control-dns:1912-latest
-contrail-controller-control-named:1912-latest
-contrail-controller-webui-job:1912-latest
-contrail-controller-webui-web:1912-latest
-contrail-kubernetes-kube-manager:1912-latest
-contrail-kubernetes-cni-init:1912-latest
-contrail-node-init:1912-latest
-contrail-nodemgr:1912-latest
-contrail-analytics-api:1912-latest
-contrail-analytics-collector:1912-latest
-contrail-analytics-query-engine:1912-latest
-contrail-external-dnsmasq:1910-latest
+contrail-controller-config-api:master.1115
+contrail-controller-config-devicemgr:master.1115
+contrail-controller-config-schema:master.1115
+contrail-controller-config-svcmonitor:master.1115
+contrail-controller-control-control:master.1115
+contrail-controller-control-dns:master.1115
+contrail-controller-control-named:master.1115
+contrail-controller-webui-job:master.1115
+contrail-controller-webui-web:master.1115
+contrail-kubernetes-kube-manager:master.1115
+contrail-kubernetes-cni-init:master.1115
+contrail-node-init:master.1115
+contrail-nodemgr:master.1115
+contrail-analytics-api:master.1115
+contrail-analytics-collector:master.1115
+contrail-analytics-query-engine:master.1115
+contrail-controller-config-devicemgr:master.1115
 EOF
 
 while read line; do
@@ -82,8 +82,7 @@ EOF
 while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
-contrail-controller-config-devicemgr:1912-reload
 contrail-controller-config-dnsmasq:dev
 EOF
 
-pull_image hub.juniper.net/contrail-nightly contrail-command:1912-latest
+pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115

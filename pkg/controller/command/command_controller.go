@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -174,8 +175,23 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		configVolumeName,
 		command.Spec.ServiceConfiguration.Containers,
 	)
-
-	contrail.AddVolumesToIntendedDeployments(deployment, map[string]string{commandConfigName: configVolumeName})
+	executableMode := int32(0744)
+	deployment.Spec.Template.Spec.Volumes = []core.Volume{{
+		Name: configVolumeName,
+		VolumeSource: core.VolumeSource{
+			ConfigMap: &core.ConfigMapVolumeSource{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: commandConfigName,
+				},
+				Items: []core.KeyToPath{
+					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
+					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
+					{Key: "contrail.yml", Path: "contrail.yml"},
+					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
+				},
+			},
+		},
+	}}
 
 	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
 		_, err := command.PrepareIntendedDeployment(deployment,
@@ -311,8 +327,8 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init": []string{"bash", "/etc/contrail/bootstrap.sh"},
-		"api":  []string{"bash", "/etc/contrail/entrypoint.sh"},
+		"init": []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
+		"api":  []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 	}
 
 	c, ok := containers[containerName]
