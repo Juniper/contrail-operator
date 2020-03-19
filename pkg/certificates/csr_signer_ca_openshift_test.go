@@ -1,4 +1,4 @@
-package openshift_test
+package certificates_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/openshift"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
 func TestCSRSignerCA(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCSRSignerCA(t *testing.T) {
 				Data:     test.configMapData,
 			}
 			fakeCoreClient := fake.NewSimpleClientset(inputConfigMap).CoreV1()
-			var csrSignerCA contrail.ManagerCSRSignerCA = openshift.CSRSignerCAGetter{Client: fakeCoreClient}
+			var csrSignerCA contrail.ManagerCSRSignerCA = certificates.CSRSignerCAOpenshift{Client: fakeCoreClient}
 			actual, err := csrSignerCA.CSRSignerCA()
 			if err != nil && !test.errorExpected {
 				t.Errorf("Got unexpected error: \"%v\"", err)

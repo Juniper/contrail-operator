@@ -1,19 +1,20 @@
-package openshift
+package certificates
 
 import (
 	"errors"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // CSRSignerCAGetter
 // TODO
-type CSRSignerCAGetter struct {
+type CSRSignerCAOpenshift struct {
 	Client typedCorev1.CoreV1Interface
 }
 
 // TODO
-func (c CSRSignerCAGetter) CSRSignerCA() (string, error) {
+func (c CSRSignerCAOpenshift ) CSRSignerCA() (string, error) {
 	kubeControllerMgrCMClient := c.Client.ConfigMaps("openshift-kube-controller-manager-operator")
 	clientCaCM, err := kubeControllerMgrCMClient.Get("csr-signer-ca", metav1.GetOptions{})
 	if err != nil {

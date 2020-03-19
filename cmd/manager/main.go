@@ -22,6 +22,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	managerController "github.com/Juniper/contrail-operator/pkg/controller/manager"
@@ -116,10 +117,10 @@ func main() {
 	var csrSignerCa v1alpha1.ManagerCSRSignerCA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = openshift.CSRSignerCAGetter{Client: clientset.CoreV1()}
+		csrSignerCa = certificates.CSRSignerCAOpenshift{Client: clientset.CoreV1()}
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = k8s.CSRSignerCAGetter{Client: clientset.CoreV1()}
+		csrSignerCa = certificates.CSRSignerCAK8s{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.
