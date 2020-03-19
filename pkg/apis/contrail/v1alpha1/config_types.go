@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -198,6 +199,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AuthMode            AuthenticationMode
 			AAAMode             AAAMode
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -211,6 +213,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AuthMode:            configConfig.AuthMode,
 			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
 
@@ -244,6 +247,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			LogLevel            string
 			FabricMgmtIP        string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -257,6 +261,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
 			FabricMgmtIP:        fabricMgmtIP,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -265,10 +270,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP              string
 			CollectorServerList string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
 
@@ -302,6 +309,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -314,6 +322,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
@@ -331,6 +340,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			AAAMode             AAAMode
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -344,6 +354,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
@@ -362,7 +373,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			AuthMode            string
 			AAAMode             AAAMode
-			//LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
@@ -376,7 +387,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			AAAMode:             configConfig.AAAMode,
-			//LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -399,6 +410,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			Hostname:            hostname,
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -410,16 +422,25 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
 		var configQueryEngineConfigBuffer bytes.Buffer
-		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, map[string]string{
-			"Hostname":            hostname,
-			"HostIP":              podList.Items[idx].Status.PodIP,
-			"CassandraServerList": cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			"CollectorServerList": collectorServerList,
-			"RedisServerList":     redisServerSpaceSeparatedList,
+		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, struct {
+			Hostname            string
+			HostIP              string
+			CassandraServerList string
+			CollectorServerList string
+			RedisServerList     string
+			CAFilePath          string
+		}{
+			Hostname:            hostname,
+			HostIP:              podList.Items[idx].Status.PodIP,
+			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
+			CollectorServerList: collectorServerList,
+			RedisServerList:     redisServerSpaceSeparatedList,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["queryengine."+podList.Items[idx].Status.PodIP] = configQueryEngineConfigBuffer.String()
 
@@ -429,11 +450,13 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["nodemanagerconfig."+podList.Items[idx].Status.PodIP] = configNodemanagerconfigConfigBuffer.String()
 
@@ -443,11 +466,13 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["nodemanageranalytics."+podList.Items[idx].Status.PodIP] = configNodemanageranalyticsConfigBuffer.String()
 	}
