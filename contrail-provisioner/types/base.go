@@ -9,4 +9,5 @@ type Nodes struct {
 	AnalyticsNodes []*AnalyticsNode           `yaml:"analyticsNodes,omitempty"`
 	VrouterNodes   []*VrouterNode             `yaml:"vrouterNodes,omitempty"`
 	ConfigNodes    []*ConfigNode              `yaml:"configNodes,omitempty"`
+	DatabaseNodes  []*DatabaseNode            `yaml:"databaseNodes,omitempty"`
 }

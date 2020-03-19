@@ -225,6 +225,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
+	configMapDatabaseNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-databasenodes", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	configMapAPIServer, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-apiserver", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -245,6 +250,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		configMapControlNodes.Name:   request.Name + "-" + instanceType + "-controlnodes-volume",
 		configMapVrouterNodes.Name:   request.Name + "-" + instanceType + "-vrouternodes-volume",
 		configMapAnalyticsNodes.Name: request.Name + "-" + instanceType + "-analyticsnodes-volume",
+		configMapDatabaseNodes.Name:  request.Name + "-" + instanceType + "-databasenodes-volume",
 		configMapAPIServer.Name:      request.Name + "-" + instanceType + "-apiserver-volume",
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
@@ -252,7 +258,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "provisioner" {
 			command := []string{"sh", "-c",
-				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -mode watch",
+				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -mode watch",
 			}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -286,6 +292,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-vrouternodes-volume",
 				MountPath: "/etc/provision/vrouter",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-databasenodes-volume",
+				MountPath: "/etc/provision/database",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{

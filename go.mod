@@ -4,23 +4,12 @@ go 1.13
 
 require (
 	github.com/Juniper/contrail-go-api v1.1.0
-	github.com/codedellemc/goscaleio v0.0.0-20170830184815-20e2ce2cf885 // indirect
-	github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c // indirect
-	github.com/d2g/dhcp4client v0.0.0-20170829104524-6e570ed0a266 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
-	github.com/jteeuwen/go-bindata v0.0.0-20151023091102-a0ff2567cfb7 // indirect
-	github.com/kr/fs v0.0.0-20131111012553-2788f0dbd169 // indirect
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
-	github.com/mholt/caddy v0.0.0-20180213163048-2de495001514 // indirect
 	github.com/operator-framework/operator-sdk v0.14.1
-	github.com/pkg/sftp v0.0.0-20160930220758-4d0e916071f6 // indirect
-	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
-	github.com/sigma/go-inotify v0.0.0-20181102212354-c87b6cf5033d // indirect
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
-	github.com/vmware/photon-controller-go-sdk v0.0.0-20170310013346-4a435daef6cc // indirect
-	github.com/xanzy/go-cloudstack v0.0.0-20160728180336-1e2cbf647e57 // indirect
+	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
 	gopkg.in/fsnotify.v1 v1.4.7
@@ -36,7 +25,8 @@ require (
 
 // Pinned to kubernetes-1.16.2
 replace (
-	//github.com/Juniper/contrail-go-api => ../contrail-go-api
+	//github.com/Juniper/contrail-go-api => ./build/contrail-go-api // breaks contrail-operator CI, as it does not perform 'make generate'
+	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
@@ -59,5 +49,3 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20191016113814-3b1a734dba6e
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
 )
-
-replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
