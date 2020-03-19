@@ -17,6 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -413,7 +415,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
 			APIPort:       apiPort,
 			Encryption: Encryption{
-				CA:       "/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+				CA:       certificates.CsrSignerCaFilepath,
 				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
 				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
 				Insecure: false,
