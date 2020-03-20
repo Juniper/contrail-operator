@@ -113,8 +113,8 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 }
 
 type configMap struct {
-	ControlPlaneEndpoint string           `yaml:"controlPlaneEndpoint"`
-	ClusterName          string           `yaml:"clusterName"`
+	ControlPlaneEndpoint string     `yaml:"controlPlaneEndpoint"`
+	ClusterName          string     `yaml:"clusterName"`
 	Networking           networking `yaml:"networking"`
 }
 

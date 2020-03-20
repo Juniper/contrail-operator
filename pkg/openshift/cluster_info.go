@@ -140,7 +140,7 @@ type metadata struct {
 
 type networking struct {
 	ClusterNetwork []clusterNetwork `yaml:"clusterNetwork"`
-	ServiceNetwork []string               `yaml:"serviceNetwork"`
+	ServiceNetwork []string         `yaml:"serviceNetwork"`
 }
 
 type clusterNetwork struct {
