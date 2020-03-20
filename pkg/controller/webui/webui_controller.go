@@ -225,8 +225,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet,
-		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
+		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+	})
 
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -363,6 +366,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -388,6 +396,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
