@@ -10,6 +10,7 @@ spec:
     replicas: 1
     nodeSelector:
       node-role.kubernetes.io/master: ""
+    keystoneSecretInstance : cluster1-admin-password
   services:
     cassandras:
     - metadata:
@@ -103,7 +104,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: michaelhenkel/contrail-provisioner:debug
+              image: dysproz/contrail-provisioner
     rabbitmq:
       metadata:
         labels:
@@ -176,6 +177,8 @@ spec:
           activate: true
           create: true
           hostNetwork: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
           tolerations:
             - effect: NoSchedule
               operator: Exists
