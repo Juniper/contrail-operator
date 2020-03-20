@@ -74,7 +74,7 @@ contrail-statusmonitor:debug
 EOF
 
 while read line; do
-	pull_image 10.84.18.17:5000 "${line}"
+	pull_image dysproz "${line}"
 done <<EOF
 contrail-provisioner:latest
 EOF
