@@ -281,8 +281,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 
 							Containers: map[string]*v1alpha1.Container{
 								"api":               &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-api:" + versionMap["config"]},
-								"devicemanager":     &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-devicemgr:master.1115"}, // Using custom dev version until required changes are merged upstream
-								"dnsmasq":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-dnsmasq:dev"},           // Using custom dev version until required changes are merged upstream
+								"devicemanager":     &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-devicemgr:master.1115"},
+								"dnsmasq":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-dnsmasq:dev"}, // Using custom dev version until required changes are merged upstream
 								"schematransformer": &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-schema:" + versionMap["config"]},
 								"servicemonitor":    &v1alpha1.Container{Image: "registry:5000/contrail-controller-config-svcmonitor:" + versionMap["config"]},
 								"analyticsapi":      &v1alpha1.Container{Image: "registry:5000/contrail-analytics-api:" + versionMap["config"]},
