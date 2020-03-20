@@ -211,7 +211,7 @@ spec:
           privileged: true
         volumeMounts:
         - mountPath: /host/usr/bin
-          name: host-usr-bin
+          name: host-usr-local-bin
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:
@@ -241,9 +241,9 @@ spec:
           type: ""
         name: docker-unix-socket
       - hostPath:
-          path: /usr/bin
+          path: /usr/local/bin
           type: ""
-        name: host-usr-bin
+        name: host-usr-local-bin
       - downwardAPI:
           defaultMode: 420
           items:

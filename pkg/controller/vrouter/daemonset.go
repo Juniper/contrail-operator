@@ -57,7 +57,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -72,7 +72,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
             - mountPath: /etc/sysconfig/network-scripts
               name: network-scripts
             - mountPath: /host/bin
@@ -167,9 +167,9 @@ spec:
             type: ""
           name: docker-unix-socket
         - hostPath:
-            path: /usr/bin
+            path: /usr/local/bin
             type: ""
-          name: host-usr-bin
+          name: host-usr-local-bin
         - hostPath:
             path: /var/log/contrail/cni
             type: ""

@@ -139,7 +139,7 @@ spec:
           privileged: true
         volumeMounts:
         - mountPath: /host/usr/bin
-          name: host-usr-bin
+          name: host-usr-local-bin
       nodeSelector:
         node-role.kubernetes.io/master: ""
       restartPolicy: Always
@@ -162,9 +162,9 @@ spec:
           type: ""
         name: docker-unix-socket
       - hostPath:
-          path: /usr/bin
+          path: /usr/local/bin
           type: ""
-        name: host-usr-bin
+        name: host-usr-local-bin
       - emptyDir: {}
         name: etc-contrail
       - emptyDir: {}

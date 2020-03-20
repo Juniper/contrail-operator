@@ -49,7 +49,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -76,9 +76,9 @@ spec:
             type: ""
           name: kubemanager-logs
         - hostPath:
-            path: /usr/bin
+            path: /usr/local/bin
             type: ""
-          name: host-usr-bin
+          name: host-usr-local-bin
         - downwardAPI:
             defaultMode: 420
             items:
