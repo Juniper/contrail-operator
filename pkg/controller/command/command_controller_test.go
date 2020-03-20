@@ -238,6 +238,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	executableMode := int32(0744)
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -270,7 +271,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 									HTTPGet: &core.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
-							Command: []string{"bash", "/etc/contrail/entrypoint.sh"},
+							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 							},
@@ -280,7 +281,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 						Name:            "command-init",
 						ImagePullPolicy: core.PullAlways,
 						Image:           "registry:5000/contrail-command",
-						Command:         []string{"bash", "/etc/contrail/bootstrap.sh"},
+						Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
 						VolumeMounts: []core.VolumeMount{
 							core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 						},
@@ -292,6 +293,12 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "command-command-configmap",
+									},
+									Items: []core.KeyToPath{
+										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
+										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
+										{Key: "contrail.yml", Path: "contrail.yml"},
+										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 									},
 								},
 							},
@@ -498,6 +505,7 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
+psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
 contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml

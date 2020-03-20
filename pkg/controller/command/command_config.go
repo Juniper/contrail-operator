@@ -57,6 +57,7 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
+psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
 contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml

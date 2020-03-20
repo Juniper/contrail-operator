@@ -155,8 +155,8 @@ func TestCommandServices(t *testing.T) {
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: map[string]*contrail.Container{
-						"init": {Image: "registry:5000/contrail-command:1912-latest"},
-						"api":  {Image: "registry:5000/contrail-command:1912-latest"},
+						"init": {Image: "registry:5000/contrail-command:master.1115"},
+						"api":  {Image: "registry:5000/contrail-command:master.1115"},
 					},
 				},
 			},
