@@ -133,7 +133,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: michaelhenkel/contrail-provisioner:debug
+              image: dysproz/contrail-provisioner:latest
     rabbitmq:
       metadata:
         labels:
