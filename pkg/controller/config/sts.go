@@ -22,244 +22,244 @@ spec:
         app: config
         contrail_manager: config
     spec:
-      containers:
-      - image: docker.io/michaelhenkel/contrail-controller-config-api:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: api
-        readinessProbe:
-          httpGet:
-            scheme: HTTPS
-            path: /
-            port: 8082
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-controller-config-devicemgr:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: devicemanager
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-external-dnsmasq:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: CONTROLLER_NODES
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: dnsmasq
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-controller-config-schema:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: schematransformer
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-controller-config-svcmonitor:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: servicemonitor
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-analytics-api:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: ANALYTICSDB_ENABLE
-          value: "true"
-        - name: ANALYTICS_ALARM_ENABLE
-          value: "true"
-        imagePullPolicy: Always
-        name: analyticsapi
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: queryengine
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-analytics-collector:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: collector
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-      - image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        imagePullPolicy: Always
-        name: redis
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-        - mountPath: /var/lib/redis
-          name: config-data
-      - env:
-        - name: DOCKER_HOST
-          value: unix://mnt/docker.sock
-        - name: NODE_TYPE
-          value: config
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-        imagePullPolicy: Always
-        name: nodemanagerconfig
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-        - mountPath: /mnt
-          name: docker-unix-socket
-        - mountPath: /var/crashes
-          name: crashes
-      - env:
-        - name: DOCKER_HOST
-          value: unix://mnt/docker.sock
-        - name: NODE_TYPE
-          value: analytics
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-        imagePullPolicy: Always
-        name: nodemanageranalytics
-        volumeMounts:
-        - mountPath: /var/log/contrail
-          name: config-logs
-        - mountPath: /mnt
-          name: docker-unix-socket
-        - mountPath: /var/crashes
-          name: crashes
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
       initContainers:
-      - command:
-        - sh
-        - -c
-        - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+      - name: init
+        image: busybox
+        command:
+          - sh
+          - -c
+          - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        image: busybox
+          - name: CONTRAIL_STATUS_IMAGE
+            value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
         imagePullPolicy: Always
-        name: init
         volumeMounts:
-        - mountPath: /tmp/podinfo
-          name: status
-      - command:
-        - sh
-        - -c
-        - until grep true /tmp/podinfo/peers_ready > /dev/null 2>&1; do sleep 1; done
+          - mountPath: /tmp/podinfo
+            name: status
+      - name: init2
         image: busybox
+        command:
+          - sh
+          - -c
+          - until grep true /tmp/podinfo/peers_ready > /dev/null 2>&1; do sleep 1; done
         imagePullPolicy: Always
-        name: init2
         volumeMounts:
-        - mountPath: /tmp/podinfo
-          name: status
-      - env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+          - mountPath: /tmp/podinfo
+            name: status
+      - name: nodeinit
         image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
+        env:
+          - name: CONTRAIL_STATUS_IMAGE
+            value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
         imagePullPolicy: Always
-        name: nodeinit
         securityContext:
           privileged: true
         volumeMounts:
-        - mountPath: /host/usr/bin
-          name: host-usr-local-bin
+          - mountPath: /host/usr/bin
+            name: host-usr-local-bin
+      containers:
+        - name: api
+          image: docker.io/michaelhenkel/contrail-controller-config-api:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /
+              port: 8082
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: devicemanager
+          image: docker.io/michaelhenkel/contrail-controller-config-devicemgr:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: dnsmasq
+          image: docker.io/michaelhenkel/contrail-external-dnsmasq:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CONTROLLER_NODES
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: schematransformer
+          image: docker.io/michaelhenkel/contrail-controller-config-schema:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: servicemonitor
+          image: docker.io/michaelhenkel/contrail-controller-config-svcmonitor:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: analyticsapi
+          image: docker.io/michaelhenkel/contrail-analytics-api:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ANALYTICSDB_ENABLE
+              value: "true"
+            - name: ANALYTICS_ALARM_ENABLE
+              value: "true"
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: queryengine
+          image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: collector
+          image: docker.io/michaelhenkel/contrail-analytics-collector:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+        - name: redis
+            image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
+            env:
+              - name: POD_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: /var/log/contrail
+                name: config-logs
+              - mountPath: /var/lib/redis
+                name: config-data
+        - name: nodemanagerconfig
+          image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
+          env:
+            - name: DOCKER_HOST
+              value: unix://mnt/docker.sock
+            - name: NODE_TYPE
+              value: config
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+            - mountPath: /mnt
+              name: docker-unix-socket
+            - mountPath: /var/crashes
+              name: crashes
+        - name: nodemanageranalytics
+          image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
+          env:
+            - name: DOCKER_HOST
+              value: unix://mnt/docker.sock
+            - name: NODE_TYPE
+              value: analytics
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+            - mountPath: /mnt
+              name: docker-unix-socket
+            - mountPath: /var/crashes
+              name: crashes
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:
-      - effect: NoSchedule
-        operator: Exists
-      - effect: NoExecute
-        operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
       volumes:
-      - persistentVolumeClaim: {}
-        name: tftp
-      - persistentVolumeClaim: {}
-        name: dnsmasq
-      - hostPath:
-          path: /var/log/contrail/config
-          type: ""
-        name: config-logs
-      - hostPath:
-          path: /var/contrail/crashes
-          type: ""
-        name: crashes
-      - hostPath:
-          path: /var/lib/contrail/config
-          type: ""
-        name: config-data
-      - hostPath:
-          path: /var/run
-          type: ""
-        name: docker-unix-socket
-      - hostPath:
-          path: /usr/local/bin
-          type: ""
-        name: host-usr-local-bin
-      - downwardAPI:
-          defaultMode: 420
-          items:
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.labels
-            path: pod_labels
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.labels
-            path: peers_ready
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.labels
-            path: pod_labelsx
-        name: status`
+        - persistentVolumeClaim: {}
+          name: tftp
+        - persistentVolumeClaim: {}
+          name: dnsmasq
+        - hostPath:
+            path: /var/log/contrail/config
+            type: ""
+          name: config-logs
+        - hostPath:
+            path: /var/contrail/crashes
+            type: ""
+          name: crashes
+        - hostPath:
+            path: /var/lib/contrail/config
+            type: ""
+          name: config-data
+        - hostPath:
+            path: /var/run
+            type: ""
+          name: docker-unix-socket
+        - hostPath:
+            path: /usr/local/bin
+            type: ""
+          name: host-usr-local-bin
+        - downwardAPI:
+            defaultMode: 420
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels
+              path: pod_labels
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels
+              path: peers_ready
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.labels
+              path: pod_labelsx
+          name: status`
 
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}
