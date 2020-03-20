@@ -313,6 +313,7 @@ keystone-manage db_sync
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password contrail123 \
+  --bootstrap-region-id RegionOne \
   --bootstrap-admin-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-internal-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-public-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/
