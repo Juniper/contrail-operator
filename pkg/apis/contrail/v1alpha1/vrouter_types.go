@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -362,6 +363,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			PhysicalInterfaceMac string
 			Gateway              string
 			MetaDataSecret       string
+			CAFilePath           string
 		}{
 			Hostname:             hostname,
 			ListenAddress:        podList.Items[idx].Status.PodIP,
@@ -373,6 +375,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			PhysicalInterfaceMac: physicalInterfaceMac,
 			Gateway:              gateway,
 			MetaDataSecret:       vrouterConfig.MetaDataSecret,
+			CAFilePath:           certificates.CsrSignerCaFilepath,
 		})
 		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
 
@@ -383,12 +386,14 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          certificates.CsrSignerCaFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 

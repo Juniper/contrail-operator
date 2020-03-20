@@ -244,7 +244,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedDS(daemonSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedDS(daemonSet, map[string]string{
+		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
+		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+	})
 	instance.AddSecretVolumesToIntendedDS(daemonSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	var serviceAccountName string
@@ -387,6 +391,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: certificates.CsrSignerCaMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
@@ -454,6 +463,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				volumeMount = corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
 					MountPath: "/etc/certificates",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				volumeMount = corev1.VolumeMount{
+					Name:      csrSignerCaVolumeName,
+					MountPath: certificates.CsrSignerCaMountPath,
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

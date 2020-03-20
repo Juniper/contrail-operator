@@ -160,6 +160,14 @@ spec:
         containers:
           postgres: 
             image: postgres
+    memcached:
+      metadata:
+        name: memcached
+        namespace: contrail
+      spec:
+        serviceConfiguration:
+          container:
+            image: kolla/centos-binary-memcached:train
     keystone:
       metadata:
         name: keystone
@@ -174,6 +182,7 @@ spec:
             - effect: NoExecute
               operator: Exists
         serviceConfiguration:
+          memcachedInstance: "memcached"
           postgresInstance: postgres
           listenPort: 5555
           containers:
