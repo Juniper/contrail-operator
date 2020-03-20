@@ -11,16 +11,6 @@ pull_image()
     docker push $LOCAL_REPO/$2
 }
 
-push_local_images()
-{
-  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-  make -f $DIR/../../Makefile provisioner && \
-  docker tag contrail-provisioner:debug $LOCAL_REPO/contrail-provisioner:latest && \
-  docker push $LOCAL_REPO/contrail-provisioner:latest
-}
-
-push_local_images
-
 while read line; do
 	pull_image opencontrailnightly "${line}"
 done <<EOF
