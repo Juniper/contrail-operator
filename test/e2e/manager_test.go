@@ -83,7 +83,7 @@ var initialVersionMap = map[string]string{
 	"config":               "master.1115",
 	"control":              "master.1115",
 	"kubemanager":          "master.1115",
-	"contrail-provisioner": "latest",
+	"contrail-provisioner": "master.1115",
 }
 
 var targetVersionMap = map[string]string{

@@ -76,7 +76,7 @@ EOF
 while read line; do
 	pull_image dysproz "${line}"
 done <<EOF
-contrail-provisioner:latest
+contrail-provisioner:master.1115
 EOF
 
 while read line; do

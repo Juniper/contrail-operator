@@ -528,8 +528,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -578,7 +578,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
-			if imageChanged || replicasChanged {
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+			}
+
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -624,7 +630,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *provisionManagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
+		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetProvisionManagerCr()
 		cr.ObjectMeta = provisionManagerService.ObjectMeta
 		cr.Labels = provisionManagerService.ObjectMeta.Labels
@@ -653,6 +659,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -694,6 +701,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					replicasChanged = true
 				}
 			}
+
 			imageChanged := false
 			for container := range provisionManagerService.Spec.ServiceConfiguration.Containers {
 				if provisionManagerService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
@@ -702,7 +710,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
-			if imageChanged || replicasChanged {
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+
+			}
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -778,8 +792,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -829,8 +843,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+			}
 
-			if imageChanged || replicasChanged {
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
