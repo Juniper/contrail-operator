@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -37,6 +38,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string) error {
 		PostgresUser:   "root",
 		PostgresDBName: "contrail_test",
 		HostIP:         hostIP,
+		CAFilePath:     certificates.CsrSignerCaFilepath,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

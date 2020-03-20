@@ -178,10 +178,12 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	deployment := newDeployment(
 		request.Name,
 		request.Namespace,
 		configVolumeName,
+		csrSignerCaVolumeName,
 		command.Spec.ServiceConfiguration.Containers,
 	)
 	executableMode := int32(0744)
@@ -192,11 +194,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				LocalObjectReference: core.LocalObjectReference{
 					Name: commandConfigName,
 				},
-				Items: []core.KeyToPath{
-					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
-					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "contrail.yml", Path: "contrail.yml"},
-					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
+			},
+		},
+		{
+			Name: csrSignerCaVolumeName,
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: certificates.CsrSignerCaConfigMapName,
+					},
 				},
 			},
 		},
@@ -279,7 +285,7 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	return keystoneServ, err
 }
 
-func newDeployment(name, namespace, configVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
+func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -303,14 +309,20 @@ func newDeployment(name, namespace, configVolumeName string, containers map[stri
 								},
 							},
 						},
-						VolumeMounts: []core.VolumeMount{{
-							Name:      configVolumeName,
-							MountPath: "/etc/contrail",
-						},
+						VolumeMounts: []core.VolumeMount{
+							{
+								Name:      configVolumeName,
+								MountPath: "/etc/contrail",
+							},
 							{
 								Name:      name + "-secret-certificates",
 								MountPath: "/etc/certificates",
-							}},
+							},
+							{
+								Name:      csrSignerCaVolumeName,
+								MountPath: certificates.CsrSignerCaMountPath,
+							},
+						},
 					}},
 					InitContainers: []core.Container{{
 						Name:            "command-init",
