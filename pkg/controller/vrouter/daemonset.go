@@ -217,16 +217,17 @@ spec:
         - downwardAPI:
             defaultMode: 420
             items:
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labels
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labelsx
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labels
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labelsx
           name: status`
 
+//GetDaemonset returns DaemonSet object created from yamlDatavrouter
 func GetDaemonset() *appsv1.DaemonSet {
 	daemonSet := appsv1.DaemonSet{}
 	err := yaml.Unmarshal([]byte(yamlDatavrouter), &daemonSet)

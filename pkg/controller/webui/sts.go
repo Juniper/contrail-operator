@@ -127,16 +127,17 @@ spec:
         - downwardAPI:
             defaultMode: 420
             items:
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labels
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labelsx
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labels
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labelsx
           name: status`
 
+// GetSTS returns StatesfulSet object created from YAML yamlDatawebui_sts
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}
 	err := yaml.Unmarshal([]byte(yamlDatawebui_sts), &sts)
