@@ -26,23 +26,23 @@ spec:
         #runAsGroup: 1999
         fsGroup: 1999
       initContainers:
-      - name: init
-          image: busybox
-          command:
-            - sh
-            - -c
-            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /tmp/podinfo
-              name: status
+        - name: init
+            image: busybox
+            command:
+              - sh
+              - -c
+              - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+            env:
+              - name: CONTRAIL_STATUS_IMAGE
+                value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+              - name: POD_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: /tmp/podinfo
+                name: status
         - name: nodeinit
           image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
           env:
@@ -81,63 +81,63 @@ spec:
           volumeMounts:
             - mountPath: /var/log/contrail
               name: control-logs
-      - name: dns
-        image: docker.io/michaelhenkel/contrail-controller-control-dns:5.2.0-dev1
-        env:
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-        imagePullPolicy: Always
-        volumeMounts:
-          - mountPath: /var/log/contrail
-            name: control-logs
-          - mountPath: /etc/contrail
-            name: etc-contrail
-          - mountPath: /etc/contrail/dns
-            name: etc-contrail-dns
-      - name: named
-        image: docker.io/michaelhenkel/contrail-controller-control-named:5.2.0-dev1
-        env:
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-          runAsGroup: 1999
-        volumeMounts:
-          - mountPath: /var/log/contrail
-            name: control-logs
-          - mountPath: /etc/contrail
-            name: etc-contrail
-          - mountPath: /etc/contrail/dns
-            name: etc-contrail-dns
-      - name: nodemanager
-        image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-        env:
-          - name: NODE_TYPE
-            value: control
-          - name: DOCKER_HOST
-            value: unix://mnt/docker.sock
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-                - python /etc/mycontrail/deprovision.sh.${POD_IP}
-        volumeMounts:
-          - mountPath: /var/log/contrail
-            name: control-logs
-          - mountPath: /var/crashes
-            name: crashes
-          - mountPath: /mnt
-            name: docker-unix-socket
+        - name: dns
+          image: docker.io/michaelhenkel/contrail-controller-control-dns:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: control-logs
+            - mountPath: /etc/contrail
+              name: etc-contrail
+            - mountPath: /etc/contrail/dns
+              name: etc-contrail-dns
+        - name: named
+          image: docker.io/michaelhenkel/contrail-controller-control-named:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            runAsGroup: 1999
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: control-logs
+            - mountPath: /etc/contrail
+              name: etc-contrail
+            - mountPath: /etc/contrail/dns
+              name: etc-contrail-dns
+        - name: nodemanager
+          image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
+          env:
+            - name: NODE_TYPE
+              value: control
+            - name: DOCKER_HOST
+              value: unix://mnt/docker.sock
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - python /etc/mycontrail/deprovision.sh.${POD_IP}
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: control-logs
+            - mountPath: /var/crashes
+              name: crashes
+            - mountPath: /mnt
+              name: docker-unix-socket
       dnsPolicy: ClusterFirst
       hostNetwork: true
       nodeSelector:

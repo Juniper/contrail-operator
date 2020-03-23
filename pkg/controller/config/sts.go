@@ -23,40 +23,40 @@ spec:
         contrail_manager: config
     spec:
       initContainers:
-      - name: init
-        image: busybox
-        command:
-          - sh
-          - -c
-          - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-        env:
-          - name: CONTRAIL_STATUS_IMAGE
-            value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        imagePullPolicy: Always
-        volumeMounts:
-          - mountPath: /tmp/podinfo
-            name: status
-      - name: init2
-        image: busybox
-        command:
-          - sh
-          - -c
-          - until grep true /tmp/podinfo/peers_ready > /dev/null 2>&1; do sleep 1; done
-        imagePullPolicy: Always
-        volumeMounts:
-          - mountPath: /tmp/podinfo
-            name: status
-      - name: nodeinit
-        image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-        env:
-          - name: CONTRAIL_STATUS_IMAGE
-            value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-        volumeMounts:
-          - mountPath: /host/usr/bin
-            name: host-usr-local-bin
+        - name: init
+          image: busybox
+          command:
+            - sh
+            - -c
+            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
+          env:
+            - name: CONTRAIL_STATUS_IMAGE
+              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /tmp/podinfo
+              name: status
+        - name: init2
+          image: busybox
+          command:
+            - sh
+            - -c
+            - until grep true /tmp/podinfo/peers_ready > /dev/null 2>&1; do sleep 1; done
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /tmp/podinfo
+              name: status
+        - name: nodeinit
+          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
+          env:
+            - name: CONTRAIL_STATUS_IMAGE
+              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /host/usr/bin
+              name: host-usr-local-bin
       containers:
         - name: api
           image: docker.io/michaelhenkel/contrail-controller-config-api:5.2.0-dev1

@@ -88,19 +88,19 @@ spec:
           volumeMounts:
             - mountPath: /var/log/contrail
               name: webui-logs
-      - name: redis
-        image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
-        env:
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-        imagePullPolicy: Always
-        volumeMounts:
-          - mountPath: /var/log/contrail
-            name: webui-logs
-          - mountPath: /var/lib/redis
-            name: webui-data
+        - name: redis
+          image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: webui-logs
+            - mountPath: /var/lib/redis
+              name: webui-data
       dnsPolicy: ClusterFirst
       hostNetwork: true
       nodeSelector:
