@@ -160,18 +160,18 @@ spec:
             - mountPath: /var/log/contrail
               name: config-logs
         - name: redis
-            image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
-            env:
-              - name: POD_IP
-                valueFrom:
-                  fieldRef:
-                    fieldPath: status.podIP
-            imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: /var/log/contrail
-                name: config-logs
-              - mountPath: /var/lib/redis
-                name: config-data
+          image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
+            - mountPath: /var/lib/redis
+              name: config-data
         - name: nodemanagerconfig
           image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
           env:
