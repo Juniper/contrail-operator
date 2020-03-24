@@ -49,7 +49,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -76,22 +76,23 @@ spec:
             type: ""
           name: kubemanager-logs
         - hostPath:
-            path: /usr/bin
+            path: /usr/local/bin
             type: ""
-          name: host-usr-bin
+          name: host-usr-local-bin
         - downwardAPI:
             defaultMode: 420
             items:
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labels
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labelsx
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labels
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labelsx
           name: status`
 
+// GetSTS returns StatesfulSet object created from yamlDatakubemanager_sts
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}
 	err := yaml.Unmarshal([]byte(yamlDatakubemanager_sts), &sts)

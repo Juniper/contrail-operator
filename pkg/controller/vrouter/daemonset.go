@@ -57,7 +57,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -72,7 +72,7 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/usr/bin
-              name: host-usr-bin
+              name: host-usr-local-bin
             - mountPath: /etc/sysconfig/network-scripts
               name: network-scripts
             - mountPath: /host/bin
@@ -167,9 +167,9 @@ spec:
             type: ""
           name: docker-unix-socket
         - hostPath:
-            path: /usr/bin
+            path: /usr/local/bin
             type: ""
-          name: host-usr-bin
+          name: host-usr-local-bin
         - hostPath:
             path: /var/log/contrail/cni
             type: ""
@@ -217,16 +217,17 @@ spec:
         - downwardAPI:
             defaultMode: 420
             items:
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labels
-            - fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.labels
-              path: pod_labelsx
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labels
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+                path: pod_labelsx
           name: status`
 
+//GetDaemonset returns DaemonSet object created from yamlDatavrouter
 func GetDaemonset() *appsv1.DaemonSet {
 	daemonSet := appsv1.DaemonSet{}
 	err := yaml.Unmarshal([]byte(yamlDatavrouter), &daemonSet)

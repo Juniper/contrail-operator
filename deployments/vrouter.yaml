@@ -76,7 +76,7 @@ spec:
           privileged: true
         volumeMounts:
         - mountPath: /host/usr/bin
-          name: host-usr-bin
+          name: host-usr-local-bin
       - env:
         - name: CONTRAIL_STATUS_IMAGE
           value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
@@ -90,7 +90,7 @@ spec:
           privileged: true
         volumeMounts:
         - mountPath: /host/usr/bin
-          name: host-usr-bin
+          name: host-usr-local-bin
         - mountPath: /etc/sysconfig/network-scripts
           name: network-scripts
         - mountPath: /host/bin
@@ -114,7 +114,7 @@ spec:
         - mountPath: /var/log/contrail
           name: vrouter-logs
         - mountPath: /host/usr/bin
-          name: host-usr-bin
+          name: host-usr-local-bin
         - mountPath: /var/lib/contrail
           name: var-lib-contrail
         - mountPath: /host/etc_cni
@@ -139,9 +139,9 @@ spec:
           type: ""
         name: docker-unix-socket
       - hostPath:
-          path: /usr/bin
+          path: /usr/local/bin
           type: ""
-        name: host-usr-bin
+        name: host-usr-local-bin
       - hostPath:
           path: /var/log/contrail/cni
           type: ""
