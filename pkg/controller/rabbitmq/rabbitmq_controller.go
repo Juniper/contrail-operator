@@ -21,7 +21,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_rabbitmq")
@@ -304,7 +304,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		secret.Data["vhost"] = secretVhost
 	}
 
-	if err := r.Client.Update(context.Background(), secret); err != nil {
+	if err = r.Client.Update(context.Background(), secret); err != nil {
 		return reconcile.Result{}, err
 	}
 

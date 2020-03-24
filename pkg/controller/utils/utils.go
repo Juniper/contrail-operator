@@ -15,7 +15,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("utils")
@@ -36,7 +36,6 @@ const (
 	DEPLOYMENT  = "Deployment.apps"
 )
 
-var err error
 
 func RemoveIndex(s []corev1.Container, index int) []corev1.Container {
 	return append(s[:index], s[index+1:]...)
@@ -174,11 +173,7 @@ func ManagerSizeChange(appGroupKind schema.GroupKind) predicate.Funcs {
 				}
 
 			}
-
-			if oldSize != newSize {
-				return true
-			}
-			return false
+			return oldSize != newSize
 		},
 	}
 }

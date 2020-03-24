@@ -83,38 +83,6 @@ const crontab = `
 0 0 * * 3 /usr/bin/fernet-rotate.sh
 `
 
-var keystoneFernetConfig = template.Must(template.New("").Parse(`
-[DEFAULT]
-debug = False
-transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-use_stderr = True
-
-[oslo_middleware]
-enable_proxy_headers_parsing = True
-
-[database]
-connection = postgresql://keystone:contrail123@{{ .PostgreSQLServer }}/keystone
-max_retries = -1
-
-[token]
-revoke_by_id = False
-provider = fernet
-expiration = 86400
-allow_expired_window = 172800
-
-[fernet_tokens]
-max_active_keys = 3
-
-[cache]
-backend = oslo_cache.memcache_pool
-enabled = True
-memcache_servers = {{ .MemcacheServer }}
-
-[oslo_messaging_notifications]
-transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-driver = noop
-`))
-
 const fernetNodeSyncScript = `
 #!/bin/bash
 

@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -93,7 +93,7 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	memcachedConfigMapName := memcachedCR.Name + "-config"
-	if err := r.configMap(memcachedConfigMapName, memcachedCR).ensureExists(); err != nil {
+	if err = r.configMap(memcachedConfigMapName, memcachedCR).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 	deployment := &apps.Deployment{

@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -142,7 +142,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
 	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err := ringsClaim.EnsureExists(); err != nil {
+	if err = ringsClaim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -157,7 +157,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		credentialsSecretName = swift.Spec.ServiceConfiguration.CredentialsSecretName
 	}
 
-	if err := r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
+	if err = r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	swift.Status.CredentialsSecretName = credentialsSecretName
@@ -215,7 +215,7 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 		"swift.conf": swiftConfig,
 	}
 
-	if err := controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
+	if err = controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
 		return err
 	}
 
@@ -344,7 +344,7 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 			Port:   port,
 			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
 		}
-		if err := theRing.AddDevice(device); err != nil {
+		if err = theRing.AddDevice(device); err != nil {
 			return err
 		}
 	}

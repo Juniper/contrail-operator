@@ -178,7 +178,7 @@ func TestSwiftStorageController(t *testing.T) {
 		}
 		for testName, test := range tests {
 			t.Run(testName, func(t *testing.T) {
-				swiftStorageCR := &contrail.SwiftStorage{
+				testSwiftStorageCR := &contrail.SwiftStorage{
 					ObjectMeta: meta.ObjectMeta{
 						Namespace: name.Namespace,
 						Name:      name.Name,
@@ -193,7 +193,7 @@ func TestSwiftStorageController(t *testing.T) {
 						},
 					},
 				}
-				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
+				fakeClient := fake.NewFakeClientWithScheme(scheme, testSwiftStorageCR)
 				claims := volumeclaims.NewFake()
 				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), claims)
 				// when

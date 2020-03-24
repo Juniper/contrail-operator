@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -118,7 +118,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if err := r.kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
+	if err = r.kubernetes.Owner(keystone).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 	if !psql.Status.Active {
@@ -129,7 +129,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if err := r.kubernetes.Owner(keystone).EnsureOwns(memcached); err != nil {
+	if err = r.kubernetes.Owner(keystone).EnsureOwns(memcached); err != nil {
 		return reconcile.Result{}, err
 	}
 	if !memcached.Status.Active {
@@ -150,37 +150,37 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 	claim.SetStoragePath(keystone.Spec.ServiceConfiguration.Storage.Path)
 	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err := claim.EnsureExists(); err != nil {
+	if err = claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
-	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kcName := keystone.Name + "-keystone"
-	if err := r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kfcName := keystone.Name + "-keystone-fernet"
-	if err := r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err = r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kscName := keystone.Name + "-keystone-ssh"
-	if err := r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(); err != nil {
+	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err := r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	keySecretName := keystone.Name + "-keystone-keys"
-	if err := r.secret(keySecretName, "keystone", keystone).ensureSecretKeyExist(); err != nil {
+	if err = r.secret(keySecretName, "keystone", keystone).ensureSecretKeyExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -409,7 +409,7 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 	}
 
 	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if ok == false || c == nil {
+	if !ok || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -418,7 +418,7 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 
 func getCommand(cr *contrail.Keystone, containerName string) []string {
 	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if ok == false || c == nil || c.Command == nil {
+	if !ok || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

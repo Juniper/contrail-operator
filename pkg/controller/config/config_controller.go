@@ -23,7 +23,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_config")
@@ -179,12 +179,10 @@ type ReconcileConfig struct {
 	Scheme    *runtime.Scheme
 	Manager   manager.Manager
 	claims    volumeclaims.PersistentVolumeClaims
-	podsReady *bool
 }
 
 // Reconcile reconciles Config.
 func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	var err error
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Config")
 	instanceType := "config"
@@ -193,7 +191,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	zookeeperInstance := &v1alpha1.Zookeeper{}
 	rabbitmqInstance := &v1alpha1.Rabbitmq{}
 
-	if err = r.Client.Get(context.TODO(), request.NamespacedName, config); err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, config); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -280,7 +278,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			claim.SetStorageSize(quantity)
 		}
 		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
-		if err := claim.EnsureExists(); err != nil {
+		if err = claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
