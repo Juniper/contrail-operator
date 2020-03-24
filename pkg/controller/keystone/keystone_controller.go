@@ -7,6 +7,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -142,7 +143,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 	claim := r.claims.New(claimName, keystone)
 	if keystone.Spec.ServiceConfiguration.Storage.Size != "" {
-		size, err := keystone.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+		var size resource.Quantity
+		size, err = keystone.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
 		if err != nil {
 			return reconcile.Result{}, err
 		}

@@ -5,6 +5,7 @@ import (
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -109,7 +110,8 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	claim := r.claims.New(claimName, instance)
 	claim.SetStoragePath(instance.Spec.Storage.Path)
 	if instance.Spec.Storage.Size != "" {
-		quantity, err := instance.Spec.Storage.SizeAsQuantity()
+		var quantity resource.Quantity
+		quantity, err = instance.Spec.Storage.SizeAsQuantity()
 		if err != nil {
 			return reconcile.Result{}, err
 		}

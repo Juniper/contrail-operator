@@ -10,6 +10,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -271,7 +272,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			claim.SetStoragePath(path)
 		}
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
-			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+			var quantity resource.Quantity
+			quantity, err = config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
 			if err != nil {
 				return reconcile.Result{}, err
 			}

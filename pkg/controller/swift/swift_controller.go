@@ -7,6 +7,7 @@ import (
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -134,7 +135,8 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	ringsClaim := r.claims.New(ringsClaimName, swift)
 	if swift.Spec.ServiceConfiguration.RingsStorage.Size != "" {
-		size, err := swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
+		var size resource.Quantity
+		size, err = swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -170,7 +172,8 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if result, err := r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
+	var result reconcile.Result
+	if result, err = r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
 		return result, err
 	}
 

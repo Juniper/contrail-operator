@@ -93,21 +93,6 @@ func addManagerWatch(c controller.Controller) error {
 	return nil
 }
 
-func (r *ReconcileManager) addWatch(ro runtime.Object) error {
-
-	controller := r.controller
-	//err := controller.Watch(&source.Kind{Type: &v1alpha1.Config{}}, &handler.EnqueueRequestForOwner{
-	err := controller.Watch(&source.Kind{Type: ro}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1alpha1.Manager{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // blank assignment to verify that ReconcileManager implements reconcile.Reconciler.
 var _ reconcile.Reconciler = &ReconcileManager{}
 
