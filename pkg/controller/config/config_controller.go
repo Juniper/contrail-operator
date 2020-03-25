@@ -417,12 +417,20 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
 			})
-			// DNSMasq container requires those variables to be set
-			// TODO: Pass keystone credentials
+
 			container.Env = append(container.Env, []corev1.EnvVar{
-				{Name: "KEYSTONE_AUTH_ADMIN_USER", Value: ""},
-				{Name: "KEYSTONE_AUTH_ADMIN_PASSWORD", Value: ""},
-				{Name: "KEYSTONE_AUTH_ADMIN_TENANT", Value: ""},
+				{Name: "KEYSTONE_AUTH_ADMIN_PASSWORD",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: config.Spec.ServiceConfiguration.KeystoneSecretName,
+							},
+							Key: "password",
+						},
+					},
+				},
+				{Name: "KEYSTONE_AUTH_ADMIN_USER", Value: "admin"},
+				{Name: "KEYSTONE_AUTH_ADMIN_TENANT", Value: "admin"},
 			}...)
 			container.VolumeMounts = volumeMountList
 			container.Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
