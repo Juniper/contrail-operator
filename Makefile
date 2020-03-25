@@ -2,18 +2,11 @@ ROOT_DIR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR := $(ROOT_DIR)/build
 GENERATE_DS_REPO := contrail-api-client
 GO_API_CLIENT_REPO := contrail-go-api
-GO_API_CLIENT_VENDOR := ./vendor/github.com/Juniper/$(GO_API_CLIENT_REPO)
 GENERATE_DS_REPO_DIR ?= ""
 GENERATE_DS_BRANCH ?= master
 GENERATE_DS_REVISION ?= HEAD
-GO_API_CLIENT_REPO_DIR ?= ""
-GO_API_CLIENT_BRANCH ?= master
-GO_API_CLIENT_REVISION ?= HEAD
-GOPATH ?= `go env GOPATH`
-SOURCEDIR ?= $(GOPATH)
-all: vendor generate
-vendor: ## Ensure vendor dependencies
-	go mod vendor
+
+all: generate provisioner
 generate: ## Generate go api client types
 	rm -rf $(BUILD_DIR)/$(GENERATE_DS_REPO) $(BUILD_DIR)/$(GO_API_CLIENT_REPO)
 ifeq ($(GENERATE_DS_REPO_DIR),"")
@@ -28,4 +21,4 @@ endif
 monitor: ## make statusmonitor
 	cd $(ROOT_DIR)/statusmonitor && go build -o statusmonitor && docker build . -f Dockerfile.debug -t contrail-statusmonitor:debug
 provisioner: ## make provisioner
-	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:debug
+	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:latest
