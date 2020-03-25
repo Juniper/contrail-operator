@@ -1,0 +1,41 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["settings.go"],
+    importpath = "github.com/Juniper/contrail-operator/test/e2e",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "cluster_test.go",
+        "command_test.go",
+        "main_test.go",
+        "manager_test.go",
+        "openstack_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis:go_default_library",
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/client/keystone:go_default_library",
+        "//pkg/client/kubeproxy:go_default_library",
+        "//pkg/client/swift:go_default_library",
+        "//test/logger:go_default_library",
+        "//test/wait:go_default_library",
+        "@com_github_ghodss//:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/test:go_default_library",
+        "@com_github_operator_framework_operator_sdk//pkg/test/e2eutil:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
+    ],
+)

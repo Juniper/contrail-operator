@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/Juniper/contrail-operator/statusmonitor",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//statusmonitor/uves:go_default_library",
+        "@in_gopkg_yaml.v2//:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
+        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_client_go//kubernetes/scheme:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+        "@io_k8s_client_go//tools/clientcmd:go_default_library",
+        "@io_k8s_client_go//util/retry:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "statusmonitor",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
