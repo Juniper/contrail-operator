@@ -84,7 +84,7 @@ In go.mod file uncomment the following line:
 In repository this line is commented out, because contrail-operator CI does not perform 'make generate' and building operator would fail with unresolved import `build/contrail-go-api`
 
 
-### Install additional dependancies
+### Install additional dependencies
 In order to generate `contrail-go-api`, which is used by contrail-provisioner, Python2 is required and the following Python libraries need to be installed:
 
     pip install future lxml
@@ -106,7 +106,7 @@ docker push localhost:5000/contrail-provisioner:latest
 ```
   
 ### Change contrail-provisioner image that is used in Contrail cluster
-If you add tag othen than `latest` to contrail-provisioner, image that is deployed in kind cluster needs to be changed. Edit file `test/env/deploy/cluster.yaml`, find `provisionManager:` and change `provisioner` image. Similarly, you can also change configuration of other services in file `test/env/deploy/cluster.yaml`.
+If you add tag other than `latest` to contrail-provisioner, image that is deployed in kind cluster needs to be changed. Edit file `test/env/deploy/cluster.yaml`, find `provisionManager:` and change `provisioner` image. Similarly, you can also change configuration of other services in file `test/env/deploy/cluster.yaml`.
 ```
 provisionManager:
   metadata:
