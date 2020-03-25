@@ -1,14 +1,14 @@
-# Contrail-Operator Development Quick Start on MacOS 
+# Contrail-Operator Development Quick Start on Linux 
 
-## Install Go 1.13
+## Requirements
 
-https://golang.org/doc/install?download=go1.13.8.darwin-amd64.pkg
+### Go 1.13
 
-## Add go bin directory to $PATH
+https://golang.org/dl/  
 
 Go executable binaries will be compiled and put into $GOPATH/bin directory. We want to run them using terminal, therefore we have to add this folder to $PATH environment variable.
 
-- edit `~/.zshrc`
+- edit `~/.bashrc`
 - insert on the bottom of the file:
 	```
 	export PATH=$PATH:~/go/bin
@@ -16,81 +16,35 @@ Go executable binaries will be compiled and put into $GOPATH/bin directory. We w
 
 - verify that correct go is used:
 	```
-	$ go version
-	go version go1.13.7 darwin/amd64
+	$ go version  
+	go version go1.13.8 linux/amd64
 	```
 
-## Checkout contrail-operator source code
 
-Contrail-Operator is a Go Module therefore can be downloaded to a folder outside the GOPATH.
+### Docker Engine
 
-	git clone git@github.com:Juniper/contrail-operator.git
+https://docs.docker.com/install/linux/docker-ce/ubuntu/
 
-## Verify if contrail-operator can be built
 
-	go build cmd/manager/main.go
+### Kubernetes Client
 
-## Install Kubernetes Client
+https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linuxl
 
-	curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/darwin/amd64/kubectl
 
-## Install IDE
-
-We use Goland and Visual Studio Code. Install your favourite one.
-
-## Install Kind
+### Kind (Kubernetes in Docker)
 
 Kind is used as a lightweight Kubernetes cluster for development purposes
-
-	GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
-
+```
+GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
+```
 Verify if it works
-	
-	$ kind version
-	kind v0.7.0 go1.13.8 darwin/amd64
+```
+$ kind version
+kind v0.7.0 go1.13.8 linux/amd64
+```
+If command not found then reload `~/.bashrc` and verify if `~/go/bin` is in $PATH.
 
-If command not found then reload `~/.zshrc` and verify if `~/go/bin` is in $PATH.
-
-## Install Docker for Desktop 
-
-* https://hub.docker.com/editions/community/docker-ce-desktop-mac
-
-### Increase memory amount in settings to 8GB:
-
-- click Docker icon
-- select Preferences
-- go to Resources/Advanced
-- increase memory to 8GB
-- restart Docker for Desktop
-
-### Log into contrail-nightly docker registry
-
-This is needed for downloading Contrail Command Docker image. 
-
-	docker login hub.juniper.net/contrail-nightly
-
-## Create Kind test environment
-
-Following commands will create Kubernetes cluster.
-
-It also starts Docker registry on port 5000. All pods deployed in the cluster will pull images from this Docker Registry. 
-
-	cd test/env
-	./create_testenv.sh
-
-Verify if it works:
-
-	$ kind get clusters
-	kind
-
-## Pull images to locker Docker registry
-
-	cd test/env
-	./update_local_registry.sh
-
-In case when you receive timeouts disable VPN and retry.
-
-## Install operator-sdk
+### Operator-sdk
 
 Operator-SDK is a set of tools for developing Kubernates Operators. It is needed for:
 
@@ -99,27 +53,57 @@ Operator-SDK is a set of tools for developing Kubernates Operators. It is needed
 - building contrail-operator image
 - running e2e tests (aka system tests)
 ```
-$ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-apple-darwin
-$ chmod u+x ./operator-sdk-v0.13.0-x86_64-apple-darwin
-$ mv ./operator-sdk-v0.13.0-x86_64-apple-darwin /usr/local/bin/operator-sdk
+$ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.0/operator-sdk-v0.17.0-x86_64-linux-gnu
+$ chmod u+x ./operator-sdk-v0.13.0-x86_64-linux-gnu  
+$ mv ./operator-sdk-v0.13.0-x86_64-linux-gnu /usr/local/bin/operator-sdk
 ```
 
 Verify if it works:
+```
+$ operator-sdk version
+operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 linux/amd64"
+```
 
-	$ operator-sdk version
-	operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 darwin/amd64"
+### Log into contrail-nightly docker registry
 
-## Build Contrail-operator
+This is needed for downloading Contrail Command Docker image. 
+
+	docker login hub.juniper.net/contrail-nightly
+
+
+### Create Kind test environment
+
+Following commands will create Kubernetes cluster.
+
+It also starts Docker registry on port 5000. All pods deployed in the cluster will pull images from this Docker Registry. 
+```
+cd test/env
+./create_testenv.sh
+```
+Verify if it works:
+```
+$ kind get clusters
+kind
+```
+### Pull images to locker Docker registry
+```
+cd test/env
+./update_local_registry.sh
+```
+In case when you receive timeouts disable VPN and retry.
+
+
+### Build Contrail-operator
 
 In order to run Contrail-operator in the Kubernetes cluster we have to build Docker Image.
 
 	operator-sdk build localhost:5000/contrail-operator:latest
 
 Verify:
-
-	$ docker images | grep contrail-operator
-	contrail-operator   latest   5c0148fdb7e8   4 seconds ago   125MB
-
+```
+$ docker images | grep contrail-operator
+contrail-operator   latest   5c0148fdb7e8   4 seconds ago   125MB
+```
 After image is created we have to push it into local Docker registry.
 
 	docker push localhost:5000/contrail-operator:latest
