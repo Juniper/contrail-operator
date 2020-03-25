@@ -2920,6 +2920,7 @@ go_repository(
     replace = "k8s.io/api",
     sum = "h1:VVUE9xTCXP6KUPMf92cQmN88orz600ebexcRRaBTepQ=",
     version = "v0.0.0-20191016110408-35e52d86657a",
+    build_file_proto_mode = "disable_global",
 )
 
 go_repository(
@@ -2928,6 +2929,7 @@ go_repository(
     replace = "k8s.io/apiextensions-apiserver",
     sum = "h1:kThoiqgMsSwBdMK/lPgjtYTsEjbUU9nXCA9DyU3feok=",
     version = "v0.0.0-20191016113550-5357c4baaf65",
+    build_file_proto_mode = "disable_global",
 )
 
 go_repository(
@@ -2936,6 +2938,7 @@ go_repository(
     replace = "k8s.io/apimachinery",
     sum = "h1:Iieh/ZEgT3BWwbLD5qEKcY06jKuPEl6zC7gPSehoLw4=",
     version = "v0.0.0-20191004115801-a2eda9f80ab8",
+    build_file_proto_mode = "disable_global",
 )
 
 go_repository(
