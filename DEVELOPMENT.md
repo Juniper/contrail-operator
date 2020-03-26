@@ -76,20 +76,12 @@ $ exit
 
 ## Building contrail-provisioner
 
-### Change go.mod file
-In go.mod file uncomment the following line:
-    
-    github.com/Juniper/contrail-go-api => ./build/contrail-go-api
-    
-In repository this line is commented out, because contrail-operator CI does not perform 'make generate' and building operator would fail with unresolved import `build/contrail-go-api`
-
-
 ### Install additional dependencies
-In order to generate `contrail-go-api`, which is used by contrail-provisioner, Python2 is required and the following Python libraries need to be installed:
+In order to generate `contrail-api-client`, which is used by contrail-provisioner, Python2 is required and the following Python libraries need to be installed:
 
     pip install future lxml
 
-### Generate contrail-go-api
+### Generate contrail-api-client
 
     make generate
 

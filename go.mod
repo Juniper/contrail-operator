@@ -25,7 +25,6 @@ require (
 
 // Pinned to kubernetes-1.16.2
 replace (
-	//github.com/Juniper/contrail-go-api => ./build/contrail-go-api // breaks contrail-operator CI, as it does not perform 'make generate'
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
