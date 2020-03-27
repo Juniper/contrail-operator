@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["kinder.go"],
+    importpath = "github.com/Juniper/contrail-operator/test/kinder/kinder",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_client_go//tools/clientcmd:go_default_library",
+        "@io_k8s_sigs_kind//pkg/apis/config/v1alpha4:go_default_library",
+        "@io_k8s_sigs_kind//pkg/cluster:go_default_library",
+    ],
+)

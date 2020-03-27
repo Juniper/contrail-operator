@@ -46,22 +46,22 @@ go_image(
 )
 
 container_push(
-   name = "contrail-operator-push",
-   image = ":contrail-operator-image",
-   format = "Docker",
-   registry = "docker.io",
-   repository = "/contrail-operator",
-   tag = "dev",
+    name = "contrail-operator-push",
+    image = ":contrail-operator-image",
+    format = "Docker",
+    registry = "docker.io",
+    repository = "/contrail-operator",
+    tag = "dev",
 )
 
 container_push(
-   name = "contrail-operator-push-debug",
-   image = ":contrail-operator-image-debug",
-   format = "Docker",
-   registry = "docker.io",
-   repository = "/contrail-operator",
-   stamp = True,
-   tag = "debug",
+    name = "contrail-operator-push-debug",
+    image = ":contrail-operator-image-debug",
+    format = "Docker",
+    registry = "docker.io",
+    repository = "/contrail-operator",
+    stamp = True,
+    tag = "debug",
 )
 
 go_binary(

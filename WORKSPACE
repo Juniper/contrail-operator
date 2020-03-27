@@ -46,6 +46,16 @@ rules_proto_dependencies()
 rules_proto_toolchains()
 
 http_archive(
+    name = "rules_python",
+    sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "py_repositories")
+
+py_repositories()
+
+http_archive(
     name = "io_bazel_rules_docker",
     sha256 = "dc97fccceacd4c6be14e800b2a00693d5e8d07f69ee187babfd04a80a9f8e250",
     strip_prefix = "rules_docker-0.14.1",
@@ -106,6 +116,35 @@ go_repository(
     importpath = "github.com/alecthomas/template",
     sum = "h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=",
     version = "v0.0.0-20190718012654-fb15b899a751",
+)
+
+go_repository(
+    name = "org_golang_x_time",
+    build_file_proto_mode = "disable",
+    importpath = "golang.org/x/time",
+    sum = "h1:/5xXl8Y5W96D+TtHSlonuFqGHIWVuyCkGJLwGh9JJFs=",
+    version = "v0.0.0-20191024005414-555d28b269f0",
+)
+
+go_repository(
+    name = "com_github_alessio_shellescape",
+    importpath = "github.com/alessio/shellescape",
+    sum = "h1:H/GMMKYPkEIC3DF/JWQz8Pdd+Feifov2EIgGfNpeogI=",
+    version = "v0.0.0-20190409004728-b115ca0f9053",
+)
+
+go_repository(
+    name = "io_k8s_sigs_kind",
+    importpath = "sigs.k8s.io/kind",
+    sum = "h1:7y7a8EYtGHM+auHmsvzuK5o84SrxPYGidlvfql7j/k4=",
+    version = "v0.7.0",
+)
+
+go_repository(
+    name = "com_github_alecthomas_units",
+    importpath = "github.com/alecthomas/units",
+    sum = "h1:Hs82Z41s6SdL1CELW+XaDYmOH4hkBN4/N9og/AsOv7E=",
+    version = "v0.0.0-20190717042225-c3de453c63f4",
 )
 
 go_repository(
@@ -3379,13 +3418,6 @@ go_repository(
     importpath = "golang.org/x/text",
     sum = "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
     version = "v0.3.2",
-)
-
-go_repository(
-    name = "org_golang_x_time",
-    importpath = "golang.org/x/time",
-    sum = "h1:/5xXl8Y5W96D+TtHSlonuFqGHIWVuyCkGJLwGh9JJFs=",
-    version = "v0.0.0-20191024005414-555d28b269f0",
 )
 
 go_repository(

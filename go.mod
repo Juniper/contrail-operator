@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/Juniper/contrail-go-api v1.1.0
+	github.com/bazelbuild/bazel-gazelle v0.20.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
@@ -13,6 +14,7 @@ require (
 	github.com/pkg/sftp v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
+	go.starlark.net v0.0.0-20200326215636-e8819e807894 // indirect
 	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
 	gopkg.in/fsnotify.v1 v1.4.7

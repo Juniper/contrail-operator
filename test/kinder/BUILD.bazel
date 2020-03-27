@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/Juniper/contrail-operator/test/kinder",
+    visibility = ["//visibility:private"],
+    deps = ["//test/kinder/kinder:go_default_library"],
+)
+
+go_binary(
+    name = "kinder",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
