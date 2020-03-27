@@ -3,15 +3,15 @@ package volumeclaims
 import (
 	"context"
 
+	core "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	core "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type PersistentVolumeClaim interface {
@@ -87,7 +87,14 @@ func (c *claim) SetNodeSelector(nodeSelectors map[string]string) {
 func (c *claim) EnsureExists() error {
 	if c.path != "" {
 		volumeMode := core.PersistentVolumeFilesystem
-		hostPathType := core.HostPathDirectoryOrCreate
+
+		// This is needed because K8s will not be able to delete local Persistent Volume
+		// and pod must have WaitForFirstConsumer volume binding mode.
+		err := c.ensureStorageClassExists()
+		if err != nil {
+			return err
+		}
+
 		pv := &core.PersistentVolume{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      c.name.Name + "-pv",
@@ -106,12 +113,10 @@ func (c *claim) EnsureExists() error {
 				},
 				PersistentVolumeReclaimPolicy: core.PersistentVolumeReclaimDelete,
 				NodeAffinity:                  c.volumeNodeAffinity,
+				StorageClassName:              "local-storage",
 				PersistentVolumeSource: core.PersistentVolumeSource{
-					// TODO: HostPath has to be changed to Local persistent volume with multi-node approach.
-					// TODO: We should create init container with hostPath volume and mount local pv to the same path.
-					HostPath: &core.HostPathVolumeSource{
+					Local: &core.LocalVolumeSource{
 						Path: c.path,
-						Type: &hostPathType,
 					},
 				},
 			},
@@ -138,7 +143,7 @@ func (c *claim) EnsureExists() error {
 	}
 
 	if c.path != "" {
-		storageClassName := ""
+		storageClassName := "local-storage"
 		pvc.Spec.StorageClassName = &storageClassName
 
 		if pvc.Spec.Selector == nil {
@@ -155,4 +160,28 @@ func (c *claim) EnsureExists() error {
 	})
 
 	return err
+}
+
+func (c *claim) ensureStorageClassExists() error {
+	volumeBindingMode := storage.VolumeBindingMode("WaitForFirstConsumer")
+	storageClass := &storage.StorageClass{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "local-storage",
+			Namespace: c.name.Namespace,
+		},
+		Provisioner:       "kubernetes.io/no-provisioner",
+		VolumeBindingMode: &volumeBindingMode,
+	}
+	err := c.client.Get(context.Background(), types.NamespacedName{Name: storageClass.Name}, storageClass)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if err = controllerutil.SetControllerReference(c.owner, storageClass, c.scheme); err != nil {
+		return err
+	}
+	err = c.client.Create(context.Background(), storageClass)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
