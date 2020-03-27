@@ -123,7 +123,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// Define a new Pod object
-	pod := newPodForCR(instance, claimName.Name)
+	pod := newPodForCR(instance, claimName.Name, instance.Spec.Storage.Path)
 
 	// Set Postgres instance as the owner and controller
 	if err = controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -164,7 +164,7 @@ func (r *ReconcilePostgres) updateStatus(
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
+func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -180,6 +180,13 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			command = c.Command
 		}
 	}
+	var (
+		directoryOrCreate  = core.HostPathType("DirectoryOrCreate")
+		postgresMountDir   = "/var/lib/postgresql/data"
+		postgresSubPath    = "postgres"
+		hostPathVolumeName = cr.Name + "-hostpath-volume"
+		pvName             = cr.Name + "-volume"
+	)
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -190,6 +197,18 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			HostNetwork:  true,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			DNSPolicy:    core.DNSClusterFirst,
+			InitContainers: []core.Container{
+				{
+					Image:           "busybox",
+					Name:            "create-postgresql-data-directory",
+					ImagePullPolicy: core.PullAlways,
+					VolumeMounts: []core.VolumeMount{{
+						Name:      hostPathVolumeName,
+						MountPath: postgresMountDir,
+						SubPath:   postgresSubPath,
+					}},
+				},
+			},
 			Containers: []core.Container{
 				{
 					Image:           image,
@@ -204,8 +223,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 						},
 					},
 					VolumeMounts: []core.VolumeMount{{
-						Name:      cr.Name + "-volume",
-						MountPath: "/var/lib/postgresql/data",
+						Name:      pvName,
+						MountPath: postgresMountDir,
 						SubPath:   "postgres",
 					}},
 					Env: []core.EnvVar{
@@ -215,14 +234,25 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					},
 				},
 			},
-			Volumes: []core.Volume{{
-				Name: cr.Name + "-volume",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName,
+			Volumes: []core.Volume{
+				{
+					Name: hostPathVolumeName,
+					VolumeSource: core.VolumeSource{
+						HostPath: &core.HostPathVolumeSource{
+							Path: dataDirPath,
+							Type: &directoryOrCreate,
+						},
 					},
 				},
-			}},
+				{
+					Name: pvName,
+					VolumeSource: core.VolumeSource{
+						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+							ClaimName: claimName,
+						},
+					},
+				},
+			},
 			Tolerations: []core.Toleration{
 				{Operator: "Exists", Effect: "NoSchedule"},
 				{Operator: "Exists", Effect: "NoExecute"},
