@@ -186,8 +186,9 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 	var (
 		directoryOrCreate  = core.HostPathType("DirectoryOrCreate")
 		postgresMountDir   = "/var/lib/postgresql/data"
+		postgresSubPath    = "postgres"
 		hostPathVolumeName = cr.Name + "-hostpath-volume"
-		volumeName         = cr.Name + "-volume"
+		pvName             = cr.Name + "-volume"
 	)
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
@@ -201,12 +202,13 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 			DNSPolicy:    core.DNSClusterFirst,
 			InitContainers: []core.Container{
 				{
-					Image:           "registry:5000/busybox",
+					Image:           "busybox",
 					Name:            "create-postgresql-data-directory",
 					ImagePullPolicy: core.PullAlways,
 					VolumeMounts: []core.VolumeMount{{
 						Name:      hostPathVolumeName,
 						MountPath: postgresMountDir,
+						SubPath:   postgresSubPath,
 					}},
 				},
 			},
@@ -224,8 +226,9 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 						},
 					},
 					VolumeMounts: []core.VolumeMount{{
-						Name:      volumeName,
+						Name:      pvName,
 						MountPath: postgresMountDir,
+						SubPath:   "postgres",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
@@ -245,7 +248,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 					},
 				},
 				{
-					Name: volumeName,
+					Name: pvName,
 					VolumeSource: core.VolumeSource{
 						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 							ClaimName: claimName,

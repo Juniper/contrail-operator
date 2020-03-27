@@ -3,15 +3,15 @@ package volumeclaims
 import (
 	"context"
 
-	core "k8s.io/api/core/v1"
-	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type PersistentVolumeClaim interface {
@@ -90,7 +90,8 @@ func (c *claim) EnsureExists() error {
 
 		// This is needed because K8s will not be able to delete local Persistent Volume
 		// and pod must have WaitForFirstConsumer volume binding mode.
-		if err := c.ensureStorageClassExists(); err != nil {
+		err := c.ensureStorageClassExists()
+		if err != nil {
 			return err
 		}
 
@@ -174,11 +175,15 @@ func (c *claim) ensureStorageClassExists() error {
 		VolumeBindingMode: &volumeBindingMode,
 	}
 	err := c.client.Get(context.Background(), types.NamespacedName{Name: storageClass.Name}, storageClass)
-	if errors.IsNotFound(err) {
-		// owner cannot be create because "Cluster-scoped resource must not have a namespace-scoped owner"
-		_ = controllerutil.SetControllerReference(c.owner, storageClass, c.scheme)
-		return c.client.Create(context.Background(), storageClass)
-	} else {
+	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
+	if err = controllerutil.SetControllerReference(c.owner, storageClass, c.scheme); err != nil {
+		return err
+	}
+	err = c.client.Create(context.Background(), storageClass)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
