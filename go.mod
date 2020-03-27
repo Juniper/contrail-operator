@@ -4,23 +4,27 @@ go 1.13
 
 require (
 	github.com/Juniper/contrail-go-api v1.1.0
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
+	github.com/joho/godotenv v1.3.0
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
 	github.com/operator-framework/operator-sdk v0.14.1
+	github.com/pkg/sftp v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
 	gopkg.in/fsnotify.v1 v1.4.7
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 	k8s.io/kubernetes v1.16.2
 	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/kind v0.7.0
 )
 
 // Pinned to kubernetes-1.16.2
