@@ -153,6 +153,8 @@ spec:
               mountPropagation: HostToContainer
             - mountPath: /var/log/contrail/cni
               name: var-log-contrail-cni
+            - mountPath: /proc
+              name: proc
           securityContext:
             privileged: true
           imagePullPolicy: Always
@@ -162,6 +164,10 @@ spec:
             path: /var/log/contrail/vrouter
             type: ""
           name: vrouter-logs
+        - hostPath:
+            path: /proc
+            type: ""
+          name: proc
         - hostPath:
             path: /var/run
             type: ""
