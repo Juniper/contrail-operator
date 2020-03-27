@@ -8,6 +8,12 @@ import (
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+const (
+	k8sServiceAccountNamespace = "kube-system"
+	k8sServiceAccountName      = "default"
+	k8sCaSecretDataKey         = "ca.crt"
+)
+
 // CSRSignerCAOpenshift implements ManagerCSSignerCA interface used for
 // for gathering the Certificate Authorities' certificates that sign the
 // CertificateSigningRequests.
@@ -19,8 +25,8 @@ type CSRSignerCAK8s struct {
 // On a k8s cluster, it is assumed that all certificates created inside the cluster are signed
 // using the root CA, that is also attached to each one of the ServiceAccounts in the cluster
 func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
-	kubeSystemServiceAccountsClient := c.Client.ServiceAccounts("kube-system")
-	defaultServiceAccount, err := kubeSystemServiceAccountsClient.Get("default", metav1.GetOptions{})
+	kubeSystemServiceAccountsClient := c.Client.ServiceAccounts(k8sServiceAccountNamespace)
+	defaultServiceAccount, err := kubeSystemServiceAccountsClient.Get(k8sServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -30,7 +36,7 @@ func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
 		return "", err
 	}
 
-	caData, ok := accountTokenSecret.Data["ca.crt"]
+	caData, ok := accountTokenSecret.Data[k8sCaSecretDataKey]
 	if !ok {
 		return "", fmt.Errorf("ca.crt field not found in the Data of %q", accountTokenSecret.Name)
 	}

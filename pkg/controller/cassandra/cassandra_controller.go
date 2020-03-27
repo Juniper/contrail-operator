@@ -1,8 +1,10 @@
 package cassandra
 
 import (
+	"bytes"
 	"context"
 	"strconv"
+	"text/template"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
@@ -161,6 +163,18 @@ type ReconcileCassandra struct {
 	Client  client.Client
 	Scheme  *runtime.Scheme
 	Manager manager.Manager
+}
+
+var cassandraInit2CommandTemplate = template.Must(template.New("").Parse(
+	"keytool -keystore /etc/keystore/server-truststore.jks -keypass {{ .KeystorePassword }} -storepass {{ .TruststorePassword }} -list -alias CARoot -noprompt;" +
+		"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass {{ .KeystorePassword }} -storepass {{ .TruststorePassword }} -noprompt -alias CARoot -import -file {{ .CAFilePath }}; fi && " +
+		"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile {{ .CAFilePath }} -password pass:{{ .TruststorePassword }} -name $(hostname -f) -out TmpFile && " +
+		"keytool -importkeystore -deststorepass {{ .KeystorePassword }} -destkeypass {{ .KeystorePassword }} -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass {{ .TruststorePassword }} -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"))
+
+type cassandraInit2CommandData struct {
+	KeystorePassword   string
+	TruststorePassword string
+	CAFilePath         string
 }
 
 // Reconcile reconciles cassandra.
@@ -365,11 +379,16 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
 		if container.Name == "init2" {
-			command := []string{"bash", "-c",
-				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -list -alias CARoot -noprompt;" +
-					"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file " + certificates.CsrSignerCaFilepath + "; fi && " +
-					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile " + certificates.CsrSignerCaFilepath + " -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile && " +
-					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"}
+			var cassandraInit2CommandBuffer bytes.Buffer
+			err = cassandraInit2CommandTemplate.Execute(&cassandraInit2CommandBuffer, cassandraInit2CommandData{
+				KeystorePassword:   cassandraKeystorePassword,
+				TruststorePassword: cassandraTruststorePassword,
+				CAFilePath:         certificates.CsrSignerCaFilepath,
+			})
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			command := []string{"bash", "-c", cassandraInit2CommandBuffer.String()}
 
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command

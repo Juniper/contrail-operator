@@ -25,7 +25,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
-	managerController "github.com/Juniper/contrail-operator/pkg/controller/manager"
+	"github.com/Juniper/contrail-operator/pkg/controller/manager"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
@@ -134,7 +134,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := managerController.Add(mgr, csrSignerCa); err != nil {
+	if err := manager.Add(mgr, csrSignerCa); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
