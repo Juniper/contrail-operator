@@ -1,19 +1,23 @@
 package certificates
 
 import (
-	"errors"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// TODO
+// CSRSignerCAOpenshift implements ManagerCSSignerCA interface used for
+// for gathering the Certificate Authorities' certificates that sign the
+// CertificateSigningRequests.
 type CSRSignerCAK8s struct {
 	Client typedCorev1.CoreV1Interface
 }
 
-// TODO
+// CSRSignerCA returns the value of certificates used for signing the CertificateSigningRequests
+// On a k8s cluster, it is assumed that all certificates created inside the cluster are signed
+// using the root CA, that is also attached to each one of the ServiceAccounts in the cluster
 func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
 	kubeSystemServiceAccountsClient := c.Client.ServiceAccounts("kube-system")
 	defaultServiceAccount, err := kubeSystemServiceAccountsClient.Get("default", metav1.GetOptions{})
@@ -21,19 +25,19 @@ func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
 		return "", err
 	}
 
-	accountTokenSecret, err := c.getServiceAccountTokenSecret(defaultServiceAccount)
+	accountTokenSecret, err := c.GetServiceAccountTokenSecret(defaultServiceAccount)
 	if err != nil {
 		return "", err
 	}
 
 	caData, ok := accountTokenSecret.Data["ca.crt"]
 	if !ok {
-		return "", errors.New("ca.crt field not found in the accountToken")
+		return "", fmt.Errorf("ca.crt field not found in the Data of %q", accountTokenSecret.Name)
 	}
 	return string(caData), nil
 }
 
-func (c CSRSignerCAK8s) getServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount) (*corev1.Secret, error) {
+func (c CSRSignerCAK8s) GetServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount) (*corev1.Secret, error) {
 	secretsClient := c.Client.Secrets(serviceAccount.Namespace)
 	for _, secretRef := range serviceAccount.Secrets {
 		secret, err := secretsClient.Get(secretRef.Name, metav1.GetOptions{})
@@ -44,5 +48,5 @@ func (c CSRSignerCAK8s) getServiceAccountTokenSecret(serviceAccount *corev1.Serv
 			return secret, nil
 		}
 	}
-	return nil, errors.New("No Secret of the SecretTypeServiceAccount found.")
+	return nil, fmt.Errorf("no Secret of the SecretTypeServiceAccount found in Secrets assigned to the %q ServiceAccount", serviceAccount.Name)
 }
