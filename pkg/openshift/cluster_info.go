@@ -10,9 +10,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
+
+// CNIDirectories is struct with directories containing CNI specific files for Openshift cluster
+var CNIDirectories = v1alpha1.VrouterCNIDirectories{
+	BinariesDirectory:    "/var/lib/cni/bin",
+	ConfigFilesDirectory: "/etc/kubernetes/cni",
+}
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {

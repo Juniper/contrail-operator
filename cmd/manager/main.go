@@ -23,6 +23,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
+	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -112,10 +113,13 @@ func main() {
 	}
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
+	var cniDirs v1alpha1.VrouterCNIDirectories
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
+		cniDirs = openshift.CNIDirectories
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
+		cniDirs = k8s.CNIDirectories
 	}
 
 	// Setup all Controllers.
@@ -125,6 +129,11 @@ func main() {
 	}
 
 	if err := kubemanager.Add(mgr, cinfo); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := vrouter.Add(mgr, cniDirs); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

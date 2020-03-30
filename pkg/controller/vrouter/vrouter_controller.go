@@ -89,13 +89,13 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Vrouter Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) error {
+	return add(mgr, newReconciler(mgr, cniDirs))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+func newReconciler(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr, CNIDirectories: cniDirs}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -170,9 +170,10 @@ var _ reconcile.Reconciler = &ReconcileVrouter{}
 type ReconcileVrouter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client         client.Client
+	Scheme         *runtime.Scheme
+	Manager        manager.Manager
+	CNIDirectories v1alpha1.VrouterCNIDirectories
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -239,7 +240,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	daemonSet := GetDaemonset()
+	daemonSet := GetDaemonset(r.CNIDirectories)
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}

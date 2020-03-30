@@ -1,12 +1,16 @@
 package vrouter
 
 import (
+	"bytes"
 	"github.com/ghodss/yaml"
+	"text/template"
 
 	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-var yamlDatavrouter = `
+var yamlDatavrouterTemplate = template.Must(template.New("").Parse(`
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -145,9 +149,9 @@ spec:
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           volumeMounts:
             - mountPath: /host/etc_cni
-              name: etc-cni
+              name: cni-config-files
             - mountPath: /host/opt_cni_bin
-              name: opt-cni-bin
+              name: cni-bin
             - mountPath: /var/run
               name: docker-unix-socket
               mountPropagation: HostToContainer
@@ -175,9 +179,9 @@ spec:
             type: ""
           name: var-log-contrail-cni
         - hostPath:
-            path: /etc/cni
+            path: {{ .ConfigFilesDirectory }}
             type: ""
-          name: etc-cni
+          name: cni-config-files
         - hostPath:
             path: /var/contrail/crashes
             type: ""
@@ -207,9 +211,9 @@ spec:
             type: ""
           name: dev
         - hostPath:
-            path: /opt/cni/bin
+            path: {{ .BinariesDirectory }}
             type: ""
-          name: opt-cni-bin
+          name: cni-bin
         - hostPath:
             path: /var/run/contrail
             type: ""
@@ -225,20 +229,15 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels
                 path: pod_labelsx
-          name: status`
+          name: status`))
 
 //GetDaemonset returns DaemonSet object created from yamlDatavrouter
-func GetDaemonset() *appsv1.DaemonSet {
+func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *appsv1.DaemonSet {
+	var yamlDatavrouterBuffer bytes.Buffer
+	err := yamlDatavrouterTemplate.Execute(&yamlDatavrouterBuffer, cniDir)
+	yamlDatavrouter := yamlDatavrouterBuffer.Bytes()
 	daemonSet := appsv1.DaemonSet{}
-	err := yaml.Unmarshal([]byte(yamlDatavrouter), &daemonSet)
-	if err != nil {
-		panic(err)
-	}
-	jsonData, err := yaml.YAMLToJSON([]byte(yamlDatavrouter))
-	if err != nil {
-		panic(err)
-	}
-	err = yaml.Unmarshal([]byte(jsonData), &daemonSet)
+	err = yaml.Unmarshal(yamlDatavrouter, &daemonSet)
 	if err != nil {
 		panic(err)
 	}
