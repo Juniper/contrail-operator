@@ -65,14 +65,16 @@ After custom resource specification (in `pkg/apis/contrail/v1alpha1/*_types.go`)
 
 ## Building contrail-provisioner
 
-### Install additional dependencies
-In order to generate `contrail-api-client`, which is used by contrail-provisioner, Python2 is required and the following Python libraries need to be installed:
+### Generate contrail-api-client
+First, install Python2 and the following Python libraries:
 
     pip install future lxml
 
-### Generate contrail-api-client
+Then, generate `contrail-api-client` files:
 
     make generate
+
+`make generate` will also change go.mod file, so that locally generated `contrail-api-client` can be imported. This needs to be run only once.
 
 ### Build contrail-provisioner
 
