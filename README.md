@@ -96,7 +96,7 @@ Verify if it works:
     cd test/env
     ./update_local_registry.sh
 
-In case when you receive timeouts disable VPN and retry.
+In case of timeouts disable VPN and retry.
 
 ## Install operator-sdk
 
@@ -179,7 +179,7 @@ Eventually all pods should be Running:
     zookeeper1-zookeeper-statefulset-0            1/1     Running     0          8m16s
 
 
-### Verify if Contrail Commmand is working
+### Verify if Contrail Command is working
 
 You can access Contrail Command application via web browser. Before that you have to forward the network traffic from localhost to Command's pod.
 
