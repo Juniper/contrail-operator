@@ -290,3 +290,4 @@ spec:
 ```
 kubectl apply -f 2-start-operator-3node-custom.yaml
 ```
+..
