@@ -186,7 +186,6 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 	var (
 		directoryOrCreate  = core.HostPathType("DirectoryOrCreate")
 		postgresMountDir   = "/var/lib/postgresql/data"
-		postgresSubPath    = "postgres"
 		hostPathVolumeName = cr.Name + "-hostpath-volume"
 		pvName             = cr.Name + "-volume"
 	)
@@ -208,7 +207,6 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 					VolumeMounts: []core.VolumeMount{{
 						Name:      hostPathVolumeName,
 						MountPath: postgresMountDir,
-						SubPath:   postgresSubPath,
 					}},
 				},
 			},
@@ -228,7 +226,6 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 					VolumeMounts: []core.VolumeMount{{
 						Name:      pvName,
 						MountPath: postgresMountDir,
-						SubPath:   "postgres",
 					}},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
