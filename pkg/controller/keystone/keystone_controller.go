@@ -150,7 +150,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 		claim.SetStorageSize(size)
 	}
-	claim.SetStoragePath(keystone.Spec.ServiceConfiguration.Storage.Path)
+	storagePath := keystone.Spec.ServiceConfiguration.Storage.Path
+	claim.SetStoragePath(storagePath)
 	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err = claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
@@ -186,7 +187,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, keySecretName, claimName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, keySecretName, claimName, storagePath)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -196,16 +197,26 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kfcName, kscName, kciName, secretName string,
-	claimName types.NamespacedName,
+	tokensClaimName types.NamespacedName, tokensPath string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
+		directoryOrCreate := core.HostPathType("DirectoryOrCreate")
 		sts.Spec.Template.Spec.Volumes = []core.Volume{
+			{
+				Name: "keystone-fernet-tokens-volume-hostpath",
+				VolumeSource: core.VolumeSource{
+					HostPath: &core.HostPathVolumeSource{
+						Path: tokensPath,
+						Type: &directoryOrCreate,
+					},
+				},
+			},
 			{
 				Name: "keystone-fernet-tokens-volume",
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName.Name,
+						ClaimName: tokensClaimName.Name,
 					},
 				},
 			},
@@ -324,6 +335,9 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							ImagePullPolicy: core.PullAlways,
 							Command:         getCommand(cr, "keystoneDbInit"),
 							Args:            []string{"-c", initDBScript},
+							VolumeMounts: []core.VolumeMount{
+								{Name: "keystone-fernet-tokens-volume-hostpath", MountPath: "/etc/keystone/fernet-keys"},
+							},
 						},
 						{
 							Name:            "keystone-init",
