@@ -90,8 +90,7 @@ func (c *claim) EnsureExists() error {
 
 		// This is needed because K8s will not be able to delete local Persistent Volume
 		// and pod must have WaitForFirstConsumer volume binding mode.
-		err := c.ensureStorageClassExists()
-		if err != nil {
+		if err := c.ensureStorageClassExists(); err != nil {
 			return err
 		}
 
@@ -121,6 +120,8 @@ func (c *claim) EnsureExists() error {
 				},
 			},
 		}
+		// owner cannot be create because "Cluster-scoped resource must not have a namespace-scoped owner"
+		_ = controllerutil.SetControllerReference(c.owner, pv, c.scheme)
 		if err := c.client.Create(context.Background(), pv); err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
@@ -173,15 +174,11 @@ func (c *claim) ensureStorageClassExists() error {
 		VolumeBindingMode: &volumeBindingMode,
 	}
 	err := c.client.Get(context.Background(), types.NamespacedName{Name: storageClass.Name}, storageClass)
-	if err != nil && !errors.IsNotFound(err) {
+	if errors.IsNotFound(err) {
+		// owner cannot be create because "Cluster-scoped resource must not have a namespace-scoped owner"
+		_ = controllerutil.SetControllerReference(c.owner, storageClass, c.scheme)
+		return c.client.Create(context.Background(), storageClass)
+	} else {
 		return err
 	}
-	if err = controllerutil.SetControllerReference(c.owner, storageClass, c.scheme); err != nil {
-		return err
-	}
-	err = c.client.Create(context.Background(), storageClass)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-	return nil
 }
