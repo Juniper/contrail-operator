@@ -61,11 +61,7 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 			fakeCoreClient := fake.NewSimpleClientset(inputConfigMap).CoreV1()
 			var csrSignerCA contrail.ManagerCSRSignerCA = certificates.CSRSignerCAOpenshift{Client: fakeCoreClient}
 			actual, err := csrSignerCA.CSRSignerCA()
-			if test.errorExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+			assert.Equal(t, err != nil, test.errorExpected)
 			assert.Equal(t, test.expected, actual)
 		})
 	}
