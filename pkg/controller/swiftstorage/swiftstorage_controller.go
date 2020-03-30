@@ -111,7 +111,8 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		}
 		claim.SetStorageSize(size)
 	}
-	claim.SetStoragePath(swiftStorage.Spec.ServiceConfiguration.Storage.Path)
+	storagePath := swiftStorage.Spec.ServiceConfiguration.Storage.Path
+	claim.SetStoragePath(storagePath)
 	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err := claim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
@@ -130,7 +131,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	ringsClaim := swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaim)
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, storagePath, ringsClaim)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -159,7 +160,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
+func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, storagePath string, ringsClaimName string) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
@@ -167,6 +168,17 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		labels := map[string]string{"app": request.Name}
 		statefulSet.Spec.Template.ObjectMeta.Labels = labels
+		statefulSet.Spec.Template.Spec.InitContainers = []core.Container{
+			{
+				Image:           "busybox",
+				Name:            "create-swift-data-directory",
+				ImagePullPolicy: core.PullAlways,
+				VolumeMounts: []core.VolumeMount{{
+					Name:      "devices-mount-point-volume-hostpath",
+					MountPath: "/srv/node/" + swiftStorage.Spec.ServiceConfiguration.Device,
+				}},
+			},
+		}
 		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Device)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		var swiftGroupId int64 = 0
@@ -175,7 +187,17 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &swiftGroupId
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &swiftGroupId
 		volumes := r.swiftServicesVolumes(swiftStorage.Name)
+		directoryOrCreate := core.HostPathType("DirectoryOrCreate")
 		statefulSet.Spec.Template.Spec.Volumes = append([]core.Volume{
+			{
+				Name: "devices-mount-point-volume-hostpath",
+				VolumeSource: core.VolumeSource{
+					HostPath: &core.HostPathVolumeSource{
+						Path: storagePath,
+						Type: &directoryOrCreate,
+					},
+				},
+			},
 			{
 				Name: "devices-mount-point-volume",
 				VolumeSource: core.VolumeSource{
