@@ -235,6 +235,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				"ReadWriteOnce",
 			},
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"claim-name": instance.Name + "-pvc",
+				},
+			},
 			StorageClassName: &storageClassName,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{storageResource: diskSize},
@@ -436,6 +441,9 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
 				Namespace: instance.Namespace,
+				Labels: map[string]string{
+					"claim-name": instance.Name + "-pvc",
+				},
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
