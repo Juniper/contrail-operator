@@ -2,14 +2,6 @@
 
 This file contains more detailed description of the development process. For quickstart guide see [README.md](README.md). For description of E2E test environment see [E2E test guide](test/env/README.md).
 
-
-Instructions below assume that you are running operator-sdk in docker. If it is already installed locally, then the following steps can be omitted:
-
-    docker run --rm -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash
-    cd /contrail-operator
-    ...
-    exit
-
 ## Repository structure overview
 During development the following files are most often edited:  
 * `pkg/apis/contrail/v1alpha1/*` - definitions of custom resources written in Go (based on these files yaml files are generated, see section  [Generate k8s files](#generate-k8s-files))
@@ -23,26 +15,15 @@ During development the following files are most often edited:
 ## Add new API and controller
 Replace Memcached with the new resource name.
 
-    cd github.com/Juniper/contrail-operator
-    docker run --rm -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash
-    cd /contrail-operator
     operator-sdk add api --api-version=contrail.juniper.net/v1alpha1 --kind=Memcached
     operator-sdk add controller --api-version=contrail.juniper.net/v1alpha1 --kind=Memcached
-    exit
-    sudo chown -R `id -u`:`id -g` ./**/*
 
 
 ## Generate k8s files
 After custom resource specification (in `pkg/apis/contrail/v1alpha1/*_types.go`) is changed, code needs to be re-generated.
 
-    cd github.com/Juniper/contrail-operator
-    docker run --rm -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash
-    cd /contrail-operator
     operator-sdk generate k8s
-    operator-sdk generate openapi
-    exit
-    cd deploy
-    ./create_manifest.sh
+    operator-sdk generate crds
 
 ## Troubleshooting
 
@@ -51,17 +32,14 @@ After custom resource specification (in `pkg/apis/contrail/v1alpha1/*_types.go`)
 * Problem: on running operator container `/usr/local/bin/entrypoint: Permission denied`
   Solution:
 
-        sudo chown -R `id -u`:`id -g` build
-        chmod -R 755 build/bin build/_output
-        <rebuild operator>
+      sudo chown -R `id -u`:`id -g` ./**/*
+      chmod -R 755 build/bin build/_output
+      <rebuild operator>
 
 
 ## Updating Contrail operator
-    cd github.com/Juniper/contrail-operator
-    docker run --rm -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash
-    cd /contrail-operator
     operator-sdk build contrail-operator
-    exit
+    # optionally: docker tag and docker push
 
 ## Building contrail-provisioner
 
