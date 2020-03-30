@@ -1,7 +1,6 @@
 # Development
 
-This file contains more detailed description of the development process. For quickstart guide see: [MAC OS quickstart](QUICKSTART-MACOS.md) or
-[Linux quickstart](QUICKSTART-LINUX.md). For description of E2E test environment see [E2E test guide](test/env/README.md).
+This file contains more detailed description of the development process. For quickstart guide see [README.md](README.md). For description of E2E test environment see [E2E test guide](test/env/README.md).
 
 
 Instructions below assume that you are running operator-sdk in docker. If it is already installed locally, then the following steps can be omitted:
@@ -14,7 +13,7 @@ $ exit
 
 ## Repository structure overview
 During development the following files are most often edited:  
-`pkg/apis/contrail/v1alpha1/*` contains definitions of custom resources written in Go (based on these files yaml files are generates, see section Generate k8s files).  
+`pkg/apis/contrail/v1alpha1/*` contains definitions of custom resources written in Go (based on these files yaml files are generated, see section Generate k8s files).
 `pkg/controller/*` contains code of controllers  
 `test/*` contains code of e2e tests  
 `test/env` contains scripts for deploying kind cluster  
