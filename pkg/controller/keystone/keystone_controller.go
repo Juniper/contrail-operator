@@ -200,7 +200,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kfcName, kscName, kciName, secretName string,
-	tokensClaimName types.NamespacedName, storagePath string,
+	tokensClaimName types.NamespacedName, tokensPath string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
@@ -210,7 +210,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				Name: "keystone-fernet-tokens-volume-hostpath",
 				VolumeSource: core.VolumeSource{
 					HostPath: &core.HostPathVolumeSource{
-						Path: storagePath,
+						Path: tokensPath,
 						Type: &directoryOrCreate,
 					},
 				},
