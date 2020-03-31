@@ -715,26 +715,6 @@ func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
 	}
 }
 
-func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
-	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{
-			"config.json":   expectedKeystoneInitKollaServiceConfig,
-			"keystone.conf": expectedKeystoneConfig,
-			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-ssh",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-	}
-}
-
 func newKeystoneWithCustomImages() *contrail.Keystone {
 	keystone := newKeystone()
 	keystone.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{

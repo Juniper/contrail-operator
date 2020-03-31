@@ -10,6 +10,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -23,7 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_config")
@@ -175,16 +176,14 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client    client.Client
-	Scheme    *runtime.Scheme
-	Manager   manager.Manager
-	claims    volumeclaims.PersistentVolumeClaims
-	podsReady *bool
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
+	claims  volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reconciles Config.
 func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	var err error
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Config")
 	instanceType := "config"
@@ -193,7 +192,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	zookeeperInstance := &v1alpha1.Zookeeper{}
 	rabbitmqInstance := &v1alpha1.Rabbitmq{}
 
-	if err = r.Client.Get(context.TODO(), request.NamespacedName, config); err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, config); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -273,14 +272,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			claim.SetStoragePath(path)
 		}
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
-			quantity, err := config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+			var quantity resource.Quantity
+			quantity, err = config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
 			if err != nil {
 				return reconcile.Result{}, err
 			}
 			claim.SetStorageSize(quantity)
 		}
 		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
-		if err := claim.EnsureExists(); err != nil {
+		if err = claim.EnsureExists(); err != nil {
 			return reconcile.Result{}, err
 		}
 	}

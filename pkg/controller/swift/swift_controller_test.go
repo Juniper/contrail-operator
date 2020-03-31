@@ -120,11 +120,11 @@ func TestSwiftController(t *testing.T) {
 					}}
 					assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
 
-					swiftName := types.NamespacedName{
+					swiftName = types.NamespacedName{
 						Name:      swiftCR.Name,
 						Namespace: swiftCR.Namespace,
 					}
-					err := fakeClient.Get(context.Background(), swiftName, swiftCR)
+					err = fakeClient.Get(context.Background(), swiftName, swiftCR)
 					assert.NoError(t, err)
 					assert.Equal(t, credentialsSecretName, swiftCR.Status.CredentialsSecretName)
 				})

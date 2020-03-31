@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_vrouter")
@@ -186,7 +186,6 @@ type ReconcileVrouter struct {
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
 // and what is in the Vrouter.Spec.
 func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	var err error
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Vrouter")
 	instanceType := "vrouter"
@@ -194,7 +193,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	controlInstance := v1alpha1.Control{}
 	configInstance := v1alpha1.Config{}
 
-	if err = r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -289,7 +288,10 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				Namespace: instance.Namespace,
 			},
 		}
-		controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
 			return reconcile.Result{}, err
 		}
@@ -319,7 +321,10 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				},
 			}},
 		}
-		controllerutil.SetControllerReference(instance, clusterRole, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, clusterRole, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), clusterRole); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -348,7 +353,10 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				Name:     clusterRoleName,
 			},
 		}
-		controllerutil.SetControllerReference(instance, clusterRoleBinding, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, clusterRoleBinding, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return reconcile.Result{}, err
 		}

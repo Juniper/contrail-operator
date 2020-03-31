@@ -26,11 +26,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_cassandra")
-var err error
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -222,6 +221,9 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 
 	storageResource := corev1.ResourceStorage
 	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.Storage.Size)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	storageClassName := "local-storage"
 	statefulSet.Spec.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -291,8 +293,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 				jvmOpts = jvmOpts + " -Xmx" + instance.Spec.ServiceConfiguration.MaxHeapSize
 			}
 			if jvmOpts != "" {
-				envs := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-				envs = append(envs)
 				jvmOptEnvVar := corev1.EnvVar{
 					Name:  "JVM_OPTS",
 					Value: jvmOpts,
@@ -329,7 +329,9 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		secretData := map[string][]byte{"keystorePassword": []byte(cassandraKeystorePassword), "truststorePassword": []byte(cassandraTruststorePassword)}
 		secret.Data = secretData
 	}
-	r.Client.Update(context.TODO(), secret)
+	if err = r.Client.Update(context.TODO(), secret); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	cassandraKeystorePassword := string(secret.Data["keystorePassword"])
 	cassandraTruststorePassword := string(secret.Data["truststorePassword"])
@@ -494,7 +496,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
-		err := r.Client.List(context.TODO(), pvcList, listOps)
+		err = r.Client.List(context.TODO(), pvcList, listOps)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

@@ -7,6 +7,7 @@ import (
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -14,9 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -134,7 +135,8 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	ringsClaim := r.claims.New(ringsClaimName, swift)
 	if swift.Spec.ServiceConfiguration.RingsStorage.Size != "" {
-		size, err := swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
+		var size resource.Quantity
+		size, err = swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -142,7 +144,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
 	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err := ringsClaim.EnsureExists(); err != nil {
+	if err = ringsClaim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -157,7 +159,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		credentialsSecretName = swift.Spec.ServiceConfiguration.CredentialsSecretName
 	}
 
-	if err := r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
+	if err = r.swiftSecret(credentialsSecretName, "swift", swift).ensureSwiftSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	swift.Status.CredentialsSecretName = credentialsSecretName
@@ -170,7 +172,8 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if result, err := r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
+	var result reconcile.Result
+	if result, err = r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
 		return result, err
 	}
 
@@ -215,7 +218,7 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 		"swift.conf": swiftConfig,
 	}
 
-	if err := controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
+	if err = controllerutil.SetControllerReference(swift, swiftSecret, r.scheme); err != nil {
 		return err
 	}
 
@@ -344,7 +347,7 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 			Port:   port,
 			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
 		}
-		if err := theRing.AddDevice(device); err != nil {
+		if err = theRing.AddDevice(device); err != nil {
 			return err
 		}
 	}
