@@ -14,9 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -49,8 +49,7 @@ var resourcesList = []runtime.Object{
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	err := apiextensionsv1beta1.AddToScheme(scheme.Scheme)
-	if err != nil {
+	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
 	var r reconcile.Reconciler
@@ -251,12 +250,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
+					if err = controllerutil.SetControllerReference(instance, cr, r.scheme); err != nil {
 						return reconcile.Result{}, err
 					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
+					if err = r.client.Create(context.TODO(), cr); err != nil {
 						return reconcile.Result{}, err
 					}
 				}

@@ -25,7 +25,6 @@ import (
 
 var log = logf.Log.WithName("controller_zookeeper")
 
-
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
 		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {

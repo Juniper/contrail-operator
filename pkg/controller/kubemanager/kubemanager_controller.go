@@ -214,8 +214,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	rabbitmqInstance := v1alpha1.Rabbitmq{}
 	configInstance := v1alpha1.Config{}
 
-	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -315,8 +314,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 				Namespace: instance.Namespace,
 			},
 		}
-		err = controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme)
-		if err != nil {
+		if err = controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = r.Client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {

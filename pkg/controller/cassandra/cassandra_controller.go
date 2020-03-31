@@ -329,8 +329,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		secretData := map[string][]byte{"keystorePassword": []byte(cassandraKeystorePassword), "truststorePassword": []byte(cassandraTruststorePassword)}
 		secret.Data = secretData
 	}
-	err = r.Client.Update(context.TODO(), secret)
-	if err != nil {
+	if err = r.Client.Update(context.TODO(), secret); err != nil {
 		return reconcile.Result{}, err
 	}
 

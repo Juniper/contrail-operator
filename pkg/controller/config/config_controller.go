@@ -176,10 +176,10 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client    client.Client
-	Scheme    *runtime.Scheme
-	Manager   manager.Manager
-	claims    volumeclaims.PersistentVolumeClaims
+	Client  client.Client
+	Scheme  *runtime.Scheme
+	Manager manager.Manager
+	claims  volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reconciles Config.

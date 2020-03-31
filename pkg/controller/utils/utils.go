@@ -36,7 +36,6 @@ const (
 	DEPLOYMENT  = "Deployment.apps"
 )
 
-
 func RemoveIndex(s []corev1.Container, index int) []corev1.Container {
 	return append(s[:index], s[index+1:]...)
 }
