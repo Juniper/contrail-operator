@@ -77,6 +77,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 	if name.Name == "" {
 		return batch.Job{}, errors.New("no job name given")
 	}
+	directoryOrCreate := core.HostPathType("DirectoryOrCreate")
 	return batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,
@@ -89,12 +90,31 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
 						{
+							Name: "rings-hostpath",
+							VolumeSource: core.VolumeSource{
+								HostPath: &core.HostPathVolumeSource{
+									Path: r.path,
+									Type: &directoryOrCreate,
+								},
+							},
+						},
+						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 									ClaimName: r.claimName,
 									ReadOnly:  false,
 								},
+							},
+						},
+					},
+					InitContainers: []core.Container{
+						{
+							Image:           "registry:5000/busybox",
+							Name:            "create-rings-data-directory",
+							ImagePullPolicy: core.PullAlways,
+							VolumeMounts: []core.VolumeMount{
+								{Name: "rings-hostpath", MountPath: r.path},
 							},
 						},
 					},
