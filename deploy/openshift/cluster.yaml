@@ -13,10 +13,10 @@ spec:
     keystoneSecretInstance : cluster1-admin-password
   services:
     cassandras:
-      - metadata:
-          labels:
-            contrail_cluster: cluster1
-          name: cassandra1
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cassandra1
       spec:
         commonConfiguration:
           create: true
@@ -66,11 +66,11 @@ spec:
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
-      - metadata:
-          labels:
-            contrail_cluster: cluster1
-            control_role: master
-          name: control1
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+          control_role: master
+        name: control1
       spec:
         commonConfiguration:
           create: true
@@ -141,10 +141,10 @@ spec:
             webuiweb:
               image: opencontrailnightly/contrail-controller-webui-web:1912-latest
     zookeepers:
-      - metadata:
-          labels:
-            contrail_cluster: cluster1
-          name: zookeeper1
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: zookeeper1
       spec:
         commonConfiguration:
           create: true
@@ -199,3 +199,4 @@ spec:
               image: kolla/centos-binary-keystone-ssh:train
             keystoneFernet:
               image: kolla/centos-binary-keystone-fernet:train
+
