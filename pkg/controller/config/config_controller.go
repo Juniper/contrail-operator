@@ -651,6 +651,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 
 	// Configure InitContainers
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
+		initContainer := &statefulSet.Spec.Template.Spec.InitContainers[idx]
 		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		if config.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
@@ -658,11 +659,11 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 
 		if container.Name == "init" {
 			for _, vol := range hostPathVolumesForLocalPV {
-				container.VolumeMounts = append(container.VolumeMounts,
+				initContainer.VolumeMounts = append(initContainer.VolumeMounts,
 					corev1.VolumeMount{
 						Name:      vol.Name,
-						MountPath: "/tmp",
-					},)
+						MountPath: vol.HostPath.Path,
+					})
 			}
 		}
 	}
