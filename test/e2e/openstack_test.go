@@ -156,7 +156,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy := proxy.NewClient("contrail", kubeproxy.HTTP, "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
 				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
 				assert.NoError(t, err)
@@ -244,7 +244,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
-				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy := proxy.NewClient("contrail", kubeproxy.HTTP, "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
 				_, err := keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				assert.NoError(t, err)
@@ -253,11 +253,11 @@ func TestOpenstackServices(t *testing.T) {
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
 			var (
-				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy    = proxy.NewClient("contrail", kubeproxy.HTTP, "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
 				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
-				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
+				swiftProxy       = proxy.NewClient("contrail", kubeproxy.HTTP, swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")
 				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)

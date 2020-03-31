@@ -250,7 +250,7 @@ func TestCommandServices(t *testing.T) {
 				assert.NotEmpty(t, commandPods.Items)
 			})
 
-			commandProxy := proxy.NewClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+			commandProxy := proxy.NewClientWithPath("contrail", kubeproxy.HTTP, commandPods.Items[0].Name, 9091, "/keystone")
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
@@ -272,11 +272,11 @@ func TestCommandServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			require.NotEmpty(t, swiftProxyPods.Items)
-			keystoneProxy := proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+			keystoneProxy := proxy.NewClient("contrail", kubeproxy.HTTP, command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
 			keystoneClient = keystone.NewClient(keystoneProxy)
 			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			swiftProxyPod := swiftProxyPods.Items[0].Name
-			swiftProxy := proxy.NewClient("contrail", swiftProxyPod, 5080)
+			swiftProxy := proxy.NewClient("contrail", kubeproxy.HTTP, swiftProxyPod, 5080)
 			swiftURL := tokens.EndpointURL("swift", "public")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)

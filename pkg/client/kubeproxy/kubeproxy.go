@@ -25,17 +25,28 @@ func New(config *rest.Config) (*HTTPProxy, error) {
 	}, nil
 }
 
+type Protocol int
+
+const (
+	HTTP Protocol = iota
+	HTTPS
+)
+
 type HTTPProxy struct {
 	client    http.Client
 	serverURL string
 }
 
-func (p *HTTPProxy) NewClient(namespace, pod string, port int) *Client {
-	return p.NewClientWithPath(namespace, pod, port, "")
+func (p *HTTPProxy) NewClient(namespace string, protocol Protocol, pod string, port int) *Client {
+	return p.NewClientWithPath(namespace, protocol, pod, port, "")
 }
 
-func (p *HTTPProxy) NewClientWithPath(namespace, pod string, port int, path string) *Client {
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s:%d/proxy%s", p.serverURL, namespace, pod, port, path)
+func (p *HTTPProxy) NewClientWithPath(namespace string, protocol Protocol, pod string, port int, path string) *Client {
+	scheme := "http"
+	if protocol == HTTPS {
+		scheme = "https"
+	}
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s:%s:%d/proxy%s", p.serverURL, namespace, scheme, pod, port, path)
 	return &Client{
 		url:    url,
 		client: p.client,
