@@ -1,4 +1,4 @@
-package certificates_test
+package openshift_test
 
 import (
 	"testing"
@@ -9,8 +9,8 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
 
 func TestCSRSignerCAOpenshift(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 				Data:     test.configMapData,
 			}
 			fakeCoreClient := fake.NewSimpleClientset(inputConfigMap).CoreV1()
-			var csrSignerCA contrail.ManagerCSRSignerCA = certificates.CSRSignerCAOpenshift{Client: fakeCoreClient}
+			var csrSignerCA certificates.CSRSignerCA = openshift.CSRSignerCAOpenshift{Client: fakeCoreClient}
 			actual, err := csrSignerCA.CSRSignerCA()
 			assert.Equal(t, err != nil, test.errorExpected)
 			assert.Equal(t, test.expected, actual)

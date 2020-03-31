@@ -1,4 +1,4 @@
-package certificates
+package k8s
 
 import (
 	"fmt"

@@ -40,6 +40,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Keystone{},
 	&v1alpha1.Swift{},
 	&v1alpha1.Memcached{},
+	&corev1.ConfigMap{},
 }
 
 /**
@@ -49,7 +50,7 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, csrca v1alpha1.ManagerCSRSignerCA) error {
+func Add(mgr manager.Manager, csrca certificates.CSRSignerCA) error {
 	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ type ReconcileManager struct {
 	controller  controller.Controller
 	cache       cache.Cache
 	kubernetes  *k8s.Kubernetes
-	csrSignerCa v1alpha1.ManagerCSRSignerCA
+	csrSignerCa certificates.CSRSignerCA
 }
 
 // Reconcile reconciles the manager.
@@ -144,21 +145,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	csrSignerCaConfigMap := &corev1.ConfigMap{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: certificates.CsrSignerCaConfigMapName, Namespace: request.Namespace}, csrSignerCaConfigMap); err != nil {
-		if errors.IsNotFound(err) {
-			csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			csrSignerCaConfigMap.Name = certificates.CsrSignerCaConfigMapName
-			csrSignerCaConfigMap.Namespace = request.Namespace
-			csrSignerCaConfigMap.Data = map[string]string{certificates.CsrSignerCaFilename: csrSignerCAValue}
-			controllerutil.SetControllerReference(instance, csrSignerCaConfigMap, r.scheme)
-			if err = r.client.Create(context.TODO(), csrSignerCaConfigMap); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
+	if err := r.processCSRSignerCaConfigMap(instance); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if instance.Spec.KeystoneSecretName == "" {
@@ -1589,5 +1577,22 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	status := &v1alpha1.ServiceStatus{}
 	status.Active = &memcached.Status.Active
 	manager.Status.Memcached = status
+	return err
+}
+
+func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
+	csrSignerCaConfigMap := &corev1.ConfigMap{}
+	csrSignerCaConfigMap.ObjectMeta.Name = certificates.CsrSignerCaConfigMapName
+	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
+		csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
+		if err != nil {
+			return err
+		}
+		csrSignerCaConfigMap.Data = map[string]string{certificates.CsrSignerCaFilename: csrSignerCAValue}
+		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
+	})
+
 	return err
 }

@@ -1,4 +1,4 @@
-package certificates_test
+package k8s_test 
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestGetServiceAccountTokenSecret(t *testing.T) {
@@ -52,7 +52,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -101,7 +101,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -125,7 +125,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -174,7 +174,7 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.CSRSignerCA()
 		// then
@@ -208,7 +208,7 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.CSRSignerCA()
 		// then
@@ -238,7 +238,7 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := certificates.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.CSRSignerCA()
 		// then

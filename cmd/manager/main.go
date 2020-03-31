@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/pflag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
@@ -114,13 +114,13 @@ func main() {
 	}
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
-	var csrSignerCa v1alpha1.ManagerCSRSignerCA
+	var csrSignerCa certificates.CSRSignerCA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = certificates.CSRSignerCAOpenshift{Client: clientset.CoreV1()}
+		csrSignerCa = openshift.CSRSignerCAOpenshift{Client: clientset.CoreV1()}
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = certificates.CSRSignerCAK8s{Client: clientset.CoreV1()}
+		csrSignerCa = k8s.CSRSignerCAK8s{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.

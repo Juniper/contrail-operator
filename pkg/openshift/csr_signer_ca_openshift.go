@@ -1,4 +1,4 @@
-package certificates
+package openshift
 
 import (
 	"fmt"
