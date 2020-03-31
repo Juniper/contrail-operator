@@ -74,15 +74,10 @@ contrail-statusmonitor:debug
 EOF
 
 while read line; do
-	pull_image dysproz "${line}"
-done <<EOF
-contrail-provisioner:master.1115
-EOF
-
-while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
 contrail-controller-config-dnsmasq:dev
+contrail-provisioner:master.1115
 EOF
 
 pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115
