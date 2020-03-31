@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -95,7 +96,13 @@ func Add(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) error {
 
 // newReconciler returns a new reconcile.Reconciler.
 func newReconciler(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
-	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr, CNIDirectories: cniDirs}
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), cniDirs)
+}
+
+// NewReconciler returns a new reconcile.Reconciler.
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+	return &ReconcileVrouter{Client: client, Scheme: scheme,
+		Config: cfg, CNIDirectories: cniDirs}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -172,7 +179,7 @@ type ReconcileVrouter struct {
 	// that reads objects from the cache and writes to the apiserver.
 	Client         client.Client
 	Scheme         *runtime.Scheme
-	Manager        manager.Manager
+	Config         *rest.Config
 	CNIDirectories v1alpha1.VrouterCNIDirectories
 }
 
@@ -511,7 +518,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 

@@ -10,7 +10,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-var yamlDatavrouterTemplate = template.Must(template.New("").Parse(`
+var yamlDataVrouterTemplate = template.Must(template.New("").Parse(`
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -233,12 +233,13 @@ spec:
 
 //GetDaemonset returns DaemonSet object created from yamlDatavrouter
 func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *appsv1.DaemonSet {
-	var yamlDatavrouterBuffer bytes.Buffer
-	err := yamlDatavrouterTemplate.Execute(&yamlDatavrouterBuffer, cniDir)
-	yamlDatavrouter := yamlDatavrouterBuffer.Bytes()
+	var yamlDataVrouterBuffer bytes.Buffer
+	if err := yamlDataVrouterTemplate.Execute(&yamlDataVrouterBuffer, cniDir); err != nil {
+		panic(err)
+	}
+	yamlDataVrouter := yamlDataVrouterBuffer.Bytes()
 	daemonSet := appsv1.DaemonSet{}
-	err = yaml.Unmarshal(yamlDatavrouter, &daemonSet)
-	if err != nil {
+	if err := yaml.Unmarshal(yamlDataVrouter, &daemonSet); err != nil {
 		panic(err)
 	}
 	return &daemonSet
