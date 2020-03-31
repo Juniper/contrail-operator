@@ -93,17 +93,28 @@ func TestRing_BuildJob(t *testing.T) {
 				job, _ := account.BuildJob(jobName)
 				// then
 				volumes := job.Spec.Template.Spec.Volumes
-				require.Len(t, volumes, 1)
-				expectedVolume := core.Volume{
-					Name: "rings",
-					VolumeSource: core.VolumeSource{
-						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-							ClaimName: claimName,
-							ReadOnly:  false,
+				directoryOrCreate := core.HostPathType("DirectoryOrCreate")
+				expectedVolumes := []core.Volume{
+					{
+						Name: "rings-hostpath",
+						VolumeSource: core.VolumeSource{
+							HostPath: &core.HostPathVolumeSource{
+								Path: "/etc/swift",
+								Type: &directoryOrCreate,
+							},
+						},
+					},
+					{
+						Name: "rings",
+						VolumeSource: core.VolumeSource{
+							PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+								ClaimName: claimName,
+								ReadOnly:  false,
+							},
 						},
 					},
 				}
-				assert.Equal(t, expectedVolume, volumes[0])
+				assert.Equal(t, expectedVolumes, volumes)
 			})
 		}
 	})
