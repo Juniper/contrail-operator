@@ -260,6 +260,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
+	hostPathVolumesForLocalPV := []corev1.Volume{}
+	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 	for _, vol := range statefulSet.Spec.Template.Spec.Volumes {
 		pvc := vol.VolumeSource.PersistentVolumeClaim
 		if pvc == nil {
@@ -271,6 +273,16 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if config.Spec.ServiceConfiguration.Storage.Path != "" {
 			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
 			claim.SetStoragePath(path)
+			hostPathVolumesForLocalPV = append(hostPathVolumesForLocalPV,
+				corev1.Volume{
+					Name: pvc.ClaimName + "-hostpath",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
+							Path: path,
+							Type: &directoryOrCreate,
+						},
+					},
+				})
 		}
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
 			var quantity resource.Quantity
@@ -285,6 +297,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{}, err
 		}
 	}
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, hostPathVolumesForLocalPV...)
 
 	config.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
 	config.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
@@ -650,6 +663,16 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		if config.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
+		}
+
+		if container.Name == "init" {
+			for _, vol := range hostPathVolumesForLocalPV {
+				container.VolumeMounts = append(container.VolumeMounts,
+					corev1.VolumeMount{
+						Name:      vol.Name,
+						MountPath: "/tmp",
+					},)
+			}
 		}
 	}
 
