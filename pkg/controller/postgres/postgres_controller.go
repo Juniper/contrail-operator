@@ -201,7 +201,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, dataDirPath string) *c
 			DNSPolicy:    core.DNSClusterFirst,
 			InitContainers: []core.Container{
 				{
-					Image:           "busybox",
+					Image:           "registry:5000/busybox",
 					Name:            "create-postgresql-data-directory",
 					ImagePullPolicy: core.PullAlways,
 					VolumeMounts: []core.VolumeMount{{
