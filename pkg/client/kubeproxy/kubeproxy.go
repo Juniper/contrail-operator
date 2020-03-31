@@ -37,16 +37,24 @@ type HTTPProxy struct {
 	serverURL string
 }
 
-func (p *HTTPProxy) NewClient(namespace string, protocol Protocol, pod string, port int) *Client {
-	return p.NewClientWithPath(namespace, protocol, pod, port, "")
+func (p *HTTPProxy) NewClient(namespace string, pod string, port int) *Client {
+	return p.NewClientWithPath(namespace, pod, port, "")
 }
 
-func (p *HTTPProxy) NewClientWithPath(namespace string, protocol Protocol, pod string, port int, path string) *Client {
-	scheme := "http"
-	if protocol == HTTPS {
-		scheme = "https"
+func (p *HTTPProxy) NewClientWithPath(namespace string, pod string, port int, path string) *Client {
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/http:%s:%d/proxy%s", p.serverURL, namespace, pod, port, path)
+	return &Client{
+		url:    url,
+		client: p.client,
 	}
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s:%s:%d/proxy%s", p.serverURL, namespace, scheme, pod, port, path)
+}
+
+func (p *HTTPProxy) NewSecureClient(namespace string, pod string, port int) *Client {
+	return p.NewSecureClientWithPath(namespace, pod, port, "")
+}
+
+func (p *HTTPProxy) NewSecureClientWithPath(namespace string, pod string, port int, path string) *Client {
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/https:%s:%d/proxy%s", p.serverURL, namespace, pod, port, path)
 	return &Client{
 		url:    url,
 		client: p.client,

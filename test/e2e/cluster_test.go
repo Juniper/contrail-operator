@@ -71,7 +71,7 @@ func TestCluster(t *testing.T) {
 			})
 
 			t.Run("then list of virtual networks on contrail config api returns 200", func(t *testing.T) {
-				configProxy := proxy.NewClient("contrail", kubeproxy.HTTPS, "config1-config-statefulset-0", 8082)
+				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
 				req, err := configProxy.NewRequest(http.MethodGet, "/virtual-networks", nil)
 				assert.NoError(t, err)
 				res, err := configProxy.Do(req)
