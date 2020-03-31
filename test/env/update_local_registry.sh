@@ -68,7 +68,7 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image michaelhenkel "${line}"
+	pull_image apasyniuk "${line}"
 done <<EOF
 contrail-statusmonitor:debug
 EOF

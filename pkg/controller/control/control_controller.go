@@ -292,9 +292,10 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
+
 		if container.Name == "statusmonitor" {
 			command := []string{"sh", "-c",
-				"/statusmonitor -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
+				"/app/statusmonitor/contrail-statusmonitor-image-debug.binary -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
