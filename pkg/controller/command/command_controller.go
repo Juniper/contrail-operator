@@ -226,7 +226,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				Items: []core.KeyToPath{
 					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "contrail.yml", Path: "contrail.yml"},
+					{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 				},
 			},
