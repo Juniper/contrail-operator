@@ -25,4 +25,4 @@ statusmonitor:
 	cd $(ROOT_DIR)/statusmonitor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o statusmonitor && docker build . -f Dockerfile.debug -t contrail-statusmonitor:latest
 
 provisioner:
-	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:latest
+	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:master.1115

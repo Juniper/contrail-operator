@@ -25,7 +25,7 @@ spec:
         serviceConfiguration:
           containers:
             provisioner:
-              image: dysproz/contrail-provisioner:latest
+              image: kaweue/contrail-provisioner:master.1115
             init:
               image: python:alpine
     cassandras:
