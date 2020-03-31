@@ -789,6 +789,9 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			ImagePullPolicy: core.PullAlways,
 			Command:         []string{"/bin/sh"},
 			Args:            []string{"-c", expectedCommandImage},
+			VolumeMounts: []core.VolumeMount{
+				{Name: "keystone-fernet-tokens-volume-hostpath", MountPath: "/etc/keystone/fernet-keys"},
+			},
 		},
 		{
 			Name:            "keystone-init",
