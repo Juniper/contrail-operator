@@ -401,6 +401,7 @@ func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
 
 func newExpectedSTS() *apps.StatefulSet {
 	trueVal := true
+	directoryOrCreate := core.HostPathType("DirectoryOrCreate")
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone-statefulset",
@@ -431,6 +432,9 @@ func newExpectedSTS() *apps.StatefulSet {
 							ImagePullPolicy: core.PullAlways,
 							Command:         []string{"/bin/sh"},
 							Args:            []string{"-c", expectedCommandImage},
+							VolumeMounts: []core.VolumeMount{
+								{Name: "keystone-fernet-tokens-volume-hostpath", MountPath: "/etc/keystone/fernet-keys"},
+							},
 						},
 						{
 							Name:            "keystone-init",
@@ -513,6 +517,15 @@ func newExpectedSTS() *apps.StatefulSet {
 						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 					Volumes: []core.Volume{
+						{
+							Name: "keystone-fernet-tokens-volume-hostpath",
+							VolumeSource: core.VolumeSource{
+								HostPath: &core.HostPathVolumeSource{
+									Path: "",
+									Type: &directoryOrCreate,
+								},
+							},
+						},
 						{
 							Name: "keystone-fernet-tokens-volume",
 							VolumeSource: core.VolumeSource{
