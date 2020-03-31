@@ -17,9 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -136,7 +136,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
+	if err = r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -151,7 +151,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	commandConfigName := command.Name + "-command-configmap"
-	if err := r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -160,7 +160,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
+	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -193,15 +193,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		},
 	}}
 
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		_, err := command.PrepareIntendedDeployment(deployment,
+	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
+		_, err = command.PrepareIntendedDeployment(deployment,
 			&command.Spec.CommonConfiguration, request, r.scheme)
 		return err
 	}); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.updateStatus(command, deployment); err != nil {
+	if err = r.updateStatus(command, deployment); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -318,7 +318,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	}
 
 	c, ok := containers[containerName]
-	if ok == false || c == nil {
+	if !ok || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -332,7 +332,7 @@ func getCommand(containers map[string]*contrail.Container, containerName string)
 	}
 
 	c, ok := containers[containerName]
-	if ok == false || c == nil || c.Command == nil {
+	if !ok || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

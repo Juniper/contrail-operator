@@ -209,7 +209,7 @@ func getPods(config Config, clientSet *kubernetes.Clientset) ([]string, error) {
 }
 
 func kubeClient(config Config) (*kubernetes.Clientset, *rest.RESTClient, error) {
-	var err error
+	
 	clientset := &kubernetes.Clientset{}
 	restClient := &rest.RESTClient{}
 	kubeConfig := &rest.Config{}

@@ -356,16 +356,3 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	}
 	return reconcile.Result{}, nil
 }
-
-func (r *ReconcileProvisionManager) getHostnameFromAnnotations(podName string, namespace string) (string, error) {
-	pod := &corev1.Pod{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
-	if err != nil {
-		return "", err
-	}
-	hostname, ok := pod.Annotations["hostname"]
-	if !ok {
-		return "", err
-	}
-	return hostname, nil
-}

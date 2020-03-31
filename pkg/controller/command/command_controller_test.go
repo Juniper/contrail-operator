@@ -124,6 +124,7 @@ func TestCommand(t *testing.T) {
 				Name:      "command",
 				Namespace: "default",
 			}, cc)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, cc.Status)
 
 			// Check and verify command deployment

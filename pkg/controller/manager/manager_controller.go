@@ -14,9 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -49,7 +49,9 @@ var resourcesList = []runtime.Object{
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	apiextensionsv1beta1.AddToScheme(scheme.Scheme)
+	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
+		return err
+	}
 	var r reconcile.Reconciler
 	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache(), kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
 	r = &reconcileManager
@@ -87,36 +89,6 @@ func addManagerWatch(c controller.Controller) error {
 			return err
 		}
 	}
-	return nil
-}
-
-// add adds a new Controller to mgr with r as the reconcile.Reconciler.
-func add(mgr manager.Manager, r reconcile.Reconciler) (controller.Controller, error) {
-	// Create a new controller
-	c, err := controller.New("manager-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return c, err
-	}
-
-	err = c.Watch(&source.Kind{Type: &v1alpha1.Manager{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return c, err
-	}
-	return c, nil
-}
-
-func (r *ReconcileManager) addWatch(ro runtime.Object) error {
-
-	controller := r.controller
-	//err := controller.Watch(&source.Kind{Type: &v1alpha1.Config{}}, &handler.EnqueueRequestForOwner{
-	err := controller.Watch(&source.Kind{Type: ro}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1alpha1.Manager{},
-	})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -169,7 +141,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
 	}
 	adminPasswordSecretName := instance.Spec.KeystoneSecretName
-	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+	if err = r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err = r.client.Update(context.TODO(), instance); err != nil {
@@ -278,9 +250,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
+					if err = controllerutil.SetControllerReference(instance, cr, r.scheme); err != nil {
+						return reconcile.Result{}, err
+					}
+					if err = r.client.Create(context.TODO(), cr); err != nil {
 						return reconcile.Result{}, err
 					}
 				}
@@ -417,7 +390,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -556,7 +532,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -676,7 +655,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -800,7 +782,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -922,7 +907,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1061,7 +1049,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1200,7 +1191,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1321,7 +1315,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1419,23 +1416,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if err := r.processPostgres(instance); err != nil {
+	if err = r.processPostgres(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processCommand(instance); err != nil {
+	if err = r.processCommand(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processKeystone(instance); err != nil {
+	if err = r.processKeystone(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processSwift(instance); err != nil {
+	if err = r.processSwift(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processMemcached(instance); err != nil {
+	if err = r.processMemcached(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -55,7 +55,7 @@ func TestPostgresController(t *testing.T) {
 
 	t.Run("should create Postgres k8s with provided registry Pod when Postgres CR is created", func(t *testing.T) {
 		// given
-		postgresCR := &contrail.Postgres{
+		postgresCR = &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{
 				Namespace: name.Namespace,
 				Name:      name.Name,

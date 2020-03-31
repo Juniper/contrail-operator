@@ -241,7 +241,7 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			var commandPods *core.PodList
-			var err error
+			
 			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
 				commandPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "command=commandtest",

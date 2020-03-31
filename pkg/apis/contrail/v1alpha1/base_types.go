@@ -165,7 +165,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Namespace: namespace,
 			},
 		}
-		controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		err = controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
@@ -184,7 +187,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 			},
 			Type: corev1.SecretType("kubernetes.io/service-account-token"),
 		}
-		controllerutil.SetControllerReference(owner, secret, scheme)
+		err = controllerutil.SetControllerReference(owner, secret, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), secret); err != nil {
 			return err
 		}
@@ -214,7 +220,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				},
 			}},
 		}
-		controllerutil.SetControllerReference(owner, clusterRole, scheme)
+		err = controllerutil.SetControllerReference(owner, clusterRole, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), clusterRole); err != nil {
 			return err
 		}
@@ -243,7 +252,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Name:     clusterRoleName,
 			},
 		}
-		controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
+		err = controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return err
 		}
