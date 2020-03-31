@@ -25,13 +25,6 @@ func New(config *rest.Config) (*HTTPProxy, error) {
 	}, nil
 }
 
-type Protocol int
-
-const (
-	HTTP Protocol = iota
-	HTTPS
-)
-
 type HTTPProxy struct {
 	client    http.Client
 	serverURL string
