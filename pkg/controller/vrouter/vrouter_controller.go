@@ -246,7 +246,10 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	daemonSet := GetDaemonset(r.CNIDirectories)
+	daemonSet, err := GetDaemonset(r.CNIDirectories)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}

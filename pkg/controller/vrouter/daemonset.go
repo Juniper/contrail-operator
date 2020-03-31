@@ -232,15 +232,15 @@ spec:
           name: status`))
 
 //GetDaemonset returns DaemonSet object created from yamlDatavrouter
-func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *appsv1.DaemonSet {
+func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) (*appsv1.DaemonSet, error) {
 	var yamlDataVrouterBuffer bytes.Buffer
 	if err := yamlDataVrouterTemplate.Execute(&yamlDataVrouterBuffer, cniDir); err != nil {
-		panic(err)
+		return &appsv1.DaemonSet{}, err
 	}
 	yamlDataVrouter := yamlDataVrouterBuffer.Bytes()
 	daemonSet := appsv1.DaemonSet{}
 	if err := yaml.Unmarshal(yamlDataVrouter, &daemonSet); err != nil {
-		panic(err)
+		return &appsv1.DaemonSet{}, err
 	}
-	return &daemonSet
+	return &daemonSet, nil
 }

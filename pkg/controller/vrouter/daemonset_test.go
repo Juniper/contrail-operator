@@ -15,7 +15,8 @@ func TestGetDaemonset(t *testing.T) {
 		BinariesDirectory:    testBinariesPath,
 		ConfigFilesDirectory: testConfigPath,
 	}
-	ds := vrouter.GetDaemonset(testCNIDirs)
+	ds, err := vrouter.GetDaemonset(testCNIDirs)
+	assert.NoError(t, err)
 	var binariesHostPath string
 	var configHostPath string
 	for _, volume := range ds.Spec.Template.Spec.Volumes {
