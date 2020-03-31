@@ -35,7 +35,6 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 			configMapName:      "csr-signer-ca",
 			configMapNamespace: "other-namespace",
 			configMapData:      map[string]string{"ca-bundle.crt": "test-ca-data"},
-			expected:           "",
 			errorExpected:      true,
 		},
 		{
@@ -43,7 +42,6 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 			configMapName:      "csr-signer-ca",
 			configMapNamespace: "openshift-kube-controller-manager-operator",
 			configMapData:      map[string]string{"test-field-name": "test-ca-data"},
-			expected:           "",
 			errorExpected:      true,
 		},
 	}

@@ -16,16 +16,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
-type fakeCSRSignerCA struct {
-	fakeCA    string
-	fakeError error
+type stubCSRSignerCA struct {
+	stubCA    string
+	stubError error
 }
 
-func (f fakeCSRSignerCA) CSRSignerCA() (string, error) {
-	return f.fakeCA, f.fakeError
+func (f stubCSRSignerCA) CSRSignerCA() (string, error) {
+	return f.stubCA, f.stubError
 }
 
 func TestManagerController(t *testing.T) {
@@ -66,7 +67,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -162,7 +163,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -228,7 +229,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -308,7 +309,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -413,7 +414,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -482,7 +483,7 @@ func TestManagerController(t *testing.T) {
 			client:      fakeClient,
 			scheme:      scheme,
 			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: fakeCSRSignerCA{fakeCA: "test-ca-value", fakeError: nil},
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -504,6 +505,45 @@ func TestManagerController(t *testing.T) {
 		assert.Equal(t, expectedSecret.ObjectMeta, secret.ObjectMeta)
 		assert.Equal(t, expectedSecret.Data, secret.Data)
 
+	})
+
+	t.Run("should create csr signer configmap if it's not present", func(t *testing.T) {
+		//given
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+		}
+		initObjs := []runtime.Object{
+			managerCR,
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:      fakeClient,
+			scheme:      scheme,
+			kubernetes:  k8s.New(fakeClient, scheme),
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+
+		configMap := &core.ConfigMap{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      certificates.CsrSignerCaConfigMapName,
+			Namespace: "default",
+		}, configMap)
+
+		assert.NoError(t, err)
 	})
 }
 

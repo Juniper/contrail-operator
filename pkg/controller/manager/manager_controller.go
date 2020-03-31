@@ -49,7 +49,7 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
+func Add(mgr manager.Manager, csrca v1alpha1.ManagerCSRSignerCA) error {
 	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
