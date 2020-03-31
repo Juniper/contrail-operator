@@ -91,7 +91,7 @@ spec:
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
             statusmonitor:
-              image: michaelhenkel/contrail-statusmonitor:debug
+              image: kaweue/contrail-statusmonitor:debug
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:

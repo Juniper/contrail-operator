@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sudo docker run -it -v $(pwd):/contrail-operator -v /var/run/docker.sock:/var/run/docker.sock kaweue/operator-sdk:v.13-go-1.13 bash -c "cd /contrail-operator; operator-sdk build contrail-operator"
+sudo docker tag contrail-operator localhost:5000/contrail-operator:latest
+sudo docker push localhost:5000/contrail-operator:latest
+sudo podman pull --tls-verify=false localhost:5000/contrail-operator:latest
+sudo podman tag localhost:5000/contrail-operator:latest  default-route-openshift-image-registry.apps.apas-oc1.apasyniuk.jnpr.com/contrail/contrail-operator
+sudo podman push --tls-verify=false default-route-openshift-image-registry.apps.apas-oc1.apasyniuk.jnpr.com/contrail/contrail-operator
+oc delete -f test/env/deploy/operator.yaml
+oc apply -f test/env/deploy/operator.yaml

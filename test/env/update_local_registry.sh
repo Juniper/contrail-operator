@@ -68,12 +68,6 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image apasyniuk "${line}"
-done <<EOF
-contrail-statusmonitor:debug
-EOF
-
-while read line; do
 	pull_image dysproz "${line}"
 done <<EOF
 contrail-provisioner:latest
@@ -82,6 +76,7 @@ EOF
 while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
+contrail-statusmonitor:debug
 contrail-controller-config-dnsmasq:dev
 EOF
 

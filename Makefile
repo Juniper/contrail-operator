@@ -26,3 +26,5 @@ statusmonitor:
 
 provisioner:
 	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:latest
+
+.PHONY: statusmonitor provisioner generate
