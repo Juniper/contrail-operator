@@ -114,7 +114,10 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 							Name:            "create-rings-data-directory",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
-								{Name: "rings-hostpath", MountPath: r.path},
+								{
+									Name:      "rings-hostpath",
+									MountPath: r.path,
+								},
 							},
 						},
 					},

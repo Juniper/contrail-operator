@@ -142,7 +142,8 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 		ringsClaim.SetStorageSize(size)
 	}
-	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
+	ringsStoragePath := swift.Spec.ServiceConfiguration.RingsStorage.Path
+	ringsClaim.SetStoragePath(ringsStoragePath)
 	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err = ringsClaim.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
@@ -173,7 +174,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 
 	var result reconcile.Result
-	if result, err = r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
+	if result, err = r.reconcileRings(swift, ringsClaimName.Name, ringsStoragePath); err != nil || result.Requeue {
 		return result, err
 	}
 
@@ -263,7 +264,7 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(
 	return err
 }
 
-func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string) (reconcile.Result, error) {
+func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim, ringsStoragePath string) (reconcile.Result, error) {
 	swiftStorage := &contrail.SwiftStorage{}
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
 		return reconcile.Result{}, err
@@ -280,15 +281,15 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 		return result, err
 	}
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
-	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, ringsStoragePath, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
-	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ringsStoragePath, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
-	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ringsStoragePath, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -329,13 +330,13 @@ func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedNam
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ips []string, swift *contrail.Swift) error {
+func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName, ringsStoragePath string, ips []string, swift *contrail.Swift) error {
 	jobName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-ring-" + ringType + "-job",
 	}
 
-	theRing, err := ring.New(ringsClaimName, "/etc/rings", ringType)
+	theRing, err := ring.New(ringsClaimName, ringsStoragePath, ringType)
 	if err != nil {
 		return err
 	}
