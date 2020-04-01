@@ -287,7 +287,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var keystoneAuthData = make(map[string]string)
 
 	var keystoneAuthConfBuffer bytes.Buffer
-	if c.Spec.ServiceConfiguration.KeystoneSecretName != "" {
+	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
 		keystoneAuth, err := c.getAuthParameters(client)
 		if err != nil {
 			return err
