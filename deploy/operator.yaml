@@ -22,9 +22,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: michaelhenkel/contrail-operator:latest
-          #command:
-          #- contrail-operator
+          image: registry:5000/contrail-operator:latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

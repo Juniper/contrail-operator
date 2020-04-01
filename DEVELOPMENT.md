@@ -24,6 +24,10 @@ After custom resource specification (in `pkg/apis/contrail/v1alpha1/*_types.go`)
 
     operator-sdk generate k8s
     operator-sdk generate crds
+    cd deploy
+    ./create_manifest.sh
+
+The last line `./create_manifest.sh` generates file `deploy/1-create-operator.yaml` which contains all custom resource definitions and `contrail-operator` deployment specification. You can also edit this file by hand, for example to change image of `contrail-operator` that is used (by default it is `registry:5000/contrail-operator:latest`).
 
 ## Troubleshooting
 
