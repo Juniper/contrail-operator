@@ -27,8 +27,7 @@ use_ssl = True
 cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 ; Authentication settings (optional)
 [auth]
-;AUTHN_TYPE = noauth
-AUTHN_TYPE = keystone
+AUTHN_TYPE = {{ .AuthMode }}
 AUTHN_PROTOCOL = http
 AUTHN_SERVER = localhost
 AUTHN_PORT = 5555
@@ -47,8 +46,8 @@ log_file=/var/log/contrail/contrail-api.log
 log_level={{ .LogLevel }}
 log_local=1
 list_optimization_enabled=True
-auth=noauth
-aaa_mode=no-auth
+auth={{ .AuthMode }}
+aaa_mode={{ .AAAMode }}
 cloud_admin_role=admin
 global_read_only_role=
 config_api_ssl_enable=True
@@ -237,7 +236,7 @@ ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list={{ .AnalyticsServerList }}
-aaa_mode = no-auth
+aaa_mode={{ .AAAMode }}
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False
@@ -253,7 +252,7 @@ http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
 rest_api_ip=0.0.0.0
-aaa_mode=no-auth
+aaa_mode={{ .AAAMode }}
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
 log_local=1

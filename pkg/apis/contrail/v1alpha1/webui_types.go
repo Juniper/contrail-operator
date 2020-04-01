@@ -108,6 +108,11 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	manager := "none"
+	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
+		manager = "openstack"
+	}
+
 	var podIPList []string
 	for _, pod := range podList.Items {
 		podIPList = append(podIPList, pod.Status.PodIP)
@@ -131,6 +136,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			RedisServerPort     string
 			AdminUsername       string
 			AdminPassword       string
+			Manager             string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
@@ -146,6 +152,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			RedisServerPort:     "6380",
 			AdminUsername:       webUIConfig.AdminUsername,
 			AdminPassword:       webUIConfig.AdminPassword,
+			Manager:             manager,
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)

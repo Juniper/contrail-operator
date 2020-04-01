@@ -8,6 +8,10 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
 	github.com/operator-framework/operator-sdk v0.14.1
+	github.com/pborman/uuid v1.2.0
+	github.com/pkg/sftp v0.0.0-20160930220758-4d0e916071f6 // indirect
+	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
+	github.com/sigma/go-inotify v0.0.0-20181102212354-c87b6cf5033d // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152

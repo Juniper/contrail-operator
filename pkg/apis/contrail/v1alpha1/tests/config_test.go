@@ -792,7 +792,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "http://localhost:5555/v2.0";
+config.regions.RegionOne = "http://localhost:5555/v3";
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -925,6 +925,8 @@ auth.admin_user = 'admin';
 auth.admin_password = 'test123';
 auth.admin_token = '';
 auth.admin_tenant_name = 'admin';
+auth.project_domain_name = 'Default';
+auth.user_domain_name = 'Default';
 module.exports = auth;
 `
 
@@ -1327,7 +1329,7 @@ ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list=1.1.1.1:8081 1.1.1.2:8081 1.1.1.3:8081
-aaa_mode = no-auth
+aaa_mode=no-auth
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False

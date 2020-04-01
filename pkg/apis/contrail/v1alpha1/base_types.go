@@ -1082,6 +1082,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	var collectorServerPort string
 	var analyticsServerPort string
 	var redisServerPort string
+	var authMode AuthenticationMode
 
 	if len(configList.Items) > 0 {
 		for _, ip := range configList.Items[0].Status.Nodes {
@@ -1089,6 +1090,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		}
 		configConfigInterface := configList.Items[0].ConfigurationParameters()
 		configConfig := configConfigInterface.(ConfigConfiguration)
+		authMode = configConfig.AuthMode
 		apiServerPort = strconv.Itoa(*configConfig.APIPort)
 		analyticsServerPort = strconv.Itoa(*configConfig.AnalyticsPort)
 		collectorServerPort = strconv.Itoa(*configConfig.CollectorPort)
@@ -1119,6 +1121,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		CollectorServerListSpaceSeparated:       collectorServerListSpaceSeparated,
 		FirstAPIServer:                          firstAPIServer,
 		RedisPort:                               redisServerPort,
+		AuthMode:                                authMode,
 	}
 	return &configCluster, nil
 }
@@ -1148,6 +1151,7 @@ type ConfigClusterConfiguration struct {
 	CollectorPort                           string
 	FirstAPIServer                          string
 	RedisPort                               string
+	AuthMode                                AuthenticationMode
 }
 
 // ControlClusterConfiguration defines all configuration knobs used to write the config file.

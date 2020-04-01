@@ -100,13 +100,10 @@ allow_expired_window = 172800
 max_active_keys = 3
 
 [cache]
-backend = oslo_cache.memcache_pool
+backend = dogpile.cache.memcached
 enabled = True
 memcache_servers = {{ .MemcacheServer }}
 
-[oslo_messaging_notifications]
-transport_url = rabbit://guest:guest@{{ .RabbitMQServer }}//
-driver = noop
 `))
 
 var wsgiKeystoneConf = template.Must(template.New("").Parse(`
@@ -127,7 +124,7 @@ TraceEnable off
 
 
 <VirtualHost *:{{ .ListenPort }}>
-    WSGIDaemonProcess keystone-public processes=2 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
+    WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
     WSGIApplicationGroup %{GLOBAL}

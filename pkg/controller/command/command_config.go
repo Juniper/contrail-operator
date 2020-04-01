@@ -103,7 +103,7 @@ resources:
       fq_name:
         - default-global-system-config
         - {{ .ClusterName | ToLower }}
-      orchestrator: none
+      orchestrator: openstack
       parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
