@@ -108,6 +108,9 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		Name:      instance.Name + "-pv-claim",
 	}
 	claim := r.claims.New(claimName, instance)
+	if instance.Spec.Storage.Path == "" {
+		instance.Spec.Storage.Path = "/mnt/volumes/postgres"
+	}
 	claim.SetStoragePath(instance.Spec.Storage.Path)
 	if instance.Spec.Storage.Size != "" {
 		var quantity resource.Quantity
