@@ -24,6 +24,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 )
 
 var src = mRand.NewSource(time.Now().UnixNano())
@@ -255,7 +257,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
 	cert := "/etc/certificates/server-" + podIP + ".crt"
 	key := "/etc/certificates/server-key-" + podIP + ".pem"
-	ca := "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	ca := cacertificates.CsrSignerCAFilepath
 	inCluster := true
 	monitorConfig := MonitorConfig{
 		APIServerList: configNodeList,

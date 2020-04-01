@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -137,6 +138,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername       string
 			AdminPassword       string
 			Manager             string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
@@ -153,6 +155,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername:       webUIConfig.AdminUsername,
 			AdminPassword:       webUIConfig.AdminPassword,
 			Manager:             manager,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)

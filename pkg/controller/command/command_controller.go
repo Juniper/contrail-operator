@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
@@ -178,10 +179,12 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	deployment := newDeployment(
 		request.Name,
 		request.Namespace,
 		configVolumeName,
+		csrSignerCaVolumeName,
 		command.Spec.ServiceConfiguration.Containers,
 	)
 	executableMode := int32(0744)
@@ -201,14 +204,26 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			},
 		},
 	}}
-	volumes = append(volumes, core.Volume{
-		Name: command.Name + "-secret-certificates",
-		VolumeSource: core.VolumeSource{
-			Secret: &core.SecretVolumeSource{
-				SecretName: command.Name + "-secret-certificates",
+	volumes = append(volumes,
+		core.Volume{
+			Name: command.Name + "-secret-certificates",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: command.Name + "-secret-certificates",
+				},
 			},
 		},
-	})
+		core.Volume{
+			Name: csrSignerCaVolumeName,
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: cacertificates.CsrSignerCAConfigMapName,
+					},
+				},
+			},
+		},
+	)
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
@@ -279,7 +294,7 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	return keystoneServ, err
 }
 
-func newDeployment(name, namespace, configVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
+func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -303,14 +318,20 @@ func newDeployment(name, namespace, configVolumeName string, containers map[stri
 								},
 							},
 						},
-						VolumeMounts: []core.VolumeMount{{
-							Name:      configVolumeName,
-							MountPath: "/etc/contrail",
-						},
+						VolumeMounts: []core.VolumeMount{
+							{
+								Name:      configVolumeName,
+								MountPath: "/etc/contrail",
+							},
 							{
 								Name:      name + "-secret-certificates",
 								MountPath: "/etc/certificates",
-							}},
+							},
+							{
+								Name:      csrSignerCaVolumeName,
+								MountPath: cacertificates.CsrSignerCAMountPath,
+							},
+						},
 					}},
 					InitContainers: []core.Container{{
 						Name:            "command-init",

@@ -24,7 +24,7 @@ xmpp_server_port=5269
 xmpp_auth_enable=True
 xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
 xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+xmpp_ca_cert={{ .CAFilePath }}
 
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
@@ -34,7 +34,7 @@ config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
 config_db_use_ssl=True
-config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+config_db_ca_certs={{ .CAFilePath }}
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
@@ -42,14 +42,14 @@ rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=sslv23
 [SANDESH]
 introspect_ssl_enable=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlNamedConfig is the template of the Named service configuration.
 var ControlNamedConfig = template.Must(template.New("").Parse(`options {
@@ -113,7 +113,7 @@ log_local=1
 xmpp_dns_auth_enable=True
 xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
 xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+xmpp_ca_cert={{ .CAFilePath }}
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
@@ -122,7 +122,7 @@ config_db_server_list={{ .CassandraServerList }}
 # config_db_username=
 # config_db_password=
 config_db_use_ssl=True
-config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+config_db_ca_certs={{ .CAFilePath }}
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
@@ -130,14 +130,14 @@ rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=sslv23
 [SANDESH]
 introspect_ssl_enable=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlNodemanagerConfig is the template of the Control Nodemanager service configuration.
 var ControlNodemanagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -157,7 +157,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash

@@ -3,7 +3,7 @@ package templates
 import "text/template"
 
 var ConfigAPIServerConfig = template.Must(template.New("").Parse(`encryption:
-ca: /run/secrets/kubernetes.io/serviceaccount/ca.crt
+ca: {{ .CAFilePath }}
 cert: /etc/certificates/server-{{ .HostIP }}.crt
 key: /etc/certificates/server-key-{{ .HostIP }}.pem
 insecure: false
@@ -24,7 +24,7 @@ WEB_SERVER = {{ .HostIP }}
 WEB_PORT = {{ .ListenPort }} ; connection to api-server directly
 BASE_URL = /
 use_ssl = True
-cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
 AUTHN_TYPE = {{ .AuthMode }}
@@ -53,10 +53,10 @@ global_read_only_role=
 config_api_ssl_enable=True
 config_api_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 config_api_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
-config_api_ssl_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+config_api_ssl_ca_cert={{ .CAFilePath }}
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -65,7 +65,7 @@ rabbit_password={{ .RabbitmqPassword }}
 rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
@@ -75,7 +75,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigDeviceManagerConfig is the template of the DeviceManager service configuration.
 var ConfigDeviceManagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -92,7 +92,7 @@ log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 zk_server_ip={{ .ZookeeperServerList }}
 # configure directories for job manager
 # the same directories must be mounted to dnsmasq and DM container
@@ -107,7 +107,7 @@ rabbit_password={{ .RabbitmqPassword }}
 rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
@@ -117,7 +117,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigKeystoneAuthConf is the template of the DeviceManager keystone auth configuration.
 var ConfigKeystoneAuthConf = template.Must(template.New("").Parse(`[KEYSTONE]
@@ -147,7 +147,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigDNSMasqConfig is the template of the DNSMasq service configuration.
 var ConfigDNSMasqConfig = `
@@ -172,7 +172,7 @@ log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -181,7 +181,7 @@ rabbit_password={{ .RabbitmqPassword }}
 rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
@@ -191,10 +191,10 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+sandesh_ca_cert={{ .CAFilePath }}
 [SECURITY]
 use_certs=True
-ca_certs=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+ca_certs={{ .CAFilePath }}
 certfile=/etc/certificates/server-{{ .HostIP }}.crt
 keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem`))
 
@@ -210,7 +210,7 @@ log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 zk_server_ip={{ .ZookeeperServerList }}
 rabbit_server={{ .RabbitmqServerList }}
 rabbit_vhost={{ .RabbitmqVhost }}
@@ -219,7 +219,7 @@ rabbit_password={{ .RabbitmqPassword }}
 rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
@@ -227,12 +227,12 @@ analytics_api_ssl_enable = True
 analytics_api_insecure_enable = False
 analytics_api_ssl_certfile = /etc/certificates/server-{{ .HostIP }}.crt
 analytics_api_ssl_keyfile = /etc/certificates/server-key-{{ .HostIP }}.pem
-analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
+analytics_api_ssl_ca_cert = {{ .CAFilePath }}
 [SECURITY]
 use_certs=True
 keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 certfile=/etc/certificates/server-{{ .HostIP }}.crt
-ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+ca_certs={{ .CAFilePath }}
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list={{ .AnalyticsServerList }}
@@ -243,7 +243,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigAnalyticsapiConfig is the template of the AnalyticsAPI service configuration.
 var ConfigAnalyticsapiConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -267,7 +267,7 @@ analytics_api_ssl_enable = True
 analytics_api_insecure_enable = True
 analytics_api_ssl_certfile = /etc/certificates/server-{{ .HostIP }}.crt
 analytics_api_ssl_keyfile = /etc/certificates/server-key-{{ .HostIP }}.pem
-analytics_api_ssl_ca_cert = /run/secrets/kubernetes.io/serviceaccount/ca.crt
+analytics_api_ssl_ca_cert = {{ .CAFilePath }}
 [REDIS]
 redis_uve_list={{ .RedisServerList }}
 redis_password=
@@ -277,7 +277,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigCollectorConfig is the template of the Collector service configuration.
 var ConfigCollectorConfig = template.Must(template.New("").Parse(`[DEFAULT]
@@ -304,7 +304,7 @@ cassandra_server_list={{ .CassandraServerList }}
 zookeeper_server_list={{ .ZookeeperServerList }}
 [CASSANDRA]
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 [COLLECTOR]
 port=8086
 server=0.0.0.0
@@ -325,7 +325,7 @@ password=
 [CONFIGDB]
 config_db_server_list={{ .CassandraServerList }}
 config_db_use_ssl=true
-config_db_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+config_db_ca_certs={{ .CAFilePath }}
 rabbitmq_server_list={{ .RabbitmqServerList }}
 rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
@@ -333,7 +333,7 @@ rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-rabbitmq_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=sslv23
 [SANDESH]
 introspect_ssl_enable=True
@@ -341,7 +341,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigQueryEngineConfig is the template of the Config Nodemanager service configuration.
 var ConfigQueryEngineConfig = template.Must(template.New("").Parse(`[DEFAULT]
@@ -363,7 +363,7 @@ cassandra_server_list={{ .CassandraServerList }}
 collectors={{ .CollectorServerList }}
 [CASSANDRA]
 cassandra_use_ssl=true
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 [REDIS]
 server_list={{ .RedisServerList }}
 password=
@@ -373,7 +373,7 @@ introspect_ssl_enable=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigNodemanagerConfigConfig is the template of the Config Nodemanager service configuration.
 var ConfigNodemanagerConfigConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -393,7 +393,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigNodemanagerAnalyticsConfig is the template of the Analytics Nodemanager service configuration.
 var ConfigNodemanagerAnalyticsConfig = template.Must(template.New("").Parse(`[DEFAULTS]
@@ -412,4 +412,4 @@ introspect_ssl_enable=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
