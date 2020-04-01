@@ -285,7 +285,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								},
 								{
 									Name:      "command-csr-signer-ca",
-									MountPath: cacertificates.CsrSignerCaMountPath,
+									MountPath: cacertificates.CsrSignerCAMountPath,
 								},
 							},
 						},
@@ -329,7 +329,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: cacertificates.CsrSignerCaConfigMapName,
+										Name: cacertificates.CsrSignerCAConfigMapName,
 									},
 								},
 							},

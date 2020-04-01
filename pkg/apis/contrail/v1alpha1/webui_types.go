@@ -155,7 +155,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername:       webUIConfig.AdminUsername,
 			AdminPassword:       webUIConfig.AdminPassword,
 			Manager:             manager,
-			CAFilePath:          cacertificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)

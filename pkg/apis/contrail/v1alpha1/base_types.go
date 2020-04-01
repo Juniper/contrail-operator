@@ -257,7 +257,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
 	cert := "/etc/certificates/server-" + podIP + ".crt"
 	key := "/etc/certificates/server-key-" + podIP + ".pem"
-	ca := cacertificates.CsrSignerCaFilepath
+	ca := cacertificates.CsrSignerCAFilepath
 	inCluster := true
 	monitorConfig := MonitorConfig{
 		APIServerList: configNodeList,

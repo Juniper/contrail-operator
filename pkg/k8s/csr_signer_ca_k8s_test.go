@@ -1,4 +1,4 @@
-package k8s_test 
+package k8s_test
 
 import (
 	"testing"
@@ -52,7 +52,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -101,7 +101,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -125,7 +125,7 @@ func TestGetServiceAccountTokenSecret(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
 		result, err := csrSignerCAK8S.GetServiceAccountTokenSecret(defaultServiceAccount)
 		// then
@@ -174,9 +174,9 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
-		result, err := csrSignerCAK8S.CSRSignerCA()
+		result, err := csrSignerCAK8S.CACert()
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "test-ca-value", result)
@@ -208,9 +208,9 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(otherSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
-		result, err := csrSignerCAK8S.CSRSignerCA()
+		result, err := csrSignerCAK8S.CACert()
 		// then
 		assert.Error(t, err)
 		assert.Equal(t, "", result)
@@ -238,9 +238,9 @@ func TestCSRSignerCAK8S(t *testing.T) {
 			},
 		}
 		fakeCoreClient := fake.NewSimpleClientset(serviceAccountTokenSecret, defaultServiceAccount).CoreV1()
-		csrSignerCAK8S := k8s.CSRSignerCAK8s{Client: fakeCoreClient}
+		csrSignerCAK8S := k8s.CSRSignerCA{Client: fakeCoreClient}
 		// when
-		result, err := csrSignerCAK8S.CSRSignerCA()
+		result, err := csrSignerCAK8S.CACert()
 		// then
 		assert.Error(t, err)
 		assert.Equal(t, "", result)

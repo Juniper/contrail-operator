@@ -375,7 +375,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			PhysicalInterfaceMac: physicalInterfaceMac,
 			Gateway:              gateway,
 			MetaDataSecret:       vrouterConfig.MetaDataSecret,
-			CAFilePath:           cacertificates.CsrSignerCaFilepath,
+			CAFilePath:           cacertificates.CsrSignerCAFilepath,
 		})
 		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
 
@@ -393,7 +393,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          cacertificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 

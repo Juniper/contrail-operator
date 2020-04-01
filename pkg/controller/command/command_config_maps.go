@@ -38,7 +38,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string) error {
 		PostgresUser:   "root",
 		PostgresDBName: "contrail_test",
 		HostIP:         hostIP,
-		CAFilePath:     cacertificates.CsrSignerCaFilepath,
+		CAFilePath:     cacertificates.CsrSignerCAFilepath,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

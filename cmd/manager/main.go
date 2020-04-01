@@ -114,13 +114,13 @@ func main() {
 	}
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
-	var csrSignerCa cacertificates.CSRSignerCA
+	var csrSignerCa cacertificates.CA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		cinfo = openshift.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = openshift.CSRSignerCAOpenshift{Client: clientset.CoreV1()}
+		csrSignerCa = openshift.CSRSignerCA{Client: clientset.CoreV1()}
 	} else {
 		cinfo = k8s.ClusterConfig{Client: clientset.CoreV1()}
-		csrSignerCa = k8s.CSRSignerCAK8s{Client: clientset.CoreV1()}
+		csrSignerCa = k8s.CSRSignerCA{Client: clientset.CoreV1()}
 	}
 
 	// Setup all Controllers.

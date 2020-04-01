@@ -1,15 +1,15 @@
 package cacertificates
 
 const (
-	CsrSignerCaConfigMapName = "csr-signer-ca"
-	CsrSignerCaMountPath     = "/etc/ssl/certs/kubernetes"
-	CsrSignerCaFilename      = "ca-bundle.crt"
-	CsrSignerCaFilepath      = CsrSignerCaMountPath + "/" + CsrSignerCaFilename
+	CsrSignerCAConfigMapName = "csr-signer-ca"
+	CsrSignerCAMountPath     = "/etc/ssl/certs/kubernetes"
+	CsrSignerCAFilename      = "ca-bundle.crt"
+	CsrSignerCAFilepath      = CsrSignerCAMountPath + "/" + CsrSignerCAFilename
 )
 
-// CSRSignerCA is an interface for gathering the
+// CA is an interface for gathering the
 // Certificate Authorities' certificates that sign the
 // CertificateSigningRequests
-type CSRSignerCA interface {
-	CSRSignerCA() (string, error)
+type CA interface {
+	CACert() (string, error)
 }

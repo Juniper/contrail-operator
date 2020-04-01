@@ -415,7 +415,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
 			APIPort:       apiPort,
 			Encryption: Encryption{
-				CA:       cacertificates.CsrSignerCaFilepath,
+				CA:       cacertificates.CsrSignerCAFilepath,
 				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
 				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
 				Insecure: false,

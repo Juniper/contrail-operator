@@ -13,17 +13,17 @@ const (
 	openshiftCaBundleDataKey      = "ca-bundle.crt"
 )
 
-// CSRSignerCAOpenshift implements ManagerCSSignerCA interface used for
+// CSRSignerCA implements ManagerCSSignerCA interface used for
 // for gathering the Certificate Authorities' certificates that sign the
 // CertificateSigningRequests. Implementation is specific to the Openshift 4.x cluster
-type CSRSignerCAOpenshift struct {
+type CSRSignerCA struct {
 	Client typedCorev1.CoreV1Interface
 }
 
-// CSRSignerCA returns the value of certificates used for signing the CertificateSigningRequests
+// CACert returns the value of certificates used for signing the CertificateSigningRequests
 // On the Openshift cluster, CA certificates that sing the CSRs are stored in a ConfigMap
 // in the namespace of the operator for the kube-controller-manager
-func (c CSRSignerCAOpenshift) CSRSignerCA() (string, error) {
+func (c CSRSignerCA) CACert() (string, error) {
 	kubeControllerMgrCMClient := c.Client.ConfigMaps(openshiftCaConfigMapNamespace)
 	clientCaCM, err := kubeControllerMgrCMClient.Get(openshiftCaConfigMapName, metav1.GetOptions{})
 	if err != nil {

@@ -231,7 +231,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          cacertificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -268,7 +268,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          cacertificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 
@@ -284,7 +284,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          cacertificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = controlNodemanagerBuffer.String()
 

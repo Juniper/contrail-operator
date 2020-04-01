@@ -14,17 +14,17 @@ const (
 	k8sCaSecretDataKey         = "ca.crt"
 )
 
-// CSRSignerCAOpenshift implements ManagerCSSignerCA interface used for
+// CSRSignerCA implements ManagerCSSignerCA interface used for
 // for gathering the Certificate Authorities' certificates that sign the
 // CertificateSigningRequests.
-type CSRSignerCAK8s struct {
+type CSRSignerCA struct {
 	Client typedCorev1.CoreV1Interface
 }
 
-// CSRSignerCA returns the value of certificates used for signing the CertificateSigningRequests
+// CACert returns the value of certificates used for signing the CertificateSigningRequests
 // On a k8s cluster, it is assumed that all certificates created inside the cluster are signed
 // using the root CA, that is also attached to each one of the ServiceAccounts in the cluster
-func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
+func (c CSRSignerCA) CACert() (string, error) {
 	kubeSystemServiceAccountsClient := c.Client.ServiceAccounts(k8sServiceAccountNamespace)
 	defaultServiceAccount, err := kubeSystemServiceAccountsClient.Get(k8sServiceAccountName, metav1.GetOptions{})
 	if err != nil {
@@ -43,7 +43,7 @@ func (c CSRSignerCAK8s) CSRSignerCA() (string, error) {
 	return string(caData), nil
 }
 
-func (c CSRSignerCAK8s) GetServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount) (*corev1.Secret, error) {
+func (c CSRSignerCA) GetServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount) (*corev1.Secret, error) {
 	secretsClient := c.Client.Secrets(serviceAccount.Namespace)
 	for _, secretRef := range serviceAccount.Secrets {
 		secret, err := secretsClient.Get(secretRef.Name, metav1.GetOptions{})

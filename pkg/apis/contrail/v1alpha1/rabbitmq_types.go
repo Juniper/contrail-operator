@@ -119,7 +119,7 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.tcp.port = 15671\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.load_definitions = /etc/rabbitmq/definitions.json\n")
-		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = %s\n", cacertificates.CsrSignerCaFilepath)
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = %s\n", cacertificates.CsrSignerCAFilepath)
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.keyfile = /etc/certificates/server-key-"+pod.Status.PodIP+".pem\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.certfile = /etc/certificates/server-"+pod.Status.PodIP+".crt\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")

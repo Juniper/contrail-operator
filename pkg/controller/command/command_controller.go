@@ -218,7 +218,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: cacertificates.CsrSignerCaConfigMapName,
+						Name: cacertificates.CsrSignerCAConfigMapName,
 					},
 				},
 			},
@@ -329,7 +329,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 							},
 							{
 								Name:      csrSignerCaVolumeName,
-								MountPath: cacertificates.CsrSignerCaMountPath,
+								MountPath: cacertificates.CsrSignerCAMountPath,
 							},
 						},
 					}},

@@ -50,7 +50,7 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, csrca cacertificates.CSRSignerCA) error {
+func Add(mgr manager.Manager, csrca cacertificates.CA) error {
 	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ type ReconcileManager struct {
 	controller  controller.Controller
 	cache       cache.Cache
 	kubernetes  *k8s.Kubernetes
-	csrSignerCa cacertificates.CSRSignerCA
+	csrSignerCa cacertificates.CA
 }
 
 // Reconcile reconciles the manager.
@@ -1582,15 +1582,15 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 
 func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
 	csrSignerCaConfigMap := &corev1.ConfigMap{}
-	csrSignerCaConfigMap.ObjectMeta.Name = cacertificates.CsrSignerCaConfigMapName
+	csrSignerCaConfigMap.ObjectMeta.Name = cacertificates.CsrSignerCAConfigMapName
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := r.csrSignerCa.CSRSignerCA()
+		csrSignerCAValue, err := r.csrSignerCa.CACert()
 		if err != nil {
 			return err
 		}
-		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCaFilename: csrSignerCAValue}
+		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCAFilename: csrSignerCAValue}
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
 

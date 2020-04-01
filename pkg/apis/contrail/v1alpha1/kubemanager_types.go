@@ -242,7 +242,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:          rabbitmqSecretUser,
 			RabbitmqPassword:      rabbitmqSecretPassword,
 			RabbitmqVhost:         rabbitmqSecretVhost,
-			CAFilePath:            cacertificates.CsrSignerCaFilepath,
+			CAFilePath:            cacertificates.CsrSignerCAFilepath,
 		})
 		data["kubemanager."+podList.Items[idx].Status.PodIP] = kubemanagerConfigBuffer.String()
 
@@ -254,7 +254,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		}{
 			ListenAddress: podList.Items[idx].Status.PodIP,
 			ListenPort:    configNodesInformation.APIServerPort,
-			CAFilePath:    cacertificates.CsrSignerCaFilepath,
+			CAFilePath:    cacertificates.CsrSignerCAFilepath,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}

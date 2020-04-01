@@ -57,8 +57,8 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 				Data:     test.configMapData,
 			}
 			fakeCoreClient := fake.NewSimpleClientset(inputConfigMap).CoreV1()
-			var csrSignerCA cacertificates.CSRSignerCA = openshift.CSRSignerCAOpenshift{Client: fakeCoreClient}
-			actual, err := csrSignerCA.CSRSignerCA()
+			var csrSignerCA cacertificates.CA = openshift.CSRSignerCA{Client: fakeCoreClient}
+			actual, err := csrSignerCA.CACert()
 			assert.Equal(t, err != nil, test.errorExpected)
 			assert.Equal(t, test.expected, actual)
 		})

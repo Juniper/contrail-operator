@@ -25,7 +25,7 @@ type stubCSRSignerCA struct {
 	stubError error
 }
 
-func (f stubCSRSignerCA) CSRSignerCA() (string, error) {
+func (f stubCSRSignerCA) CACert() (string, error) {
 	return f.stubCA, f.stubError
 }
 
@@ -539,7 +539,7 @@ func TestManagerController(t *testing.T) {
 
 		configMap := &core.ConfigMap{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      cacertificates.CsrSignerCaConfigMapName,
+			Name:      cacertificates.CsrSignerCAConfigMapName,
 			Namespace: "default",
 		}, configMap)
 
