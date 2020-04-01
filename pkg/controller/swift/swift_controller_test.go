@@ -45,22 +45,28 @@ func TestSwiftController(t *testing.T) {
 		tests := map[string]struct {
 			size         string
 			path         string
+			expectedPath string
 			expectedSize *resource.Quantity
 		}{
-			"no size and path given": {},
+			"no size and path given": {
+				expectedPath: "/etc/rings",
+			},
 			"only size given": {
 				size:         "1Gi",
 				expectedSize: &quantity1Gi,
+				expectedPath: "/etc/rings",
 			},
 			"size and path given": {
 				size:         "5Gi",
 				path:         "/path",
 				expectedSize: &quantity5Gi,
+				expectedPath: "/path",
 			},
 			"size and path given 2": {
 				size:         "1Gi",
 				path:         "/other",
 				expectedSize: &quantity1Gi,
+				expectedPath: "/other",
 			},
 		}
 		for testName, test := range tests {
@@ -144,7 +150,7 @@ func TestSwiftController(t *testing.T) {
 					}
 					claim, ok := claims.Claim(claimName)
 					require.True(t, ok, "missing claim")
-					assert.Equal(t, test.path, claim.StoragePath())
+					assert.Equal(t, test.expectedPath, claim.StoragePath())
 					assert.Equal(t, test.expectedSize, claim.StorageSize())
 					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
 				})
