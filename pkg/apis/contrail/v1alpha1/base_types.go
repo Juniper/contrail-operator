@@ -24,6 +24,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 )
 
 var src = mRand.NewSource(time.Now().UnixNano())
@@ -255,7 +257,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
 	cert := "/etc/certificates/server-" + podIP + ".crt"
 	key := "/etc/certificates/server-key-" + podIP + ".pem"
-	ca := "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	ca := cacertificates.CsrSignerCAFilepath
 	inCluster := true
 	monitorConfig := MonitorConfig{
 		APIServerList: configNodeList,
@@ -1082,6 +1084,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	var collectorServerPort string
 	var analyticsServerPort string
 	var redisServerPort string
+	var authMode AuthenticationMode
 
 	if len(configList.Items) > 0 {
 		for _, ip := range configList.Items[0].Status.Nodes {
@@ -1089,6 +1092,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		}
 		configConfigInterface := configList.Items[0].ConfigurationParameters()
 		configConfig := configConfigInterface.(ConfigConfiguration)
+		authMode = configConfig.AuthMode
 		apiServerPort = strconv.Itoa(*configConfig.APIPort)
 		analyticsServerPort = strconv.Itoa(*configConfig.AnalyticsPort)
 		collectorServerPort = strconv.Itoa(*configConfig.CollectorPort)
@@ -1119,6 +1123,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		CollectorServerListSpaceSeparated:       collectorServerListSpaceSeparated,
 		FirstAPIServer:                          firstAPIServer,
 		RedisPort:                               redisServerPort,
+		AuthMode:                                authMode,
 	}
 	return &configCluster, nil
 }
@@ -1148,6 +1153,7 @@ type ConfigClusterConfiguration struct {
 	CollectorPort                           string
 	FirstAPIServer                          string
 	RedisPort                               string
+	AuthMode                                AuthenticationMode
 }
 
 // ControlClusterConfiguration defines all configuration knobs used to write the config file.

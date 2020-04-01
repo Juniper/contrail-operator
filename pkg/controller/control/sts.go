@@ -70,7 +70,7 @@ spec:
             - mountPath: /var/log/contrail
               name: control-logs
         - name: statusmonitor
-          image: docker.io/michaelhenkel/contrail-statusmonitor:debug
+          image: docker.io/kaweue/contrail-statusmonitor:debug
           env:
             - name: POD_IP
               valueFrom:

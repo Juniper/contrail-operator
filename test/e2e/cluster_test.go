@@ -70,13 +70,13 @@ func TestCluster(t *testing.T) {
 				assert.NoError(t, err)
 			})
 
-			t.Run("then list of virtual networks on contrail config api returns 200", func(t *testing.T) {
+			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {
 				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
 				req, err := configProxy.NewRequest(http.MethodGet, "/virtual-networks", nil)
 				assert.NoError(t, err)
 				res, err := configProxy.Do(req)
 				assert.NoError(t, err)
-				assert.Equal(t, 200, res.StatusCode)
+				assert.Equal(t, 401, res.StatusCode)
 			})
 		})
 

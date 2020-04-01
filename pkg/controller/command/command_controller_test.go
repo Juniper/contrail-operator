@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -274,10 +275,17 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
-								{Name: "command-command-volume", MountPath: "/etc/contrail"},
+								{
+									Name: "command-command-volume", 
+									MountPath: "/etc/contrail",
+								},
 								{
 									Name:      "command-secret-certificates",
 									MountPath: "/etc/certificates",
+								},
+								{
+									Name:      "command-csr-signer-ca",
+									MountPath: cacertificates.CsrSignerCAMountPath,
 								},
 							},
 						},
@@ -313,6 +321,16 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "command-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "command-csr-signer-ca",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: cacertificates.CsrSignerCAConfigMapName,
+									},
 								},
 							},
 						},
@@ -559,7 +577,7 @@ resources:
       fq_name:
         - default-global-system-config
         - cluster1
-      orchestrator: none
+      orchestrator: openstack
       parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4

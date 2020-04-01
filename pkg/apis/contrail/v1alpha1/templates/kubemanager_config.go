@@ -37,12 +37,12 @@ rabbit_password={{ .RabbitmqPassword }}
 rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-kombu_ssl_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=sslv23
 rabbit_health_check_interval=10
 cassandra_server_list={{ .CassandraServerList }}
 cassandra_use_ssl=True
-cassandra_ca_certs=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cassandra_ca_certs={{ .CAFilePath }}
 collectors={{ .CollectorServerList }}
 zk_server_ip={{ .ZookeeperServerList }}
 [SANDESH]
@@ -51,14 +51,14 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 var KubemanagerAPIVNC = template.Must(template.New("").Parse(`[global]
 WEB_SERVER = {{ .ListenAddress }}
 WEB_PORT = {{ .ListenPort }} ; connection to api-server directly
 BASE_URL = /
 use_ssl = True
-cafile = /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
 AUTHN_TYPE = noauth

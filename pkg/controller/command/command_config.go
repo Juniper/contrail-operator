@@ -19,13 +19,14 @@ type commandConf struct {
 	PostgresUser   string
 	PostgresDBName string
 	HostIP         string
+	CAFilePath     string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
 	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint.sh"] = commandEntrypoint
+	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
 func (c *commandConf) executeTemplate(t *template.Template) string {
@@ -37,12 +38,12 @@ func (c *commandConf) executeTemplate(t *template.Template) string {
 }
 
 // TODO: Major HACK contrailgo doesn't support external CA certificates
-var commandEntrypoint = `
+var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
-cp /run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/pki/ca-trust/source/anchors/
+cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
 /bin/contrailgo -c /etc/contrail/contrail.yml run
-`
+`))
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
@@ -103,7 +104,7 @@ resources:
       fq_name:
         - default-global-system-config
         - {{ .ClusterName | ToLower }}
-      orchestrator: none
+      orchestrator: openstack
       parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
