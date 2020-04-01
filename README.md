@@ -111,7 +111,7 @@ Operator-SDK is a set of tools for developing Kubernates Operators. It is needed
 
     $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-apple-darwin
     $ chmod u+x ./operator-sdk-v0.13.0-x86_64-apple-darwin
-    $ mv ./operator-sdk-v0.13.0-x86_64-apple-darwin /usr/local/bin/operator-sdk
+    $ sudo mv ./operator-sdk-v0.13.0-x86_64-apple-darwin /usr/local/bin/operator-sdk
 
 Verify if it works:
 
@@ -120,9 +120,9 @@ Verify if it works:
 
 ### Operator-sdk installation on Linux
 
-    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.0/operator-sdk-v0.17.0-x86_64-linux-gnu
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-linux-gnu
     $ chmod u+x ./operator-sdk-v0.13.0-x86_64-linux-gnu  
-    $ mv ./operator-sdk-v0.13.0-x86_64-linux-gnu /usr/local/bin/operator-sdk
+    $ sudo mv ./operator-sdk-v0.13.0-x86_64-linux-gnu /usr/local/bin/operator-sdk
 
 
 Verify if it works:

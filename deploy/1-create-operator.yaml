@@ -476,6 +476,10 @@ spec:
           properties:
             active:
               type: boolean
+            ips:
+              items:
+                type: string
+              type: array
           type: object
       type: object
   version: v1alpha1
@@ -1602,6 +1606,10 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        ips:
+                          items:
+                            type: string
+                          type: array
                       type: object
                   type: object
                 config:
