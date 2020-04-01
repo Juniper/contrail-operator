@@ -110,7 +110,7 @@ spec:
             init:
               image: registry:5000/python:alpine
             provisioner:
-              image: registry:5000/contrail-provisioner:latest
+              image: registry:5000/contrail-provisioner:master.1115
     rabbitmq:
       metadata:
         labels:

@@ -40,6 +40,13 @@ type encryption struct {
 	Insecure bool   `yaml:"insecure,omitempty"`
 }
 
+type KeystoneAuthParameters struct {
+	AdminUsername string `yaml:"admin_user,omitempty"`
+	AdminPassword string `yaml:"admin_password,omitempty"`
+	AuthUrl       string `yaml:"auth_url,omitempty"`
+	TenantName    string `yaml:"tenant_name,omitempty"`
+}
+
 func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Client) {
 	fmt.Printf("%s %s updated\n", nodeType, *nodesPtr)
 	nodeYaml, err := ioutil.ReadFile(*nodesPtr)
@@ -109,6 +116,7 @@ func main() {
 	vrouterNodesPtr := flag.String("vrouterNodes", "/provision.yaml", "path to vrouter nodes yaml file")
 	databaseNodesPtr := flag.String("databaseNodes", "/provision.yaml", "path to database nodes yaml file")
 	apiserverPtr := flag.String("apiserver", "/provision.yaml", "path to apiserver yaml file")
+	keystoneAuthConfPtr := flag.String("keystoneAuthConf", "/provision.yaml", "path to keystone authentication configuration file")
 	modePtr := flag.String("mode", "watch", "watch/run")
 	flag.Parse()
 
@@ -124,10 +132,21 @@ func main() {
 			panic(err)
 		}
 
+		var keystoneAuthParameters *KeystoneAuthParameters
+		keystoneAuthYaml, err := ioutil.ReadFile(*keystoneAuthConfPtr)
+		if err != nil {
+			panic(err)
+		}
+		if len(keystoneAuthYaml) > 0 {
+			if err = yaml.Unmarshal(keystoneAuthYaml, &keystoneAuthParameters); err != nil {
+				panic(err)
+			}
+		}
 		var contrailClient *contrail.Client
 		err = retry(5, 10*time.Second, func() (err error) {
-			contrailClient, err = getAPIClient(&apiServer)
+			contrailClient, err = getAPIClient(&apiServer, keystoneAuthParameters)
 			return
+
 		})
 		if err != nil {
 			if !connectionError(err) {
@@ -288,7 +307,18 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		contrailClient, err := getAPIClient(&apiServer)
+
+		var keystoneAuthParameters *KeystoneAuthParameters
+		keystoneAuthYaml, err := ioutil.ReadFile(*keystoneAuthConfPtr)
+		if err != nil {
+			panic(err)
+		}
+		if len(keystoneAuthYaml) > 0 {
+			if err = yaml.Unmarshal(keystoneAuthYaml, &keystoneAuthParameters); err != nil {
+				panic(err)
+			}
+		}
+		contrailClient, err := getAPIClient(&apiServer, keystoneAuthParameters)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -433,7 +463,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func getAPIClient(apiServerObj *APIServer) (*contrail.Client, error) {
+func getAPIClient(apiServerObj *APIServer, keystoneAuthParameters *KeystoneAuthParameters) (*contrail.Client, error) {
 	var contrailClient *contrail.Client
 	for _, apiServer := range apiServerObj.APIServerList {
 		apiServerSlice := strings.Split(apiServer, ":")
@@ -444,6 +474,9 @@ func getAPIClient(apiServerObj *APIServer) (*contrail.Client, error) {
 		fmt.Printf("api server %s:%d\n", apiServerSlice[0], apiPortInt)
 		contrailClient := contrail.NewClient(apiServerSlice[0], apiPortInt)
 		contrailClient.AddEncryption(apiServerObj.Encryption.CA, apiServerObj.Encryption.Key, apiServerObj.Encryption.Cert, true)
+		if keystoneAuthParameters != nil {
+			setupAuthKeystone(contrailClient, keystoneAuthParameters)
+		}
 		//contrailClient.AddHTTPParameter(1)
 		_, err = contrailClient.List("global-system-config")
 		if err == nil {
@@ -824,4 +857,21 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 		}
 	}
 	return nil
+}
+
+func setupAuthKeystone(client *contrail.Client, keystoneAuthParameters *KeystoneAuthParameters) {
+	keystone := contrail.NewKeepaliveKeystoneClient(
+		keystoneAuthParameters.AuthUrl,
+		keystoneAuthParameters.TenantName,
+		keystoneAuthParameters.AdminUsername,
+		keystoneAuthParameters.AdminPassword,
+		"",
+	)
+	err := keystone.AuthenticateV3()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	client.SetAuthenticator(keystone)
+
 }

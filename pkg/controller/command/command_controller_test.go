@@ -269,12 +269,16 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
-									HTTPGet: &core.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
+									HTTPGet: &core.HTTPGetAction{Scheme: core.URISchemeHTTPS, Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
+								{Name: "command-command-volume", MountPath: "/etc/contrail"},
+								{
+									Name:      "command-secret-certificates",
+									MountPath: "/etc/certificates",
+								},
 							},
 						},
 					},
@@ -301,6 +305,14 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 										{Key: "contrail.yml", Path: "contrail.yml"},
 										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 									},
+								},
+							},
+						},
+						{
+							Name: "command-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "command-secret-certificates",
 								},
 							},
 						},
@@ -400,9 +412,9 @@ server:
   enable_vnc_replication: true
   enable_gzip: false
   tls:
-    enabled: false
-    key_file: tools/server.key
-    cert_file: tools/server.crt
+    enabled: true
+    key_file: /etc/certificates/server-key-0.0.0.0.pem
+    cert_file: /etc/certificates/server-0.0.0.0.crt
   enable_grpc: false
   enable_vnc_neutron: false
   static_files:
@@ -459,7 +471,7 @@ keystone:
     type: memory
     expire: 36000
   insecure: true
-  authurl: http://localhost:9091/keystone/v3
+  authurl: https://localhost:9091/keystone/v3
   service_user:
     id: username
     password: password123
@@ -475,7 +487,7 @@ client:
   project_id: admin
   domain_id: default
   schema_root: /
-  endpoint: http://localhost:9091
+  endpoint: https://localhost:9091
 
 agent:
   enabled: false

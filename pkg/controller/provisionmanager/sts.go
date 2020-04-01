@@ -61,7 +61,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: docker.io/dysproz/contrail-provisioner:latest
+        image: docker.io/kaweue/contrail-provisioner:master.1115
         imagePullPolicy: Always
         volumeMounts:
         - mountPath: /var/lib/provisionmanager

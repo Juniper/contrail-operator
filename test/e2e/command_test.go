@@ -241,7 +241,7 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			var commandPods *core.PodList
-			
+
 			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
 				commandPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "command=commandtest",
@@ -250,7 +250,7 @@ func TestCommandServices(t *testing.T) {
 				assert.NotEmpty(t, commandPods.Items)
 			})
 
-			commandProxy := proxy.NewClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {

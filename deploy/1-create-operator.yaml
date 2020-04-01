@@ -2462,6 +2462,8 @@ spec:
                             manager configuration
                           properties:
                             containers: {}
+                            keystoneSecretName:
+                              type: string
                           type: object
                       required:
                       - commonConfiguration
@@ -3640,6 +3642,8 @@ spec:
                 configuration
               properties:
                 containers: {}
+                keystoneSecretName:
+                  type: string
               type: object
           required:
           - commonConfiguration
