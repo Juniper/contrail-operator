@@ -18,6 +18,7 @@ type commandConf struct {
 	SwiftPassword  string
 	PostgresUser   string
 	PostgresDBName string
+	HostIP         string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -285,9 +286,9 @@ server:
   enable_vnc_replication: true
   enable_gzip: false
   tls:
-    enabled: false
-    key_file: tools/server.key
-    cert_file: tools/server.crt
+    enabled: true
+    key_file: /etc/certificates/server-key-{{ .HostIP }}.pem
+    cert_file: /etc/certificates/server-{{ .HostIP }}.crt
   enable_grpc: false
   enable_vnc_neutron: false
   static_files:
@@ -344,7 +345,7 @@ keystone:
     type: memory
     expire: 36000
   insecure: true
-  authurl: http://localhost:9091/keystone/v3
+  authurl: https://localhost:9091/keystone/v3
   service_user:
     id: {{ .SwiftUsername }}
     password: {{ .SwiftPassword }}
@@ -360,7 +361,7 @@ client:
   project_id: admin
   domain_id: default
   schema_root: /
-  endpoint: http://localhost:9091
+  endpoint: https://localhost:9091
 
 agent:
   enabled: false
