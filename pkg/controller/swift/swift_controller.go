@@ -143,6 +143,9 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		ringsClaim.SetStorageSize(size)
 	}
 	ringsStoragePath := swift.Spec.ServiceConfiguration.RingsStorage.Path
+	if ringsStoragePath == "" {
+		ringsStoragePath = "/etc/rings"
+	}
 	ringsClaim.SetStoragePath(ringsStoragePath)
 	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err = ringsClaim.EnsureExists(); err != nil {
@@ -334,10 +337,6 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 	jobName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-ring-" + ringType + "-job",
-	}
-
-	if ringsStoragePath == "" {
-		ringsStoragePath = "/etc/rings"
 	}
 	theRing, err := ring.New(ringsClaimName, ringsStoragePath, ringType)
 	if err != nil {
