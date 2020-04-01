@@ -229,6 +229,8 @@ spec:
 
 //GetDaemonset returns DaemonSet object created from yamlDatavrouter
 func GetDaemonset() *appsv1.DaemonSet {
+  var aaa []int
+  aaa = append(aaa)
 	daemonSet := appsv1.DaemonSet{}
 	err := yaml.Unmarshal([]byte(yamlDatavrouter), &daemonSet)
 	if err != nil {
