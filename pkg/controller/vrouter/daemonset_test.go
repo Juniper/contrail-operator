@@ -20,12 +20,24 @@ func TestGetDaemonset(t *testing.T) {
 	ds, err := vrouter.GetDaemonset(testCNIDirs)
 	assert.NoError(t, err)
 	pathType := v1.HostPathType("")
-	assert.Contains(t, ds.Spec.Template.Spec.Volumes,
-		v1.Volume{Name: "cni-bin",
-			VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: testBinariesPath,
-				Type: &pathType}}})
-	assert.Contains(t, ds.Spec.Template.Spec.Volumes,
-		v1.Volume{Name: "cni-config-files",
-			VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: testConfigPath,
-				Type: &pathType}}})
+	expectedCniBinVolume := v1.Volume{
+		Name: "cni-bin",
+		VolumeSource: v1.VolumeSource{
+			HostPath: &v1.HostPathVolumeSource{
+				Path: testBinariesPath,
+				Type: &pathType,
+			},
+		},
+	}
+	expectedCniConfigVolume := v1.Volume{
+		Name: "cni-config-files",
+		VolumeSource: v1.VolumeSource{
+			HostPath: &v1.HostPathVolumeSource{
+				Path: testConfigPath,
+				Type: &pathType,
+			},
+		},
+	}
+	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
+	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniConfigVolume)
 }
