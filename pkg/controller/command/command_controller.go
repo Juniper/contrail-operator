@@ -127,8 +127,20 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.ensureCertificatesExist(command); err != nil {
+	commandPods, err := r.listCommandsPods(command.Name)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
+	}
+
+	if err := r.ensureCertificatesExist(command, commandPods); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if len(commandPods.Items) > 0 {
+		err = contrail.SetPodsToReady(commandPods, r.client)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	adminPasswordSecretName := command.Spec.ServiceConfiguration.KeystoneSecretName
@@ -224,6 +236,24 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			},
 		},
 	)
+	defMode := int32(420)
+	volumes = append(volumes, core.Volume{
+		Name: "status",
+		VolumeSource: core.VolumeSource{
+			DownwardAPI: &core.DownwardAPIVolumeSource{
+				Items: []core.DownwardAPIVolumeFile{
+					{
+						FieldRef: &core.ObjectFieldSelector{
+							APIVersion: "v1",
+							FieldPath:  "metadata.labels",
+						},
+						Path: "pod_labels",
+					},
+				},
+				DefaultMode: &defMode,
+			},
+		},
+	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
@@ -333,16 +363,27 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 							},
 						},
 					}},
-					InitContainers: []core.Container{{
-						Name:            "command-init",
-						ImagePullPolicy: core.PullAlways,
-						Image:           getImage(containers, "init"),
-						Command:         getCommand(containers, "init"),
-						VolumeMounts: []core.VolumeMount{{
-							Name:      configVolumeName,
-							MountPath: "/etc/contrail",
+					InitContainers: []core.Container{
+						{
+							Name:            "command-init",
+							ImagePullPolicy: core.PullAlways,
+							Image:           getImage(containers, "init"),
+							Command:         getCommand(containers, "init"),
+							VolumeMounts: []core.VolumeMount{{
+								Name:      configVolumeName,
+								MountPath: "/etc/contrail",
+							}},
+						},
+						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           getImage(containers, "wait-for-ready-conf"),
+							Command:         getCommand(containers, "wait-for-ready-conf"),
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
 						}},
-					}},
 					DNSPolicy: core.DNSClusterFirst,
 					Tolerations: []core.Toleration{
 						{Operator: "Exists", Effect: "NoSchedule"},
@@ -356,8 +397,9 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 
 func getImage(containers map[string]*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"init": "localhost:5000/contrail-command",
-		"api":  "localhost:5000/contrail-command",
+		"init":                "localhost:5000/contrail-command",
+		"api":                 "localhost:5000/contrail-command",
+		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 
 	c, ok := containers[containerName]
@@ -370,8 +412,9 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init": []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-		"api":  []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
+		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
+		"api":                 {"bash", "-c", "/etc/contrail/entrypoint.sh"},
+		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
 	c, ok := containers[containerName]
@@ -449,10 +492,20 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	return nil
 }
 
-func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command) error {
+func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, pods *core.PodList) error {
 	hostNetwork := true
 	if command.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.New(r.client, r.scheme, command, r.config, "command", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.New(r.client, r.scheme, command, r.config, pods, "command", hostNetwork).EnsureExistsAndIsSigned()
+}
+
+func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {
+	pods := &core.PodList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": "command", "command": commandName})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
+		return &core.PodList{}, err
+	}
+	return pods, nil
 }
