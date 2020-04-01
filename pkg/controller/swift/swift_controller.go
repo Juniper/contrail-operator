@@ -336,6 +336,9 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 		Name:      swift.Name + "-ring-" + ringType + "-job",
 	}
 
+	if ringsStoragePath == "" {
+		ringsStoragePath = "/etc/rings"
+	}
 	theRing, err := ring.New(ringsClaimName, ringsStoragePath, ringType)
 	if err != nil {
 		return err
