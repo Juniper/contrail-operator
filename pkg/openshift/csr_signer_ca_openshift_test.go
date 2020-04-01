@@ -9,7 +9,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
 
@@ -57,7 +57,7 @@ func TestCSRSignerCAOpenshift(t *testing.T) {
 				Data:     test.configMapData,
 			}
 			fakeCoreClient := fake.NewSimpleClientset(inputConfigMap).CoreV1()
-			var csrSignerCA certificates.CSRSignerCA = openshift.CSRSignerCAOpenshift{Client: fakeCoreClient}
+			var csrSignerCA cacertificates.CSRSignerCA = openshift.CSRSignerCAOpenshift{Client: fakeCoreClient}
 			actual, err := csrSignerCA.CSRSignerCA()
 			assert.Equal(t, err != nil, test.errorExpected)
 			assert.Equal(t, test.expected, actual)

@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -119,7 +119,7 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("loopback_users = none\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.tcp.port = 15671\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("management.load_definitions = /etc/rabbitmq/definitions.json\n")
-		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = %s\n", certificates.CsrSignerCaFilepath)
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.cacertfile = %s\n", cacertificates.CsrSignerCaFilepath)
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.keyfile = /etc/certificates/server-key-"+pod.Status.PodIP+".pem\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.certfile = /etc/certificates/server-"+pod.Status.PodIP+".crt\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")

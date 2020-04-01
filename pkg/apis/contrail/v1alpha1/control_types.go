@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -231,7 +231,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          certificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCaFilepath,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -268,7 +268,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          certificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCaFilepath,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 
@@ -284,7 +284,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          certificates.CsrSignerCaFilepath,
+			CAFilePath:          cacertificates.CsrSignerCaFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = controlNodemanagerBuffer.String()
 

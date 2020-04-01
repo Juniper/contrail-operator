@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
@@ -280,8 +281,8 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
-		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -441,7 +442,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: certificates.CsrSignerCaMountPath,
+				MountPath: cacertificates.CsrSignerCaMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

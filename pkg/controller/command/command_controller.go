@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
@@ -194,27 +195,35 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				LocalObjectReference: core.LocalObjectReference{
 					Name: commandConfigName,
 				},
-			},
-		},
-		{
-			Name: csrSignerCaVolumeName,
-			VolumeSource: core.VolumeSource{
-				ConfigMap: &core.ConfigMapVolumeSource{
-					LocalObjectReference: core.LocalObjectReference{
-						Name: certificates.CsrSignerCaConfigMapName,
-					},
+				Items: []core.KeyToPath{
+					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
+					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
+					{Key: "contrail.yml", Path: "contrail.yml"},
+					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 				},
 			},
 		},
 	}}
-	volumes = append(volumes, core.Volume{
-		Name: command.Name + "-secret-certificates",
-		VolumeSource: core.VolumeSource{
-			Secret: &core.SecretVolumeSource{
-				SecretName: command.Name + "-secret-certificates",
+	volumes = append(volumes,
+		core.Volume{
+			Name: command.Name + "-secret-certificates",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: command.Name + "-secret-certificates",
+				},
 			},
 		},
-	})
+		core.Volume{
+			Name: csrSignerCaVolumeName,
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: cacertificates.CsrSignerCaConfigMapName,
+					},
+				},
+			},
+		},
+	)
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
@@ -320,7 +329,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 							},
 							{
 								Name:      csrSignerCaVolumeName,
-								MountPath: certificates.CsrSignerCaMountPath,
+								MountPath: cacertificates.CsrSignerCaMountPath,
 							},
 						},
 					}},

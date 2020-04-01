@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -275,17 +275,17 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{
+								{
+									Name: "command-command-volume", 
+									MountPath: "/etc/contrail",
+								},
+								{
 									Name:      "command-secret-certificates",
 									MountPath: "/etc/certificates",
 								},
-								core.VolumeMount{
-									Name:      "command-command-volume",
-									MountPath: "/etc/contrail",
-								},
-								core.VolumeMount{
+								{
 									Name:      "command-csr-signer-ca",
-									MountPath: certificates.CsrSignerCaMountPath,
+									MountPath: cacertificates.CsrSignerCaMountPath,
 								},
 							},
 						},
@@ -317,19 +317,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
-<<<<<<< HEAD
 							Name: "command-secret-certificates",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "command-secret-certificates",
-=======
+								},
+							},
+						},
+						{
 							Name: "command-csr-signer-ca",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: certificates.CsrSignerCaConfigMapName,
+										Name: cacertificates.CsrSignerCaConfigMapName,
 									},
->>>>>>> Fixed current command controller unit tests
 								},
 							},
 						},

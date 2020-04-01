@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
@@ -288,8 +289,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	config.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
-		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
 	})
 	config.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -340,7 +341,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -374,7 +375,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 				corev1.VolumeMount{
 					Name:      "tftp",
@@ -413,7 +414,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 				corev1.VolumeMount{
 					Name:      "tftp",
@@ -462,7 +463,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -487,7 +488,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -512,7 +513,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -533,7 +534,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			queryEngineContainer.VolumeMounts = volumeMountList
@@ -558,7 +559,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				},
 				corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

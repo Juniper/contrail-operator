@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -539,7 +539,7 @@ func TestManagerController(t *testing.T) {
 
 		configMap := &core.ConfigMap{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      certificates.CsrSignerCaConfigMapName,
+			Name:      cacertificates.CsrSignerCaConfigMapName,
 			Namespace: "default",
 		}, configMap)
 

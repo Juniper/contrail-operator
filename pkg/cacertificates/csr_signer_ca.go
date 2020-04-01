@@ -1,4 +1,4 @@
-package certificates
+package cacertificates
 
 const (
 	CsrSignerCaConfigMapName = "csr-signer-ca"

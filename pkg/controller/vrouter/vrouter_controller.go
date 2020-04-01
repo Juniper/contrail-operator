@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
@@ -246,8 +247,8 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedDS(daemonSet, map[string]string{
-		configMap.Name:                        request.Name + "-" + instanceType + "-volume",
-		certificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCaConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedDS(daemonSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -393,7 +394,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: certificates.CsrSignerCaMountPath,
+				MountPath: cacertificates.CsrSignerCaMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -467,7 +468,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				volumeMountList = append(volumeMountList, volumeMount)
 				volumeMount = corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.CsrSignerCaMountPath,
+					MountPath: cacertificates.CsrSignerCaMountPath,
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
