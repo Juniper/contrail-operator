@@ -62,7 +62,7 @@ func TestCluster(t *testing.T) {
 			t.Run("then manager has ready condition in less then 10 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       10 * time.Minute,
+					Timeout:       20 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
