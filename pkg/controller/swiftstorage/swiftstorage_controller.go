@@ -112,6 +112,9 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		claim.SetStorageSize(size)
 	}
 	storagePath := swiftStorage.Spec.ServiceConfiguration.Storage.Path
+	if storagePath == "" {
+		storagePath = "/mnt/volumes/swift-storage"
+	}
 	claim.SetStoragePath(storagePath)
 	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err := claim.EnsureExists(); err != nil {
