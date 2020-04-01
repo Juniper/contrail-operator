@@ -276,7 +276,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
 								{
-									Name: "command-command-volume", 
+									Name:      "command-command-volume",
 									MountPath: "/etc/contrail",
 								},
 								{
