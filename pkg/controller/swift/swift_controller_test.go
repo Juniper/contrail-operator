@@ -49,12 +49,12 @@ func TestSwiftController(t *testing.T) {
 			expectedSize *resource.Quantity
 		}{
 			"no size and path given": {
-				expectedPath: "/etc/rings",
+				expectedPath: "/mnt/volumes/swift-rings",
 			},
 			"only size given": {
 				size:         "1Gi",
 				expectedSize: &quantity1Gi,
-				expectedPath: "/etc/rings",
+				expectedPath: "/mnt/volumes/swift-rings",
 			},
 			"size and path given": {
 				size:         "5Gi",
