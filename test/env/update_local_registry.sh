@@ -68,14 +68,9 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image michaelhenkel "${line}"
-done <<EOF
-contrail-statusmonitor:debug
-EOF
-
-while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
+contrail-statusmonitor:debug
 contrail-controller-config-dnsmasq:dev
 contrail-provisioner:master.1115
 EOF
