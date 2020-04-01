@@ -144,7 +144,7 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	ringsStoragePath := swift.Spec.ServiceConfiguration.RingsStorage.Path
 	if ringsStoragePath == "" {
-		ringsStoragePath = "/etc/rings"
+		ringsStoragePath = "/mnt/volumes/swift-rings"
 	}
 	ringsClaim.SetStoragePath(ringsStoragePath)
 	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
