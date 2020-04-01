@@ -151,6 +151,9 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		claim.SetStorageSize(size)
 	}
 	storagePath := keystone.Spec.ServiceConfiguration.Storage.Path
+	if storagePath == "" {
+		storagePath = "/mnt/volumes/keystone"
+	}
 	claim.SetStoragePath(storagePath)
 	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
 	if err = claim.EnsureExists(); err != nil {
@@ -197,7 +200,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kfcName, kscName, kciName, secretName string,
-	tokensClaimName types.NamespacedName, tokensPath string,
+	tokensClaimName types.NamespacedName, storagePath string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
@@ -207,7 +210,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 				Name: "keystone-fernet-tokens-volume-hostpath",
 				VolumeSource: core.VolumeSource{
 					HostPath: &core.HostPathVolumeSource{
-						Path: tokensPath,
+						Path: storagePath,
 						Type: &directoryOrCreate,
 					},
 				},

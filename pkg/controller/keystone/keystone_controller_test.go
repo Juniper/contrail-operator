@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +30,7 @@ func TestKeystone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, storage.SchemeBuilder.AddToScheme(scheme))
 	tests := []struct {
 		name             string
 		initObjs         []runtime.Object
@@ -296,21 +298,27 @@ func TestKeystone(t *testing.T) {
 		tests := map[string]struct {
 			size         string
 			path         string
+			expectedPath string
 			expectedSize *resource.Quantity
 		}{
-			"no size and path given": {},
+			"no size and path given": {
+				expectedPath: "/mnt/volumes/keystone",
+			},
 			"only size given": {
 				size:         "1Gi",
+				expectedPath: "/mnt/volumes/keystone",
 				expectedSize: &quantity1Gi,
 			},
 			"size and path given": {
 				size:         "5Gi",
 				path:         "/path",
+				expectedPath: "/path",
 				expectedSize: &quantity5Gi,
 			},
 			"size and path given 2": {
 				size:         "1Gi",
 				path:         "/other",
+				expectedPath: "/other",
 				expectedSize: &quantity1Gi,
 			},
 		}
@@ -345,7 +353,7 @@ func TestKeystone(t *testing.T) {
 				}
 				claim, ok := claims.Claim(claimName)
 				require.True(t, ok, "missing claim")
-				assert.Equal(t, test.path, claim.StoragePath())
+				assert.Equal(t, test.expectedPath, claim.StoragePath())
 				assert.Equal(t, test.expectedSize, claim.StorageSize())
 				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
 			})
@@ -530,7 +538,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							Name: "keystone-fernet-tokens-volume-hostpath",
 							VolumeSource: core.VolumeSource{
 								HostPath: &core.HostPathVolumeSource{
-									Path: "",
+									Path: "/mnt/volumes/keystone",
 									Type: &directoryOrCreate,
 								},
 							},
