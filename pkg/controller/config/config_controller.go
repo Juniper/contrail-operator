@@ -271,20 +271,22 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
 		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
 		claim := r.claims.New(claimName, config)
-		if config.Spec.ServiceConfiguration.Storage.Path != "" {
-			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
-			claim.SetStoragePath(path)
-			hostPathVolumesForLocalPV = append(hostPathVolumesForLocalPV,
-				corev1.Volume{
-					Name: pvc.ClaimName + "-hostpath",
-					VolumeSource: corev1.VolumeSource{
-						HostPath: &corev1.HostPathVolumeSource{
-							Path: path,
-							Type: &directoryOrCreate,
-						},
-					},
-				})
+		storagePath := config.Spec.ServiceConfiguration.Storage.Path
+		if storagePath == "" {
+			storagePath = "/mnt/volumes/config"
 		}
+		path := storagePath + string(os.PathSeparator) + vol.Name
+		claim.SetStoragePath(path)
+		hostPathVolumesForLocalPV = append(hostPathVolumesForLocalPV,
+			corev1.Volume{
+				Name: pvc.ClaimName + "-hostpath",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: path,
+						Type: &directoryOrCreate,
+					},
+				},
+			})
 		if config.Spec.ServiceConfiguration.Storage.Size != "" {
 			var quantity resource.Quantity
 			quantity, err = config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
