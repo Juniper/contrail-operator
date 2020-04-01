@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -282,7 +283,15 @@ func TestCommandServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then swift container should be created", func(t *testing.T) {
-				err = swiftClient.GetContainer("contrail_container")
+				err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+					err = swiftClient.GetContainer("contrail_container")
+					if err == nil {
+						return true, nil
+					}
+					t.Log(err)
+					return false, nil
+				})
+
 				assert.NoError(t, err)
 			})
 
