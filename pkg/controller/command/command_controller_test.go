@@ -181,8 +181,9 @@ func newCommand() *contrail.Command {
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
 				Containers: map[string]*contrail.Container{
-					"init": {Image: "registry:5000/contrail-command"},
-					"api":  {Image: "registry:5000/contrail-command"},
+					"init":                {Image: "registry:5000/contrail-command"},
+					"api":                 {Image: "registry:5000/contrail-command"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -241,6 +242,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	executableMode := int32(0744)
+	defMode := int32(420)
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -276,7 +278,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
 								{
-									Name: "command-command-volume", 
+									Name:      "command-command-volume",
 									MountPath: "/etc/contrail",
 								},
 								{
@@ -298,6 +300,15 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 						VolumeMounts: []core.VolumeMount{
 							core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 						},
+					}, {
+						Name:            "wait-for-ready-conf",
+						ImagePullPolicy: core.PullAlways,
+						Image:           "registry:5000/busybox",
+						Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+						VolumeMounts: []core.VolumeMount{{
+							Name:      "status",
+							MountPath: "/tmp/podinfo",
+						}},
 					}},
 					Volumes: []core.Volume{
 						{
@@ -334,10 +345,27 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								},
 							},
 						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &defMode,
+								},
+							},
+						},
 					},
 					Tolerations: []core.Toleration{
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 				},
 			},

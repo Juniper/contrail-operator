@@ -212,4 +212,3 @@ func (m Manager) IsClusterReady() bool {
 func init() {
 	SchemeBuilder.Register(&Manager{}, &ManagerList{})
 }
-
