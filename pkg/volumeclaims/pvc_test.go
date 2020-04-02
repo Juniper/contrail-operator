@@ -339,9 +339,7 @@ func TestEnsureExists(t *testing.T) {
 				pv := &core.PersistentVolume{}
 				err = cl.Get(context.Background(), pvKey, pv)
 				require.NoError(t, err)
-				actual := pv.Spec.NodeAffinity
-				expected := test.expectedVolumeNodeAffinity
-				assertNodeAffinity(t, expected, actual)
+				assertNodeAffinity(t, test.expectedVolumeNodeAffinity, pv.Spec.NodeAffinity)
 			})
 		}
 	})
