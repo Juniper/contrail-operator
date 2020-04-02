@@ -13,6 +13,7 @@ type swiftProxyInitConfig struct {
 	SwiftEndpoint         string
 	SwiftPassword         string
 	SwiftUser             string
+	CAFilePath            string
 }
 
 func (s *swiftProxyInitConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -38,6 +39,8 @@ const registerPlaybook = `
         description: "object store service"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
+
     - name: create swift endpoints service
       os_keystone_endpoint:
         service: "swift"
@@ -46,6 +49,7 @@ const registerPlaybook = `
         endpoint_interface: "{{ item.interface }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
       with_items:
         - { url: "http://{{ swift_endpoint }}/v1", interface: "admin" }
         - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
@@ -56,6 +60,7 @@ const registerPlaybook = `
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
     - name: create swift user
       os_user:
         default_project: "service"
@@ -64,11 +69,13 @@ const registerPlaybook = `
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
     - name: create admin role    
       os_keystone_role:
         name: "{{ item }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
       with_items:
         - admin
         - ResellerAdmin
@@ -80,6 +87,7 @@ const registerPlaybook = `
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
 `
 
 var registerConfig = template.Must(template.New("").Parse(`
@@ -94,4 +102,6 @@ openstack_auth:
 swift_endpoint: "{{ .SwiftEndpoint }}"
 swift_password: "{{ .SwiftPassword }}"
 swift_user: "{{ .SwiftUser }}"
+
+ca_cert_filepath: "{{ .CAFilePath }}"
 `))

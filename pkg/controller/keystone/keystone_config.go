@@ -13,6 +13,7 @@ type keystoneConfig struct {
 	RabbitMQServer   string
 	PostgreSQLServer string
 	MemcacheServer   string
+	PodIP            string
 }
 
 func (c *keystoneConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -109,6 +110,7 @@ memcache_servers = {{ .MemcacheServer }}
 var wsgiKeystoneConf = template.Must(template.New("").Parse(`
 Listen {{ .ListenAddress }}:{{ .ListenPort }}
 
+ServerName {{ .ListenAddress }}
 ServerSignature Off
 ServerTokens Prod
 TraceEnable off
@@ -116,7 +118,6 @@ TraceEnable off
 
 <Directory "/usr/bin">
     <FilesMatch "^keystone-wsgi-(public|admin)$">
-        AllowOverride None
         Options None
         Require all granted
     </FilesMatch>
@@ -124,6 +125,9 @@ TraceEnable off
 
 
 <VirtualHost *:{{ .ListenPort }}>
+    SSLEngine on
+    SSLCertificateFile "/etc/certificates/server-{{ .PodIP }}.crt"
+    SSLCertificateKeyFile "/etc/certificates/server-key-{{ .PodIP }}.pem"
     WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public

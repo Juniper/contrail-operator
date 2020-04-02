@@ -34,6 +34,7 @@ var config = &v1alpha1.Config{
 	Spec: v1alpha1.ConfigSpec{
 		ServiceConfiguration: v1alpha1.ConfigConfiguration{
 			KeystoneSecretName: "keystone-adminpass-secret",
+			AuthMode:           v1alpha1.AuthenticationModeKeystone,
 		},
 	},
 }
@@ -117,6 +118,24 @@ var vrouter = &v1alpha1.Vrouter{
 			ControlInstance: "control1",
 			Gateway:         "1.1.8.254",
 		},
+	},
+}
+
+var keystone = &v1alpha1.Keystone{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "keystone",
+		Namespace: "default",
+		Labels: map[string]string{
+			"contrail_cluster": "cluster1",
+		},
+	},
+	Spec: v1alpha1.KeystoneSpec{
+		ServiceConfiguration: v1alpha1.KeystoneConfiguration{
+			ListenPort: 5555,
+		},
+	},
+	Status: v1alpha1.KeystoneStatus{
+		IPs: []string{"10.11.12.13"},
 	},
 }
 
@@ -261,6 +280,7 @@ func SetupEnv() Environment {
 		kubemanager,
 		webui,
 		vrouter,
+		keystone,
 		rabbitmqList,
 		zookeeperList,
 		cassandraList,
@@ -278,6 +298,7 @@ func SetupEnv() Environment {
 		kubemanager,
 		webui,
 		vrouter,
+		keystone,
 		&configConfigMap,
 		&controlConfigMap,
 		&cassandraConfigMap,
@@ -789,7 +810,7 @@ var webuiConfigHa = `/*
 */
 var config = {};
 config.orchestration = {};
-config.orchestration.Manager = "none";
+config.orchestration.Manager = "openstack";
 config.orchestrationModuleEndPointFromConfig = false;
 config.contrailEndPointFromConfig = true;
 config.regionsFromConfig = false;
@@ -797,7 +818,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "http://localhost:5555/v3";
+config.regions.RegionOne = "https://10.11.12.13:5555/v3";
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -821,13 +842,13 @@ config.computeManager.apiVersion = ['v1.1', 'v2'];
 config.computeManager.strictSSL = false;
 config.computeManager.ca = "";
 config.identityManager = {};
-config.identityManager.ip = "localhost";
+config.identityManager.ip = "10.11.12.13";
 config.identityManager.port = "5555";
-config.identityManager.authProtocol = "http";
+config.identityManager.authProtocol = "https";
 config.identityManager.apiVersion = ['v3'];
 config.identityManager.strictSSL = false;
 config.identityManager.defaultDomain = "Default";
-config.identityManager.ca = "";
+config.identityManager.ca = "/etc/ssl/certs/kubernetes/ca-bundle.crt";
 config.storageManager = {};
 config.storageManager.ip = "127.0.0.1";
 config.storageManager.port = "8776";
@@ -944,8 +965,8 @@ log_file=/var/log/contrail/contrail-api.log
 log_level=SYS_NOTICE
 log_local=1
 list_optimization_enabled=True
-auth=noauth
-aaa_mode=no-auth
+auth=keystone
+aaa_mode=rbac
 cloud_admin_role=admin
 global_read_only_role=
 config_api_ssl_enable=True
@@ -1334,7 +1355,7 @@ ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 [SCHEDULER]
 # Analytics server list used to get vrouter status and schedule service instance
 analytics_server_list=1.1.1.1:8081 1.1.1.2:8081 1.1.1.3:8081
-aaa_mode=no-auth
+aaa_mode=rbac
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False
@@ -1380,7 +1401,7 @@ http_server_port=8090
 http_server_ip=0.0.0.0
 rest_api_port=8081
 rest_api_ip=0.0.0.0
-aaa_mode=no-auth
+aaa_mode=rbac
 log_file=/var/log/contrail/contrail-analytics-api.log
 log_level=SYS_NOTICE
 log_local=1
@@ -1810,11 +1831,12 @@ use_ssl = True
 cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 ; Authentication settings (optional)
 [auth]
-AUTHN_TYPE = noauth
-AUTHN_PROTOCOL = http
-AUTHN_SERVER = localhost
+AUTHN_TYPE = keystone
+AUTHN_PROTOCOL = https
+AUTHN_SERVER = 10.11.12.13
 AUTHN_PORT = 5555
 AUTHN_URL = /v3/auth/tokens
 AUTHN_DOMAIN = Default
+cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `

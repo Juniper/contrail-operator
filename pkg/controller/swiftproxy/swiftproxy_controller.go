@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -175,6 +176,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 		ringsClaimName := swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
+		csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
 			swiftConfigName,
@@ -183,6 +185,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 			swiftProxy.Spec.ServiceConfiguration.Containers,
 			ringsClaimName,
 			listenPort,
+			csrSignerCaVolumeName,
 		)
 
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
@@ -252,8 +255,8 @@ func updatePodTemplate(
 	containers map[string]*contrail.Container,
 	ringsClaimName string,
 	port int,
+	csrSignerCaVolumeName string,
 ) {
-
 	pod.InitContainers = []core.Container{
 		{
 			Name:            "init",
@@ -261,6 +264,7 @@ func updatePodTemplate(
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
+				core.VolumeMount{Name: csrSignerCaVolumeName, MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
 			},
 			Command: getCommand(containers, "init"),
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -274,6 +278,7 @@ func updatePodTemplate(
 			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+			{Name: csrSignerCaVolumeName, MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
@@ -337,6 +342,16 @@ func updatePodTemplate(
 				PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 					ClaimName: ringsClaimName,
 					ReadOnly:  true,
+				},
+			},
+		},
+		{
+			Name: csrSignerCaVolumeName,
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: cacertificates.CsrSignerCAConfigMapName,
+					},
 				},
 			},
 		},

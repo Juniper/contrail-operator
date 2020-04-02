@@ -130,6 +130,8 @@ spec:
                 containers: {}
                 fabricMgmtIP:
                   type: string
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
                 logLevel:

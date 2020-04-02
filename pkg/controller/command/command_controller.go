@@ -161,12 +161,21 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	keystone, err := r.getKeystone(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if keystone.Status.Node == "" {
+		return reconcile.Result{}, fmt.Errorf("%q Status.Node field empty", keystone.Name)
+	}
+	keystoneUrl := fmt.Sprintf("https://%s", keystone.Status.Node)
+
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0]); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneUrl); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -236,7 +245,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			},
 		},
 	)
-	defMode := int32(420)
+	var labelsMountPermission int32 = 0644
 	volumes = append(volumes, core.Volume{
 		Name: "status",
 		VolumeSource: core.VolumeSource{
@@ -250,7 +259,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 						Path: "pod_labels",
 					},
 				},
-				DefaultMode: &defMode,
+				DefaultMode: &labelsMountPermission,
 			},
 		},
 	})
@@ -265,11 +274,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	if err = r.updateStatus(command, deployment); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	keystone, err := r.getKeystone(command)
-	if err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -472,7 +476,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystoneProxy := proxy.NewClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
+	keystoneProxy := proxy.NewSecureClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {

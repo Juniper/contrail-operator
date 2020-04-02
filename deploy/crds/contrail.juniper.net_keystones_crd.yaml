@@ -136,6 +136,10 @@ spec:
           properties:
             active:
               type: boolean
+            ips:
+              items:
+                type: string
+              type: array
             node:
               type: string
             port:

@@ -620,6 +620,8 @@ spec:
                 containers: {}
                 fabricMgmtIP:
                   type: string
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
                 logLevel:
@@ -992,6 +994,10 @@ spec:
           properties:
             active:
               type: boolean
+            ips:
+              items:
+                type: string
+              type: array
             node:
               type: string
             port:
@@ -1741,6 +1747,8 @@ spec:
                             containers: {}
                             fabricMgmtIP:
                               type: string
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                             logLevel:
@@ -2100,6 +2108,10 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        ips:
+                          items:
+                            type: string
+                          type: array
                         node:
                           type: string
                         port:
@@ -2490,6 +2502,8 @@ spec:
                             manager configuration
                           properties:
                             containers: {}
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                           type: object
@@ -3048,6 +3062,8 @@ spec:
                             clusterRoleBinding:
                               type: string
                             containers: {}
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                             serviceAccount:
@@ -3670,6 +3686,8 @@ spec:
                 configuration
               properties:
                 containers: {}
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
               type: object
@@ -4418,6 +4436,8 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
                 serviceAccount:

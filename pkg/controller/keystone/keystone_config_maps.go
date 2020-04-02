@@ -21,20 +21,21 @@ func (r *ReconcileKeystone) configMap(configMapName, ownerType string, keystone 
 	}
 }
 
-func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string) error {
+func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, podIP string) error {
 	cc := &keystoneConfig{
-		ListenAddress:    "0.0.0.0",
+		ListenAddress:    podIP,
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: postgresNode,
 		MemcacheServer:   memcachedNode,
+		PodIP:            podIP,
 	}
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string) error {
+func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, podIP string) error {
 	cc := &keystoneInitConf{
-		ListenAddress:    "0.0.0.0",
+		ListenAddress:    podIP,
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: postgresNode,
@@ -55,9 +56,9 @@ func (c *configMaps) ensureKeystoneFernetConfigMap(postgresNode, memcachedNode s
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneSSHConfigMap() error {
+func (c *configMaps) ensureKeystoneSSHConfigMap(podIP string) error {
 	cc := &keystoneSSHConf{
-		ListenAddress: "0.0.0.0",
+		ListenAddress: podIP,
 	}
 
 	return c.cm.EnsureExists(cc)

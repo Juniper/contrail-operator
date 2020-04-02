@@ -91,9 +91,10 @@ use = egg:swift#proxy_logging
 
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-auth_uri = http://{{ .KeystoneServer }}
-auth_url = http://{{ .KeystoneServer }}
+auth_url = https://{{ .KeystoneServer }}
 auth_type = password
+auth_protocol = https
+insecure = true
 project_domain_id = default
 user_domain_id = default
 project_name = service

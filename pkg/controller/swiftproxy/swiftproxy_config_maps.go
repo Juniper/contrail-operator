@@ -6,6 +6,7 @@ import (
 	core "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -46,11 +47,12 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 
 func (c *configMaps) ensureInitExists(endpoint string) error {
 	spc := &swiftProxyInitConfig{
-		KeystoneAuthURL:       "http://" + c.keystoneStatus.Node + "/v3",
+		KeystoneAuthURL:       "https://" + c.keystoneStatus.Node + "/v3",
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
 		SwiftEndpoint:         fmt.Sprintf("%v:%v", endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		CAFilePath:            cacertificates.CsrSignerCAFilepath,
 	}
 	return c.cm.EnsureExists(spc)
 }

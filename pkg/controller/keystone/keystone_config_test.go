@@ -127,6 +127,7 @@ memcache_servers = localhost:11211
 const expectedWSGIKeystoneConfig = `
 Listen 0.0.0.0:5555
 
+ServerName 0.0.0.0
 ServerSignature Off
 ServerTokens Prod
 TraceEnable off
@@ -134,7 +135,6 @@ TraceEnable off
 
 <Directory "/usr/bin">
     <FilesMatch "^keystone-wsgi-(public|admin)$">
-        AllowOverride None
         Options None
         Require all granted
     </FilesMatch>
@@ -142,6 +142,9 @@ TraceEnable off
 
 
 <VirtualHost *:5555>
+    SSLEngine on
+    SSLCertificateFile "/etc/certificates/server-0.0.0.0.crt"
+    SSLCertificateKeyFile "/etc/certificates/server-key-0.0.0.0.pem"
     WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
@@ -264,7 +267,7 @@ keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
-  --bootstrap-admin-url http://0.0.0.0:5555/v3/ \
-  --bootstrap-internal-url http://0.0.0.0:5555/v3/ \
-  --bootstrap-public-url http://0.0.0.0:5555/v3/
+  --bootstrap-admin-url https://0.0.0.0:5555/v3/ \
+  --bootstrap-internal-url https://0.0.0.0:5555/v3/ \
+  --bootstrap-public-url https://0.0.0.0:5555/v3/
 `

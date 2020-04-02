@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -76,7 +77,7 @@ func TestKeystone(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "localhost:5555", Port: 5555},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "127.0.0.1:5555", Port: 5555},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
@@ -223,7 +224,7 @@ func TestKeystone(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := keystone.NewReconciler(
-				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme),
+				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme), &rest.Config{},
 			)
 
 			req := reconcile.Request{
@@ -328,7 +329,7 @@ func TestKeystone(t *testing.T) {
 				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached, adminSecret)
 				claims := volumeclaims.NewFake()
 				r := keystone.NewReconciler(
-					cl, scheme, k8s.New(cl, scheme), claims,
+					cl, scheme, k8s.New(cl, scheme), claims, &rest.Config{},
 				)
 				// when
 				_, err := r.Reconcile(reconcile.Request{
@@ -405,6 +406,7 @@ func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
 
 func newExpectedSTS() *apps.StatefulSet {
 	trueVal := true
+	var labelsMountPermission int32 = 0644
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone-statefulset",
@@ -429,6 +431,16 @@ func newExpectedSTS() *apps.StatefulSet {
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,
 					InitContainers: []core.Container{
+						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "localhost:5000/busybox",
+							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
 						{
 							Name:            "keystone-db-init",
 							Image:           "localhost:5000/postgresql-client",
@@ -478,12 +490,16 @@ func newExpectedSTS() *apps.StatefulSet {
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
-									HTTPGet: &core.HTTPGetAction{Path: "/v3", Port: intstr.IntOrString{
-										IntVal: 5555,
-									}},
+									HTTPGet: &core.HTTPGetAction{
+										Scheme: core.URISchemeHTTPS,
+										Path:   "/v3",
+										Port: intstr.IntOrString{
+											IntVal: 5555,
+										}},
 								},
 							},
 							Resources: core.ResourceRequirements{
@@ -585,6 +601,31 @@ func newExpectedSTS() *apps.StatefulSet {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "keystone-keystone-keys",
+								},
+							},
+						},
+						{
+							Name: "keystone-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
 								},
 							},
 						},
@@ -781,6 +822,16 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 	sts := newExpectedSTS()
 	sts.Spec.Template.Spec.InitContainers = []core.Container{
 		{
+			Name:            "wait-for-ready-conf",
+			ImagePullPolicy: core.PullAlways,
+			Image:           "localhost:5000/busybox",
+			Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+			VolumeMounts: []core.VolumeMount{{
+				Name:      "status",
+				MountPath: "/tmp/podinfo",
+			}},
+		},
+		{
 			Name:            "keystone-db-init",
 			Image:           "image1",
 			ImagePullPolicy: core.PullAlways,
@@ -830,12 +881,16 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 			},
 			ReadinessProbe: &core.Probe{
 				Handler: core.Handler{
-					HTTPGet: &core.HTTPGetAction{Path: "/v3", Port: intstr.IntOrString{
-						IntVal: 5555,
-					}},
+					HTTPGet: &core.HTTPGetAction{
+						Scheme: core.URISchemeHTTPS,
+						Path:   "/v3",
+						Port: intstr.IntOrString{
+							IntVal: 5555,
+						}},
 				},
 			},
 			Resources: core.ResourceRequirements{
@@ -892,3 +947,5 @@ createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
 psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
 createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
 psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+
+const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"

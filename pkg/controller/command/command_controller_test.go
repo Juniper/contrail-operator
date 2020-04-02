@@ -519,7 +519,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	executableMode := int32(0744)
-	defMode := int32(420)
+	var labelsMountPermission int32 = 0644
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -654,7 +654,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 											Path: "pod_labels",
 										},
 									},
-									DefaultMode: &defMode,
+									DefaultMode: &labelsMountPermission,
 								},
 							},
 						},
@@ -1046,8 +1046,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: "http://0.0.0.0:5555"
-      public_url: "http://0.0.0.0:5555"
+      private_url: https://10.0.2.15:5555
+      public_url: https://10.0.2.15:5555
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
