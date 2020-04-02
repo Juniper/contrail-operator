@@ -95,3 +95,17 @@ After this change apply changes to k8s cluster:
 
     cd test/env
     ./apply_contrail_cluster.sh
+
+## Measuring Unit Tests code coverage
+
+### Measure code coverage by package
+
+    go test -coverprofile=cov.out ./pkg/...
+
+### Calculate total code coverage 
+
+    go tool cover -func cov.out | grep total | awk '{print $3}'
+
+### Display code coverage in the browser
+
+    go tool cover -html=cov.out
