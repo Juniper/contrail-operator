@@ -339,11 +339,25 @@ func TestEnsureExists(t *testing.T) {
 				pv := &core.PersistentVolume{}
 				err = cl.Get(context.Background(), pvKey, pv)
 				require.NoError(t, err)
-				assert.NotNil(t, pv.Spec.NodeAffinity)
-				assert.Equal(t, test.expectedVolumeNodeAffinity, *pv.Spec.NodeAffinity)
+				actual := pv.Spec.NodeAffinity
+				expected := test.expectedVolumeNodeAffinity
+				assertNodeAffinity(t, expected, actual)
 			})
 		}
 	})
+}
+
+func assertNodeAffinity(t *testing.T, expected core.VolumeNodeAffinity, actual *core.VolumeNodeAffinity) {
+	require.NotNil(t, actual)
+	require.NotNil(t, actual.Required)
+	actualTerms := actual.Required.NodeSelectorTerms
+	require.NotNil(t, actualTerms)
+	expectedTerms := expected.Required.NodeSelectorTerms
+	require.Len(t, actualTerms, len(expectedTerms))
+	for j := 0; j < len(expectedTerms); j++ {
+		assert.ElementsMatch(t, expectedTerms[j].MatchExpressions, actualTerms[j].MatchExpressions)
+		assert.ElementsMatch(t, expectedTerms[j].MatchFields, actualTerms[j].MatchFields)
+	}
 }
 
 func scheme(t *testing.T) *runtime.Scheme {
