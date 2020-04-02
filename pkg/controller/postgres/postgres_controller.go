@@ -180,6 +180,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			command = c.Command
 		}
 	}
+	db := "contrail_test"
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -199,7 +200,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					ReadinessProbe: &core.Probe{
 						Handler: core.Handler{
 							Exec: &core.ExecAction{
-								Command: []string{"pg_isready", "-h", "localhost", "-U", "root"},
+								Command: []string{"pg_isready", "-h", "localhost", "-U", "root", "-d", db},
 							},
 						},
 					},
@@ -211,7 +212,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
 						{Name: "POSTGRES_PASSWORD", Value: "contrail123"},
-						{Name: "POSTGRES_DB", Value: "contrail_test"},
+						{Name: "POSTGRES_DB", Value: db},
 					},
 				},
 			},
