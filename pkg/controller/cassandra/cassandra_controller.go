@@ -1,10 +1,14 @@
 package cassandra
 
 import (
+	"bytes"
 	"context"
 	"strconv"
+	"text/template"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,11 +30,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_cassandra")
-var err error
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -163,6 +166,18 @@ type ReconcileCassandra struct {
 	Manager manager.Manager
 }
 
+var cassandraInit2CommandTemplate = template.Must(template.New("").Parse(
+	"keytool -keystore /etc/keystore/server-truststore.jks -keypass {{ .KeystorePassword }} -storepass {{ .TruststorePassword }} -list -alias CARoot -noprompt;" +
+		"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass {{ .KeystorePassword }} -storepass {{ .TruststorePassword }} -noprompt -alias CARoot -import -file {{ .CAFilePath }}; fi && " +
+		"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile {{ .CAFilePath }} -password pass:{{ .TruststorePassword }} -name $(hostname -f) -out TmpFile && " +
+		"keytool -importkeystore -deststorepass {{ .KeystorePassword }} -destkeypass {{ .KeystorePassword }} -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass {{ .TruststorePassword }} -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"))
+
+type cassandraInit2CommandData struct {
+	KeystorePassword   string
+	TruststorePassword string
+	CAFilePath         string
+}
+
 // Reconcile reconciles cassandra.
 func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -214,7 +229,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	cassandraDefaultConfigurationInterface := instance.ConfigurationParameters()
@@ -222,6 +241,9 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 
 	storageResource := corev1.ResourceStorage
 	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.Storage.Size)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	storageClassName := "local-storage"
 	statefulSet.Spec.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 		ObjectMeta: metav1.ObjectMeta{
@@ -281,6 +303,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: "/etc/keystore",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			var jvmOpts string
@@ -291,8 +318,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 				jvmOpts = jvmOpts + " -Xmx" + instance.Spec.ServiceConfiguration.MaxHeapSize
 			}
 			if jvmOpts != "" {
-				envs := (&statefulSet.Spec.Template.Spec.Containers[idx]).Env
-				envs = append(envs)
 				jvmOptEnvVar := corev1.EnvVar{
 					Name:  "JVM_OPTS",
 					Value: jvmOpts,
@@ -329,7 +354,9 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		secretData := map[string][]byte{"keystorePassword": []byte(cassandraKeystorePassword), "truststorePassword": []byte(cassandraTruststorePassword)}
 		secret.Data = secretData
 	}
-	r.Client.Update(context.TODO(), secret)
+	if err = r.Client.Update(context.TODO(), secret); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	cassandraKeystorePassword := string(secret.Data["keystorePassword"])
 	cassandraTruststorePassword := string(secret.Data["truststorePassword"])
@@ -353,11 +380,16 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
 		if container.Name == "init2" {
-			command := []string{"bash", "-c",
-				"keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -list -alias CARoot -noprompt;" +
-					"if [ $? -ne 0 ]; then keytool -keystore /etc/keystore/server-truststore.jks -keypass " + cassandraKeystorePassword + " -storepass " + cassandraTruststorePassword + " -noprompt -alias CARoot -import -file /run/secrets/kubernetes.io/serviceaccount/ca.crt; fi && " +
-					"openssl pkcs12 -export -in /etc/certificates/server-${POD_IP}.crt -inkey /etc/certificates/server-key-${POD_IP}.pem -chain -CAfile /run/secrets/kubernetes.io/serviceaccount/ca.crt -password pass:" + cassandraTruststorePassword + " -name $(hostname -f) -out TmpFile && " +
-					"keytool -importkeystore -deststorepass " + cassandraKeystorePassword + " -destkeypass " + cassandraKeystorePassword + " -destkeystore /etc/keystore/server-keystore.jks -deststoretype pkcs12 -srcstorepass " + cassandraTruststorePassword + " -srckeystore TmpFile -srcstoretype PKCS12 -alias $(hostname -f) -noprompt;"}
+			var cassandraInit2CommandBuffer bytes.Buffer
+			err = cassandraInit2CommandTemplate.Execute(&cassandraInit2CommandBuffer, cassandraInit2CommandData{
+				KeystorePassword:   cassandraKeystorePassword,
+				TruststorePassword: cassandraTruststorePassword,
+				CAFilePath:         cacertificates.CsrSignerCAFilepath,
+			})
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			command := []string{"bash", "-c", cassandraInit2CommandBuffer.String()}
 
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
@@ -374,6 +406,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}
@@ -482,7 +519,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
@@ -494,7 +531,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
-		err := r.Client.List(context.TODO(), pvcList, listOps)
+		err = r.Client.List(context.TODO(), pvcList, listOps)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

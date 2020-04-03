@@ -18,13 +18,15 @@ type commandConf struct {
 	SwiftPassword  string
 	PostgresUser   string
 	PostgresDBName string
+	HostIP         string
+	CAFilePath     string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
 	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint.sh"] = commandEntrypoint
+	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
 func (c *commandConf) executeTemplate(t *template.Template) string {
@@ -36,12 +38,12 @@ func (c *commandConf) executeTemplate(t *template.Template) string {
 }
 
 // TODO: Major HACK contrailgo doesn't support external CA certificates
-var commandEntrypoint = `
+var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
-cp /run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/pki/ca-trust/source/anchors/
+cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
 /bin/contrailgo -c /etc/contrail/contrail.yml run
-`
+`))
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
@@ -102,7 +104,7 @@ resources:
       fq_name:
         - default-global-system-config
         - {{ .ClusterName | ToLower }}
-      orchestrator: none
+      orchestrator: openstack
       parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
@@ -285,9 +287,9 @@ server:
   enable_vnc_replication: true
   enable_gzip: false
   tls:
-    enabled: false
-    key_file: tools/server.key
-    cert_file: tools/server.crt
+    enabled: true
+    key_file: /etc/certificates/server-key-{{ .HostIP }}.pem
+    cert_file: /etc/certificates/server-{{ .HostIP }}.crt
   enable_grpc: false
   enable_vnc_neutron: false
   static_files:
@@ -344,7 +346,7 @@ keystone:
     type: memory
     expire: 36000
   insecure: true
-  authurl: http://localhost:9091/keystone/v3
+  authurl: https://localhost:9091/keystone/v3
   service_user:
     id: {{ .SwiftUsername }}
     password: {{ .SwiftPassword }}
@@ -360,7 +362,7 @@ client:
   project_id: admin
   domain_id: default
   schema_root: /
-  endpoint: http://localhost:9091
+  endpoint: https://localhost:9091
 
 agent:
   enabled: false

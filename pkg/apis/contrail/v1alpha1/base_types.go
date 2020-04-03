@@ -1,16 +1,8 @@
 package v1alpha1
 
 import (
-	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"net"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -30,11 +20,12 @@ import (
 	mRand "math/rand"
 
 	appsv1 "k8s.io/api/apps/v1"
-	certv1beta1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 )
 
 var src = mRand.NewSource(time.Now().UnixNano())
@@ -165,7 +156,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Namespace: namespace,
 			},
 		}
-		controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		err = controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
@@ -184,7 +178,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 			},
 			Type: corev1.SecretType("kubernetes.io/service-account-token"),
 		}
-		controllerutil.SetControllerReference(owner, secret, scheme)
+		err = controllerutil.SetControllerReference(owner, secret, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), secret); err != nil {
 			return err
 		}
@@ -214,7 +211,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				},
 			}},
 		}
-		controllerutil.SetControllerReference(owner, clusterRole, scheme)
+		err = controllerutil.SetControllerReference(owner, clusterRole, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), clusterRole); err != nil {
 			return err
 		}
@@ -243,7 +243,10 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Name:     clusterRoleName,
 			},
 		}
-		controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
+		err = controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
+		if err != nil {
+			return err
+		}
 		if err = client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return err
 		}
@@ -254,7 +257,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
 	cert := "/etc/certificates/server-" + podIP + ".crt"
 	key := "/etc/certificates/server-key-" + podIP + ".pem"
-	ca := "/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	ca := cacertificates.CsrSignerCAFilepath
 	inCluster := true
 	monitorConfig := MonitorConfig{
 		APIServerList: configNodeList,
@@ -300,236 +303,6 @@ type errorString struct {
 
 func (e *errorString) Error() string {
 	return e.s
-}
-
-// CSRINSecret checks if CSR is stored in secret
-func CSRINSecret(secret *corev1.Secret, podIP string) bool {
-	_, ok := secret.Data["server-"+podIP+".csr"]
-	return ok
-}
-
-// PEMINSecret checks if CSR is stored in secret
-func PEMINSecret(secret *corev1.Secret, podIP string) bool {
-	_, ok := secret.Data["server-"+podIP+".pem"]
-	return ok
-}
-
-// CRTINSecret checks if CSR is stored in secret
-func CRTINSecret(secret *corev1.Secret, podIP string) bool {
-	_, ok := secret.Data["server-"+podIP+".crt"]
-	return ok
-}
-
-func getSecret(client client.Client, request reconcile.Request) (*corev1.Secret, error) {
-	csrSecret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret-certificates", Namespace: request.Namespace}, csrSecret)
-	if err != nil && errors.IsNotFound(err) {
-		return csrSecret, err
-	}
-	return csrSecret, nil
-}
-
-// SigningRequestStatus returns the status of a signing request
-func SigningRequestStatus(secret *corev1.Secret, podIP string) string {
-	approvalStatus, ok := secret.Data["status-"+podIP]
-	if ok {
-		return string(approvalStatus)
-	}
-	return "NoStatus"
-}
-
-// CreateAndSignCsr creates and signs the CSR
-func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *runtime.Scheme, object v1.Object, restConfig *rest.Config, podList *corev1.PodList, hostNetwork bool) error {
-
-	//var csrINSecret bool
-	//var pemINSecret bool
-	//var signingRequestStatus string
-	var hostname string
-
-	csrSecret, err := getSecret(client, request)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-
-		if hostNetwork {
-			hostname = pod.Spec.NodeName
-		} else {
-			hostname = pod.Spec.Hostname
-		}
-		csrINSecret := CSRINSecret(csrSecret, pod.Status.PodIP)
-		pemINSecret := PEMINSecret(csrSecret, pod.Status.PodIP)
-		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
-		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Created" || signingRequestStatus == "Pending") || !(csrINSecret || pemINSecret) {
-			csrRequest, privateKey, err := generateCsr(pod.Status.PodIP, hostname)
-			if err != nil {
-				return err
-			}
-			if csrSecret.Data == nil {
-				csrSecret.Data = make(map[string][]byte)
-			}
-			csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
-			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
-
-			fmt.Println("Added CSR and PEM to secret for " + request.Name + " " + pod.Status.PodIP)
-			csr := &certv1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					return err
-				}
-				csr := &certv1beta1.CertificateSigningRequest{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      request.Name + "-" + pod.Spec.NodeName,
-						Namespace: request.Namespace,
-					},
-					Spec: certv1beta1.CertificateSigningRequestSpec{
-						Groups:  []string{"system:authenticated"},
-						Request: csrSecret.Data["server-"+pod.Status.PodIP+".csr"],
-						Usages: []certv1beta1.KeyUsage{
-							"digital signature",
-							"key encipherment",
-							"server auth",
-							"client auth",
-						},
-					},
-				}
-				if err = controllerutil.SetControllerReference(object, csr, scheme); err != nil {
-					return err
-				}
-				err = client.Create(context.TODO(), csr)
-				if err != nil {
-					if errors.IsAlreadyExists(err) {
-						return nil
-					}
-					return err
-				}
-
-			}
-			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Created")
-			fmt.Println("Created CSR for " + request.Name + " " + pod.Status.PodIP)
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				fmt.Println("Failed to update csrSecret after creating CSR")
-				return err
-			}
-
-		}
-	}
-	csrSecret, err = getSecret(client, request)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
-		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Pending") {
-			csr := &certv1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil && errors.IsNotFound(err) {
-				return err
-			}
-			var conditionType certv1beta1.RequestConditionType
-			conditionType = "Approved"
-			csrCondition := certv1beta1.CertificateSigningRequestCondition{
-				Type:    conditionType,
-				Reason:  "ContrailApprove",
-				Message: "This CSR was approved by operator approve.",
-			}
-
-			csr.Status.Conditions = []certv1beta1.CertificateSigningRequestCondition{csrCondition}
-			clientset, err := kubernetes.NewForConfig(restConfig)
-			if err != nil {
-				return err
-			}
-			_, err = clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
-			if err != nil {
-				return err
-			}
-			if len(csrSecret.Data) == 0 {
-				return fmt.Errorf("%s", "csrSecret.Data empty")
-			}
-			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Pending")
-			fmt.Println("Sent Approval for " + request.Name + " " + pod.Status.PodIP)
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				fmt.Println("Failed to update csrSecret after sending approval")
-				return err
-			}
-
-		}
-	}
-
-	csrSecret, err = getSecret(client, request)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		if !CRTINSecret(csrSecret, pod.Status.PodIP) {
-			csr := &certv1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil && errors.IsNotFound(err) {
-				return err
-			}
-			signedRequest := &certv1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: csr.Name, Namespace: csr.Namespace}, signedRequest)
-			if err != nil {
-				return err
-			}
-
-			if signedRequest.Status.Certificate == nil || len(signedRequest.Status.Certificate) == 0 {
-				err = errors.NewGone("csr not sigened yet")
-				return err
-			}
-			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = signedRequest.Status.Certificate
-			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Approved")
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				fmt.Println("Failed to update csrSecret after fetching CRT")
-				return err
-			}
-			fmt.Println("Added CRT to secret for " + request.Name + " " + pod.Status.PodIP)
-
-		}
-	}
-
-	return nil
-}
-
-func generateCsr(ipAddress string, hostname string) ([]byte, []byte, error) {
-	certPrivKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	certPrivKeyPEM := new(bytes.Buffer)
-	pem.Encode(certPrivKeyPEM, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
-	})
-	privateKeyBuffer, err := ioutil.ReadAll(certPrivKeyPEM)
-	if err != nil {
-		fmt.Println("cannot read certPrivKeyPEM to privateKeyBuffer")
-		return nil, nil, err
-	}
-	csrTemplate := x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName:         ipAddress,
-			Country:            []string{"US"},
-			Province:           []string{"CA"},
-			Locality:           []string{"Sunnyvale"},
-			Organization:       []string{"Juniper Networks"},
-			OrganizationalUnit: []string{"Contrail"},
-		},
-		DNSNames:       []string{hostname},
-		EmailAddresses: []string{"test@email.com"},
-		IPAddresses:    []net.IP{net.ParseIP(ipAddress)},
-	}
-	buf := new(bytes.Buffer)
-	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &csrTemplate, certPrivKey)
-	pem.Encode(buf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
-	pemBuf, err := ioutil.ReadAll(buf)
-	if err != nil {
-		fmt.Println("cannot read buf to pemBuf")
-		return nil, nil, err
-	}
-
-	return pemBuf, privateKeyBuffer, nil
 }
 
 // CreateConfigMap creates a config map based on the instance type.
@@ -1311,6 +1084,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	var collectorServerPort string
 	var analyticsServerPort string
 	var redisServerPort string
+	var authMode AuthenticationMode
 
 	if len(configList.Items) > 0 {
 		for _, ip := range configList.Items[0].Status.Nodes {
@@ -1318,6 +1092,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		}
 		configConfigInterface := configList.Items[0].ConfigurationParameters()
 		configConfig := configConfigInterface.(ConfigConfiguration)
+		authMode = configConfig.AuthMode
 		apiServerPort = strconv.Itoa(*configConfig.APIPort)
 		analyticsServerPort = strconv.Itoa(*configConfig.AnalyticsPort)
 		collectorServerPort = strconv.Itoa(*configConfig.CollectorPort)
@@ -1348,6 +1123,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		CollectorServerListSpaceSeparated:       collectorServerListSpaceSeparated,
 		FirstAPIServer:                          firstAPIServer,
 		RedisPort:                               redisServerPort,
+		AuthMode:                                authMode,
 	}
 	return &configCluster, nil
 }
@@ -1377,6 +1153,7 @@ type ConfigClusterConfiguration struct {
 	CollectorPort                           string
 	FirstAPIServer                          string
 	RedisPort                               string
+	AuthMode                                AuthenticationMode
 }
 
 // ControlClusterConfiguration defines all configuration knobs used to write the config file.

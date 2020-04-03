@@ -110,6 +110,8 @@ require (
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/jwalterweatherman v1.1.0
+	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
+	github.com/sigma/go-inotify v0.0.0-20181102212354-c87b6cf5033d // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
@@ -151,7 +153,6 @@ require (
 
 // Pinned to kubernetes-1.16.2
 replace (
-	//github.com/Juniper/contrail-go-api => ./build/contrail-go-api // breaks contrail-operator CI, as it does not perform 'make generate'
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65

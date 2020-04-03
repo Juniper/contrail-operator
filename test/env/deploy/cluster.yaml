@@ -50,7 +50,7 @@ spec:
             devicemanager:
               image: registry:5000/contrail-controller-config-devicemgr:master.1115
             dnsmasq:
-              image: registry:5000/contrail-controller-config-dnsmasq:dev
+              image: registry:5000/contrail-controller-config-dnsmasq:master.1115
             init:
               image: registry:5000/python:alpine
             init2:
@@ -67,6 +67,7 @@ spec:
               image: registry:5000/contrail-analytics-query-engine:master.1115
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
+          authMode: keystone
     controls:
     - metadata:
         labels:
@@ -110,7 +111,7 @@ spec:
             init:
               image: registry:5000/python:alpine
             provisioner:
-              image: registry:5000/contrail-provisioner:latest
+              image: registry:5000/contrail-provisioner:master.1115
     rabbitmq:
       metadata:
         labels:
@@ -194,6 +195,8 @@ spec:
               image: registry:5000/contrail-command:master.1115
             init:
               image: registry:5000/contrail-command:master.1115
+            wait-for-ready-conf:
+              image: registry:5000/busybox
     keystone:
       metadata:
         name: keystone

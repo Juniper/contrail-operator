@@ -476,6 +476,10 @@ spec:
           properties:
             active:
               type: boolean
+            ips:
+              items:
+                type: string
+              type: array
           type: object
       type: object
   version: v1alpha1
@@ -595,10 +599,20 @@ spec:
             serviceConfiguration:
               description: ConfigConfiguration is the Spec for the cassandras API.
               properties:
+                aaaMode:
+                  enum:
+                  - noauth
+                  - rbac
+                  type: string
                 analyticsPort:
                   type: integer
                 apiPort:
                   type: integer
+                authMode:
+                  enum:
+                  - noauth
+                  - keystone
+                  type: string
                 cassandraInstance:
                   type: string
                 collectorPort:
@@ -1592,6 +1606,10 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        ips:
+                          items:
+                            type: string
+                          type: array
                       type: object
                   type: object
                 config:
@@ -1702,10 +1720,20 @@ spec:
                           description: ConfigConfiguration is the Spec for the cassandras
                             API.
                           properties:
+                            aaaMode:
+                              enum:
+                              - noauth
+                              - rbac
+                              type: string
                             analyticsPort:
                               type: integer
                             apiPort:
                               type: integer
+                            authMode:
+                              enum:
+                              - noauth
+                              - keystone
+                              type: string
                             cassandraInstance:
                               type: string
                             collectorPort:
@@ -2462,6 +2490,8 @@ spec:
                             manager configuration
                           properties:
                             containers: {}
+                            keystoneSecretName:
+                              type: string
                           type: object
                       required:
                       - commonConfiguration
@@ -3640,6 +3670,8 @@ spec:
                 configuration
               properties:
                 containers: {}
+                keystoneSecretName:
+                  type: string
               type: object
           required:
           - commonConfiguration
@@ -4590,9 +4622,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: michaelhenkel/contrail-operator:latest
-          #command:
-          #- contrail-operator
+          image: registry:5000/contrail-operator:latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

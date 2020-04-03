@@ -5,6 +5,8 @@ import (
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -25,7 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_kubemanager")
@@ -205,7 +207,6 @@ type ReconcileKubemanager struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	var err error
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Kubemanager")
 	instanceType := "kubemanager"
@@ -215,8 +216,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	rabbitmqInstance := v1alpha1.Rabbitmq{}
 	configInstance := v1alpha1.Config{}
 
-	err = r.Client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -279,7 +279,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	var serviceAccountName string
@@ -316,7 +320,9 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 				Namespace: instance.Namespace,
 			},
 		}
-		controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme)
+		if err = controllerutil.SetControllerReference(instance, serviceAccount, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
 			return reconcile.Result{}, err
 		}
@@ -335,7 +341,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			},
 			Type: corev1.SecretType("kubernetes.io/service-account-token"),
 		}
-		controllerutil.SetControllerReference(instance, secret, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, secret, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), secret); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -365,7 +374,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 				},
 			}},
 		}
-		controllerutil.SetControllerReference(instance, clusterRole, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, clusterRole, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), clusterRole); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -394,7 +406,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 				Name:     clusterRoleName,
 			},
 		}
-		controllerutil.SetControllerReference(instance, clusterRoleBinding, r.Scheme)
+		err = controllerutil.SetControllerReference(instance, clusterRoleBinding, r.Scheme)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err = r.Client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -423,6 +438,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -464,7 +484,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 

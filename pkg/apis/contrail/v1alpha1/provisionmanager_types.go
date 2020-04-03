@@ -1,13 +1,14 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"context"
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"gopkg.in/yaml.v2"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -31,7 +34,8 @@ type ProvisionManagerSpec struct {
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers map[string]*Container `json:"containers,omitempty"`
+	Containers         map[string]*Container `json:"containers,omitempty"`
+	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -60,7 +64,6 @@ type ProvisionManager struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // ProvisionManagerList contains a list of ProvisionManager
 type ProvisionManagerList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -105,6 +108,13 @@ type VrouterNode struct {
 type DatabaseNode struct {
 	IPAddress string `yaml:"ipAddress,omitempty"`
 	Hostname  string `yaml:"hostname,omitempty"`
+}
+
+type KeystoneAuthParameters struct {
+	AdminUsername string
+	AdminPassword string
+	AuthUrl       string
+	TenantName    string
 }
 
 func init() {
@@ -192,10 +202,24 @@ func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace 
 	return hostname, nil
 }
 
+func (c *ProvisionManager) getAuthParameters(client client.Client) (*KeystoneAuthParameters, error) {
+	k := &KeystoneAuthParameters{
+		AdminUsername: "admin",
+		AuthUrl:       "http://localhost:5555/v3/auth",
+		TenantName:    "admin",
+	}
+	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
+	adminPasswordSecret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
+		return nil, err
+	}
+	k.AdminPassword = string(adminPasswordSecret.Data["password"])
+	return k, nil
+}
+
 func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
-
 	configMapConfigNodes := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-confignodes", Namespace: request.Namespace}, configMapConfigNodes)
 	if err != nil {
@@ -232,6 +256,11 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	configMapKeystoneAuthConf := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-keystoneauth", Namespace: request.Namespace}, configMapKeystoneAuthConf)
+	if err != nil {
+		return err
+	}
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
 	if err != nil {
@@ -257,6 +286,28 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var vrouterNodeData = make(map[string]string)
 	var databaseNodeData = make(map[string]string)
 	var apiServerData = make(map[string]string)
+	var keystoneAuthData = make(map[string]string)
+
+	var keystoneAuthConfBuffer bytes.Buffer
+	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
+		keystoneAuth, err := c.getAuthParameters(client)
+		if err != nil {
+			return err
+		}
+		keystoneAuthConf.Execute(&keystoneAuthConfBuffer, struct {
+			AdminUsername string
+			AdminPassword string
+			TenantName    string
+			AuthUrl       string
+		}{
+			AdminUsername: keystoneAuth.AdminUsername,
+			AdminPassword: keystoneAuth.AdminPassword,
+			TenantName:    keystoneAuth.TenantName,
+			AuthUrl:       keystoneAuth.AuthUrl,
+		})
+
+	}
+	keystoneAuthData["keystone-auth.yaml"] = keystoneAuthConfBuffer.String()
 
 	if len(configList.Items) > 0 {
 		nodeList := []*ConfigNode{}
@@ -364,7 +415,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
 			APIPort:       apiPort,
 			Encryption: Encryption{
-				CA:       "/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+				CA:       cacertificates.CsrSignerCAFilepath,
 				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
 				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
 				Insecure: false,
@@ -439,6 +490,12 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
+	configMapKeystoneAuthConf.Data = keystoneAuthData
+	err = client.Update(context.TODO(), configMapKeystoneAuthConf)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -455,3 +512,10 @@ func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client clie
 func (c *ProvisionManager) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)
 }
+
+// KeystoneAuthConf is the template of keystone auth configuration.
+var keystoneAuthConf = template.Must(template.New("").Parse(`admin_password: {{ .AdminPassword }}
+admin_user: {{ .AdminUsername }}
+tenant_name: {{ .TenantName }}
+auth_url: {{ .AuthUrl }}
+`))

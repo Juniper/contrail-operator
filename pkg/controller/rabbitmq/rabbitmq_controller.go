@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/randomstring"
 
@@ -21,7 +23,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_rabbitmq")
@@ -211,9 +213,13 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet,
-		map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume",
-			configMap2.Name: request.Name + "-" + instanceType + "-runner"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		configMap2.Name:                         request.Name + "-" + instanceType + "-runner",
+		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+	},
+	)
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
@@ -241,6 +247,11 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
@@ -304,7 +315,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		secret.Data["vhost"] = secretVhost
 	}
 
-	if err := r.Client.Update(context.Background(), secret); err != nil {
+	if err = r.Client.Update(context.Background(), secret); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -328,7 +339,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {

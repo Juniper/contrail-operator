@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -235,6 +237,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
+	configMapKeystoneAuthConf, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-keystoneauth", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -244,21 +251,21 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMapConfigNodes.Name:    request.Name + "-" + instanceType + "-confignodes-volume",
-		configMapControlNodes.Name:   request.Name + "-" + instanceType + "-controlnodes-volume",
-		configMapVrouterNodes.Name:   request.Name + "-" + instanceType + "-vrouternodes-volume",
-		configMapAnalyticsNodes.Name: request.Name + "-" + instanceType + "-analyticsnodes-volume",
-		configMapDatabaseNodes.Name:  request.Name + "-" + instanceType + "-databasenodes-volume",
-		configMapAPIServer.Name:      request.Name + "-" + instanceType + "-apiserver-volume",
+		configMapConfigNodes.Name:      request.Name + "-" + instanceType + "-confignodes-volume",
+		configMapControlNodes.Name:     request.Name + "-" + instanceType + "-controlnodes-volume",
+		configMapVrouterNodes.Name:     request.Name + "-" + instanceType + "-vrouternodes-volume",
+		configMapAnalyticsNodes.Name:   request.Name + "-" + instanceType + "-analyticsnodes-volume",
+		configMapDatabaseNodes.Name:    request.Name + "-" + instanceType + "-databasenodes-volume",
+		configMapAPIServer.Name:        request.Name + "-" + instanceType + "-apiserver-volume",
+		configMapKeystoneAuthConf.Name: request.Name + "-" + instanceType + "-keystoneauth-volume",
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "provisioner" {
 			command := []string{"sh", "-c",
-				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -mode watch",
+				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -keystoneAuthConf /etc/provision/keystone/keystone-auth.yaml -mode watch",
 			}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -304,6 +311,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 				MountPath: "/etc/provision/apiserver",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-keystoneauth-volume",
+				MountPath: "/etc/provision/keystone",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -339,7 +351,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -355,17 +367,4 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileProvisionManager) getHostnameFromAnnotations(podName string, namespace string) (string, error) {
-	pod := &corev1.Pod{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
-	if err != nil {
-		return "", err
-	}
-	hostname, ok := pod.Annotations["hostname"]
-	if !ok {
-		return "", err
-	}
-	return hostname, nil
 }

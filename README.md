@@ -1,292 +1,255 @@
 # Contrail Operator
 
-## Prerequisites
+## References
+[E2E test guide](test/env/README.md)  
+[Detailed development guide](DEVELOPMENT.md)  
 
-- An installed kubernetes cluster (>=1.15.0)
+## Requirements
+  * Go 1.13
+  * Docker
+  * Kubernetes client
+  * operator-sdk (https://github.com/operator-framework/operator-sdk/)
+  * Kubernetes cluster (only one node is supported right now)
 
-## Create CRDs, Service Account, Role, Bindings, Persistent volumes
 
-```bash
-for directory in $(seq 5); do
-  mkdir -p /mnt/volumes/$directory
-  rm -rf /mnt/volumes/$directory/*
-done
+# Contrail-Operator Development Quick Start
 
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/0-create-persistent-volumes.yaml | kubectl apply -f -
-```
+## Install Go 1.13
 
-```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/1-create-operator.yaml | kubectl apply -f -
-```
+* https://golang.org/doc/install#install
 
-Wait for Contrail Operator deployment to run:    
+## Checkout contrail-operator source code
 
-```
-[root@kvm1 ~]# kubectl get pods
-NAME                                 READY   STATUS    RESTARTS   AGE
-contrail-operator-7bbb99845c-qktvf   1/1     Running   0          16m
-```
+Contrail-Operator is a Go Module therefore can be downloaded to a folder outside the GOPATH.
 
-## Quick Install
+    git clone git@github.com:Juniper/contrail-operator.git
 
-### Apply a 1 or a 3 node manifest
+## Verify if contrail-operator can be built
 
-Note: THIS WILL INSTALL CONTRAIL USING DEFAULTS!
+    go build cmd/manager/main.go
 
-#### 1 Node
+## Install Kubernetes Client
 
-```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-1node.yaml | kubectl apply -f -
-```
+On Mac OS: https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-macos  
+On Linux: https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux
 
-#### 3 Node
+## Install IDE
 
-```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-3node.yaml | kubectl apply -f -
-```
+We use Goland and Visual Studio Code. Install your favourite one.
 
-## Custom Install
+## Install Kind
 
-### Get a manifest
+Kind is used as a lightweight Kubernetes cluster for development purposes
 
-```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/2-start-operator-3node.yaml \
-  -o 2-start-operator-3node-custom.yaml
-```
+    GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
 
-### Edit manifest
+Verify if it works (Mac OS):
+    
+    $ kind version
+    kind v0.7.0 go1.13.8 darwin/amd64
 
-```
-vi 2-start-operator-3node-custom.yaml
+Verify if it works (Linux):
+    
+    $ kind version
+    kind v0.7.0 go1.13.8 linux/amd64
 
----
-apiVersion: contrail.juniper.net/v1alpha1
-kind: Manager
-metadata:
-  ## (Mandatory) defines the name of the cluster
-  name: cluster1
-spec:
-  commonConfiguration:
-    ## (Optional - defaults to 1). Defines the number of instances globally.
-    ## Can be overwritten in each service
-    replicas: 3
-    ## (Optional - defaults to true). DO NOT CHANGE FOR NOW!
-    hostNetwork: true
-    ## (Optional). Needed if images are pulled from a password potected registry.
-    imagePullSecrets:
-    - contrail-nightly
-  services:
-    ## Cassandra Services
-    cassandras:
-    - metadata:
-        name: cassandra1
-        labels:
-          ## (Manadatory). Has to match managers metadata.name
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          ## (Optional). Selects the node to run the service on.
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          images:
-            cassandra: cassandra:3.11.4
-            init: python:alpine
-          ## (Optional). Cassandra service configuration
-          listenAddress: auto
-          startRpc: true
-          port: 9160
-          cqlPort: 9042
-          sslStoragePort: 7001
-          storagePort: 7000
-          jmxLocalPort: 7199
-          clusterName: ContrailConfigDB
-          maxHeapSize: 1024M
-          minHeapSize: 100M
-    zookeepers:
-    - metadata:
-        name: zookeeper1
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          tolerations:
-          - effect: NoSchedule
-            operator: Exists
-          - effect: NoExecute
-            operator: Exists
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          images:
-            zookeeper: docker.io/zookeeper:3.5.5
-            init: python:alpine
-          clientPort: 2181
-          electionPort: 3888
-          serverPort: 2888
-    rabbitmq:
-      metadata:
-        name: rabbitmq1
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          images:
-            rabbitmq: rabbitmq:3.7
-            init: python:alpine
-          port: 5673
-          erlangCookie: 47EFF3BB-4786-46E0-A5BB-58455B3C2CB4
-    config:
-      metadata:
-        name: config1
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          ## (Manadatory). Defines which cassandra/zookeeper instance to use.
-          ## Has to match cassandras and zookeepers metadata.name
-          cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
-          images:
-            api: hub.juniper.net/contrail-nightly/contrail-controller-config-api:1908.47
-            devicemanager: hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:1908.47
-            schematransformer: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:1908.47
-            servicemonitor: hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:1908.47
-            analyticsapi: hub.juniper.net/contrail-nightly/contrail-analytics-api:1908.47
-            collector: hub.juniper.net/contrail-nightly/contrail-analytics-collector:1908.47
-            redis: redis:4.0.2
-            nodemanagerconfig: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodemanageranalytics: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
-    kubemanagers:
-    - metadata:
-        name: kubemanager1
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
-          images:
-            kubemanager: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
-          ## (Optional). If kubeadm has the required information useKubeadmConfig can be set to true.
-          ## In that case kubernetesAPIServer, kubernetesAPIPort, podSubnet, serviceSubnet, kubernetesClusterName
-          ## don't need to be provided. Can be checked with kubeadm.
-          useKubeadmConfig: false
-          serviceAccount: contrail-service-account
-          clusterRole: contrail-cluster-role
-          clusterRoleBinding: contrail-cluster-role-binding
-          cloudOrchestrator: kubernetes
-          kubernetesAPIServer: "10.96.0.1"
-          kubernetesAPIPort: 443
-          podSubnet: 10.32.0.0/12
-          serviceSubnet: 10.96.0.0/12
-          kubernetesClusterName: kubernetes
-          ipFabricForwarding: true
-          ipFabricSnat: true
-          kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    controls:
-    - metadata:
-        name: control1
-        labels:
-          contrail_cluster: cluster1
-          control_role: master
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
-          images:
-            control: hub.juniper.net/contrail-nightly/contrail-controller-control-control:1908.47
-            dns: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:1908.47
-            named: hub.juniper.net/contrail-nightly/contrail-controller-control-named:1908.47
-            nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
-    webui:
-      metadata:
-        name: webui1
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""   
-        serviceConfiguration:
-          cassandraInstance: cassandra1
-          images:
-            webuiweb: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:1908.47
-            webuijob: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:1908.47
-            redis: redis:4.0.2
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-    ## There can be multiple vrouter daemonsets with different configurations.
-    ## This example has two DS', one for the master and one for the nodes.
-    ## In this example, nodes are be identified by the nodeselector and the
-    ## label node-role.opencontrail.org: "vrouter". Hence, nodes must be labeled first
-    vrouters:
-    - metadata:
-        name: vroutermaster
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""    
-        serviceConfiguration:
-          cassandraInstance: cassandra1
-          controlInstance: control1
-          images:
-            vrouteragent: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:1908.47
-            vrouterkernelinit: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:1908.47
-            vroutercni: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:1908.47
-            nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
-    - metadata:
-        name: vrouternodes
-        labels:
-          contrail_cluster: cluster1
-      spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.opencontrail.org: "vrouter"  
-        serviceConfiguration:
-          cassandraInstance: cassandra1
-          controlInstance: control1
-          images:
-            vrouteragent: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:1908.47
-            vrouterkernelinit: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:1908.47
-            vroutercni: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:1908.47
-            nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine 
-```
+If command is not found, then reload `~/.zshrc` (on Mac OS) or `~/.bashrc` (on Linux) and verify if `~/go/bin` is in `$PATH`.
 
-### Apply custom manifest
+## Install Docker for Desktop (Mac OS only)
 
-```
-kubectl apply -f 2-start-operator-3node-custom.yaml
-```
+* https://hub.docker.com/editions/community/docker-ce-desktop-mac
+
+### Increase memory amount in settings to 8GB:
+
+- click Docker icon
+- select Preferences
+- go to Resources/Advanced
+- increase memory to 8GB
+- restart Docker for Desktop
+
+## Install Docker Engine (Linux only)
+
+Instruction for Ubuntu (other distros are available as well): https://docs.docker.com/install/linux/docker-ce/ubuntu/ 
+
+## Log into contrail-nightly docker registry
+
+This is needed for downloading Contrail Command Docker image. 
+
+    docker login hub.juniper.net/contrail-nightly
+
+## Create Kind test environment
+
+Following commands will create Kubernetes cluster.
+
+It also starts Docker registry on port 5000. All pods deployed in the cluster will pull images from this Docker Registry. 
+
+    cd test/env
+    ./create_testenv.sh
+
+Verify if it works:
+
+    $ kind get clusters
+    kind
+
+## Pull images to locker Docker registry
+
+    cd test/env
+    ./update_local_registry.sh
+
+In case of timeouts disable VPN and retry.
+
+## Install operator-sdk
+
+Operator-SDK is a set of tools for developing Kubernates Operators. It is needed for:
+
+- Go code generation
+- K8s Custom Resource Definitions generation
+- building contrail-operator image
+- running e2e tests (aka system tests)
+
+### Operator-sdk installation on Mac OS
+
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-apple-darwin
+    $ chmod u+x ./operator-sdk-v0.13.0-x86_64-apple-darwin
+    $ sudo mv ./operator-sdk-v0.13.0-x86_64-apple-darwin /usr/local/bin/operator-sdk
+
+Verify if it works:
+
+    $ operator-sdk version
+    operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 darwin/amd64"
+
+### Operator-sdk installation on Linux
+
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-linux-gnu
+    $ chmod u+x ./operator-sdk-v0.13.0-x86_64-linux-gnu  
+    $ sudo mv ./operator-sdk-v0.13.0-x86_64-linux-gnu /usr/local/bin/operator-sdk
+
+
+Verify if it works:
+
+    $ operator-sdk version
+    operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 linux/amd64"
+
+
+## Build Contrail-Operator
+
+In order to run Contrail-Operator in the Kubernetes cluster we have to build Docker Image.
+
+    operator-sdk build localhost:5000/contrail-operator:latest
+
+Verify:
+
+    $ docker images | grep contrail-operator
+    contrail-operator   latest   5c0148fdb7e8   4 seconds ago   125MB
+
+After image is created we have to push it into local Docker registry.
+
+    docker push localhost:5000/contrail-operator:latest
+
+## Run Contrail-Operator with sample Contrail configuration
+
+Following command will deploy Contrail-Operator on a working Kubernetes cluster. It will also create a sample Contrail configuration. Note: you can change this configuration by editing `test/env/deploy/cluster.yaml` file.
+
+    cd test/env
+    ./apply_contrail_cluster.sh
+
+As soon as contrail-operator is started, it deploys Contrail services. It is a time-consuming process. You can watch the progress using following command:
+
+    watch kubectl get pods -n contrail
+
+Eventually all pods should be Running:
+
+    NAME                                          READY   STATUS      RESTARTS   AGE
+    cassandra1-cassandra-statefulset-0            1/1     Running     0          8m15s
+    command-command-deployment-77644668cf-dpp6f   1/1     Running     0          7m21s
+    config1-config-statefulset-0                  9/9     Running     0          4m47s
+    contrail-operator-585f5bd8b5-hfdrz            1/1     Running     0          9m24s
+    control1-control-statefulset-0                4/4     Running     0          2m56s
+    keystone-keystone-statefulset-0               3/3     Running     0          7m8s
+    memcached-deployment-5f5f974bd9-gthzx         1/1     Running     0          8m15s
+    postgres-pod                                  1/1     Running     0          8m16s
+    provmanager1-provisionmanager-statefulset-0   1/1     Running     0          2m57s
+    rabbitmq1-rabbitmq-statefulset-0              1/1     Running     0          8m15s
+    swift-proxy-deployment-754f87448b-6l5nc       1/1     Running     0          4m32s
+    swift-ring-account-job-rnsxs                  0/1     Completed   0          7s
+    swift-ring-container-job-pkb2k                0/1     Completed   0          7s
+    swift-ring-object-job-7nn44                   0/1     Completed   0          7s
+    swift-storage-statefulset-0                   13/13   Running     0          8m11s
+    webui1-webui-statefulset-0                    3/3     Running     0          2m56s
+    zookeeper1-zookeeper-statefulset-0            1/1     Running     0          8m16s
+
+
+### Verify if Contrail Command is working
+
+You can access Contrail Command application via web browser. Before that you have to forward the network traffic from localhost to Command's pod.
+
+    kubectl port-forward $(kubectl get pods -l command=command -n contrail -o name) -n contrail 9091:9091
+
+Go to http://localhost:9091
+
+Authenticate using `admin` username and `contrail123` password. 
+
+## Run unit tests
+
+You can run unit test tests on your favourite IDE by executing all tests in `pkg` package.
+
+You can also use command line tool:
+
+    go test ./pkg/...
+
+Eventually you should get results and command should return success:
+
+    ?       github.com/Juniper/contrail-operator/pkg/apis    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/apis/contrail    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/tests    0.943s
+    ?       github.com/Juniper/contrail-operator/pkg/client/keystone    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/client/kubeproxy    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/client/swift    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/controller/cassandra    1.414s
+    ok      github.com/Juniper/contrail-operator/pkg/controller/command    2.316s
+    ?       github.com/Juniper/contrail-operator/pkg/controller/config    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/control    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/enqueue    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/controller/keystone    4.196s
+    ?       github.com/Juniper/contrail-operator/pkg/controller/kubemanager    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/controller/manager    1.789s
+    ?       github.com/Juniper/contrail-operator/pkg/controller/manager/crs    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/controller/memcached    1.097s
+    ok      github.com/Juniper/contrail-operator/pkg/controller/postgres    1.779s
+    ?       github.com/Juniper/contrail-operator/pkg/controller/provisionmanager    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/rabbitmq    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/controller/swift    1.002s
+    ok      github.com/Juniper/contrail-operator/pkg/controller/swiftproxy    0.870s
+    ok      github.com/Juniper/contrail-operator/pkg/controller/swiftstorage    1.147s
+    ?       github.com/Juniper/contrail-operator/pkg/controller/utils    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/vrouter    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/webui    [no test files]
+    ?       github.com/Juniper/contrail-operator/pkg/controller/zookeeper    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/job    0.389s
+    ok      github.com/Juniper/contrail-operator/pkg/k8s    0.558s
+    ?       github.com/Juniper/contrail-operator/pkg/randomstring    [no test files]
+    ok      github.com/Juniper/contrail-operator/pkg/swift/ring    0.416s
+    ok      github.com/Juniper/contrail-operator/pkg/volumeclaims    0.633s
+    
+## Run e2e tests (aka system tests)
+
+In order to test if the whole system works as expected we have a few plumbing tests. They verify if after deployment all Contrail services can talk to each other and operate as expected.
+
+Before tests can be run you have to have clean the cluster. The fastest way is to delete the cluster:
+
+    kind delete cluster
+
+Then you have to create a new one plus a `contrail` namespace:
+
+    cd test/env
+    ./create_testenv.sh
+    kubectl create namespace contrail
+
+System tests can be run using operator-sdk tool
+
+    # From contrail-operator root directory
+    operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
+

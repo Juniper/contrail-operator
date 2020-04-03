@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -25,7 +26,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist() error {
+func (c *configMaps) ensureCommandConfigExist(hostIP string) error {
 	cc := &commandConf{
 		ClusterName:    "default",
 		AdminUsername:  "admin",
@@ -36,6 +37,8 @@ func (c *configMaps) ensureCommandConfigExist() error {
 		TelemetryURL:   "http://localhost:8081",
 		PostgresUser:   "root",
 		PostgresDBName: "contrail_test",
+		HostIP:         hostIP,
+		CAFilePath:     cacertificates.CsrSignerCAFilepath,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

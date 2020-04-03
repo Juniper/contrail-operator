@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -214,6 +215,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			CAFilePath          string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -229,6 +231,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -251,6 +254,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			CAFilePath          string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
@@ -264,6 +268,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 
@@ -273,11 +278,13 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = controlNodemanagerBuffer.String()
 

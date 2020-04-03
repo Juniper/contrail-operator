@@ -14,12 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -39,6 +40,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Keystone{},
 	&v1alpha1.Swift{},
 	&v1alpha1.Memcached{},
+	&corev1.ConfigMap{},
 }
 
 /**
@@ -48,10 +50,17 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	apiextensionsv1beta1.AddToScheme(scheme.Scheme)
+func Add(mgr manager.Manager, csrca cacertificates.CA) error {
+	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
+		return err
+	}
 	var r reconcile.Reconciler
-	reconcileManager := ReconcileManager{client: mgr.GetClient(), scheme: mgr.GetScheme(), manager: mgr, cache: mgr.GetCache(), kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
+	reconcileManager := ReconcileManager{client: mgr.GetClient(),
+		scheme:      mgr.GetScheme(),
+		manager:     mgr,
+		cache:       mgr.GetCache(),
+		kubernetes:  k8s.New(mgr.GetClient(), mgr.GetScheme()),
+		csrSignerCa: csrca}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -90,36 +99,6 @@ func addManagerWatch(c controller.Controller) error {
 	return nil
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler.
-func add(mgr manager.Manager, r reconcile.Reconciler) (controller.Controller, error) {
-	// Create a new controller
-	c, err := controller.New("manager-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return c, err
-	}
-
-	err = c.Watch(&source.Kind{Type: &v1alpha1.Manager{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return c, err
-	}
-	return c, nil
-}
-
-func (r *ReconcileManager) addWatch(ro runtime.Object) error {
-
-	controller := r.controller
-	//err := controller.Watch(&source.Kind{Type: &v1alpha1.Config{}}, &handler.EnqueueRequestForOwner{
-	err := controller.Watch(&source.Kind{Type: ro}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1alpha1.Manager{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // blank assignment to verify that ReconcileManager implements reconcile.Reconciler.
 var _ reconcile.Reconciler = &ReconcileManager{}
 
@@ -127,12 +106,13 @@ var _ reconcile.Reconciler = &ReconcileManager{}
 type ReconcileManager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	client     client.Client
-	scheme     *runtime.Scheme
-	manager    manager.Manager
-	controller controller.Controller
-	cache      cache.Cache
-	kubernetes *k8s.Kubernetes
+	client      client.Client
+	scheme      *runtime.Scheme
+	manager     manager.Manager
+	controller  controller.Controller
+	cache       cache.Cache
+	kubernetes  *k8s.Kubernetes
+	csrSignerCa cacertificates.CA
 }
 
 // Reconcile reconciles the manager.
@@ -165,11 +145,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
+	if err := r.processCSRSignerCaConfigMap(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if instance.Spec.KeystoneSecretName == "" {
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
 	}
 	adminPasswordSecretName := instance.Spec.KeystoneSecretName
-	if err := r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
+	if err = r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err = r.client.Update(context.TODO(), instance); err != nil {
@@ -278,9 +262,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
+					if err = controllerutil.SetControllerReference(instance, cr, r.scheme); err != nil {
+						return reconcile.Result{}, err
+					}
+					if err = r.client.Create(context.TODO(), cr); err != nil {
 						return reconcile.Result{}, err
 					}
 				}
@@ -417,7 +402,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -552,11 +540,14 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -599,7 +590,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
-			if imageChanged || replicasChanged {
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+			}
+
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -645,7 +642,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *provisionManagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
+		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 		cr := cr.GetProvisionManagerCr()
 		cr.ObjectMeta = provisionManagerService.ObjectMeta
 		cr.Labels = provisionManagerService.ObjectMeta.Labels
@@ -674,9 +671,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -712,6 +713,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					replicasChanged = true
 				}
 			}
+
 			imageChanged := false
 			for container := range provisionManagerService.Spec.ServiceConfiguration.Containers {
 				if provisionManagerService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
@@ -720,7 +722,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
-			if imageChanged || replicasChanged {
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+
+			}
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -796,11 +804,14 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -844,8 +855,13 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 					break
 				}
 			}
+			secretParamChanged := false
+			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
+				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+				secretParamChanged = true
+			}
 
-			if imageChanged || replicasChanged {
+			if imageChanged || replicasChanged || secretParamChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
 					return reconcile.Result{}, err
@@ -922,7 +938,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1061,7 +1080,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1200,7 +1222,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1321,7 +1346,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			if err != nil {
 				if errors.IsNotFound(err) {
-					controllerutil.SetControllerReference(instance, cr, r.scheme)
+					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
+					if err != nil {
+						return reconcile.Result{}, err
+					}
 					err = r.client.Create(context.TODO(), cr)
 					if err != nil {
 						return reconcile.Result{}, err
@@ -1419,23 +1447,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if err := r.processPostgres(instance); err != nil {
+	if err = r.processPostgres(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processCommand(instance); err != nil {
+	if err = r.processCommand(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processKeystone(instance); err != nil {
+	if err = r.processKeystone(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processSwift(instance); err != nil {
+	if err = r.processSwift(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processMemcached(instance); err != nil {
+	if err = r.processMemcached(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -1549,5 +1577,22 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	status := &v1alpha1.ServiceStatus{}
 	status.Active = &memcached.Status.Active
 	manager.Status.Memcached = status
+	return err
+}
+
+func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
+	csrSignerCaConfigMap := &corev1.ConfigMap{}
+	csrSignerCaConfigMap.ObjectMeta.Name = cacertificates.CsrSignerCAConfigMapName
+	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
+		csrSignerCAValue, err := r.csrSignerCa.CACert()
+		if err != nil {
+			return err
+		}
+		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCAFilename: csrSignerCAValue}
+		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
+	})
+
 	return err
 }

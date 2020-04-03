@@ -12,11 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("types_kubemanager")
@@ -216,6 +217,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser          string
 			RabbitmqPassword      string
 			RabbitmqVhost         string
+			CAFilePath            string
 		}{
 			Token:                 token,
 			ListenAddress:         podList.Items[idx].Status.PodIP,
@@ -240,6 +242,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:          rabbitmqSecretUser,
 			RabbitmqPassword:      rabbitmqSecretPassword,
 			RabbitmqVhost:         rabbitmqSecretVhost,
+			CAFilePath:            cacertificates.CsrSignerCAFilepath,
 		})
 		data["kubemanager."+podList.Items[idx].Status.PodIP] = kubemanagerConfigBuffer.String()
 
@@ -247,9 +250,11 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		configtemplates.KubemanagerAPIVNC.Execute(&vncApiConfigBuffer, struct {
 			ListenAddress string
 			ListenPort    string
+			CAFilePath    string
 		}{
 			ListenAddress: podList.Items[idx].Status.PodIP,
 			ListenPort:    configNodesInformation.APIServerPort,
+			CAFilePath:    cacertificates.CsrSignerCAFilepath,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}

@@ -14,10 +14,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// +kubebuilder:validation:Enum=noauth;keystone
+type AuthenticationMode string
+
+const (
+	AuthenticationModeNoAuth   AuthenticationMode = "noauth"
+	AuthenticationModeKeystone AuthenticationMode = "keystone"
+)
+
+// +kubebuilder:validation:Enum=noauth;rbac
+type AAAMode string
+
+const (
+	AAAModeNoAuth AAAMode = "no-auth"
+	AAAModeRBAC   AAAMode = "rbac"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -59,6 +76,8 @@ type ConfigConfiguration struct {
 	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
 	LogLevel           string                `json:"logLevel,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	AuthMode           AuthenticationMode    `json:"authMode,omitempty"`
+	AAAMode            AAAMode               `json:"aaaMode,omitempty"`
 	Storage            Storage               `json:"storage,omitempty"`
 	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
 }
@@ -177,7 +196,10 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			AuthMode            AuthenticationMode
+			AAAMode             AAAMode
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -188,7 +210,10 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			AuthMode:            configConfig.AuthMode,
+			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
 
@@ -196,9 +221,11 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
 			HostIP     string
 			ListenPort string
+			AuthMode   AuthenticationMode
 		}{
 			HostIP:     podList.Items[idx].Status.PodIP,
 			ListenPort: strconv.Itoa(*configConfig.APIPort),
+			AuthMode:   configConfig.AuthMode,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
@@ -220,6 +247,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			LogLevel            string
 			FabricMgmtIP        string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -233,6 +261,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
 			FabricMgmtIP:        fabricMgmtIP,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -241,10 +270,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP              string
 			CollectorServerList string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
 
@@ -278,6 +309,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -290,6 +322,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
@@ -305,7 +338,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
+			AAAMode             AAAMode
 			LogLevel            string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -317,7 +352,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
+			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
@@ -334,7 +371,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser        string
 			RabbitmqPassword    string
 			RabbitmqVhost       string
-			//LogLevel            string
+			AuthMode            string
+			AAAMode             AAAMode
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerSpaceSeparatedList,
@@ -347,7 +386,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			//LogLevel:            configConfig.LogLevel,
+			AAAMode:             configConfig.AAAMode,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -370,6 +410,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword    string
 			RabbitmqVhost       string
 			LogLevel            string
+			CAFilePath          string
 		}{
 			Hostname:            hostname,
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -381,16 +422,25 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			LogLevel:            configConfig.LogLevel,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
 		var configQueryEngineConfigBuffer bytes.Buffer
-		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, map[string]string{
-			"Hostname":            hostname,
-			"HostIP":              podList.Items[idx].Status.PodIP,
-			"CassandraServerList": cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			"CollectorServerList": collectorServerList,
-			"RedisServerList":     redisServerSpaceSeparatedList,
+		configtemplates.ConfigQueryEngineConfig.Execute(&configQueryEngineConfigBuffer, struct {
+			Hostname            string
+			HostIP              string
+			CassandraServerList string
+			CollectorServerList string
+			RedisServerList     string
+			CAFilePath          string
+		}{
+			Hostname:            hostname,
+			HostIP:              podList.Items[idx].Status.PodIP,
+			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
+			CollectorServerList: collectorServerList,
+			RedisServerList:     redisServerSpaceSeparatedList,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["queryengine."+podList.Items[idx].Status.PodIP] = configQueryEngineConfigBuffer.String()
 
@@ -400,11 +450,13 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["nodemanagerconfig."+podList.Items[idx].Status.PodIP] = configNodemanagerconfigConfigBuffer.String()
 
@@ -414,11 +466,13 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
+			CAFilePath          string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			CollectorServerList: collectorServerList,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
+			CAFilePath:          cacertificates.CsrSignerCAFilepath,
 		})
 		data["nodemanageranalytics."+podList.Items[idx].Status.PodIP] = configNodemanageranalyticsConfigBuffer.String()
 	}
@@ -682,6 +736,20 @@ func (c *Config) ConfigurationParameters() interface{} {
 		rabbitmqVhost = RabbitmqVhost
 	}
 	configConfiguration.RabbitmqVhost = rabbitmqVhost
+
+	configConfiguration.AuthMode = c.Spec.ServiceConfiguration.AuthMode
+	if configConfiguration.AuthMode == "" {
+		configConfiguration.AuthMode = AuthenticationModeNoAuth
+	}
+
+	configConfiguration.AAAMode = c.Spec.ServiceConfiguration.AAAMode
+	if configConfiguration.AAAMode == "" {
+		configConfiguration.AAAMode = AAAModeNoAuth
+		if configConfiguration.AuthMode == AuthenticationModeKeystone {
+			configConfiguration.AAAMode = AAAModeRBAC
+		}
+	}
+
 	return configConfiguration
 
 }

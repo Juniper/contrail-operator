@@ -54,6 +54,7 @@ func TestKeystone(t *testing.T) {
 				newExpectedKeystoneConfigMap(),
 				newExpectedKeystoneFernetConfigMap(),
 				newExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -81,6 +82,7 @@ func TestKeystone(t *testing.T) {
 				newExpectedKeystoneConfigMap(),
 				newExpectedKeystoneFernetConfigMap(),
 				newExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -98,6 +100,7 @@ func TestKeystone(t *testing.T) {
 				newExpectedKeystoneConfigMap(),
 				newExpectedKeystoneFernetConfigMap(),
 				newExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneInitConfigMap(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
@@ -112,6 +115,7 @@ func TestKeystone(t *testing.T) {
 				newExpectedKeystoneConfigMap(),
 				newExpectedKeystoneFernetConfigMap(),
 				newExpectedKeystoneSSHConfigMap(),
+				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -472,6 +476,11 @@ func newExpectedSTS() *apps.StatefulSet {
 									}},
 								},
 							},
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									"cpu": resource.MustParse("2"),
+								},
+							},
 						},
 						{
 							Image:           "localhost:5000/centos-binary-keystone-ssh:train",
@@ -724,7 +733,7 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-ssh",
+			Name:      "keystone-keystone-init",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 			OwnerReferences: []meta.OwnerReference{
@@ -807,6 +816,11 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 					HTTPGet: &core.HTTPGetAction{Path: "/v3", Port: intstr.IntOrString{
 						IntVal: 5555,
 					}},
+				},
+			},
+			Resources: core.ResourceRequirements{
+				Requests: core.ResourceList{
+					"cpu": resource.MustParse("2"),
 				},
 			},
 		},

@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -209,6 +209,7 @@ func getPods(config Config, clientSet *kubernetes.Clientset) ([]string, error) {
 }
 
 func kubeClient(config Config) (*kubernetes.Clientset, *rest.RESTClient, error) {
+
 	var err error
 	clientset := &kubernetes.Clientset{}
 	restClient := &rest.RESTClient{}

@@ -8,7 +8,15 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
+
+// CNIDirectories is struct with directories containing CNI specific files for k8s cluster
+var CNIDirectories = v1alpha1.VrouterCNIDirectories{
+	BinariesDirectory:    "/opt/cni/bin",
+	ConfigFilesDirectory: "/etc/cni",
+}
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {

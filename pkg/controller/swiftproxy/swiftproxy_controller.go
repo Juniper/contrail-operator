@@ -14,14 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swiftproxy")
@@ -88,7 +87,6 @@ type ReconcileSwiftProxy struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reads that state of the cluster for a SwiftProxy object and makes changes based on the state read
@@ -115,7 +113,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if err := r.kubernetes.Owner(swiftProxy).EnsureOwns(keystone); err != nil {
+	if err = r.kubernetes.Owner(swiftProxy).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
 	if !keystone.Status.Active {
@@ -126,7 +124,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if err := r.kubernetes.Owner(swiftProxy).EnsureOwns(memcached); err != nil {
+	if err = r.kubernetes.Owner(swiftProxy).EnsureOwns(memcached); err != nil {
 		return reconcile.Result{}, err
 	}
 	if !memcached.Status.Active {
@@ -135,19 +133,19 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 	adminPasswordSecretName := swiftProxy.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
-	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: swiftProxy.Namespace}, adminPasswordSecret); err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: swiftProxy.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	passwordSecretName := swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName
 	passwordSecret := &core.Secret{}
-	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: passwordSecretName, Namespace: swiftProxy.Namespace}, passwordSecret); err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: passwordSecretName, Namespace: swiftProxy.Namespace}, passwordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
-	if err := cm.ensureExists(memcached.Status.Node); err != nil {
+	if err = cm.ensureExists(memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -158,7 +156,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
 	cm = r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
-	if err := cm.ensureInitExists(endpoint); err != nil {
+	if err = cm.ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -352,7 +350,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	}
 
 	c, ok := containers[containerName]
-	if ok == false || c == nil {
+	if !ok || c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -365,7 +363,7 @@ func getCommand(containers map[string]*contrail.Container, containerName string)
 	}
 
 	c, ok := containers[containerName]
-	if ok == false || c == nil || c.Command == nil {
+	if !ok || c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

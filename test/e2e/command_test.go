@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -155,8 +156,9 @@ func TestCommandServices(t *testing.T) {
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: map[string]*contrail.Container{
-						"init": {Image: "registry:5000/contrail-command:master.1115"},
-						"api":  {Image: "registry:5000/contrail-command:master.1115"},
+						"init":                {Image: "registry:5000/contrail-command:master.1115"},
+						"api":                 {Image: "registry:5000/contrail-command:master.1115"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 					},
 				},
 			},
@@ -241,7 +243,7 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			var commandPods *core.PodList
-			var err error
+
 			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
 				commandPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "command=commandtest",
@@ -250,7 +252,7 @@ func TestCommandServices(t *testing.T) {
 				assert.NotEmpty(t, commandPods.Items)
 			})
 
-			commandProxy := proxy.NewClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
 			keystoneClient := keystone.NewClient(commandProxy)
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
@@ -282,7 +284,15 @@ func TestCommandServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then swift container should be created", func(t *testing.T) {
-				err = swiftClient.GetContainer("contrail_container")
+				err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+					err = swiftClient.GetContainer("contrail_container")
+					if err == nil {
+						return true, nil
+					}
+					t.Log(err)
+					return false, nil
+				})
+
 				assert.NoError(t, err)
 			})
 

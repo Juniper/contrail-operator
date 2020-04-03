@@ -17,7 +17,7 @@ xmpp_dns_auth_enable=True
 xmpp_auth_enable=True
 xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
 xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-xmpp_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+xmpp_ca_cert={{ .CAFilePath }}
 physical_interface_mac = {{ .PhysicalInterfaceMac }}
 tsn_servers = []
 [SANDESH]
@@ -26,7 +26,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+sandesh_ca_cert={{ .CAFilePath }}
 [NETWORKS]
 control_network_ip={{ .ListenAddress }}
 [DNS]
@@ -84,7 +84,7 @@ introspect_ssl_insecure=False
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
-sandesh_ca_cert=/run/secrets/kubernetes.io/serviceaccount/ca.crt`))
+sandesh_ca_cert={{ .CAFilePath }}`))
 
 // VrouterProvisionConfig is the template of the Vrouter provision script.
 var VrouterProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash

@@ -68,21 +68,11 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image michaelhenkel "${line}"
-done <<EOF
-contrail-statusmonitor:debug
-EOF
-
-while read line; do
-	pull_image dysproz "${line}"
-done <<EOF
-contrail-provisioner:latest
-EOF
-
-while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
-contrail-controller-config-dnsmasq:dev
+contrail-statusmonitor:debug
+contrail-provisioner:master.1115
 EOF
 
 pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115
+pull_image hub.juniper.net/contrail-nightly contrail-controller-config-dnsmasq:master.1115

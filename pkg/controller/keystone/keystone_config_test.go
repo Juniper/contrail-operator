@@ -118,13 +118,10 @@ allow_expired_window = 172800
 max_active_keys = 3
 
 [cache]
-backend = oslo_cache.memcache_pool
+backend = dogpile.cache.memcached
 enabled = True
 memcache_servers = localhost:11211
 
-[oslo_messaging_notifications]
-transport_url = rabbit://guest:guest@localhost:5672//
-driver = noop
 `
 
 const expectedWSGIKeystoneConfig = `
@@ -145,7 +142,7 @@ TraceEnable off
 
 
 <VirtualHost *:5555>
-    WSGIDaemonProcess keystone-public processes=2 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
+    WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
     WSGIApplicationGroup %{GLOBAL}
@@ -158,53 +155,6 @@ TraceEnable off
     CustomLog "|/usr/sbin/rotatelogs /var/log/kolla/keystone/keystone-apache-public-access.log 604800" logformat
 </VirtualHost>
 `
-
-const keystoneFernetKollaServiceConfig = `
-    {
-        "command": "crond -s -n",
-        "config_files": [{
-                "source": "/var/lib/kolla/config_files/keystone.conf",
-                "dest": "/etc/keystone/keystone.conf",
-                "owner": "keystone",
-                "perm": "0600"
-            },
-            {
-                "source": "/var/lib/kolla/config_files/crontab",
-                "dest": "/var/spool/cron/root",
-                "owner": "root",
-                "perm": "0600"
-            },
-            {
-                "source": "/var/lib/kolla/config_files/fernet-rotate.sh",
-                "dest": "/usr/bin/fernet-rotate.sh",
-                "owner": "root",
-                "perm": "0755"
-            },
-            {
-                "source": "/var/lib/kolla/config_files/fernet-node-sync.sh",
-                "dest": "/usr/bin/fernet-node-sync.sh",
-                "owner": "root",
-                "perm": "0755"
-            },
-            {
-                "source": "/var/lib/kolla/config_files/fernet-push.sh",
-                "dest": "/usr/bin/fernet-push.sh",
-                "owner": "root",
-                "perm": "0755"
-            },
-            {
-                "source": "/var/lib/kolla/config_files/ssh_config",
-                "dest": "/var/lib/keystone/.ssh/config",
-                "owner": "keystone",
-                "perm": "0600"
-            },
-            {
-                "source": "/var/lib/kolla/ssh_files/id_rsa",
-                "dest": "/var/lib/keystone/.ssh/id_rsa",
-                "owner": "keystone",
-                "perm": "0600"
-            }    ]
-    }`
 
 const expectedCrontab = `
 0 0 * * 0 /usr/bin/fernet-rotate.sh
@@ -312,9 +262,9 @@ const expectedkeystoneInitBootstrapScript = `
 keystone-manage db_sync
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
-keystone-manage bootstrap --bootstrap-password contrail123 \
+keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
-  --bootstrap-admin-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
-  --bootstrap-internal-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
-  --bootstrap-public-url http://{{ .ListenAddress }}:{{ .ListenPort }}/v3/
+  --bootstrap-admin-url http://0.0.0.0:5555/v3/ \
+  --bootstrap-internal-url http://0.0.0.0:5555/v3/ \
+  --bootstrap-public-url http://0.0.0.0:5555/v3/
 `

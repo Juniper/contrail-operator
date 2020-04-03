@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -124,6 +125,7 @@ func TestCommand(t *testing.T) {
 				Name:      "command",
 				Namespace: "default",
 			}, cc)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, cc.Status)
 
 			// Check and verify command deployment
@@ -179,8 +181,9 @@ func newCommand() *contrail.Command {
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
 				Containers: map[string]*contrail.Container{
-					"init": {Image: "registry:5000/contrail-command"},
-					"api":  {Image: "registry:5000/contrail-command"},
+					"init":                {Image: "registry:5000/contrail-command"},
+					"api":                 {Image: "registry:5000/contrail-command"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -239,6 +242,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	executableMode := int32(0744)
+	defMode := int32(420)
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -268,12 +272,23 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
-									HTTPGet: &core.HTTPGetAction{Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
+									HTTPGet: &core.HTTPGetAction{Scheme: core.URISchemeHTTPS, Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
 							Command: []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
+								{
+									Name:      "command-command-volume",
+									MountPath: "/etc/contrail",
+								},
+								{
+									Name:      "command-secret-certificates",
+									MountPath: "/etc/certificates",
+								},
+								{
+									Name:      "command-csr-signer-ca",
+									MountPath: cacertificates.CsrSignerCAMountPath,
+								},
 							},
 						},
 					},
@@ -285,6 +300,15 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 						VolumeMounts: []core.VolumeMount{
 							core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
 						},
+					}, {
+						Name:            "wait-for-ready-conf",
+						ImagePullPolicy: core.PullAlways,
+						Image:           "registry:5000/busybox",
+						Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+						VolumeMounts: []core.VolumeMount{{
+							Name:      "status",
+							MountPath: "/tmp/podinfo",
+						}},
 					}},
 					Volumes: []core.Volume{
 						{
@@ -303,10 +327,45 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								},
 							},
 						},
+						{
+							Name: "command-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "command-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "command-csr-signer-ca",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: cacertificates.CsrSignerCAConfigMapName,
+									},
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &defMode,
+								},
+							},
+						},
 					},
 					Tolerations: []core.Toleration{
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 				},
 			},
@@ -399,9 +458,9 @@ server:
   enable_vnc_replication: true
   enable_gzip: false
   tls:
-    enabled: false
-    key_file: tools/server.key
-    cert_file: tools/server.crt
+    enabled: true
+    key_file: /etc/certificates/server-key-0.0.0.0.pem
+    cert_file: /etc/certificates/server-0.0.0.0.crt
   enable_grpc: false
   enable_vnc_neutron: false
   static_files:
@@ -458,7 +517,7 @@ keystone:
     type: memory
     expire: 36000
   insecure: true
-  authurl: http://localhost:9091/keystone/v3
+  authurl: https://localhost:9091/keystone/v3
   service_user:
     id: username
     password: password123
@@ -474,7 +533,7 @@ client:
   project_id: admin
   domain_id: default
   schema_root: /
-  endpoint: http://localhost:9091
+  endpoint: https://localhost:9091
 
 agent:
   enabled: false
@@ -546,7 +605,7 @@ resources:
       fq_name:
         - default-global-system-config
         - cluster1
-      orchestrator: none
+      orchestrator: openstack
       parent_type: global-system-configsd
       provisioning_state: CREATED
       uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4

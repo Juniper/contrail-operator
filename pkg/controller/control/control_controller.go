@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +22,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var log = logf.Log.WithName("controller_control")
@@ -187,7 +189,6 @@ type ReconcileControl struct {
 
 // Reconcile reconciles control resource
 func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	var err error
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Control")
 	instanceType := "control"
@@ -197,8 +198,7 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	rabbitmqInstance := v1alpha1.Rabbitmq{}
 	configInstance := v1alpha1.Config{}
 
-	err = r.Client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil && errors.IsNotFound(err) {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
 	}
 
@@ -252,7 +252,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume"})
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
+		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	nodemgr := true
@@ -291,6 +295,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -315,6 +324,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-secret-certificates",
 				MountPath: "/etc/certificates",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -345,6 +359,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/mycontrail",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -372,6 +391,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 				MountPath: "/etc/certificates",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
@@ -395,6 +419,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 				volumeMount := corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
 					MountPath: "/etc/mycontrail",
+				}
+				volumeMountList = append(volumeMountList, volumeMount)
+				volumeMount = corev1.VolumeMount{
+					Name:      csrSignerCaVolumeName,
+					MountPath: cacertificates.CsrSignerCAMountPath,
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -440,7 +469,7 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = v1alpha1.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 

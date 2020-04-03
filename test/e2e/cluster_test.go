@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
@@ -34,6 +36,9 @@ func TestCluster(t *testing.T) {
 	namespace, err := ctx.GetNamespace()
 	assert.NoError(t, err)
 	f := test.Global
+
+	proxy, err := kubeproxy.New(f.KubeConfig)
+	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
@@ -63,6 +68,15 @@ func TestCluster(t *testing.T) {
 					Logger:        log,
 				}.ForManagerCondition(manager.Name, contrail.ManagerReady)
 				assert.NoError(t, err)
+			})
+
+			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {
+				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
+				req, err := configProxy.NewRequest(http.MethodGet, "/virtual-networks", nil)
+				assert.NoError(t, err)
+				res, err := configProxy.Do(req)
+				assert.NoError(t, err)
+				assert.Equal(t, 401, res.StatusCode)
 			})
 		})
 
