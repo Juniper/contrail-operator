@@ -11,6 +11,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/cacertificates:go_default_library",
+        "//pkg/certificates:go_default_library",
         "//pkg/client/keystone:go_default_library",
         "//pkg/client/kubeproxy:go_default_library",
         "//pkg/client/swift:go_default_library",
@@ -28,9 +30,9 @@ go_library(
         "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/controller/controllerutil:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/handler:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/runtime/log:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/source:go_default_library",
     ],
 )
@@ -41,6 +43,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/cacertificates:go_default_library",
         "//pkg/k8s:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",

@@ -10,8 +10,11 @@ go_library(
     deps = [
         "//pkg/apis:go_default_library",
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/cacertificates:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/kubemanager:go_default_library",
+        "//pkg/controller/manager:go_default_library",
+        "//pkg/controller/vrouter:go_default_library",
         "//pkg/k8s:go_default_library",
         "//pkg/openshift:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/k8sutil:go_default_library",
@@ -23,8 +26,8 @@ go_library(
         "@com_github_spf13_pflag//:go_default_library",
         "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client/config:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/runtime/log:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/runtime/signals:go_default_library",
     ],
 )
