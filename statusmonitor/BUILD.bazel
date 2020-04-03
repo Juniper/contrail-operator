@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -24,4 +26,38 @@ go_binary(
     name = "statusmonitor",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "contrail-statusmonitor-image",
+    embed = [":go_default_library"],
+    goos = "linux",
+    base = "@go_image_base//image",
+    importpath = "github.com/Juniper/contrail-operator/statusmonitor",
+)
+
+container_push(
+    name = "contrail-statusmonitor-push",
+    image = ":contrail-statusmonitor-image",
+    format = "Docker",
+    registry = "docker.io",
+    repository = "michaelhenkel/contrail-statusmonitor",
+    tag = "dev",
+)
+
+go_image(
+    name = "contrail-statusmonitor-image-debug",
+    embed = [":go_default_library"],
+    goos = "linux",
+    base = "@go_debug_image_base//image:image",
+    importpath = "github.com/Juniper/contrail-operator/statusmonitor",
+)
+
+container_push(
+    name = "contrail-statusmonitor-push-debug",
+    image = ":contrail-statusmonitor-image-debug",
+    format = "Docker",
+    registry = "docker.io",
+    repository = "michaelhenkel/contrail-statusmonitor",
+    tag = "debug",
 )

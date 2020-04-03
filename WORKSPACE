@@ -1,5 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 http_archive(
     name = "io_bazel_rules_go",
@@ -44,6 +44,7 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 
 rules_proto_toolchains()
+
 
 http_archive(
     name = "rules_python",
@@ -91,6 +92,113 @@ load(
 
 _go_image_repos()
 
+GOGOBUILD = """
+load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+filegroup(
+    name = "gogo_proto_fg",
+    srcs = glob([ "gogoproto/gogo.proto" ]),
+    visibility = [ "//visibility:public" ],
+)
+proto_library(
+    name = "gogo_proto",
+    srcs = [
+        "gogoproto/gogo.proto",
+    ],
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+    visibility = ["//visibility:public"],
+)
+go_proto_library(
+    name = "descriptor_go_proto",
+    importpath = "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    proto = "@com_google_protobuf//:descriptor_proto",
+    visibility = ["//visibility:public"],
+)
+cc_proto_library(
+    name = "gogo_proto_cc",
+    srcs = [
+        "gogoproto/gogo.proto",
+    ],
+    default_runtime = "@com_google_protobuf//:protobuf",
+    protoc = "@com_google_protobuf//:protoc",
+    deps = ["@com_google_protobuf//:cc_wkt_protos"],
+    visibility = ["//visibility:public"],
+)
+go_proto_library(
+    name = "gogo_proto_go",
+    importpath = "gogoproto",
+    proto = ":gogo_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":descriptor_go_proto",
+    ],
+)
+py_proto_library(
+    name = "gogo_proto_py",
+    srcs = [
+        "gogoproto/gogo.proto",
+    ],
+    default_runtime = "@com_google_protobuf//:protobuf_python",
+    protoc = "@com_google_protobuf//:protoc",
+    visibility = ["//visibility:public"],
+    deps = ["@com_google_protobuf//:protobuf_python"],
+)
+"""
+
+new_git_repository(
+    name = "com_github_gogo_protobuf_repo",
+    remote = "https://github.com/gogo/protobuf.git",
+    branch = "master",
+    build_file_content = GOGOBUILD
+)
+
+
+#http_archive(
+#    name = "com_github_gogo_protobuf_repo",
+#    #sha256 = "5628607bb4c51c3157aacc3a50f0ab707582b805",
+#    #strip_prefix = "protobuf-1.3.1",
+#    #url = "https://github.com/gogo/protobuf/archive/v1.3.0.tar.gz",
+#    url = "file://v1.3.0.tar.gz",
+#    #build_file_content = GOGOBUILD
+#)
+
+CONTRAIL_BUILD = """
+filegroup(
+    name = "contrail_schema",
+    srcs = glob([ "schemas/contrail/**/*.yml" ]),
+    visibility = [ "//visibility:public" ],
+)
+"""
+
+new_git_repository(
+    name = "contrail_repository",
+    remote = "https://github.com/Juniper/contrail.git",
+    branch = "master",
+    build_file_content = CONTRAIL_BUILD
+)
+
+ASF_BUILD = """
+filegroup(
+    name = "asf_templates",
+    srcs = glob([ "**" ]),
+    visibility = [ "//visibility:public" ],
+)
+filegroup(
+    name = "asf_proto",
+    srcs = glob([ "pkg/services/baseservices/base.proto" ]),
+    visibility = [ "//visibility:public" ],
+)
+"""
+
+new_git_repository(
+    name = "asf_repository",
+    remote = "https://github.com/Juniper/asf.git",
+    #commit = "ac2649e96024ebed11853a01c83ffd7fc6548919",
+    branch = "master",
+    build_file_content = ASF_BUILD
+)
 
 go_repository(
     name = "com_github_gogo_protobuf",
@@ -3537,4 +3645,84 @@ go_repository(
     importpath = "gomodules.xyz/jsonpatch/v2",
     sum = "h1:xyiBuvkD2g5n7cYzx6u2sxQvsAy4QJsZFCzGVdzOXZ0=",
     version = "v2.0.1",
+)
+
+go_repository(
+    name = "com_github_juniper_asf",
+    importpath = "github.com/Juniper/asf",
+    commit = "ac2649e96024ebed11853a01c83ffd7fc6548919",
+)
+
+go_repository(
+    name = "com_github_yudai_gotty",
+    importpath = "github.com/yudai/gotty",
+    commit = "a080c85cbc59226c94c6941ad8c395232d72d517",
+)
+
+go_repository(
+    name = "com_github_flosch_pongo2",
+    importpath = "github.com/flosch/pongo2",
+    sum = "h1:GY1+t5Dr9OKADM64SYnQjw/w99HMYvQ0A8/JoUkxVmc=",
+    version = "v0.0.0-20190707114632-bbf5a6c351f4",
+)
+
+go_repository(
+    name = "com_github_juju_errors",
+    importpath = "github.com/juju/errors",
+    commit = "3fe23663418fc1d724868c84f21b7519bbac7441",
+)
+
+go_repository(
+    name = "com_github_volatiletech_sqlboiler",
+    importpath = "github.com/volatiletech/sqlboiler",
+    commit = "e004393fa62ca053ec76d14df63d2e066cd2de23",
+)
+
+go_repository(
+    name = "com_github_volatiletech_inflect",
+    importpath = "github.com/volatiletech/inflect",
+    commit = "e7201282ae8da26cd97aed2e516f75c0bd91bb93",
+)
+
+go_repository(
+    name = "com_github_hashicorp_go_cleanhttp",
+    commit = "3573b8b52aa7b37b9358d966a898feb387f62437",  # Feb 10, 2017
+    importpath = "github.com/hashicorp/go-cleanhttp",
+)
+
+go_repository(
+    name = "com_github_labstack_echo",
+    importpath = "github.com/labstack/echo",
+    commit = "542835808e41723e5ecf5864b189a0ad36b8f3f6",
+)
+
+go_repository(
+    name = "com_github_databus23_keystone",
+    importpath = "github.com/databus23/keystone",
+    commit = "350fd0e663cd9a825f2684f8a30e84bbb2a26419",
+)
+
+go_repository(
+    name = "com_github_labstack_gommon",
+    importpath = "github.com/labstack/gommon",
+    commit = "4919956f6fb227b548f004da27c7c6b20fba499f",
+)
+
+go_repository(
+    name = "com_github_sirupsen_logrus",
+    importpath = "github.com/sirupsen/logrus",
+    sum = "h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=",
+    version = "v1.4.2",
+)
+
+go_repository(
+    name = "com_github_valyala_fasttemplate",
+    importpath = "github.com/valyala/fasttemplate",
+    commit = "f2edffee060be376160f92203356c93e83b01352",
+)
+
+go_repository(
+    name = "com_github_valyala_bytebufferpool",
+    importpath = "github.com/valyala/bytebufferpool",
+    commit = "cdfbe9377474227bb42120c1e22fd4433e7f69bf",
 )
