@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["keystone.go"],
+    importpath = "github.com/Juniper/contrail-operator/pkg/client/keystone",
+    visibility = ["//visibility:public"],
+    deps = ["//pkg/client/kubeproxy:go_default_library"],
+)

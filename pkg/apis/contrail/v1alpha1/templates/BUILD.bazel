@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cassandra_config.go",
+        "config_config.go",
+        "control_config.go",
+        "kubemanager_config.go",
+        "rabbitmq_config.go",
+        "vrouter_config.go",
+        "webui_config.go",
+        "zookeeper_config.go",
+    ],
+    importpath = "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates",
+    visibility = ["//visibility:public"],
+)
