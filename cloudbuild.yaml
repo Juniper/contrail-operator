@@ -1,5 +1,5 @@
 steps:
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '--incompatible_string_join_requires_strings=false', '--config=remote', '...']
+  args: ['build', '//cmd/manager:contrail-operator-push' ]
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['test', '--incompatible_string_join_requires_strings=false', '--config=remote', '...']
+  args: ['test', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
