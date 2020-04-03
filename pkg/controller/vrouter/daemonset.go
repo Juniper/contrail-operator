@@ -10,8 +10,22 @@ import (
 
 //GetDaemonset returns DaemonSet object for vRouter
 func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
-	var val420 int32 = 420
+	var labelsMountPermission int32 = 0644
 	var trueVal = true
+
+	var contrailStatusImageEnv = core.EnvVar{
+		Name:  "CONTRAIL_STATUS_IMAGE",
+		Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+	}
+
+	var podIPEnv = core.EnvVar{
+		Name: "POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
+			},
+		},
+	}
 
 	var podInitContainers = []core.Container{
 		core.Container{
@@ -23,18 +37,8 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
 			},
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name:  "CONTRAIL_STATUS_IMAGE",
-					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
-				},
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				contrailStatusImageEnv,
+				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
@@ -48,18 +52,8 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 			Name:  "nodeinit",
 			Image: "docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name:  "CONTRAIL_STATUS_IMAGE",
-					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
-				},
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				contrailStatusImageEnv,
+				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
@@ -76,18 +70,8 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 			Name:  "vrouterkernelinit",
 			Image: "docker.io/michaelhenkel/contrail-vrouter-kernel-init:5.2.0-dev1",
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name:  "CONTRAIL_STATUS_IMAGE",
-					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
-				},
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				contrailStatusImageEnv,
+				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
@@ -123,14 +107,7 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 			Name:  "vrouteragent",
 			Image: "docker.io/michaelhenkel/contrail-vrouter-agent:5.2.0-dev1",
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
@@ -182,14 +159,7 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 			Name:  "nodemanager",
 			Image: "docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1",
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				podIPEnv,
 				core.EnvVar{
 					Name:  "DOCKER_HOST",
 					Value: "unix://mnt/docker.sock",
@@ -215,18 +185,8 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 			Name:  "vroutercni",
 			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
 			Env: []core.EnvVar{
-				core.EnvVar{
-					Name:  "CONTRAIL_STATUS_IMAGE",
-					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
-				},
-				core.EnvVar{
-					Name: "POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
-				},
+				contrailStatusImageEnv,
+				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
@@ -386,7 +346,7 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 							},
 						},
 					},
-					DefaultMode: &val420,
+					DefaultMode: &labelsMountPermission,
 				},
 			},
 		},
