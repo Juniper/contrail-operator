@@ -3,14 +3,10 @@ package vrouter
 import (
 	"context"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -26,6 +22,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 var log = logf.Log.WithName("controller_vrouter")
@@ -91,13 +92,19 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Vrouter Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) error {
+	return add(mgr, newReconciler(mgr, cniDirs))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileVrouter{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+func newReconciler(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), cniDirs)
+}
+
+// NewReconciler returns a new reconcile.Reconciler.
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+	return &ReconcileVrouter{Client: client, Scheme: scheme,
+		Config: cfg, CNIDirectories: cniDirs}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -172,9 +179,10 @@ var _ reconcile.Reconciler = &ReconcileVrouter{}
 type ReconcileVrouter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client         client.Client
+	Scheme         *runtime.Scheme
+	Config         *rest.Config
+	CNIDirectories v1alpha1.VrouterCNIDirectories
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -240,7 +248,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	daemonSet := GetDaemonset()
+	daemonSet := GetDaemonset(r.CNIDirectories)
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -534,7 +542,8 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork); err != nil {
 			return reconcile.Result{}, err
 		}
 
