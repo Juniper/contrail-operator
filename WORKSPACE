@@ -92,6 +92,23 @@ load(
 
 _go_image_repos()
 
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "e754d6028845423b2cc7a6c375f9657fe0b0bbb196d76c8de6dd129c3aa74023",
+    strip_prefix = "bazel-toolchains-2.2.3",
+    urls = [
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.2.3/bazel-toolchains-2.2.3.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/2.2.3/bazel-toolchains-2.2.3.tar.gz",
+    ],
+)
+
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+
+# Creates a default toolchain config for RBE.
+# Use this as is if you are using the rbe_ubuntu16_04 container,
+# otherwise refer to RBE docs.
+rbe_autoconfig(name = "rbe_default")
+
 GOGOBUILD = """
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
@@ -154,15 +171,6 @@ new_git_repository(
     build_file_content = GOGOBUILD
 )
 
-
-#http_archive(
-#    name = "com_github_gogo_protobuf_repo",
-#    #sha256 = "5628607bb4c51c3157aacc3a50f0ab707582b805",
-#    #strip_prefix = "protobuf-1.3.1",
-#    #url = "https://github.com/gogo/protobuf/archive/v1.3.0.tar.gz",
-#    url = "file://v1.3.0.tar.gz",
-#    #build_file_content = GOGOBUILD
-#)
 
 CONTRAIL_BUILD = """
 filegroup(
