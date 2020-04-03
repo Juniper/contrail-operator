@@ -1,246 +1,441 @@
 package vrouter
 
 import (
-	"bytes"
-	"github.com/ghodss/yaml"
-	"text/template"
-
-	appsv1 "k8s.io/api/apps/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+  meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-var yamlDataVrouterTemplate = template.Must(template.New("").Parse(`
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: vrouter
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: vrouter
-  template:
-    metadata:
-      labels:
-        app: vrouter
-    spec:
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
-      tolerations:
-        - operator: Exists
-          effect: NoSchedule
-        - operator: Exists
-          effect: NoExecute
-      initContainers:
-        - name: init
-          image: busybox
-          command:
-            - sh
-            - -c
-            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          volumeMounts:
-            - mountPath: /tmp/podinfo
-              name: status
-          imagePullPolicy: Always
-        - name: nodeinit
-          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-          volumeMounts:
-            - mountPath: /host/usr/bin
-              name: host-usr-local-bin
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-        - name: vrouterkernelinit
-          image: docker.io/michaelhenkel/contrail-vrouter-kernel-init:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-          volumeMounts:
-            - mountPath: /host/usr/bin
-              name: host-usr-local-bin
-            - mountPath: /etc/sysconfig/network-scripts
-              name: network-scripts
-            - mountPath: /host/bin
-              name: host-bin
-            - mountPath: /usr/src
-              name: usr-src
-            - mountPath: /lib/modules
-              name: lib-modules
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-      containers:
-        - name: vrouteragent
-          image: docker.io/michaelhenkel/contrail-vrouter-agent:5.2.0-dev1
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                - /clean-up.sh
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: vrouter-logs
-            - mountPath: /dev
-              name: dev
-            - mountPath: /etc/sysconfig/network-scripts
-              name: network-scripts
-            - mountPath: /host/bin
-              name: host-bin
-            - mountPath: /usr/src
-              name: usr-src
-            - mountPath: /lib/modules
-              name: lib-modules
-            - mountPath: /var/lib/contrail
-              name: var-lib-contrail
-            - mountPath: /var/contrail/crashes
-              name: var-crashes
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-        - name: nodemanager
-          image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: DOCKER_HOST
-              value: unix://mnt/docker.sock
-            - name: NODE_TYPE
-              value: vrouter
-          volumeMounts:
-          - mountPath: /var/log/contrail
-            name: vrouter-logs
-          - mountPath: /mnt
-            name: docker-unix-socket
-          imagePullPolicy: Always
-        - name: vroutercni
-          image: docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-          volumeMounts:
-            - mountPath: /host/etc_cni
-              name: cni-config-files
-            - mountPath: /host/opt_cni_bin
-              name: cni-bin
-            - mountPath: /var/run
-              name: docker-unix-socket
-              mountPropagation: HostToContainer
-            - mountPath: /var/log/contrail/cni
-              name: var-log-contrail-cni
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-      restartPolicy: Always
-      volumes:
-        - hostPath:
-            path: /var/log/contrail/vrouter
-            type: ""
-          name: vrouter-logs
-        - hostPath:
-            path: /var/run
-            type: ""
-          name: docker-unix-socket
-        - hostPath:
-            path: /usr/local/bin
-            type: ""
-          name: host-usr-local-bin
-        - hostPath:
-            path: /var/log/contrail/cni
-            type: ""
-          name: var-log-contrail-cni
-        - hostPath:
-            path: {{ .ConfigFilesDirectory }}
-            type: ""
-          name: cni-config-files
-        - hostPath:
-            path: /var/contrail/crashes
-            type: ""
-          name: var-crashes
-        - hostPath:
-            path: /var/lib/contrail
-            type: ""
-          name: var-lib-contrail
-        - hostPath:
-            path: /lib/modules
-            type: ""
-          name: lib-modules
-        - hostPath:
-            path: /usr/src
-            type: ""
-          name: usr-src
-        - hostPath:
-            path: /bin
-            type: ""
-          name: host-bin
-        - hostPath:
-            path: /etc/sysconfig/network-scripts
-            type: ""
-          name: network-scripts
-        - hostPath:
-            path: /dev
-            type: ""
-          name: dev
-        - hostPath:
-            path: {{ .BinariesDirectory }}
-            type: ""
-          name: cni-bin
-        - hostPath:
-            path: /var/run/contrail
-            type: ""
-          name: var-run-contrail
-        - downwardAPI:
-            defaultMode: 420
-            items:
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labels
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labelsx
-          name: status`))
+//GetDaemonset returns DaemonSet object for vRouter
+func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
+	var val420 int32 = 420
+	var trueVal = true
 
-//GetDaemonset returns DaemonSet object created from yamlDatavrouter
-func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) (*appsv1.DaemonSet, error) {
-	var yamlDataVrouterBuffer bytes.Buffer
-	if err := yamlDataVrouterTemplate.Execute(&yamlDataVrouterBuffer, cniDir); err != nil {
-		return &appsv1.DaemonSet{}, err
+	var podInitContainers = []core.Container{
+		core.Container{
+			Name:  "init",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
+			},
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name:  "CONTRAIL_STATUS_IMAGE",
+					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+				},
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "status",
+					MountPath: "/tmp/podinfo",
+				},
+			},
+			ImagePullPolicy: "Always",
+		},
+		core.Container{
+			Name:  "nodeinit",
+			Image: "docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name:  "CONTRAIL_STATUS_IMAGE",
+					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+				},
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "host-usr-local-bin",
+					MountPath: "/host/usr/bin",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+		},
+		core.Container{
+			Name:  "vrouterkernelinit",
+			Image: "docker.io/michaelhenkel/contrail-vrouter-kernel-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name:  "CONTRAIL_STATUS_IMAGE",
+					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+				},
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "host-usr-local-bin",
+					MountPath: "/host/usr/bin",
+				},
+				core.VolumeMount{
+					Name:      "network-scripts",
+					MountPath: "/etc/sysconfig/network-scripts",
+				},
+				core.VolumeMount{
+					Name:      "host-bin",
+					MountPath: "/host/bin",
+				},
+				core.VolumeMount{
+					Name:      "usr-src",
+					MountPath: "/usr/src",
+				},
+				core.VolumeMount{
+					Name:      "lib-modules",
+					MountPath: "/lib/modules",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+		},
 	}
-	yamlDataVrouter := yamlDataVrouterBuffer.Bytes()
-	daemonSet := appsv1.DaemonSet{}
-	if err := yaml.Unmarshal(yamlDataVrouter, &daemonSet); err != nil {
-		return &appsv1.DaemonSet{}, err
+
+	var podContainers = []core.Container{
+		core.Container{
+			Name:  "vrouteragent",
+			Image: "docker.io/michaelhenkel/contrail-vrouter-agent:5.2.0-dev1",
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "vrouter-logs",
+					MountPath: "/var/log/contrail",
+				},
+				core.VolumeMount{
+					Name:      "dev",
+					MountPath: "/dev",
+				},
+				core.VolumeMount{
+					Name:      "network-scripts",
+					MountPath: "/etc/sysconfig/network-scripts",
+				},
+				core.VolumeMount{
+					Name:      "host-bin",
+					MountPath: "/host/bin",
+				},
+				core.VolumeMount{
+					Name:      "usr-src",
+					MountPath: "/usr/src",
+				},
+				core.VolumeMount{
+					Name:      "lib-modules",
+					MountPath: "/lib/modules",
+				},
+				core.VolumeMount{
+					Name:      "var-lib-contrail",
+					MountPath: "/var/lib/contrail",
+				},
+				core.VolumeMount{
+					Name:      "var-crashes",
+					MountPath: "/var/contrail/crashes",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+			Lifecycle: &core.Lifecycle{
+				PreStop: &core.Handler{
+					Exec: &core.ExecAction{
+						Command: []string{"/clean-up.sh"},
+					},
+				},
+			},
+		},
+		core.Container{
+			Name:  "nodemanager",
+			Image: "docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1",
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+				core.EnvVar{
+					Name:  "DOCKER_HOST",
+					Value: "unix://mnt/docker.sock",
+				},
+				core.EnvVar{
+					Name:  "NODE_TYPE",
+					Value: "vrouter",
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "vrouter-logs",
+					MountPath: "/var/log/contrail",
+				},
+				core.VolumeMount{
+					Name:      "docker-unix-socket",
+					MountPath: "/mnt",
+				},
+			},
+			ImagePullPolicy: "Always",
+		},
+		core.Container{
+			Name:  "vroutercni",
+			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				core.EnvVar{
+					Name:  "CONTRAIL_STATUS_IMAGE",
+					Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+				},
+				core.EnvVar{
+					Name: "POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				},
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "cni-config-files",
+					MountPath: "/host/etc_cni",
+				},
+				core.VolumeMount{
+					Name:      "cni-bin",
+					MountPath: "/host/opt_cni_bin",
+				},
+				core.VolumeMount{
+					Name:      "docker-unix-socket",
+					MountPath: "/host/opt_cni_bin",
+				},
+				core.VolumeMount{
+					Name:      "var-log-contrail-cni",
+					MountPath: "/var/log/contrail/cni",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+		},
 	}
-	return &daemonSet, nil
+
+	var podVolumes = []core.Volume{
+		core.Volume{
+			Name: "vrouter-logs",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/log/contrail/vrouter",
+				},
+			},
+		},
+		core.Volume{
+			Name: "docker-unix-socket",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/run",
+				},
+			},
+		},
+		core.Volume{
+			Name: "host-usr-local-bin",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/usr/local/bin",
+				},
+			},
+		},
+		core.Volume{
+			Name: "var-log-contrail-cni",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/log/contrail/cni",
+				},
+			},
+		},
+		core.Volume{
+			Name: "cni-config-files",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: cniDir.ConfigFilesDirectory,
+				},
+			},
+		},
+		core.Volume{
+			Name: "var-crashes",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/contrail/crashes",
+				},
+			},
+		},
+		core.Volume{
+			Name: "var-lib-contrail",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/lib/contrail",
+				},
+			},
+		},
+		core.Volume{
+			Name: "lib-modules",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/lib/modules",
+				},
+			},
+		},
+		core.Volume{
+			Name: "usr-src",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/usr/src",
+				},
+			},
+		},
+		core.Volume{
+			Name: "host-bin",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/bin",
+				},
+			},
+		},
+		core.Volume{
+			Name: "network-scripts",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/etc/sysconfig/network-scripts",
+				},
+			},
+		},
+		core.Volume{
+			Name: "dev",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/dev",
+				},
+			},
+		},
+		core.Volume{
+			Name: "cni-bin",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: cniDir.BinariesDirectory,
+				},
+			},
+		},
+		core.Volume{
+			Name: "var-run-contrail",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/run/contrail",
+				},
+			},
+		},
+		core.Volume{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labels",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labelsx",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+					},
+					DefaultMode: &val420,
+				},
+			},
+		},
+	}
+
+	var podTolerations = []core.Toleration{
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoSchedule",
+		},
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoExecute",
+		},
+	}
+
+	var podSpec = core.PodSpec{
+		Volumes:        podVolumes,
+		InitContainers: podInitContainers,
+		Containers:     podContainers,
+		RestartPolicy:  "Always",
+		DNSPolicy:      "ClusterFirst",
+		HostNetwork:    true,
+		Tolerations:    podTolerations,
+	}
+
+	var daemonSetSelector = meta.LabelSelector{
+		MatchLabels: map[string]string{"app": "vrouter"},
+	}
+
+	var daemonsetTemplate = core.PodTemplateSpec{
+		ObjectMeta: meta.ObjectMeta{},
+		Spec:       podSpec,
+	}
+
+	var daemonSet = apps.DaemonSet{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "DaemonSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "vrouter",
+			Namespace: "default",
+		},
+		Spec: apps.DaemonSetSpec{
+			Selector: &daemonSetSelector,
+			Template: daemonsetTemplate,
+		},
+	}
+
+	return &daemonSet
 }

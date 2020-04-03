@@ -17,15 +17,12 @@ func TestGetDaemonset(t *testing.T) {
 		BinariesDirectory:    testBinariesPath,
 		ConfigFilesDirectory: testConfigPath,
 	}
-	ds, err := vrouter.GetDaemonset(testCNIDirs)
-	assert.NoError(t, err)
-	pathType := v1.HostPathType("")
+	ds := vrouter.GetDaemonset(testCNIDirs)
 	expectedCniBinVolume := v1.Volume{
 		Name: "cni-bin",
 		VolumeSource: v1.VolumeSource{
 			HostPath: &v1.HostPathVolumeSource{
 				Path: testBinariesPath,
-				Type: &pathType,
 			},
 		},
 	}
@@ -34,7 +31,6 @@ func TestGetDaemonset(t *testing.T) {
 		VolumeSource: v1.VolumeSource{
 			HostPath: &v1.HostPathVolumeSource{
 				Path: testConfigPath,
-				Type: &pathType,
 			},
 		},
 	}

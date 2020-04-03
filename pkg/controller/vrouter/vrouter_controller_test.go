@@ -4,10 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,6 +16,10 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 )
 
 func TestVrouterController(t *testing.T) {
