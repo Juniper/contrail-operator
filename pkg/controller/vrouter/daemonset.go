@@ -3,7 +3,7 @@ package vrouter
 import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-  meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
