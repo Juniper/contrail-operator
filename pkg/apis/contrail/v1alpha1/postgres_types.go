@@ -10,15 +10,17 @@ import (
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Containers map[string]*Container `json:"containers,omitempty"`
-	Storage    Storage               `json:"storage,omitempty"`
+	Containers  map[string]*Container `json:"containers,omitempty"`
+	Storage     Storage               `json:"storage,omitempty"`
+	HostNetwork *bool                 `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
 }
 
 // PostgresStatus defines the observed state of Postgres
 // +k8s:openapi-gen=true
 type PostgresStatus struct {
-	Active bool   `json:"active,omitempty"`
-	Node   string `json:"node,omitempty"`
+	Active bool     `json:"active,omitempty"`
+	Node   string   `json:"node,omitempty"`
+	IPs    []string `json:"ips,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
