@@ -4,3 +4,5 @@ steps:
 - name: 'gcr.io/cloud-builders/bazel'
   args: ['test', '--config=remote', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
 timeout: '1h'
+options:
+  machineType: 'N1_HIGHCPU_8'
