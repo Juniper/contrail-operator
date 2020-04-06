@@ -191,18 +191,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 		"app": cr.Name,
 	}
 
-	image := "localhost:5000/postgres"
-	command := []string{"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/postgresql/ssl/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/postgresql/ssl/server-key-${MY_POD_IP}.pem"}
-	if c := cr.Spec.Containers["postgres"]; c != nil {
-		if c.Image != "" {
-			image = c.Image
-		}
-
-		if c.Command != nil {
-			command = c.Command
-		}
-	}
 	db := "contrail_test"
+	var labelsMountPermission int32 = 0644
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -213,10 +203,22 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			HostNetwork:  true,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			DNSPolicy:    core.DNSClusterFirst,
+			InitContainers: []core.Container{
+				{
+					Name:            "wait-for-ready-conf",
+					Image:           getImage(cr.Spec.Containers, "wait-for-ready-conf"),
+					Command:         getCommand(cr.Spec.Containers, "wait-for-ready-conf"),
+					ImagePullPolicy: core.PullAlways,
+					VolumeMounts: []core.VolumeMount{{
+						Name:      "status",
+						MountPath: "/tmp/podinfo",
+					}},
+				},
+			},
 			Containers: []core.Container{
 				{
-					Image:           image,
-					Command:         command,
+					Image:           getImage(cr.Spec.Containers, "postgres"),
+					Command:         getCommand(cr.Spec.Containers, "postgres"),
 					Name:            "postgres",
 					ImagePullPolicy: core.PullAlways,
 					ReadinessProbe: &core.Probe{
@@ -269,6 +271,23 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 						},
 					},
 				},
+				core.Volume{
+					Name: "status",
+					VolumeSource: core.VolumeSource{
+						DownwardAPI: &core.DownwardAPIVolumeSource{
+							Items: []core.DownwardAPIVolumeFile{
+								{
+									FieldRef: &core.ObjectFieldSelector{
+										APIVersion: "v1",
+										FieldPath:  "metadata.labels",
+									},
+									Path: "pod_labels",
+								},
+							},
+							DefaultMode: &labelsMountPermission,
+						},
+					},
+				},
 			},
 			Tolerations: []core.Toleration{
 				{Operator: "Exists", Effect: "NoSchedule"},
@@ -295,4 +314,32 @@ func (r *ReconcilePostgres) listPostgresPods(postgresName string) (*core.PodList
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+func getImage(containers map[string]*contrail.Container, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"postgres":            "localhost:5000/contrail-command",
+		"wait-for-ready-conf": "localhost:5000/busybox",
+	}
+
+	c, ok := containers[containerName]
+	if !ok || c == nil {
+		return defaultContainersImages[containerName]
+	}
+
+	return c.Image
+}
+
+func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+	var defaultContainersCommand = map[string][]string{
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/postgresql/ssl/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/postgresql/ssl/server-key-${MY_POD_IP}.pem"},
+		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+	}
+
+	c, ok := containers[containerName]
+	if !ok || c == nil || c.Command == nil {
+		return defaultContainersCommand[containerName]
+	}
+
+	return c.Command
 }
