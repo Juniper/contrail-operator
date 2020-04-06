@@ -64,8 +64,6 @@ github.com/ExpansiveWorlds/instrumentedsql v0.0.0-20171218214018-45abb4b1947d h1
 github.com/ExpansiveWorlds/instrumentedsql v0.0.0-20171218214018-45abb4b1947d/go.mod h1:Lm6NFlzU3HvZIo5l8GykZn6MH8/wq/A/X/d+7P/hgZU=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20190822182118-27a4ced34534/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
 github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab/go.mod h1:3VYc5hodBMJ5+l/7J4xAyMeuM2PNuepvHlGs8yilUCA=
-github.com/Juniper/asf v0.0.0-20200330081506-d317915f0ee1 h1:2jpVj/Y41wPY0fEoBRWFAksrtiFd4cNtb2RH66M9SG4=
-github.com/Juniper/asf v0.0.0-20200330081506-d317915f0ee1/go.mod h1:a3vVchXMTp54iASmQppnDztIt7WCpF3/Qq/o02Tqqu8=
 github.com/Juniper/contrail v0.0.0-20200330181744-e78e7561c8fd h1:31S3FvAcU12o5sLmsAvNjG0p2XAF7lDI6ceFxnpj7K0=
 github.com/Juniper/contrail v0.0.0-20200330181744-e78e7561c8fd/go.mod h1:74ucqR/LV6yXUKyBxdikyQ3+EXLs8jJh7yKZ/bQ34WQ=
 github.com/Juniper/contrail v0.0.0-20200330233038-9deae1205bb1 h1:sBxEkKCRoPdt3V+fbdRPuguXvVtO+rPWYaWi+d9QsXU=

@@ -6,7 +6,6 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/DATA-DOG/go-sqlmock v1.3.3
 	github.com/ExpansiveWorlds/instrumentedsql v0.0.0-20171218214018-45abb4b1947d
-	github.com/Juniper/asf v0.0.0-20200330081506-d317915f0ee1
 	github.com/Juniper/contrail v0.0.0-20200330181744-e78e7561c8fd
 	github.com/Juniper/contrail-go-api v1.1.0
 	github.com/NYTimes/gziphandler v1.1.1
