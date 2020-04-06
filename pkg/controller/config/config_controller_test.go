@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -48,11 +47,8 @@ func TestConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//scheme := scheme.Scheme
-			scheme.AddKnownTypes(contrail.SchemeGroupVersion, tt.initObjs...)
+			// scheme.AddKnownTypes(contrail.SchemeGroupVersion, tt.initObjs...)
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
-			// cl := fake.NewFakeClient(tt.initObjs...)
-			// := &config.ReconcileConfig{Client: cl, Scheme: scheme, claims: volumeclaims.New(cl, scheme)}
 			r := config.NewReconciler(
 				cl, scheme, volumeclaims.New(cl, scheme),
 			)
@@ -68,16 +64,10 @@ func TestConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.False(t, res.Requeue)
 
-			if errors.IsNotFound(err) {
-				err = nil
-			}
-			assert.NoError(t, err)
-
 			conf := &contrail.Config{}
 			err = cl.Get(context.Background(), req.NamespacedName, conf)
 			assert.NoError(t, err)
 			compareConfigStatus(t, tt.expectedStatus, conf.Status)
-			// assert.Equal(t, tt.expectedStatus, conf.Status)
 		})
 	}
 }
