@@ -222,10 +222,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP     string
 			ListenPort string
 			AuthMode   AuthenticationMode
+			CAFilePath string
 		}{
 			HostIP:     podList.Items[idx].Status.PodIP,
 			ListenPort: strconv.Itoa(*configConfig.APIPort),
 			AuthMode:   configConfig.AuthMode,
+			CAFilePath: cacertificates.CsrSignerCAFilepath,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
