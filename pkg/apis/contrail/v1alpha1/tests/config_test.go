@@ -495,6 +495,11 @@ func TestConfigConfig(t *testing.T) {
 			t.Fatalf("get api config: \n%v\n", diff)
 		}
 
+		if environment.configConfigMap.Data["vnc.1.1.1.1"] != vncApiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["vnc.1.1.1.1"], vncApiConfig)
+			t.Fatalf("get vncapi config: \n%v\n", diff)
+		}
+
 		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfig)
 			t.Fatalf("get devicemanager config: \n%v\n", diff)
@@ -1796,3 +1801,20 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
 sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
+
+var vncApiConfig = `[global]
+WEB_SERVER = 1.1.1.1
+WEB_PORT = 8082 ; connection to api-server directly
+BASE_URL = /
+use_ssl = True
+cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
+; Authentication settings (optional)
+[auth]
+AUTHN_TYPE = noauth
+AUTHN_PROTOCOL = http
+AUTHN_SERVER = localhost
+AUTHN_PORT = 5555
+AUTHN_URL = /v3/auth/tokens
+AUTHN_DOMAIN = Default
+;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
+`
