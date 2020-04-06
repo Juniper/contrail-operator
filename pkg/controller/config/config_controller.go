@@ -94,6 +94,13 @@ func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
+// NewReconciler is used to create a new ReconcileConfig
+func NewReconciler(
+	client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims,
+) *ReconcileConfig {
+	return &ReconcileConfig{Client: client, Scheme: scheme, claims: claims}
+}
+
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileConfig{
 		Client:  mgr.GetClient(),
