@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/core"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -28,7 +28,7 @@ func TestConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
-	// assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	falseVal := false
 	tests := []struct {
 		name           string
 		initObjs       []runtime.Object
@@ -42,6 +42,7 @@ func TestConfig(t *testing.T) {
 				newZookeeper(),
 				newRabbitmq(),
 			},
+			expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 		},
 	}
 
@@ -75,7 +76,8 @@ func TestConfig(t *testing.T) {
 			conf := &contrail.Config{}
 			err = cl.Get(context.Background(), req.NamespacedName, conf)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedStatus, conf.Status)
+			compareConfigStatus(t, tt.expectedStatus, conf.Status)
+			// assert.Equal(t, tt.expectedStatus, conf.Status)
 		})
 	}
 }
@@ -101,6 +103,20 @@ func newConfigInst() *contrail.Config {
 				CassandraInstance:  cassandraInstance,
 				ZookeeperInstance:  "zookeeper-instance",
 				KeystoneSecretName: "keystone-adminpass-secret",
+				Containers: map[string]*contrail.Container{
+					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
+					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
+					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
+					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
+					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
+					"init":              &contrail.Container{Image: "python:alpine"},
+					"init2":             &contrail.Container{Image: "busybox"},
+					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
+					"redis":             &contrail.Container{Image: "redis"},
+					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
+					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
+					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
+				},
 			},
 		},
 	}
@@ -138,4 +154,13 @@ func newRabbitmq() *contrail.Rabbitmq {
 		},
 		Status: contrail.RabbitmqStatus{Active: &trueVal},
 	}
+}
+
+func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.ConfigStatus) {
+	if expectedStatus.Active != nil && realStatus.Active != nil {
+		assert.Equal(t, *expectedStatus.Active, *realStatus.Active)
+	} else {
+		t.Error("config status active not initialized")
+	}
+	// TODO compare rest fields
 }
