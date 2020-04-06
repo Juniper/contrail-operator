@@ -232,8 +232,10 @@ spec:
         name: postgres
       spec:
         containers:
-          postgres: 
+          postgres:
             image: registry:5000/postgres
+          wait-for-ready-conf:
+            image: registry:5000/busybox
     memcached:
       metadata:
         name: memcached
