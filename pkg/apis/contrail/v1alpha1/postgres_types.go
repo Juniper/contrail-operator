@@ -20,7 +20,6 @@ type PostgresSpec struct {
 type PostgresStatus struct {
 	Active bool     `json:"active,omitempty"`
 	Node   string   `json:"node,omitempty"`
-	IPs    []string `json:"ips,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

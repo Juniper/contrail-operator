@@ -125,11 +125,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		}
 	}
 
-	ips := instance.Status.IPs
-	if len(ips) == 0 {
-		ips = []string{"0.0.0.0"}
-	}
-
 	claimName := types.NamespacedName{
 		Namespace: instance.Namespace,
 		Name:      instance.Name + "-pv-claim",
@@ -150,7 +145,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	// Define a new Pod object
-	pod := newPodForCR(instance, claimName.Name, ips[0])
+	pod := newPodForCR(instance, claimName.Name)
 
 	// Set Postgres instance as the owner and controller
 	if err = controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -191,13 +186,13 @@ func (r *ReconcilePostgres) updateStatus(
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrail.Postgres, claimName string, podIP string) *core.Pod {
+func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
 
 	image := "localhost:5000/postgres"
-	command := []string{"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server-$MY_POD_IP.crt -c ssl_key_file=/var/lib/postgresql/server-key-$MY_POD_IP.pem"}
+	command := []string{"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/postgresql/ssl/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/postgresql/ssl/server-key-${MY_POD_IP}.pem"}
 	if c := cr.Spec.Containers["postgres"]; c != nil {
 		if c.Image != "" {
 			image = c.Image
@@ -239,7 +234,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, podIP string) *core.Po
 						},
 						{
 							Name:      cr.Name + "-secret-certificates",
-							MountPath: "/var/lib/postgresql",
+							MountPath: "/var/lib/postgresql/ssl",
 						},
 					},
 					Env: []core.EnvVar{
