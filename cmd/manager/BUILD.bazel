@@ -48,10 +48,15 @@ go_image(
     importpath = "github.com/Juniper/contrail-operator",
 )
 
+docker_build(
+  name = "contrail-operator-docker-image",
+  base = ":contrail-operator-image",
+)
+
 container_push(
     name = "contrail-operator-push",
     image = ":contrail-operator-image",
-    format = "OCI",
+    format = "docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-operator",
     tag = "{BUILD_SCM_VERSION}",
@@ -60,7 +65,7 @@ container_push(
 container_push(
     name = "contrail-operator-push-debug",
     image = ":contrail-operator-image-debug",
-    format = "OCI",
+    format = "docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-operator",
     stamp = True,
