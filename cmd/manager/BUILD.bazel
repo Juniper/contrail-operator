@@ -52,8 +52,8 @@ container_push(
     name = "contrail-operator-push",
     image = ":contrail-operator-image",
     format = "Docker",
-    registry = "docker.io",
-    repository = "/contrail-operator",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-operator",
     tag = "dev",
 )
 
@@ -61,8 +61,8 @@ container_push(
     name = "contrail-operator-push-debug",
     image = ":contrail-operator-image-debug",
     format = "Docker",
-    registry = "docker.io",
-    repository = "/contrail-operator",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-operator",
     stamp = True,
     tag = "debug",
 )

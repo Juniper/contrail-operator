@@ -1,6 +1,6 @@
 steps:
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '--config=remote', '//cmd/manager:contrail-operator-push' ]
+  args: ['run', '--config=remote', '//cmd/manager:contrail-operator-push' ]
 - name: 'gcr.io/cloud-builders/bazel'
   args: ['test', '--config=remote', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
 timeout: '1h'
