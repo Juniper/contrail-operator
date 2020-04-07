@@ -48,11 +48,6 @@ go_image(
     importpath = "github.com/Juniper/contrail-operator",
 )
 
-docker_build(
-  name = "contrail-operator-docker-image",
-  base = ":contrail-operator-image",
-)
-
 container_push(
     name = "contrail-operator-push",
     image = ":contrail-operator-image",
