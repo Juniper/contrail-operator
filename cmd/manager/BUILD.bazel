@@ -51,20 +51,20 @@ go_image(
 container_push(
     name = "contrail-operator-push",
     image = ":contrail-operator-image",
-    format = "Docker",
+    format = "OCI",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-operator",
-    tag = "dev",
+    tag = "{BUILD_SCM_VERSION}",
 )
 
 container_push(
     name = "contrail-operator-push-debug",
     image = ":contrail-operator-image-debug",
-    format = "Docker",
+    format = "OCI",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-operator",
     stamp = True,
-    tag = "debug",
+    tag = "{BUILD_SCM_VERSION}",
 )
 
 go_binary(
