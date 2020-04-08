@@ -100,3 +100,5 @@ build:remote --project_id=eng-prod-237922
 build:remote --experimental_remote_download_outputs=minimal
 build:remote --experimental_inmemory_jdeps_files
 build:remote --experimental_inmemory_dotd_files
+
+build --workspace_status_command="bazeltools/workspace-status.sh"
