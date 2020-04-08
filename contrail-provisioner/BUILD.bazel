@@ -37,9 +37,9 @@ container_push(
     name = "contrail-provisioner-push",
     image = ":contrail-provisioner-image",
     format = "Docker",
-    registry = "docker.io",
-    repository = "michaelhenkel/contrail-provisioner",
-    tag = "dev",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-provisioner",
+    tag = "{BUILD_SCM_VERSION}",
 )
 
 go_image(
@@ -54,7 +54,7 @@ container_push(
     name = "contrail-provisioner-push-debug",
     image = ":contrail-provisioner-image-debug",
     format = "Docker",
-    registry = "docker.io",
-    repository = "michaelhenkel/contrail-provisioner",
-    tag = "debug",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-provisioner",
+    tag = "{BUILD_SCM_VERSION}",
 )
