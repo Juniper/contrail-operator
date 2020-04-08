@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
@@ -144,8 +145,9 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	// Define a new Pod object
-	pod := newPodForCR(instance, claimName.Name)
+	pod := newPodForCR(instance, claimName.Name, csrSignerCaVolumeName)
 
 	// Set Postgres instance as the owner and controller
 	if err = controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -186,7 +188,7 @@ func (r *ReconcilePostgres) updateStatus(
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
+func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -245,6 +247,10 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 							Name:      cr.Name + "-secret-certificates",
 							MountPath: "/var/lib/ssl_certificates",
 						},
+						{
+							Name:      csrSignerCaVolumeName,
+							MountPath: cacertificates.CsrSignerCAMountPath,
+						},
 					},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
@@ -296,6 +302,16 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 						},
 					},
 				},
+				core.Volume{
+					Name: csrSignerCaVolumeName,
+					VolumeSource: core.VolumeSource{
+						ConfigMap: &core.ConfigMapVolumeSource{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: cacertificates.CsrSignerCAConfigMapName,
+							},
+						},
+					},
+				},
 			},
 			Tolerations: []core.Toleration{
 				{Operator: "Exists", Effect: "NoSchedule"},
@@ -340,7 +356,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem"},
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + cacertificates.CsrSignerCAFilepath},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
