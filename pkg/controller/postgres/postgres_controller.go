@@ -194,7 +194,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 	db := "contrail_test"
 	var labelsMountPermission int32 = 0644
 	var secretMountPermission int32 = 0640
-	var fsUser int64 = 70
+	var fsUser int64 = 999
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -238,7 +238,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					VolumeMounts: []core.VolumeMount{
 						{
 							Name:      cr.Name + "-volume",
-							MountPath: "/var/lib/postgresql/data/pgdata",
+							MountPath: "/var/lib/postgresql",
 							SubPath:   "postgres",
 						},
 						{
