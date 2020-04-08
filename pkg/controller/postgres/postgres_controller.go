@@ -193,7 +193,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 
 	db := "contrail_test"
 	var labelsMountPermission int32 = 0644
-	var certificatesMountPermission int32 = 0640
+	var secretMountPermission int32 = 0640
+	var fsUser int64 = 70
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -204,6 +205,11 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			HostNetwork:  true,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			DNSPolicy:    core.DNSClusterFirst,
+			SecurityContext: &core.PodSecurityContext{
+				RunAsUser:          &fsUser,
+				FSGroup:            &fsUser,
+				SupplementalGroups: []int64{999, 1000},
+			},
 			InitContainers: []core.Container{
 				{
 					Name:            "wait-for-ready-conf",
@@ -232,12 +238,12 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					VolumeMounts: []core.VolumeMount{
 						{
 							Name:      cr.Name + "-volume",
-							MountPath: "/var/lib/postgresql/data",
+							MountPath: "/var/lib/postgresql/data/pgdata",
 							SubPath:   "postgres",
 						},
 						{
 							Name:      cr.Name + "-secret-certificates",
-							MountPath: "/var/lib/postgresql/ssl",
+							MountPath: "/var/lib/ssl_certificates",
 						},
 					},
 					Env: []core.EnvVar{
@@ -268,8 +274,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 					Name: cr.Name + "-secret-certificates",
 					VolumeSource: core.VolumeSource{
 						Secret: &core.SecretVolumeSource{
-							SecretName: cr.Name + "-secret-certificates",
-							DefaultMode: &certificatesMountPermission,
+							SecretName:  cr.Name + "-secret-certificates",
+							DefaultMode: &secretMountPermission,
 						},
 					},
 				},
@@ -334,7 +340,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"postgres":            {"/bin/bash", "-c", "whoami; docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/postgresql/ssl/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/postgresql/ssl/server-key-${MY_POD_IP}.pem"},
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
