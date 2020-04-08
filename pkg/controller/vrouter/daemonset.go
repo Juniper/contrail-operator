@@ -12,6 +12,7 @@ import (
 func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 	var labelsMountPermission int32 = 0644
 	var trueVal = true
+	hostToContainerMountPropagation := core.MountPropagationHostToContainer
 
 	var contrailStatusImageEnv = core.EnvVar{
 		Name:  "CONTRAIL_STATUS_IMAGE",
@@ -198,8 +199,9 @@ func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
 					MountPath: "/host/opt_cni_bin",
 				},
 				core.VolumeMount{
-					Name:      "docker-unix-socket",
-					MountPath: "/host/opt_cni_bin",
+					Name:             "docker-unix-socket",
+					MountPath:        "/var/run",
+					MountPropagation: &hostToContainerMountPropagation,
 				},
 				core.VolumeMount{
 					Name:      "var-log-contrail-cni",
