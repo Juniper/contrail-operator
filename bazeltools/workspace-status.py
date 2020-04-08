@@ -130,6 +130,10 @@ if __name__ == "__main__":
     git = git.decode('utf-8')
     print('BUILD_SCM_REVISION {}'.format(git))
 
+    git_branch = run_os_command(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+    git_branch = git_branch.decode('utf-8')
+    print('BUILD_SCM_BRANCH {}'.format(git_branch))
+
     stamp = run_os_command(['git', 'show', '-s', '--format=%ct', 'HEAD'])
     stamp = int(stamp.decode('utf-8'))
     utctime = datetime.utcfromtimestamp(stamp)

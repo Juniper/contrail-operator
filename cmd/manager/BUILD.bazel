@@ -54,7 +54,8 @@ container_push(
     format = "Docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-operator",
-    tag = "{BUILD_SCM_VERSION}",
+    tag = "{BUILD_SCM_REVISION}-{BUILD_SCM_BRANCH}",
+    #tag = "dev",
 )
 
 container_push(
