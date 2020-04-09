@@ -101,6 +101,7 @@ require (
 	github.com/pkg/sftp v1.11.0 // indirect
 	github.com/pmylund/go-cache v2.1.0+incompatible
 	github.com/pseudomuto/protoc-gen-doc v1.3.1
+	github.com/rogpeppe/go-internal v1.5.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
 	github.com/shopspring/decimal v0.0.0-20191009025716-f1972eb1d1f5
