@@ -136,13 +136,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if len(commandPods.Items) > 0 {
-		err = contrail.SetPodsToReady(commandPods, r.client)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
 	adminPasswordSecretName := command.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: command.Namespace}, adminPasswordSecret); err != nil {
@@ -175,6 +168,13 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0]); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if len(commandPods.Items) > 0 {
+		err = contrail.SetPodsToReady(commandPods, r.client)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	psql, err := r.getPostgres(command)
@@ -365,6 +365,16 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 					}},
 					InitContainers: []core.Container{
 						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           getImage(containers, "wait-for-ready-conf"),
+							Command:         getCommand(containers, "wait-for-ready-conf"),
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
+						{
 							Name:            "command-init",
 							ImagePullPolicy: core.PullAlways,
 							Image:           getImage(containers, "init"),
@@ -374,16 +384,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								MountPath: "/etc/contrail",
 							}},
 						},
-						{
-							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
-							Image:           getImage(containers, "wait-for-ready-conf"),
-							Command:         getCommand(containers, "wait-for-ready-conf"),
-							VolumeMounts: []core.VolumeMount{{
-								Name:      "status",
-								MountPath: "/tmp/podinfo",
-							}},
-						}},
+					},
 					DNSPolicy: core.DNSClusterFirst,
 					Tolerations: []core.Toleration{
 						{Operator: "Exists", Effect: "NoSchedule"},

@@ -292,24 +292,26 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 					},
-					InitContainers: []core.Container{{
-						Name:            "command-init",
-						ImagePullPolicy: core.PullAlways,
-						Image:           "registry:5000/contrail-command",
-						Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-						VolumeMounts: []core.VolumeMount{
-							core.VolumeMount{Name: "command-command-volume", MountPath: "/etc/contrail"},
-						},
-					}, {
-						Name:            "wait-for-ready-conf",
-						ImagePullPolicy: core.PullAlways,
-						Image:           "registry:5000/busybox",
-						Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
-						VolumeMounts: []core.VolumeMount{{
-							Name:      "status",
-							MountPath: "/tmp/podinfo",
+					InitContainers: []core.Container{
+						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "registry:5000/busybox",
+							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						}, {
+							Name:            "command-init",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "registry:5000/contrail-command",
+							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "command-command-volume",
+								MountPath: "/etc/contrail",
+							}},
 						}},
-					}},
 					Volumes: []core.Volume{
 						{
 							Name: "command-command-volume",
@@ -468,7 +470,7 @@ server:
   dynamic_proxy_path: proxy
   proxy:
     /contrail:
-    - http://localhost:8082
+    - https://0.0.0.0:8082
   notify_etcd: false
 
 no_auth: false
@@ -578,7 +580,7 @@ resources:
         - default-global-system-config
         - 534965b0-f40c-11e9-8de6-38c986460fd4
       hostname: cluster1
-      ip_address: localhost
+      ip_address: 0.0.0.0
       isNode: 'false'
       name: 5349662b-f40c-11e9-a57d-38c986460fd4
       node_type: private
@@ -656,107 +658,107 @@ resources:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      uuid: 53496238-f40c-11e9-8494-38c986460fd4
+      uuid: 53496300-f40c-11e9-8880-38c986460fd4
     kind: contrail_config_node
   - data:
-      name: 53496300-f40c-11e9-8880-38c986460fd4
+      name: 53496238-f40c-11e9-8494-38c986460eee
       fq_name:
         - default-global-system-config
         - cluster1
-        - 53496300-f40c-11e9-8880-38c986460fd4
+        - 53496238-f40c-11e9-8494-38c986460eee
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      uuid: 53496238-f40c-11e9-8494-38c986460fd4
-    kind: contrail_config_node
+      uuid: 53496238-f40c-11e9-8494-38c986460eee
+    kind: openstack_storage_node
   - data:
-      name: 4b49504f-7bea-4500-b83c-e16a8eccac77
+      name: 53496300-f40c-11e9-8880-38c986460eff
       fq_name:
         - default-global-system-config
         - cluster1
-        - 4b49504f-7bea-4500-b83c-e16a8eccac77
+        - 53496300-f40c-11e9-8880-38c986460eff
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      uuid: 4b49504f-7bea-4500-b83c-e16a8eccac77
-    kind: contrail_ztp_dhcp_node
+      uuid: 53496300-f40c-11e9-8880-38c986460eff
+    kind: contrail_analytics_node
   - data:
-      name: f7dda935-4a4a-477e-b0f8-ec0329ba887e
+      name: 53496300-f40c-11e9-8880-38c986460efe
       fq_name:
         - default-global-system-config
         - cluster1
-        - f7dda935-4a4a-477e-b0f8-ec0329ba887e 
+        - 53496300-f40c-11e9-8880-38c986460efe
       node_refs:
         - uuid: 5349552b-f40c-11e9-be04-38c986460fd4
       parent_type: contrail-cluster
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      uuid: f7dda935-4a4a-477e-b0f8-ec0329ba887e
-    kind: contrail_ztp_tftp_node
+      uuid: 53496300-f40c-11e9-8880-38c986460efe
+    kind: contrail_analytics_database_node
   - data:
-      name: nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+      name: nodejs
       fq_name:
         - default-global-system-config
         - cluster1
-        - nodejs-32dced10-efac-42f0-be7a-353ca163dca9
+        - nodejs
       uuid: 32dced10-efac-42f0-be7a-353ca163dca9
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
-      private_url: https://localhost:8143
-      public_url: https://localhost:8143
+      private_url: https://0.0.0.0:8143
+      public_url: https://0.0.0.0:8143
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
-      name: telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+      name: telemetry
       fq_name:
         - default-global-system-config
         - cluster1
-        - telemetry-aabf28e5-2a5a-409d-9dd9-a989732b208f
+        - telemetry
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: http://localhost:8081
-      public_url: http://localhost:8081
+      private_url: http://0.0.0.0:8081
+      public_url: http://0.0.0.0:8081
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
-      name: config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+      name: config
       fq_name:
         - default-global-system-config
         - cluster1
-        - config-b62a2f34-c6f7-4a25-ae04-f312d2747291
+        - config
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
-      private_url: http://localhost:8082
-      public_url: http://localhost:8082
+      private_url: https://0.0.0.0:8082
+      public_url: https://0.0.0.0:8082
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
-      name: keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+      name: keystone
       fq_name:
         - default-global-system-config
         - cluster1
-        - keystone-b62a2f34-c6f7-4a25-eeee-f312d2747291
+        - keystone
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: "http://localhost:5555"
-      public_url: "http://localhost:5555"
+      private_url: "http://0.0.0.0:5555"
+      public_url: "http://0.0.0.0:5555"
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
-      name: swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+      name: swift
       fq_name:
         - default-global-system-config
         - cluster1
-        - swift-b62a2f34-c6f7-4a25-efef-f312d2747291
+        - swift
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "http://localhost:5080"
-      public_url: "http://localhost:5080"
+      private_url: "http://0.0.0.0:5080"
+      public_url: "http://0.0.0.0:5080"
     kind: endpoint
 `
