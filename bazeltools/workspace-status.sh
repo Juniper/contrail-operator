@@ -6,5 +6,7 @@ set -eu
 
 #echo BUILD_SCM_REVISION rev
 #echo BUILD_SCM_BRANCH branch
-echo BUILD_SCM_REVISION $(git rev-parse --short HEAD)
-echo BUILD_SCM_BRANCH $(git rev-parse --abbrev-ref HEAD)
+rev=`/usr/bin/git rev-parse --short HEAD`
+branch=`/usr/bin/git rev-parse --abbrev-ref HEAD`
+echo BUILD_SCM_REVISION rev-${rev}
+echo BUILD_SCM_BRANCH branch-${branch}
