@@ -1,4 +1,8 @@
 steps:
+- name: 'gcr.io/cloud-builders/git'
+  args: ['clone', 'https://github.com/Juniper/contrail-operator']
+- name: gcr.io/cloud-builders/git
+  args: ['fetch', '--unshallow']
 - name: 'gcr.io/cloud-builders/bazel'
   args: ['test', '--config=remote', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
 - name: 'gcr.io/cloud-builders/bazel'
