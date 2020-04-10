@@ -23,6 +23,7 @@ steps:
     EOF
     mv known_hosts /root/.ssh/known_hosts
     ls -ltra
+    env
   volumes:
   - name: 'ssh'
     path: /root/.ssh
