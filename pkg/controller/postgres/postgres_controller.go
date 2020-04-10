@@ -233,7 +233,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 					ReadinessProbe: &core.Probe{
 						Handler: core.Handler{
 							Exec: &core.ExecAction{
-								Command: []string{"pg_isready", "-h", "localhost", "-U", "root", "-d", db},
+								Command: []string{"sh", "-c", "pg_isready -h $MY_POD_IP -U root -d" + db},
 							},
 						},
 					},
