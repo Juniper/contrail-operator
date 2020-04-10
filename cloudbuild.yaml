@@ -1,18 +1,10 @@
 steps:
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-  - kms
-  - decrypt
-  - --ciphertext-file=id_rsa.enc
-  - --plaintext-file=/root/.ssh/id_rsa
-  - --location=global
-  - --keyring=my-keyring
-  - --key=github-key
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
-- name: 'gcr.io/cloud-builders/git'
-  entrypoint: 'bash'
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['test', '--config=remote', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
+#- name: 'gcr.io/cloud-builders/bazel'
+#  args: ['build', '--config=remote', '//cmd/manager:contrail-operator-image' ]
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['run', '//cmd/manager:contrail-operator-push' ]
   env:
   - BUILD_ID=$BUILD_ID
   - COMMIT_SHA=$COMMIT_SHA
@@ -21,42 +13,6 @@ steps:
   - BRANCH_NAME=$BRANCH_NAME
   - TAG_NAME=$TAG_NAME
   - REVISION_ID=$REVISION_ID
-  args:
-  - '-c'
-  - |
-    chmod 600 /root/.ssh/id_rsa
-    cat <<EOF >/root/.ssh/config
-    Hostname github.com
-    IdentityFile /root/.ssh/id_rsa
-    EOF
-    mv known_hosts /root/.ssh/known_hosts
-    echo build_id $BUILD_ID
-    echo commit_sha $COMMIT_SHA
-    echo short_sha $SHORT_SHA
-    echo repo_name $REPO_NAME
-    echo branch_name $BRANCH_NAME
-    echo tag_name $TAG_NAME
-    echo revision_id $REVISION_ID
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
-#- name: 'gcr.io/cloud-builders/git'
-#  args:
-#  - clone
-#  - git@github.com:Juniper/contrail-operator.git
-#  volumes:
-#  - name: 'ssh'
-#    path: /root/.ssh
-#- name: 'gcr.io/cloud-builders/git'
-#  args: ['clone', 'https://github.com/Juniper/contrail-operator']
-- name: gcr.io/cloud-builders/git
-  args: ['fetch', '--unshallow']
-- name: 'gcr.io/cloud-builders/bazel'
-  args: ['test', '--config=remote', '//pkg/apis/contrail/v1alpha1/tests:go_default_test']
-- name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '--config=remote', '//cmd/manager:contrail-operator-image' ]
-- name: 'gcr.io/cloud-builders/bazel'
-  args: ['run', '//cmd/manager:contrail-operator-push' ]
 timeout: '1h'
 options:
   machineType: 'N1_HIGHCPU_8'
