@@ -22,7 +22,7 @@ steps:
     IdentityFile /root/.ssh/id_rsa
     EOF
     mv known_hosts /root/.ssh/known_hosts
-    ls -ltr 
+    ls -ltra
   volumes:
   - name: 'ssh'
     path: /root/.ssh
