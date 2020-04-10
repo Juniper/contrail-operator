@@ -28,7 +28,7 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   args:
   - clone
-  - git@github.com:michaelhenkel/Juniper/contrail-operator
+  - git@github.com:Juniper/contrail-operator.git
   volumes:
   - name: 'ssh'
     path: /root/.ssh
