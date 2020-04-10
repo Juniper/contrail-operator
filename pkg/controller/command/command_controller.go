@@ -383,6 +383,16 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
 							}},
+							Env: []core.EnvVar{
+								{
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
