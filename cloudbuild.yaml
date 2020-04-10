@@ -12,7 +12,7 @@ steps:
 #- name: 'gcr.io/cloud-builders/bazel'
 #  args: ['build', '--config=remote', '//cmd/manager:contrail-operator-image' ]
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['run', '//cmd/manager:contrail-operator-push' ]
+  args: ['run', '--config=remote', '//cmd/manager:contrail-operator-push' ]
   env:
   - BUILD_ID=$BUILD_ID
   - COMMIT_SHA=$COMMIT_SHA
