@@ -3,7 +3,7 @@ steps:
   args:
   - kms
   - decrypt
-  - --ciphertext-file=id_rsa_github.enc
+  - --ciphertext-file=id_rsa.enc
   - --plaintext-file=/root/.ssh/id_rsa
   - --location=global
   - --keyring=my-keyring
