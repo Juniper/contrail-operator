@@ -12,12 +12,28 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/memcached"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
+
+type testWatcher struct{}
+
+func (w *testWatcher) Watch(src source.Source, eventhandler handler.EventHandler, predicates ...predicate.Predicate) error {
+	return nil
+}
+
+func TestMemcachedAdd(t *testing.T) {
+	t.Run("test watch", func(t *testing.T) {
+		w := &testWatcher{}
+		memcached.AddWatch(w)
+	})
+}
 
 func TestMemcachedController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()

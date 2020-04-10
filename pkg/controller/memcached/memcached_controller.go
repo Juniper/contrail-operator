@@ -11,11 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -25,17 +24,6 @@ import (
 
 var log = logf.Log.WithName("controller_memcached")
 
-// Add creates a new Memcached Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconcileMemcached(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()))
-}
-
 func NewReconcileMemcached(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes) *ReconcileMemcached {
 	return &ReconcileMemcached{
 		client:     client,
@@ -44,17 +32,16 @@ func NewReconcileMemcached(client client.Client, scheme *runtime.Scheme, kuberne
 	}
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	c, err := controller.New("memcached-controller", mgr, controller.Options{Reconciler: r})
+type Watcher interface {
+	Watch(src source.Source, eventhandler handler.EventHandler, predicates ...predicate.Predicate) error
+}
+
+func AddWatch(w Watcher) error {
+	err := w.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
-	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-	err = c.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = w.Watch(&source.Kind{Type: &apps.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Memcached{},
 	})
