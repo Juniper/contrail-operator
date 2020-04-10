@@ -22,7 +22,7 @@ steps:
     IdentityFile /root/.ssh/id_rsa
     EOF
     mv known_hosts /root/.ssh/known_hosts
-    ls contrail-oprator/.git/
+    ls -ltr 
   volumes:
   - name: 'ssh'
     path: /root/.ssh
