@@ -27,15 +27,15 @@ steps:
   volumes:
   - name: 'ssh'
     path: /root/.ssh
-- name: 'gcr.io/cloud-builders/git'
-  args:
-  - clone
-  - git@github.com:Juniper/contrail-operator.git
-  volumes:
-  - name: 'ssh'
-    path: /root/.ssh
-- name: 'gcr.io/cloud-builders/git'
-  args: ['clone', 'https://github.com/Juniper/contrail-operator']
+#- name: 'gcr.io/cloud-builders/git'
+#  args:
+#  - clone
+#  - git@github.com:Juniper/contrail-operator.git
+#  volumes:
+#  - name: 'ssh'
+#    path: /root/.ssh
+#- name: 'gcr.io/cloud-builders/git'
+#  args: ['clone', 'https://github.com/Juniper/contrail-operator']
 - name: gcr.io/cloud-builders/git
   args: ['fetch', '--unshallow']
 - name: 'gcr.io/cloud-builders/bazel'
