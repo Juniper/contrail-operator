@@ -189,11 +189,17 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 	var data = make(map[string]string)
 	for idx := range podList.Items {
-
 		configAuth, err := c.AuthParameters(client)
 		if err != nil {
 			return err
 		}
+		hostname := podList.Items[idx].Annotations["hostname"]
+		configNodesList := strings.Split(analyticsServerSpaceSeparatedList, " ")
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
+		if err != nil {
+			return err
+		}
+		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 		var configApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIConfig.Execute(&configApiConfigBuffer, struct {
 			HostIP              string
@@ -413,7 +419,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 				return err
 			}
 		*/
-		hostname := podList.Items[idx].Annotations["hostname"]
+		//hostname := podList.Items[idx].Annotations["hostname"]
 		var configCollectorConfigBuffer bytes.Buffer
 		configtemplates.ConfigCollectorConfig.Execute(&configCollectorConfigBuffer, struct {
 			Hostname            string

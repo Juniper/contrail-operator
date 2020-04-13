@@ -71,6 +71,7 @@ func check(err error) {
 }
 
 func main() {
+	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")
 	flag.Parse()
@@ -173,14 +174,20 @@ func getStatus(config Config) {
 			break
 		}
 	}
-	err = updateControlStatus(&config, controlStatusMap, clientset, restClient)
+	switch config.NodeType {
+	case "controle":
+		err = updateControlStatus(&config, controlStatusMap, restClient)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func closeResp(resp *http.Response) {
-	resp.Body.Close()
+	err := resp.Body.Close()
+	if err != nil {
+		log.Printf("closing http session failed: %v", err)
+	}
 }
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
@@ -189,12 +196,11 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-func getPods(config Config, clientSet *kubernetes.Clientset) ([]string, error) {
-	//var podList []string
+func getPods(config Config, clientSet kubernetes.Interface) ([]string, error) {
 	var podHostnames []string
-	podList, err := clientSet.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: "control=" + config.NodeName})
+	podList, err := clientSet.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: string(config.NodeType) + "=" + config.NodeName})
 	if err != nil {
-		return podHostnames, err
+		return podHostnames, fmt.Errorf("get pods failed: %v", err)
 	}
 	var podAnnotations map[string]string
 
@@ -235,7 +241,10 @@ func kubeClient(config Config) (*kubernetes.Clientset, *rest.RESTClient, error) 
 		kubeConfig.TLSClientConfig.Insecure = true
 	}
 	// create the clientset
-	contrailOperatorTypes.SchemeBuilder.AddToScheme(scheme.Scheme)
+	err = contrailOperatorTypes.SchemeBuilder.AddToScheme(scheme.Scheme)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	crdConfig := kubeConfig
 	crdConfig.ContentConfig.GroupVersion = &schema.GroupVersion{Group: contrailOperatorTypes.SchemeGroupVersion.Group, Version: contrailOperatorTypes.SchemeGroupVersion.Version}
@@ -323,7 +332,7 @@ func (c *vrouterClient) UpdateStatus(name string, object *contrailOperatorTypes.
 	return &result, err
 }
 
-func updateControlStatus(config *Config, controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus, clientSet *kubernetes.Clientset, restClient *rest.RESTClient) error {
+func updateControlStatus(config *Config, controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 		controlCient := &controlClient{
@@ -364,7 +373,10 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 
 func getControlStatus(statusBody []byte) *contrailOperatorTypes.ControlServiceStatus {
 	controlUVEStatus := &uves.ControlUVEStatus{}
-	json.Unmarshal(statusBody, controlUVEStatus)
+	err := json.Unmarshal(statusBody, controlUVEStatus)
+	if err != nil {
+		log.Fatal(err)
+	}
 	connectionList := []contrailOperatorTypes.Connection{}
 
 	bgpRouterList := typeSwitch(controlUVEStatus.BgpRouterState.BgpRouterIPList)
