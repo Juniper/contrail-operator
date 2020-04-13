@@ -97,6 +97,9 @@ build:remote --bes_backend="buildeventservice.googleapis.com"
 build:remote --bes_timeout=60s
 build:remote --remote_instance_name=projects/eng-prod-237922/instances/default_instance
 build:remote --project_id=eng-prod-237922
-build:remote --experimental_remote_download_outputs=minimal
+#build:remote --experimental_remote_download_outputs=minimal
 build:remote --experimental_inmemory_jdeps_files
 build:remote --experimental_inmemory_dotd_files
+
+build --workspace_status_command="bazeltools/workspace-status.sh"
+run --workspace_status_command="bazeltools/workspace-status.sh"

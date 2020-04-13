@@ -52,19 +52,27 @@ container_push(
     name = "contrail-operator-push",
     image = ":contrail-operator-image",
     format = "Docker",
-    registry = "docker.io",
-    repository = "/contrail-operator",
-    tag = "dev",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-operator",
+    tag = "{BUILD_SCM_BRANCH}-{BUILD_SCM_REVISION}",
+)
+
+container_push(
+    name = "contrail-operator-push-latest",
+    image = ":contrail-operator-image",
+    format = "Docker",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-operator",
+    tag = "{BUILD_SCM_BRANCH}-latest",
 )
 
 container_push(
     name = "contrail-operator-push-debug",
     image = ":contrail-operator-image-debug",
     format = "Docker",
-    registry = "docker.io",
-    repository = "/contrail-operator",
-    stamp = True,
-    tag = "debug",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-operator",
+    tag = "{BUILD_SCM_BRANCH}-{BUILD_SCM_REVISION}-dev",
 )
 
 go_binary(
