@@ -233,7 +233,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 					ReadinessProbe: &core.Probe{
 						Handler: core.Handler{
 							Exec: &core.ExecAction{
-								Command: []string{"sh", "-c", "pg_isready -h $MY_POD_IP -U root -d" + db},
+								Command: []string{"sh", "-c", "pg_isready -h $MY_POD_IP -U root -d " + db},
 							},
 						},
 					},
@@ -330,9 +330,9 @@ func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres,
 	return certificates.New(r.client, r.scheme, postgres, r.config, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
 }
 
-func (r *ReconcilePostgres) listPostgresPods(postgresName string) (*core.PodList, error) {
+func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) {
 	pods := &core.PodList{}
-	labelSelector := labels.SelectorFromSet(map[string]string{"app": postgresName})
+	labelSelector := labels.SelectorFromSet(map[string]string{"app": app})
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
 	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
 		return &core.PodList{}, err
