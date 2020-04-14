@@ -113,6 +113,7 @@ func TestPostgresController(t *testing.T) {
 			client: fakeClient,
 			scheme: scheme,
 			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -141,6 +142,7 @@ func TestPostgresController(t *testing.T) {
 			client: fakeClient,
 			scheme: scheme,
 			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -158,10 +160,12 @@ func TestPostgresController(t *testing.T) {
 			client: fakeClient,
 			scheme: scheme,
 			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
 		})
+		assert.NoError(t, err)
 		// when
 		makePodReady(t, fakeClient, podName)
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
