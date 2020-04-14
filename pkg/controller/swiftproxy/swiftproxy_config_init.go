@@ -52,9 +52,9 @@ const registerPlaybook = `
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "http://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "{{"https://{{ swift_endpoint }}/v1"}}", interface: "admin" }
+        - { url: "{{"https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s"}}", interface: "internal" }
+        - { url: "{{"https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s"}}", interface: "public" }
     - name: create service project
       os_project:
         name: "service"
