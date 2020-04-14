@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/api/certificates/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -82,6 +83,7 @@ func TestPostgresController(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, v1beta1.SchemeBuilder.AddToScheme(scheme))
 
 	name := types.NamespacedName{Namespace: "default", Name: "testDB"}
 	podName := types.NamespacedName{Namespace: "default", Name: "testDB-pod"}
@@ -156,18 +158,20 @@ func TestPostgresController(t *testing.T) {
 	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		conf, err := contrail.GetConfig()
+		assert.NoError(t, err)
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
 			claims: volumeclaims.NewFake(),
-			config: &rest.Config{},
+			config: conf,
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
 		})
 		assert.NoError(t, err)
 		// when
-		makePodReady(t, fakeClient, podName)
+		makePodReady(t, fakeClient, podName, name)
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
 		})
@@ -222,12 +226,13 @@ func TestPostgresController(t *testing.T) {
 					client: fakeClient,
 					scheme: scheme,
 					claims: claims,
+					config: &rest.Config{},
 				}
 				_, err = reconcilePostgres.Reconcile(reconcile.Request{
 					NamespacedName: name,
 				})
 				// when
-				makePodReady(t, fakeClient, podName)
+				makePodReady(t, fakeClient, podName, name)
 				_, err = reconcilePostgres.Reconcile(reconcile.Request{
 					NamespacedName: name,
 				})
@@ -341,9 +346,9 @@ func assertPodExist(t *testing.T, c client.Client, name types.NamespacedName, co
 	assert.Equal(t, containerImage, pod.Spec.Containers[0].Image)
 }
 
-func makePodReady(t *testing.T, cl client.Client, name types.NamespacedName) {
+func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, name types.NamespacedName) {
 	pod := core.Pod{}
-	err := cl.Get(context.TODO(), name, &pod)
+	err := cl.Get(context.TODO(), podName, &pod)
 	require.NoError(t, err)
 	for _, container := range pod.Spec.Containers {
 		pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, core.ContainerStatus{
@@ -352,7 +357,26 @@ func makePodReady(t *testing.T, cl client.Client, name types.NamespacedName) {
 		})
 	}
 	pod.Status.PodIP = "1.1.1.1"
+	pod.Spec.NodeName = "test"
 	err = cl.Update(context.TODO(), &pod)
+	require.NoError(t, err)
+	csr := &v1beta1.CertificateSigningRequest{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name.Name + "-" + pod.Spec.NodeName,
+			Namespace: name.Namespace,
+		},
+		Spec: v1beta1.CertificateSigningRequestSpec{
+			Groups:  []string{"system:authenticated"},
+			Request: []byte{},
+			Usages: []v1beta1.KeyUsage{
+				"digital signature",
+				"key encipherment",
+				"server auth",
+				"client auth",
+			},
+		},
+	}
+	err = cl.Create(context.TODO(), csr)
 	require.NoError(t, err)
 }
 

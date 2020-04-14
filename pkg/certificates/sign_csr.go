@@ -77,7 +77,8 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
 
 			fmt.Println("Added Certificate and PEM to secret for " + request.Name + " " + pod.Status.PodIP)
-			csr := &v1beta1.CertificateSigningRequest{}
+			csr := &v1beta1.CertificateSigningRequestList{}
+			err = client.List(context.TODO(), csr)
 			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
 			if err != nil {
 				if !errors.IsNotFound(err) {
