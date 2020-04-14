@@ -1,11 +1,11 @@
 package randomstring
 
 import (
+	"math/rand"
 	"regexp"
 	"testing"
+	"time"
 	"unicode"
-        "math/rand"
-        "time"
 )
 
 func IsLetter(s string) bool {
@@ -21,11 +21,7 @@ func IsValid(s string) bool {
 	re := regexp.MustCompile("^[a-zA-Z0-9_]*$")
 	return re.MatchString(s)
 }
-/*
-type StubSize struct {
-	size int
-}
-*/
+
 type StubData interface {
 	Generate() string
 }
@@ -46,10 +42,10 @@ func TestRandomstring(t *testing.T) {
 	})
 
 	t.Run("Random string Generate method verification2", func(t *testing.T) {
-                rand.Seed(time.Now().UnixNano())
-                min := 10
-                max := 30
-		stubsize := RandString{rand.Intn(max - min + 1) + min}
+		rand.Seed(time.Now().UnixNano())
+		min := 10
+		max := 30
+		stubsize := RandString{rand.Intn(max-min+1) + min}
 		checkGenerateString(t, stubsize)
 	})
 
@@ -63,10 +59,10 @@ func TestRandomstring(t *testing.T) {
 	})
 
 	t.Run("Random string bytes function verification2", func(t *testing.T) {
-                rand.Seed(time.Now().UnixNano())
-                min := 10
-                max := 30
-		got := randStringBytes(rand.Intn(max - min + 1) + min)
+		rand.Seed(time.Now().UnixNano())
+		min := 10
+		max := 30
+		got := randStringBytes(rand.Intn(max-min+1) + min)
 		if !IsValid(got) {
 			t.Errorf("failed to verify random bytes")
 		}
