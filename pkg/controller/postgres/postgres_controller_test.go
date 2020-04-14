@@ -158,7 +158,7 @@ func TestPostgresController(t *testing.T) {
 	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-		conf, err := contrail.GetConfig()
+		conf, err := contrail.GetClientConfig()
 		assert.NoError(t, err)
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
