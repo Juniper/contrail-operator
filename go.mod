@@ -39,8 +39,10 @@ require (
 	github.com/operator-framework/operator-sdk v0.14.1
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/sftp v1.11.0 // indirect
-	github.com/pmylund/go-cache v2.1.0+incompatible // indirect
-	github.com/pseudomuto/protoc-gen-doc v1.3.1 // indirect
+	github.com/pmylund/go-cache v2.1.0+incompatible
+	github.com/pseudomuto/protoc-gen-doc v1.3.1
+	github.com/rogpeppe/go-internal v1.5.0
+	github.com/satori/go.uuid v1.2.0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
 	github.com/shopspring/decimal v0.0.0-20191009025716-f1972eb1d1f5 // indirect
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
