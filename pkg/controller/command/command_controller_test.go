@@ -1,7 +1,12 @@
 package command_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,12 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -26,12 +32,150 @@ func TestCommand(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+
+	missingInitObjectAndCheckNoErrorCases := map[string]struct {
+		initObjs []runtime.Object
+	}{
+		"no command": {
+			initObjs: []runtime.Object{},
+		},
+		"Swift secret name is empty": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwiftWithEmptyCredentialsSecretName(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+	}
+	for name, missingInitObjectAndCheckNoErrorCase := range missingInitObjectAndCheckNoErrorCases {
+		t.Run(name, func(t *testing.T) {
+			cl := fake.NewFakeClientWithScheme(scheme, missingInitObjectAndCheckNoErrorCase.initObjs...)
+			conf := &rest.Config{}
+			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
+
+			req := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "command",
+					Namespace: "default",
+				},
+			}
+
+			_, err := r.Reconcile(req)
+			assert.NoError(t, err)
+		})
+	}
+
+	missingInitObjectAndCheckErrorCases := map[string]struct {
+		initObjs []runtime.Object
+	}{
+		"no Postgres": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+		"no Swift": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+		"no Keystone": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(false),
+			},
+		},
+		"no Swift secret": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+		"no admin secret": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newSwiftSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+		"no Swift container exists": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(true),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			},
+		},
+	}
+	for name, missingInitObjectAndCheckErrorCase := range missingInitObjectAndCheckErrorCases {
+		t.Run(name, func(t *testing.T) {
+			cl := fake.NewFakeClientWithScheme(scheme, missingInitObjectAndCheckErrorCase.initObjs...)
+			conf := &rest.Config{}
+			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
+
+			req := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "command",
+					Namespace: "default",
+				},
+			}
+
+			_, err := r.Reconcile(req)
+			assert.Error(t, err)
+		})
+	}
+
+	t.Run("Swift secret name is empty", func(t *testing.T) {
+		initObjs := []runtime.Object{
+			newCommand(),
+			newPostgres(true),
+			newAdminSecret(),
+			newSwiftSecret(),
+			newSwiftWithEmptyCredentialsSecretName(false),
+			newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		conf := &rest.Config{}
+		r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "command",
+				Namespace: "default",
+			},
+		}
+
+		_, err := r.Reconcile(req)
+		assert.NoError(t, err)
+	})
+
 	tests := []struct {
 		name               string
 		initObjs           []runtime.Object
 		expectedStatus     contrail.CommandStatus
 		expectedDeployment *apps.Deployment
 		expectedPostgres   *contrail.Postgres
+		expectedSwift      *contrail.Swift
 	}{
 		{
 			name: "create a new deployment",
@@ -46,6 +190,39 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(false),
+		},
+		{
+			name: "create a new deployment and check swift containers existence",
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(true),
+				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newPodList(),
+			},
+			expectedStatus:     contrail.CommandStatus{},
+			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
+			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(true),
+		},
+		{
+			name: "create a new deployment with inactive Keystone",
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: false, Node: "10.0.2.15:5555"}, nil),
+				newPodList(),
+			},
+			expectedStatus:     contrail.CommandStatus{},
+			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
+			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(false),
 		},
 		{
 			name: "remove tolerations from deployment",
@@ -63,6 +240,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(false),
 		},
 		{
 			name: "update command status to false",
@@ -80,6 +258,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(false),
 		},
 		{
 			name: "update command status to active",
@@ -99,13 +278,37 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedPostgres:   newPostgresWithOwner(true),
+			expectedSwift:      newSwiftWithOwner(false),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
-			conf, _ := config.GetConfig()
+			conf := &rest.Config{
+				Host:    "localhost",
+				APIPath: "/",
+				Transport: mockRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+					requestBody := ioutil.NopCloser(strings.NewReader("everything fine"))
+
+					if strings.Contains(r.URL.Path, "keystone") {
+						jsonBytes, _ := json.Marshal(
+							keystone.AuthTokens{},
+						)
+
+						requestBody = ioutil.NopCloser(
+							bytes.NewReader(
+								jsonBytes,
+							),
+						)
+					}
+
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       requestBody,
+					}, nil
+				}),
+			}
 			r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
 
 			req := reconcile.Request{
@@ -157,8 +360,23 @@ func TestCommand(t *testing.T) {
 			assert.NoError(t, err)
 			psql.SetResourceVersion("")
 			assert.Equal(t, tt.expectedPostgres, psql)
+			// Check if Swift has been updated
+			swift := &contrail.Swift{}
+			err = cl.Get(context.Background(), types.NamespacedName{
+				Name:      tt.expectedSwift.GetName(),
+				Namespace: tt.expectedSwift.GetNamespace(),
+			}, swift)
+			assert.NoError(t, err)
+			swift.SetResourceVersion("")
+			assert.Equal(t, tt.expectedSwift, swift)
 		})
 	}
+}
+
+type mockRoundTripFunc func(r *http.Request) (*http.Response, error)
+
+func (m mockRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return m(r)
 }
 
 func newCommand() *contrail.Command {
@@ -193,11 +411,14 @@ func newCommand() *contrail.Command {
 
 func newPostgres(active bool) *contrail.Postgres {
 	return &contrail.Postgres{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Postgres",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-db",
 			Namespace: "default",
 		},
-		TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 		Status: contrail.PostgresStatus{
 			Active: active,
 		},
@@ -206,6 +427,10 @@ func newPostgres(active bool) *contrail.Postgres {
 
 func newSwift(active bool) *contrail.Swift {
 	return &contrail.Swift{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Swift",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swift",
 			Namespace: "default",
@@ -217,14 +442,66 @@ func newSwift(active bool) *contrail.Swift {
 	}
 }
 
+func newSwiftWithEmptyCredentialsSecretName(active bool) *contrail.Swift {
+	return &contrail.Swift{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift",
+			Namespace: "default",
+		},
+		Status: contrail.SwiftStatus{
+			Active:                active,
+			CredentialsSecretName: "",
+		},
+	}
+}
+
+func newPodList() *core.PodList {
+	return &core.PodList{
+		Items: []core.Pod{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Namespace: "default",
+					Labels: map[string]string{
+						"SwiftProxy": "swift-proxy",
+					},
+				},
+			},
+		},
+	}
+}
+
 func newPostgresWithOwner(active bool) *contrail.Postgres {
 	falseVal := false
 	psql := newPostgres(active)
 	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
-		{"contrail.juniper.net/v1alpha1", "Command", "command", "", &falseVal, &falseVal},
+		{
+			APIVersion:         "contrail.juniper.net/v1alpha1",
+			Kind:               "Command",
+			Name:               "command",
+			UID:                "",
+			Controller:         &falseVal,
+			BlockOwnerDeletion: &falseVal,
+		},
 	}
 
 	return psql
+}
+
+func newSwiftWithOwner(active bool) *contrail.Swift {
+	falseVal := false
+	swift := newSwift(active)
+	swift.ObjectMeta.OwnerReferences = []meta.OwnerReference{
+		{
+			APIVersion:         "contrail.juniper.net/v1alpha1",
+			Kind:               "Command",
+			Name:               "command",
+			UID:                "",
+			Controller:         &falseVal,
+			BlockOwnerDeletion: &falseVal,
+		},
+	}
+
+	return swift
 }
 
 func newCommandWithEmptyToleration() *contrail.Command {
@@ -249,7 +526,14 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
 			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
+				{
+					APIVersion:         "contrail.juniper.net/v1alpha1",
+					Kind:               "Command",
+					Name:               "command",
+					UID:                "",
+					Controller:         &trueVal,
+					BlockOwnerDeletion: &trueVal,
+				},
 			},
 		},
 		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
@@ -399,7 +683,14 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
 		OwnerReferences: []meta.OwnerReference{
-			{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
+			{
+				APIVersion:         "contrail.juniper.net/v1alpha1",
+				Kind:               "Command",
+				Name:               "command",
+				UID:                "",
+				Controller:         &trueVal,
+				BlockOwnerDeletion: &trueVal,
+			},
 		},
 	}, actual.ObjectMeta)
 
