@@ -22,7 +22,7 @@ type commandConf struct {
 	CAFilePath     string
 	PGPassword     string
 	KeystoneIP     string
-	KeystonePort   string
+	KeystonePort   int
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {

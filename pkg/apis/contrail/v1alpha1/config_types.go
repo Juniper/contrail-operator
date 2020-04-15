@@ -294,14 +294,14 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername string
 			AdminPassword string
-			KeystoneUrl   string
 			KeystoneIP    string
+			KeystonePort  int
 			CAFilePath    string
 		}{
 			AdminUsername: configAuth.AdminUsername,
 			AdminPassword: configAuth.AdminPassword,
-			KeystoneUrl:   configAuth.KeystoneUrl,
 			KeystoneIP:    configAuth.KeystoneIP,
+			KeystonePort:  configAuth.KeystonePort,
 			CAFilePath:    cacertificates.CsrSignerCAFilepath,
 		})
 		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
@@ -500,8 +500,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 type ConfigAuthParameters struct {
 	AdminUsername string
 	AdminPassword string
-	KeystoneUrl   string
 	KeystoneIP    string
+	KeystonePort  int
 }
 
 func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, error) {
@@ -524,7 +524,7 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 		if len(keystone.Status.IPs) == 0 {
 			return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
 		}
-		w.KeystoneUrl = fmt.Sprintf("https://%s:%d/v3", keystone.Status.IPs[0], keystone.Spec.ServiceConfiguration.ListenPort)
+		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
 		w.KeystoneIP = keystone.Status.IPs[0]
 	}
 

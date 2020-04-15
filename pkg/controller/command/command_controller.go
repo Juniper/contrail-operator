@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -176,7 +175,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 	keystoneIP := keystone.Status.IPs[0]
-	keystonePort := strconv.Itoa(keystone.Spec.ServiceConfiguration.ListenPort)
+	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
