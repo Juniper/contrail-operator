@@ -376,6 +376,19 @@ func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, 
 	}
 	err = cl.Create(context.TODO(), csr)
 	require.NoError(t, err)
+	csrSecret := &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name.Name + "-secret-certificates",
+			Namespace: name.Namespace,
+		},
+		Data: map[string][]byte{
+			"status-" + pod.Status.PodIP:          []byte("Approved"),
+			"server-" + pod.Status.PodIP + ".pem": []byte("Dummy .pem"),
+			"server-" + pod.Status.PodIP + ".crt": []byte("Dummy .crt"),
+		},
+	}
+	err = cl.Update(context.TODO(), csrSecret)
+	require.NoError(t, err)
 }
 
 func assertPostgresStatusActive(t *testing.T, c client.Client, name types.NamespacedName, active bool) {

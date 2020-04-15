@@ -19,8 +19,8 @@ type commandConf struct {
 	PostgresUser   string
 	PostgresDBName string
 	HostIP         string
-  CAFilePath     string
-  PGPassword     string
+	CAFilePath     string
+	PGPassword     string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
