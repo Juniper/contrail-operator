@@ -77,7 +77,7 @@ func TestKeystone(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Node: "127.0.0.1:5555", Port: 5555},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),

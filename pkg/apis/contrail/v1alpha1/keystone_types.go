@@ -26,7 +26,6 @@ type KeystoneConfiguration struct {
 // +k8s:openapi-gen=true
 type KeystoneStatus struct {
 	Active bool     `json:"active,omitempty"`
-	Node   string   `json:"node,omitempty"`
 	Port   int      `json:"port,omitempty"`
 	IPs    []string `json:"ips,omitempty"`
 }

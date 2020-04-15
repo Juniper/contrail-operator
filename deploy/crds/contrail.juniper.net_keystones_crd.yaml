@@ -140,8 +140,6 @@ spec:
               items:
                 type: string
               type: array
-            node:
-              type: string
             port:
               type: integer
           type: object

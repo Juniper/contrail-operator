@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -170,18 +171,19 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if keystone.Status.Node == "" {
-		log.Info(fmt.Sprintf("%q Status.Node field empty", keystone.Name))
+	if len(keystone.Status.IPs) == 0 {
+		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneUrl := fmt.Sprintf("https://%s", keystone.Status.Node)
+	keystoneIP := keystone.Status.IPs[0]
+	keystonePort := strconv.Itoa(keystone.Spec.ServiceConfiguration.ListenPort)
 
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneUrl); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort); err != nil {
 		return reconcile.Result{}, err
 	}
 

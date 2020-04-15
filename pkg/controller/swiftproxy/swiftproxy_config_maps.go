@@ -13,21 +13,26 @@ import (
 type configMaps struct {
 	cm                      *k8s.ConfigMap
 	swiftProxySpec          contrail.SwiftProxySpec
-	keystoneStatus          contrail.KeystoneStatus
+	keystone                *keystoneEndpoint
 	keystoneAdminPassSecret *core.Secret
 	credentialsSecret       *core.Secret
+}
+
+type keystoneEndpoint struct {
+	keystoneIP   string
+	keystonePort int
 }
 
 func (r *ReconcileSwiftProxy) configMap(
 	configMapName string,
 	swiftProxy *contrail.SwiftProxy,
-	keystone *contrail.Keystone,
+	keystone *keystoneEndpoint,
 	keystoneSecret *core.Secret,
 	swiftSecret *core.Secret) *configMaps {
 	return &configMaps{
 		cm:                      r.kubernetes.ConfigMap(configMapName, "SwiftProxy", swiftProxy),
 		swiftProxySpec:          swiftProxy.Spec,
-		keystoneStatus:          keystone.Status,
+		keystone:                keystone,
 		keystoneAdminPassSecret: keystoneSecret,
 		credentialsSecret:       swiftSecret,
 	}
@@ -36,7 +41,8 @@ func (r *ReconcileSwiftProxy) configMap(
 func (c *configMaps) ensureExists(memcachedNode string) error {
 	spc := &swiftProxyConfig{
 		ListenPort:            c.swiftProxySpec.ServiceConfiguration.ListenPort,
-		KeystoneServer:        c.keystoneStatus.Node,
+		KeystoneIP:            c.keystone.keystoneIP,
+		KeystonePort:          c.keystone.keystonePort,
 		MemcachedServer:       memcachedNode,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
@@ -47,7 +53,8 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 
 func (c *configMaps) ensureInitExists(endpoint string) error {
 	spc := &swiftProxyInitConfig{
-		KeystoneAuthURL:       "https://" + c.keystoneStatus.Node + "/v3",
+		KeystoneIP:            c.keystone.keystoneIP,
+		KeystonePort:          c.keystone.keystonePort,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),

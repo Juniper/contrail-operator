@@ -8,7 +8,8 @@ import (
 )
 
 type swiftProxyInitConfig struct {
-	KeystoneAuthURL       string
+	KeystoneIP            string
+	KeystonePort          int
 	KeystoneAdminPassword string
 	SwiftEndpoint         string
 	SwiftPassword         string
@@ -92,7 +93,7 @@ const registerPlaybook = `
 
 var registerConfig = template.Must(template.New("").Parse(`
 openstack_auth:
-  auth_url: "{{ .KeystoneAuthURL }}"
+  auth_url: "https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3"
   username: "admin"
   password: "{{ .KeystoneAdminPassword }}"
   project_name: "admin"

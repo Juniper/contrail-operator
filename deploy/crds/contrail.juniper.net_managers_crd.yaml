@@ -918,8 +918,6 @@ spec:
                           items:
                             type: string
                           type: array
-                        node:
-                          type: string
                         port:
                           type: integer
                       type: object
@@ -1179,6 +1177,8 @@ spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
                         containers: {}
+                        hostNetwork:
+                          type: boolean
                         storage:
                           properties:
                             path:

@@ -226,10 +226,10 @@ func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string)
 	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 		return nil, err
 	}
-	if keystone.Status.Node == "" {
-		return nil, fmt.Errorf("%q Status.Node field empty", keystoneInstanceName)
+	if len(keystone.Status.IPs) == 0 {
+		return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
 	}
-	k.AuthUrl = fmt.Sprintf("http://%s/v3/auth", keystone.Status.Node)
+	k.AuthUrl = fmt.Sprintf("http://%s:%d/v3/auth", keystone.Status.IPs[0], keystone.Spec.ServiceConfiguration.ListenPort)
 
 	return k, nil
 }

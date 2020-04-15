@@ -1860,6 +1860,11 @@ func (in *PostgresSpec) DeepCopyInto(out *PostgresSpec) {
 		}
 	}
 	out.Storage = in.Storage
+	if in.HostNetwork != nil {
+		in, out := &in.HostNetwork, &out.HostNetwork
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

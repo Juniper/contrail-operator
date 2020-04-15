@@ -2,6 +2,7 @@ package swiftproxy
 
 import (
 	"context"
+	"fmt"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -120,6 +121,11 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
+	if len(keystone.Status.IPs) == 0 {
+		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+		return reconcile.Result{}, nil
+	}
+	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.IPs[0], keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 
 	memcached, err := r.getMemcached(swiftProxy)
 	if err != nil {
@@ -145,7 +151,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
-	cm := r.configMap(swiftConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
+	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
 	if err = cm.ensureExists(memcached.Status.Node); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -156,7 +162,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	cm = r.configMap(swiftInitConfigName, swiftProxy, keystone, adminPasswordSecret, passwordSecret)
+	cm = r.configMap(swiftInitConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
 	if err = cm.ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}

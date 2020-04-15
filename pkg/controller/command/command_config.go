@@ -21,7 +21,8 @@ type commandConf struct {
 	HostIP         string
 	CAFilePath     string
 	PGPassword     string
-	KeystoneUrl    string
+	KeystoneIP     string
+	KeystonePort   string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -244,8 +245,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: {{ .KeystoneUrl }}
-      public_url: {{ .KeystoneUrl }}
+      private_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
+      public_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291

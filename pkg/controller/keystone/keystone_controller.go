@@ -332,18 +332,15 @@ func (r *ReconcileKeystone) updateStatus(
 	if err := r.client.List(context.Background(), &pods, labels); err != nil {
 		return err
 	}
+	if sts.Status.ReadyReplicas == intendentReplicas {
+		k.Status.Active = true
+		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
+	}
 	k.Status.IPs = []string{}
-	podIP := "127.0.0.1"
 	for _, pod := range pods.Items {
 		if pod.Status.PodIP != "" {
 			k.Status.IPs = append(k.Status.IPs, pod.Status.PodIP)
-			podIP = pod.Status.PodIP
 		}
-	}
-	if sts.Status.ReadyReplicas == intendentReplicas {
-		k.Status.Active = true
-		k.Status.Node = fmt.Sprintf("%v:%v", podIP, k.Spec.ServiceConfiguration.ListenPort)
-		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
 
 	return r.client.Status().Update(context.Background(), k)
