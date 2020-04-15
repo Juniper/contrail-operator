@@ -1,14 +1,12 @@
 package randomstring
 
 import (
-	"math/rand"
 	"regexp"
 	"testing"
-	"time"
 	"unicode"
 )
 
-func IsLetter(s string) bool {
+func HasLettersOnly(s string) bool {
 	for _, r := range s {
 		if !unicode.IsLetter(r) {
 			return false
@@ -22,31 +20,23 @@ func IsValid(s string) bool {
 	return re.MatchString(s)
 }
 
-type StubData interface {
+type TestInterface interface {
 	Generate() string
 }
 
 func TestRandomstring(t *testing.T) {
 
-	checkGenerateString := func(t *testing.T, stubdata StubData) {
+	checkGenerateString := func(t *testing.T, testinterface TestInterface) {
 		t.Helper()
-		got := stubdata.Generate()
-		if !IsLetter(got) {
+		got := testinterface.Generate()
+		if !HasLettersOnly(got) {
 			t.Errorf("failed to verify Generate")
 		}
 	}
 
-	t.Run("Random string Generate method verification1", func(t *testing.T) {
-		stubsize := RandString{12}
-		checkGenerateString(t, stubsize)
-	})
-
-	t.Run("Random string Generate method verification2", func(t *testing.T) {
-		rand.Seed(time.Now().UnixNano())
-		min := 10
-		max := 30
-		stubsize := RandString{rand.Intn(max-min+1) + min}
-		checkGenerateString(t, stubsize)
+	t.Run("Random string Generate method verification", func(t *testing.T) {
+		testvalue := RandString{12}
+		checkGenerateString(t, testvalue)
 	})
 
 	t.Run("Random string bytes function verification1", func(t *testing.T) {
@@ -58,14 +48,4 @@ func TestRandomstring(t *testing.T) {
 
 	})
 
-	t.Run("Random string bytes function verification2", func(t *testing.T) {
-		rand.Seed(time.Now().UnixNano())
-		min := 10
-		max := 30
-		got := randStringBytes(rand.Intn(max-min+1) + min)
-		if !IsValid(got) {
-			t.Errorf("failed to verify random bytes")
-		}
-
-	})
 }
