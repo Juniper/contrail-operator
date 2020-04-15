@@ -266,7 +266,7 @@ func newExpectedDeployment() *apps.Deployment {
 func newExpectedMemcachedConfigMap() *core.ConfigMap {
 	trueVal := true
 	expectedConfig := `{
-	"command": "/usr/bin/memcached -v -l 0.0.0.0 -p 11211 -c 5000 -U 0 -m 256",
+	"command": "/usr/bin/memcached -vv -l 127.0.0.1 -p 11211 -c 5000 -U 0 -m 256",
 	"config_files": []
 }`
 	return &core.ConfigMap{

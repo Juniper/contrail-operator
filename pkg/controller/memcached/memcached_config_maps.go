@@ -50,7 +50,8 @@ func (c *memcachedConfig) String() string {
 	return buffer.String()
 }
 
+// -l 127.0.0.1 makes memcached available only on localhost
 const memcachedConfigTemplate = `{
-	"command": "/usr/bin/memcached -v -l 0.0.0.0 -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
+	"command": "/usr/bin/memcached -vv -l 127.0.0.1 -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
 	"config_files": []
 }`
