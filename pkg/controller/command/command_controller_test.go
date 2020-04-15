@@ -855,7 +855,7 @@ replication:
 `
 const expectedBootstrapScript = `
 #!/bin/bash
-export PGPASSWORD=${PGPASSWORD:-contrail123}
+export PGPASSWORD=contrail123
 QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then

@@ -19,7 +19,8 @@ type commandConf struct {
 	PostgresUser   string
 	PostgresDBName string
 	HostIP         string
-	CAFilePath     string
+  CAFilePath     string
+  PGPassword     string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -47,7 +48,7 @@ update-ca-trust
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
-export PGPASSWORD=${PGPASSWORD:-contrail123}
+export PGPASSWORD={{ .PGPassword }}
 QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then

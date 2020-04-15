@@ -196,7 +196,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 	db := "contrail_test"
 	var labelsMountPermission int32 = 0644
 	var secretMountPermission int32 = 0640
-	var fsUser int64 = 999
+	var postgresUID int64 = 999
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -208,8 +208,8 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			DNSPolicy:    core.DNSClusterFirst,
 			SecurityContext: &core.PodSecurityContext{
-				RunAsUser:          &fsUser,
-				FSGroup:            &fsUser,
+				RunAsUser:          &postgresUID,
+				FSGroup:            &postgresUID,
 				SupplementalGroups: []int64{999, 1000},
 			},
 			InitContainers: []core.Container{
