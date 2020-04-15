@@ -171,7 +171,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	if keystone.Status.Node == "" {
-		return reconcile.Result{}, fmt.Errorf("%q Status.Node field empty", keystone.Name)
+		log.Info(fmt.Sprintf("%q Status.Node field empty", keystone.Name))
+		return reconcile.Result{}, nil
 	}
 	keystoneUrl := fmt.Sprintf("https://%s", keystone.Status.Node)
 
