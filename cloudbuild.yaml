@@ -29,6 +29,26 @@ steps:
   - BRANCH_NAME=$BRANCH_NAME
   - TAG_NAME=$TAG_NAME
   - REVISION_ID=$REVISION_ID
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['run', '--config=remote', '//statusmonitor:contrail-statusmonitor-push' ]
+  env:
+  - BUILD_ID=$BUILD_ID
+  - COMMIT_SHA=$COMMIT_SHA
+  - SHORT_SHA=$SHORT_SHA
+  - REPO_NAME=$REPO_NAME
+  - BRANCH_NAME=$BRANCH_NAME
+  - TAG_NAME=$TAG_NAME
+  - REVISION_ID=$REVISION_ID
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['run', '--config=remote', '//statusmonitor:contrail-statusmonitor-push-latest' ]
+  env:
+  - BUILD_ID=$BUILD_ID
+  - COMMIT_SHA=$COMMIT_SHA
+  - SHORT_SHA=$SHORT_SHA
+  - REPO_NAME=$REPO_NAME
+  - BRANCH_NAME=$BRANCH_NAME
+  - TAG_NAME=$TAG_NAME
+  - REVISION_ID=$REVISION_ID
 timeout: '1h'
 options:
   machineType: 'N1_HIGHCPU_8'
