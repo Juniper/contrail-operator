@@ -591,6 +591,16 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							Image:           "registry:5000/contrail-command",
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
+							Env: []core.EnvVar{
+								{
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "command-command-volume",
 								MountPath: "/etc/contrail",
@@ -726,7 +736,7 @@ func newSwiftSecret() *core.Secret {
 
 const expectedCommandConfig = `
 database:
-  host: localhost
+  host: 0.0.0.0
   user: root
   password: contrail123
   name: contrail_test
@@ -845,8 +855,8 @@ replication:
 `
 const expectedBootstrapScript = `
 #!/bin/bash
-
-QUERY_RESULT=$(psql -w -h localhost -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+export PGPASSWORD=contrail123
+QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -857,8 +867,8 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
+psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
 contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
 contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
 `

@@ -324,6 +324,16 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							ImagePullPolicy: core.PullAlways,
 							Command:         getCommand(cr, "keystoneDbInit"),
 							Args:            []string{"-c", initDBScript},
+							Env: []core.EnvVar{
+								{
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 						},
 						{
 							Name:            "keystone-init",
@@ -440,8 +450,9 @@ const initDBScript = `DB_USER=${DB_USER:-root}
 DB_NAME=${DB_NAME:-contrail_test}
 KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
+export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h localhost -U $DB_USER $KEYSTONE
-psql -h localhost -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h localhost -U $DB_USER $KEYSTONE
-psql -h localhost -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
+psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
+psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
