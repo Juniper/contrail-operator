@@ -226,17 +226,17 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var vncApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
-			HostIP       string
-			ListenPort   string
-			AuthMode     AuthenticationMode
-			CAFilePath   string
-			AuthServerIP string
+			HostIP     string
+			ListenPort string
+			AuthMode   AuthenticationMode
+			CAFilePath string
+			KeystoneIP string
 		}{
-			HostIP:       podList.Items[idx].Status.PodIP,
-			ListenPort:   strconv.Itoa(*configConfig.APIPort),
-			AuthMode:     configConfig.AuthMode,
-			CAFilePath:   cacertificates.CsrSignerCAFilepath,
-			AuthServerIP: configAuth.KeystoneIP,
+			HostIP:     podList.Items[idx].Status.PodIP,
+			ListenPort: strconv.Itoa(*configConfig.APIPort),
+			AuthMode:   configConfig.AuthMode,
+			CAFilePath: cacertificates.CsrSignerCAFilepath,
+			KeystoneIP: configAuth.KeystoneIP,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
@@ -294,14 +294,14 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername string
 			AdminPassword string
-			AuthUrl       string
-			AuthServerIP  string
+			KeystoneUrl   string
+			KeystoneIP    string
 			CAFilePath    string
 		}{
 			AdminUsername: configAuth.AdminUsername,
 			AdminPassword: configAuth.AdminPassword,
-			AuthUrl:       configAuth.KeystoneUrl,
-			AuthServerIP:  configAuth.KeystoneIP,
+			KeystoneUrl:   configAuth.KeystoneUrl,
+			KeystoneIP:    configAuth.KeystoneIP,
 			CAFilePath:    cacertificates.CsrSignerCAFilepath,
 		})
 		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
