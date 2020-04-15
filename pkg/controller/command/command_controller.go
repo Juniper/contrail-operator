@@ -165,6 +165,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if keystone.Status.Node == "" {
 		return reconcile.Result{}, fmt.Errorf("%q Status.Node field empty", keystone.Name)
 	}
@@ -274,10 +279,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	if err = r.updateStatus(command, deployment); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
 
