@@ -28,7 +28,6 @@ func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, po
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: postgresNode,
 		MemcacheServer:   memcachedNode,
-		PodIP:            podIP,
 	}
 	return c.cm.EnsureExists(cc)
 }

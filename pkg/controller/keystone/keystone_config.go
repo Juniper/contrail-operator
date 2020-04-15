@@ -13,7 +13,6 @@ type keystoneConfig struct {
 	RabbitMQServer   string
 	PostgreSQLServer string
 	MemcacheServer   string
-	PodIP            string
 }
 
 func (c *keystoneConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -126,8 +125,8 @@ TraceEnable off
 
 <VirtualHost *:{{ .ListenPort }}>
     SSLEngine on
-    SSLCertificateFile "/etc/certificates/server-{{ .PodIP }}.crt"
-    SSLCertificateKeyFile "/etc/certificates/server-key-{{ .PodIP }}.pem"
+    SSLCertificateFile "/etc/certificates/server-{{ .ListenAddress }}.crt"
+    SSLCertificateKeyFile "/etc/certificates/server-key-{{ .ListenAddress }}.pem"
     WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
