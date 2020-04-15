@@ -28,11 +28,12 @@ cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
 AUTHN_TYPE = {{ .AuthMode }}
-AUTHN_PROTOCOL = http
-AUTHN_SERVER = localhost
+AUTHN_PROTOCOL = https
+AUTHN_SERVER = {{ .KeystoneIP }}
 AUTHN_PORT = 5555
 AUTHN_URL = /v3/auth/tokens
 AUTHN_DOMAIN = Default
+cafile = {{ .CAFilePath }}
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
 
@@ -125,11 +126,12 @@ var ConfigKeystoneAuthConf = template.Must(template.New("").Parse(`[KEYSTONE]
 admin_password = {{ .AdminPassword }}
 admin_tenant_name = {{ .AdminUsername }}
 admin_user = {{ .AdminUsername }}
-auth_host = localhost
+auth_host = {{ .KeystoneIP }}
 auth_port = 5555
-auth_protocol = http
-auth_url = http://localhost:5555/v3
+auth_protocol = https
+auth_url = https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3
 auth_type = password
+cafile = {{ .CAFilePath }}
 user_domain_name = Default
 project_domain_name = Default
 region_name = RegionOne`))

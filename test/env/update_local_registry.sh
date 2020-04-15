@@ -71,7 +71,7 @@ while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
 contrail-statusmonitor:debug
-contrail-provisioner:master.1115
+contrail-provisioner:master.1115-keystone-tls
 EOF
 
 pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115

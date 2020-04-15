@@ -46,7 +46,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwiftWithEmptyCredentialsSecretName(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Swift": {
@@ -86,7 +86,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Keystone": {
@@ -104,7 +104,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no admin secret": {
@@ -113,7 +113,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Swift container exists": {
@@ -123,7 +123,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 	}
@@ -152,7 +152,7 @@ func TestCommand(t *testing.T) {
 			newAdminSecret(),
 			newSwiftSecret(),
 			newSwiftWithEmptyCredentialsSecretName(false),
-			newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		conf := &rest.Config{}
@@ -185,7 +185,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -200,7 +200,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -216,7 +216,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: false, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -235,7 +235,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -253,7 +253,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -271,7 +271,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Active: true,
@@ -519,7 +519,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	executableMode := int32(0744)
-	defMode := int32(420)
+	var labelsMountPermission int32 = 0644
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -654,7 +654,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 											Path: "pod_labels",
 										},
 									},
-									DefaultMode: &defMode,
+									DefaultMode: &labelsMountPermission,
 								},
 							},
 						},
@@ -680,6 +680,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
+				ListenPort:         5555,
 			},
 		},
 		Status: status,
@@ -1046,8 +1047,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: "http://0.0.0.0:5555"
-      public_url: "http://0.0.0.0:5555"
+      private_url: https://10.0.2.15:5555
+      public_url: https://10.0.2.15:5555
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291

@@ -1,12 +1,11 @@
 package v1alpha1
 
 import (
-	"bytes"
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,6 +35,7 @@ type ProvisionManagerSpec struct {
 type ProvisionManagerConfiguration struct {
 	Containers         map[string]*Container `json:"containers,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -111,10 +111,11 @@ type DatabaseNode struct {
 }
 
 type KeystoneAuthParameters struct {
-	AdminUsername string
-	AdminPassword string
-	AuthUrl       string
-	TenantName    string
+	AdminUsername string     `yaml:"admin_user,omitempty"`
+	AdminPassword string     `yaml:"admin_password,omitempty"`
+	AuthUrl       string     `yaml:"auth_url,omitempty"`
+	TenantName    string     `yaml:"tenant_name,omitempty"`
+	Encryption    Encryption `yaml:"encryption,omitempty"`
 }
 
 func init() {
@@ -202,11 +203,16 @@ func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace 
 	return hostname, nil
 }
 
-func (c *ProvisionManager) getAuthParameters(client client.Client) (*KeystoneAuthParameters, error) {
+func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string) (*KeystoneAuthParameters, error) {
 	k := &KeystoneAuthParameters{
 		AdminUsername: "admin",
-		AuthUrl:       "http://localhost:5555/v3/auth",
 		TenantName:    "admin",
+		Encryption: Encryption{
+			CA:       cacertificates.CsrSignerCAFilepath,
+			Key:      "/etc/certificates/server-key-" + podIP + ".pem",
+			Cert:     "/etc/certificates/server-" + podIP + ".crt",
+			Insecure: false,
+		},
 	}
 	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &corev1.Secret{}
@@ -214,6 +220,17 @@ func (c *ProvisionManager) getAuthParameters(client client.Client) (*KeystoneAut
 		return nil, err
 	}
 	k.AdminPassword = string(adminPasswordSecret.Data["password"])
+
+	keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
+	keystone := &Keystone{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
+		return nil, err
+	}
+	if len(keystone.Status.IPs) == 0 {
+		return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
+	}
+	k.AuthUrl = fmt.Sprintf("http://%s:%d/v3/auth", keystone.Status.IPs[0], keystone.Spec.ServiceConfiguration.ListenPort)
+
 	return k, nil
 }
 
@@ -288,26 +305,19 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var apiServerData = make(map[string]string)
 	var keystoneAuthData = make(map[string]string)
 
-	var keystoneAuthConfBuffer bytes.Buffer
 	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
-		keystoneAuth, err := c.getAuthParameters(client)
-		if err != nil {
-			return err
+		for _, pod := range podList.Items {
+			keystoneAuth, err := c.getAuthParameters(client, pod.Status.PodIP)
+			if err != nil {
+				return err
+			}
+			keystoneAuthYaml, err := yaml.Marshal(keystoneAuth)
+			if err != nil {
+				return err
+			}
+			keystoneAuthData["keystone-auth-"+pod.Status.PodIP+".yaml"] = string(keystoneAuthYaml)
 		}
-		keystoneAuthConf.Execute(&keystoneAuthConfBuffer, struct {
-			AdminUsername string
-			AdminPassword string
-			TenantName    string
-			AuthUrl       string
-		}{
-			AdminUsername: keystoneAuth.AdminUsername,
-			AdminPassword: keystoneAuth.AdminPassword,
-			TenantName:    keystoneAuth.TenantName,
-			AuthUrl:       keystoneAuth.AuthUrl,
-		})
-
 	}
-	keystoneAuthData["keystone-auth.yaml"] = keystoneAuthConfBuffer.String()
 
 	if len(configList.Items) > 0 {
 		nodeList := []*ConfigNode{}
@@ -512,10 +522,3 @@ func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client clie
 func (c *ProvisionManager) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)
 }
-
-// KeystoneAuthConf is the template of keystone auth configuration.
-var keystoneAuthConf = template.Must(template.New("").Parse(`admin_password: {{ .AdminPassword }}
-admin_user: {{ .AdminUsername }}
-tenant_name: {{ .TenantName }}
-auth_url: {{ .AuthUrl }}
-`))

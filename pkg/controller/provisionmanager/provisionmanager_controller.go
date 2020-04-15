@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
@@ -251,21 +252,24 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMapConfigNodes.Name:      request.Name + "-" + instanceType + "-confignodes-volume",
-		configMapControlNodes.Name:     request.Name + "-" + instanceType + "-controlnodes-volume",
-		configMapVrouterNodes.Name:     request.Name + "-" + instanceType + "-vrouternodes-volume",
-		configMapAnalyticsNodes.Name:   request.Name + "-" + instanceType + "-analyticsnodes-volume",
-		configMapDatabaseNodes.Name:    request.Name + "-" + instanceType + "-databasenodes-volume",
-		configMapAPIServer.Name:        request.Name + "-" + instanceType + "-apiserver-volume",
-		configMapKeystoneAuthConf.Name: request.Name + "-" + instanceType + "-keystoneauth-volume",
+		configMapConfigNodes.Name:               request.Name + "-" + instanceType + "-confignodes-volume",
+		configMapControlNodes.Name:              request.Name + "-" + instanceType + "-controlnodes-volume",
+		configMapVrouterNodes.Name:              request.Name + "-" + instanceType + "-vrouternodes-volume",
+		configMapAnalyticsNodes.Name:            request.Name + "-" + instanceType + "-analyticsnodes-volume",
+		configMapDatabaseNodes.Name:             request.Name + "-" + instanceType + "-databasenodes-volume",
+		configMapAPIServer.Name:                 request.Name + "-" + instanceType + "-apiserver-volume",
+		configMapKeystoneAuthConf.Name:          request.Name + "-" + instanceType + "-keystoneauth-volume",
+		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "provisioner" {
 			command := []string{"sh", "-c",
-				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -keystoneAuthConf /etc/provision/keystone/keystone-auth.yaml -mode watch",
+				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml -mode watch",
 			}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -314,6 +318,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-keystoneauth-volume",
 				MountPath: "/etc/provision/keystone",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      csrSignerCaVolumeName,
+				MountPath: cacertificates.CsrSignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

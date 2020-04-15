@@ -40,6 +40,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
+          keystoneInstance: keystone
           containers:
             analyticsapi:
               image: registry:5000/contrail-analytics-api:master.1115
@@ -107,11 +108,12 @@ spec:
             node-role.kubernetes.io/master: ""
           replicas: 1
         serviceConfiguration:
+          keystoneInstance: keystone
           containers:
             init:
               image: registry:5000/python:alpine
             provisioner:
-              image: registry:5000/contrail-provisioner:master.1115
+              image: registry:5000/contrail-provisioner:master.1115-keystone-tls
     rabbitmq:
       metadata:
         labels:
@@ -140,6 +142,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
+          keystoneInstance: keystone
           containers:
             init:
               image: registry:5000/python:alpine
@@ -217,6 +220,8 @@ spec:
           postgresInstance: postgres
           listenPort: 5555
           containers:
+            wait-for-ready-conf:
+              image: registry:5000/busybox
             keystoneDbInit:
               image: registry:5000/postgresql-client
             keystoneInit:
