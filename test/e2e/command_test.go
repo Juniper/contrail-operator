@@ -56,6 +56,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
 					"postgres": {Image: "registry:5000/postgres"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 			},
 		}
