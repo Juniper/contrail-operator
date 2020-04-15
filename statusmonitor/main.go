@@ -137,6 +137,7 @@ func getStatus(config Config) {
 	clientset, restClient, err := kubeClient(config)
 	check(err)
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
+	var configStatusMap = make(map[string]contrailOperatorTypes.ConfigServiceStatus)
 
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
@@ -145,11 +146,18 @@ func getStatus(config Config) {
 		}
 
 		for _, hostname := range hostnameList {
-			resp, err := client.Get("https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname)
+			var url string
+			switch config.NodeType {
+			case "control":
+				url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
+			case "config":
+				url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
+			}
+			resp, err := client.Get(url)
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Printf("https://%s/analytics/uves/%s/%s", apiServer, nodeType, hostname)
+			fmt.Print(url)
 			//defer resp.Body.Close()
 			defer closeResp(resp)
 			if resp != nil {
@@ -164,6 +172,12 @@ func getStatus(config Config) {
 						fmt.Println("control status")
 						controlStatus := getControlStatus(bodyBytes)
 						controlStatusMap[hostname] = *controlStatus
+					case "config":
+						configStatus, err := getConfigStatus(bodyBytes)
+						if err != nil {
+							log.Printf("warning: getting config status failed: %v", err)
+						}
+						configStatusMap[hostname] = *configStatus
 					}
 
 					//break
@@ -175,8 +189,10 @@ func getStatus(config Config) {
 		}
 	}
 	switch config.NodeType {
-	case "controle":
+	case "control":
 		err = updateControlStatus(&config, controlStatusMap, restClient)
+	case "config":
+		err = updateConfigStatus(&config, configStatusMap, restClient)
 	}
 	if err != nil {
 		log.Fatal(err)
