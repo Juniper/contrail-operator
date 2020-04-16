@@ -252,6 +252,16 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 				Spec: core.PodSpec{
 					InitContainers: []core.Container{
 						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "localhost:5000/busybox",
+							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
+						{
 							Name:            "init",
 							Image:           "localhost:5000/centos-binary-kolla-toolbox:train",
 							ImagePullPolicy: core.PullAlways,
@@ -736,3 +746,5 @@ swift_user: "otherUser"
 
 ca_cert_filepath: "/etc/ssl/certs/kubernetes/ca-bundle.crt"
 `
+
+const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"

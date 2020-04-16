@@ -1060,7 +1060,7 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "http://0.0.0.0:5080"
-      public_url: "http://0.0.0.0:5080"
+      private_url: "https://0.0.0.0:5080"
+      public_url: "https://0.0.0.0:5080"
     kind: endpoint
 `

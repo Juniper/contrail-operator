@@ -265,6 +265,8 @@ spec:
             containers:
               init:
                 image: registry:5000/centos-binary-kolla-toolbox:train
+              wait-for-ready-conf:
+                  image: registry:5000/busybox
               api:
                 image: registry:5000/centos-binary-swift-proxy-server:train
           swiftStorageConfiguration:

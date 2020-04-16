@@ -125,8 +125,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	if len(swiftProxyPods.Items) > 0 {
-		err = contrail.SetPodsToReady(swiftProxyPods, r.client)
-		if err != nil {
+		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -295,6 +294,16 @@ func updatePodTemplate(
 ) {
 	pod.InitContainers = []core.Container{
 		{
+			Name:            "wait-for-ready-conf",
+			ImagePullPolicy: core.PullAlways,
+			Image:           getImage(containers, "wait-for-ready-conf"),
+			Command:         getCommand(containers, "wait-for-ready-conf"),
+			VolumeMounts: []core.VolumeMount{{
+				Name:      "status",
+				MountPath: "/tmp/podinfo",
+			}},
+		},
+		{
 			Name:            "init",
 			Image:           getImage(containers, "init"),
 			ImagePullPolicy: core.PullAlways,
@@ -413,8 +422,9 @@ func updatePodTemplate(
 
 func getImage(containers map[string]*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"init": "localhost:5000/centos-binary-kolla-toolbox:train",
-		"api":  "localhost:5000/centos-binary-swift-proxy-server:train",
+		"init":                "localhost:5000/centos-binary-kolla-toolbox:train",
+		"api":                 "localhost:5000/centos-binary-swift-proxy-server:train",
+		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 
 	c, ok := containers[containerName]
@@ -427,7 +437,8 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 
 func getCommand(containers map[string]*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init": []string{"ansible-playbook"},
+		"init":                []string{"ansible-playbook"},
+		"wait-for-ready-conf": []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
 	c, ok := containers[containerName]
