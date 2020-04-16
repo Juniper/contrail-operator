@@ -234,6 +234,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy-deployment",
@@ -356,6 +357,23 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
+								},
+							},
+						},
+						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
@@ -391,8 +409,8 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 func newSwiftProxyWithCustomImages() runtime.Object {
 	sp := newSwiftProxy(contrail.SwiftProxyStatus{})
 	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"init": {Image: "image1"},
-		"api":  {Image: "image2"},
+		"init":                {Image: "image1"},
+		"api":                 {Image: "image2"},
 		"wait-for-ready-conf": {Image: "image3", Command: []string{"cmd"}},
 	}
 

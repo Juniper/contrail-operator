@@ -361,6 +361,7 @@ func updatePodTemplate(
 			Effect:   core.TaintEffectNoExecute,
 		},
 	}
+	var labelsMountPermission int32 = 0644
 	pod.Volumes = []core.Volume{
 		{
 			Name: "config-volume",
@@ -395,6 +396,23 @@ func updatePodTemplate(
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					SecretName: swiftCertificatesSecretName,
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						{
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+							Path: "pod_labels",
+						},
+					},
+					DefaultMode: &labelsMountPermission,
 				},
 			},
 		},

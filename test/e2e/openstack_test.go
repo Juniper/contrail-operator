@@ -218,8 +218,9 @@ func TestOpenstackServices(t *testing.T) {
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
-								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+								"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+								"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+								"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 							},
 						},
 					},
