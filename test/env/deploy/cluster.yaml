@@ -43,29 +43,29 @@ spec:
           keystoneInstance: keystone
           containers:
             analyticsapi:
-              image: registry:5000/contrail-analytics-api:master.1115
+              image: registry:5000/contrail-analytics-api:master.1175
             api:
-              image: registry:5000/contrail-controller-config-api:master.1115
+              image: registry:5000/contrail-controller-config-api:master.1175
             collector:
-              image: registry:5000/contrail-analytics-collector:master.1115
+              image: registry:5000/contrail-analytics-collector:master.1175
             devicemanager:
-              image: registry:5000/contrail-controller-config-devicemgr:master.1115
+              image: registry:5000/contrail-controller-config-devicemgr:master.1175
             dnsmasq:
-              image: registry:5000/contrail-controller-config-dnsmasq:master.1115
+              image: registry:5000/contrail-controller-config-dnsmasq:master.1175
             init:
               image: registry:5000/python:alpine
             init2:
               image: registry:5000/busybox
             nodeinit:
-              image: registry:5000/contrail-node-init:master.1115
+              image: registry:5000/contrail-node-init:master.1175
             redis:
               image: registry:5000/redis:4.0.2
             schematransformer:
-              image: registry:5000/contrail-controller-config-schema:master.1115
+              image: registry:5000/contrail-controller-config-schema:master.1175
             servicemonitor:
-              image: registry:5000/contrail-controller-config-svcmonitor:master.1115
+              image: registry:5000/contrail-controller-config-svcmonitor:master.1175
             queryengine:
-              image: registry:5000/contrail-analytics-query-engine:master.1115
+              image: registry:5000/contrail-analytics-query-engine:master.1175
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
@@ -84,15 +84,15 @@ spec:
           cassandraInstance: cassandra1
           containers:
             control:
-              image: registry:5000/contrail-controller-control-control:master.1115
+              image: registry:5000/contrail-controller-control-control:master.1175
             dns:
-              image: registry:5000/contrail-controller-control-dns:master.1115
+              image: registry:5000/contrail-controller-control-dns:master.1175
             init:
               image: registry:5000/python:alpine
             named:
-              image: registry:5000/contrail-controller-control-named:master.1115
+              image: registry:5000/contrail-controller-control-named:master.1175
             nodeinit:
-              image: registry:5000/contrail-node-init:master.1115
+              image: registry:5000/contrail-node-init:master.1175
             statusmonitor:
               image: registry:5000/contrail-statusmonitor:master-180ab9
           zookeeperInstance: zookeeper1
@@ -147,13 +147,13 @@ spec:
             init:
               image: registry:5000/python:alpine
             nodeinit:
-              image: registry:5000/contrail-node-init:master.1115
+              image: registry:5000/contrail-node-init:master.1175
             redis:
               image: registry:5000/redis:4.0.2
             webuijob:
-              image: registry:5000/contrail-controller-webui-job:master.1115
+              image: registry:5000/contrail-controller-webui-job:master.1175
             webuiweb:
-              image: registry:5000/contrail-controller-webui-web:master.1115
+              image: registry:5000/contrail-controller-webui-web:master.1175
     zookeepers:
     - metadata:
         labels:
