@@ -300,9 +300,9 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
-									Path: "/healthcheck",
+									Path:   "/healthcheck",
 									Scheme: "HTTPS",
-									Port: intstr.IntOrString{IntVal: int32(5070)},
+									Port:   intstr.IntOrString{IntVal: int32(5070)},
 								},
 							},
 						},
@@ -393,6 +393,7 @@ func newSwiftProxyWithCustomImages() runtime.Object {
 	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
 		"init": {Image: "image1"},
 		"api":  {Image: "image2"},
+		"wait-for-ready-conf": {Image: "image3", Command: []string{"cmd"}},
 	}
 
 	return sp
@@ -401,6 +402,16 @@ func newSwiftProxyWithCustomImages() runtime.Object {
 func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 	deployment := newExpectedDeployment(apps.DeploymentStatus{})
 	deployment.Spec.Template.Spec.InitContainers = []core.Container{
+		{
+			Name:            "wait-for-ready-conf",
+			ImagePullPolicy: core.PullAlways,
+			Image:           "image3",
+			Command:         []string{"cmd"},
+			VolumeMounts: []core.VolumeMount{{
+				Name:      "status",
+				MountPath: "/tmp/podinfo",
+			}},
+		},
 		{
 			Name:            "init",
 			Image:           "image1",
@@ -427,9 +438,9 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
 				HTTPGet: &core.HTTPGetAction{
-					Path: "/healthcheck",
+					Path:   "/healthcheck",
 					Scheme: "HTTPS",
-					Port: intstr.IntOrString{IntVal: int32(5070)},
+					Port:   intstr.IntOrString{IntVal: int32(5070)},
 				},
 			},
 		},
@@ -551,8 +562,8 @@ func newSwiftSecret() *core.Secret {
 
 const boostrapScript = `
 #!/bin/bash
-cp /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
-cp /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+ln -s /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+ln -s /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
 
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
