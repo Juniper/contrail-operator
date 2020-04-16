@@ -143,8 +143,8 @@ allow_versioned_writes = True
 
 const bootstrapScript = `
 #!/bin/bash
-cp /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
-cp /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+ln -s /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+ln -s /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
 
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz

@@ -125,8 +125,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	if len(swiftProxyPods.Items) > 0 {
-		err = contrail.SetPodsToReady(swiftProxyPods, r.client)
-		if err != nil {
+		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
