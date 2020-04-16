@@ -2,7 +2,7 @@ package swiftstorage
 
 func (c *configMaps) ensureSwiftAccountAuditor() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-auditor.conf",
 		DestConfigFileName:         "account-auditor.conf",
@@ -15,7 +15,7 @@ func (c *configMaps) ensureSwiftAccountAuditor() error {
 
 func (c *configMaps) ensureSwiftAccountReaper() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-reaper.conf",
 		DestConfigFileName:         "account-reaper.conf",
@@ -28,7 +28,7 @@ func (c *configMaps) ensureSwiftAccountReaper() error {
 
 func (c *configMaps) ensureSwiftAccountReplicationServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-replication-server.conf",
 		DestConfigFileName:         "account-server.conf",
@@ -41,7 +41,7 @@ func (c *configMaps) ensureSwiftAccountReplicationServer() error {
 
 func (c *configMaps) ensureSwiftAccountReplicator() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-replicator.conf",
 		DestConfigFileName:         "account-replicator.conf",
@@ -54,7 +54,7 @@ func (c *configMaps) ensureSwiftAccountReplicator() error {
 
 func (c *configMaps) ensureSwiftAccountServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.AccountBindPort,
 		SrcConfigFileName:          "account-server.conf",
 		DestConfigFileName:         "account-server.conf",

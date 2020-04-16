@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -154,7 +155,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 			kubernetes := k8s.New(cl, scheme)
-			r := swiftproxy.NewReconciler(cl, scheme, kubernetes)
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes, &rest.Config{})
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -270,6 +271,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 							{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+							{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -277,11 +279,19 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						}, {
 							Name:  "KOLLA_CONFIG_STRATEGY",
 							Value: "COPY_ALWAYS",
+						}, {
+							Name: "POD_IP",
+							ValueFrom: &core.EnvVarSource{
+								FieldRef: &core.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
 						}},
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
 									Path: "/healthcheck",
+									Scheme: "HTTPS",
 									Port: intstr.IntOrString{IntVal: int32(5070)},
 								},
 							},
@@ -324,6 +334,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "test-secret",
+								},
+							},
+						},
+						{
+							Name: "swiftproxy-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "swiftproxy-secret-certificates",
 								},
 							},
 						},
@@ -394,11 +412,13 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
 				HTTPGet: &core.HTTPGetAction{
 					Path: "/healthcheck",
+					Scheme: "HTTPS",
 					Port: intstr.IntOrString{IntVal: int32(5070)},
 				},
 			},
@@ -409,6 +429,13 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		}, {
 			Name:  "KOLLA_CONFIG_STRATEGY",
 			Value: "COPY_ALWAYS",
+		}, {
+			Name: "POD_IP",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
 		}},
 	}}
 
@@ -514,6 +541,9 @@ func newSwiftSecret() *core.Secret {
 
 const boostrapScript = `
 #!/bin/bash
+cp /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+cp /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
 ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
@@ -554,6 +584,8 @@ log_name = swift-proxy-server
 log_facility = local0
 log_level = INFO
 workers = 2
+cert_file = /etc/swift/proxy.crt
+key_file = /etc/swift/proxy.key
 
 [pipeline:main]
 pipeline = catch_errors gatekeeper healthcheck cache container_sync bulk tempurl ratelimit authtoken keystoneauth container_quotas account_quotas slo dlo proxy-server
@@ -650,9 +682,9 @@ const registerPlaybook = `
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "http://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "https://{{ swift_endpoint }}/v1", interface: "admin" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
     - name: create service project
       os_project:
         name: "service"

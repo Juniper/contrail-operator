@@ -2,7 +2,7 @@ package swiftstorage
 
 func (c *configMaps) ensureSwiftObjectAuditor() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-auditor.conf",
 		DestConfigFileName:         "object-auditor.conf",
@@ -15,7 +15,7 @@ func (c *configMaps) ensureSwiftObjectAuditor() error {
 
 func (c *configMaps) ensureSwiftObjectExpirer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-expirer.conf",
 		DestConfigFileName:         "object-expirer.conf",
@@ -28,7 +28,7 @@ func (c *configMaps) ensureSwiftObjectExpirer() error {
 
 func (c *configMaps) ensureSwiftObjectReplicationServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-replication-server.conf",
 		DestConfigFileName:         "object-server.conf",
@@ -41,7 +41,7 @@ func (c *configMaps) ensureSwiftObjectReplicationServer() error {
 
 func (c *configMaps) ensureSwiftObjectReplicator() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-replicator.conf",
 		DestConfigFileName:         "object-replicator.conf",
@@ -54,7 +54,7 @@ func (c *configMaps) ensureSwiftObjectReplicator() error {
 
 func (c *configMaps) ensureSwiftObjectServer() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-server.conf",
 		DestConfigFileName:         "object-server.conf",
@@ -67,7 +67,7 @@ func (c *configMaps) ensureSwiftObjectServer() error {
 
 func (c *configMaps) ensureSwiftObjectUpdater() error {
 	cc := &swiftServiceConfig{
-		BindAddress:                "127.0.0.1",
+		BindAddress:                "0.0.0.0",
 		BindPort:                   c.swiftStorageConf.ObjectBindPort,
 		SrcConfigFileName:          "object-updater.conf",
 		DestConfigFileName:         "object-updater.conf",

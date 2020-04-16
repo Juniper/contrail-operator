@@ -476,11 +476,11 @@ var expectedConfig = `
 
 var expectedAccountAuditorConf = `
 [DEFAULT]
-bind_ip = 127.0.0.1
+bind_ip = 0.0.0.0
 bind_port = 6001
 devices = /srv/node
 mount_check = false
-log_udp_host = 127.0.0.1
+log_udp_host = 0.0.0.0
 log_udp_port = 5140
 log_name =
 log_facility = local0
