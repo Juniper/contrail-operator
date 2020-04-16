@@ -268,7 +268,10 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
-	localIP := "127.0.0.1"
+	ips := swiftStorage.Status.IPs
+	if len(ips) == 0 {
+		ips = []string{"0.0.0.0"}
+	}
 	swiftName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name,
@@ -277,15 +280,15 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 		return result, err
 	}
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
-	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, localIP, swift); err != nil {
+	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
-	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, localIP, swift); err != nil {
+	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
-	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, localIP, swift); err != nil {
+	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -326,7 +329,7 @@ func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedNam
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ip string, swift *contrail.Swift) error {
+func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ips []string, swift *contrail.Swift) error {
 	jobName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-ring-" + ringType + "-job",
@@ -336,15 +339,17 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 	if err != nil {
 		return err
 	}
-	device := ring.Device{
-		Region: "1",
-		Zone:   "1",
-		IP:     ip,
-		Port:   port,
-		Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
-	}
-	if err = theRing.AddDevice(device); err != nil {
-		return err
+	for _, ip := range ips {
+		device := ring.Device{
+			Region: "1",
+			Zone:   "1",
+			IP:     ip,
+			Port:   port,
+			Device: swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.Device,
+		}
+		if err = theRing.AddDevice(device); err != nil {
+			return err
+		}
 	}
 	job, err := theRing.BuildJob(jobName)
 	if err != nil {
