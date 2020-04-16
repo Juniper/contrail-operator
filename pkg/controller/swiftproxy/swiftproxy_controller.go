@@ -176,7 +176,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	endpoint, err := r.getEndpoint(swiftProxy)
+	endpoint, err := r.getEndpoint(swiftProxy, swiftProxyPods)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -257,17 +257,10 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 	return key, err
 }
 
-func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy) (string, error) {
+func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy, pods *core.PodList) (string, error) {
 	endpoint := cr.Spec.ServiceConfiguration.Endpoint
-	if endpoint == "" {
-		pods := core.PodList{}
-		labels := client.MatchingLabels{"SwiftProxy": cr.Name}
-		if err := r.client.List(context.Background(), &pods, labels); err != nil {
-			return "", err
-		}
-		if len(pods.Items) != 0 {
-			endpoint = pods.Items[0].Status.PodIP
-		}
+	if endpoint == "" && len(pods.Items) != 0 {
+		return pods.Items[0].Status.PodIP, nil
 	}
 	return endpoint, nil
 }
