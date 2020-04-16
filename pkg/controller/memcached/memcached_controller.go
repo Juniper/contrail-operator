@@ -134,7 +134,7 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 		if len(pods.Items) != 1 {
 			return fmt.Errorf("ReconcileMemchached.updateStatus: expected 1 pod with labels %v, got %d", labels, len(pods.Items))
 		}
-		ip := pods.Items[0].Status.PodIP
+		ip := "127.0.0.1" // memcached is available only on localhost for security reasons, after configuring SSL this should be changed to pods.Items[0].Status.PodIP
 		port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
 		memcachedCR.Status.Node = fmt.Sprintf("%s:%d", ip, port)
 		memcachedCR.Status.Active = true
