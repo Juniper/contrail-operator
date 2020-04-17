@@ -28,7 +28,7 @@ type commandConf struct {
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
-	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
+	cm.Data["command-app-server.yml"] = c.executeTemplate(commandConfig)
 	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
@@ -45,7 +45,7 @@ var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
 cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
-/bin/contrailgo -c /etc/contrail/contrail.yml run
+/bin/commandappserver -c /etc/contrail/command-app-server.yml run
 `))
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
@@ -64,8 +64,8 @@ fi
 set -e
 psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
-contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
-contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `))
 
 var funcMap = template.FuncMap{

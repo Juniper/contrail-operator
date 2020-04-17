@@ -617,7 +617,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 									Items: []core.KeyToPath{
 										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-										{Key: "contrail.yml", Path: "contrail.yml"},
+										{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 									},
 								},
@@ -705,7 +705,7 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		},
 	}, actual.ObjectMeta)
 
-	assert.Equal(t, expectedCommandConfig, actual.Data["contrail.yml"])
+	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server.yml"])
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
@@ -870,8 +870,8 @@ fi
 set -e
 psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
-contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
-contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `
 
 const expectedCommandInitCluster = `

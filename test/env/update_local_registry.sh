@@ -74,5 +74,5 @@ contrail-statusmonitor:master-180ab9
 contrail-provisioner:master.1175
 EOF
 
-pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115
+pull_image hub.juniper.net/contrail-nightly contrail-command:master.1175
 pull_image hub.juniper.net/contrail-nightly contrail-controller-config-dnsmasq:master.1175
