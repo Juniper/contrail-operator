@@ -497,7 +497,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("no swift proxy pod found")
 	}
 	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxy := proxy.NewClient(command.Namespace, swiftProxyPod, sPort)
+	swiftProxy := proxy.NewSecureClient(command.Namespace, swiftProxyPod, sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

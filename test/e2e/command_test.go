@@ -55,7 +55,7 @@ func TestCommandServices(t *testing.T) {
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgres"},
+					"postgres":            {Image: "registry:5000/postgres"},
 					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 			},
@@ -132,8 +132,9 @@ func TestCommandServices(t *testing.T) {
 						KeystoneInstance:   "commandtest-keystone",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
-							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+							"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+							"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+							"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 						},
 					},
 				},
@@ -280,7 +281,7 @@ func TestCommandServices(t *testing.T) {
 			keystoneClient = keystone.NewClient(keystoneProxy)
 			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			swiftProxyPod := swiftProxyPods.Items[0].Name
-			swiftProxy := proxy.NewClient("contrail", swiftProxyPod, 5080)
+			swiftProxy := proxy.NewSecureClient("contrail", swiftProxyPod, 5080)
 			swiftURL := tokens.EndpointURL("swift", "public")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)

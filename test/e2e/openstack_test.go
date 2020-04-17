@@ -54,7 +54,7 @@ func TestOpenstackServices(t *testing.T) {
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgres"},
+					"postgres":            {Image: "registry:5000/postgres"},
 					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 			},
@@ -218,8 +218,9 @@ func TestOpenstackServices(t *testing.T) {
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
-								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+								"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+								"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+								"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 							},
 						},
 					},
@@ -259,7 +260,7 @@ func TestOpenstackServices(t *testing.T) {
 				keystoneClient   = keystone.NewClient(keystoneProxy)
 				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
-				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
+				swiftProxy       = proxy.NewSecureClient("contrail", swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")
 				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
