@@ -124,12 +124,6 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	if len(swiftProxyPods.Items) > 0 {
-		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
 	keystone, err := r.getKeystone(swiftProxy)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -184,6 +178,12 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	cm = r.configMap(swiftInitConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
 	if err = cm.ensureInitExists(endpoint); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if len(swiftProxyPods.Items) > 0 {
+		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	deployment := &apps.Deployment{
