@@ -34,7 +34,7 @@ func TestRandomstring(t *testing.T) {
 		}
 	}
 
-	t.Run("Random string Generate method verification", func(t *testing.T) {
+	t.Run("verification", func(t *testing.T) {
 		testvalue := RandString{Size: 12}
 		checkGenerateString(t, testvalue)
 	})
