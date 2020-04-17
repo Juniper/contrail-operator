@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -137,52 +138,18 @@ func getStatus(config Config) {
 	clientset, restClient, err := kubeClient(config)
 	check(err)
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
-	var configStatusMap = make(map[string]contrailOperatorTypes.ConfigServiceStatus)
+	var configStatusMap = make(map[string]map[string]contrailOperatorTypes.ConfigServiceStatus)
 
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		for _, hostname := range hostnameList {
-			var url string
-			switch config.NodeType {
-			case "control":
-				url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
-			case "config":
-				url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
-			}
-			resp, err := client.Get(url)
-			if err != nil {
-				fmt.Println(err)
-			}
-			fmt.Print(url)
-			//defer resp.Body.Close()
-			defer closeResp(resp)
-			if resp != nil {
-				fmt.Printf("resp not nil %d ", resp.StatusCode)
-				if resp.StatusCode == http.StatusOK {
-					bodyBytes, err := ioutil.ReadAll(resp.Body)
-					if err != nil {
-						log.Fatal(err)
-					}
-					switch config.NodeType {
-					case "control":
-						fmt.Println("control status")
-						controlStatus := getControlStatus(bodyBytes)
-						controlStatusMap[hostname] = *controlStatus
-					case "config":
-						configStatus, err := getConfigStatus(bodyBytes)
-						if err != nil {
-							log.Printf("warning: getting config status failed: %v", err)
-						}
-						configStatusMap[hostname] = *configStatus
-					}
-
-					//break
-				}
-			}
+		switch config.NodeType {
+		case "control":
+			GetControlStatusFromApiServer(apiServer, nodeType, &client, hostnameList, controlStatusMap)
+		case "config":
+			GetConfigStatusFromApiServer(apiServer, &client, configStatusMap)
 		}
 		if len(controlStatusMap) == len(hostnameList) {
 			break
@@ -196,6 +163,65 @@ func getStatus(config Config) {
 	}
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func GetConfigStatusFromApiServer(apiServer string, client *http.Client,
+	configStatusMap map[string]map[string]contrailOperatorTypes.ConfigServiceStatus) {
+	var url string
+	url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer closeResp(resp)
+	if resp != nil {
+		log.Printf("resp not nil %d ", resp.StatusCode)
+		if resp.StatusCode == http.StatusOK {
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			configStatus, hostName, err := getConfigStatus(bodyBytes)
+			if err != nil {
+				log.Printf("warning: getting config status failed: %v", err)
+			}
+			if _, ok := configStatusMap[hostName]; !ok {
+				configStatusMap[hostName] = map[string]contrailOperatorTypes.ConfigServiceStatus{}
+			}
+			moduleNameFmt := strings.Replace(configStatus.ModuleName, "contrail", "", 1)
+			moduleNameFmt = strings.Replace(moduleNameFmt, "-", "", -1)
+			configStatusMap[hostName][moduleNameFmt] = *configStatus
+		}
+	}
+}
+
+func GetControlStatusFromApiServer(apiServer, nodeType string, client *http.Client, hostnameList []string,
+	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) {
+	for _, hostname := range hostnameList {
+		var url string
+		url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
+		resp, err := client.Get(url)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Print(url)
+		//defer resp.Body.Close()
+		defer closeResp(resp)
+		if resp != nil {
+			fmt.Printf("resp not nil %d ", resp.StatusCode)
+			if resp.StatusCode == http.StatusOK {
+				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println("control status")
+				controlStatus := getControlStatus(bodyBytes)
+				controlStatusMap[hostname] = *controlStatus
+
+				//break
+			}
+		}
 	}
 }
 

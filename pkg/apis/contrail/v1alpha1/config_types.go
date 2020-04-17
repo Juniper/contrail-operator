@@ -89,11 +89,11 @@ type ConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active        *bool                          `json:"active,omitempty"`
-	Nodes         map[string]string              `json:"nodes,omitempty"`
-	Ports         ConfigStatusPorts              `json:"ports,omitempty"`
-	ConfigChanged *bool                          `json:"configChanged,omitempty"`
-	ServiceStatus map[string]ConfigServiceStatus `json:"serviceStatus,omitempty"`
+	Active        *bool                                     `json:"active,omitempty"`
+	Nodes         map[string]string                         `json:"nodes,omitempty"`
+	Ports         ConfigStatusPorts                         `json:"ports,omitempty"`
+	ConfigChanged *bool                                     `json:"configChanged,omitempty"`
+	ServiceStatus map[string]map[string]ConfigServiceStatus `json:"serviceStatus,omitempty"`
 }
 
 type ConfigConnectionInfo struct {
@@ -103,9 +103,9 @@ type ConfigConnectionInfo struct {
 }
 
 type ConfigServiceStatus struct {
-	NodeName    string
-	ModuleName  string
-	ModuleState string
+	NodeName    string `json:"nodeName,omitempty"`
+	ModuleName  string `json:"moduleName,omitempty"`
+	ModuleState string `json:"state"`
 }
 
 type ConfigStatusPorts struct {
@@ -182,7 +182,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		rabbitmqSecretVhost = configConfig.RabbitmqVhost
 	}
 	var collectorServerList, analyticsServerList, apiServerList, analyticsServerSpaceSeparatedList,
-		apiServerSpaceSeparatedList, redisServerSpaceSeparatedList, apiIntorspectServerSpaceSepartedList string
+		apiServerSpaceSeparatedList, redisServerSpaceSeparatedList string
 	var podIPList []string
 	for _, pod := range podList.Items {
 		podIPList = append(podIPList, pod.Status.PodIP)
@@ -200,8 +200,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	apiServerSpaceSeparatedList = apiServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.APIPort)
 	redisServerSpaceSeparatedList = strings.Join(podIPList, ":"+strconv.Itoa(*configConfig.RedisPort)+" ")
 	redisServerSpaceSeparatedList = redisServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.RedisPort)
-	apiIntorspectServerSpaceSepartedList = strings.Join(podIPList, ":"+strconv.Itoa(ConfigApiIntrospectPort)+" ")
-	apiIntorspectServerSpaceSepartedList = apiIntorspectServerSpaceSepartedList + ":" + strconv.Itoa(ConfigApiIntrospectPort)
 
 	var data = make(map[string]string)
 	for idx := range podList.Items {
@@ -209,9 +207,18 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		if err != nil {
 			return err
 		}
+		configIntrospectNodes := make([]string, 0)
+		introspectPorts := []int{ConfigApiIntrospectPort, ConfigSchemaIntrospectPort, ConfigDeviceManagerIntrospectPort,
+			ConfigSvcMonitorIntrospectPort}
+		for _, port := range introspectPorts {
+			nodesPortStr := strings.Join(podIPList, ":"+strconv.Itoa(port)+" ")
+			nodesPortStr = nodesPortStr + ":" + strconv.Itoa(port)
+			nodePortList := strings.Split(nodesPortStr, " ")
+			configIntrospectNodes = append(configIntrospectNodes, nodePortList...)
+		}
 		hostname := podList.Items[idx].Annotations["hostname"]
-		configNodesList := strings.Split(apiIntorspectServerSpaceSepartedList, " ")
-		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectNodes,
+			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
 		if err != nil {
 			return err
 		}

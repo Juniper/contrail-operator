@@ -732,9 +732,19 @@ func (in *ConfigStatus) DeepCopyInto(out *ConfigStatus) {
 	}
 	if in.ServiceStatus != nil {
 		in, out := &in.ServiceStatus, &out.ServiceStatus
-		*out = make(map[string]ConfigServiceStatus, len(*in))
+		*out = make(map[string]map[string]ConfigServiceStatus, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal map[string]ConfigServiceStatus
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = make(map[string]ConfigServiceStatus, len(*in))
+				for key, val := range *in {
+					(*out)[key] = val
+				}
+			}
+			(*out)[key] = outVal
 		}
 	}
 	return

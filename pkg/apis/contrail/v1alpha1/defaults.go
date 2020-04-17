@@ -76,6 +76,9 @@ const (
 	ConfigApiServerCertfile                     string = "/etc/contrail/ssl/certs/server.pem"
 	ConfigApiServerKeyfile                      string = "/etc/contrail/ssl/private/server-privkey.pem"
 	ConfigApiServerCaCertfile                   string = "/etc/contrail/ssl/certs/ca-cert.pem"
+	ConfigSchemaIntrospectPort                  int    = 8087
+	ConfigSvcMonitorIntrospectPort              int    = 8088
+	ConfigDeviceManagerIntrospectPort           int    = 8096
 	CassandraSslEnable                          string = "false"
 	CassandraSslCertfile                        string = "/etc/contrail/ssl/certs/server.pem"
 	CassandraSslKeyfile                         string = "/etc/contrail/ssl/private/server-privkey.pem"

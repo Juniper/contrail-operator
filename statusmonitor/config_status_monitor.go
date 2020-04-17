@@ -67,7 +67,7 @@ func (c *configClient) UpdateStatus(name string, object *contrailOperatorTypes.C
 	return &result, err
 }
 
-func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
+func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 		configClient := &configClient{
@@ -106,14 +106,13 @@ func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTyp
 	return nil
 }
 
-func getConfigStatus(statusBody []byte) (*contrailOperatorTypes.ConfigServiceStatus, error) {
+func getConfigStatus(statusBody []byte) (*contrailOperatorTypes.ConfigServiceStatus, string, error) {
 	configServiceStatus := contrailOperatorTypes.ConfigServiceStatus{}
 	serviceStatus, err := ParseIntrospectResp(statusBody)
 	if err != nil {
-		return &configServiceStatus, err
+		return &configServiceStatus, "", err
 	}
-	configServiceStatus.NodeName = serviceStatus.NodeName
 	configServiceStatus.ModuleName = serviceStatus.ModuleName
 	configServiceStatus.ModuleState = serviceStatus.ModuleState
-	return &configServiceStatus, nil
+	return &configServiceStatus, serviceStatus.NodeName, nil
 }
