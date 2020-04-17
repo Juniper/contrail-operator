@@ -94,7 +94,7 @@ spec:
             nodeinit:
               image: registry:5000/contrail-node-init:master.1115
             statusmonitor:
-              image: registry:5000/contrail-statusmonitor:debug
+              image: registry:5000/contrail-statusmonitor:master-180ab9
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
