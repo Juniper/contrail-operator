@@ -80,10 +80,10 @@ var initialVersionMap = map[string]string{
 	"rabbitmq":             "3.7.16",
 	"cassandra":            "3.11.3",
 	"zookeeper":            "3.5.4-beta",
-	"config":               "master.1115",
-	"control":              "master.1115",
-	"kubemanager":          "master.1115",
-	"contrail-provisioner": "master.1115",
+	"config":               "master.1175",
+	"control":              "master.1175",
+	"kubemanager":          "master.1175",
+	"contrail-provisioner": "master.1175",
 }
 
 var targetVersionMap = map[string]string{
