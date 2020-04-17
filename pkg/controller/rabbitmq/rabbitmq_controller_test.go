@@ -10,10 +10,85 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"testing"
 )
+
+func TestRabbitmqResourceHandler(t *testing.T) {
+	falseVal := false
+	initObjs := []runtime.Object{
+		newRabbitmq(),
+	}
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := meta.ObjectMeta{}
+	or := meta.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []meta.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	t.Run("Create Event", func(t *testing.T) {
+		evc := event.CreateEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.CreateFunc(evc, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Update Event", func(t *testing.T) {
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: nil,
+			MetaNew:   pod,
+			ObjectNew: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.UpdateFunc(evu, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Delete Event", func(t *testing.T) {
+		evd := event.DeleteEvent{
+			Meta:               pod,
+			Object:             nil,
+			DeleteStateUnknown: false,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.DeleteFunc(evd, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Generic Event", func(t *testing.T) {
+		evg := event.GenericEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.GenericFunc(evg, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+}
+
 
 type TestCase struct {
 	name           string
@@ -100,28 +175,6 @@ func newConfigInst() *contrail.Config {
 	}
 }
 
-func newCassandra() *contrail.Cassandra {
-	trueVal := true
-	return &contrail.Cassandra{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "cassandra-instance",
-			Namespace: "default",
-		},
-		Status: contrail.CassandraStatus{Active: &trueVal},
-	}
-}
-
-func newZookeeper() *contrail.Zookeeper {
-	trueVal := true
-	return &contrail.Zookeeper{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "zookeeper-instance",
-			Namespace: "default",
-		},
-		Status: contrail.ZookeeperStatus{Active: &trueVal},
-	}
-}
-
 func newManager(rbt *contrail.Rabbitmq) *contrail.Manager {
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
@@ -165,19 +218,8 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: map[string]*contrail.Container{
-					"rabbitmq":          &contrail.Container{Image: "contrail-controller-rabbitmq"},
-					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
-					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
 					"init":              &contrail.Container{Image: "python:alpine"},
-					"init2":             &contrail.Container{Image: "busybox"},
-					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
-					"redis":             &contrail.Container{Image: "redis"},
-					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
+					"rabbitmq":          &contrail.Container{Image: "contrail-controller-rabbitmq"},
 				},
 			},
 		},
@@ -201,8 +243,6 @@ func testcase1() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(rbt),
 			newConfigInst(),
-			newCassandra(),
-			newZookeeper(),
 			rbt,
 		},
 		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
@@ -221,9 +261,6 @@ func testcase2() *TestCase {
 		name: "Rabbitmq deletion timestamp set",
 		initObjs: []runtime.Object{
 			newManager(rbt),
-			newConfigInst(),
-			newCassandra(),
-			newZookeeper(),
 			rbt,
 		},
 		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
@@ -242,9 +279,6 @@ func testcase3() *TestCase {
 		name: "Preset Rabbitmq command",
 		initObjs: []runtime.Object{
 			newManager(rbt),
-			newConfigInst(),
-			newCassandra(),
-			newZookeeper(),
 			rbt,
 		},
 		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
@@ -264,12 +298,10 @@ func testcase4() *TestCase {
 		name: "Preset Rabbitmq Password",
 		initObjs: []runtime.Object{
 			newManager(rbt),
-			newConfigInst(),
-			newCassandra(),
-			newZookeeper(),
 			rbt,
 		},
 		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
 	}
 	return tc
 }
+

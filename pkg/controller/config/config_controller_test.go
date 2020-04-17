@@ -11,10 +11,85 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"testing"
 )
+
+func TestConfigResourceHandler(t *testing.T) {
+	falseVal := false
+	initObjs := []runtime.Object{
+		newConfigInst(),
+	}
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := meta.ObjectMeta{}
+	or := meta.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []meta.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	t.Run("Create Event", func(t *testing.T) {
+		evc := event.CreateEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.CreateFunc(evc, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Update Event", func(t *testing.T) {
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: nil,
+			MetaNew:   pod,
+			ObjectNew: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.UpdateFunc(evu, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Delete Event", func(t *testing.T) {
+		evd := event.DeleteEvent{
+			Meta:               pod,
+			Object:             nil,
+			DeleteStateUnknown: false,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.DeleteFunc(evd, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Generic Event", func(t *testing.T) {
+		evg := event.GenericEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.GenericFunc(evg, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+}
+
 
 type TestCase struct {
 	name           string
@@ -190,19 +265,8 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"zookeeper":         &contrail.Container{Image: "contrail-controller-zookeeper"},
-					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
-					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
 					"init":              &contrail.Container{Image: "python:alpine"},
-					"init2":             &contrail.Container{Image: "busybox"},
-					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
-					"redis":             &contrail.Container{Image: "redis"},
-					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
+					"zookeeper":         &contrail.Container{Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -225,9 +289,6 @@ func testcase1() *TestCase {
 		name: "create a new statefulset",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -246,9 +307,6 @@ func testcase2() *TestCase {
 		name: "Config deletion timestamp set",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -278,9 +336,6 @@ func testcase3() *TestCase {
 		name: "Preset start command for containers",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -300,8 +355,6 @@ func testcase4() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			zkp,
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -322,9 +375,6 @@ func testcase5() *TestCase {
 		name: "Set Storage Info",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -361,9 +411,6 @@ func testcase7() *TestCase {
 		name: "Object is not a node manager",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -391,9 +438,6 @@ func testcase8() *TestCase {
 		name: "Remove Node Manager templates if Node Manager containers not listed",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
@@ -412,9 +456,6 @@ func testcase9() *TestCase {
 		name: "Preset Init command",
 		initObjs: []runtime.Object{
 			newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
 			cfg,
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
