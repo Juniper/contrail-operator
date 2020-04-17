@@ -133,7 +133,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: kaweue/contrail-provisioner:master.1115
+              image: kaweue/contrail-provisioner:master.1175
     rabbitmq:
       metadata:
         labels:

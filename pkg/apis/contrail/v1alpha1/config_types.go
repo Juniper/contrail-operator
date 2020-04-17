@@ -114,6 +114,8 @@ func init() {
 	SchemeBuilder.Register(&Config{}, &ConfigList{})
 }
 
+const DMRunModeFull = "Full"
+
 func (c *Config) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
@@ -259,6 +261,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel            string
 			FabricMgmtIP        string
 			CAFilePath          string
+			DMRunMode           string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ApiServerList:       apiServerList,
@@ -273,6 +276,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel:            configConfig.LogLevel,
 			FabricMgmtIP:        fabricMgmtIP,
 			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			DMRunMode:           DMRunModeFull,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
