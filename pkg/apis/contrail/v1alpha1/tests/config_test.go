@@ -1264,6 +1264,7 @@ kombu_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+dm_run_mode=Full
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False
@@ -1815,6 +1816,7 @@ kombu_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+dm_run_mode=Full
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False
