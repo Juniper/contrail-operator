@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-func HasLettersOnly(s string) bool {
+func hasLettersOnly(s string) bool {
 	for _, r := range s {
 		if !unicode.IsLetter(r) {
 			return false
@@ -15,7 +15,7 @@ func HasLettersOnly(s string) bool {
 	return true
 }
 
-func IsValid(s string) bool {
+func isValid(s string) bool {
 	re := regexp.MustCompile("^[a-zA-Z0-9_]*$")
 	return re.MatchString(s)
 }
@@ -29,7 +29,7 @@ func TestRandomstring(t *testing.T) {
 	checkGenerateString := func(t *testing.T, testinterface TestInterface) {
 		t.Helper()
 		got := testinterface.Generate()
-		if !HasLettersOnly(got) {
+		if !hasLettersOnly(got) {
 			t.Errorf("failed to verify Generate")
 		}
 	}
@@ -42,7 +42,7 @@ func TestRandomstring(t *testing.T) {
 	t.Run("Random string bytes function verification1", func(t *testing.T) {
 		value2 := 3
 		got := randStringBytes(value2)
-		if !IsValid(got) {
+		if !isValid(got) {
 			t.Errorf("failed to verify random bytes")
 		}
 
