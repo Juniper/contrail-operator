@@ -586,6 +586,36 @@ func (in *ConfigConfiguration) DeepCopyInto(out *ConfigConfiguration) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.ApiIntrospectPort != nil {
+		in, out := &in.ApiIntrospectPort, &out.ApiIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
+	if in.SchemaIntrospectPort != nil {
+		in, out := &in.SchemaIntrospectPort, &out.SchemaIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
+	if in.DeviceManagerIntrospectPort != nil {
+		in, out := &in.DeviceManagerIntrospectPort, &out.DeviceManagerIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
+	if in.SvcMonitorIntrospectPort != nil {
+		in, out := &in.SvcMonitorIntrospectPort, &out.SvcMonitorIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
+	if in.AnalyticsApiIntrospectPort != nil {
+		in, out := &in.AnalyticsApiIntrospectPort, &out.AnalyticsApiIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
+	if in.CollectorIntrospectPort != nil {
+		in, out := &in.CollectorIntrospectPort, &out.CollectorIntrospectPort
+		*out = new(int)
+		**out = **in
+	}
 	if in.NodeManager != nil {
 		in, out := &in.NodeManager, &out.NodeManager
 		*out = new(bool)
