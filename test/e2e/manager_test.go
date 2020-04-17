@@ -317,7 +317,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								"control":       &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-control:" + versionMap["control"]},
 								"dns":           &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-dns:" + versionMap["control"]},
 								"named":         &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-named:" + versionMap["control"]},
-								"statusmonitor": &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:debug"},
+								"statusmonitor": &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:master-180ab9"},
 								"nodeinit":      &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["control"]},
 								"init":          &v1alpha1.Container{Image: "registry:5000/python:alpine"},
 							},
