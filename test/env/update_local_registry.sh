@@ -70,7 +70,7 @@ pull_image tmaier postgresql-client
 while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
-contrail-statusmonitor:debug
+contrail-statusmonitor:master-180ab9
 contrail-provisioner:master.1115
 EOF
 
