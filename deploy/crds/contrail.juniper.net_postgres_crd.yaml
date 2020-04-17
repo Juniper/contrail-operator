@@ -32,6 +32,8 @@ spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
             containers: {}
+            hostNetwork:
+              type: boolean
             storage:
               properties:
                 path:

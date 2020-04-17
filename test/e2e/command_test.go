@@ -56,6 +56,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
 					"postgres": {Image: "registry:5000/postgres"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 			},
 		}
@@ -82,11 +83,12 @@ func TestCommandServices(t *testing.T) {
 					ListenPort:         5555,
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					Containers: map[string]*contrail.Container{
-						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
-						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystone":       {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:train"},
-						"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:train"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
+						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystoneSsh":         {Image: "registry:5000/centos-binary-keystone-ssh:train"},
+						"keystoneFernet":      {Image: "registry:5000/centos-binary-keystone-fernet:train"},
 					},
 				},
 			},
@@ -224,10 +226,6 @@ func TestCommandServices(t *testing.T) {
 				Logger:        log,
 			}
 
-			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForDeployment("commandtest-command-deployment"))
-			})
-
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
 			})
@@ -240,6 +238,10 @@ func TestCommandServices(t *testing.T) {
 					Client:        f.Client,
 				}.ForSwiftActive(command.Spec.ServiceConfiguration.SwiftInstance)
 				require.NoError(t, err)
+			})
+
+			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
+				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment"))
 			})
 
 			var commandPods *core.PodList
@@ -274,7 +276,7 @@ func TestCommandServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			require.NotEmpty(t, swiftProxyPods.Items)
-			keystoneProxy := proxy.NewClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+			keystoneProxy := proxy.NewSecureClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
 			keystoneClient = keystone.NewClient(keystoneProxy)
 			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			swiftProxyPod := swiftProxyPods.Items[0].Name

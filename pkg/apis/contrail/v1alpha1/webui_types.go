@@ -3,7 +3,9 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sort"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,6 +52,7 @@ type WebuiConfiguration struct {
 	ClusterRole        string                `json:"clusterRole,omitempty"`
 	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -68,6 +71,11 @@ type WebuiList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Webui `json:"items"`
+}
+
+type keystoneEndpoint struct {
+	keystoneIP   string
+	keystonePort int
 }
 
 func init() {
@@ -110,8 +118,13 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	}
 
 	manager := "none"
+	keystoneData := &keystoneEndpoint{}
 	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
 		manager = "openstack"
+		err = c.getKeystoneEndpoint(keystoneData, client)
+		if err != nil {
+			return err
+		}
 	}
 
 	var podIPList []string
@@ -139,6 +152,8 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminPassword       string
 			Manager             string
 			CAFilePath          string
+			KeystoneIP          string
+			KeystonePort        string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			Hostname:            podList.Items[idx].Name,
@@ -156,6 +171,8 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminPassword:       webUIConfig.AdminPassword,
 			Manager:             manager,
 			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			KeystoneIP:          keystoneData.keystoneIP,
+			KeystonePort:        strconv.Itoa(keystoneData.keystonePort),
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)
@@ -294,5 +311,19 @@ func (c *Webui) ManageNodeStatus(podNameIPMap map[string]string,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *Webui) getKeystoneEndpoint(k *keystoneEndpoint, client client.Client) error {
+	keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
+	keystone := &Keystone{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
+		return err
+	}
+	if len(keystone.Status.IPs) == 0 {
+		return fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
+	}
+	k.keystoneIP = keystone.Status.IPs[0]
+	k.keystonePort = keystone.Spec.ServiceConfiguration.ListenPort
 	return nil
 }

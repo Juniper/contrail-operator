@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -76,6 +77,7 @@ type ConfigConfiguration struct {
 	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
 	LogLevel           string                `json:"logLevel,omitempty"`
 	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
 	AuthMode           AuthenticationMode    `json:"authMode,omitempty"`
 	AAAMode            AAAMode               `json:"aaaMode,omitempty"`
 	Storage            Storage               `json:"storage,omitempty"`
@@ -185,6 +187,11 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 	var data = make(map[string]string)
 	for idx := range podList.Items {
+
+		configAuth, err := c.AuthParameters(client)
+		if err != nil {
+			return err
+		}
 		var configApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIConfig.Execute(&configApiConfigBuffer, struct {
 			HostIP              string
@@ -223,11 +230,13 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ListenPort string
 			AuthMode   AuthenticationMode
 			CAFilePath string
+			KeystoneIP string
 		}{
 			HostIP:     podList.Items[idx].Status.PodIP,
 			ListenPort: strconv.Itoa(*configConfig.APIPort),
 			AuthMode:   configConfig.AuthMode,
 			CAFilePath: cacertificates.CsrSignerCAFilepath,
+			KeystoneIP: configAuth.KeystoneIP,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
@@ -281,18 +290,19 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		})
 		data["contrail-fabric-ansible.conf."+podList.Items[idx].Status.PodIP] = fabricAnsibleConfigBuffer.String()
 
-		configAuth, err := c.AuthParameters(client)
-		if err != nil {
-			return err
-		}
-
 		var configKeystoneAuthConfBuffer bytes.Buffer
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername string
 			AdminPassword string
+			KeystoneIP    string
+			KeystonePort  int
+			CAFilePath    string
 		}{
 			AdminUsername: configAuth.AdminUsername,
 			AdminPassword: configAuth.AdminPassword,
+			KeystoneIP:    configAuth.KeystoneIP,
+			KeystonePort:  configAuth.KeystonePort,
+			CAFilePath:    cacertificates.CsrSignerCAFilepath,
 		})
 		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
 
@@ -490,6 +500,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 type ConfigAuthParameters struct {
 	AdminUsername string
 	AdminPassword string
+	KeystoneIP    string
+	KeystonePort  int
 }
 
 func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, error) {
@@ -502,6 +514,20 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 		return nil, err
 	}
 	w.AdminPassword = string(adminPasswordSecret.Data["password"])
+
+	if c.Spec.ServiceConfiguration.AuthMode == AuthenticationModeKeystone {
+		keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
+		keystone := &Keystone{}
+		if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
+			return nil, err
+		}
+		if len(keystone.Status.IPs) == 0 {
+			return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
+		}
+		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
+		w.KeystoneIP = keystone.Status.IPs[0]
+	}
+
 	return w, nil
 }
 

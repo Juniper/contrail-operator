@@ -16,7 +16,7 @@
 
 ## Install Go 1.13
 
-* https://golang.org/doc/install#install
+* https://golang.org/doc/install#install 
 
 ## Checkout contrail-operator source code
 
