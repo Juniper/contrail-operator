@@ -9,27 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-
-	// "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	meta1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	// "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 func TestProvisionManagerController(t *testing.T) {
@@ -80,7 +68,6 @@ func TestProvisionManagerController(t *testing.T) {
 			// require.NoError(t, err, "Failed to get status")
 			compareConfigStatus(t, tt.expectedStatus, conf.Status)
 		})
-
 	}
 
 	t.Run("Create event verification", func(t *testing.T) {
@@ -145,7 +132,6 @@ func TestProvisionManagerController(t *testing.T) {
 		hf.GenericFunc(evg, wq)
 		assert.Equal(t, 1, wq.Len())
 	})
-
 }
 
 type TestCase struct {
@@ -284,66 +270,4 @@ func testcase3() *TestCase {
 		expectedStatus: contrail.ProvisionManagerStatus{Active: &falseVal},
 	}
 	return tc
-}
-
-type mockManager struct {
-	scheme *runtime.Scheme
-}
-
-func (m *mockManager) Add(r manager.Runnable) error {
-	if err := m.SetFields(r); err != nil {
-		return err
-	}
-	return nil
-}
-func (m *mockManager) SetFields(i interface{}) error {
-	if _, err := inject.SchemeInto(m.scheme, i); err != nil {
-		return err
-	}
-	if _, err := inject.InjectorInto(m.SetFields, i); err != nil {
-		return err
-	}
-	return nil
-}
-func (m *mockManager) AddHealthzCheck(name string, check healthz.Checker) error {
-	return nil
-}
-func (m *mockManager) AddReadyzCheck(name string, check healthz.Checker) error {
-	return nil
-}
-func (m *mockManager) Start(<-chan struct{}) error {
-	return nil
-}
-func (m *mockManager) GetConfig() *rest.Config {
-	return nil
-}
-func (m *mockManager) GetScheme() *runtime.Scheme {
-	return nil
-}
-func (m *mockManager) GetClient() client.Client {
-	return nil
-}
-func (m *mockManager) GetFieldIndexer() client.FieldIndexer {
-	return nil
-}
-func (m *mockManager) GetCache() cache.Cache {
-	return nil
-}
-func (m *mockManager) GetEventRecorderFor(name string) record.EventRecorder {
-	return nil
-}
-func (m *mockManager) GetRESTMapper() meta.RESTMapper {
-	return nil
-}
-func (m *mockManager) GetAPIReader() client.Reader {
-	return nil
-}
-func (m *mockManager) GetWebhookServer() *webhook.Server {
-	return nil
-}
-
-type mockReconciler struct{}
-
-func (m *mockReconciler) Reconcile(reconcile.Request) (reconcile.Result, error) {
-	return reconcile.Result{}, nil
 }
