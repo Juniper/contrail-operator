@@ -54,7 +54,8 @@ func TestOpenstackServices(t *testing.T) {
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgres"},
+					"postgres":            {Image: "registry:5000/postgres"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
 				},
 			},
 		}
@@ -81,11 +82,12 @@ func TestOpenstackServices(t *testing.T) {
 					KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 					ListenPort:         5555,
 					Containers: map[string]*contrail.Container{
-						"keystoneDbInit": {Image: "registry:5000/postgresql-client"},
-						"keystoneInit":   {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystone":       {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystoneSsh":    {Image: "registry:5000/centos-binary-keystone-ssh:train"},
-						"keystoneFernet": {Image: "registry:5000/centos-binary-keystone-fernet:train"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
+						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
+						"keystoneSsh":         {Image: "registry:5000/centos-binary-keystone-ssh:train"},
+						"keystoneFernet":      {Image: "registry:5000/centos-binary-keystone-fernet:train"},
 					},
 				},
 			},
@@ -156,7 +158,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy := proxy.NewSecureClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
 				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
 				assert.NoError(t, err)
@@ -216,8 +218,9 @@ func TestOpenstackServices(t *testing.T) {
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
-								"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-								"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+								"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+								"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+								"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 							},
 						},
 					},
@@ -244,7 +247,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
-				keystoneProxy := proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy := proxy.NewSecureClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
 				_, err := keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				assert.NoError(t, err)
@@ -253,11 +256,11 @@ func TestOpenstackServices(t *testing.T) {
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
 			var (
-				keystoneProxy    = proxy.NewClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
+				keystoneProxy    = proxy.NewSecureClient("contrail", "openstacktest-keystone-keystone-statefulset-0", 5555)
 				keystoneClient   = keystone.NewClient(keystoneProxy)
 				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxyPod    = swiftProxyPods.Items[0].Name
-				swiftProxy       = proxy.NewClient("contrail", swiftProxyPod, 5070)
+				swiftProxy       = proxy.NewSecureClient("contrail", swiftProxyPod, 5070)
 				swiftURL         = tokens.EndpointURL("swift", "public")
 				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)

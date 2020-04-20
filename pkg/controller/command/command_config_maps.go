@@ -26,7 +26,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(hostIP string) error {
+func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneIP string, keystonePort int) error {
 	cc := &commandConf{
 		ClusterName:    "default",
 		AdminUsername:  "admin",
@@ -39,6 +39,9 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string) error {
 		PostgresDBName: "contrail_test",
 		HostIP:         hostIP,
 		CAFilePath:     cacertificates.CsrSignerCAFilepath,
+		PGPassword:     "contrail123",
+		KeystoneIP:     keystoneIP,
+		KeystonePort:   keystonePort,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

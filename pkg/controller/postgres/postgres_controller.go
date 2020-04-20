@@ -2,13 +2,16 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -19,6 +22,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
@@ -35,7 +40,8 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	client := mgr.GetClient()
 	scheme := mgr.GetScheme()
 	claims := volumeclaims.New(client, scheme)
-	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims}
+	config := mgr.GetConfig()
+	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims, config: config}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -74,6 +80,7 @@ type ReconcilePostgres struct {
 	client client.Client
 	scheme *runtime.Scheme
 	claims volumeclaims.PersistentVolumeClaims
+	config *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Postgres object and makes changes based on the state read
@@ -103,6 +110,22 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
+	postgresPods, err := r.listPostgresPods(instance.Name)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to list postgres pods: %v", err)
+	}
+
+	if err := r.ensureCertificatesExist(instance, postgresPods); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if len(postgresPods.Items) > 0 {
+		err = contrail.SetPodsToReady(postgresPods, r.client)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
 	claimName := types.NamespacedName{
 		Namespace: instance.Namespace,
 		Name:      instance.Name + "-pv-claim",
@@ -122,8 +145,9 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	// Define a new Pod object
-	pod := newPodForCR(instance, claimName.Name)
+	pod := newPodForCR(instance, claimName.Name, csrSignerCaVolumeName)
 
 	// Set Postgres instance as the owner and controller
 	if err = controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
@@ -164,23 +188,15 @@ func (r *ReconcilePostgres) updateStatus(
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
+func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName string) *core.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
 
-	image := "localhost:5000/postgres"
-	command := []string{"/bin/bash", "-c", "docker-entrypoint.sh -c wal_level=logical"}
-	if c := cr.Spec.Containers["postgres"]; c != nil {
-		if c.Image != "" {
-			image = c.Image
-		}
-
-		if c.Command != nil {
-			command = c.Command
-		}
-	}
 	db := "contrail_test"
+	var labelsMountPermission int32 = 0644
+	var secretMountPermission int32 = 0640
+	var postgresUID int64 = 999
 	return &core.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -191,39 +207,112 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 			HostNetwork:  true,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			DNSPolicy:    core.DNSClusterFirst,
+			SecurityContext: &core.PodSecurityContext{
+				RunAsUser:          &postgresUID,
+				FSGroup:            &postgresUID,
+				SupplementalGroups: []int64{999, 1000},
+			},
+			InitContainers: []core.Container{
+				{
+					Name:            "wait-for-ready-conf",
+					Image:           getImage(cr.Spec.Containers, "wait-for-ready-conf"),
+					Command:         getCommand(cr.Spec.Containers, "wait-for-ready-conf"),
+					ImagePullPolicy: core.PullAlways,
+					VolumeMounts: []core.VolumeMount{{
+						Name:      "status",
+						MountPath: "/tmp/podinfo",
+					}},
+				},
+			},
 			Containers: []core.Container{
 				{
-					Image:           image,
-					Command:         command,
+					Image:           getImage(cr.Spec.Containers, "postgres"),
+					Command:         getCommand(cr.Spec.Containers, "postgres"),
 					Name:            "postgres",
 					ImagePullPolicy: core.PullAlways,
 					ReadinessProbe: &core.Probe{
 						Handler: core.Handler{
 							Exec: &core.ExecAction{
-								Command: []string{"pg_isready", "-h", "localhost", "-U", "root", "-d", db},
+								Command: []string{"sh", "-c", "pg_isready -h $MY_POD_IP -U root -d " + db},
 							},
 						},
 					},
-					VolumeMounts: []core.VolumeMount{{
-						Name:      cr.Name + "-volume",
-						MountPath: "/var/lib/postgresql/data",
-						SubPath:   "postgres",
-					}},
+					VolumeMounts: []core.VolumeMount{
+						{
+							Name:      cr.Name + "-volume",
+							MountPath: "/var/lib/postgresql",
+							SubPath:   "postgres",
+						},
+						{
+							Name:      cr.Name + "-secret-certificates",
+							MountPath: "/var/lib/ssl_certificates",
+						},
+						{
+							Name:      csrSignerCaVolumeName,
+							MountPath: cacertificates.CsrSignerCAMountPath,
+						},
+					},
 					Env: []core.EnvVar{
 						{Name: "POSTGRES_USER", Value: "root"},
 						{Name: "POSTGRES_PASSWORD", Value: "contrail123"},
 						{Name: "POSTGRES_DB", Value: db},
+						{
+							Name: "MY_POD_IP",
+							ValueFrom: &core.EnvVarSource{
+								FieldRef: &core.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
+						},
 					},
 				},
 			},
-			Volumes: []core.Volume{{
-				Name: cr.Name + "-volume",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName,
+			Volumes: []core.Volume{
+				core.Volume{
+					Name: cr.Name + "-volume",
+					VolumeSource: core.VolumeSource{
+						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+							ClaimName: claimName,
+						},
 					},
 				},
-			}},
+				core.Volume{
+					Name: cr.Name + "-secret-certificates",
+					VolumeSource: core.VolumeSource{
+						Secret: &core.SecretVolumeSource{
+							SecretName:  cr.Name + "-secret-certificates",
+							DefaultMode: &secretMountPermission,
+						},
+					},
+				},
+				core.Volume{
+					Name: "status",
+					VolumeSource: core.VolumeSource{
+						DownwardAPI: &core.DownwardAPIVolumeSource{
+							Items: []core.DownwardAPIVolumeFile{
+								{
+									FieldRef: &core.ObjectFieldSelector{
+										APIVersion: "v1",
+										FieldPath:  "metadata.labels",
+									},
+									Path: "pod_labels",
+								},
+							},
+							DefaultMode: &labelsMountPermission,
+						},
+					},
+				},
+				core.Volume{
+					Name: csrSignerCaVolumeName,
+					VolumeSource: core.VolumeSource{
+						ConfigMap: &core.ConfigMapVolumeSource{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: cacertificates.CsrSignerCAConfigMapName,
+							},
+						},
+					},
+				},
+			},
 			Tolerations: []core.Toleration{
 				{Operator: "Exists", Effect: "NoSchedule"},
 				{Operator: "Exists", Effect: "NoExecute"},
@@ -231,4 +320,50 @@ func newPodForCR(cr *contrail.Postgres, claimName string) *core.Pod {
 		},
 	}
 
+}
+
+func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres, pods *core.PodList) error {
+	hostNetwork := true
+	if postgres.Spec.HostNetwork != nil {
+		hostNetwork = *postgres.Spec.HostNetwork
+	}
+	return certificates.New(r.client, r.scheme, postgres, r.config, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
+}
+
+func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) {
+	pods := &core.PodList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"app": app})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
+		return &core.PodList{}, err
+	}
+	return pods, nil
+}
+
+func getImage(containers map[string]*contrail.Container, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"postgres":            "localhost:5000/postgres",
+		"wait-for-ready-conf": "localhost:5000/busybox",
+	}
+
+	c, ok := containers[containerName]
+	if !ok || c == nil {
+		return defaultContainersImages[containerName]
+	}
+
+	return c.Image
+}
+
+func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+	var defaultContainersCommand = map[string][]string{
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + cacertificates.CsrSignerCAFilepath},
+		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+	}
+
+	c, ok := containers[containerName]
+	if !ok || c == nil || c.Command == nil {
+		return defaultContainersCommand[containerName]
+	}
+
+	return c.Command
 }

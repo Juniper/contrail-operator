@@ -46,7 +46,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwiftWithEmptyCredentialsSecretName(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Swift": {
@@ -86,7 +86,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Keystone": {
@@ -104,7 +104,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no admin secret": {
@@ -113,7 +113,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 		"no Swift container exists": {
@@ -123,7 +123,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 		},
 	}
@@ -152,7 +152,7 @@ func TestCommand(t *testing.T) {
 			newAdminSecret(),
 			newSwiftSecret(),
 			newSwiftWithEmptyCredentialsSecretName(false),
-			newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+			newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		conf := &rest.Config{}
@@ -185,7 +185,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -200,7 +200,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -216,7 +216,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: false, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -235,7 +235,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -253,7 +253,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -271,7 +271,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Active: true,
@@ -519,7 +519,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
 	executableMode := int32(0744)
-	defMode := int32(420)
+	var labelsMountPermission int32 = 0644
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -591,6 +591,16 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							Image:           "registry:5000/contrail-command",
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
+							Env: []core.EnvVar{
+								{
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "command-command-volume",
 								MountPath: "/etc/contrail",
@@ -607,7 +617,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 									Items: []core.KeyToPath{
 										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-										{Key: "contrail.yml", Path: "contrail.yml"},
+										{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 									},
 								},
@@ -644,7 +654,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 											Path: "pod_labels",
 										},
 									},
-									DefaultMode: &defMode,
+									DefaultMode: &labelsMountPermission,
 								},
 							},
 						},
@@ -670,6 +680,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
+				ListenPort:         5555,
 			},
 		},
 		Status: status,
@@ -694,7 +705,7 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		},
 	}, actual.ObjectMeta)
 
-	assert.Equal(t, expectedCommandConfig, actual.Data["contrail.yml"])
+	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server.yml"])
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
@@ -726,7 +737,7 @@ func newSwiftSecret() *core.Secret {
 
 const expectedCommandConfig = `
 database:
-  host: localhost
+  host: 0.0.0.0
   user: root
   password: contrail123
   name: contrail_test
@@ -845,8 +856,8 @@ replication:
 `
 const expectedBootstrapScript = `
 #!/bin/bash
-
-QUERY_RESULT=$(psql -w -h localhost -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+export PGPASSWORD=contrail123
+QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -857,10 +868,10 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
-contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
-contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `
 
 const expectedCommandInitCluster = `
@@ -1036,8 +1047,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: "http://0.0.0.0:5555"
-      public_url: "http://0.0.0.0:5555"
+      private_url: https://10.0.2.15:5555
+      public_url: https://10.0.2.15:5555
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
@@ -1049,7 +1060,7 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "http://0.0.0.0:5080"
-      public_url: "http://0.0.0.0:5080"
+      private_url: "https://0.0.0.0:5080"
+      public_url: "https://0.0.0.0:5080"
     kind: endpoint
 `

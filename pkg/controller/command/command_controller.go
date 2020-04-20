@@ -161,12 +161,28 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	keystone, err := r.getKeystone(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if len(keystone.Status.IPs) == 0 {
+		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+		return reconcile.Result{}, nil
+	}
+	keystoneIP := keystone.Status.IPs[0]
+	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
+
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0]); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -210,7 +226,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				Items: []core.KeyToPath{
 					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "contrail.yml", Path: "contrail.yml"},
+					{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 				},
 			},
@@ -236,7 +252,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			},
 		},
 	)
-	defMode := int32(420)
+	var labelsMountPermission int32 = 0644
 	volumes = append(volumes, core.Volume{
 		Name: "status",
 		VolumeSource: core.VolumeSource{
@@ -250,7 +266,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 						Path: "pod_labels",
 					},
 				},
-				DefaultMode: &defMode,
+				DefaultMode: &labelsMountPermission,
 			},
 		},
 	})
@@ -265,15 +281,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	if err = r.updateStatus(command, deployment); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	keystone, err := r.getKeystone(command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -383,6 +390,16 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
 							}},
+							Env: []core.EnvVar{
+								{
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
@@ -462,7 +479,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystoneProxy := proxy.NewClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
+	keystoneProxy := proxy.NewSecureClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
@@ -480,7 +497,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("no swift proxy pod found")
 	}
 	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxy := proxy.NewClient(command.Namespace, swiftProxyPod, sPort)
+	swiftProxy := proxy.NewSecureClient(command.Namespace, swiftProxyPod, sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

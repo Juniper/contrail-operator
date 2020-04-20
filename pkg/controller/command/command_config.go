@@ -20,12 +20,15 @@ type commandConf struct {
 	PostgresDBName string
 	HostIP         string
 	CAFilePath     string
+	PGPassword     string
+	KeystoneIP     string
+	KeystonePort   int
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
-	cm.Data["contrail.yml"] = c.executeTemplate(commandConfig)
+	cm.Data["command-app-server.yml"] = c.executeTemplate(commandConfig)
 	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
@@ -42,13 +45,13 @@ var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
 cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
-/bin/contrailgo -c /etc/contrail/contrail.yml run
+/bin/commandappserver -c /etc/contrail/command-app-server.yml run
 `))
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
-
-QUERY_RESULT=$(psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+export PGPASSWORD={{ .PGPassword }}
+QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -59,10 +62,10 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h localhost -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h localhost -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
-contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
-contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `))
 
 var funcMap = template.FuncMap{
@@ -242,8 +245,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: "http://{{ .HostIP }}:5555"
-      public_url: "http://{{ .HostIP }}:5555"
+      private_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
+      public_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
@@ -255,14 +258,14 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "http://{{ .HostIP }}:5080"
-      public_url: "http://{{ .HostIP }}:5080"
+      private_url: "https://{{ .HostIP }}:5080"
+      public_url: "https://{{ .HostIP }}:5080"
     kind: endpoint
 `))
 
 var commandConfig = template.Must(template.New("").Parse(`
 database:
-  host: localhost
+  host: {{ .HostIP }}
   user: root
   password: contrail123
   name: contrail_test

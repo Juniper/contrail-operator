@@ -620,6 +620,8 @@ spec:
                 containers: {}
                 fabricMgmtIP:
                   type: string
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
                 logLevel:
@@ -992,8 +994,10 @@ spec:
           properties:
             active:
               type: boolean
-            node:
-              type: string
+            ips:
+              items:
+                type: string
+              type: array
             port:
               type: integer
           type: object
@@ -1741,6 +1745,8 @@ spec:
                             containers: {}
                             fabricMgmtIP:
                               type: string
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                             logLevel:
@@ -2100,8 +2106,10 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        node:
-                          type: string
+                        ips:
+                          items:
+                            type: string
+                          type: array
                         port:
                           type: integer
                       type: object
@@ -2361,6 +2369,8 @@ spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
                         containers: {}
+                        hostNetwork:
+                          type: boolean
                         storage:
                           properties:
                             path:
@@ -2490,6 +2500,8 @@ spec:
                             manager configuration
                           properties:
                             containers: {}
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                           type: object
@@ -3048,6 +3060,8 @@ spec:
                             clusterRoleBinding:
                               type: string
                             containers: {}
+                            keystoneInstance:
+                              type: string
                             keystoneSecretName:
                               type: string
                             serviceAccount:
@@ -3533,6 +3547,8 @@ spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
             containers: {}
+            hostNetwork:
+              type: boolean
             storage:
               properties:
                 path:
@@ -3670,6 +3686,8 @@ spec:
                 configuration
               properties:
                 containers: {}
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
               type: object
@@ -4418,6 +4436,8 @@ spec:
                 clusterRoleBinding:
                   type: string
                 containers: {}
+                keystoneInstance:
+                  type: string
                 keystoneSecretName:
                   type: string
                 serviceAccount:

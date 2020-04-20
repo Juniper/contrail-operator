@@ -88,7 +88,7 @@ spec:
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1912-latest
             statusmonitor:
-              image: michaelhenkel/contrail-statusmonitor:debug
+              image: kaweue/contrail-statusmonitor:master-180ab9
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:

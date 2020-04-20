@@ -91,7 +91,7 @@ spec:
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
             statusmonitor:
-              image: kaweue/contrail-statusmonitor:debug
+              image: kaweue/contrail-statusmonitor:master-180ab9
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
@@ -133,7 +133,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: kaweue/contrail-provisioner:master.1115
+              image: kaweue/contrail-provisioner:master.1175
     rabbitmq:
       metadata:
         labels:

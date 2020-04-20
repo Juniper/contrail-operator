@@ -28,11 +28,12 @@ cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
 AUTHN_TYPE = {{ .AuthMode }}
-AUTHN_PROTOCOL = http
-AUTHN_SERVER = localhost
+AUTHN_PROTOCOL = https
+AUTHN_SERVER = {{ .KeystoneIP }}
 AUTHN_PORT = 5555
 AUTHN_URL = /v3/auth/tokens
 AUTHN_DOMAIN = Default
+cafile = {{ .CAFilePath }}
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
 
@@ -66,7 +67,7 @@ rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 kombu_ssl_ca_certs={{ .CAFilePath }}
-kombu_ssl_version=sslv23
+kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
@@ -108,9 +109,10 @@ rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 kombu_ssl_ca_certs={{ .CAFilePath }}
-kombu_ssl_version=sslv23
+kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
+dm_run_mode={{ .DMRunMode }}
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False
@@ -125,11 +127,12 @@ var ConfigKeystoneAuthConf = template.Must(template.New("").Parse(`[KEYSTONE]
 admin_password = {{ .AdminPassword }}
 admin_tenant_name = {{ .AdminUsername }}
 admin_user = {{ .AdminUsername }}
-auth_host = localhost
+auth_host = {{ .KeystoneIP }}
 auth_port = 5555
-auth_protocol = http
-auth_url = http://localhost:5555/v3
+auth_protocol = https
+auth_url = https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3
 auth_type = password
+cafile = {{ .CAFilePath }}
 user_domain_name = Default
 project_domain_name = Default
 region_name = RegionOne`))
@@ -182,7 +185,7 @@ rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 kombu_ssl_ca_certs={{ .CAFilePath }}
-kombu_ssl_version=sslv23
+kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
@@ -220,7 +223,7 @@ rabbit_use_ssl=True
 kombu_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 kombu_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 kombu_ssl_ca_certs={{ .CAFilePath }}
-kombu_ssl_version=sslv23
+kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 analytics_api_ssl_enable = True
@@ -334,7 +337,7 @@ rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .HostIP }}.crt
 rabbitmq_ssl_ca_certs={{ .CAFilePath }}
-rabbitmq_ssl_version=sslv23
+rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=False

@@ -11,7 +11,7 @@ all: generate provisioner statusmonitor
 generate: ## Generate go api client types
 	rm -rf $(BUILD_DIR)/$(GENERATE_DS_REPO) $(BUILD_DIR)/$(GO_API_CLIENT_REPO)
 ifeq ($(GENERATE_DS_REPO_DIR),"")
-	git clone -b $(GENERATE_DS_BRANCH) https://github.com/michaelhenkel/$(GO_API_CLIENT_REPO).git $(BUILD_DIR)/$(GO_API_CLIENT_REPO)
+	git clone -b $(GENERATE_DS_BRANCH) https://github.com/Juniper/$(GO_API_CLIENT_REPO).git $(BUILD_DIR)/$(GO_API_CLIENT_REPO)
 	git clone -b $(GENERATE_DS_BRANCH) https://github.com/Juniper/$(GENERATE_DS_REPO).git $(BUILD_DIR)/$(GENERATE_DS_REPO)
 	cd $(BUILD_DIR)/$(GENERATE_DS_REPO) && git checkout $(GENERATE_DS_REVISION)
 	cd $(BUILD_DIR)/$(GO_API_CLIENT_REPO) && go mod init github.com/contrail-operator/build/contrail-go-api
@@ -25,6 +25,6 @@ statusmonitor:
 	cd $(ROOT_DIR)/statusmonitor && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o statusmonitor && docker build . -f Dockerfile.debug -t contrail-statusmonitor:latest
 
 provisioner:
-	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:master.1115
+	cd $(ROOT_DIR)/contrail-provisioner && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o contrail-provisioner && docker build . -t contrail-provisioner:master.1175
 
 .PHONY: statusmonitor provisioner generate

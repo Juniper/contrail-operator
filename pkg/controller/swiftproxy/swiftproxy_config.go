@@ -9,7 +9,8 @@ import (
 
 type swiftProxyConfig struct {
 	ListenPort            int
-	KeystoneServer        string
+	KeystoneIP            string
+	KeystonePort          int
 	MemcachedServer       string
 	KeystoneAdminPassword string
 	SwiftUser             string
@@ -64,6 +65,8 @@ log_name = swift-proxy-server
 log_facility = local0
 log_level = INFO
 workers = 2
+cert_file = /etc/swift/proxy.crt
+key_file = /etc/swift/proxy.key
 
 [pipeline:main]
 pipeline = catch_errors gatekeeper healthcheck cache container_sync bulk tempurl ratelimit authtoken keystoneauth container_quotas account_quotas slo dlo proxy-server
@@ -91,9 +94,10 @@ use = egg:swift#proxy_logging
 
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-auth_uri = http://{{ .KeystoneServer }}
-auth_url = http://{{ .KeystoneServer }}
+auth_url = https://{{ .KeystoneIP }}:{{ .KeystonePort }}
 auth_type = password
+auth_protocol = https
+insecure = true
 project_domain_id = default
 user_domain_id = default
 project_name = service
@@ -139,6 +143,9 @@ allow_versioned_writes = True
 
 const bootstrapScript = `
 #!/bin/bash
+ln -s /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+ln -s /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
 ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz

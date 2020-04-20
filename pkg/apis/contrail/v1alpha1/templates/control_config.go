@@ -43,7 +43,7 @@ rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 rabbitmq_ssl_ca_certs={{ .CAFilePath }}
-rabbitmq_ssl_version=sslv23
+rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
 sandesh_ssl_enable=True
@@ -131,7 +131,7 @@ rabbitmq_use_ssl=True
 rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 rabbitmq_ssl_ca_certs={{ .CAFilePath }}
-rabbitmq_ssl_version=sslv23
+rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
 sandesh_ssl_enable=True

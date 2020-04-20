@@ -12,10 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -40,7 +42,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -49,7 +51,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -63,7 +65,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
 				newKeystone(
-					contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+					contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 					[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 				),
 				newExpectedDeployment(apps.DeploymentStatus{}),
@@ -77,7 +79,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -90,7 +92,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
@@ -102,7 +104,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
@@ -114,7 +116,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{Active: true}),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
 				newAdminSecret(),
@@ -124,7 +126,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 		},
@@ -133,7 +135,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxyWithCustomImages(),
-				newKeystone(contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -142,7 +144,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeploymentWithCustomImages(),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, Node: "10.0.2.15:5555"},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 		},
@@ -153,7 +155,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 			kubernetes := k8s.New(cl, scheme)
-			r := swiftproxy.NewReconciler(cl, scheme, kubernetes)
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes, &rest.Config{})
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -232,6 +234,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy-deployment",
@@ -250,11 +253,22 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 				Spec: core.PodSpec{
 					InitContainers: []core.Container{
 						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "localhost:5000/busybox",
+							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
+						{
 							Name:            "init",
 							Image:           "localhost:5000/centos-binary-kolla-toolbox:train",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
+								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
 							},
 							Command: []string{"ansible-playbook"},
 							Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -267,6 +281,8 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+							{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+							{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -274,12 +290,20 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						}, {
 							Name:  "KOLLA_CONFIG_STRATEGY",
 							Value: "COPY_ALWAYS",
+						}, {
+							Name: "POD_IP",
+							ValueFrom: &core.EnvVarSource{
+								FieldRef: &core.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
 						}},
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
-									Path: "/healthcheck",
-									Port: intstr.IntOrString{IntVal: int32(5070)},
+									Path:   "/healthcheck",
+									Scheme: "HTTPS",
+									Port:   intstr.IntOrString{IntVal: int32(5070)},
 								},
 							},
 						},
@@ -325,11 +349,46 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
+							Name: "swiftproxy-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "swiftproxy-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
+								},
+							},
+						},
+						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 									ClaimName: "test-rings-claim",
 									ReadOnly:  true,
+								},
+							},
+						},
+						{
+							Name: "swiftproxy-csr-signer-ca",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: cacertificates.CsrSignerCAConfigMapName,
+									},
 								},
 							},
 						},
@@ -350,8 +409,9 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 func newSwiftProxyWithCustomImages() runtime.Object {
 	sp := newSwiftProxy(contrail.SwiftProxyStatus{})
 	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"init": {Image: "image1"},
-		"api":  {Image: "image2"},
+		"init":                {Image: "image1"},
+		"api":                 {Image: "image2"},
+		"wait-for-ready-conf": {Image: "image3", Command: []string{"cmd"}},
 	}
 
 	return sp
@@ -361,11 +421,22 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 	deployment := newExpectedDeployment(apps.DeploymentStatus{})
 	deployment.Spec.Template.Spec.InitContainers = []core.Container{
 		{
+			Name:            "wait-for-ready-conf",
+			ImagePullPolicy: core.PullAlways,
+			Image:           "image3",
+			Command:         []string{"cmd"},
+			VolumeMounts: []core.VolumeMount{{
+				Name:      "status",
+				MountPath: "/tmp/podinfo",
+			}},
+		},
+		{
 			Name:            "init",
 			Image:           "image1",
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
+				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
 			},
 			Command: []string{"ansible-playbook"},
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -379,12 +450,15 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
 				HTTPGet: &core.HTTPGetAction{
-					Path: "/healthcheck",
-					Port: intstr.IntOrString{IntVal: int32(5070)},
+					Path:   "/healthcheck",
+					Scheme: "HTTPS",
+					Port:   intstr.IntOrString{IntVal: int32(5070)},
 				},
 			},
 		},
@@ -394,6 +468,13 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		}, {
 			Name:  "KOLLA_CONFIG_STRATEGY",
 			Value: "COPY_ALWAYS",
+		}, {
+			Name: "POD_IP",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
 		}},
 	}}
 
@@ -411,6 +492,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
+				ListenPort:         5555,
 			},
 		},
 		Status: status,
@@ -498,6 +580,9 @@ func newSwiftSecret() *core.Secret {
 
 const boostrapScript = `
 #!/bin/bash
+ln -s /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+ln -s /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
 ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
@@ -538,6 +623,8 @@ log_name = swift-proxy-server
 log_facility = local0
 log_level = INFO
 workers = 2
+cert_file = /etc/swift/proxy.crt
+key_file = /etc/swift/proxy.key
 
 [pipeline:main]
 pipeline = catch_errors gatekeeper healthcheck cache container_sync bulk tempurl ratelimit authtoken keystoneauth container_quotas account_quotas slo dlo proxy-server
@@ -565,9 +652,10 @@ use = egg:swift#proxy_logging
 
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-auth_uri = http://10.0.2.15:5555
-auth_url = http://10.0.2.15:5555
+auth_url = https://10.0.2.15:5555
 auth_type = password
+auth_protocol = https
+insecure = true
 project_domain_id = default
 user_domain_id = default
 project_name = service
@@ -621,6 +709,8 @@ const registerPlaybook = `
         description: "object store service"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
+
     - name: create swift endpoints service
       os_keystone_endpoint:
         service: "swift"
@@ -629,16 +719,18 @@ const registerPlaybook = `
         endpoint_interface: "{{ item.interface }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "http://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "https://{{ swift_endpoint }}/v1", interface: "admin" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
     - name: create service project
       os_project:
         name: "service"
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
     - name: create swift user
       os_user:
         default_project: "service"
@@ -647,11 +739,13 @@ const registerPlaybook = `
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
     - name: create admin role    
       os_keystone_role:
         name: "{{ item }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
       with_items:
         - admin
         - ResellerAdmin
@@ -663,11 +757,12 @@ const registerPlaybook = `
         domain: "default"
         interface: "admin"
         auth: "{{ openstack_auth }}"
+        ca_cert: "{{ ca_cert_filepath }}"
 `
 
 var registerConfig = `
 openstack_auth:
-  auth_url: "http://10.0.2.15:5555/v3"
+  auth_url: "https://10.0.2.15:5555/v3"
   username: "admin"
   password: "test123"
   project_name: "admin"
@@ -677,4 +772,8 @@ openstack_auth:
 swift_endpoint: "10.255.254.4:5070"
 swift_password: "password2"
 swift_user: "otherUser"
+
+ca_cert_filepath: "/etc/ssl/certs/kubernetes/ca-bundle.crt"
 `
+
+const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
