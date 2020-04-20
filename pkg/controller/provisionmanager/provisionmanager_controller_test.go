@@ -65,7 +65,6 @@ func TestProvisionManagerController(t *testing.T) {
 			// check for success or failure
 			conf := &contrail.ProvisionManager{}
 			err = cl.Get(context.Background(), req.NamespacedName, conf)
-			// require.NoError(t, err, "Failed to get status")
 			compareConfigStatus(t, tt.expectedStatus, conf.Status)
 		})
 	}
@@ -177,8 +176,6 @@ func newProvisionManager() *contrail.ProvisionManager {
 		},
 		Status: contrail.ProvisionManagerStatus{
 			Active: &trueVal,
-			// Nodes:               map[string]string{"node-role.kubernetes.io/master": "somevalue"}, //  to be placed
-			// GlobalConfiguration: map[string]string{"key_value": "somevalue"},
 		},
 	}
 }
