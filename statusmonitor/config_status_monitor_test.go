@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseIntrospectResp(t *testing.T) {
-	data, err := ParseIntrospectResp(intorspectData())
+	data, err := ParseIntrospectResp(introspectData())
 	assert.NoError(t, err)
 	assert.Equal(t, data.NodeName, "kind-control-plane")
 	assert.Equal(t, data.ModuleName, "contrail-api")
@@ -18,7 +18,7 @@ func TestParseIntrospectResp(t *testing.T) {
 
 }
 
-func intorspectData() []byte {
+func introspectData() []byte {
 	return []byte(`<?xml-stylesheet type="text/xsl" href="/universal_parse.xsl"?>
 <__NodeStatusUVE_list type="slist">
     <NodeStatusUVE type="sandesh">
