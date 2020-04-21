@@ -140,7 +140,6 @@ type TestCase struct {
 }
 
 var falseVal = false
-var trueVal = true
 
 func newProvisionManager() *contrail.ProvisionManager {
 	trueVal := true
