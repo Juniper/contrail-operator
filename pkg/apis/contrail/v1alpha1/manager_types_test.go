@@ -94,7 +94,7 @@ func TestManagerTypeTwo(t *testing.T) {
 		err := cl.Update(context.TODO(), mgr)
 		if err != nil {
 			t.Fatalf("Testing Update in manager_types.: (%v)", err)
-		}
+		}	
 	})
 
 	t.Run("Testing Delete in manager_types.", func(t *testing.T) {
