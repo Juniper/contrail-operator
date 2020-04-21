@@ -71,6 +71,7 @@ while read line; do
 	pull_image kaweue "${line}"
 done <<EOF
 contrail-statusmonitor:master-180ab9
+contrail-statusmonitor:latest
 contrail-provisioner:master.1175
 EOF
 

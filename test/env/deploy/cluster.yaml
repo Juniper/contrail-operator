@@ -67,7 +67,7 @@ spec:
             queryengine:
               image: registry:5000/contrail-analytics-query-engine:master.1175
             statusmonitor:
-              image: registry:5000/contrail-statusmonitor:debug
+              image: registry:5000/contrail-statusmonitor:latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
