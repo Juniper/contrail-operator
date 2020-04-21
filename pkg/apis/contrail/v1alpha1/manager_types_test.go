@@ -2,38 +2,19 @@ package v1alpha1_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var trueVal = true
 var NameValue = "cassandra"
-
-var keystone = &contrail.Keystone{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "keystone",
-		Namespace: "default",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-	Spec: contrail.KeystoneSpec{
-		ServiceConfiguration: contrail.KeystoneConfiguration{
-			ListenPort: 5555,
-		},
-	},
-	Status: contrail.KeystoneStatus{
-		IPs: []string{"10.11.12.13"},
-	},
-}
 
 var cassandra = &contrail.Cassandra{
 	ObjectMeta: meta.ObjectMeta{
@@ -46,16 +27,14 @@ var cassandra = &contrail.Cassandra{
 }
 
 var managerstatus = &contrail.ServiceStatus{
-	Name: &NameValue,
-	Active: &trueVal,
+	Name:    &NameValue,
+	Active:  &trueVal,
 	Created: &trueVal,
 }
 
-func newManager() *contrail.Manager{
-	obj := []*contrail.Cassandra{}
-	obj = append(obj, cassandra)
-	mgrstatus := []*contrail.ServiceStatus{}
-	mgrstatus = append(mgrstatus, managerstatus)
+func newManager() *contrail.Manager {
+	obj := []*contrail.Cassandra{cassandra}
+	mgrstatus := []*contrail.ServiceStatus{managerstatus}
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -64,19 +43,19 @@ func newManager() *contrail.Manager{
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Cassandras:	obj,
-				},
+				Cassandras: obj,
 			},
+		},
 		Status: contrail.ManagerStatus{
 			Cassandras: mgrstatus,
 		},
 	}
 }
 
- func TestManagerTypeTwo(t *testing.T) {
+func TestManagerTypeTwo(t *testing.T) {
 	var (
-		name            = "config1"
-		namespace       = "default"
+		name      = "config1"
+		namespace = "default"
 	)
 
 	// Objects to track in the fake client.
@@ -89,10 +68,6 @@ func newManager() *contrail.Manager{
 	// Create a fake client to mock API calls.
 	cl := fake.NewFakeClient(objs...)
 
-	// Create a ReconcileMemcached object with the scheme and fake client.
-
-	// Mock request to simulate Reconcile() being called on an event for a
-	// watched resource .
 	req := reconcile.Request{
 		NamespacedName: types.NamespacedName{
 			Name:      name,
@@ -100,7 +75,7 @@ func newManager() *contrail.Manager{
 		},
 	}
 
-    var mgr = newManager()
+	var mgr = newManager()
 	t.Run("Testing get types with context.", func(t *testing.T) {
 		err := cl.Get(context.TODO(), req.NamespacedName, mgr)
 		if err != nil {
@@ -140,7 +115,7 @@ func newManager() *contrail.Manager{
 
 		for _, zookeeperService := range mgr.Spec.Services.Zookeepers {
 			for _, zookeeperStatus := range mgr.Status.Zookeepers {
-				if zookeeperService.Name == *zookeeperStatus.Name  {
+				if zookeeperService.Name == *zookeeperStatus.Name {
 					// no need to verify
 				}
 			}
@@ -152,7 +127,7 @@ func newManager() *contrail.Manager{
 				}
 			}
 		}
-        
+
 	})
-      //  nothing to verify
+	//  nothing to verify
 }
