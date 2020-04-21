@@ -4,22 +4,6 @@ import (
 	"testing"
 	tm "github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
-
-
-	// "strings"
-
-	// "k8s.io/apimachinery/pkg/api/errors"
-	// "k8s.io/apimachinery/pkg/runtime"
-	// "k8s.io/apimachinery/pkg/runtime/schema"
-	// "sigs.k8s.io/controller-runtime/pkg/client"
-	// "sigs.k8s.io/controller-runtime/pkg/event"
-	// "sigs.k8s.io/controller-runtime/pkg/predicate"
-	// "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	// appsv1 "k8s.io/api/apps/v1"
-	// corev1 "k8s.io/api/core/v1"
-	// logf "sigs.k8s.io/controller-runtime/pkg/log"
-
 )
 
 func TestUntils(t *testing.T){
