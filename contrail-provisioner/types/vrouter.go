@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
 // VrouterNode struct defines Contrail Vrouter node

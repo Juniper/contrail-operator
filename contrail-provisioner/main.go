@@ -17,7 +17,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	contrail "github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
 // ProvisionConfig defines the structure of the provison config

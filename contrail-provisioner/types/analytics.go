@@ -2,7 +2,8 @@ package types
 
 import (
 	"github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
 // AnalyticsNode struct defines Contrail Analytics node
