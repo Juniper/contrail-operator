@@ -90,7 +90,6 @@ func TestConfigResourceHandler(t *testing.T) {
 	})
 }
 
-
 type TestCase struct {
 	name           string
 	initObjs       []runtime.Object
@@ -178,21 +177,22 @@ func newConfigInst() *contrail.Config {
 				ZookeeperInstance:  "zookeeper-instance",
 				KeystoneSecretName: "keystone-adminpass-secret",
 				Containers: map[string]*contrail.Container{
-					"nodemanagerconfig":    &contrail.Container{Image: "contrail-nodemanager-config"},
-					"nodemanageranalytics": &contrail.Container{Image: "contrail-nodemanager-analytics"},
-					"config":               &contrail.Container{Image: "contrail-config-api"},
-					"analyticsapi":         &contrail.Container{Image: "contrail-analytics-api"},
-					"api":                  &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":            &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":        &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":              &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
-					"init":                 &contrail.Container{Image: "python:alpine"},
-					"init2":                &contrail.Container{Image: "busybox"},
-					"nodeinit":             &contrail.Container{Image: "contrail-node-init"},
-					"redis":                &contrail.Container{Image: "redis"},
-					"schematransformer":    &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":       &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":          &contrail.Container{Image: "contrail-analytics-query-engine"},
+					"nodemanagerconfig":    {Image: "contrail-nodemanager-config"},
+					"nodemanageranalytics": {Image: "contrail-nodemanager-analytics"},
+					"config":               {Image: "contrail-config-api"},
+					"analyticsapi":         {Image: "contrail-analytics-api"},
+					"api":                  {Image: "contrail-controller-config-api"},
+					"collector":            {Image: "contrail-analytics-collector"},
+					"devicemanager":        {Image: "contrail-controller-config-devicemgr"},
+					"dnsmasq":              {Image: "contrail-controller-config-dnsmasq"},
+					"init":                 {Image: "python:alpine"},
+					"init2":                {Image: "busybox"},
+					"nodeinit":             {Image: "contrail-node-init"},
+					"redis":                {Image: "redis"},
+					"schematransformer":    {Image: "contrail-controller-config-schema"},
+					"servicemonitor":       {Image: "contrail-controller-config-svcmonitor"},
+					"queryengine":          {Image: "contrail-analytics-query-engine"},
+					"statusmonitor":        {Image: "contrail-statusmonitor:debug"},
 				},
 			},
 		},
@@ -265,8 +265,8 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"zookeeper":         &contrail.Container{Image: "contrail-controller-zookeeper"},
+					"init":      {Image: "python:alpine"},
+					"zookeeper": {Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},

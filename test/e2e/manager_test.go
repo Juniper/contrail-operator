@@ -292,6 +292,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								"nodeinit":          &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
 								"init":              &v1alpha1.Container{Image: "registry:5000/python:alpine"},
 								"init2":             &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"statusmonitor":     &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:latest"},
 							},
 						},
 					},
