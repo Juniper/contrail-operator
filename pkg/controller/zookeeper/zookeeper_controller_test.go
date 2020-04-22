@@ -3,6 +3,7 @@ package zookeeper
 import (
 	"context"
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -86,6 +87,13 @@ func TestZookeeperResourceHandler(t *testing.T) {
 		hf := resourceHandler(cl)
 		hf.GenericFunc(evg, wq)
 		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("add controller to Manager", func(t *testing.T) {
+		mgr := &mocking.MockManager{Scheme:scheme}
+		reconciler := &mocking.MockReconciler{}
+		err := add(mgr, reconciler)
+		assert.NoError(t, err)
 	})
 }
 
