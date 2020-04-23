@@ -13,18 +13,10 @@ import (
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-
-
 	"k8s.io/client-go/util/workqueue"
-
-
 	"sigs.k8s.io/controller-runtime/pkg/event"
-
-
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 )
