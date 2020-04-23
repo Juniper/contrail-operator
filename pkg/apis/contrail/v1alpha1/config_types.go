@@ -80,7 +80,7 @@ type ConfigConfiguration struct {
 	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
 	AuthMode           AuthenticationMode    `json:"authMode,omitempty"`
 	AAAMode            AAAMode               `json:"aaaMode,omitempty"`
-	Storage            Storage               `json:"storage,omitempty"`
+	Storages           map[string]Storage    `json:"storage,omitempty"`
 	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
 }
 
@@ -707,6 +707,20 @@ func (c *Config) ConfigurationParameters() interface{} {
 	var rabbitmqPassword string
 	var rabbitmqVhost string
 	var logLevel string
+	if len(c.Spec.ServiceConfiguration.Storages) == 0 {
+		var storagesMap = make(map[string]Storage)
+		tftpStorage := Storage{
+			Size: "10M",
+			Path: "/etc/tftp",
+		}
+		storagesMap["tftp"] = tftpStorage
+		dnsmasqStorage := Storage{
+			Size: "10M",
+			Path: "/var/lib/dnsmasq",
+		}
+		storagesMap["dnsmasq"] = dnsmasqStorage
+		configConfiguration.Storages = storagesMap
+	}
 	if c.Spec.ServiceConfiguration.LogLevel != "" {
 		logLevel = c.Spec.ServiceConfiguration.LogLevel
 	} else {

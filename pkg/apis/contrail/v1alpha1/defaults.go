@@ -118,7 +118,7 @@ const (
 	RabbitmqUser                                string = "guest"
 	RabbitmqPassword                            string = "guest"
 	RabbitmqUseSsl                              bool   = false
-	RabbitmqSslVer                              string = "tlsv1_2"
+	RabbitmqSslVer                              string = "sslv23"
 	RabbitmqClientSslCertfile                   string = "/etc/contrail/ssl/certs/server.pem"
 	RabbitmqClientSslKeyfile                    string = "/etc/contrail/ssl/private/server-privkey.pem"
 	RabbitmqClientSslCacertfile                 string = "/etc/contrail/ssl/certs/ca-cert.pem"
