@@ -284,7 +284,15 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "provisioner" {
 			command := []string{"sh", "-c",
-				"/contrail-provisioner -controlNodes /etc/provision/control/controlnodes.yaml -configNodes /etc/provision/config/confignodes.yaml -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml -databaseNodes /etc/provision/database/databasenodes.yaml -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml -keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml -mode watch",
+				`/app/contrail-provisioner/contrail-provisioner-image-debug.binary \
+				  -controlNodes /etc/provision/control/controlnodes.yaml \
+				  -configNodes /etc/provision/config/confignodes.yaml \
+				  -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml \
+				  -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml \
+				  -databaseNodes /etc/provision/database/databasenodes.yaml \
+				  -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml \
+				  -keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml \
+				  -mode watch`,
 			}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
