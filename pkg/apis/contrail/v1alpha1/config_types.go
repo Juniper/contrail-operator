@@ -87,7 +87,6 @@ type ConfigConfiguration struct {
 	AuthMode                    AuthenticationMode    `json:"authMode,omitempty"`
 	AAAMode                     AAAMode               `json:"aaaMode,omitempty"`
 	Storages                    map[string]Storage    `json:"storage,omitempty"`
-	Storage                     Storage               `json:"storage,omitempty"`
 	FabricMgmtIP                string                `json:"fabricMgmtIP,omitempty"`
 }
 

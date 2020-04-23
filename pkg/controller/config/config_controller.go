@@ -345,6 +345,21 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		},
 	}
 
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "In",
+						Values:   []string{request.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
+
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 
 		switch container.Name {
