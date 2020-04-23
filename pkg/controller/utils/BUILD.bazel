@@ -24,4 +24,7 @@ go_test(
     name = "go_default_test",
     srcs = ["utils_test.go"],
     embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
+    ],
 )
