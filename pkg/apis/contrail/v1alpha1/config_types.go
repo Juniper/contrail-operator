@@ -64,24 +64,30 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	APIPort            *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort      *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort      *int                  `json:"collectorPort,omitempty"`
-	RedisPort          *int                  `json:"redisPort,omitempty"`
-	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance  string                `json:"zookeeperInstance,omitempty"`
-	NodeManager        *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser       string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword   string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost      string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel           string                `json:"logLevel,omitempty"`
-	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
-	AuthMode           AuthenticationMode    `json:"authMode,omitempty"`
-	AAAMode            AAAMode               `json:"aaaMode,omitempty"`
-	Storage            Storage               `json:"storage,omitempty"`
-	FabricMgmtIP       string                `json:"fabricMgmtIP,omitempty"`
+	Containers                  map[string]*Container `json:"containers,omitempty"`
+	APIPort                     *int                  `json:"apiPort,omitempty"`
+	AnalyticsPort               *int                  `json:"analyticsPort,omitempty"`
+	CollectorPort               *int                  `json:"collectorPort,omitempty"`
+	RedisPort                   *int                  `json:"redisPort,omitempty"`
+	ApiIntrospectPort           *int                  `json:"apiIntrospectPort,omitempty"`
+	SchemaIntrospectPort        *int                  `json:"schemaIntrospectPort,omitempty"`
+	DeviceManagerIntrospectPort *int                  `json:"deviceManagerIntrospectPort,omitempty"`
+	SvcMonitorIntrospectPort    *int                  `json:"svcMonitorIntrospectPort,omitempty"`
+	AnalyticsApiIntrospectPort  *int                  `json:"analyticsMonitorIntrospectPort,omitempty"`
+	CollectorIntrospectPort     *int                  `json:"collectorMonitorIntrospectPort,omitempty"`
+	CassandraInstance           string                `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance           string                `json:"zookeeperInstance,omitempty"`
+	NodeManager                 *bool                 `json:"nodeManager,omitempty"`
+	RabbitmqUser                string                `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword            string                `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost               string                `json:"rabbitmqVhost,omitempty"`
+	LogLevel                    string                `json:"logLevel,omitempty"`
+	KeystoneSecretName          string                `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance            string                `json:"keystoneInstance,omitempty"`
+	AuthMode                    AuthenticationMode    `json:"authMode,omitempty"`
+	AAAMode                     AAAMode               `json:"aaaMode,omitempty"`
+	Storage                     Storage               `json:"storage,omitempty"`
+	FabricMgmtIP                string                `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -89,10 +95,23 @@ type ConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active        *bool             `json:"active,omitempty"`
-	Nodes         map[string]string `json:"nodes,omitempty"`
-	Ports         ConfigStatusPorts `json:"ports,omitempty"`
-	ConfigChanged *bool             `json:"configChanged,omitempty"`
+	Active        *bool                                     `json:"active,omitempty"`
+	Nodes         map[string]string                         `json:"nodes,omitempty"`
+	Ports         ConfigStatusPorts                         `json:"ports,omitempty"`
+	ConfigChanged *bool                                     `json:"configChanged,omitempty"`
+	ServiceStatus map[string]map[string]ConfigServiceStatus `json:"serviceStatus,omitempty"`
+}
+
+type ConfigConnectionInfo struct {
+	Name          string
+	Status        string
+	ServerAddress []string
+}
+
+type ConfigServiceStatus struct {
+	NodeName    string `json:"nodeName,omitempty"`
+	ModuleName  string `json:"moduleName,omitempty"`
+	ModuleState string `json:"state"`
 }
 
 type ConfigStatusPorts struct {
@@ -168,7 +187,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	if rabbitmqSecretVhost == "" {
 		rabbitmqSecretVhost = configConfig.RabbitmqVhost
 	}
-	var collectorServerList, analyticsServerList, apiServerList, analyticsServerSpaceSeparatedList, apiServerSpaceSeparatedList, redisServerSpaceSeparatedList string
+	var collectorServerList, analyticsServerList, apiServerList, analyticsServerSpaceSeparatedList,
+		apiServerSpaceSeparatedList, redisServerSpaceSeparatedList string
 	var podIPList []string
 	for _, pod := range podList.Items {
 		podIPList = append(podIPList, pod.Status.PodIP)
@@ -189,11 +209,27 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 	var data = make(map[string]string)
 	for idx := range podList.Items {
-
 		configAuth, err := c.AuthParameters(client)
 		if err != nil {
 			return err
 		}
+		configIntrospectNodes := make([]string, 0)
+		introspectPorts := []int{*configConfig.ApiIntrospectPort, *configConfig.SchemaIntrospectPort,
+			*configConfig.DeviceManagerIntrospectPort, *configConfig.SvcMonitorIntrospectPort,
+			*configConfig.AnalyticsApiIntrospectPort, *configConfig.CollectorIntrospectPort}
+		for _, port := range introspectPorts {
+			nodesPortStr := strings.Join(podIPList, ":"+strconv.Itoa(port)+" ")
+			nodesPortStr = nodesPortStr + ":" + strconv.Itoa(port)
+			nodePortList := strings.Split(nodesPortStr, " ")
+			configIntrospectNodes = append(configIntrospectNodes, nodePortList...)
+		}
+		hostname := podList.Items[idx].Annotations["hostname"]
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectNodes,
+			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
+		if err != nil {
+			return err
+		}
+		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 		var configApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIConfig.Execute(&configApiConfigBuffer, struct {
 			HostIP              string
@@ -209,6 +245,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AAAMode             AAAMode
 			LogLevel            string
 			CAFilePath          string
+			ApiIntrospectPort   string
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -223,6 +260,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AAAMode:             configConfig.AAAMode,
 			LogLevel:            configConfig.LogLevel,
 			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			ApiIntrospectPort:   strconv.Itoa(*configConfig.ApiIntrospectPort),
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
 
@@ -248,35 +286,37 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
-			HostIP              string
-			ApiServerList       string
-			AnalyticsServerList string
-			CassandraServerList string
-			ZookeeperServerList string
-			RabbitmqServerList  string
-			CollectorServerList string
-			RabbitmqUser        string
-			RabbitmqPassword    string
-			RabbitmqVhost       string
-			LogLevel            string
-			FabricMgmtIP        string
-			CAFilePath          string
-			DMRunMode           string
+			HostIP                      string
+			ApiServerList               string
+			AnalyticsServerList         string
+			CassandraServerList         string
+			ZookeeperServerList         string
+			RabbitmqServerList          string
+			CollectorServerList         string
+			RabbitmqUser                string
+			RabbitmqPassword            string
+			RabbitmqVhost               string
+			LogLevel                    string
+			FabricMgmtIP                string
+			CAFilePath                  string
+			DeviceManagerIntrospectPort string
+			DMRunMode                   string
 		}{
-			HostIP:              podList.Items[idx].Status.PodIP,
-			ApiServerList:       apiServerList,
-			AnalyticsServerList: analyticsServerList,
-			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
-			CollectorServerList: collectorServerList,
-			RabbitmqUser:        rabbitmqSecretUser,
-			RabbitmqPassword:    rabbitmqSecretPassword,
-			RabbitmqVhost:       rabbitmqSecretVhost,
-			LogLevel:            configConfig.LogLevel,
-			FabricMgmtIP:        fabricMgmtIP,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
-			DMRunMode:           DMRunModeFull,
+			HostIP:                      podList.Items[idx].Status.PodIP,
+			ApiServerList:               apiServerList,
+			AnalyticsServerList:         analyticsServerList,
+			CassandraServerList:         cassandraNodesInformation.ServerListSpaceSeparated,
+			ZookeeperServerList:         zookeeperNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:          rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
+			CollectorServerList:         collectorServerList,
+			RabbitmqUser:                rabbitmqSecretUser,
+			RabbitmqPassword:            rabbitmqSecretPassword,
+			RabbitmqVhost:               rabbitmqSecretVhost,
+			LogLevel:                    configConfig.LogLevel,
+			FabricMgmtIP:                fabricMgmtIP,
+			CAFilePath:                  cacertificates.CsrSignerCAFilepath,
+			DeviceManagerIntrospectPort: strconv.Itoa(*configConfig.DeviceManagerIntrospectPort),
+			DMRunMode:                   DMRunModeFull,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
@@ -314,96 +354,102 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configSchematransformerConfigBuffer bytes.Buffer
 		configtemplates.ConfigSchematransformerConfig.Execute(&configSchematransformerConfigBuffer, struct {
-			HostIP              string
-			ApiServerList       string
-			AnalyticsServerList string
-			CassandraServerList string
-			ZookeeperServerList string
-			RabbitmqServerList  string
-			CollectorServerList string
-			RabbitmqUser        string
-			RabbitmqPassword    string
-			RabbitmqVhost       string
-			LogLevel            string
-			CAFilePath          string
+			HostIP               string
+			ApiServerList        string
+			AnalyticsServerList  string
+			CassandraServerList  string
+			ZookeeperServerList  string
+			RabbitmqServerList   string
+			CollectorServerList  string
+			RabbitmqUser         string
+			RabbitmqPassword     string
+			RabbitmqVhost        string
+			LogLevel             string
+			CAFilePath           string
+			SchemaIntrospectPort string
 		}{
-			HostIP:              podList.Items[idx].Status.PodIP,
-			ApiServerList:       apiServerList,
-			AnalyticsServerList: analyticsServerList,
-			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
-			CollectorServerList: collectorServerList,
-			RabbitmqUser:        rabbitmqSecretUser,
-			RabbitmqPassword:    rabbitmqSecretPassword,
-			RabbitmqVhost:       rabbitmqSecretVhost,
-			LogLevel:            configConfig.LogLevel,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			HostIP:               podList.Items[idx].Status.PodIP,
+			ApiServerList:        apiServerList,
+			AnalyticsServerList:  analyticsServerList,
+			CassandraServerList:  cassandraNodesInformation.ServerListSpaceSeparated,
+			ZookeeperServerList:  zookeeperNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:   rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
+			CollectorServerList:  collectorServerList,
+			RabbitmqUser:         rabbitmqSecretUser,
+			RabbitmqPassword:     rabbitmqSecretPassword,
+			RabbitmqVhost:        rabbitmqSecretVhost,
+			LogLevel:             configConfig.LogLevel,
+			CAFilePath:           cacertificates.CsrSignerCAFilepath,
+			SchemaIntrospectPort: strconv.Itoa(*configConfig.SchemaIntrospectPort),
 		})
 		data["schematransformer."+podList.Items[idx].Status.PodIP] = configSchematransformerConfigBuffer.String()
 
 		var configServicemonitorConfigBuffer bytes.Buffer
 		configtemplates.ConfigServicemonitorConfig.Execute(&configServicemonitorConfigBuffer, struct {
-			HostIP              string
-			ApiServerList       string
-			AnalyticsServerList string
-			CassandraServerList string
-			ZookeeperServerList string
-			RabbitmqServerList  string
-			CollectorServerList string
-			RabbitmqUser        string
-			RabbitmqPassword    string
-			RabbitmqVhost       string
-			AAAMode             AAAMode
-			LogLevel            string
-			CAFilePath          string
+			HostIP                   string
+			ApiServerList            string
+			AnalyticsServerList      string
+			CassandraServerList      string
+			ZookeeperServerList      string
+			RabbitmqServerList       string
+			CollectorServerList      string
+			RabbitmqUser             string
+			RabbitmqPassword         string
+			RabbitmqVhost            string
+			AAAMode                  AAAMode
+			LogLevel                 string
+			CAFilePath               string
+			SvcMonitorIntrospectPort string
 		}{
-			HostIP:              podList.Items[idx].Status.PodIP,
-			ApiServerList:       apiServerList,
-			AnalyticsServerList: analyticsServerSpaceSeparatedList,
-			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
-			CollectorServerList: collectorServerList,
-			RabbitmqUser:        rabbitmqSecretUser,
-			RabbitmqPassword:    rabbitmqSecretPassword,
-			RabbitmqVhost:       rabbitmqSecretVhost,
-			AAAMode:             configConfig.AAAMode,
-			LogLevel:            configConfig.LogLevel,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			HostIP:                   podList.Items[idx].Status.PodIP,
+			ApiServerList:            apiServerList,
+			AnalyticsServerList:      analyticsServerSpaceSeparatedList,
+			CassandraServerList:      cassandraNodesInformation.ServerListSpaceSeparated,
+			ZookeeperServerList:      zookeeperNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:       rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
+			CollectorServerList:      collectorServerList,
+			RabbitmqUser:             rabbitmqSecretUser,
+			RabbitmqPassword:         rabbitmqSecretPassword,
+			RabbitmqVhost:            rabbitmqSecretVhost,
+			AAAMode:                  configConfig.AAAMode,
+			LogLevel:                 configConfig.LogLevel,
+			CAFilePath:               cacertificates.CsrSignerCAFilepath,
+			SvcMonitorIntrospectPort: strconv.Itoa(*configConfig.SvcMonitorIntrospectPort),
 		})
 		data["servicemonitor."+podList.Items[idx].Status.PodIP] = configServicemonitorConfigBuffer.String()
 
 		var configAnalyticsapiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAnalyticsapiConfig.Execute(&configAnalyticsapiConfigBuffer, struct {
-			HostIP              string
-			ApiServerList       string
-			AnalyticsServerList string
-			CassandraServerList string
-			ZookeeperServerList string
-			RabbitmqServerList  string
-			CollectorServerList string
-			RedisServerList     string
-			RabbitmqUser        string
-			RabbitmqPassword    string
-			RabbitmqVhost       string
-			AuthMode            string
-			AAAMode             AAAMode
-			CAFilePath          string
+			HostIP                     string
+			ApiServerList              string
+			AnalyticsServerList        string
+			CassandraServerList        string
+			ZookeeperServerList        string
+			RabbitmqServerList         string
+			CollectorServerList        string
+			RedisServerList            string
+			RabbitmqUser               string
+			RabbitmqPassword           string
+			RabbitmqVhost              string
+			AuthMode                   string
+			AAAMode                    AAAMode
+			CAFilePath                 string
+			AnalyticsApiIntrospectPort string
 		}{
-			HostIP:              podList.Items[idx].Status.PodIP,
-			ApiServerList:       apiServerSpaceSeparatedList,
-			AnalyticsServerList: analyticsServerSpaceSeparatedList,
-			CassandraServerList: cassandraNodesInformation.ServerListSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListSpaceSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
-			CollectorServerList: collectorServerList,
-			RedisServerList:     redisServerSpaceSeparatedList,
-			RabbitmqUser:        rabbitmqSecretUser,
-			RabbitmqPassword:    rabbitmqSecretPassword,
-			RabbitmqVhost:       rabbitmqSecretVhost,
-			AAAMode:             configConfig.AAAMode,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			HostIP:                     podList.Items[idx].Status.PodIP,
+			ApiServerList:              apiServerSpaceSeparatedList,
+			AnalyticsServerList:        analyticsServerSpaceSeparatedList,
+			CassandraServerList:        cassandraNodesInformation.ServerListSpaceSeparated,
+			ZookeeperServerList:        zookeeperNodesInformation.ServerListSpaceSeparated,
+			RabbitmqServerList:         rabbitmqNodesInformation.ServerListCommaSeparatedSSL,
+			CollectorServerList:        collectorServerList,
+			RedisServerList:            redisServerSpaceSeparatedList,
+			RabbitmqUser:               rabbitmqSecretUser,
+			RabbitmqPassword:           rabbitmqSecretPassword,
+			RabbitmqVhost:              rabbitmqSecretVhost,
+			AAAMode:                    configConfig.AAAMode,
+			CAFilePath:                 cacertificates.CsrSignerCAFilepath,
+			AnalyticsApiIntrospectPort: strconv.Itoa(*configConfig.AnalyticsApiIntrospectPort),
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
 		/*
@@ -413,32 +459,33 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 				return err
 			}
 		*/
-		hostname := podList.Items[idx].Annotations["hostname"]
 		var configCollectorConfigBuffer bytes.Buffer
 		configtemplates.ConfigCollectorConfig.Execute(&configCollectorConfigBuffer, struct {
-			Hostname            string
-			HostIP              string
-			ApiServerList       string
-			CassandraServerList string
-			ZookeeperServerList string
-			RabbitmqServerList  string
-			RabbitmqUser        string
-			RabbitmqPassword    string
-			RabbitmqVhost       string
-			LogLevel            string
-			CAFilePath          string
+			Hostname                string
+			HostIP                  string
+			ApiServerList           string
+			CassandraServerList     string
+			ZookeeperServerList     string
+			RabbitmqServerList      string
+			RabbitmqUser            string
+			RabbitmqPassword        string
+			RabbitmqVhost           string
+			LogLevel                string
+			CAFilePath              string
+			CollectorIntrospectPort string
 		}{
-			Hostname:            hostname,
-			HostIP:              podList.Items[idx].Status.PodIP,
-			ApiServerList:       apiServerSpaceSeparatedList,
-			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
-			RabbitmqUser:        rabbitmqSecretUser,
-			RabbitmqPassword:    rabbitmqSecretPassword,
-			RabbitmqVhost:       rabbitmqSecretVhost,
-			LogLevel:            configConfig.LogLevel,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			Hostname:                hostname,
+			HostIP:                  podList.Items[idx].Status.PodIP,
+			ApiServerList:           apiServerSpaceSeparatedList,
+			CassandraServerList:     cassandraNodesInformation.ServerListCQLSpaceSeparated,
+			ZookeeperServerList:     zookeeperNodesInformation.ServerListCommaSeparated,
+			RabbitmqServerList:      rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
+			RabbitmqUser:            rabbitmqSecretUser,
+			RabbitmqPassword:        rabbitmqSecretPassword,
+			RabbitmqVhost:           rabbitmqSecretVhost,
+			LogLevel:                configConfig.LogLevel,
+			CAFilePath:              cacertificates.CsrSignerCAFilepath,
+			CollectorIntrospectPort: strconv.Itoa(*configConfig.CollectorIntrospectPort),
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
@@ -740,6 +787,54 @@ func (c *Config) ConfigurationParameters() interface{} {
 		redisPort = RedisServerPort
 	}
 	configConfiguration.RedisPort = &redisPort
+
+	var apiIntrospectPort int
+	if c.Spec.ServiceConfiguration.ApiIntrospectPort != nil {
+		apiIntrospectPort = *c.Spec.ServiceConfiguration.ApiIntrospectPort
+	} else {
+		apiIntrospectPort = ConfigApiIntrospectPort
+	}
+	configConfiguration.ApiIntrospectPort = &apiIntrospectPort
+
+	var schemaIntrospectPort int
+	if c.Spec.ServiceConfiguration.SchemaIntrospectPort != nil {
+		schemaIntrospectPort = *c.Spec.ServiceConfiguration.SchemaIntrospectPort
+	} else {
+		schemaIntrospectPort = ConfigSchemaIntrospectPort
+	}
+	configConfiguration.SchemaIntrospectPort = &schemaIntrospectPort
+
+	var deviceManagerIntrospectPort int
+	if c.Spec.ServiceConfiguration.DeviceManagerIntrospectPort != nil {
+		deviceManagerIntrospectPort = *c.Spec.ServiceConfiguration.DeviceManagerIntrospectPort
+	} else {
+		deviceManagerIntrospectPort = ConfigDeviceManagerIntrospectPort
+	}
+	configConfiguration.DeviceManagerIntrospectPort = &deviceManagerIntrospectPort
+
+	var svcMonitorIntrospectPort int
+	if c.Spec.ServiceConfiguration.SvcMonitorIntrospectPort != nil {
+		svcMonitorIntrospectPort = *c.Spec.ServiceConfiguration.SvcMonitorIntrospectPort
+	} else {
+		svcMonitorIntrospectPort = ConfigSvcMonitorIntrospectPort
+	}
+	configConfiguration.SvcMonitorIntrospectPort = &svcMonitorIntrospectPort
+
+	var analyticsApiIntrospectPort int
+	if c.Spec.ServiceConfiguration.AnalyticsApiIntrospectPort != nil {
+		analyticsApiIntrospectPort = *c.Spec.ServiceConfiguration.AnalyticsApiIntrospectPort
+	} else {
+		analyticsApiIntrospectPort = AnalyticsApiIntrospectPort
+	}
+	configConfiguration.AnalyticsApiIntrospectPort = &analyticsApiIntrospectPort
+
+	var collectorIntrospectPort int
+	if c.Spec.ServiceConfiguration.CollectorIntrospectPort != nil {
+		collectorIntrospectPort = *c.Spec.ServiceConfiguration.CollectorIntrospectPort
+	} else {
+		collectorIntrospectPort = CollectorIntrospectPort
+	}
+	configConfiguration.CollectorIntrospectPort = &collectorIntrospectPort
 
 	if c.Spec.ServiceConfiguration.NodeManager != nil {
 		configConfiguration.NodeManager = c.Spec.ServiceConfiguration.NodeManager

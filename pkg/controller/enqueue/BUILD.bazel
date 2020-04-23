@@ -29,8 +29,8 @@ go_test(
     srcs = [
         "enqueue_request_for_object_by_owner_test.go",
         "enqueue_request_for_object_group_kind_test.go",
-        "enqueue_test.go",
-    ],
+        "enqueue_request_for_owner_group_kind_test.go",
+    ]
     embed = [":go_default_library"],
     deps = [
         "@com_github_stretchr_testify//assert:go_default_library",
