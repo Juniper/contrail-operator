@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUntils(t *testing.T){
+func TestUtils(t *testing.T){
 	t.Run("testing utils with WebuiGroupKind", func(t *testing.T){
         expected := "Webui.contrail.juniper.net"
 		got := tm.WebuiGroupKind()
