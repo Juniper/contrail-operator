@@ -231,10 +231,6 @@ spec:
         - effect: NoExecute
           operator: Exists
       volumes:
-        - persistentVolumeClaim: {}
-          name: tftp
-        - persistentVolumeClaim: {}
-          name: dnsmasq
         - hostPath:
             path: /var/log/contrail/config
             type: ""
@@ -270,7 +266,15 @@ spec:
                 apiVersion: v1
                 fieldPath: metadata.labels
               path: pod_labelsx
-          name: status`
+          name: status
+  volumeClaimTemplates:
+  - metadata:
+      name: config-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1G`
 
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}

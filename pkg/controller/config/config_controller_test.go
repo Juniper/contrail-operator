@@ -2,6 +2,8 @@ package config
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestConfigResourceHandler(t *testing.T) {
@@ -267,6 +268,8 @@ func newZookeeper() *contrail.Zookeeper {
 				Containers: map[string]*contrail.Container{
 					"init":      {Image: "python:alpine"},
 					"zookeeper": {Image: "contrail-controller-zookeeper"},
+					"init":      &contrail.Container{Image: "python:alpine"},
+					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -366,8 +369,12 @@ func testcase5() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
-	cfg.Spec.ServiceConfiguration.Storage.Path = "my-storage-path"
-	cfg.Spec.ServiceConfiguration.Storage.Size = "1G"
+	var storageMap = make(map[string]contrail.Storage)
+	storageMap["my-storage-path"] = contrail.Storage{
+		Path: "my-storage-path",
+		Size: "1G",
+	}
+	cfg.Spec.ServiceConfiguration.Storages = storageMap
 	cfg.Spec.CommonConfiguration.NodeSelector = map[string]string{
 		"selector1": "1",
 	}
