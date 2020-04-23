@@ -265,8 +265,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	configDefaultConfigurationInterface := config.ConfigurationParameters()
-	configDefaultConfiguration := configDefaultConfigurationInterface.(v1alpha1.ConfigConfiguration)
+	configDefaultConfiguration := config.ConfigurationParameters()
 	var persistentVolumeClaimList []corev1.PersistentVolumeClaim
 	for storageName, storage := range configDefaultConfiguration.Storages {
 		storageResource := corev1.ResourceStorage

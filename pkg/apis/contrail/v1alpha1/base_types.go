@@ -1090,8 +1090,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		for _, ip := range configList.Items[0].Status.Nodes {
 			configNodes = append(configNodes, ip)
 		}
-		configConfigInterface := configList.Items[0].ConfigurationParameters()
-		configConfig := configConfigInterface.(ConfigConfiguration)
+		configConfig := configList.Items[0].ConfigurationParameters()
 		authMode = configConfig.AuthMode
 		apiServerPort = strconv.Itoa(*configConfig.APIPort)
 		analyticsServerPort = strconv.Itoa(*configConfig.AnalyticsPort)
