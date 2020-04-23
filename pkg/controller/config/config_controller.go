@@ -2,8 +2,8 @@ package config
 
 import (
 	"context"
-	"os"
 	"reflect"
+	"strconv"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
@@ -13,11 +13,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -26,6 +28,8 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -261,31 +265,35 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	for _, vol := range statefulSet.Spec.Template.Spec.Volumes {
-		pvc := vol.VolumeSource.PersistentVolumeClaim
-		if pvc == nil {
-			continue
-		}
-		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
-		claim := r.claims.New(claimName, config)
-		if config.Spec.ServiceConfiguration.Storage.Path != "" {
-			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
-			claim.SetStoragePath(path)
-		}
-		if config.Spec.ServiceConfiguration.Storage.Size != "" {
-			var quantity resource.Quantity
-			quantity, err = config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			claim.SetStorageSize(quantity)
-		}
-		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
-		if err = claim.EnsureExists(); err != nil {
+	configDefaultConfiguration := config.ConfigurationParameters()
+	var persistentVolumeClaimList []corev1.PersistentVolumeClaim
+	for storageName, storage := range configDefaultConfiguration.Storages {
+		storageResource := corev1.ResourceStorage
+		diskSize, err := resource.ParseQuantity(storage.Size)
+		if err != nil {
 			return reconcile.Result{}, err
 		}
+		storageClassName := "local-storage"
+		pvc := corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      storageName,
+				Namespace: request.Namespace,
+				Labels:    map[string]string{"contrail_manager": instanceType, instanceType: request.Name},
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				StorageClassName: &storageClassName,
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{storageResource: diskSize},
+				},
+			},
+		}
+		persistentVolumeClaimList = append(persistentVolumeClaimList, pvc)
+
 	}
+	statefulSet.Spec.VolumeClaimTemplates = persistentVolumeClaimList
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	config.AddVolumesToIntendedSTS(statefulSet, map[string]string{
@@ -322,6 +330,36 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	statefulSet.Spec.Template.Spec.ServiceAccountName = "serviceaccount-statusmonitor-config"
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "In",
+						Values:   []string{request.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
+
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "In",
+						Values:   []string{request.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
+
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 
 		switch container.Name {
@@ -624,7 +662,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
-
 			}
 		case "statusmonitor":
 			command := []string{"sh", "-c",
@@ -675,12 +712,124 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
+	var initVolumeList []corev1.Volume
+	for storageName, storage := range configDefaultConfiguration.Storages {
+		initHostPathType := corev1.HostPathType("DirectoryOrCreate")
+		initHostPathSource := &corev1.HostPathVolumeSource{
+			Path: storage.Path,
+			Type: &initHostPathType,
+		}
+		initVolume := corev1.Volume{
+			Name: request.Name + "-" + instanceType + "-" + storageName + "-init",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: initHostPathSource,
+			},
+		}
+		initVolumeList = append(initVolumeList, initVolume)
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
+	}
+
 	// Configure InitContainers
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
 		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = config.Spec.ServiceConfiguration.Containers[container.Name].Image
 		if config.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = config.Spec.ServiceConfiguration.Containers[container.Name].Command
 		}
+		for _, volume := range initVolumeList {
+			volumeMount := corev1.VolumeMount{
+				Name:      volume.Name,
+				MountPath: volume.VolumeSource.HostPath.Path,
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
+	}
+
+	volumeBindingMode := storagev1.VolumeBindingMode("WaitForFirstConsumer")
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "local-storage",
+			Namespace: config.Namespace,
+		},
+		Provisioner:       "kubernetes.io/no-provisioner",
+		VolumeBindingMode: &volumeBindingMode,
+	}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: storageClass.Name}, storageClass)
+	if err != nil && errors.IsNotFound(err) {
+		if err = controllerutil.SetControllerReference(config, storageClass, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		err = r.Client.Create(context.TODO(), storageClass)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
+	volumeMode := corev1.PersistentVolumeMode("Filesystem")
+	nodeSelectorMatchExpressions := []corev1.NodeSelectorRequirement{}
+	for k, v := range config.Spec.CommonConfiguration.NodeSelector {
+		valueList := []string{v}
+		expression := corev1.NodeSelectorRequirement{
+			Key:      k,
+			Operator: corev1.NodeSelectorOperator("In"),
+			Values:   valueList,
+		}
+		nodeSelectorMatchExpressions = append(nodeSelectorMatchExpressions, expression)
+	}
+	nodeSelectorTerm := corev1.NodeSelector{
+		NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+			MatchExpressions: nodeSelectorMatchExpressions,
+		}},
+	}
+	volumeNodeAffinity := corev1.VolumeNodeAffinity{
+		Required: &nodeSelectorTerm,
+	}
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	storageCount := 1
+	for _, storage := range configDefaultConfiguration.Storages {
+		localVolumeSource := corev1.LocalVolumeSource{
+			Path: storage.Path,
+		}
+		diskSize, err := resource.ParseQuantity(storage.Size)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		replicasInt := int(*config.Spec.CommonConfiguration.Replicas)
+		for i := 0; i < replicasInt; i++ {
+			pv := &corev1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      config.Name + "-pv-" + strconv.Itoa(i) + "-" + strconv.Itoa(storageCount),
+					Namespace: config.Namespace,
+				},
+				Spec: corev1.PersistentVolumeSpec{
+					Capacity:   corev1.ResourceList{corev1.ResourceStorage: diskSize},
+					VolumeMode: &volumeMode,
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						"ReadWriteOnce",
+					},
+					PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimPolicy("Delete"),
+					StorageClassName:              "local-storage",
+					NodeAffinity:                  &volumeNodeAffinity,
+					PersistentVolumeSource: corev1.PersistentVolumeSource{
+						Local: &localVolumeSource,
+					},
+				},
+			}
+			err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pv.Name, Namespace: request.Namespace}, pv)
+			if err != nil && errors.IsNotFound(err) {
+				if err = controllerutil.SetControllerReference(config, pv, r.Scheme); err != nil {
+					return reconcile.Result{}, err
+				}
+				if err = r.Client.Create(context.TODO(), pv); err != nil && !errors.IsAlreadyExists(err) {
+					return reconcile.Result{}, err
+				}
+			}
+		}
+		storageCount++
 	}
 
 	configChanged := false
@@ -723,6 +872,21 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 
 		if err = config.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
+		}
+		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
+		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
+		pvcList := &corev1.PersistentVolumeClaimList{}
+		err = r.Client.List(context.TODO(), pvcList, listOps)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		for _, pvc := range pvcList.Items {
+			if err = controllerutil.SetControllerReference(config, &pvc, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err = r.Client.Update(context.TODO(), &pvc); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 	}
 

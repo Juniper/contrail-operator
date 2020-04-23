@@ -22,6 +22,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -268,7 +269,20 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err = v1alpha1.CreateAccount("statusmonitor-control", request.Namespace, r.Client, r.Scheme, instance); err != nil {
 		return reconcile.Result{}, err
 	}
-
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "In",
+						Values:   []string{request.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 	statefulSet.Spec.Template.Spec.ServiceAccountName = "serviceaccount-statusmonitor-control"
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "control" {
@@ -304,8 +318,7 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
 		}
 		if container.Name == "statusmonitor" {
-			command := []string{"sh", "-c",
-				"/statusmonitor -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
+			command := []string{"sh", "-c", "/app/statusmonitor/contrail-statusmonitor-image-debug.binary -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
 			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {

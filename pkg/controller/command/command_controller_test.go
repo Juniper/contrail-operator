@@ -659,6 +659,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 					},
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{"command"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					Tolerations: []core.Toleration{
 						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
 						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},

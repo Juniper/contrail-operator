@@ -621,7 +621,13 @@ func (in *ConfigConfiguration) DeepCopyInto(out *ConfigConfiguration) {
 		*out = new(bool)
 		**out = **in
 	}
-	out.Storage = in.Storage
+	if in.Storages != nil {
+		in, out := &in.Storages, &out.Storages
+		*out = make(map[string]Storage, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

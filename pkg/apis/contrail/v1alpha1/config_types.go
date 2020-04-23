@@ -86,7 +86,7 @@ type ConfigConfiguration struct {
 	KeystoneInstance            string                `json:"keystoneInstance,omitempty"`
 	AuthMode                    AuthenticationMode    `json:"authMode,omitempty"`
 	AAAMode                     AAAMode               `json:"aaaMode,omitempty"`
-	Storage                     Storage               `json:"storage,omitempty"`
+	Storages                    map[string]Storage    `json:"storage,omitempty"`
 	FabricMgmtIP                string                `json:"fabricMgmtIP,omitempty"`
 }
 
@@ -176,8 +176,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
 	}
 
-	configConfigInterface := c.ConfigurationParameters()
-	configConfig := configConfigInterface.(ConfigConfiguration)
+	configConfig := c.ConfigurationParameters()
 	if rabbitmqSecretUser == "" {
 		rabbitmqSecretUser = configConfig.RabbitmqUser
 	}
@@ -712,8 +711,7 @@ func (c *Config) WaitForPeerPods(request reconcile.Request, reconcileClient clie
 func (c *Config) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	configConfigInterface := c.ConfigurationParameters()
-	configConfig := configConfigInterface.(ConfigConfiguration)
+	configConfig := c.ConfigurationParameters()
 	c.Status.Ports.APIPort = strconv.Itoa(*configConfig.APIPort)
 	c.Status.Ports.AnalyticsPort = strconv.Itoa(*configConfig.AnalyticsPort)
 	c.Status.Ports.CollectorPort = strconv.Itoa(*configConfig.CollectorPort)
@@ -744,8 +742,8 @@ func (c *Config) IsActive(name string, namespace string, myclient client.Client)
 	return false
 }
 
-func (c *Config) ConfigurationParameters() interface{} {
-	configConfiguration := ConfigConfiguration{}
+func (c *Config) ConfigurationParameters() *ConfigConfiguration {
+	configConfiguration := &ConfigConfiguration{}
 	var apiPort int
 	var analyticsPort int
 	var collectorPort int
@@ -754,6 +752,28 @@ func (c *Config) ConfigurationParameters() interface{} {
 	var rabbitmqPassword string
 	var rabbitmqVhost string
 	var logLevel string
+	var storagesMap = make(map[string]Storage)
+	tftpStorage := Storage{
+		Size: "10M",
+		Path: "/etc/tftp",
+	}
+	dnsmasqStorage := Storage{
+		Size: "10M",
+		Path: "/var/lib/dnsmasq",
+	}
+	if len(c.Spec.ServiceConfiguration.Storages) == 0 {
+		storagesMap["tftp"] = tftpStorage
+		storagesMap["dnsmasq"] = dnsmasqStorage
+		configConfiguration.Storages = storagesMap
+	} else {
+		storagesMap = configConfiguration.Storages
+		if _, ok := storagesMap["tftp"]; !ok {
+			storagesMap["tftp"] = tftpStorage
+		}
+		if _, ok := storagesMap["dnsmasq"]; !ok {
+			storagesMap["dnsmasq"] = dnsmasqStorage
+		}
+	}
 	if c.Spec.ServiceConfiguration.LogLevel != "" {
 		logLevel = c.Spec.ServiceConfiguration.LogLevel
 	} else {

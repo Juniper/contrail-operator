@@ -2,6 +2,8 @@ package config
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
@@ -9,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestConfigResourceHandler(t *testing.T) {
@@ -43,6 +45,7 @@ func TestConfigResourceHandler(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 	t.Run("Create Event", func(t *testing.T) {
 		evc := event.CreateEvent{
 			Meta:   pod,
@@ -111,6 +114,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 
 	tests := []*TestCase{
 		testcase1(),
@@ -273,8 +277,8 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":      {Image: "python:alpine"},
-					"zookeeper": {Image: "contrail-controller-zookeeper"},
+					"init":      &contrail.Container{Image: "python:alpine"},
+					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -374,8 +378,12 @@ func testcase5() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
-	cfg.Spec.ServiceConfiguration.Storage.Path = "my-storage-path"
-	cfg.Spec.ServiceConfiguration.Storage.Size = "1G"
+	var storageMap = make(map[string]contrail.Storage)
+	storageMap["my-storage-path"] = contrail.Storage{
+		Path: "my-storage-path",
+		Size: "1G",
+	}
+	cfg.Spec.ServiceConfiguration.Storages = storageMap
 	cfg.Spec.CommonConfiguration.NodeSelector = map[string]string{
 		"selector1": "1",
 	}
