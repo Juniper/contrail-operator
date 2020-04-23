@@ -8,22 +8,79 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	errorsS "errors"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net"
+	"time"
 
-	"k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+var log = logf.Log.WithName("csr_signer")
+
+var caCert *x509.Certificate
+var CaCertBuff []byte
+var caPrivKey *rsa.PrivateKey
+
+func init() {
+	var err error
+	caPrivKey, err = rsa.GenerateKey(rand.Reader, 2048)
+
+	notBefore := time.Now()
+
+	notAfter := notBefore.Add(365 * 24 * time.Hour)
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+
+	csrTemplate := x509.Certificate{
+		SerialNumber: serialNumber,
+		IsCA:         true,
+		Subject: pkix.Name{
+			CommonName:         "contrail-signer",
+			Country:            []string{"US"},
+			Province:           []string{"CA"},
+			Locality:           []string{"Sunnyvale"},
+			Organization:       []string{"Juniper Networks"},
+			OrganizationalUnit: []string{"Contrail"},
+		},
+		NotBefore: notBefore,
+		NotAfter:  notAfter,
+
+		KeyUsage:       x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:    []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		EmailAddresses: []string{"test@email.com"},
+	}
+
+	cert, err := x509.CreateCertificate(rand.Reader, &csrTemplate, &csrTemplate, caPrivKey.Public(), caPrivKey)
+	if err != nil {
+		fmt.Println(err)
+		panic("fail to create certyficate")
+	}
+	caCert, err = x509.ParseCertificate(cert)
+	if err != nil {
+		panic("fail to parse certyficate")
+	}
+
+	certPrivKeyPEM := new(bytes.Buffer)
+	pem.Encode(certPrivKeyPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	})
+	CaCertBuff, err = ioutil.ReadAll(certPrivKeyPEM)
+
+	fmt.Println(caCert)
+}
 
 // CSRINSecret checks if Certificate is stored in secret
 func CSRINSecret(secret *corev1.Secret, podIP string) bool {
@@ -56,136 +113,24 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 		return err
 	}
 	for _, pod := range podList.Items {
+		if pod.Status.PodIP == "" {
+			return errorsS.New("not pods ip")
+		}
 
 		if hostNetwork {
 			hostname = pod.Spec.NodeName
 		} else {
 			hostname = pod.Spec.Hostname
 		}
-		csrINSecret := CSRINSecret(csrSecret, pod.Status.PodIP)
-		pemINSecret := PEMINSecret(csrSecret, pod.Status.PodIP)
-		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
-		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Created" || signingRequestStatus == "Pending") || !(csrINSecret || pemINSecret) {
-			csrRequest, privateKey, err := generateCsr(pod.Status.PodIP, hostname)
-			if err != nil {
-				return err
-			}
+		if !PEMINSecret(csrSecret, pod.Status.PodIP) {
+
 			if csrSecret.Data == nil {
 				csrSecret.Data = make(map[string][]byte)
 			}
+			csrRequest, privateKey, err := generateCsr(pod.Status.PodIP, hostname)
+			fmt.Println(string(csrRequest))
 			csrSecret.Data["server-key-"+pod.Status.PodIP+".pem"] = privateKey
-			csrSecret.Data["server-"+pod.Status.PodIP+".csr"] = csrRequest
-
-			fmt.Println("Added Certificate and PEM to secret for " + request.Name + " " + pod.Status.PodIP)
-			csr := &v1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					return err
-				}
-				csr := &v1beta1.CertificateSigningRequest{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      request.Name + "-" + pod.Spec.NodeName,
-						Namespace: request.Namespace,
-					},
-					Spec: v1beta1.CertificateSigningRequestSpec{
-						Groups:  []string{"system:authenticated"},
-						Request: csrSecret.Data["server-"+pod.Status.PodIP+".csr"],
-						Usages: []v1beta1.KeyUsage{
-							"digital signature",
-							"key encipherment",
-							"server auth",
-							"client auth",
-						},
-					},
-				}
-				if err = controllerutil.SetControllerReference(object, csr, scheme); err != nil {
-					return err
-				}
-				err = client.Create(context.TODO(), csr)
-				if err != nil {
-					if errors.IsAlreadyExists(err) {
-						return nil
-					}
-					return err
-				}
-
-			}
-			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Created")
-			fmt.Println("Created Certificate for " + request.Name + " " + pod.Status.PodIP)
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				fmt.Println("Failed to update csrSecret after creating Certificate")
-				return err
-			}
-
-		}
-	}
-	csrSecret, err = getSecret(client, request)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		signingRequestStatus := SigningRequestStatus(csrSecret, pod.Status.PodIP)
-		if !(signingRequestStatus == "Approved" || signingRequestStatus == "Pending") {
-			csr := &v1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil && errors.IsNotFound(err) {
-				return err
-			}
-			var conditionType v1beta1.RequestConditionType
-			conditionType = "Approved"
-			csrCondition := v1beta1.CertificateSigningRequestCondition{
-				Type:    conditionType,
-				Reason:  "ContrailApprove",
-				Message: "This Certificate was approved by operator approve.",
-			}
-
-			csr.Status.Conditions = []v1beta1.CertificateSigningRequestCondition{csrCondition}
-			clientset, err := kubernetes.NewForConfig(restConfig)
-			if err != nil {
-				return err
-			}
-			_, err = clientset.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
-			if err != nil {
-				return err
-			}
-			if len(csrSecret.Data) == 0 {
-				return fmt.Errorf("%s", "csrSecret.Data empty")
-			}
-			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Pending")
-			fmt.Println("Sent Approval for " + request.Name + " " + pod.Status.PodIP)
-			err = client.Update(context.TODO(), csrSecret)
-			if err != nil {
-				fmt.Println("Failed to update csrSecret after sending approval")
-				return err
-			}
-
-		}
-	}
-
-	csrSecret, err = getSecret(client, request)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		if !CRTINSecret(csrSecret, pod.Status.PodIP) {
-			csr := &v1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + pod.Spec.NodeName}, csr)
-			if err != nil && errors.IsNotFound(err) {
-				return err
-			}
-			signedRequest := &v1beta1.CertificateSigningRequest{}
-			err = client.Get(context.TODO(), types.NamespacedName{Name: csr.Name, Namespace: csr.Namespace}, signedRequest)
-			if err != nil {
-				return err
-			}
-
-			if signedRequest.Status.Certificate == nil || len(signedRequest.Status.Certificate) == 0 {
-				err = errors.NewGone("csr not sigened yet")
-				return err
-			}
-			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = signedRequest.Status.Certificate
+			csrSecret.Data["server-"+pod.Status.PodIP+".crt"] = csrRequest
 			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Approved")
 			err = client.Update(context.TODO(), csrSecret)
 			if err != nil {
@@ -212,7 +157,13 @@ func generateCsr(ipAddress string, hostname string) ([]byte, []byte, error) {
 		fmt.Println("cannot read certPrivKeyPEM to privateKeyBuffer")
 		return nil, nil, err
 	}
-	csrTemplate := x509.CertificateRequest{
+
+	notBefore := time.Now()
+
+	notAfter := notBefore.Add(364 * 24 * time.Hour)
+
+	csrTemplate := x509.Certificate{
+		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
 			CommonName:         ipAddress,
 			Country:            []string{"US"},
@@ -224,17 +175,29 @@ func generateCsr(ipAddress string, hostname string) ([]byte, []byte, error) {
 		DNSNames:       []string{hostname},
 		EmailAddresses: []string{"test@email.com"},
 		IPAddresses:    []net.IP{net.ParseIP(ipAddress)},
+		NotBefore:      notBefore,
+		NotAfter:       notAfter,
 	}
-	buf := new(bytes.Buffer)
-	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &csrTemplate, certPrivKey)
-	pem.Encode(buf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
-	pemBuf, err := ioutil.ReadAll(buf)
+	csrBytes, err := x509.CreateCertificate(rand.Reader, &csrTemplate, caCert, certPrivKey.Public(), caPrivKey)
+
+	if err != nil {
+		fmt.Println(err)
+		panic("fail to sign cert")
+	}
+
+	certBuff := new(bytes.Buffer)
+	pem.Encode(certBuff, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: csrBytes,
+	})
+	certBytes, err := ioutil.ReadAll(certBuff)
+
 	if err != nil {
 		fmt.Println("cannot read buf to pemBuf")
 		return nil, nil, err
 	}
 
-	return pemBuf, privateKeyBuffer, nil
+	return certBytes, privateKeyBuffer, nil
 }
 
 func getSecret(client client.Client, request reconcile.Request) (*corev1.Secret, error) {

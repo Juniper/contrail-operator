@@ -21,6 +21,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -1586,10 +1587,7 @@ func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := r.csrSignerCa.CACert()
-		if err != nil {
-			return err
-		}
+		csrSignerCAValue := string(certificates.CaCertBuff)
 		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCAFilename: csrSignerCAValue}
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
