@@ -67,6 +67,15 @@ container_push(
     image = ":contrail-statusmonitor-image-debug",
     format = "Docker",
     registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-statusmonitor",
-    tag = "{BUILD_SCM_VERSION}",
+    repository = "eng-prod-237922/contrail-statusmonitor-debug",
+    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
+)
+
+container_push(
+    name = "contrail-statusmonitor-push-debug-latest",
+    image = ":contrail-statusmonitor-image-debug",
+    format = "Docker",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-statusmonitor-debug",
+    tag = "{BUILD_SCM_BRANCH}.latest",
 )
