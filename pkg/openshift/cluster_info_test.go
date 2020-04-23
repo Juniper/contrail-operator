@@ -82,14 +82,6 @@ servingInfo:
   keyFile: /var/serving-cert/tls.key`
 
 func (suite *ClusterInfoSuite) SetupTest() {
-	/*
-			ccv1Data, err := ioutil.ReadFile("test_files/cluster-config-v1.yml")
-			suite.Assert().NoError(err)
-			ccv1DataString := string(ccv1Data)
-				consoleData, err := ioutil.ReadFile("test_files/console-config.yml")
-		suite.Assert().NoError(err)
-		consoleDataString := string(consoleData)
-	*/
 	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfigV1)
 	consoleMap := getConfigMap("console-config", "openshift-console", "console-config.yaml", consoleConfig)
 	fakeClientset := fake.NewSimpleClientset(ccv1Map, consoleMap)
