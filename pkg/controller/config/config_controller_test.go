@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,6 +44,7 @@ func TestConfigResourceHandler(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 	t.Run("Create Event", func(t *testing.T) {
 		evc := event.CreateEvent{
 			Meta:   pod,
@@ -104,6 +106,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 
 	tests := []*TestCase{
 		testcase1(),
