@@ -91,7 +91,7 @@ spec:
             nodeinit:
               image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             statusmonitor:
-              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor-debug:master.latest
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor-debug:svl_artifactory.latest
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
@@ -127,13 +127,13 @@ spec:
           create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
-          replicas: 3
+          replicas: 1
         serviceConfiguration:
           containers:
             init:
               image: python:alpine
             provisioner:
-              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner-debug:master.latest
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner-debug:svl_artifactory.latest
     rabbitmq:
       metadata:
         labels:

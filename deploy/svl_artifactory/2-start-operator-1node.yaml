@@ -41,29 +41,29 @@ spec:
           cassandraInstance: cassandra1
           containers:
             analyticsapi:
-              image: opencontrailnightly/contrail-analytics-api:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-api:2003.latest
             api:
-              image: opencontrailnightly/contrail-controller-config-api:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-api:2003.latest
             collector:
-              image: opencontrailnightly/contrail-analytics-collector:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-collector:2003.latest
             devicemanager:
-              image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:2003.latest
             dnsmasq:
-              image: opencontrailnightly/contrail-external-dnsmasq:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:2003.latest
             init:
               image: python:alpine
             init2:
               image: busybox
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             redis:
               image: redis:4.0.2
             schematransformer:
-              image: opencontrailnightly/contrail-controller-config-schema:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-schema:2003.latest
             servicemonitor:
-              image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:2003.latest
             queryengine:
-              image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-query-engine:2003.latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -81,17 +81,17 @@ spec:
           cassandraInstance: cassandra1
           containers:
             control:
-              image: opencontrailnightly/contrail-controller-control-control:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-control:2003.latest
             dns:
-              image: opencontrailnightly/contrail-controller-control-dns:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-dns:2003.latest
             init:
               image: python:alpine
             named:
-              image: opencontrailnightly/contrail-controller-control-named:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-named:2003.latest
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             statusmonitor:
-              image: kaweue/contrail-statusmonitor:debug
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor-debug:svl_artifactory.latest
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
@@ -109,9 +109,9 @@ spec:
             init:
               image: python:alpine
             kubemanager:
-              image: michaelhenkel/contrail-kubernetes-kube-manager:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:2003.latest
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -133,7 +133,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: kaweue/contrail-provisioner:master.1175
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner-debug:svl_artifactory.latest
     rabbitmq:
       metadata:
         labels:
@@ -166,17 +166,17 @@ spec:
             init:
               image: python:alpine
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             nodemanager:
-              image: opencontrailnightly/contrail-nodemgr:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-nodemgr:2003.latest
             vrouteragent:
-              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-agent:2003.latest
             vroutercni:
               image: michaelhenkel/contrailcni:v0.0.1
             vrouterkernelbuildinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:2003.latest
             vrouterkernelinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2003.latest
           controlInstance: control1
     - metadata:
         labels:
@@ -193,17 +193,17 @@ spec:
             init:
               image: python:alpine
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             nodemanager:
-              image: opencontrailnightly/contrail-nodemgr:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-nodemgr:2003.latest
             vrouteragent:
-              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-agent:2003.latest
             vroutercni:
               image: michaelhenkel/contrailcni:v0.0.1
             vrouterkernelbuildinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:2003.latest
             vrouterkernelinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2003.latest
           controlInstance: control1
     webui:
       metadata:
@@ -221,13 +221,13 @@ spec:
             init:
               image: python:alpine
             nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:2003.latest
             redis:
               image: redis:4.0.2
             webuijob:
-              image: opencontrailnightly/contrail-controller-webui-job:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-webui-job:2003.latest
             webuiweb:
-              image: opencontrailnightly/contrail-controller-webui-web:1910-latest
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-webui-web:2003.latest
     zookeepers:
     - metadata:
         labels:
