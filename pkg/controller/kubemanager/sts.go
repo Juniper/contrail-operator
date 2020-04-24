@@ -30,7 +30,7 @@ spec:
       hostNetwork: true
       initContainers:
         - name: init
-          image: busybox
+          image: busybox:1.31
           command:
             - sh
             - -c

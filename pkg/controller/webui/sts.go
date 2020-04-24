@@ -39,7 +39,7 @@ spec:
             - mountPath: /host/usr/bin
               name: host-usr-local-bin
         - name: init
-          image: busybox
+          image: busybox:1.31
           command:
             - sh
             - -c

@@ -74,7 +74,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: busybox
+        image: busybox:1.31
         imagePullPolicy: Always
         name: init
         resources: {}
@@ -95,7 +95,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: busybox
+        image: busybox:1.31
         imagePullPolicy: Always
         name: init2
         resources: {}

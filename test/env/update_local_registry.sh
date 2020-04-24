@@ -53,7 +53,7 @@ EOF
 while read line; do
 	pull_image docker.io "${line}"
 done <<EOF
-busybox:latest
+busybox:1.31
 cassandra:3.11.4
 cassandra:3.11.3
 zookeeper:3.5.5

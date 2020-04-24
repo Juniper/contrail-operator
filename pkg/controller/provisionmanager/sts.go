@@ -38,7 +38,7 @@ spec:
         env:
         - name: CONTRAIL_STATUS_IMAGE
           value: hub.juniper.net/contrail-nightly/contrail-status:5.2.0-0.740
-        image: busybox
+        image: busybox:1.31
         imagePullPolicy: Always
         name: init
         resources: {}

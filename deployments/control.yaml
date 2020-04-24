@@ -75,7 +75,7 @@ spec:
           preStop:
             exec:
               command:
-              - "python /etc/mycontrail/deprovision.sh.${POD_IP}""
+              - "python /etc/mycontrail/deprovision.sh.${POD_IP}"
         volumeMounts:
         - mountPath: /var/log/contrail
           name: control-logs
@@ -95,7 +95,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: busybox
+        image: busybox:1.31
         imagePullPolicy: Always
         name: init
         volumeMounts:

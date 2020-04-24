@@ -52,7 +52,7 @@ spec:
             init:
               image: python:alpine
             init2:
-              image: busybox
+              image: busybox:1.31
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1912-latest
             redis:

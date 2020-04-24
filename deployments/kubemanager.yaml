@@ -35,7 +35,7 @@ spec:
         env:
         - name: CONTRAIL_STATUS_IMAGE
           value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        image: busybox
+        image: busybox:1.31
         imagePullPolicy: Always
         name: init
         volumeMounts:

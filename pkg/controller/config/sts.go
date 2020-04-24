@@ -24,7 +24,7 @@ spec:
     spec:
       initContainers:
         - name: init
-          image: busybox
+          image: busybox:1.31
           command:
             - sh
             - -c
@@ -37,7 +37,7 @@ spec:
             - mountPath: /tmp/podinfo
               name: status
         - name: init2
-          image: busybox
+          image: busybox:1.31
           command:
             - sh
             - -c
