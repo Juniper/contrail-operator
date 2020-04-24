@@ -492,10 +492,10 @@ func newKollaEnvs(kollaService string) []core.EnvVar {
 func getImage(cr *contrail.Keystone, containerName string) string {
 	var defaultContainersImages = map[string]string{
 		"keystoneDbInit":      "localhost:5000/postgresql-client",
-		"keystoneInit":        "localhost:5000/centos-binary-keystone:train",
-		"keystone":            "localhost:5000/centos-binary-keystone:train",
-		"keystoneSsh":         "localhost:5000/centos-binary-keystone-ssh:train",
-		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train",
+		"keystoneInit":        "localhost:5000/centos-binary-keystone:train-2005",
+		"keystone":            "localhost:5000/centos-binary-keystone:train-2005",
+		"keystoneSsh":         "localhost:5000/centos-binary-keystone-ssh:train-2005",
+		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train-2005",
 		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
 

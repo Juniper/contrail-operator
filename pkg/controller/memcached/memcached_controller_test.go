@@ -210,7 +210,7 @@ func newExpectedDeployment() *apps.Deployment {
 				Spec: core.PodSpec{
 					Containers: []core.Container{{
 						Name:            "memcached",
-						Image:           "localhost:5000/centos-binary-memcached:train",
+						Image:           "localhost:5000/centos-binary-memcached:train-2005",
 						ImagePullPolicy: core.PullAlways,
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -290,7 +290,7 @@ func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
 			ServiceConfiguration: contrail.MemcachedConfiguration{
-				Container:       contrail.Container{Image: "localhost:5000/centos-binary-memcached:train"},
+				Container:       contrail.Container{Image: "localhost:5000/centos-binary-memcached:train-2005"},
 				ListenPort:      11211,
 				ConnectionLimit: 5000,
 				MaxMemory:       256,
@@ -305,7 +305,7 @@ func newMemcachedCRWithDefaultValues() *contrail.Memcached {
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
 			ServiceConfiguration: contrail.MemcachedConfiguration{
-				Container: contrail.Container{Image: "localhost:5000/centos-binary-memcached:train"},
+				Container: contrail.Container{Image: "localhost:5000/centos-binary-memcached:train-2005"},
 			},
 		},
 	}

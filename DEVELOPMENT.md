@@ -87,7 +87,7 @@ If you add tag other than `latest` to contrail-provisioner, image that is deploy
         serviceConfiguration:
           containers:
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             provisioner:
               image: registry:5000/contrail-provisioner:latest
 

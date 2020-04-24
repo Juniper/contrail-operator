@@ -286,19 +286,19 @@ func (cg *containerGenerator) swiftContainer(name string) core.Container {
 
 func (cg *containerGenerator) getImage(name string) string {
 	var defaultImages = map[string]string{
-		"swift-account-server":       "localhost:5000/centos-binary-swift-account:train",
-		"swift-account-auditor":      "localhost:5000/centos-binary-swift-account:train",
-		"swift-account-replicator":   "localhost:5000/centos-binary-swift-account:train",
-		"swift-account-reaper":       "localhost:5000/centos-binary-swift-account:train",
-		"swift-container-server":     "localhost:5000/centos-binary-swift-container:train",
-		"swift-container-auditor":    "localhost:5000/centos-binary-swift-container:train",
-		"swift-container-replicator": "localhost:5000/centos-binary-swift-container:train",
-		"swift-container-updater":    "localhost:5000/centos-binary-swift-container:train",
-		"swift-object-server":        "localhost:5000/centos-binary-swift-object:train",
-		"swift-object-auditor":       "localhost:5000/centos-binary-swift-object:train",
-		"swift-object-replicator":    "localhost:5000/centos-binary-swift-object:train",
-		"swift-object-updater":       "localhost:5000/centos-binary-swift-object:train",
-		"swift-object-expirer":       "localhost:5000/centos-binary-swift-object-expirer:train",
+		"swift-account-server":       "localhost:5000/centos-binary-swift-account:train-2005",
+		"swift-account-auditor":      "localhost:5000/centos-binary-swift-account:train-2005",
+		"swift-account-replicator":   "localhost:5000/centos-binary-swift-account:train-2005",
+		"swift-account-reaper":       "localhost:5000/centos-binary-swift-account:train-2005",
+		"swift-container-server":     "localhost:5000/centos-binary-swift-container:train-2005",
+		"swift-container-auditor":    "localhost:5000/centos-binary-swift-container:train-2005",
+		"swift-container-replicator": "localhost:5000/centos-binary-swift-container:train-2005",
+		"swift-container-updater":    "localhost:5000/centos-binary-swift-container:train-2005",
+		"swift-object-server":        "localhost:5000/centos-binary-swift-object:train-2005",
+		"swift-object-auditor":       "localhost:5000/centos-binary-swift-object:train-2005",
+		"swift-object-replicator":    "localhost:5000/centos-binary-swift-object:train-2005",
+		"swift-object-updater":       "localhost:5000/centos-binary-swift-object:train-2005",
+		"swift-object-expirer":       "localhost:5000/centos-binary-swift-object-expirer:train-2005",
 	}
 
 	if cg.containersSpec == nil {

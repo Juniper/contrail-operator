@@ -227,13 +227,13 @@ spec:
             keystoneDbInit:
               image: registry:5000/postgresql-client
             keystoneInit:
-              image: registry:5000/centos-binary-keystone:train
+              image: registry:5000/centos-binary-keystone:train-2005
             keystone:
-              image: registry:5000/centos-binary-keystone:train
+              image: registry:5000/centos-binary-keystone:train-2005
             keystoneSsh:
-              image: registry:5000/centos-binary-keystone-ssh:train
+              image: registry:5000/centos-binary-keystone-ssh:train-2005
             keystoneFernet:
-              image: registry:5000/centos-binary-keystone-fernet:train
+              image: registry:5000/centos-binary-keystone-fernet:train-2005
     postgres:
       metadata:
         name: postgres
@@ -250,7 +250,7 @@ spec:
       spec:
         serviceConfiguration:
           container:
-            image: "registry:5000/centos-binary-memcached:train"
+            image: "registry:5000/centos-binary-memcached:train-2005"
     swift:
       metadata:
         name: swift
@@ -259,18 +259,18 @@ spec:
           credentialsSecretName: "swift-credentials-secret"
           containers:
             ring-reconciler:
-              image: registry:5000/centos-source-swift-base:train
+              image: registry:5000/centos-source-swift-base:train-2005
           swiftProxyConfiguration:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
             containers:
               init:
-                image: registry:5000/centos-binary-kolla-toolbox:train
+                image: registry:5000/centos-binary-kolla-toolbox:train-2005
               wait-for-ready-conf:
                   image: registry:5000/busybox:1.31
               api:
-                image: registry:5000/centos-binary-swift-proxy-server:train
+                image: registry:5000/centos-binary-swift-proxy-server:train-2005
           swiftStorageConfiguration:
             accountBindPort: 6001
             containerBindPort: 6002
@@ -278,28 +278,28 @@ spec:
             device: d1
             containers:
               swiftObjectExpirer:
-                image: registry:5000/centos-binary-swift-object-expirer:train
+                image: registry:5000/centos-binary-swift-object-expirer:train-2005
               swiftObjectUpdater:
-                image: registry:5000/centos-binary-swift-object:train
+                image: registry:5000/centos-binary-swift-object:train-2005
               swiftObjectReplicator:
-                image: registry:5000/centos-binary-swift-object:train
+                image: registry:5000/centos-binary-swift-object:train-2005
               swiftObjectAuditor:
-                image: registry:5000/centos-binary-swift-object:train
+                image: registry:5000/centos-binary-swift-object:train-2005
               swiftObjectServer:
-                image: registry:5000/centos-binary-swift-object:train
+                image: registry:5000/centos-binary-swift-object:train-2005
               swiftContainerUpdater:
-                image: registry:5000/centos-binary-swift-container:train
+                image: registry:5000/centos-binary-swift-container:train-2005
               swiftContainerReplicator:
-                image: registry:5000/centos-binary-swift-container:train
+                image: registry:5000/centos-binary-swift-container:train-2005
               swiftContainerAuditor:
-                image: registry:5000/centos-binary-swift-container:train
+                image: registry:5000/centos-binary-swift-container:train-2005
               swiftContainerServer:
-                image: registry:5000/centos-binary-swift-container:train
+                image: registry:5000/centos-binary-swift-container:train-2005
               swiftAccountReaper:
-                image: registry:5000/centos-binary-swift-account:train
+                image: registry:5000/centos-binary-swift-account:train-2005
               swiftAccountReplicator:
-                image: registry:5000/centos-binary-swift-account:train
+                image: registry:5000/centos-binary-swift-account:train-2005
               swiftAccountAuditor:
-                image: registry:5000/centos-binary-swift-account:train
+                image: registry:5000/centos-binary-swift-account:train-2005
               swiftAccountServer:
-                image: registry:5000/centos-binary-swift-account:train
+                image: registry:5000/centos-binary-swift-account:train-2005

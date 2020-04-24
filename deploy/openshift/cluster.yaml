@@ -168,7 +168,7 @@ spec:
       spec:
         serviceConfiguration:
           container:
-            image: kolla/centos-binary-memcached:train
+            image: kolla/centos-binary-memcached:train-2005
     keystone:
       metadata:
         name: keystone
@@ -192,11 +192,11 @@ spec:
             keystoneDbInit:
               image: tmaier/postgresql-client
             keystoneInit:
-              image: kolla/centos-binary-keystone:train
+              image: kolla/centos-binary-keystone:train-2005
             keystone:
-              image: kolla/centos-binary-keystone:train
+              image: kolla/centos-binary-keystone:train-2005
             keystoneSsh:
-              image: kolla/centos-binary-keystone-ssh:train
+              image: kolla/centos-binary-keystone-ssh:train-2005
             keystoneFernet:
-              image: kolla/centos-binary-keystone-fernet:train
+              image: kolla/centos-binary-keystone-fernet:train-2005
 
