@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/job"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/swift/ring"
@@ -357,7 +358,8 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ring
 	}
 
 	for idx, jc := range job.Spec.Template.Spec.Containers {
-		if c, ok := swift.Spec.ServiceConfiguration.Containers[jc.Name]; ok {
+		c := utils.GetContainerFromList(jc.Name, swift.Spec.ServiceConfiguration.Containers)
+		if c != nil {
 			if len(c.Command) > 0 {
 				job.Spec.Template.Spec.Containers[idx].Command = c.Command
 			}

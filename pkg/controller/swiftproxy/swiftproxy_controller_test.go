@@ -408,10 +408,10 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 
 func newSwiftProxyWithCustomImages() runtime.Object {
 	sp := newSwiftProxy(contrail.SwiftProxyStatus{})
-	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"init":                {Image: "image1"},
-		"api":                 {Image: "image2"},
-		"wait-for-ready-conf": {Image: "image3", Command: []string{"cmd"}},
+	sp.Spec.ServiceConfiguration.Containers = []*contrail.Container{
+		{Name: "init", Image: "image1"},
+		{Name: "api", Image: "image2"},
+		{Name: "wait-for-ready-conf", Image: "image3", Command: []string{"cmd"}},
 	}
 
 	return sp

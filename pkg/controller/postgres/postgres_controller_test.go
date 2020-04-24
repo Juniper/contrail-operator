@@ -134,8 +134,8 @@ func TestPostgresController(t *testing.T) {
 				Name:      name.Name,
 			},
 			Spec: contrail.PostgresSpec{
-				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgress"},
+				Containers: []*contrail.Container{
+					{Name: "postgres", Image: "registry:5000/postgress"},
 				},
 			},
 		}

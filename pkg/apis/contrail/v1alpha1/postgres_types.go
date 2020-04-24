@@ -10,9 +10,9 @@ import (
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Containers  map[string]*Container `json:"containers,omitempty"`
-	Storage     Storage               `json:"storage,omitempty"`
-	HostNetwork *bool                 `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
+	Containers  []*Container `json:"containers,omitempty"`
+	Storage     Storage      `json:"storage,omitempty"`
+	HostNetwork *bool        `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
 }
 
 // PostgresStatus defines the observed state of Postgres

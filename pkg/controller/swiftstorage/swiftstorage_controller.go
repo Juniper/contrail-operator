@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
@@ -220,7 +221,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 	return statefulSet, err
 }
 
-func (r *ReconcileSwiftStorage) swiftContainers(containers map[string]*contrail.Container, device string) []core.Container {
+func (r *ReconcileSwiftStorage) swiftContainers(containers []*contrail.Container, device string) []core.Container {
 	cg := containerGenerator{
 		containersSpec: containers,
 		device:         device,
@@ -243,7 +244,7 @@ func (r *ReconcileSwiftStorage) swiftContainers(containers map[string]*contrail.
 }
 
 type containerGenerator struct {
-	containersSpec map[string]*contrail.Container
+	containersSpec []*contrail.Container
 	device         string
 }
 
@@ -306,7 +307,8 @@ func (cg *containerGenerator) getImage(name string) string {
 	}
 
 	camelCaseName := kebabToCamelCase(name)
-	if v, ok := cg.containersSpec[camelCaseName]; ok {
+	v := utils.GetContainerFromList(camelCaseName, cg.containersSpec)
+	if v != nil {
 		return v.Image
 	}
 
@@ -321,7 +323,8 @@ func (cg *containerGenerator) getCommand(name string) []string {
 	}
 
 	camelCaseName := kebabToCamelCase(name)
-	if v, ok := cg.containersSpec[camelCaseName]; ok {
+	v := utils.GetContainerFromList(camelCaseName, cg.containersSpec)
+	if v != nil {
 		if v.Command != nil {
 			return v.Command
 		}

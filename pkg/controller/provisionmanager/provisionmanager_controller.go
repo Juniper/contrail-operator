@@ -268,21 +268,22 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "provisioner" {
-                        command := []string{"sh", "-c",
-                                `/app/contrail-provisioner/contrail-provisioner-image.binary \
-                                  -controlNodes /etc/provision/control/controlnodes.yaml \
-                                  -configNodes /etc/provision/config/confignodes.yaml \
-                                  -analyticsNodes /etc/provision/analytics/analyticsnodes.yaml \
-                                  -vrouterNodes /etc/provision/vrouter/vrouternodes.yaml \
-                                  -databaseNodes /etc/provision/database/databasenodes.yaml \
-                                  -apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml \
-                                  -keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml \
-                                  -mode watch`,
-                        }
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			command := []string{"sh", "-c",
+				`/app/contrail-provisioner/contrail-provisioner-image.binary \
+					-controlNodes /etc/provision/control/controlnodes.yaml \
+					-configNodes /etc/provision/config/confignodes.yaml \
+					-analyticsNodes /etc/provision/analytics/analyticsnodes.yaml \
+					-vrouterNodes /etc/provision/vrouter/vrouternodes.yaml \
+					-databaseNodes /etc/provision/database/databasenodes.yaml \
+					-apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml \
+					-keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml \
+					-mode watch`,
+			}
+			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instanceContainer.Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts) > 0 {
@@ -334,15 +335,16 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		}
 	}
 
 	// Configure InitContainers
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
-		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
-		if instance.Spec.ServiceConfiguration.Containers[container.Name].Command != nil {
-			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+		(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
+		if instanceContainer.Command != nil {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
 	}
 

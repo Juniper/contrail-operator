@@ -2,6 +2,8 @@ package cassandra
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestCassandraResourceHandler(t *testing.T) {
@@ -92,7 +93,7 @@ func TestCassandraResourceHandler(t *testing.T) {
 
 	t.Run("Add controller to Manager", func(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme)
-		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
 		err := Add(mgr)
 		assert.NoError(t, err)
 	})
@@ -108,7 +109,6 @@ func newCassandra() *contrail.Cassandra {
 		Status: contrail.CassandraStatus{Active: &trueVal},
 	}
 }
-
 
 func TestCassandra(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
@@ -149,15 +149,15 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 		},
 		Spec: contrail.CassandraSpec{
 			CommonConfiguration: contrail.CommonConfiguration{
-				Create:   &create,
-				Replicas: &replicas,
+				Create:       &create,
+				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
-				Containers: map[string]*contrail.Container{
-					"cassandra": &contrail.Container{Image: "cassandra:3.5"},
-					"init":      &contrail.Container{Image: "busybox"},
-					"init2":     &contrail.Container{Image: "cassandra:3.5"},
+				Containers: []*contrail.Container{
+					{Name: "cassandra", Image: "cassandra:3.5"},
+					{Name: "init", Image: "busybox"},
+					{Name: "init2", Image: "cassandra:3.5"},
 				},
 				MinHeapSize: "100M",
 				MaxHeapSize: "1G",

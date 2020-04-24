@@ -28,6 +28,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -331,7 +332,11 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	return keystoneServ, err
 }
 
-func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
+func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
+	commandContainer := utils.GetContainerFromList("api", containers)
+	initContainer := utils.GetContainerFromList("init", containers)
+	waitForReadyContainer := utils.GetContainerFromList("wait-for-ready-conf", containers)
+
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -344,8 +349,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
-						Image:           getImage(containers, "api"),
-						Command:         getCommand(containers, "api"),
+						Image:           commandContainer.Image,
+						Command:         commandContainer.Command,
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -374,8 +379,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						{
 							Name:            "wait-for-ready-conf",
 							ImagePullPolicy: core.PullAlways,
-							Image:           getImage(containers, "wait-for-ready-conf"),
-							Command:         getCommand(containers, "wait-for-ready-conf"),
+							Image:           waitForReadyContainer.Image,
+							Command:         waitForReadyContainer.Command,
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "status",
 								MountPath: "/tmp/podinfo",
@@ -384,8 +389,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						{
 							Name:            "command-init",
 							ImagePullPolicy: core.PullAlways,
-							Image:           getImage(containers, "init"),
-							Command:         getCommand(containers, "init"),
+							Image:           initContainer.Image,
+							Command:         initContainer.Command,
 							VolumeMounts: []core.VolumeMount{{
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",

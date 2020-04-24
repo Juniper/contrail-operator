@@ -33,9 +33,9 @@ type ProvisionManagerSpec struct {
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
+	Containers         []*Container `json:"containers,omitempty"`
+	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager

@@ -38,6 +38,7 @@ go_test(
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/controller/mock:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",

@@ -42,18 +42,18 @@ type CassandraSpec struct {
 // CassandraConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type CassandraConfiguration struct {
-	Containers     map[string]*Container `json:"containers,omitempty"`
-	ClusterName    string                `json:"clusterName,omitempty"`
-	ListenAddress  string                `json:"listenAddress,omitempty"`
-	Port           *int                  `json:"port,omitempty"`
-	CqlPort        *int                  `json:"cqlPort,omitempty"`
-	SslStoragePort *int                  `json:"sslStoragePort,omitempty"`
-	StoragePort    *int                  `json:"storagePort,omitempty"`
-	JmxLocalPort   *int                  `json:"jmxLocalPort,omitempty"`
-	MaxHeapSize    string                `json:"maxHeapSize,omitempty"`
-	MinHeapSize    string                `json:"minHeapSize,omitempty"`
-	StartRPC       *bool                 `json:"startRPC,omitempty"`
-	Storage        Storage               `json:"storage,omitempty"`
+	Containers     []*Container `json:"containers,omitempty"`
+	ClusterName    string       `json:"clusterName,omitempty"`
+	ListenAddress  string       `json:"listenAddress,omitempty"`
+	Port           *int         `json:"port,omitempty"`
+	CqlPort        *int         `json:"cqlPort,omitempty"`
+	SslStoragePort *int         `json:"sslStoragePort,omitempty"`
+	StoragePort    *int         `json:"storagePort,omitempty"`
+	JmxLocalPort   *int         `json:"jmxLocalPort,omitempty"`
+	MaxHeapSize    string       `json:"maxHeapSize,omitempty"`
+	MinHeapSize    string       `json:"minHeapSize,omitempty"`
+	StartRPC       *bool        `json:"startRPC,omitempty"`
+	Storage        Storage      `json:"storage,omitempty"`
 }
 
 // CassandraStatus defines the status of the cassandra object.

@@ -55,17 +55,17 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	ControlInstance    string                `json:"controlInstance,omitempty"`
-	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
-	Gateway            string                `json:"gateway,omitempty"`
-	PhysicalInterface  string                `json:"physicalInterface,omitempty"`
-	MetaDataSecret     string                `json:"metaDataSecret,omitempty"`
-	NodeManager        *bool                 `json:"nodeManager,omitempty"`
-	Distribution       *Distribution         `json:"distribution,omitempty"`
-	ServiceAccount     string                `json:"serviceAccount,omitempty"`
-	ClusterRole        string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
+	Containers         []*Container  `json:"containers,omitempty"`
+	ControlInstance    string        `json:"controlInstance,omitempty"`
+	CassandraInstance  string        `json:"cassandraInstance,omitempty"`
+	Gateway            string        `json:"gateway,omitempty"`
+	PhysicalInterface  string        `json:"physicalInterface,omitempty"`
+	MetaDataSecret     string        `json:"metaDataSecret,omitempty"`
+	NodeManager        *bool         `json:"nodeManager,omitempty"`
+	Distribution       *Distribution `json:"distribution,omitempty"`
+	ServiceAccount     string        `json:"serviceAccount,omitempty"`
+	ClusterRole        string        `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string        `json:"clusterRoleBinding,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -172,9 +173,11 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 }
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
+	instanceContainer := utils.GetContainerFromList("memcached", memcachedCR.Spec.ServiceConfiguration.Containers)
+
 	return core.Container{
 		Name:            "memcached",
-		Image:           memcachedCR.Spec.ServiceConfiguration.Container.Image,
+		Image:           instanceContainer.Image,
 		ImagePullPolicy: core.PullAlways,
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",

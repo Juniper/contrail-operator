@@ -398,17 +398,17 @@ func newCommand() *contrail.Command {
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
-				Containers: map[string]*contrail.Container{
-					"init":                {Image: "registry:5000/contrail-command"},
-					"api":                 {Image: "registry:5000/contrail-command"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "registry:5000/contrail-command", Command: []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"}},
+					{Name: "api", Image: "registry:5000/contrail-command", Command: []string{"bash","-c", "/etc/contrail/bootstrap.sh"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox", Command: []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 		},
 	}
 }
-
+//bash -c /etc/contrail/bootstrap.sh
 func newPostgres(active bool) *contrail.Postgres {
 	return &contrail.Postgres{
 		TypeMeta: meta.TypeMeta{
