@@ -25,7 +25,7 @@ spec:
             cassandra:
               image: registry:5000/cassandra:3.11.4
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             init2:
               image: registry:5000/cassandra:3.11.4
     config:
@@ -53,7 +53,7 @@ spec:
             dnsmasq:
               image: registry:5000/contrail-controller-config-dnsmasq:master.1175
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             init2:
               image: registry:5000/busybox:1.31
             nodeinit:
@@ -90,7 +90,7 @@ spec:
             dns:
               image: registry:5000/contrail-controller-control-dns:master.1175
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             named:
               image: registry:5000/contrail-controller-control-named:master.1175
             nodeinit:
@@ -113,7 +113,7 @@ spec:
           keystoneInstance: keystone
           containers:
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             provisioner:
               image: registry:5000/contrail-provisioner:master.1175
     rabbitmq:
@@ -129,7 +129,7 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             rabbitmq:
               image: registry:5000/rabbitmq:3.7.16
     webui:
@@ -147,7 +147,7 @@ spec:
           keystoneInstance: keystone
           containers:
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             nodeinit:
               image: registry:5000/contrail-node-init:master.1175
             redis:
@@ -169,7 +169,7 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: registry:5000/python:alpine
+              image: registry:5000/python:3.8.2-alpine
             zookeeper:
               image: registry:5000/zookeeper:3.5.5
     command:

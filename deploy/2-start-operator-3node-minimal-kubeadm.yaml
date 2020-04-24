@@ -23,7 +23,7 @@ spec:
         serviceConfiguration:
           images:
             cassandra: cassandra:3.11.4
-            init: python:alpine
+            init: python:3.8.2-alpine
     zookeepers:
     - metadata:
         name: zookeeper1
@@ -37,7 +37,7 @@ spec:
         serviceConfiguration:
           images:
             zookeeper: docker.io/zookeeper:3.5.5
-            init: python:alpine
+            init: python:3.8.2-alpine
     rabbitmq:
       metadata:
         name: rabbitmq1
@@ -51,7 +51,7 @@ spec:
         serviceConfiguration:
           images:
             rabbitmq: rabbitmq:3.7.16
-            init: python:alpine
+            init: python:3.8.2-alpine
     config:
       metadata:
         name: config1
@@ -76,7 +76,7 @@ spec:
             nodemanagerconfig: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodemanageranalytics: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
+            init: python:3.8.2-alpine
     kubemanagers:
     - metadata:
         name: kubemanager1
@@ -93,7 +93,7 @@ spec:
           images:
             kubemanager: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:1908.47
             nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
+            init: python:3.8.2-alpine
           useKubeadmConfig: true
           #serviceAccount: contrail-service-account
           #clusterRole: contrail-cluster-role
@@ -127,7 +127,7 @@ spec:
             named: hub.juniper.net/contrail-nightly/contrail-controller-control-named:1908.47
             nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
+            init: python:3.8.2-alpine
     webui:
       metadata:
         name: webui1
@@ -164,7 +164,7 @@ spec:
             vroutercni: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:1908.47
             nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
+            init: python:3.8.2-alpine
     - metadata:
         name: vrouternodes
         labels:
@@ -183,4 +183,4 @@ spec:
             vroutercni: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:1908.47
             nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
-            init: python:alpine
+            init: python:3.8.2-alpine

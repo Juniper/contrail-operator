@@ -290,7 +290,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								"queryengine":       &v1alpha1.Container{Image: "registry:5000/contrail-analytics-query-engine:" + versionMap["config"]},
 								"redis":             &v1alpha1.Container{Image: "registry:5000/redis:4.0.2"},
 								"nodeinit":          &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
-								"init":              &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+								"init":              &v1alpha1.Container{Image: "registry:5000/python:3.8.2-alpine"},
 								"init2":             &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 								"statusmonitor":     &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:latest"},
 							},
@@ -320,7 +320,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								"named":         &v1alpha1.Container{Image: "registry:5000/contrail-controller-control-named:" + versionMap["control"]},
 								"statusmonitor": &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:master-180ab9"},
 								"nodeinit":      &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["control"]},
-								"init":          &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+								"init":          &v1alpha1.Container{Image: "registry:5000/python:3.8.2-alpine"},
 							},
 						},
 					},
@@ -339,7 +339,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
 							Containers: map[string]*v1alpha1.Container{
-								"init":        &v1alpha1.Container{Image: "registry:5000/python:alpine"},
+								"init":        &v1alpha1.Container{Image: "registry:5000/python:3.8.2-alpine"},
 								"provisioner": &v1alpha1.Container{Image: "registry:5000/contrail-provisioner:" + versionMap["contrail-provisioner"]},
 							},
 						},

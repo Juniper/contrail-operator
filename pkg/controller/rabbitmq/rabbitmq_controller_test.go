@@ -90,13 +90,12 @@ func TestRabbitmqResourceHandler(t *testing.T) {
 	})
 
 	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
+		mgr := &mocking.MockManager{Scheme: scheme}
 		reconciler := &mocking.MockReconciler{}
 		err := add(mgr, reconciler)
 		assert.NoError(t, err)
 	})
 }
-
 
 type TestCase struct {
 	name           string
@@ -170,7 +169,7 @@ func newConfigInst() *contrail.Config {
 					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
 					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
 					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
-					"init":              &contrail.Container{Image: "python:alpine"},
+					"init":              &contrail.Container{Image: "python:3.8.2-alpine"},
 					"init2":             &contrail.Container{Image: "busybox"},
 					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
 					"redis":             &contrail.Container{Image: "redis"},
@@ -226,8 +225,8 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"rabbitmq":          &contrail.Container{Image: "contrail-controller-rabbitmq"},
+					"init":     &contrail.Container{Image: "python:3.8.2-alpine"},
+					"rabbitmq": &contrail.Container{Image: "contrail-controller-rabbitmq"},
 				},
 			},
 		},
@@ -312,4 +311,3 @@ func testcase4() *TestCase {
 	}
 	return tc
 }
-

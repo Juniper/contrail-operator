@@ -109,7 +109,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":      &contrail.Container{Image: "python:alpine"},
+					"init":      &contrail.Container{Image: "python:3.8.2-alpine"},
 					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
 				},
 			},

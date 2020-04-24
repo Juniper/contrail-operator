@@ -91,7 +91,7 @@ func TestConfigResourceHandler(t *testing.T) {
 	})
 
 	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
+		mgr := &mocking.MockManager{Scheme: scheme}
 		reconciler := &mocking.MockReconciler{}
 		err := add(mgr, reconciler)
 		assert.NoError(t, err)
@@ -193,7 +193,7 @@ func newConfigInst() *contrail.Config {
 					"collector":            {Image: "contrail-analytics-collector"},
 					"devicemanager":        {Image: "contrail-controller-config-devicemgr"},
 					"dnsmasq":              {Image: "contrail-controller-config-dnsmasq"},
-					"init":                 {Image: "python:alpine"},
+					"init":                 {Image: "python:3.8.2-alpine"},
 					"init2":                {Image: "busybox"},
 					"nodeinit":             {Image: "contrail-node-init"},
 					"redis":                {Image: "redis"},
@@ -273,7 +273,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":      {Image: "python:alpine"},
+					"init":      {Image: "python:3.8.2-alpine"},
 					"zookeeper": {Image: "contrail-controller-zookeeper"},
 				},
 			},
