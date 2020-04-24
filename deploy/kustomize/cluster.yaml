@@ -1,0 +1,304 @@
+---
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Manager
+metadata:
+  name: cluster1
+  namespace: contrail
+spec:
+  commonConfiguration:
+    hostNetwork: true
+    replicas: 1
+  keystoneSecretInstance : cluster1-admin-password
+  services:
+    cassandras:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cassandra1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            cassandra:
+              image: $(DOCKER_REGISTRY)/cassandra:3.11.4
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            init2:
+              image: $(DOCKER_REGISTRY)/cassandra:3.11.4
+    config:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: config1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          keystoneInstance: keystone
+          containers:
+            analyticsapi:
+              image: $(CONTRAIL_REGISTRY)/contrail-analytics-api:$(CONTRAIL_TAG)
+            api:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-config-api:$(CONTRAIL_TAG)
+            collector:
+              image: $(CONTRAIL_REGISTRY)/contrail-analytics-collector:$(CONTRAIL_TAG)
+            devicemanager:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-config-devicemgr:$(CONTRAIL_TAG)
+            dnsmasq:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-config-dnsmasq:$(CONTRAIL_TAG)
+            init:
+              image: $(CONTRAIL_REGISTRY)/python:alpine
+            init2:
+              image: $(DOCKER_REGISTRY)/busybox
+            nodeinit:
+              image: $(CONTRAIL_REGISTRY)/contrail-node-init:$(CONTRAIL_TAG)
+            redis:
+              image: $(DOCKER_REGISTRY)/redis:4.0.2
+            schematransformer:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-config-schema:$(CONTRAIL_TAG)
+            servicemonitor:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-config-svcmonitor:$(CONTRAIL_TAG)
+            queryengine:
+              image: $(CONTRAIL_REGISTRY)/contrail-analytics-query-engine:$(CONTRAIL_TAG)
+            statusmonitor:
+              image: $(OPERATOR_REGISTRY)/contrail-statusmonitor:$(OPERATOR_TAG)
+          zookeeperInstance: zookeeper1
+          authMode: keystone
+    controls:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+          control_role: master
+        name: control1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            control:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-control-control:$(CONTRAIL_TAG)
+            dns:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-control-dns:$(CONTRAIL_TAG)
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            named:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-control-named:$(CONTRAIL_TAG)
+            nodeinit:
+              image: $(CONTRAIL_REGISTRY)/contrail-node-init:$(CONTRAIL_TAG)
+            statusmonitor:
+              image: $(CONTRAIL_REGISTRY)/contrail-statusmonitor:$(CONTRAIL_TAG)
+          zookeeperInstance: zookeeper1
+    provisionManager:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: provmanager1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+          replicas: 1
+        serviceConfiguration:
+          keystoneInstance: keystone
+          containers:
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            provisioner:
+              image: $(OPERATOR_REGISTRY)/contrail-provisioner:$(OPERATOR_TAG)
+    rabbitmq:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: rabbitmq1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            rabbitmq:
+              image: $(DOCKER_REGISTRY)/rabbitmq:3.7
+    webui:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: webui1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          keystoneInstance: keystone
+          containers:
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            nodeinit:
+              image: $(CONTRAIL_REGISTRY)/contrail-node-init:$(CONTRAIL_TAG)
+            redis:
+              image: $(DOCKER_REGISTRY)/redis:4.0.2
+            webuijob:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-webui-job:$(CONTRAIL_TAG)
+            webuiweb:
+              image: $(CONTRAIL_REGISTRY)/contrail-controller-webui-web:$(CONTRAIL_TAG)
+    zookeepers:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: zookeeper1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            init:
+              image: $(DOCKER_REGISTRY)/python:alpine
+            zookeeper:
+              image: $(DOCKER_REGISTRY)/zookeeper:3.5.5
+    command:
+      metadata:
+        name: command
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          hostNetwork: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          configAPIURL: https://kind-control-plane:8082
+          telemetryURL: https://kind-control-plane:8081
+          postgresInstance: postgres
+          swiftInstance: swift
+          swiftProxyPort: 5080
+          keystonePort: 5555
+          keystoneInstance: keystone
+          containers:
+            api:
+              image: $(CONTRAIL_REGISTRY)/contrail-command:$(CONTRAIL_TAG)
+            init:
+              image: $(CONTRAIL_REGISTRY)/contrail-command:$(CONTRAIL_TAG)
+            wait-for-ready-conf:
+              image: $(DOCKER_REGISTRY)/busybox
+    keystone:
+      metadata:
+        name: keystone
+      spec:
+        commonConfiguration:
+          activate: true
+          create: true
+          hostNetwork: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          memcachedInstance: "memcached"
+          postgresInstance: postgres
+          listenPort: 5555
+          containers:
+            wait-for-ready-conf:
+              image: $(DOCKER_REGISTRY)/busybox
+            keystoneDbInit:
+              image: $(DOCKER_REGISTRY)/postgresql-client
+            keystoneInit:
+              image: $(KOLLA_REGISTRY)/centos-binary-keystone:$(KOLLA_TAG)
+            keystone:
+              image: $(KOLLA_REGISTRY)/centos-binary-keystone:$(KOLLA_TAG)
+            keystoneSsh:
+              image: $(KOLLA_REGISTRY)/centos-binary-keystone-ssh:$(KOLLA_TAG)
+            keystoneFernet:
+              image: $(KOLLA_REGISTRY)/centos-binary-keystone-fernet:$(KOLLA_TAG)
+    postgres:
+      metadata:
+        name: postgres
+      spec:
+        containers:
+          postgres:
+            image: $(DOCKER_REGISTRY)/postgres
+          wait-for-ready-conf:
+            image: $(DOCKER_REGISTRY)/busybox
+    memcached:
+      metadata:
+        name: memcached
+        namespace: contrail
+      spec:
+        serviceConfiguration:
+          container:
+            image: $(KOLLA_REGISTRY)/centos-binary-memcached:$(KOLLA_TAG)
+    swift:
+      metadata:
+        name: swift
+      spec:
+        serviceConfiguration:
+          credentialsSecretName: "swift-credentials-secret"
+          containers:
+            ring-reconciler:
+                    image: $(KOLLA_REGISTRY)/centos-source-swift-base:$(KOLLA_TAG)
+          swiftProxyConfiguration:
+            memcachedInstance: "memcached"
+            keystoneInstance: "keystone"
+            listenPort: 5080
+            containers:
+              init:
+                image: $(KOLLA_REGISTRY)/centos-binary-kolla-toolbox:$(KOLLA_TAG)
+              wait-for-ready-conf:
+                image: $(DOCKER_REGISTRY)/busybox
+              api:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-proxy-server:$(KOLLA_TAG)
+          swiftStorageConfiguration:
+            accountBindPort: 6001
+            containerBindPort: 6002
+            objectBindPort: 6000
+            device: d1
+            containers:
+              swiftObjectExpirer:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-object-expirer:$(KOLLA_TAG)
+              swiftObjectUpdater:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-object:$(KOLLA_TAG)
+              swiftObjectReplicator:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-object:$(KOLLA_TAG)
+              swiftObjectAuditor:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-object:$(KOLLA_TAG)
+              swiftObjectServer:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-object:$(KOLLA_TAG)
+              swiftContainerUpdater:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-container:$(KOLLA_TAG)
+              swiftContainerReplicator:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-container:$(KOLLA_TAG)
+              swiftContainerAuditor:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-container:$(KOLLA_TAG)
+              swiftContainerServer:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-container:$(KOLLA_TAG)
+              swiftAccountReaper:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-account:$(KOLLA_TAG)
+              swiftAccountReplicator:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-account:$(KOLLA_TAG)
+              swiftAccountAuditor:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-account:$(KOLLA_TAG)
+              swiftAccountServer:
+                image: $(KOLLA_REGISTRY)/centos-binary-swift-account:$(KOLLA_TAG)
