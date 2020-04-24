@@ -1,10 +1,13 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
-    srcs = ["main.go", "config_status_monitor.go"],
+    srcs = [
+        "config_status_monitor.go",
+        "main.go",
+    ],
     importpath = "github.com/Juniper/contrail-operator/statusmonitor",
     visibility = ["//visibility:private"],
     deps = [
@@ -67,6 +70,31 @@ container_push(
     image = ":contrail-statusmonitor-image-debug",
     format = "Docker",
     registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-statusmonitor",
-    tag = "{BUILD_SCM_VERSION}",
+    repository = "eng-prod-237922/contrail-statusmonitor-debug",
+    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
+)
+
+container_push(
+    name = "contrail-statusmonitor-push-debug-latest",
+    image = ":contrail-statusmonitor-image-debug",
+    format = "Docker",
+    registry = "gcr.io",
+    repository = "eng-prod-237922/contrail-statusmonitor-debug",
+    tag = "{BUILD_SCM_BRANCH}.latest",
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "config_status_monitor_test.go",
+        "main_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_client_go//kubernetes/fake:go_default_library",
+    ],
 )
