@@ -118,7 +118,7 @@ spec:
             init:
               image: python:3.8.2-alpine
             rabbitmq:
-              image: rabbitmq:3.7
+              image: rabbitmq:3.7.16
     webui:
       metadata:
         labels:

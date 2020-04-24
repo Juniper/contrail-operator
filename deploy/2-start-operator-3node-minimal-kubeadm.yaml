@@ -22,7 +22,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           images:
-            cassandra: cassandra:3.11.3
+            cassandra: cassandra:3.11.4
             init: python:alpine
     zookeepers:
     - metadata:
@@ -36,7 +36,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           images:
-            zookeeper: docker.io/zookeeper:3.5.4-beta
+            zookeeper: docker.io/zookeeper:3.5.5
             init: python:alpine
     rabbitmq:
       metadata:
@@ -50,7 +50,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           images:
-            rabbitmq: rabbitmq:3.7.17
+            rabbitmq: rabbitmq:3.7.16
             init: python:alpine
     config:
       metadata:

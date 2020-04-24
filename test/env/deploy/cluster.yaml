@@ -131,7 +131,7 @@ spec:
             init:
               image: registry:5000/python:alpine
             rabbitmq:
-              image: registry:5000/rabbitmq:3.7
+              image: registry:5000/rabbitmq:3.7.16
     webui:
       metadata:
         labels:

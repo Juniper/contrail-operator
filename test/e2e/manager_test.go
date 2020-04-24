@@ -404,7 +404,7 @@ func RabbitmqCluster(t *testing.T) {
 			},
 			ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 				Containers: map[string]*v1alpha1.Container{
-					"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:3.7"},
+					"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:3.7.16"},
 					"init":     &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 				},
 			},
