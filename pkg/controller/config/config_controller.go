@@ -2,17 +2,13 @@ package config
 
 import (
 	"context"
-	"os"
 	"reflect"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
-
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -99,7 +95,6 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		Client:  mgr.GetClient(),
 		Scheme:  mgr.GetScheme(),
 		Manager: mgr,
-		claims:  volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
 	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -181,7 +176,6 @@ type ReconcileConfig struct {
 	Client  client.Client
 	Scheme  *runtime.Scheme
 	Manager manager.Manager
-	claims  volumeclaims.PersistentVolumeClaims
 }
 
 // Reconcile reconciles Config.
@@ -259,32 +253,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	statefulSet.Spec.Template.Spec.ShareProcessNamespace = &trueVal
 	if err = config.PrepareSTS(statefulSet, &config.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
-	}
-
-	for _, vol := range statefulSet.Spec.Template.Spec.Volumes {
-		pvc := vol.VolumeSource.PersistentVolumeClaim
-		if pvc == nil {
-			continue
-		}
-		pvc.ClaimName = config.Name + "-" + instanceType + "-" + vol.Name
-		claimName := types.NamespacedName{Namespace: config.Namespace, Name: pvc.ClaimName}
-		claim := r.claims.New(claimName, config)
-		if config.Spec.ServiceConfiguration.Storage.Path != "" {
-			path := config.Spec.ServiceConfiguration.Storage.Path + string(os.PathSeparator) + vol.Name
-			claim.SetStoragePath(path)
-		}
-		if config.Spec.ServiceConfiguration.Storage.Size != "" {
-			var quantity resource.Quantity
-			quantity, err = config.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			claim.SetStorageSize(quantity)
-		}
-		claim.SetNodeSelector(config.Spec.CommonConfiguration.NodeSelector)
-		if err = claim.EnsureExists(); err != nil {
-			return reconcile.Result{}, err
-		}
 	}
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"

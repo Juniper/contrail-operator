@@ -90,13 +90,12 @@ func TestZookeeperResourceHandler(t *testing.T) {
 	})
 
 	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
+		mgr := &mocking.MockManager{Scheme: scheme}
 		reconciler := &mocking.MockReconciler{}
 		err := add(mgr, reconciler)
 		assert.NoError(t, err)
 	})
 }
-
 
 type TestCase struct {
 	name           string
@@ -186,8 +185,8 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"zookeeper":         &contrail.Container{Image: "contrail-controller-zookeeper"},
+					"init":      &contrail.Container{Image: "python:alpine"},
+					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},

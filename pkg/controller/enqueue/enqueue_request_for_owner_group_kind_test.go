@@ -15,7 +15,6 @@ import (
 	"testing"
 )
 
-
 type restScope struct {
 	name meta2.RESTScopeName
 }
@@ -64,7 +63,7 @@ func TestOwnerGroupKind(t *testing.T) {
 		Resource: "ownder-kind",
 	}
 
-	rs := &restScope{name:"owner-scope"}
+	rs := &restScope{name: "owner-scope"}
 	mapper := meta2.NewDefaultRESTMapper(dgv)
 	mapper.AddSpecific(gvk, gvr, gvr, rs)
 	req := RequestForOwnerGroupKind{
@@ -119,13 +118,14 @@ func TestOwnerGroupKind(t *testing.T) {
 
 	t.Run("Inject Scheme", func(t *testing.T) {
 		is := &RequestForOwnerGroupKind{
-			OwnerType:    &apps.Deployment{},
+			OwnerType: &apps.Deployment{},
 		}
 		err = is.InjectScheme(scheme)
 		assert.NoError(t, err, "Inject Scheme failed")
 	})
 
-	t.Run("Inject Mapper", func(t *testing.T) { im := &RequestForOwnerGroupKind{}
+	t.Run("Inject Mapper", func(t *testing.T) {
+		im := &RequestForOwnerGroupKind{}
 		err = im.InjectMapper(mapper)
 		assert.NoError(t, err, "Inject Mapper failed")
 	})
@@ -165,7 +165,7 @@ func TestOwnerGroupKindFailure(t *testing.T) {
 		Resource: "ownder-kind",
 	}
 
-	rs := &restScope{name:"owner-scope"}
+	rs := &restScope{name: "owner-scope"}
 	mapper := meta2.NewDefaultRESTMapper(dgv)
 	mapper.AddSpecific(gvk, gvr, gvr, rs)
 	req := RequestForOwnerGroupKind{

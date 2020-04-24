@@ -231,9 +231,9 @@ spec:
         - effect: NoExecute
           operator: Exists
       volumes:
-        - persistentVolumeClaim: {}
+        - emptyDir: {}
           name: tftp
-        - persistentVolumeClaim: {}
+        - emptyDir: {}
           name: dnsmasq
         - hostPath:
             path: /var/log/contrail/config
