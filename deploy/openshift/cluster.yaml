@@ -25,7 +25,7 @@ spec:
             cassandra:
               image: cassandra:3.11.4
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             init2:
               image: cassandra:3.11.4
     config:
@@ -50,7 +50,7 @@ spec:
             dnsmasq:
               image: kaweue/contrail-controller-config-dnsmasq:dev
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             init2:
               image: busybox:1.31
             nodeinit:
@@ -82,7 +82,7 @@ spec:
             dns:
               image: opencontrailnightly/contrail-controller-control-dns:1912-latest
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             named:
               image: opencontrailnightly/contrail-controller-control-named:1912-latest
             nodeinit:
@@ -102,7 +102,7 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             provisioner:
               image: dysproz/contrail-provisioner
     rabbitmq:
@@ -116,7 +116,7 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             rabbitmq:
               image: rabbitmq:3.7
     webui:
@@ -131,7 +131,7 @@ spec:
           cassandraInstance: cassandra1
           containers:
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             nodeinit:
               image: opencontrailnightly/contrail-node-init:1912-latest
             redis:
@@ -151,7 +151,7 @@ spec:
         serviceConfiguration:
           containers:
             init:
-              image: python:alpine
+              image: python:3.8.2-alpine
             zookeeper:
               image: zookeeper:3.5.5
     postgres:
@@ -160,7 +160,7 @@ spec:
       spec:
         containers:
           postgres: 
-            image: postgres
+            image: postgres:12.2
     memcached:
       metadata:
         name: memcached

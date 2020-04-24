@@ -55,7 +55,7 @@ func TestOpenstackServices(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
 					"postgres":            {Image: "registry:5000/postgres"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 				},
 			},
 		}
@@ -82,7 +82,7 @@ func TestOpenstackServices(t *testing.T) {
 					KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 					ListenPort:         5555,
 					Containers: map[string]*contrail.Container{
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
 						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
 						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
@@ -218,7 +218,7 @@ func TestOpenstackServices(t *testing.T) {
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 							Containers: map[string]*contrail.Container{
-								"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+								"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 								"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
 								"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 							},

@@ -417,7 +417,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	var defaultContainersImages = map[string]string{
 		"init":                "localhost:5000/contrail-command",
 		"api":                 "localhost:5000/contrail-command",
-		"wait-for-ready-conf": "localhost:5000/busybox",
+		"wait-for-ready-conf": "localhost:5000/busybox:12.2",
 	}
 
 	c, ok := containers[containerName]

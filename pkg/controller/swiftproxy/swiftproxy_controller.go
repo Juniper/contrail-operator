@@ -442,7 +442,7 @@ func getImage(containers map[string]*contrail.Container, containerName string) s
 	var defaultContainersImages = map[string]string{
 		"init":                "localhost:5000/centos-binary-kolla-toolbox:train",
 		"api":                 "localhost:5000/centos-binary-swift-proxy-server:train",
-		"wait-for-ready-conf": "localhost:5000/busybox",
+		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
 
 	c, ok := containers[containerName]

@@ -220,7 +220,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 							Containers: map[string]*v1alpha1.Container{
 								"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:" + versionMap["rabbitmq"]},
-								"init":     &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init":     &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 							},
 						},
 					},
@@ -239,7 +239,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.ZookeeperConfiguration{
 							Containers: map[string]*v1alpha1.Container{
 								"zookeeper": &v1alpha1.Container{Image: "registry:5000/zookeeper:" + versionMap["zookeeper"]},
-								"init":      &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init":      &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 							},
 						},
 					},
@@ -258,7 +258,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.CassandraConfiguration{
 							Containers: map[string]*v1alpha1.Container{
 								"cassandra": &v1alpha1.Container{Image: "registry:5000/cassandra:" + versionMap["cassandra"]},
-								"init":      &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init":      &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 								"init2":     &v1alpha1.Container{Image: "registry:5000/cassandra:" + versionMap["cassandra"]},
 							},
 						},
@@ -291,7 +291,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								"redis":             &v1alpha1.Container{Image: "registry:5000/redis:4.0.2"},
 								"nodeinit":          &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
 								"init":              &v1alpha1.Container{Image: "registry:5000/python:alpine"},
-								"init2":             &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init2":             &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 								"statusmonitor":     &v1alpha1.Container{Image: "registry:5000/contrail-statusmonitor:latest"},
 							},
 						},
@@ -363,7 +363,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							Containers: map[string]*v1alpha1.Container{
 								"kubemanager": &v1alpha1.Container{Image: "registry:5000/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
 								"nodeinit":    &v1alpha1.Container{Image: "registry:5000/contrail-node-init:" + versionMap["kubemanager"]},
-								"init":        &v1alpha1.Container{Image: "registry:5000/busybox"},
+								"init":        &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 							},
 						},
 					},
@@ -405,7 +405,7 @@ func RabbitmqCluster(t *testing.T) {
 			ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 				Containers: map[string]*v1alpha1.Container{
 					"rabbitmq": &v1alpha1.Container{Image: "registry:5000/rabbitmq:3.7"},
-					"init":     &v1alpha1.Container{Image: "registry:5000/busybox"},
+					"init":     &v1alpha1.Container{Image: "registry:5000/busybox:1.31"},
 				},
 			},
 		},

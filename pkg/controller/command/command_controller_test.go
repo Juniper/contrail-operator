@@ -401,7 +401,7 @@ func newCommand() *contrail.Command {
 				Containers: map[string]*contrail.Container{
 					"init":                {Image: "registry:5000/contrail-command"},
 					"api":                 {Image: "registry:5000/contrail-command"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -580,7 +580,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 						{
 							Name:            "wait-for-ready-conf",
 							ImagePullPolicy: core.PullAlways,
-							Image:           "registry:5000/busybox",
+							Image:           "registry:5000/busybox:1.31",
 							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "status",

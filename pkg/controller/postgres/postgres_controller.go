@@ -342,8 +342,8 @@ func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) 
 
 func getImage(containers map[string]*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"postgres":            "localhost:5000/postgres",
-		"wait-for-ready-conf": "localhost:5000/busybox",
+		"postgres":            "localhost:5000/postgres:12.2",
+		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
 
 	c, ok := containers[containerName]

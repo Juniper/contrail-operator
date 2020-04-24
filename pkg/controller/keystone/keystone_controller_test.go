@@ -434,7 +434,7 @@ func newExpectedSTS() *apps.StatefulSet {
 						{
 							Name:            "wait-for-ready-conf",
 							ImagePullPolicy: core.PullAlways,
-							Image:           "localhost:5000/busybox",
+							Image:           "localhost:5000/busybox:1.31",
 							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "status",
@@ -824,7 +824,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 		{
 			Name:            "wait-for-ready-conf",
 			ImagePullPolicy: core.PullAlways,
-			Image:           "localhost:5000/busybox",
+			Image:           "localhost:5000/busybox:1.31",
 			Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 			VolumeMounts: []core.VolumeMount{{
 				Name:      "status",

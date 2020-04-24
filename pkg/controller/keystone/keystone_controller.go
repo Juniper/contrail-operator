@@ -496,7 +496,7 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 		"keystone":            "localhost:5000/centos-binary-keystone:train",
 		"keystoneSsh":         "localhost:5000/centos-binary-keystone-ssh:train",
 		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train",
-		"wait-for-ready-conf": "localhost:5000/busybox",
+		"wait-for-ready-conf": "localhost:5000/busybox:12.2",
 	}
 
 	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]

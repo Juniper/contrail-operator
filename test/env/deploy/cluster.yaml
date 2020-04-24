@@ -55,7 +55,7 @@ spec:
             init:
               image: registry:5000/python:alpine
             init2:
-              image: registry:5000/busybox
+              image: registry:5000/busybox:1.31
             nodeinit:
               image: registry:5000/contrail-node-init:master.1175
             redis:
@@ -201,7 +201,7 @@ spec:
             init:
               image: registry:5000/contrail-command:master.1175
             wait-for-ready-conf:
-              image: registry:5000/busybox
+              image: registry:5000/busybox:1.31
     keystone:
       metadata:
         name: keystone
@@ -223,7 +223,7 @@ spec:
           listenPort: 5555
           containers:
             wait-for-ready-conf:
-              image: registry:5000/busybox
+              image: registry:5000/busybox:1.31
             keystoneDbInit:
               image: registry:5000/postgresql-client
             keystoneInit:
@@ -242,7 +242,7 @@ spec:
           postgres:
             image: registry:5000/postgres
           wait-for-ready-conf:
-            image: registry:5000/busybox
+            image: registry:5000/busybox:1.31
     memcached:
       metadata:
         name: memcached
@@ -268,7 +268,7 @@ spec:
               init:
                 image: registry:5000/centos-binary-kolla-toolbox:train
               wait-for-ready-conf:
-                  image: registry:5000/busybox
+                  image: registry:5000/busybox:1.31
               api:
                 image: registry:5000/centos-binary-swift-proxy-server:train
           swiftStorageConfiguration:

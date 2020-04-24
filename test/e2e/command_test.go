@@ -56,7 +56,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				Containers: map[string]*contrail.Container{
 					"postgres":            {Image: "registry:5000/postgres"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+					"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 				},
 			},
 		}
@@ -83,7 +83,7 @@ func TestCommandServices(t *testing.T) {
 					ListenPort:         5555,
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					Containers: map[string]*contrail.Container{
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
 						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
 						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
@@ -132,7 +132,7 @@ func TestCommandServices(t *testing.T) {
 						KeystoneInstance:   "commandtest-keystone",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 						Containers: map[string]*contrail.Container{
-							"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+							"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 							"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
 							"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 						},
@@ -161,7 +161,7 @@ func TestCommandServices(t *testing.T) {
 					Containers: map[string]*contrail.Container{
 						"init":                {Image: "registry:5000/contrail-command:master.1175"},
 						"api":                 {Image: "registry:5000/contrail-command:master.1175"},
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+						"wait-for-ready-conf": {Image: "registry:5000/busybox:1.31"},
 					},
 				},
 			},
