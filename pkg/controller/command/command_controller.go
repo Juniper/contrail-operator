@@ -333,10 +333,6 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
-	commandContainer := utils.GetContainerFromList("api", containers)
-	initContainer := utils.GetContainerFromList("init", containers)
-	waitForReadyContainer := utils.GetContainerFromList("wait-for-ready-conf", containers)
-
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -349,8 +345,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
-						Image:           commandContainer.Image,
-						Command:         commandContainer.Command,
+						Image:           getImage(containers, "api"),
+						Command:         getCommand(containers, "api"),
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -379,8 +375,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						{
 							Name:            "wait-for-ready-conf",
 							ImagePullPolicy: core.PullAlways,
-							Image:           waitForReadyContainer.Image,
-							Command:         waitForReadyContainer.Command,
+							Image:           getImage(containers, "wait-for-ready-conf"),
+							Command:         getCommand(containers, "wait-for-ready-conf"),
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "status",
 								MountPath: "/tmp/podinfo",
@@ -389,8 +385,8 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						{
 							Name:            "command-init",
 							ImagePullPolicy: core.PullAlways,
-							Image:           initContainer.Image,
-							Command:         initContainer.Command,
+							Image:           getImage(containers, "init"),
+							Command:         getCommand(containers, "init"),
 							VolumeMounts: []core.VolumeMount{{
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
@@ -418,30 +414,30 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 	}
 }
 
-func getImage(containers map[string]*contrail.Container, containerName string) string {
+func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
 		"init":                "localhost:5000/contrail-command",
 		"api":                 "localhost:5000/contrail-command",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil {
 		return defaultContainersImages[containerName]
 	}
 
 	return c.Image
 }
 
-func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
 		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
 		"api":                 {"bash", "-c", "/etc/contrail/entrypoint.sh"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil || c.Command == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

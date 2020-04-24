@@ -445,7 +445,7 @@ func getImage(containers []*contrail.Container, containerName string) string {
 		"api":                 "localhost:5000/centos-binary-swift-proxy-server:train",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
-	c := utils.GetContainerFromList("containerName", containers)
+	c := utils.GetContainerFromList(containerName, containers)
 	if c == nil {
 		return defaultContainersImages[containerName]
 	}
@@ -459,7 +459,7 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 		"wait-for-ready-conf": []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
-	c := utils.GetContainerFromList("containerName", containers)
+	c := utils.GetContainerFromList(containerName, containers)
 	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}

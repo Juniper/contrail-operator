@@ -476,20 +476,28 @@ func testcase8() *TestCase {
 
 	configContainer := utils.GetContainerFromList("config", cfg.Spec.ServiceConfiguration.Containers)
 	configContainer.Command = []string{"bash", "/runner/run.sh"}
+	var nodemanagerconfig *int
 	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
 		if container.Name == "nodemanagerconfig" {
-			cfg.Spec.ServiceConfiguration.Containers[idx] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
-			cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
-			cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
+			nodemanagerconfig = &idx
 		}
 	}
+	if nodemanagerconfig != nil {
+		cfg.Spec.ServiceConfiguration.Containers[*nodemanagerconfig] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
+		cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
+		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
+	}
 
+	var nodemanageranalytics *int
 	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
 		if container.Name == "nodemanageranalytics" {
-			cfg.Spec.ServiceConfiguration.Containers[idx] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
-			cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
-			cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
+			nodemanageranalytics = &idx
 		}
+	}
+	if nodemanageranalytics != nil {
+		cfg.Spec.ServiceConfiguration.Containers[*nodemanageranalytics] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
+		cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
+		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
 	}
 
 	tc := &TestCase{
