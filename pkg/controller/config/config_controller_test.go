@@ -91,7 +91,7 @@ func TestConfigResourceHandler(t *testing.T) {
 	})
 
 	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
+		mgr := &mocking.MockManager{Scheme: scheme}
 		reconciler := &mocking.MockReconciler{}
 		err := add(mgr, reconciler)
 		assert.NoError(t, err)

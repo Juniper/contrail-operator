@@ -90,13 +90,12 @@ func TestRabbitmqResourceHandler(t *testing.T) {
 	})
 
 	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
+		mgr := &mocking.MockManager{Scheme: scheme}
 		reconciler := &mocking.MockReconciler{}
 		err := add(mgr, reconciler)
 		assert.NoError(t, err)
 	})
 }
-
 
 type TestCase struct {
 	name           string
@@ -226,8 +225,8 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"rabbitmq":          &contrail.Container{Image: "contrail-controller-rabbitmq"},
+					"init":     &contrail.Container{Image: "python:alpine"},
+					"rabbitmq": &contrail.Container{Image: "contrail-controller-rabbitmq"},
 				},
 			},
 		},
@@ -312,4 +311,3 @@ func testcase4() *TestCase {
 	}
 	return tc
 }
-
