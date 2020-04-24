@@ -5,6 +5,8 @@ import (
 	"context"
 	"testing"
 
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -12,8 +14,6 @@ import (
 	meta1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -42,6 +42,13 @@ func TestProvisionManagerController(t *testing.T) {
 	pod := &core.Pod{
 		ObjectMeta: metaobj,
 	}
+
+	t.Run("add controller to Manager verification", func(t *testing.T) {
+		mgr := &mocking.MockManager{Scheme: scheme}
+		reconciler := &mocking.MockReconciler{}
+		err := add(mgr, reconciler)
+		assert.NoError(t, err)
+	})
 
 	tests := []*TestCase{
 		testcase1(),

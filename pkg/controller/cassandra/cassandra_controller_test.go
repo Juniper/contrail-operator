@@ -2,17 +2,113 @@ package cassandra
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"testing"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
+	schemepkg "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"testing"
 )
+
+func TestCassandraResourceHandler(t *testing.T) {
+	falseVal := false
+	initObjs := []runtime.Object{
+		newCassandra(),
+	}
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := meta.ObjectMeta{}
+	or := meta.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []meta.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	t.Run("Create Event", func(t *testing.T) {
+		evc := event.CreateEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.CreateFunc(evc, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Update Event", func(t *testing.T) {
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: nil,
+			MetaNew:   pod,
+			ObjectNew: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.UpdateFunc(evu, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Delete Event", func(t *testing.T) {
+		evd := event.DeleteEvent{
+			Meta:               pod,
+			Object:             nil,
+			DeleteStateUnknown: false,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.DeleteFunc(evd, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Generic Event", func(t *testing.T) {
+		evg := event.GenericEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.GenericFunc(evg, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("add controller to Manager", func(t *testing.T) {
+		mgr := &mocking.MockManager{Scheme: scheme}
+		reconciler := &mocking.MockReconciler{}
+		err := add(mgr, reconciler)
+		assert.NoError(t, err)
+	})
+}
+
+func newCassandra() *contrail.Cassandra {
+	trueVal := true
+	return &contrail.Cassandra{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cassandra-instance",
+			Namespace: "default",
+		},
+		Status: contrail.CassandraStatus{Active: &trueVal},
+	}
+}
 
 func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	var (
@@ -22,22 +118,22 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 		create          = true
 	)
 	// A Memcached object with metadata and spec.
-	var cassandra = &v1alpha1.Cassandra{
-		ObjectMeta: metav1.ObjectMeta{
+	var cassandra = &contrail.Cassandra{
+		ObjectMeta: meta.ObjectMeta{
 			Name:      "cassandra1",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
-		Spec: v1alpha1.CassandraSpec{
-			CommonConfiguration: v1alpha1.CommonConfiguration{
+		Spec: contrail.CassandraSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
 				Create:   &create,
 				Replicas: &replicas,
 			},
-			ServiceConfiguration: v1alpha1.CassandraConfiguration{
-				Containers: map[string]*v1alpha1.Container{
-					"cassandra": &v1alpha1.Container{Image: "cassandra:3.5"},
-					"init":      &v1alpha1.Container{Image: "busybox"},
-					"init2":     &v1alpha1.Container{Image: "cassandra:3.5"},
+			ServiceConfiguration: contrail.CassandraConfiguration{
+				Containers: map[string]*contrail.Container{
+					"cassandra": &contrail.Container{Image: "cassandra:3.5"},
+					"init":      &contrail.Container{Image: "busybox"},
+					"init2":     &contrail.Container{Image: "cassandra:3.5"},
 				},
 			},
 		},
@@ -47,8 +143,8 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	objs := []runtime.Object{cassandra}
 
 	// Register operator types with the runtime scheme.
-	s := scheme.Scheme
-	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, cassandra)
+	s := schemepkg.Scheme
+	s.AddKnownTypes(contrail.SchemeGroupVersion, cassandra)
 
 	// Create a fake client to mock API calls.
 	cl := fake.NewFakeClient(objs...)
@@ -68,12 +164,8 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reconcile: (%v)", err)
 	}
-	// Check the result of reconciliation to make sure it has the desired state.
-	// if !res.Requeue {
-	//	 t.Error("reconcile did not requeue request as expected")
-	// }
 	// Check if statefulset has been created and has the correct size.
-	sts := &appsv1.StatefulSet{}
+	sts := &apps.StatefulSet{}
 	req.NamespacedName.Name = req.NamespacedName.Name + "-cassandra-statefulset"
 	err = r.Client.Get(context.TODO(), req.NamespacedName, sts)
 	if err != nil {
