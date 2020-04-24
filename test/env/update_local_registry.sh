@@ -4,6 +4,11 @@ set -o errexit
 
 LOCAL_REPO=localhost:"${INTERNAL_INSECURE_REGISTRY_PORT:-5000}"
 
+CONTRAIL_TAG="${CONTRAIL_TAG:-master.latest}"
+CONTRAIL_REGISTRY="${CONTRAIL_REGISTRY:-svl-artifactory.juniper.net/contrail-nightly}"
+OPERATOR_TAG="${OPERATOR_TAG:-master.latest}"
+OPERATOR_REGISTRY="${OPERATOR_REGISTRY:-svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922}"
+
 pull_image() 
 {
     docker pull $1/$2 
@@ -12,25 +17,27 @@ pull_image()
 }
 
 while read line; do
-	pull_image opencontrailnightly "${line}"
+	pull_image ${CONTRAIL_REGISTRY} "${line}"
 done <<EOF
-contrail-controller-config-api:master.1175
-contrail-controller-config-devicemgr:master.1175
-contrail-controller-config-schema:master.1175
-contrail-controller-config-svcmonitor:master.1175
-contrail-controller-control-control:master.1175
-contrail-controller-control-dns:master.1175
-contrail-controller-control-named:master.1175
-contrail-controller-webui-job:master.1175
-contrail-controller-webui-web:master.1175
-contrail-kubernetes-kube-manager:master.1175
-contrail-kubernetes-cni-init:master.1175
-contrail-node-init:master.1175
-contrail-nodemgr:master.1175
-contrail-analytics-api:master.1175
-contrail-analytics-collector:master.1175
-contrail-analytics-query-engine:master.1175
-contrail-controller-config-devicemgr:master.1175
+contrail-controller-config-api:${CONTRAIL_TAG}
+contrail-controller-config-devicemgr:${CONTRAIL_TAG}
+contrail-controller-config-schema:${CONTRAIL_TAG}
+contrail-controller-config-svcmonitor:${CONTRAIL_TAG}
+contrail-controller-control-control:${CONTRAIL_TAG}
+contrail-controller-control-dns:${CONTRAIL_TAG}
+contrail-controller-control-named:${CONTRAIL_TAG}
+contrail-controller-webui-job:${CONTRAIL_TAG}
+contrail-controller-webui-web:${CONTRAIL_TAG}
+contrail-kubernetes-kube-manager:${CONTRAIL_TAG}
+contrail-kubernetes-cni-init:${CONTRAIL_TAG}
+contrail-node-init:${CONTRAIL_TAG}
+contrail-nodemgr:${CONTRAIL_TAG}
+contrail-analytics-api:${CONTRAIL_TAG}
+contrail-analytics-collector:${CONTRAIL_TAG}
+contrail-analytics-query-engine:${CONTRAIL_TAG}
+contrail-controller-config-devicemgr:${CONTRAIL_TAG}
+contrail-command:${CONTRAIL_TAG}
+contrail-controller-config-dnsmasq:${CONTRAIL_TAG}
 EOF
 
 while read line; do
@@ -68,12 +75,8 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image kaweue "${line}"
+	pull_image ${OPERATOR_REGISTRY} "${line}"
 done <<EOF
-contrail-statusmonitor:master-180ab9
-contrail-provisioner:master.1175
+contrail-statusmonitor:${OPERATOR_TAG}
+contrail-provisioner:${OPERATOR_TAG}
 EOF
-
-pull_image hub.juniper.net/contrail-nightly contrail-command:master.1175
-pull_image hub.juniper.net/contrail-nightly contrail-controller-config-dnsmasq:master.1175
-pull_image 10.84.18.17:5000 contrail-statusmonitor:latest

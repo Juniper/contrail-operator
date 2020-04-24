@@ -1,0 +1,57 @@
+resources:
+- cluster.yaml
+- images.yaml
+
+vars:
+- name: CONTRAIL_REGISTRY
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.contrailRegistry
+- name: DOCKER_REGISTRY
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.dockerRegistry
+- name: OPERATOR_REGISTRY
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.operatorRegistry
+- name: KOLLA_REGISTRY
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.kollaRegistry
+- name: OPERATOR_TAG
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.operatorTag
+- name: CONTRAIL_TAG
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.contrailTag
+- name: KOLLA_TAG
+  objref:
+    kind: ContrailImages
+    name: cluster1
+    apiVersion: v1alpha1
+  fieldref:
+    fieldpath: spec.kollaTag
+
+configurations:
+- kustomizeconfig/manager.yaml

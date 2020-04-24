@@ -1,0 +1,12 @@
+apiVersion: v1alpha1
+kind: ContrailImages
+metadata:
+  name: cluster1
+spec:
+  contrailRegistry: registry:5000
+  dockerRegistry: registry:5000
+  operatorRegistry: registry:5000
+  kollaRegistry: registry:5000
+  contrailTag: master.latest
+  operatorTag: master.latest
+  kollaTag: train
