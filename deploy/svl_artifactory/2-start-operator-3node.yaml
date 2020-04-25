@@ -49,7 +49,7 @@ spec:
           - name: devicemanager
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:master.latest
           - name: dnsmasq
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-external-dnsmasq:master.latest
+            image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:master.latest
           - name: init
             image: python:alpine
           - name: init2
@@ -64,6 +64,8 @@ spec:
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:master.latest
           - name: queryengine
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-query-engine:master.latest
+          - name: statusmonitor
+            image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor-debug:svl_artifactory.latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -91,7 +93,7 @@ spec:
           - name: nodeinit
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           - name: statusmonitor
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.latest
+            image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:svl_artifactory-debug.latest
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
@@ -133,7 +135,7 @@ spec:
           - name: init
             image: python:alpine
           - name: provisioner
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:master.latest
+            image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner-debug:svl_artifactory.latest
     rabbitmq:
       metadata:
         labels:
