@@ -1,9 +1,9 @@
 package utils_test
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	tm "github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -338,7 +338,7 @@ func TestUtilsSecond(t *testing.T) {
 
 	t.Run("Update Event in RemoveIndex verification", func(t *testing.T) {
 		ri := tm.RemoveIndex(InitContainers, 1)
-		if len(ri) == 0{
+		if len(ri) == 0 {
 			t.Errorf("Update Event in RemoveIndex verification failed")
 		}
 	})
@@ -585,6 +585,7 @@ func newStatefulSet() *apps.StatefulSet {
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 	}
 }
+
 var replica = int32(1)
 var trueVal = true
 
