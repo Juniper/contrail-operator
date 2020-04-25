@@ -263,7 +263,7 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	nodemgr := true
 	controlNodemgrContainer := utils.GetContainerFromList("nodemanager", instance.Spec.ServiceConfiguration.Containers)
 
-	if controlNodemgrContainer != nil {
+	if controlNodemgrContainer == nil {
 		nodemgr = false
 	}
 

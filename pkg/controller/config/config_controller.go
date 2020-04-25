@@ -268,11 +268,11 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	configNodemgrContainer := utils.GetContainerFromList("nodemanagerconfig", config.Spec.ServiceConfiguration.Containers)
 	analyticsNodemgrContainer := utils.GetContainerFromList("nodemanageranalytics", config.Spec.ServiceConfiguration.Containers)
 
-	if configNodemgrContainer != nil {
+	if configNodemgrContainer == nil {
 		configNodeMgr = false
 	}
 
-	if analyticsNodemgrContainer != nil {
+	if analyticsNodemgrContainer == nil {
 		analyticsNodeMgr = false
 	}
 
