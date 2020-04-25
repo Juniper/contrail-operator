@@ -546,6 +546,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{"command"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,

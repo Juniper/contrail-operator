@@ -342,6 +342,20 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 			Selector: &meta.LabelSelector{},
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{name},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
