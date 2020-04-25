@@ -110,7 +110,20 @@ spec:
               description: ProvisionManagerConfiguration defines the provision manager
                 configuration
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
