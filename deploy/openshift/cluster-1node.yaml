@@ -200,7 +200,7 @@ spec:
             vrouteragent:
               image: opencontrailnightly/contrail-vrouter-agent:master.1175
             vroutercni:
-              image: michaelhenkel/contrailcni:v0.0.1
+              image: apasyniuk/contrailcni
             vrouterkernelbuildinit:
               image: opencontrailnightly/contrail-vrouter-kernel-build-init:master.1175
             vrouterkernelinit:
@@ -225,7 +225,7 @@ spec:
             vrouteragent:
               image: opencontrailnightly/contrail-vrouter-agent:master.1175
             vroutercni:
-              image: michaelhenkel/contrailcni:v0.0.1
+              image: apasyniuk/contrailcni
             vrouterkernelbuildinit:
               image: opencontrailnightly/contrail-vrouter-kernel-build-init:master.1175
             vrouterkernelinit:
