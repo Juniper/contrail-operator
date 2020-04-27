@@ -68,16 +68,16 @@ func TestManagerController(t *testing.T) {
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 			Status: contrail.ManagerStatus{
-				Cassandras: mgrstatus,
-				Zookeepers: mgrstatus1,
-				Rabbitmq:   mgrstatus2,
-				Config:     mgrstatus3,
-				Controls:   mgrstatus4,
-				Vrouters:   mgrstatus5,
-				Webui:      mgrstatus6,
-				ProvisionManager: mgrstatus7,
-				Kubemanagers: mgrstatus8,
-				Keystone: mgrstatus9,
+				Cassandras: mgrstatusCassandras,
+				Zookeepers: mgrstatusZookeeper,
+				Rabbitmq:   mgrstatusRabbitmq,
+				Config:     mgrstatusConfig,
+				Controls:   mgrstatusControl,
+				Vrouters:   mgrstatusVrouter,
+				Webui:      mgrstatusWebui,
+				ProvisionManager: mgrstatusProvisionmanager,
+				Kubemanagers: mgrstatusKubemanager,
+				Keystone: mgrstatusKeystone,
 
 			},
 		}
@@ -856,16 +856,16 @@ var managerstatus9 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
-var mgrstatus = []*contrail.ServiceStatus{managerstatus}
-var mgrstatus1 = []*contrail.ServiceStatus{managerstatus1}
-var mgrstatus2 = managerstatus2
-var mgrstatus3 = managerstatus3
-var mgrstatus4 = []*contrail.ServiceStatus{managerstatus4}
-var mgrstatus5 = []*contrail.ServiceStatus{managerstatus5}
-var mgrstatus6 = managerstatus6
-var mgrstatus7 = managerstatus7
-var mgrstatus8 = []*contrail.ServiceStatus{managerstatus8}
-var mgrstatus9 = managerstatus9
+var mgrstatusCassandras = []*contrail.ServiceStatus{managerstatus}
+var mgrstatusZookeeper = []*contrail.ServiceStatus{managerstatus1}
+var mgrstatusRabbitmq = managerstatus2
+var mgrstatusConfig = managerstatus3
+var mgrstatusControl = []*contrail.ServiceStatus{managerstatus4}
+var mgrstatusVrouter = []*contrail.ServiceStatus{managerstatus5}
+var mgrstatusWebui = managerstatus6
+var mgrstatusProvisionmanager = managerstatus7
+var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
+var mgrstatusKeystone = managerstatus9
 
 func newRabbitmq() *contrail.Rabbitmq {
 	trueVal := true
