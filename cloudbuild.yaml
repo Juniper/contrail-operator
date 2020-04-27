@@ -1,13 +1,12 @@
 steps:
-- name: gcr.io/cloud-builders/docker
-  args:
-  - 'run'
-  - '--volume=/var/run/docker.sock:/var/run/docker.sock'
-  - 'kaweue/testrunner:4'
-  - '-c'
-  - 'kind delete cluster; kind create cluster; IP=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" kind-control-plane); echo $$IP; kubectl config set-cluster kind-kind --server=https://$$IP:6443 --insecure-skip-tls-verify; kubectl cluster-info; kind delete cluster;'
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - "run"
+      - "--volume=/var/run/docker.sock:/var/run/docker.sock"
+      - "kaweue/testrunner:4"
+      - "-c"
+      - 'kind delete cluster; kind create cluster; IP=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" kind-control-plane); echo $$IP; kubectl config set-cluster kind-kind --server=https://$$IP:6443 --insecure-skip-tls-verify; kubectl cluster-info; kind delete cluster;'
 
-timeout: '600s'
+timeout: "600s"
 options:
-  machineType: 'N1_HIGHCPU_8'
-
+  machineType: "N1_HIGHCPU_8"
