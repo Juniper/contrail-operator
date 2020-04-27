@@ -284,7 +284,6 @@ func TestUtilsSecond(t *testing.T) {
 			ObjectNew: pod,
 		}
 		hf := tm.PodInitStatusChange(serviceMap)
-		hf.UpdateFunc(evu)
 		status = hf.UpdateFunc(evu)
 		assert.Equal(t, status, expectedStatus)
 	})
@@ -300,7 +299,6 @@ func TestUtilsSecond(t *testing.T) {
 			ObjectNew: pod,
 		}
 		hf := tm.PodInitRunning(serviceMap)
-		hf.UpdateFunc(evu)
 		status = hf.UpdateFunc(evu)
 		assert.Equal(t, status, expectedStatus)
 	})
@@ -331,7 +329,6 @@ func TestUtilsSecond(t *testing.T) {
 			ObjectNew: pod,
 		}
 		hf := tm.PodIPChange(serviceMap)
-		hf.UpdateFunc(evu)
 		status = hf.UpdateFunc(evu)
 		assert.Equal(t, status, expectedStatus)
 	})
