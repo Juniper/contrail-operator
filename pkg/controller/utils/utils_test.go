@@ -1,10 +1,9 @@
 package utils_test
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	tm "github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -80,6 +79,7 @@ func TestUtils(t *testing.T) {
 		got := tm.DeploymentGroupKind()
 		assert.Equal(t, expected, got.String())
 	})
+
 }
 
 func TestUtilsSecond(t *testing.T) {
@@ -135,9 +135,9 @@ func TestUtilsSecond(t *testing.T) {
 		expectedStatus := false
 		status := true
 		evu := event.UpdateEvent{
-			MetaOld:   pod,
+			MetaOld:   newZookeeper(),
 			ObjectOld: control,
-			MetaNew:   pod,
+			MetaNew:   newZookeeper(),
 			ObjectNew: control,
 		}
 		hf := tm.ControlActiveChange()
@@ -271,6 +271,78 @@ func TestUtilsSecond(t *testing.T) {
 		hf := tm.STSStatusChange(tm.CassandraGroupKind())
 		status = hf.UpdateFunc(evu)
 		assert.Equal(t, status, expectedStatus)
+	})
+
+	t.Run("Update Event in PodInitStatusChange verification", func(t *testing.T) {
+		var serviceMap = map[string]string{"contrail_cluster": "config1"}
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   newZookeeper(),
+			ObjectOld: pod,
+			MetaNew:   newZookeeper(),
+			ObjectNew: pod,
+		}
+		hf := tm.PodInitStatusChange(serviceMap)
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
+	t.Run("Update Event in PodInitRunning verification", func(t *testing.T) {
+		var serviceMap = map[string]string{"contrail_cluster": "config1"}
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   newZookeeper(),
+			ObjectOld: pod,
+			MetaNew:   newZookeeper(),
+			ObjectNew: pod,
+		}
+		hf := tm.PodInitRunning(serviceMap)
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
+	t.Run("Update Event in PodStatusChange verification", func(t *testing.T) {
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: pod,
+			MetaNew:   pod,
+			ObjectNew: pod,
+		}
+		hf := tm.PodStatusChange(tm.ControlGroupKind())
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+		tm.PodStatusChange(tm.ControlGroupKind())
+	})
+
+	t.Run("Update Event in PodIPChange verification", func(t *testing.T) {
+		var serviceMap = map[string]string{"contrail_cluster": "config1"}
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   newZookeeper(),
+			ObjectOld: pod,
+			MetaNew:   newZookeeper(),
+			ObjectNew: pod,
+		}
+		hf := tm.PodIPChange(serviceMap)
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
+	t.Run("Update Event in RemoveIndex verification", func(t *testing.T) {
+		ri := tm.RemoveIndex(InitContainers, 1)
+		if len(ri) == 0 {
+			t.Errorf("Update Event in RemoveIndex verification failed")
+		}
+	})
+
+	t.Run("Update Event in MergeCommonConfiguration verification", func(t *testing.T) {
+		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
+		// nothing to test
 	})
 
 }
@@ -509,4 +581,72 @@ func newStatefulSet() *apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 	}
+}
+
+var replica = int32(1)
+var trueVal = true
+
+var managerCommonConfiguration = contrail.CommonConfiguration{
+	Activate:     &trueVal,
+	Create:       &trueVal,
+	HostNetwork:  &trueVal,
+	Replicas:     &replica,
+	NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+}
+
+var secondCommonConfiguration = contrail.CommonConfiguration{
+	Activate:     &trueVal,
+	Create:       &trueVal,
+	HostNetwork:  &trueVal,
+	Replicas:     &replica,
+	NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+}
+
+const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
+const expectedCommandImage = `DB_USER=${DB_USER:-root}`
+
+var InitContainers = []core.Container{
+	{
+		Name:            "wait-for-ready-conf",
+		ImagePullPolicy: core.PullAlways,
+		Image:           "localhost:5000/busybox",
+		Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+		VolumeMounts: []core.VolumeMount{{
+			Name:      "status",
+			MountPath: "/tmp/podinfo",
+		}},
+	},
+	{
+		Name:            "keystone-db-init",
+		Image:           "localhost:5000/postgresql-client",
+		ImagePullPolicy: core.PullAlways,
+		Command:         []string{"/bin/sh"},
+		Args:            []string{"-c", expectedCommandImage},
+		Env: []core.EnvVar{
+			{
+				Name: "MY_POD_IP",
+				ValueFrom: &core.EnvVarSource{
+					FieldRef: &core.ObjectFieldSelector{
+						FieldPath: "status.podIP",
+					},
+				},
+			},
+		},
+	},
+	{
+		Name:            "keystone-init",
+		Image:           "localhost:5000/centos-binary-keystone:train",
+		ImagePullPolicy: core.PullAlways,
+		Env: []core.EnvVar{{
+			Name:  "KOLLA_SERVICE_NAME",
+			Value: "keystone",
+		}, {
+			Name:  "KOLLA_CONFIG_STRATEGY",
+			Value: "COPY_ALWAYS",
+		}},
+		VolumeMounts: []core.VolumeMount{
+			core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+			core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+		},
+	},
 }
