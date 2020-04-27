@@ -35,7 +35,7 @@ go_image(
     name = "contrail-statusmonitor-image",
     embed = [":go_default_library"],
     goos = "linux",
-    base = "@go_image_base//image",
+    base = "@go_debug_image_base//image:image",
     importpath = "github.com/Juniper/contrail-operator/statusmonitor",
 )
 
@@ -54,32 +54,6 @@ container_push(
     format = "Docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-statusmonitor",
-    tag = "{BUILD_SCM_BRANCH}.latest",
-)
-
-go_image(
-    name = "contrail-statusmonitor-image-debug",
-    embed = [":go_default_library"],
-    goos = "linux",
-    base = "@go_debug_image_base//image:image",
-    importpath = "github.com/Juniper/contrail-operator/statusmonitor",
-)
-
-container_push(
-    name = "contrail-statusmonitor-push-debug",
-    image = ":contrail-statusmonitor-image-debug",
-    format = "Docker",
-    registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-statusmonitor-debug",
-    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
-)
-
-container_push(
-    name = "contrail-statusmonitor-push-debug-latest",
-    image = ":contrail-statusmonitor-image-debug",
-    format = "Docker",
-    registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-statusmonitor-debug",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
