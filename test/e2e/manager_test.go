@@ -84,8 +84,8 @@ var initialVersionMap = map[string]string{
 	"config":                 "master.1175",
 	"control":                "master.1175",
 	"kubemanager":            "master.1175",
-	"contrail-provisioner":   "master.696465e",
-	"contrail-statusmonitor": "master.696465e",
+	"contrail-provisioner":   "change_image_format.aa5218b",
+	"contrail-statusmonitor": "change_image_format.aa5218b",
 }
 
 var targetVersionMap = map[string]string{
@@ -294,7 +294,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "nodeinit", Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
 								{Name: "init", Image: "registry:5000/python:alpine"},
 								{Name: "init2", Image: "registry:5000/busybox"},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-statusmonitor" + versionMap["contrail-statusmonitor"]},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 							},
 						},
 					},
