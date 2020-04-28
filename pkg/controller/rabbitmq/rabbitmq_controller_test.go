@@ -89,11 +89,45 @@ func TestRabbitmqResourceHandler(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme: scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		err := Add(mgr)
 		assert.NoError(t, err)
+	})
+
+	t.Run("Failed to Find Rabbitmq Instance", func(t *testing.T) {
+		scheme, err := contrail.SchemeBuilder.Build()
+		require.NoError(t, err, "Failed to build scheme")
+		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+		rbt := newRabbitmq()
+		initObjs := []runtime.Object{
+			newManager(rbt),
+			newConfigInst(),
+			rbt,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+
+		r := &ReconcileRabbitmq{Client: cl, Scheme: scheme}
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "invalid-rabbitmq-instance",
+				Namespace: "default",
+			},
+		}
+
+		res, err := r.Reconcile(req)
+		require.NoError(t, err, "r.Reconcile failed")
+		require.False(t, res.Requeue, "Request was requeued when it should not be")
+
+		// check for success or failure
+		conf := &contrail.Rabbitmq{}
+		err = cl.Get(context.Background(), req.NamespacedName, conf)
+		errmsg := err.Error()
+		require.Contains(t, errmsg,  "\"invalid-rabbitmq-instance\" not found",
+			"Error message string is not as expected")
 	})
 }
 
@@ -114,6 +148,7 @@ func TestRabbitmq(t *testing.T) {
 		testcase2(),
 		testcase3(),
 		testcase4(),
+		testcase5(),
 	}
 
 	for _, tt := range tests {
@@ -234,6 +269,19 @@ func newRabbitmq() *contrail.Rabbitmq {
 	}
 }
 
+func newPodList() *core.PodList {
+	return &core.PodList{
+		Items: []core.Pod{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Namespace: "default",
+					Labels: map[string]string{ "contrail_cluster": "config1"},
+				},
+			},
+		},
+	}
+}
+
 func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.RabbitmqStatus) {
 	require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
 	require.NotNil(t, realStatus.Active, "realStatus.Active Should not be nil")
@@ -279,9 +327,10 @@ func testcase3() *TestCase {
 	falseVal := false
 	rbt := newRabbitmq()
 
-	command := []string{"bash", "/runner/run.sh"}
+	// dummy command
+	command := []string{"bash", "/runner/dummy.sh"}
+	rbt.Spec.ServiceConfiguration.Containers["init"].Command = command
 	rbt.Spec.ServiceConfiguration.Containers["rabbitmq"].Command = command
-
 	tc := &TestCase{
 		name: "Preset Rabbitmq command",
 		initObjs: []runtime.Object{
@@ -306,6 +355,21 @@ func testcase4() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(rbt),
 			rbt,
+		},
+		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
+	}
+	return tc
+}
+
+func testcase5() *TestCase {
+	falseVal := false
+	rbt := newRabbitmq()
+	tc := &TestCase{
+		name: "Pod Test",
+		initObjs: []runtime.Object{
+			newManager(rbt),
+			rbt,
+			newPodList(),
 		},
 		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
 	}

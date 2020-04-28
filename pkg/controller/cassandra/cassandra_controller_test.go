@@ -9,13 +9,12 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	schemepkg "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"testing"
 )
@@ -91,10 +90,10 @@ func TestCassandraResourceHandler(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme: scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		err := Add(mgr)
 		assert.NoError(t, err)
 	})
 }
@@ -108,6 +107,30 @@ func newCassandra() *contrail.Cassandra {
 		},
 		Status: contrail.CassandraStatus{Active: &trueVal},
 	}
+}
+
+
+func TestCassandra(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	cas := newCassandra()
+
+	dt := meta.Now()
+	cas.ObjectMeta.DeletionTimestamp = &dt
+
+	cl := fake.NewFakeClientWithScheme(scheme, cas)
+	r := &ReconcileCassandra{Client: cl, Scheme: scheme}
+	// Mock request to simulate Reconcile() being called on an event for a
+	// watched resource .
+	req := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "cassandra-instance",
+			Namespace: "default",
+		},
+	}
+	_, err = r.Reconcile(req)
 }
 
 func TestCassandraControllerStatefulSetCreate(t *testing.T) {
@@ -128,6 +151,7 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 			CommonConfiguration: contrail.CommonConfiguration{
 				Create:   &create,
 				Replicas: &replicas,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
 				Containers: map[string]*contrail.Container{
@@ -135,6 +159,8 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 					"init":      &contrail.Container{Image: "busybox"},
 					"init2":     &contrail.Container{Image: "cassandra:3.5"},
 				},
+				MinHeapSize: "100M",
+				MaxHeapSize: "1G",
 			},
 		},
 	}
