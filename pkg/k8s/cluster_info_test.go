@@ -1,7 +1,6 @@
 package k8s_test
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -20,11 +19,37 @@ type ClusterInfoSuite struct {
 	CoreV1Interface typedCorev1.CoreV1Interface
 }
 
+var kubeadmConfig = `---
+apiServer:
+  certSANs:
+    - localhost
+    - 127.0.0.1
+  extraArgs:
+    authorization-mode: Node,RBAC
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: test
+controlPlaneEndpoint: 10.255.254.3:6443
+controllerManager:
+  extraArgs:
+    enable-hostpath-provisioner: "true"
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+kubernetesVersion: v1.17.0
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+scheduler: {}`
+
 func (suite *ClusterInfoSuite) SetupTest() {
-	data, err := ioutil.ReadFile("test_files/kubeadm-config.yml")
-	suite.Assert().NoError(err)
-	dataString := string(data)
-	cm := kubeadmConfigMap(dataString)
+	cm := kubeadmConfigMap(kubeadmConfig)
 	fakeClientset := fake.NewSimpleClientset(cm)
 	coreV1Interface := fakeClientset.CoreV1()
 	suite.ClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}

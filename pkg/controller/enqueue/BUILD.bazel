@@ -30,14 +30,20 @@ go_test(
         "enqueue_request_for_object_by_owner_test.go",
         "enqueue_request_for_object_group_kind_test.go",
         "enqueue_request_for_owner_group_kind_test.go",
-    ]
+        "enqueue_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
+        "@io_k8s_kubernetes//pkg/apis/core:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/event:go_default_library",
     ],
 )

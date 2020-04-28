@@ -68,12 +68,11 @@ EOF
 pull_image tmaier postgresql-client
 
 while read line; do
-	pull_image kaweue "${line}"
+	pull_image svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922 "${line}"
 done <<EOF
-contrail-statusmonitor:master-180ab9
-contrail-provisioner:master.1175
+contrail-statusmonitor:fix_bazel_test.67a50b2
+contrail-provisioner:fix_bazel_test.67a50b2
 EOF
 
 pull_image hub.juniper.net/contrail-nightly contrail-command:master.1175
 pull_image hub.juniper.net/contrail-nightly contrail-controller-config-dnsmasq:master.1175
-pull_image 10.84.18.17:5000 contrail-statusmonitor:latest
