@@ -53,32 +53,33 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:    command,
-					Cassandras: []*contrail.Cassandra{cassandra},
-					Zookeepers: []*contrail.Zookeeper{zookeeper},
-					Rabbitmq:   rbt,
-					Config:     config,
-					Controls:   []*contrail.Control{control},
-					Webui:      webui,
-					Vrouters:   []*contrail.Vrouter{vrouter},
-					Kubemanagers: []*contrail.Kubemanager{kubemanager},
+					Command:          command,
+					Cassandras:       []*contrail.Cassandra{cassandra},
+					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Rabbitmq:         rbt,
+					Config:           config,
+					Controls:         []*contrail.Control{control},
+					Webui:            webui,
+					Vrouters:         []*contrail.Vrouter{vrouter},
+					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
 					ProvisionManager: provisionmanager,
-					Keystone: keystone,
+					Keystone:         keystone,
+					Swift:            swift,
+					Memcached:        memcached,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 			Status: contrail.ManagerStatus{
-				Cassandras: mgrstatusCassandras,
-				Zookeepers: mgrstatusZookeeper,
-				Rabbitmq:   mgrstatusRabbitmq,
-				Config:     mgrstatusConfig,
-				Controls:   mgrstatusControl,
-				Vrouters:   mgrstatusVrouter,
-				Webui:      mgrstatusWebui,
+				Cassandras:       mgrstatusCassandras,
+				Zookeepers:       mgrstatusZookeeper,
+				Rabbitmq:         mgrstatusRabbitmq,
+				Config:           mgrstatusConfig,
+				Controls:         mgrstatusControl,
+				Vrouters:         mgrstatusVrouter,
+				Webui:            mgrstatusWebui,
 				ProvisionManager: mgrstatusProvisionmanager,
-				Kubemanagers: mgrstatusKubemanager,
-				Keystone: mgrstatusKeystone,
-
+				Kubemanagers:     mgrstatusKubemanager,
+				Keystone:         mgrstatusKeystone,
 			},
 		}
 		initObjs := []runtime.Object{
@@ -657,7 +658,10 @@ var (
 	replicas int32 = 3
 	create         = true
 	trueVal        = true
+	falseVal       = false
 )
+
+
 
 var cassandra = &contrail.Cassandra{
 	ObjectMeta: meta.ObjectMeta{
@@ -935,8 +939,8 @@ var kubemanager = &contrail.Kubemanager{
 		ServiceConfiguration: contrail.KubemanagerConfiguration{
 			Containers: map[string]*contrail.Container{
 				"kubemanager": &contrail.Container{Image: "kubemanager"},
-				"init":  &contrail.Container{Image: "busybox"},
-				"init2": &contrail.Container{Image: "kubemanager"},
+				"init":        &contrail.Container{Image: "busybox"},
+				"init2":       &contrail.Container{Image: "kubemanager"},
 			},
 		},
 	},
@@ -956,8 +960,8 @@ var keystone = &contrail.Keystone{
 		ServiceConfiguration: contrail.KeystoneConfiguration{
 			Containers: map[string]*contrail.Container{
 				"keystone": &contrail.Container{Image: "keystone"},
-				"init":  &contrail.Container{Image: "busybox"},
-				"init2": &contrail.Container{Image: "keystone"},
+				"init":     &contrail.Container{Image: "busybox"},
+				"init2":    &contrail.Container{Image: "keystone"},
 			},
 		},
 	},
@@ -996,4 +1000,55 @@ func newManager() *contrail.Manager {
 			},
 		},
 	}
+}
+
+var memcached = &contrail.Memcached{
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-memcached",
+	},
+	Spec: contrail.MemcachedSpec{
+		ServiceConfiguration: contrail.MemcachedConfiguration{
+			Container:       contrail.Container{Image: "localhost:5000/centos-binary-memcached:train"},
+			ListenPort:      11211,
+			ConnectionLimit: 5000,
+			MaxMemory:       256,
+		},
+	},
+	Status: contrail.MemcachedStatus{Active: falseVal},
+}
+
+const credentialsSecretName = "credentials-secret"
+
+var swift = &contrail.Swift{
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-swift",
+	},
+	Spec: contrail.SwiftSpec{
+		ServiceConfiguration: contrail.SwiftConfiguration{
+			Containers: map[string]*contrail.Container{
+				"ring-reconciler": {Image: "ring-reconciler"},
+			},
+			SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+				AccountBindPort:   6001,
+				ContainerBindPort: 6002,
+				ObjectBindPort:    6000,
+				Containers: map[string]*contrail.Container{
+					"container1": {Image: "image1"},
+					"container2": {Image: "image2"},
+				},
+				Device: "dev",
+			},
+			SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+				ListenPort:            5070,
+				KeystoneInstance:      "keystone",
+				CredentialsSecretName: credentialsSecretName,
+				Containers: map[string]*contrail.Container{
+					"container3": {Image: "image3"},
+					"container4": {Image: "image4"},
+				},
+			},
+		},
+	},
 }
