@@ -90,12 +90,13 @@ func TestConfigResourceHandler(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme: scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		err := Add(mgr)
 		assert.NoError(t, err)
 	})
+
 }
 
 type TestCase struct {
@@ -201,6 +202,11 @@ func newConfigInst() *contrail.Config {
 					"queryengine":          {Image: "contrail-analytics-query-engine"},
 					"statusmonitor":        {Image: "contrail-statusmonitor:debug"},
 				},
+				Storage: contrail.Storage{
+					Size: "10G",
+					Path: "/mnt/my-storage",
+				},
+				NodeManager: &falseVal,
 			},
 		},
 		Status: contrail.ConfigStatus{Active: &falseVal},
@@ -290,13 +296,18 @@ func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.Confi
 // ------------------------ TEST CASES ------------------------------------
 
 func testcase1() *TestCase {
+	trueVal := true
 	falseVal := false
 	cfg := newConfigInst()
+	cfg.Spec.ServiceConfiguration.NodeManager = &trueVal
 	tc := &TestCase{
 		name: "create a new statefulset",
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -315,6 +326,9 @@ func testcase2() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -344,6 +358,9 @@ func testcase3() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -363,6 +380,8 @@ func testcase4() *TestCase {
 			newManager(cfg),
 			zkp,
 			cfg,
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -383,6 +402,9 @@ func testcase5() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -419,6 +441,9 @@ func testcase7() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -446,6 +471,9 @@ func testcase8() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -464,6 +492,9 @@ func testcase9() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -492,3 +523,4 @@ func testcase10() *TestCase {
 	}
 	return tc
 }
+

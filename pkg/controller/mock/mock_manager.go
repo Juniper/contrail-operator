@@ -17,6 +17,7 @@ import (
 // ------------------------ MOCKED MANAGER ------------------------------------
 type MockManager struct {
 	Scheme *runtime.Scheme
+	Client *client.Client
 }
 
 func (m *MockManager) Add(r manager.Runnable) error {
