@@ -67,7 +67,7 @@ spec:
             queryengine:
               image: registry:5000/contrail-analytics-query-engine:master.1175
             statusmonitor:
-              image: registry:5000/contrail-statusmonitor:fix_bazel_test.67a50b2
+              image: registry:5000/contrail-statusmonitor:master.696465e
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
@@ -96,7 +96,7 @@ spec:
             nodeinit:
               image: registry:5000/contrail-node-init:master.1175
             statusmonitor:
-              image: registry:5000/contrail-statusmonitor:fix_bazel_test.67a50b2
+              image: registry:5000/contrail-statusmonitor:master.696465e
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -115,7 +115,7 @@ spec:
             init:
               image: registry:5000/python:alpine
             provisioner:
-              image: registry:5000/contrail-provisioner:fix_bazel_test.67a50b2
+              image: registry:5000/contrail-provisioner:master.696465e
     rabbitmq:
       metadata:
         labels:

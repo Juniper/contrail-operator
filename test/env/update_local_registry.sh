@@ -70,8 +70,8 @@ pull_image tmaier postgresql-client
 while read line; do
 	pull_image svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922 "${line}"
 done <<EOF
-contrail-statusmonitor:fix_bazel_test.67a50b2
-contrail-provisioner:fix_bazel_test.67a50b2
+contrail-statusmonitor:master.696465e
+contrail-provisioner:master.696465e
 EOF
 
 pull_image hub.juniper.net/contrail-nightly contrail-command:master.1175
