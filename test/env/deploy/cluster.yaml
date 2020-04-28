@@ -22,11 +22,11 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            cassandra:
+            - name: cassandra
               image: registry:5000/cassandra:3.11.4
-            init:
+            - name: init
               image: registry:5000/python:alpine
-            init2:
+            - name: init2
               image: registry:5000/cassandra:3.11.4
     config:
       metadata:
@@ -241,8 +241,8 @@ spec:
         containers:
         - name: postgres
           image: registry:5000/postgres
-          wait-for-ready-conf:
-            image: registry:5000/busybox
+        - name: wait-for-ready-conf
+          image: registry:5000/busybox
     memcached:
       metadata:
         name: memcached
@@ -259,19 +259,19 @@ spec:
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:
-            ring-reconciler:
-              image: registry:5000/centos-source-swift-base:train
+          - name: ring-reconciler
+            image: registry:5000/centos-source-swift-base:train
           swiftProxyConfiguration:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
             containers:
-              init:
-                image: registry:5000/centos-binary-kolla-toolbox:train
-              wait-for-ready-conf:
-                  image: registry:5000/busybox
-              api:
-                image: registry:5000/centos-binary-swift-proxy-server:train
+            - name: init
+              image: registry:5000/centos-binary-kolla-toolbox:train
+            - name: wait-for-ready-conf
+              image: registry:5000/busybox
+            - name: api
+              image: registry:5000/centos-binary-swift-proxy-server:train
           swiftStorageConfiguration:
             accountBindPort: 6001
             containerBindPort: 6002
