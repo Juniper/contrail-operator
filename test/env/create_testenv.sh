@@ -7,7 +7,7 @@ KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 INTERNAL_INSECURE_REGISTRY_PORT="${INTERNAL_INSECURE_REGISTRY_PORT:-5000}"
 
 # create registry container unless it already exists
-reg_name='kind-registry'
+reg_name='kind-registry-proxy'
 reg_port=${INTERNAL_INSECURE_REGISTRY_PORT}
 running="$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)"
 if [ "${running}" != 'true' ]; then

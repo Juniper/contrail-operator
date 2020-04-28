@@ -23,11 +23,11 @@ spec:
         serviceConfiguration:
           containers:
             - name: cassandra
-              image: registry:5000/cassandra:3.11.4
+              image: registry:5000/common-docker-third-party/contrail/cassandra:3.11.4
             - name: init
-              image: registry:5000/python:alpine
+              image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
-              image: registry:5000/cassandra:3.11.4
+              image: registry:5000/common-docker-third-party/contrail/cassandra:3.11.4
     config:
       metadata:
         labels:
@@ -43,31 +43,31 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: analyticsapi
-            image: registry:5000/contrail-analytics-api:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-api:master.1175
           - name: api
-            image: registry:5000/contrail-controller-config-api:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-api:master.1175
           - name: collector
-            image: registry:5000/contrail-analytics-collector:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-collector:master.1175
           - name: devicemanager
-            image: registry:5000/contrail-controller-config-devicemgr:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master.1175
           - name: dnsmasq
-            image: registry:5000/contrail-controller-config-dnsmasq:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master.1175
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: init2
-            image: registry:5000/busybox
+            image: registry:5000/common-docker-third-party/contrail/busybox:1.31
           - name: nodeinit
-            image: registry:5000/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
           - name: redis
-            image: registry:5000/redis:4.0.2
+            image: registry:5000/contrail-nightly/common-docker-third-party/contrail/redis:4.0.2
           - name: schematransformer
-            image: registry:5000/contrail-controller-config-schema:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-schema:master.1175
           - name: servicemonitor
-            image: registry:5000/contrail-controller-config-svcmonitor:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master.1175
           - name: queryengine
-            image: registry:5000/contrail-analytics-query-engine:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master.1175
           - name: statusmonitor
-            image: registry:5000/contrail-statusmonitor:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.696465e
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
@@ -86,17 +86,17 @@ spec:
           cassandraInstance: cassandra1
           containers:
           - name: control
-            image: registry:5000/contrail-controller-control-control:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-control:master.1175
           - name: dns
-            image: registry:5000/contrail-controller-control-dns:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-dns:master.1175
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: named
-            image: registry:5000/contrail-controller-control-named:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-named:master.1175
           - name: nodeinit
-            image: registry:5000/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
           - name: statusmonitor
-            image: registry:5000/contrail-statusmonitor:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.696465e
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -113,9 +113,9 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: provisioner
-            image: registry:5000/contrail-provisioner:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:master.696465e
     rabbitmq:
       metadata:
         labels:
@@ -129,9 +129,9 @@ spec:
         serviceConfiguration:
           containers:
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: rabbitmq
-            image: registry:5000/rabbitmq:3.7
+            image: registry:5000/common-docker-third-party/contrail/rabbitmq:3.7
     webui:
       metadata:
         labels:
@@ -147,15 +147,15 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: nodeinit
-            image: registry:5000/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
           - name: redis
-            image: registry:5000/redis:4.0.2
+            image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: webuijob
-            image: registry:5000/contrail-controller-webui-job:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-webui-job:master.1175
           - name: webuiweb
-            image: registry:5000/contrail-controller-webui-web:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-webui-web:master.1175
     zookeepers:
     - metadata:
         labels:
@@ -169,9 +169,9 @@ spec:
         serviceConfiguration:
           containers:
           - name: init
-            image: registry:5000/python:alpine
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: zookeeper
-            image: registry:5000/zookeeper:3.5.5
+            image: registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5
     command:
       metadata:
         name: command
@@ -197,11 +197,11 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: api
-            image: registry:5000/contrail-command:master.1175
+            image: registry:5000/contrail-nightly/contrail-command:master.1175
           - name: init
-            image: registry:5000/contrail-command:master.1175
+            image: registry:5000/contrail-nightly/contrail-command:master.1175
           - name: wait-for-ready-conf
-            image: registry:5000/busybox
+            image: registry:5000/common-docker-third-party/contrail/busybox:1.31
     keystone:
       metadata:
         name: keystone
@@ -223,26 +223,26 @@ spec:
           listenPort: 5555
           containers:
           - name: wait-for-ready-conf
-            image: registry:5000/busybox
+            image: registry:5000/common-docker-third-party/contrail/busybox:1.31
           - name: keystoneDbInit
-            image: registry:5000/postgresql-client
+            image: registry:5000/common-docker-third-party/contrail/postgresql-client:1.0
           - name: keystoneInit
-            image: registry:5000/centos-binary-keystone:train
+            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005
           - name: keystone
-            image: registry:5000/centos-binary-keystone:train
+            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005
           - name: keystoneSsh
-            image: registry:5000/centos-binary-keystone-ssh:train
+            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone-ssh:train-2005
           - name: keystoneFernet
-            image: registry:5000/centos-binary-keystone-fernet:train
+            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone-fernet:train-2005
     postgres:
       metadata:
         name: postgres
       spec:
         containers:
         - name: postgres
-          image: registry:5000/postgres
+          image: registry:5000/common-docker-third-party/contrail/postgres:12.2
         - name: wait-for-ready-conf
-          image: registry:5000/busybox
+          image: registry:5000/common-docker-third-party/contrail/busybox:1.31
     memcached:
       metadata:
         name: memcached
@@ -251,7 +251,7 @@ spec:
         serviceConfiguration:
           containers:
           - name: memcached
-            image: "registry:5000/centos-binary-memcached:train"
+            image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"
     swift:
       metadata:
         name: swift
@@ -260,18 +260,18 @@ spec:
           credentialsSecretName: "swift-credentials-secret"
           containers:
           - name: ring-reconciler
-            image: registry:5000/centos-source-swift-base:train
+            image: registry:5000/common-docker-third-party/contrail/centos-source-swift-base:train-2005
           swiftProxyConfiguration:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"
             listenPort: 5080
             containers:
             - name: init
-              image: registry:5000/centos-binary-kolla-toolbox:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
             - name: wait-for-ready-conf
-              image: registry:5000/busybox
+              image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: api
-              image: registry:5000/centos-binary-swift-proxy-server:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005
           swiftStorageConfiguration:
             accountBindPort: 6001
             containerBindPort: 6002
@@ -279,28 +279,28 @@ spec:
             device: d1
             containers:
             - name: swiftObjectExpirer
-              image: registry:5000/centos-binary-swift-object-expirer:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
             - name: swiftObjectUpdater
-              image: registry:5000/centos-binary-swift-object:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
             - name: swiftObjectReplicator
-              image: registry:5000/centos-binary-swift-object:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
             - name: swiftObjectAuditor
-              image: registry:5000/centos-binary-swift-object:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
             - name: swiftObjectServer
-              image: registry:5000/centos-binary-swift-object:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
             - name: swiftContainerUpdater
-              image: registry:5000/centos-binary-swift-container:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
             - name: swiftContainerReplicator
-              image: registry:5000/centos-binary-swift-container:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
             - name: swiftContainerAuditor
-              image: registry:5000/centos-binary-swift-container:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
             - name: swiftContainerServer
-              image: registry:5000/centos-binary-swift-container:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
             - name: swiftAccountReaper
-              image: registry:5000/centos-binary-swift-account:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
             - name: swiftAccountReplicator
-              image: registry:5000/centos-binary-swift-account:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
             - name: swiftAccountAuditor
-              image: registry:5000/centos-binary-swift-account:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
             - name: swiftAccountServer
-              image: registry:5000/centos-binary-swift-account:train
+              image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005

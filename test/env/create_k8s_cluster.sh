@@ -11,7 +11,7 @@ fi
 
 # desired cluster name; default is "kind"
 kind_cluster_name="$1"
-insecure_registry_address="$2"
+insecure_registry_address="172.17.0.5"
 
 # create a cluster with the local registry enabled in containerd
 cat <<EOF | kind create cluster --name "${kind_cluster_name}" --config=-
