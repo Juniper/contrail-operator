@@ -58,14 +58,14 @@ spec:
             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
           - name: nodeinit
             image: registry:5000/contrail-nightly/contrail-node-init:master.1175
-          - name: redis
-            image: registry:5000/contrail-nightly/common-docker-third-party/contrail/redis:4.0.2
           - name: schematransformer
             image: registry:5000/contrail-nightly/contrail-controller-config-schema:master.1175
           - name: servicemonitor
             image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master.1175
           - name: queryengine
             image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master.1175
+          - name: redis
+            image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: statusmonitor
             image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.696465e
           logLevel: SYS_DEBUG

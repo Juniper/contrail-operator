@@ -221,7 +221,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 							Containers: []*v1alpha1.Container{
-								{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7:" + versionMap["rabbitmq"]},
+								{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:" + versionMap["rabbitmq"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							},
 						},
