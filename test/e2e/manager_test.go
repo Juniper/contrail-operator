@@ -221,8 +221,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 							Containers: []*v1alpha1.Container{
-								{Name: "rabbitmq", Image: "registry:5000/rabbitmq:" + versionMap["rabbitmq"]},
-								{Name: "init", Image: "registry:5000/busybox"},
+								{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:" + versionMap["rabbitmq"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							},
 						},
 					},
@@ -240,8 +240,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.ZookeeperConfiguration{
 							Containers: []*v1alpha1.Container{
-								{Name: "zookeeper", Image: "registry:5000/zookeeper:" + versionMap["zookeeper"]},
-								{Name: "init", Image: "registry:5000/busybox"},
+								{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:" + versionMap["zookeeper"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							},
 						},
 					},
@@ -259,9 +259,9 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.CassandraConfiguration{
 							Containers: []*v1alpha1.Container{
-								{Name: "cassandra", Image: "registry:5000/cassandra:" + versionMap["cassandra"]},
-								{Name: "init", Image: "registry:5000/busybox"},
-								{Name: "init2", Image: "registry:5000/cassandra:" + versionMap["cassandra"]},
+								{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:" + versionMap["cassandra"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+								{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/cassandra:" + versionMap["cassandra"]},
 							},
 						},
 					},
@@ -282,19 +282,19 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							ZookeeperInstance: "zookeeper1",
 
 							Containers: []*v1alpha1.Container{
-								{Name: "api", Image: "registry:5000/contrail-controller-config-api:" + versionMap["config"]},
-								{Name: "devicemanager", Image: "registry:5000/contrail-controller-config-devicemgr:" + versionMap["config"]},
-								{Name: "dnsmasq", Image: "registry:5000/contrail-controller-config-dnsmasq:" + versionMap["config"]},
-								{Name: "schematransformer", Image: "registry:5000/contrail-controller-config-schema:" + versionMap["config"]},
-								{Name: "servicemonitor", Image: "registry:5000/contrail-controller-config-svcmonitor:" + versionMap["config"]},
-								{Name: "analyticsapi", Image: "registry:5000/contrail-analytics-api:" + versionMap["config"]},
-								{Name: "collector", Image: "registry:5000/contrail-analytics-collector:" + versionMap["config"]},
-								{Name: "queryengine", Image: "registry:5000/contrail-analytics-query-engine:" + versionMap["config"]},
-								{Name: "redis", Image: "registry:5000/redis:4.0.2"},
-								{Name: "nodeinit", Image: "registry:5000/contrail-node-init:" + versionMap["config"]},
-								{Name: "init", Image: "registry:5000/python:alpine"},
-								{Name: "init2", Image: "registry:5000/busybox"},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+								{Name: "api", Image: "registry:5000/contrail-nightly/contrail-controller-config-api:" + versionMap["config"]},
+								{Name: "devicemanager", Image: "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + versionMap["config"]},
+								{Name: "dnsmasq", Image: "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + versionMap["config"]},
+								{Name: "schematransformer", Image: "registry:5000/contrail-nightly/contrail-controller-config-schema:" + versionMap["config"]},
+								{Name: "servicemonitor", Image: "registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:" + versionMap["config"]},
+								{Name: "analyticsapi", Image: "registry:5000/contrail-nightly/contrail-analytics-api:" + versionMap["config"]},
+								{Name: "collector", Image: "registry:5000/contrail-nightly/contrail-analytics-collector:" + versionMap["config"]},
+								{Name: "queryengine", Image: "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + versionMap["config"]},
+								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["config"]},
+								{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+								{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 							},
 						},
 					},
@@ -317,12 +317,12 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
 							Containers: []*v1alpha1.Container{
-								{Name: "control", Image: "registry:5000/contrail-controller-control-control:" + versionMap["control"]},
-								{Name: "dns", Image: "registry:5000/contrail-controller-control-dns:" + versionMap["control"]},
-								{Name: "named", Image: "registry:5000/contrail-controller-control-named:" + versionMap["control"]},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
-								{Name: "nodeinit", Image: "registry:5000/contrail-node-init:" + versionMap["control"]},
-								{Name: "init", Image: "registry:5000/python:alpine"},
+								{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + versionMap["control"]},
+								{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["control"]},
+								{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + versionMap["control"]},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["control"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 							},
 						},
 					},
@@ -341,8 +341,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
 							Containers: []*v1alpha1.Container{
-								{Name: "init", Image: "registry:5000/python:alpine"},
-								{Name: "provisioner", Image: "registry:5000/contrail-provisioner:" + versionMap["contrail-provisioner"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+								{Name: "provisioner", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:" + versionMap["contrail-provisioner"]},
 							},
 						},
 					},
@@ -363,9 +363,9 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							ZookeeperInstance: "zookeeper1",
 
 							Containers: []*v1alpha1.Container{
-								{Name: "kubemanager", Image: "registry:5000/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
-								{Name: "nodeinit", Image: "registry:5000/contrail-node-init:" + versionMap["kubemanager"]},
-								{Name: "init", Image: "registry:5000/busybox"},
+								{Name: "kubemanager", Image: "registry:5000/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
+								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["kubemanager"]},
+								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							},
 						},
 					},
@@ -406,8 +406,8 @@ func RabbitmqCluster(t *testing.T) {
 			},
 			ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 				Containers: []*v1alpha1.Container{
-					{Name: "rabbitmq", Image: "registry:5000/rabbitmq:3.7"},
-					{Name: "init", Image: "registry:5000/busybox"},
+					{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7"},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 				},
 			},
 		},
@@ -430,7 +430,7 @@ func upgradeZookeeper(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 		return err
 	}
 	zkContainer := utils.GetContainerFromList("zookeeper", instance.Spec.Services.Zookeepers[0].Spec.ServiceConfiguration.Containers)
-	zkContainer.Image = "registry:5000/zookeeper:" + targetVersionMap["zookeeper"]
+	zkContainer.Image = "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
 	err = f.Client.Update(goctx.TODO(), instance)
 	if err != nil {
 		return err
@@ -500,7 +500,7 @@ func upgradeCassandra(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 		return err
 	}
 	cassandraContainer := utils.GetContainerFromList("cassandra", instance.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Containers)
-	cassandraContainer.Image = "registry:5000/cassandra:" + targetVersionMap["cassandra"]
+	cassandraContainer.Image = "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
 	err = f.Client.Update(goctx.TODO(), instance)
 	if err != nil {
 		return err
