@@ -344,6 +344,7 @@ func TestUtilsSecond(t *testing.T) {
 		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
 		// nothing to test
 	})
+	
 
 }
 
@@ -376,7 +377,7 @@ var cassandra = &contrail.Cassandra{
 func newRabbitmq() *contrail.Rabbitmq {
 	trueVal := true
 	falseVal := false
-	replica := int32(1)
+	replicas := int32(1)
 	return &contrail.Rabbitmq{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "rabbitmq-instance",
@@ -395,7 +396,7 @@ func newRabbitmq() *contrail.Rabbitmq {
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				Replicas:     &replica,
+				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
@@ -436,8 +437,8 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":      &contrail.Container{Image: "python:alpine"},
-					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
+					"init":      &contrail.Container{Image: "zookeeper"},
+					"zookeeper": &contrail.Container{Image: "zookeeper"},
 				},
 			},
 		},
@@ -456,6 +457,13 @@ func newManager() *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ManagerSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:     &trueVal,
+				Create:       &trueVal,
+				HostNetwork:  &trueVal,
+				Replicas:     &replica,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
 			Services: contrail.Services{
 				Zookeepers: []*contrail.Zookeeper{zoo},
 				Cassandras: []*contrail.Cassandra{cassandra},
@@ -470,11 +478,18 @@ var control = &contrail.Control{
 	ObjectMeta: meta.ObjectMeta{
 		Name:      "control1",
 		Namespace: "default",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-			"control_role":     "master",
+		Labels:    map[string]string{"contrail_cluster": "config1"},
+	},
+	Spec: contrail.ControlSpec{
+		CommonConfiguration: contrail.CommonConfiguration{
+			Activate:     &trueVal,
+			Create:       &trueVal,
+			HostNetwork:  &trueVal,
+			Replicas:     &replica,
+			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 		},
 	},
+	Status: contrail.ControlStatus{Active: &falseVal},
 }
 
 var kubemanager = &contrail.Kubemanager{
@@ -501,6 +516,7 @@ var vrouter = &contrail.Vrouter{
 			Gateway:         "1.1.8.254",
 		},
 	},
+	Status: contrail.VrouterStatus{Active: &falseVal},
 }
 
 var keystone = &contrail.Keystone{
@@ -535,6 +551,7 @@ var config = &contrail.Config{
 			AuthMode:           contrail.AuthenticationModeKeystone,
 		},
 	},
+	Status: contrail.ConfigStatus{Active: &falseVal},
 }
 
 var DaemonSet = GetDaemonset()
@@ -548,6 +565,13 @@ func GetDaemonset() *apps.DaemonSet {
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "vrouter",
 			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{
+					Name:       "config1",
+					Kind:       "Manager",
+					Controller: &trueVal,
+				},
+			},
 		},
 	}
 	return &daemonSet
@@ -585,6 +609,7 @@ func newStatefulSet() *apps.StatefulSet {
 
 var replica = int32(1)
 var trueVal = true
+var falseVal = false
 
 var managerCommonConfiguration = contrail.CommonConfiguration{
 	Activate:     &trueVal,
@@ -592,14 +617,22 @@ var managerCommonConfiguration = contrail.CommonConfiguration{
 	HostNetwork:  &trueVal,
 	Replicas:     &replica,
 	NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+	ImagePullSecrets: []string{"contrail-nightly"},
+	Tolerations: []core.Toleration{
+		{
+				Effect:   core.TaintEffectNoSchedule,
+				Operator: core.TolerationOpExists,
+		},
+		{
+				Effect:   core.TaintEffectNoExecute,
+				Operator: core.TolerationOpExists,
+		},
+	},
 }
 
 var secondCommonConfiguration = contrail.CommonConfiguration{
 	Activate:     &trueVal,
 	Create:       &trueVal,
-	HostNetwork:  &trueVal,
-	Replicas:     &replica,
-	NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 }
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
