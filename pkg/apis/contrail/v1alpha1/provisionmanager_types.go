@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -33,9 +34,25 @@ type ProvisionManagerSpec struct {
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers         []*Container `json:"containers,omitempty"`
-	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
+	Containers                 []*Container               `json:"containers,omitempty"`
+	KeystoneSecretName         string                     `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance           string                     `json:"keystoneInstance,omitempty"`
+	GlobalVrouterConfiguration GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
+}
+
+type EcmpHashingIncludeFields struct {
+	HashingConfigured bool `json:"hashingConfigured,omitempty"`
+	SourceIp          bool `json:"sourceIp,omitempty"`
+	DestinationIp     bool `json:"destinationIp,omitempty"`
+	IpProtocol        bool `json:"ipProtocol,omitempty"`
+	SourcePort        bool `json:"sourcePort,omitempty"`
+	DestinationPort   bool `json:"destinationPort,omitempty"`
+}
+
+type GlobalVrouterConfiguration struct {
+	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
+	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
+	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -203,6 +220,23 @@ func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace 
 	return hostname, nil
 }
 
+func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration, error) {
+	g := &GlobalVrouterConfiguration{}
+	g.EncapsulationPriorities = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EncapsulationPriorities
+	g.VxlanNetworkIdentifierMode = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.VxlanNetworkIdentifierMode
+	g.EcmpHashingIncludeFields = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EcmpHashingIncludeFields
+	if g.EncapsulationPriorities == "" {
+		g.EncapsulationPriorities = "VXLAN,MPLSoGRE,MPLSoUDP"
+	}
+	if g.VxlanNetworkIdentifierMode == "" {
+		g.VxlanNetworkIdentifierMode = "automatic"
+	}
+	if g.EcmpHashingIncludeFields == (EcmpHashingIncludeFields{}) {
+		g.EcmpHashingIncludeFields = EcmpHashingIncludeFields{true, true, true, true, true, true}
+	}
+	return g, nil
+}
+
 func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string) (*KeystoneAuthParameters, error) {
 	k := &KeystoneAuthParameters{
 		AdminUsername: "admin",
@@ -278,6 +312,13 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
+
+	configMapGlobalVrouter := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-globalvrouter", Namespace: request.Namespace}, configMapGlobalVrouter)
+	if err != nil {
+		return err
+	}
+
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
 	if err != nil {
@@ -304,6 +345,17 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	var databaseNodeData = make(map[string]string)
 	var apiServerData = make(map[string]string)
 	var keystoneAuthData = make(map[string]string)
+	var globalVrouterData = make(map[string]string)
+
+	globalVrouter, err := c.getGlobalVrouterConfig()
+	if err != nil {
+		return err
+	}
+	globalVrouterJson, err := json.Marshal(globalVrouter)
+	if err != nil {
+		return err
+	}
+	globalVrouterData["globalvrouter.json"] = string(globalVrouterJson)
 
 	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
 		for _, pod := range podList.Items {
@@ -502,6 +554,12 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 
 	configMapKeystoneAuthConf.Data = keystoneAuthData
 	err = client.Update(context.TODO(), configMapKeystoneAuthConf)
+	if err != nil {
+		return err
+	}
+
+	configMapGlobalVrouter.Data = globalVrouterData
+	err = client.Update(context.TODO(), configMapGlobalVrouter)
 	if err != nil {
 		return err
 	}

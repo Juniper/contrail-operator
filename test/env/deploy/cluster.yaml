@@ -67,7 +67,7 @@ spec:
           - name: redis
             image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: statusmonitor
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:configure-encap-priority-provisioner.bee1bc8
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
@@ -96,7 +96,7 @@ spec:
           - name: nodeinit
             image: registry:5000/contrail-nightly/contrail-node-init:master.1175
           - name: statusmonitor
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:configure-encap-priority-provisioner.bee1bc8
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -111,11 +111,21 @@ spec:
           replicas: 1
         serviceConfiguration:
           keystoneInstance: keystone
+          globalVrouterConfiguration:
+            ecmpHashingIncludeFields:
+              destinationIp: true
+              destinationPort: true
+              hashingConfigured: true
+              ipProtocol: true
+              sourceIp: true
+              sourcePort: true
+            encapPriority: VXLAN,MPLSoGRE,MPLSoUDP
+            vxlanNetworkIdentifierMode: automatic
           containers:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: provisioner
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:change_image_format.aa5218b
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:configure-encap-priority-provisioner.bee1bc8
     rabbitmq:
       metadata:
         labels:
