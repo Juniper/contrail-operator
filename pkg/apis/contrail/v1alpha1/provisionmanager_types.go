@@ -34,10 +34,10 @@ type ProvisionManagerSpec struct {
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers                 []*Container                `json:"containers,omitempty"`
-	KeystoneSecretName         string                      `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance           string                      `json:"keystoneInstance,omitempty"`
-	GlobalVrouterConfiguration *GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
+	Containers                 []*Container               `json:"containers,omitempty"`
+	KeystoneSecretName         string                     `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance           string                     `json:"keystoneInstance,omitempty"`
+	GlobalVrouterConfiguration GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
 }
 
 type EcmpHashingIncludeFields struct {

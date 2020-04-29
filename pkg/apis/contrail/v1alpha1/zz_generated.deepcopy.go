@@ -2035,11 +2035,7 @@ func (in *ProvisionManagerConfiguration) DeepCopyInto(out *ProvisionManagerConfi
 			}
 		}
 	}
-	if in.GlobalVrouterConfiguration != nil {
-		in, out := &in.GlobalVrouterConfiguration, &out.GlobalVrouterConfiguration
-		*out = new(GlobalVrouterConfiguration)
-		**out = **in
-	}
+	out.GlobalVrouterConfiguration = in.GlobalVrouterConfiguration
 	return
 }
 
