@@ -118,7 +118,7 @@ type ReconcileManager struct {
 // Reconcile reconciles the manager.
 func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling Manager")
+	reqLogger.Info("Reconciling Manager......")
 	instance := &v1alpha1.Manager{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
