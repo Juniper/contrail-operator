@@ -5094,7 +5094,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-operator:change_image_format.latest
+          image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-operator:master.latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

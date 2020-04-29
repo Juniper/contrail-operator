@@ -84,8 +84,8 @@ var initialVersionMap = map[string]string{
 	"config":                 "master.1175",
 	"control":                "master.1175",
 	"kubemanager":            "master.1175",
-	"contrail-provisioner":   "change_image_format.aa5218b",
-	"contrail-statusmonitor": "change_image_format.aa5218b",
+	"contrail-provisioner":   "configure-encap-priority-provisioner.bee1bc8",
+	"contrail-statusmonitor": "configure-encap-priority-provisioner.bee1bc8",
 }
 
 var targetVersionMap = map[string]string{
