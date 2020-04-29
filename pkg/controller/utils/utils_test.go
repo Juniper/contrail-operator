@@ -344,7 +344,6 @@ func TestUtilsSecond(t *testing.T) {
 		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
 		// nothing to test
 	})
-	
 
 }
 
@@ -492,16 +491,6 @@ var control = &contrail.Control{
 	Status: contrail.ControlStatus{Active: &falseVal},
 }
 
-var kubemanager = &contrail.Kubemanager{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "kubemanager1",
-		Namespace: "default",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-}
-
 var vrouter = &contrail.Vrouter{
 	ObjectMeta: meta.ObjectMeta{
 		Name:      "vrouter",
@@ -517,24 +506,6 @@ var vrouter = &contrail.Vrouter{
 		},
 	},
 	Status: contrail.VrouterStatus{Active: &falseVal},
-}
-
-var keystone = &contrail.Keystone{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "keystone",
-		Namespace: "default",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-	Spec: contrail.KeystoneSpec{
-		ServiceConfiguration: contrail.KeystoneConfiguration{
-			ListenPort: 5555,
-		},
-	},
-	Status: contrail.KeystoneStatus{
-		IPs: []string{"10.11.12.13"},
-	},
 }
 
 var config = &contrail.Config{
@@ -612,27 +583,27 @@ var trueVal = true
 var falseVal = false
 
 var managerCommonConfiguration = contrail.CommonConfiguration{
-	Activate:     &trueVal,
-	Create:       &trueVal,
-	HostNetwork:  &trueVal,
-	Replicas:     &replica,
-	NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+	Activate:         &trueVal,
+	Create:           &trueVal,
+	HostNetwork:      &trueVal,
+	Replicas:         &replica,
+	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
 	ImagePullSecrets: []string{"contrail-nightly"},
 	Tolerations: []core.Toleration{
 		{
-				Effect:   core.TaintEffectNoSchedule,
-				Operator: core.TolerationOpExists,
+			Effect:   core.TaintEffectNoSchedule,
+			Operator: core.TolerationOpExists,
 		},
 		{
-				Effect:   core.TaintEffectNoExecute,
-				Operator: core.TolerationOpExists,
+			Effect:   core.TaintEffectNoExecute,
+			Operator: core.TolerationOpExists,
 		},
 	},
 }
 
 var secondCommonConfiguration = contrail.CommonConfiguration{
-	Activate:     &trueVal,
-	Create:       &trueVal,
+	Activate: &trueVal,
+	Create:   &trueVal,
 }
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
