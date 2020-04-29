@@ -138,7 +138,7 @@ func getStatus(config Config) {
 	clientset, restClient, err := kubeClient(config)
 	check(err)
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
-	var configStatusMap = make(map[string]map[string]contrailOperatorTypes.ConfigServiceStatus)
+	var configStatusMap = make(map[string]contrailOperatorTypes.ConfigServiceStatus)
 
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
@@ -167,12 +167,22 @@ func getStatus(config Config) {
 }
 
 func GetConfigStatusFromApiServer(apiServer string, client *http.Client,
-	configStatusMap map[string]map[string]contrailOperatorTypes.ConfigServiceStatus) {
-	var url string
-	url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
+	configStatusMap map[string]contrailOperatorTypes.ConfigServiceStatus) {
+	serviceAddressName := strings.Split(apiServer, "::")
+	serviceAddress := serviceAddressName[0]
+	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 	resp, err := client.Get(url)
 	if err != nil {
+		moduleName := serviceAddressName[1]
+		moduleNameFmt := strings.Replace(moduleName, "contrail", "", 1)
+		moduleNameFmt = strings.Replace(moduleNameFmt, "-", "", -1)
+		configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+			NodeName:    "",
+			ModuleName:  moduleName,
+			ModuleState: "connection-error",
+		}
 		fmt.Println(err)
+		return
 	}
 	defer closeResp(resp)
 	if resp != nil {
@@ -182,16 +192,13 @@ func GetConfigStatusFromApiServer(apiServer string, client *http.Client,
 			if err != nil {
 				log.Fatal(err)
 			}
-			configStatus, hostName, err := getConfigStatus(bodyBytes)
+			configStatus, _, err := getConfigStatus(bodyBytes)
 			if err != nil {
 				log.Printf("warning: getting config status failed: %v", err)
 			}
-			if _, ok := configStatusMap[hostName]; !ok {
-				configStatusMap[hostName] = map[string]contrailOperatorTypes.ConfigServiceStatus{}
-			}
 			moduleNameFmt := strings.Replace(configStatus.ModuleName, "contrail", "", 1)
 			moduleNameFmt = strings.Replace(moduleNameFmt, "-", "", -1)
-			configStatusMap[hostName][moduleNameFmt] = *configStatus
+			configStatusMap[moduleNameFmt] = *configStatus
 		}
 	}
 }

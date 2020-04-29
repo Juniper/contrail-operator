@@ -67,7 +67,7 @@ func (c *configClient) UpdateStatus(name string, object *contrailOperatorTypes.C
 	return &result, err
 }
 
-func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
+func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 		configClient := &configClient{
@@ -78,16 +78,20 @@ func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrail
 		check(err)
 		update := false
 		if configObject.Status.ServiceStatus == nil {
-			configObject.Status.ServiceStatus = StatusMap
+			configObject.Status.ServiceStatus = map[string]map[string]contrailOperatorTypes.ConfigServiceStatus{}
+			configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 			update = true
-		} else {
-			same := reflect.DeepEqual(configObject.Status.ServiceStatus, StatusMap)
-			if !same {
-				configObject.Status.ServiceStatus = StatusMap
+		}
+		if !update {
+			if _, ok := configObject.Status.ServiceStatus[config.Hostname]; !ok {
+				configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 				update = true
-
-			} else {
-				configObject.Status.ServiceStatus = StatusMap
+			}
+		}
+		if !update {
+			same := reflect.DeepEqual(configObject.Status.ServiceStatus[config.Hostname], StatusMap)
+			if !same {
+				configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 				update = true
 			}
 		}
