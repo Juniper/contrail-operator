@@ -111,6 +111,16 @@ spec:
           replicas: 1
         serviceConfiguration:
           keystoneInstance: keystone
+          globalVrouterConfiguration:
+            ecmpHashingIncludeFields:
+              destinationIp: true
+              destinationPort: true
+              hashingConfigured: true
+              ipProtocol: true
+              sourceIp: true
+              sourcePort: true
+            encapPriority: VXLAN,MPLSoGRE,MPLSoUDP
+            vxlanNetworkIdentifierMode: automatic
           containers:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
