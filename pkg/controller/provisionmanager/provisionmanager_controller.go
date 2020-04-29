@@ -171,7 +171,7 @@ type ReconcileProvisionManager struct {
 
 func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling ProvisionManager")
+	reqLogger.Info("Reconciling  ProvisionManager")
 	instanceType := "provisionmanager"
 	instance := &v1alpha1.ProvisionManager{}
 	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
