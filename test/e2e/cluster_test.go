@@ -17,6 +17,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
 )
@@ -55,19 +56,32 @@ func TestCluster(t *testing.T) {
 
 			err = yaml.Unmarshal(yamlFile, manager)
 			require.NoError(t, err)
+			utils.GetContainerFromList("statusmonitor",
+				manager.Spec.Services.Config.Spec.ServiceConfiguration.Containers).Image =
+				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+
+			utils.GetContainerFromList("statusmonitor",
+				manager.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers).Image =
+				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+
+			utils.GetContainerFromList("provisioner",
+				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
+				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:" + scmBranch + "." + scmRevision
 
 			err = f.Client.Create(context.TODO(), manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
-			t.Run("then manager has ready condition in less then 10 minutes", func(t *testing.T) {
+			// test images might not be available immediately
+			t.Run("then manager has ready condition in less then 15 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       10 * time.Minute,
+					Timeout:       15 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
 				}.ForManagerCondition(manager.Name, contrail.ManagerReady)
-				assert.NoError(t, err)
+				// reference cluster failed there is no point to test operator futher
+				require.NoError(t, err)
 			})
 
 			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {

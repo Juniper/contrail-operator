@@ -15,11 +15,22 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 
 	f "github.com/operator-framework/operator-sdk/pkg/test"
 )
 
+var scmRevision = getEnv("BUILD_SCM_REVISION", "latest")
+var scmBranch = getEnv("BUILD_SCM_BRANCH", "master")
+
 func TestMain(m *testing.M) {
 	f.MainEntry(m)
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
