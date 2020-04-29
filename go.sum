@@ -69,6 +69,8 @@ github.com/Juniper/contrail v0.0.0-20200330181744-e78e7561c8fd/go.mod h1:74ucqR/
 github.com/Juniper/contrail v0.0.0-20200330233038-9deae1205bb1 h1:sBxEkKCRoPdt3V+fbdRPuguXvVtO+rPWYaWi+d9QsXU=
 github.com/Juniper/contrail-go-api v1.1.0 h1:A3vC2UxOBqFltHlfoyWD8RJQm9i805IQPJkYcLQc1ec=
 github.com/Juniper/contrail-go-api v1.1.0/go.mod h1:oEhWD06BFRAWdIBUvgUoGuVRYtb3lWQPHuja6+m4PoU=
+github.com/Juniper/contrail-go-api v1.1.1-0.20200414151206-7bb4264f1da4 h1:GswUxqPbmwhx7zQj+8msn0jKaVrVRPnWsPuNizqpU1o=
+github.com/Juniper/contrail-go-api v1.1.1-0.20200414151206-7bb4264f1da4/go.mod h1:oEhWD06BFRAWdIBUvgUoGuVRYtb3lWQPHuja6+m4PoU=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e h1:eb0Pzkt15Bm7f2FFYv7sjY7NPFi3cPkS3tv1CcrFBWA=
 github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=

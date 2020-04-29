@@ -210,6 +210,17 @@ spec:
               name: docker-unix-socket
             - mountPath: /var/crashes
               name: crashes
+        - name: statusmonitor
+          image: docker.io/kaweue/contrail-statusmonitor:debug
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: config-logs
       dnsPolicy: ClusterFirst
       hostNetwork: true
       nodeSelector:
@@ -220,9 +231,9 @@ spec:
         - effect: NoExecute
           operator: Exists
       volumes:
-        - persistentVolumeClaim: {}
+        - emptyDir: {}
           name: tftp
-        - persistentVolumeClaim: {}
+        - emptyDir: {}
           name: dnsmasq
         - hostPath:
             path: /var/log/contrail/config

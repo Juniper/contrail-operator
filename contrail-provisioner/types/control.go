@@ -5,7 +5,8 @@ import (
 	"reflect"
 
 	"github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
 // ControlNode struct defines Contrail control node

@@ -365,10 +365,10 @@ var cassandra = &contrail.Cassandra{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.CassandraConfiguration{
-			Containers: map[string]*contrail.Container{
-				"cassandra": &contrail.Container{Image: "cassandra:3.5"},
-				"init":      &contrail.Container{Image: "busybox"},
-				"init2":     &contrail.Container{Image: "cassandra:3.5"},
+			Containers: []*contrail.Container{
+				{Name: "cassandra", Image: "cassandra:3.5"},
+				{Name: "init", Image: "busybox"},
+				{Name: "init2", Image: "cassandra:3.5"},
 			},
 		},
 	},
@@ -400,9 +400,9 @@ func newRabbitmq() *contrail.Rabbitmq {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":     &contrail.Container{Image: "python:alpine"},
-					"rabbitmq": &contrail.Container{Image: "contrail-controller-rabbitmq"},
+				Containers: []*contrail.Container{
+					{Name: "init2", Image: "python:alpine"},
+					{Name: "rabbitmq", Image: "contrail-controller-rabbitmq"},
 				},
 			},
 		},
@@ -436,9 +436,9 @@ func newZookeeper() *contrail.Zookeeper {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":      &contrail.Container{Image: "zookeeper"},
-					"zookeeper": &contrail.Container{Image: "zookeeper"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "python:alpine"},
+					{Name: "zookeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},

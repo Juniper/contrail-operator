@@ -47,14 +47,14 @@ func TestVrouterController(t *testing.T) {
 		},
 		Spec: contrail.VrouterSpec{
 			ServiceConfiguration: contrail.VrouterConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":                   {Image: "image1"},
-					"nodemanager":            {Image: "image2"},
-					"vrouteragent":           {Image: "image3"},
-					"vroutercni":             {Image: "image4"},
-					"vrouterkernelbuildinit": {Image: "image5"},
-					"vrouterkernelinit":      {Image: "image6"},
-					"nodeinit":               {Image: "image7"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "image1"},
+					{Name: "nodemanager", Image: "image2"},
+					{Name: "vrouteragent", Image: "image3"},
+					{Name: "vroutercni", Image: "image4"},
+					{Name: "vrouterkernelbuildinit", Image: "image5"},
+					{Name: "vrouterkernelinit", Image: "image6"},
+					{Name: "nodeinit", Image: "image7"},
 				},
 				ControlInstance:   "control1",
 				CassandraInstance: "cassandra1",

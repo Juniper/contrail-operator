@@ -50,14 +50,14 @@ type RabbitmqSpec struct {
 // RabbitmqConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type RabbitmqConfiguration struct {
-	Containers   map[string]*Container `json:"containers,omitempty"`
-	Port         *int                  `json:"port,omitempty"`
-	SSLPort      *int                  `json:"sslPort,omitempty"`
-	ErlangCookie string                `json:"erlangCookie,omitempty"`
-	Vhost        string                `json:"vhost,omitempty"`
-	User         string                `json:"user,omitempty"`
-	Password     string                `json:"password,omitempty"`
-	Secret       string                `json:"secret,omitempty"`
+	Containers   []*Container `json:"containers,omitempty"`
+	Port         *int         `json:"port,omitempty"`
+	SSLPort      *int         `json:"sslPort,omitempty"`
+	ErlangCookie string       `json:"erlangCookie,omitempty"`
+	Vhost        string       `json:"vhost,omitempty"`
+	User         string       `json:"user,omitempty"`
+	Password     string       `json:"password,omitempty"`
+	Secret       string       `json:"secret,omitempty"`
 }
 
 // +k8s:openapi-gen=true

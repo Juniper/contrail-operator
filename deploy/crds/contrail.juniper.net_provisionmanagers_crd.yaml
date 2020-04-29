@@ -110,7 +110,42 @@ spec:
               description: ProvisionManagerConfiguration defines the provision manager
                 configuration
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
+                globalVrouterConfiguration:
+                  properties:
+                    ecmpHashingIncludeFields:
+                      properties:
+                        destinationIp:
+                          type: boolean
+                        destinationPort:
+                          type: boolean
+                        hashingConfigured:
+                          type: boolean
+                        ipProtocol:
+                          type: boolean
+                        sourceIp:
+                          type: boolean
+                        sourcePort:
+                          type: boolean
+                      type: object
+                    encapPriority:
+                      type: string
+                    vxlanNetworkIdentifierMode:
+                      type: string
+                  type: object
                 keystoneInstance:
                   type: string
                 keystoneSecretName:

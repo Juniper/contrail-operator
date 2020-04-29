@@ -28,6 +28,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -226,7 +227,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				Items: []core.KeyToPath{
 					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "contrail.yml", Path: "contrail.yml"},
+					{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 				},
 			},
@@ -331,7 +332,7 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	return keystoneServ, err
 }
 
-func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers map[string]*contrail.Container) *apps.Deployment {
+func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -341,6 +342,20 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 			Selector: &meta.LabelSelector{},
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{name},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					Containers: []core.Container{{
 						Name:            "command",
 						ImagePullPolicy: core.PullAlways,
@@ -413,30 +428,30 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 	}
 }
 
-func getImage(containers map[string]*contrail.Container, containerName string) string {
+func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
 		"init":                "localhost:5000/contrail-command",
 		"api":                 "localhost:5000/contrail-command",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil {
 		return defaultContainersImages[containerName]
 	}
 
 	return c.Image
 }
 
-func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
 		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
 		"api":                 {"bash", "-c", "/etc/contrail/entrypoint.sh"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil || c.Command == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 
@@ -497,7 +512,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("no swift proxy pod found")
 	}
 	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxy := proxy.NewClient(command.Namespace, swiftProxyPod, sPort)
+	swiftProxy := proxy.NewSecureClient(command.Namespace, swiftProxyPod, sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

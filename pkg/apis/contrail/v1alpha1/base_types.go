@@ -59,6 +59,7 @@ type MonitorEncryption struct {
 // Container defines name, image and command.
 // +k8s:openapi-gen=true
 type Container struct {
+	Name    string   `json:"name,omitempty"`
 	Image   string   `json:"image,omitempty"`
 	Command []string `json:"command,omitempty"`
 }

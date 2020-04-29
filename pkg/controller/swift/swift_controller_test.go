@@ -2,8 +2,9 @@ package swift_test
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -329,16 +330,16 @@ func newSwift(swiftName types.NamespacedName) *contrail.Swift {
 		},
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
-				Containers: map[string]*contrail.Container{
-					"ring-reconciler": {Image: "ring-reconciler"},
+				Containers: []*contrail.Container{
+					{Name: "ring-reconciler", Image: "ring-reconciler"},
 				},
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 					AccountBindPort:   6001,
 					ContainerBindPort: 6002,
 					ObjectBindPort:    6000,
-					Containers: map[string]*contrail.Container{
-						"container1": {Image: "image1"},
-						"container2": {Image: "image2"},
+					Containers: []*contrail.Container{
+						{Name: "container1", Image: "image1"},
+						{Name: "container2", Image: "image2"},
 					},
 					Device: "dev",
 				},
@@ -346,9 +347,9 @@ func newSwift(swiftName types.NamespacedName) *contrail.Swift {
 					ListenPort:            5070,
 					KeystoneInstance:      "keystone",
 					CredentialsSecretName: credentialsSecretName,
-					Containers: map[string]*contrail.Container{
-						"container3": {Image: "image3"},
-						"container4": {Image: "image4"},
+					Containers: []*contrail.Container{
+						{Name: "container3", Image: "image3"},
+						{Name: "container4", Image: "image4"},
 					},
 				},
 			},

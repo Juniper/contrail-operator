@@ -114,7 +114,11 @@ spec:
                   - noauth
                   - rbac
                   type: string
+                analyticsMonitorIntrospectPort:
+                  type: integer
                 analyticsPort:
+                  type: integer
+                apiIntrospectPort:
                   type: integer
                 apiPort:
                   type: integer
@@ -125,9 +129,26 @@ spec:
                   type: string
                 cassandraInstance:
                   type: string
+                collectorMonitorIntrospectPort:
+                  type: integer
                 collectorPort:
                   type: integer
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
+                deviceManagerIntrospectPort:
+                  type: integer
                 fabricMgmtIP:
                   type: string
                 keystoneInstance:
@@ -146,6 +167,8 @@ spec:
                   type: string
                 redisPort:
                   type: integer
+                schemaIntrospectPort:
+                  type: integer
                 storage:
                   properties:
                     path:
@@ -154,6 +177,8 @@ spec:
                       pattern: ^([0-9]+)([KMGTPE]i)?$
                       type: string
                   type: object
+                svcMonitorIntrospectPort:
+                  type: integer
                 zookeeperInstance:
                   type: string
               type: object
@@ -186,6 +211,7 @@ spec:
                 redisPort:
                   type: string
               type: object
+            serviceStatus: {}
           type: object
       type: object
   version: v1alpha1
