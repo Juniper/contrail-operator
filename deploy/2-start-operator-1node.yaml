@@ -21,12 +21,12 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            cassandra:
-              image: cassandra:3.11.4
-            init:
-              image: python:alpine
-            init2:
-              image: cassandra:3.11.4
+          - name: cassandra
+            image: cassandra:3.11.4
+          - name: init
+            image: python:alpine
+          - name: init2
+            image: cassandra:3.11.4
     config:
       metadata:
         labels:
@@ -40,30 +40,30 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            analyticsapi:
-              image: opencontrailnightly/contrail-analytics-api:1910-latest
-            api:
-              image: opencontrailnightly/contrail-controller-config-api:1910-latest
-            collector:
-              image: opencontrailnightly/contrail-analytics-collector:1910-latest
-            devicemanager:
-              image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
-            dnsmasq:
-              image: opencontrailnightly/contrail-external-dnsmasq:1910-latest
-            init:
-              image: python:alpine
-            init2:
-              image: busybox
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            redis:
-              image: redis:4.0.2
-            schematransformer:
-              image: opencontrailnightly/contrail-controller-config-schema:1910-latest
-            servicemonitor:
-              image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
-            queryengine:
-              image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
+          - name: analyticsapi
+            image: opencontrailnightly/contrail-analytics-api:1910-latest
+          - name: api
+            image: opencontrailnightly/contrail-controller-config-api:1910-latest
+          - name: collector
+            image: opencontrailnightly/contrail-analytics-collector:1910-latest
+          - name: devicemanager
+            image: opencontrailnightly/contrail-controller-config-devicemgr:1910-latest
+          - name: dnsmasq
+            image: opencontrailnightly/contrail-external-dnsmasq:1910-latest
+          - name: init
+            image: python:alpine
+          - name: init2
+            image: busybox
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: redis
+            image: redis:4.0.2
+          - name: schematransformer
+            image: opencontrailnightly/contrail-controller-config-schema:1910-latest
+          - name: servicemonitor
+            image: opencontrailnightly/contrail-controller-config-svcmonitor:1910-latest
+          - name: queryengine
+            image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -80,18 +80,18 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            control:
-              image: opencontrailnightly/contrail-controller-control-control:1910-latest
-            dns:
-              image: opencontrailnightly/contrail-controller-control-dns:1910-latest
-            init:
-              image: python:alpine
-            named:
-              image: opencontrailnightly/contrail-controller-control-named:1910-latest
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            statusmonitor:
-              image: kaweue/contrail-statusmonitor:debug
+          - name: control
+            image: opencontrailnightly/contrail-controller-control-control:1910-latest
+          - name: dns
+            image: opencontrailnightly/contrail-controller-control-dns:1910-latest
+          - name: init
+            image: python:alpine
+          - name: named
+            image: opencontrailnightly/contrail-controller-control-named:1910-latest
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: statusmonitor
+            image: kaweue/contrail-statusmonitor:master-180ab9
           zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
@@ -106,12 +106,12 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            init:
-              image: python:alpine
-            kubemanager:
-              image: michaelhenkel/contrail-kubernetes-kube-manager:1910-latest
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: init
+            image: python:alpine
+          - name: kubemanager
+            image: michaelhenkel/contrail-kubernetes-kube-manager:1910-latest
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -130,10 +130,10 @@ spec:
           replicas: 1
         serviceConfiguration:
           containers:
-            init:
-              image: python:alpine
-            provisioner:
-              image: kaweue/contrail-provisioner:master.1175
+          - name: init
+            image: python:alpine
+          - name: provisioner
+            image: kaweue/contrail-provisioner:master.1175
     rabbitmq:
       metadata:
         labels:
@@ -146,10 +146,10 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            init:
-              image: python:alpine
-            rabbitmq:
-              image: rabbitmq:3.7
+          - name: init
+            image: python:alpine
+          - name: rabbitmq
+            image: rabbitmq:3.7
     vrouters:
     - metadata:
         labels:
@@ -163,20 +163,18 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            init:
-              image: python:alpine
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            nodemanager:
-              image: opencontrailnightly/contrail-nodemgr:1910-latest
-            vrouteragent:
-              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
-            vroutercni:
-              image: michaelhenkel/contrailcni:v0.0.1
-            vrouterkernelbuildinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
-            vrouterkernelinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+          - name: init
+            image: python:alpine
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: vrouteragent
+            image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+          - name: vroutercni
+            image: michaelhenkel/contrailcni:v0.0.1
+          - name: vrouterkernelbuildinit
+            image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+          - name: vrouterkernelinit
+            image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
           controlInstance: control1
     - metadata:
         labels:
@@ -190,20 +188,18 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            init:
-              image: python:alpine
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            nodemanager:
-              image: opencontrailnightly/contrail-nodemgr:1910-latest
-            vrouteragent:
-              image: opencontrailnightly/contrail-vrouter-agent:1910-latest
-            vroutercni:
-              image: michaelhenkel/contrailcni:v0.0.1
-            vrouterkernelbuildinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
-            vrouterkernelinit:
-              image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
+          - name: init
+            image: python:alpine
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: vrouteragent
+            image: opencontrailnightly/contrail-vrouter-agent:1910-latest
+          - name: vroutercni
+            image: michaelhenkel/contrailcni:v0.0.1
+          - name: vrouterkernelbuildinit
+            image: opencontrailnightly/contrail-vrouter-kernel-build-init:1910-latest
+          - name: vrouterkernelinit
+            image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
           controlInstance: control1
     webui:
       metadata:
@@ -218,16 +214,16 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            init:
-              image: python:alpine
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            redis:
-              image: redis:4.0.2
-            webuijob:
-              image: opencontrailnightly/contrail-controller-webui-job:1910-latest
-            webuiweb:
-              image: opencontrailnightly/contrail-controller-webui-web:1910-latest
+          - name: init
+            image: python:alpine
+          - name: nodeinit
+            image: opencontrailnightly/contrail-node-init:1910-latest
+          - name: redis
+            image: redis:4.0.2
+          - name: webuijob
+            image: opencontrailnightly/contrail-controller-webui-job:1910-latest
+          - name: webuiweb
+            image: opencontrailnightly/contrail-controller-webui-web:1910-latest
     zookeepers:
     - metadata:
         labels:
@@ -240,7 +236,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            init:
-              image: python:alpine
-            zookeeper:
-              image: docker.io/zookeeper:3.5.5
+          - name: init
+            image: python:alpine
+          - name: zookeeper
+            image: docker.io/zookeeper:3.5.5

@@ -57,28 +57,28 @@ type KubemanagerStatus struct {
 // KubemanagerConfiguration is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
-	Containers            map[string]*Container `json:"containers,omitempty"`
-	CassandraInstance     string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance     string                `json:"zookeeperInstance,omitempty"`
-	UseKubeadmConfig      *bool                 `json:"useKubeadmConfig,omitempty"`
-	ServiceAccount        string                `json:"serviceAccount,omitempty"`
-	ClusterRole           string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding    string                `json:"clusterRoleBinding,omitempty"`
-	CloudOrchestrator     string                `json:"cloudOrchestrator,omitempty"`
-	KubernetesAPIServer   string                `json:"kubernetesAPIServer,omitempty"`
-	KubernetesAPIPort     *int                  `json:"kubernetesAPIPort,omitempty"`
-	KubernetesAPISSLPort  *int                  `json:"kubernetesAPISSLPort,omitempty"`
-	PodSubnets            string                `json:"podSubnets,omitempty"`
-	ServiceSubnets        string                `json:"serviceSubnets,omitempty"`
-	KubernetesClusterName string                `json:"kubernetesClusterName,omitempty"`
-	IPFabricSubnets       string                `json:"ipFabricSubnets,omitempty"`
-	IPFabricForwarding    *bool                 `json:"ipFabricForwarding,omitempty"`
-	IPFabricSnat          *bool                 `json:"ipFabricSnat,omitempty"`
-	KubernetesTokenFile   string                `json:"kubernetesTokenFile,omitempty"`
-	HostNetworkService    *bool                 `json:"hostNetworkService,omitempty"`
-	RabbitmqUser          string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword      string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost         string                `json:"rabbitmqVhost,omitempty"`
+	Containers            []*Container `json:"containers,omitempty"`
+	CassandraInstance     string       `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance     string       `json:"zookeeperInstance,omitempty"`
+	UseKubeadmConfig      *bool        `json:"useKubeadmConfig,omitempty"`
+	ServiceAccount        string       `json:"serviceAccount,omitempty"`
+	ClusterRole           string       `json:"clusterRole,omitempty"`
+	ClusterRoleBinding    string       `json:"clusterRoleBinding,omitempty"`
+	CloudOrchestrator     string       `json:"cloudOrchestrator,omitempty"`
+	KubernetesAPIServer   string       `json:"kubernetesAPIServer,omitempty"`
+	KubernetesAPIPort     *int         `json:"kubernetesAPIPort,omitempty"`
+	KubernetesAPISSLPort  *int         `json:"kubernetesAPISSLPort,omitempty"`
+	PodSubnets            string       `json:"podSubnets,omitempty"`
+	ServiceSubnets        string       `json:"serviceSubnets,omitempty"`
+	KubernetesClusterName string       `json:"kubernetesClusterName,omitempty"`
+	IPFabricSubnets       string       `json:"ipFabricSubnets,omitempty"`
+	IPFabricForwarding    *bool        `json:"ipFabricForwarding,omitempty"`
+	IPFabricSnat          *bool        `json:"ipFabricSnat,omitempty"`
+	KubernetesTokenFile   string       `json:"kubernetesTokenFile,omitempty"`
+	HostNetworkService    *bool        `json:"hostNetworkService,omitempty"`
+	RabbitmqUser          string       `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword      string       `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost         string       `json:"rabbitmqVhost,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.

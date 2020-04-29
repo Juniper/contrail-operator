@@ -53,32 +53,31 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:    command,
-					Cassandras: []*contrail.Cassandra{cassandra},
-					Zookeepers: []*contrail.Zookeeper{zookeeper},
-					Rabbitmq:   rbt,
-					Config:     config,
-					Controls:   []*contrail.Control{control},
-					Webui:      webui,
-					Vrouters:   []*contrail.Vrouter{vrouter},
-					Kubemanagers: []*contrail.Kubemanager{kubemanager},
+					Command:          command,
+					Cassandras:       []*contrail.Cassandra{cassandra},
+					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Rabbitmq:         rbt,
+					Config:           config,
+					Controls:         []*contrail.Control{control},
+					Webui:            webui,
+					Vrouters:         []*contrail.Vrouter{vrouter},
+					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
 					ProvisionManager: provisionmanager,
-					Keystone: keystone,
+					Keystone:         keystone,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 			Status: contrail.ManagerStatus{
-				Cassandras: mgrstatusCassandras,
-				Zookeepers: mgrstatusZookeeper,
-				Rabbitmq:   mgrstatusRabbitmq,
-				Config:     mgrstatusConfig,
-				Controls:   mgrstatusControl,
-				Vrouters:   mgrstatusVrouter,
-				Webui:      mgrstatusWebui,
+				Cassandras:       mgrstatusCassandras,
+				Zookeepers:       mgrstatusZookeeper,
+				Rabbitmq:         mgrstatusRabbitmq,
+				Config:           mgrstatusConfig,
+				Controls:         mgrstatusControl,
+				Vrouters:         mgrstatusVrouter,
+				Webui:            mgrstatusWebui,
 				ProvisionManager: mgrstatusProvisionmanager,
-				Kubemanagers: mgrstatusKubemanager,
-				Keystone: mgrstatusKeystone,
-
+				Kubemanagers:     mgrstatusKubemanager,
+				Keystone:         mgrstatusKeystone,
 			},
 		}
 		initObjs := []runtime.Object{
@@ -671,10 +670,10 @@ var cassandra = &contrail.Cassandra{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.CassandraConfiguration{
-			Containers: map[string]*contrail.Container{
-				"cassandra": &contrail.Container{Image: "cassandra:3.5"},
-				"init":      &contrail.Container{Image: "busybox"},
-				"init2":     &contrail.Container{Image: "cassandra:3.5"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "cassandra", Image: "cassandra:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "cassandra:3.5"},
 			},
 		},
 	},
@@ -692,10 +691,10 @@ var zookeeper = &contrail.Zookeeper{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.ZookeeperConfiguration{
-			Containers: map[string]*contrail.Container{
-				"zookeeper": &contrail.Container{Image: "zookeeper:3.5"},
-				"init":      &contrail.Container{Image: "busybox"},
-				"init2":     &contrail.Container{Image: "zookeeper:3.5"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "zookeeper", Image: "zookeeper:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "zookeeper:3.5"},
 			},
 		},
 	},
@@ -735,10 +734,10 @@ var control = &contrail.Control{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.ControlConfiguration{
-			Containers: map[string]*contrail.Container{
-				"control": &contrail.Container{Image: "control:3.5"},
-				"init":    &contrail.Container{Image: "busybox"},
-				"init2":   &contrail.Container{Image: "control:3.5"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "control", Image: "control:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "control:3.5"},
 			},
 		},
 	},
@@ -756,10 +755,10 @@ var vrouter = &contrail.Vrouter{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.VrouterConfiguration{
-			Containers: map[string]*contrail.Container{
-				"vrouter": &contrail.Container{Image: "vrouter:3.5"},
-				"init":    &contrail.Container{Image: "busybox"},
-				"init2":   &contrail.Container{Image: "vrouter:3.5"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "vrouter", Image: "vrouter:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "vrouter:3.5"},
 			},
 		},
 	},
@@ -777,10 +776,10 @@ var webui = &contrail.Webui{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.WebuiConfiguration{
-			Containers: map[string]*contrail.Container{
-				"webui": &contrail.Container{Image: "webui:3.5"},
-				"init":  &contrail.Container{Image: "busybox"},
-				"init2": &contrail.Container{Image: "webui:3.5"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "webui", Image: "webui:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "webui:3.5"},
 			},
 		},
 	},
@@ -896,10 +895,10 @@ func newRabbitmq() *contrail.Rabbitmq {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
-				Containers: map[string]*contrail.Container{
-					"rabbitmq": &contrail.Container{Image: "rabbitmq:3.5"},
-					"init":     &contrail.Container{Image: "busybox"},
-					"init2":    &contrail.Container{Image: "rabbitmq:3.5"},
+				Containers: []*contrail.Container{
+					&contrail.Container{Name: "rabbitmq", Image: "rabbitmq:3.5"},
+					&contrail.Container{Name: "init", Image: "busybox"},
+					&contrail.Container{Name: "init2", Image: "rabbitmq:3.5"},
 				},
 			},
 		},
@@ -933,10 +932,10 @@ var kubemanager = &contrail.Kubemanager{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.KubemanagerConfiguration{
-			Containers: map[string]*contrail.Container{
-				"kubemanager": &contrail.Container{Image: "kubemanager"},
-				"init":  &contrail.Container{Image: "busybox"},
-				"init2": &contrail.Container{Image: "kubemanager"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "kubemanager", Image: "kubemanager:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "kubemanager:3.5"},
 			},
 		},
 	},
@@ -954,10 +953,10 @@ var keystone = &contrail.Keystone{
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.KeystoneConfiguration{
-			Containers: map[string]*contrail.Container{
-				"keystone": &contrail.Container{Image: "keystone"},
-				"init":  &contrail.Container{Image: "busybox"},
-				"init2": &contrail.Container{Image: "keystone"},
+			Containers: []*contrail.Container{
+				&contrail.Container{Name: "keystone", Image: "keystone:3.5"},
+				&contrail.Container{Name: "init", Image: "busybox"},
+				&contrail.Container{Name: "init2", Image: "keystone:3.5"},
 			},
 		},
 	},

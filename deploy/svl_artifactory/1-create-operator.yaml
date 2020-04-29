@@ -280,7 +280,20 @@ spec:
               properties:
                 clusterName:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 cqlPort:
                   type: integer
                 jmxLocalPort:
@@ -455,7 +468,20 @@ spec:
                   type: string
                 configAPIURL:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -604,7 +630,11 @@ spec:
                   - noauth
                   - rbac
                   type: string
+                analyticsMonitorIntrospectPort:
+                  type: integer
                 analyticsPort:
+                  type: integer
+                apiIntrospectPort:
                   type: integer
                 apiPort:
                   type: integer
@@ -615,9 +645,26 @@ spec:
                   type: string
                 cassandraInstance:
                   type: string
+                collectorMonitorIntrospectPort:
+                  type: integer
                 collectorPort:
                   type: integer
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
+                deviceManagerIntrospectPort:
+                  type: integer
                 fabricMgmtIP:
                   type: string
                 keystoneInstance:
@@ -636,6 +683,8 @@ spec:
                   type: string
                 redisPort:
                   type: integer
+                schemaIntrospectPort:
+                  type: integer
                 storage:
                   properties:
                     path:
@@ -644,6 +693,8 @@ spec:
                       pattern: ^([0-9]+)([KMGTPE]i)?$
                       type: string
                   type: object
+                svcMonitorIntrospectPort:
+                  type: integer
                 zookeeperInstance:
                   type: string
               type: object
@@ -676,6 +727,7 @@ spec:
                 redisPort:
                   type: string
               type: object
+            serviceStatus: {}
           type: object
       type: object
   version: v1alpha1
@@ -801,7 +853,20 @@ spec:
                   type: integer
                 cassandraInstance:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 dnsIntrospectPort:
                   type: integer
                 dnsPort:
@@ -967,7 +1032,20 @@ spec:
             serviceConfiguration:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 keystoneSecretName:
                   type: string
                 listenPort:
@@ -1128,7 +1206,20 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 hostNetworkService:
                   type: boolean
                 ipFabricForwarding:
@@ -1421,7 +1512,20 @@ spec:
                             properties:
                               clusterName:
                                 type: string
-                              containers: {}
+                              containers:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
+                                        type: string
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
+                                type: array
                               cqlPort:
                                 type: integer
                               jmxLocalPort:
@@ -1589,7 +1693,20 @@ spec:
                               type: string
                             configAPIURL:
                               type: string
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -1729,7 +1846,11 @@ spec:
                               - noauth
                               - rbac
                               type: string
+                            analyticsMonitorIntrospectPort:
+                              type: integer
                             analyticsPort:
+                              type: integer
+                            apiIntrospectPort:
                               type: integer
                             apiPort:
                               type: integer
@@ -1740,9 +1861,26 @@ spec:
                               type: string
                             cassandraInstance:
                               type: string
+                            collectorMonitorIntrospectPort:
+                              type: integer
                             collectorPort:
                               type: integer
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
+                            deviceManagerIntrospectPort:
+                              type: integer
                             fabricMgmtIP:
                               type: string
                             keystoneInstance:
@@ -1761,6 +1899,8 @@ spec:
                               type: string
                             redisPort:
                               type: integer
+                            schemaIntrospectPort:
+                              type: integer
                             storage:
                               properties:
                                 path:
@@ -1769,6 +1909,8 @@ spec:
                                   pattern: ^([0-9]+)([KMGTPE]i)?$
                                   type: string
                               type: object
+                            svcMonitorIntrospectPort:
+                              type: integer
                             zookeeperInstance:
                               type: string
                           type: object
@@ -1801,6 +1943,7 @@ spec:
                             redisPort:
                               type: string
                           type: object
+                        serviceStatus: {}
                       type: object
                   type: object
                 controls:
@@ -1921,7 +2064,20 @@ spec:
                                 type: integer
                               cassandraInstance:
                                 type: string
-                              containers: {}
+                              containers:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
+                                        type: string
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
+                                type: array
                               dnsIntrospectPort:
                                 type: integer
                               dnsPort:
@@ -2079,7 +2235,20 @@ spec:
                           description: KeystoneConfiguration is the Spec for the keystone
                             API.
                           properties:
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             keystoneSecretName:
                               type: string
                             listenPort:
@@ -2235,7 +2404,20 @@ spec:
                                 type: string
                               clusterRoleBinding:
                                 type: string
-                              containers: {}
+                              containers:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
+                                        type: string
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetworkService:
                                 type: boolean
                               ipFabricForwarding:
@@ -2317,16 +2499,20 @@ spec:
                             connectionLimit:
                               format: int32
                               type: integer
-                            container:
-                              description: Container defines name, image and command.
-                              properties:
-                                command:
-                                  items:
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
                                     type: string
-                                  type: array
-                                image:
-                                  type: string
-                              type: object
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             listenPort:
                               format: int32
                               type: integer
@@ -2334,7 +2520,7 @@ spec:
                               format: int32
                               type: integer
                           required:
-                          - container
+                          - containers
                           type: object
                       required:
                       - serviceConfiguration
@@ -2368,7 +2554,20 @@ spec:
                     spec:
                       description: PostgresSpec defines the desired state of Postgres
                       properties:
-                        containers: {}
+                        containers:
+                          items:
+                            description: Container defines name, image and command.
+                            properties:
+                              command:
+                                items:
+                                  type: string
+                                type: array
+                              image:
+                                type: string
+                              name:
+                                type: string
+                            type: object
+                          type: array
                         hostNetwork:
                           type: boolean
                         storage:
@@ -2499,7 +2698,20 @@ spec:
                           description: ProvisionManagerConfiguration defines the provision
                             manager configuration
                           properties:
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -2637,7 +2849,20 @@ spec:
                           description: RabbitmqConfiguration is the Spec for the cassandras
                             API.
                           properties:
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             erlangCookie:
                               type: string
                             password:
@@ -2704,7 +2929,20 @@ spec:
                           description: SwiftConfiguration is the Spec for the keystone
                             API.
                           properties:
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             credentialsSecretName:
                               type: string
                             ringsStorage:
@@ -2719,7 +2957,21 @@ spec:
                               description: SwiftProxyConfiguration is the Spec for
                                 the keystone API.
                               properties:
-                                containers: {}
+                                containers:
+                                  items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    type: object
+                                  type: array
                                 credentialsSecretName:
                                   type: string
                                 endpoint:
@@ -2745,7 +2997,21 @@ spec:
                                   type: integer
                                 containerBindPort:
                                   type: integer
-                                containers: {}
+                                containers:
+                                  items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    type: object
+                                  type: array
                                 device:
                                   type: string
                                 objectBindPort:
@@ -2899,7 +3165,20 @@ spec:
                                 type: string
                               clusterRoleBinding:
                                 type: string
-                              containers: {}
+                              containers:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
+                                        type: string
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
+                                type: array
                               controlInstance:
                                 type: string
                               distribution:
@@ -3059,7 +3338,20 @@ spec:
                               type: string
                             clusterRoleBinding:
                               type: string
-                            containers: {}
+                            containers:
+                              items:
+                                description: Container defines name, image and command.
+                                properties:
+                                  command:
+                                    items:
+                                      type: string
+                                    type: array
+                                  image:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -3200,7 +3492,20 @@ spec:
                             properties:
                               clientPort:
                                 type: integer
-                              containers: {}
+                              containers:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
+                                        type: string
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
+                                type: array
                               electionPort:
                                 type: integer
                               serverPort:
@@ -3476,16 +3781,20 @@ spec:
                 connectionLimit:
                   format: int32
                   type: integer
-                container:
-                  description: Container defines name, image and command.
-                  properties:
-                    command:
-                      items:
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
                         type: string
-                      type: array
-                    image:
-                      type: string
-                  type: object
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 listenPort:
                   format: int32
                   type: integer
@@ -3493,7 +3802,7 @@ spec:
                   format: int32
                   type: integer
               required:
-              - container
+              - containers
               type: object
           required:
           - serviceConfiguration
@@ -3546,7 +3855,20 @@ spec:
         spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
-            containers: {}
+            containers:
+              items:
+                description: Container defines name, image and command.
+                properties:
+                  command:
+                    items:
+                      type: string
+                    type: array
+                  image:
+                    type: string
+                  name:
+                    type: string
+                type: object
+              type: array
             hostNetwork:
               type: boolean
             storage:
@@ -3685,7 +4007,20 @@ spec:
               description: ProvisionManagerConfiguration defines the provision manager
                 configuration
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -3831,7 +4166,20 @@ spec:
             serviceConfiguration:
               description: RabbitmqConfiguration is the Spec for the cassandras API.
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 erlangCookie:
                   type: string
                 password:
@@ -3916,7 +4264,20 @@ spec:
             serviceConfiguration:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 credentialsSecretName:
                   type: string
                 endpoint:
@@ -3988,7 +4349,20 @@ spec:
             serviceConfiguration:
               description: SwiftConfiguration is the Spec for the keystone API.
               properties:
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 credentialsSecretName:
                   type: string
                 ringsStorage:
@@ -4003,7 +4377,20 @@ spec:
                   description: SwiftProxyConfiguration is the Spec for the keystone
                     API.
                   properties:
-                    containers: {}
+                    containers:
+                      items:
+                        description: Container defines name, image and command.
+                        properties:
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          image:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      type: array
                     credentialsSecretName:
                       type: string
                     endpoint:
@@ -4029,7 +4416,20 @@ spec:
                       type: integer
                     containerBindPort:
                       type: integer
-                    containers: {}
+                    containers:
+                      items:
+                        description: Container defines name, image and command.
+                        properties:
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          image:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      type: array
                     device:
                       type: string
                     objectBindPort:
@@ -4114,7 +4514,20 @@ spec:
                   type: integer
                 containerBindPort:
                   type: integer
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 device:
                   type: string
                 objectBindPort:
@@ -4267,7 +4680,20 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 controlInstance:
                   type: string
                 distribution:
@@ -4435,7 +4861,20 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -4580,7 +5019,20 @@ spec:
               properties:
                 clientPort:
                   type: integer
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 electionPort:
                   type: integer
                 serverPort:
@@ -4642,7 +5094,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-operator:master.latest
+          image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-operator:change_image_format.latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

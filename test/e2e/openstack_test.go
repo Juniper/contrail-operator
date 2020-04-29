@@ -53,9 +53,9 @@ func TestOpenstackServices(t *testing.T) {
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
 			Spec: contrail.PostgresSpec{
-				Containers: map[string]*contrail.Container{
-					"postgres":            {Image: "registry:5000/postgres"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+				Containers: []*contrail.Container{
+					{Name: "postgres", Image: "registry:5000/postgres"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 				},
 			},
 		}
@@ -67,7 +67,7 @@ func TestOpenstackServices(t *testing.T) {
 			},
 			Spec: contrail.MemcachedSpec{
 				ServiceConfiguration: contrail.MemcachedConfiguration{
-					Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:train"},
+					Containers: []*contrail.Container{{Name: "memcached", Image: "registry:5000/centos-binary-memcached:train"}},
 				},
 			},
 		}
@@ -81,13 +81,13 @@ func TestOpenstackServices(t *testing.T) {
 					PostgresInstance:   "openstacktest-psql",
 					KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
 					ListenPort:         5555,
-					Containers: map[string]*contrail.Container{
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
-						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
-						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystoneSsh":         {Image: "registry:5000/centos-binary-keystone-ssh:train"},
-						"keystoneFernet":      {Image: "registry:5000/centos-binary-keystone-fernet:train"},
+					Containers: []*contrail.Container{
+						{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
+						{Name: "keystoneDbInit", Image: "registry:5000/postgresql-client"},
+						{Name: "keystoneInit", Image: "registry:5000/centos-binary-keystone:train"},
+						{Name: "keystone", Image: "registry:5000/centos-binary-keystone:train"},
+						{Name: "keystoneSsh", Image: "registry:5000/centos-binary-keystone-ssh:train"},
+						{Name: "keystoneFernet", Image: "registry:5000/centos-binary-keystone-fernet:train"},
 					},
 				},
 			},
@@ -187,8 +187,8 @@ func TestOpenstackServices(t *testing.T) {
 				},
 				Spec: contrail.SwiftSpec{
 					ServiceConfiguration: contrail.SwiftConfiguration{
-						Containers: map[string]*contrail.Container{
-							"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:train"},
+						Containers: []*contrail.Container{
+							{Name: "ring-reconciler", Image: "registry:5000/centos-source-swift-base:train"},
 						},
 						CredentialsSecretName: "openstacktest-swift-credentials-secret",
 						SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
@@ -196,20 +196,20 @@ func TestOpenstackServices(t *testing.T) {
 							ContainerBindPort: 6002,
 							ObjectBindPort:    6000,
 							Device:            "d1",
-							Containers: map[string]*contrail.Container{
-								"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:train"},
-								"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:train"},
-								"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:train"},
-								"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:train"},
-								"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:train"},
-								"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:train"},
-								"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:train"},
-								"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:train"},
-								"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:train"},
-								"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:train"},
-								"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:train"},
-								"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:train"},
-								"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:train"},
+							Containers: []*contrail.Container{
+								{Name: "swiftObjectExpirer", Image: "registry:5000/centos-binary-swift-object-expirer:train"},
+								{Name: "swiftObjectUpdater", Image: "registry:5000/centos-binary-swift-object:train"},
+								{Name: "swiftObjectReplicator", Image: "registry:5000/centos-binary-swift-object:train"},
+								{Name: "swiftObjectAuditor", Image: "registry:5000/centos-binary-swift-object:train"},
+								{Name: "swiftObjectServer", Image: "registry:5000/centos-binary-swift-object:train"},
+								{Name: "swiftContainerUpdater", Image: "registry:5000/centos-binary-swift-container:train"},
+								{Name: "swiftContainerReplicator", Image: "registry:5000/centos-binary-swift-container:train"},
+								{Name: "swiftContainerAuditor", Image: "registry:5000/centos-binary-swift-container:train"},
+								{Name: "swiftContainerServer", Image: "registry:5000/centos-binary-swift-container:train"},
+								{Name: "swiftAccountReaper", Image: "registry:5000/centos-binary-swift-account:train"},
+								{Name: "swiftAccountReplicator", Image: "registry:5000/centos-binary-swift-account:train"},
+								{Name: "swiftAccountAuditor", Image: "registry:5000/centos-binary-swift-account:train"},
+								{Name: "swiftAccountServer", Image: "registry:5000/centos-binary-swift-account:train"},
 							},
 						},
 						SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
@@ -217,10 +217,10 @@ func TestOpenstackServices(t *testing.T) {
 							ListenPort:         5070,
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
-							Containers: map[string]*contrail.Container{
-								"wait-for-ready-conf": {Image: "registry:5000/busybox"},
-								"init":                {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-								"api":                 {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+							Containers: []*contrail.Container{
+								{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
+								{Name: "init", Image: "registry:5000/centos-binary-kolla-toolbox:train"},
+								{Name: "api", Image: "registry:5000/centos-binary-swift-proxy-server:train"},
 							},
 						},
 					},

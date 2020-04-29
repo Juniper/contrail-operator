@@ -2,8 +2,11 @@ package zookeeper
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -15,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestZookeeperResourceHandler(t *testing.T) {
@@ -91,7 +93,7 @@ func TestZookeeperResourceHandler(t *testing.T) {
 
 	t.Run("Add controller to Manager", func(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme)
-		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
 		err := Add(mgr)
 		assert.NoError(t, err)
 	})
@@ -190,9 +192,9 @@ func newZookeeper() *contrail.Zookeeper {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":      &contrail.Container{Image: "python:alpine"},
-					"zookeeper": &contrail.Container{Image: "contrail-controller-zookeeper"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "python:alpine"},
+					{Name: "zookeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -243,8 +245,8 @@ func testcase3() *TestCase {
 
 	// dummy command
 	command := []string{"bash", "/runner/dummy.sh"}
-	zoo.Spec.ServiceConfiguration.Containers["init"].Command = command
-	zoo.Spec.ServiceConfiguration.Containers["zookeeper"].Command = command
+	utils.GetContainerFromList("zookeeper", zoo.Spec.ServiceConfiguration.Containers).Command = command
+	utils.GetContainerFromList("init", zoo.Spec.ServiceConfiguration.Containers).Command = command
 
 	tc := &TestCase{
 		name: "Preset Rabbitmq command",
