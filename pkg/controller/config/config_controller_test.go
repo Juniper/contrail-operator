@@ -93,7 +93,7 @@ func TestConfigResourceHandler(t *testing.T) {
 
 	t.Run("Add controller to Manager", func(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme)
-		mgr := &mocking.MockManager{Client: &cl, Scheme:scheme}
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
 		err := Add(mgr)
 		assert.NoError(t, err)
 	})
@@ -475,28 +475,28 @@ func testcase8() *TestCase {
 	cfg := newConfigInst()
 
 	configContainer := utils.GetContainerFromList("config", cfg.Spec.ServiceConfiguration.Containers)
-	configContainer.Command = []string{"bash", "/runner/run.sh"}
+	configContainer.Command = []string{"bash", "/dummy/run.sh"}
 	var nodemanagerconfig *int
 	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
 		if container.Name == "nodemanagerconfig" {
-			nodemanagerconfig = &idx
+			val := idx
+			nodemanagerconfig = &val
 		}
 	}
 	if nodemanagerconfig != nil {
 		cfg.Spec.ServiceConfiguration.Containers[*nodemanagerconfig] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
-		cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
 		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
 	}
 
 	var nodemanageranalytics *int
 	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
 		if container.Name == "nodemanageranalytics" {
-			nodemanageranalytics = &idx
+			val := idx
+			nodemanageranalytics = &val
 		}
 	}
 	if nodemanageranalytics != nil {
 		cfg.Spec.ServiceConfiguration.Containers[*nodemanageranalytics] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
-		cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1] = nil
 		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
 	}
 
@@ -557,4 +557,3 @@ func testcase10() *TestCase {
 	}
 	return tc
 }
-

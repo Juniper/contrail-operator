@@ -9,6 +9,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
+    tags=["manual"],
     srcs = [
         "cluster_test.go",
         "command_test.go",
