@@ -145,6 +145,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
+	if err := certificates.EnsureCaCertificateExists(r.client, instance, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if err := r.processCSRSignerCaConfigMap(instance); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -1619,11 +1623,11 @@ func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := r.signerCa.CACert()
+		csrSignerCAValue, err := certificates.GetCaCert(r.client, manager)
 		if err != nil {
 			return err
 		}
-		csrSignerCaConfigMap.Data = map[string]string{certificates.SignerCAFilename: csrSignerCAValue}
+		csrSignerCaConfigMap.Data = map[string]string{certificates.SignerCAFilename: string(csrSignerCAValue)}
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
 
