@@ -398,10 +398,10 @@ func newCommand() *contrail.Command {
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
-				Containers: map[string]*contrail.Container{
-					"init":                {Image: "registry:5000/contrail-command"},
-					"api":                 {Image: "registry:5000/contrail-command"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "registry:5000/contrail-command"},
+					{Name: "api", Image: "registry:5000/contrail-command"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -546,6 +546,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{"command"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,

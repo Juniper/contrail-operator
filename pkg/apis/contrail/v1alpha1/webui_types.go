@@ -46,13 +46,13 @@ type WebuiSpec struct {
 // WebuiConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
-	ServiceAccount     string                `json:"serviceAccount,omitempty"`
-	ClusterRole        string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
-	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
+	Containers         []*Container `json:"containers,omitempty"`
+	CassandraInstance  string       `json:"cassandraInstance,omitempty"`
+	ServiceAccount     string       `json:"serviceAccount,omitempty"`
+	ClusterRole        string       `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string       `json:"clusterRoleBinding,omitempty"`
+	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
 }
 
 // +k8s:openapi-gen=true

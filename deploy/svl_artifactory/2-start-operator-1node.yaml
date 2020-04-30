@@ -1,0 +1,246 @@
+---
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Manager
+metadata:
+  name: cluster1
+  namespace: contrail
+spec:
+  commonConfiguration:
+    hostNetwork: true
+    replicas: 1
+  services:
+    cassandras:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cassandra1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            cassandra:
+              image: cassandra:3.11.4
+            init:
+              image: python:alpine
+            init2:
+              image: cassandra:3.11.4
+    config:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: config1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            analyticsapi:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-api:master.latest
+            api:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-api:master.latest
+            collector:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-collector:master.latest
+            devicemanager:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:master.latest
+            dnsmasq:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:master.latest
+            init:
+              image: python:alpine
+            init2:
+              image: busybox
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+            redis:
+              image: redis:4.0.2
+            schematransformer:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-schema:master.latest
+            servicemonitor:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:master.latest
+            queryengine:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-analytics-query-engine:master.latest
+          logLevel: SYS_DEBUG
+          zookeeperInstance: zookeeper1
+    controls:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+          control_role: master
+        name: control1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            control:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-control:master.latest
+            dns:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-dns:master.latest
+            init:
+              image: python:alpine
+            named:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-named:master.latest
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+            statusmonitor:
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor-debug:svl_artifactory.latest
+          zookeeperInstance: zookeeper1
+    kubemanagers:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: kubemanager1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            init:
+              image: python:alpine
+            kubemanager:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.latest
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+          ipFabricForwarding: false
+          ipFabricSnat: true
+          kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+          useKubeadmConfig: true
+          zookeeperInstance: zookeeper1
+    provisionManager:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: provmanager1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+          replicas: 1
+        serviceConfiguration:
+          containers:
+            init:
+              image: python:alpine
+            provisioner:
+              image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner-debug:svl_artifactory.latest
+    rabbitmq:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: rabbitmq1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            init:
+              image: python:alpine
+            rabbitmq:
+              image: rabbitmq:3.7
+    vrouters:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: vroutermaster
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            init:
+              image: python:alpine
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+            nodemanager:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-nodemgr:master.latest
+            vrouteragent:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-agent:master.latest
+            vroutercni:
+              image: michaelhenkel/contrailcni:v0.0.1
+            vrouterkernelbuildinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.latest
+            vrouterkernelinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:master.latest
+          controlInstance: control1
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: vrouternodes
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.opencontrail.org: vrouter
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            init:
+              image: python:alpine
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+            nodemanager:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-nodemgr:master.latest
+            vrouteragent:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-agent:master.latest
+            vroutercni:
+              image: michaelhenkel/contrailcni:v0.0.1
+            vrouterkernelbuildinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.latest
+            vrouterkernelinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:master.latest
+          controlInstance: control1
+    webui:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: webui1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            init:
+              image: python:alpine
+            nodeinit:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
+            redis:
+              image: redis:4.0.2
+            webuijob:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-webui-job:master.latest
+            webuiweb:
+              image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-webui-web:master.latest
+    zookeepers:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: zookeeper1
+      spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            init:
+              image: python:alpine
+            zookeeper:
+              image: docker.io/zookeeper:3.5.5

@@ -25,6 +25,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -287,7 +288,7 @@ func updatePodTemplate(
 	swiftInitConfigName string,
 	swiftConfSecretName string,
 	swiftCertificatesSecretName string,
-	containers map[string]*contrail.Container,
+	containers []*contrail.Container,
 	ringsClaimName string,
 	port int,
 	csrSignerCaVolumeName string,
@@ -438,29 +439,28 @@ func updatePodTemplate(
 	}
 }
 
-func getImage(containers map[string]*contrail.Container, containerName string) string {
+func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
 		"init":                "localhost:5000/centos-binary-kolla-toolbox:train",
 		"api":                 "localhost:5000/centos-binary-swift-proxy-server:train",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
-
-	c, ok := containers[containerName]
-	if !ok || c == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil {
 		return defaultContainersImages[containerName]
 	}
 
 	return c.Image
 }
 
-func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
 		"init":                []string{"ansible-playbook"},
 		"wait-for-ready-conf": []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil || c.Command == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

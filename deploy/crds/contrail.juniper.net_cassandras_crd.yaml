@@ -111,7 +111,20 @@ spec:
               properties:
                 clusterName:
                   type: string
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 cqlPort:
                   type: integer
                 jmxLocalPort:

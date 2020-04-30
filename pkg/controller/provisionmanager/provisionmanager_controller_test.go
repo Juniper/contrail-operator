@@ -1,4 +1,3 @@
-// package provisionmanager
 package provisionmanager
 
 import (
@@ -7,6 +6,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -218,10 +218,10 @@ func newProvisionManager() *contrail.ProvisionManager {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-				Containers: map[string]*contrail.Container{
-					"provisioner": {Image: "provisioner"},
-					"init":        {Image: "busybox"},
-					"init2":       {Image: "provisionmanager"},
+				Containers: []*contrail.Container{
+					{Name: "provisioner", Image: "provisioner"},
+					{Name: "init", Image: "busybox"},
+					{Name: "init2", Image: "provisionmanager"},
 				},
 			},
 		},
@@ -317,8 +317,8 @@ func testcase2() *TestCase {
 
 func testcase3() *TestCase {
 	pmr := newProvisionManager()
-	command := []string{"bash", "/runner/run.sh"}
-	pmr.Spec.ServiceConfiguration.Containers["provisioner"].Command = command
+	instanceContainer := utils.GetContainerFromList("provisioner", pmr.Spec.ServiceConfiguration.Containers)
+	instanceContainer.Command = []string{"bash", "/runner/run.sh"}
 
 	tc := &TestCase{
 		name: "Preset provisionmanager command verification",

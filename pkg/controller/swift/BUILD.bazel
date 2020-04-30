@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "//pkg/job:go_default_library",
         "//pkg/k8s:go_default_library",
         "//pkg/randomstring:go_default_library",

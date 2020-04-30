@@ -797,20 +797,25 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 
 func newKeystoneWithCustomImages() *contrail.Keystone {
 	keystone := newKeystone()
-	keystone.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"keystoneDbInit": {
+	keystone.Spec.ServiceConfiguration.Containers = []*contrail.Container{
+		{
+			Name:  "keystoneDbInit",
 			Image: "image1",
 		},
-		"keystoneInit": {
+		{
+			Name:  "keystoneInit",
 			Image: "image2",
 		},
-		"keystone": {
+		{
+			Name:  "keystone",
 			Image: "image3",
 		},
-		"keystoneSsh": {
+		{
+			Name:  "keystoneSsh",
 			Image: "image4",
 		},
-		"keystoneFernet": {
+		{
+			Name:  "keystoneFernet",
 			Image: "image5",
 		},
 	}

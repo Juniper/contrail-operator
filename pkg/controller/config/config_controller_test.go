@@ -2,9 +2,11 @@ package config
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -16,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestConfigResourceHandler(t *testing.T) {
@@ -90,12 +91,13 @@ func TestConfigResourceHandler(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr)
 		assert.NoError(t, err)
 	})
+
 }
 
 type TestCase struct {
@@ -129,8 +131,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			claims := volumeclaims.New(cl, scheme)
-			r := &ReconcileConfig{Client: cl, Scheme: scheme, claims: claims}
+			r := &ReconcileConfig{Client: cl, Scheme: scheme}
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -184,24 +185,29 @@ func newConfigInst() *contrail.Config {
 				CassandraInstance:  "cassandra-instance",
 				ZookeeperInstance:  "zookeeper-instance",
 				KeystoneSecretName: "keystone-adminpass-secret",
-				Containers: map[string]*contrail.Container{
-					"nodemanagerconfig":    {Image: "contrail-nodemanager-config"},
-					"nodemanageranalytics": {Image: "contrail-nodemanager-analytics"},
-					"config":               {Image: "contrail-config-api"},
-					"analyticsapi":         {Image: "contrail-analytics-api"},
-					"api":                  {Image: "contrail-controller-config-api"},
-					"collector":            {Image: "contrail-analytics-collector"},
-					"devicemanager":        {Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":              {Image: "contrail-controller-config-dnsmasq"},
-					"init":                 {Image: "python:alpine"},
-					"init2":                {Image: "busybox"},
-					"nodeinit":             {Image: "contrail-node-init"},
-					"redis":                {Image: "redis"},
-					"schematransformer":    {Image: "contrail-controller-config-schema"},
-					"servicemonitor":       {Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":          {Image: "contrail-analytics-query-engine"},
-					"statusmonitor":        {Image: "contrail-statusmonitor:debug"},
+				Containers: []*contrail.Container{
+					{Name: "nodemanagerconfig", Image: "contrail-nodemanager-config"},
+					{Name: "nodemanageranalytics", Image: "contrail-nodemanager-analytics"},
+					{Name: "config", Image: "contrail-config-api"},
+					{Name: "analyticsapi", Image: "contrail-analytics-api"},
+					{Name: "api", Image: "contrail-controller-config-api"},
+					{Name: "collector", Image: "contrail-analytics-collector"},
+					{Name: "devicemanager", Image: "contrail-controller-config-devicemgr"},
+					{Name: "dnsmasq", Image: "contrail-controller-config-dnsmasq"},
+					{Name: "init", Image: "python:alpine"},
+					{Name: "init2", Image: "busybox"},
+					{Name: "nodeinit", Image: "contrail-node-init"},
+					{Name: "redis", Image: "redis"},
+					{Name: "schematransformer", Image: "contrail-controller-config-schema"},
+					{Name: "servicemonitor", Image: "contrail-controller-config-svcmonitor"},
+					{Name: "queryengine", Image: "contrail-analytics-query-engine"},
+					{Name: "statusmonitor", Image: "contrail-statusmonitor:debug"},
 				},
+				Storage: contrail.Storage{
+					Size: "10G",
+					Path: "/mnt/my-storage",
+				},
+				NodeManager: &falseVal,
 			},
 		},
 		Status: contrail.ConfigStatus{Active: &falseVal},
@@ -272,9 +278,9 @@ func newZookeeper() *contrail.Zookeeper {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":      {Image: "python:alpine"},
-					"zookeeper": {Image: "contrail-controller-zookeeper"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "python:alpine"},
+					{Name: "zooekeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -291,13 +297,18 @@ func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.Confi
 // ------------------------ TEST CASES ------------------------------------
 
 func testcase1() *TestCase {
+	trueVal := true
 	falseVal := false
 	cfg := newConfigInst()
+	cfg.Spec.ServiceConfiguration.NodeManager = &trueVal
 	tc := &TestCase{
 		name: "create a new statefulset",
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -316,6 +327,9 @@ func testcase2() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -326,25 +340,47 @@ func testcase3() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
-	command := []string{"bash", "/dummy/run.sh"}
-	cfg.Spec.ServiceConfiguration.Containers["config"].Command = command
+	configContainer := utils.GetContainerFromList("config", cfg.Spec.ServiceConfiguration.Containers)
+	configContainer.Command = []string{"bash", "/runner/run.sh"}
 
-	cfg.Spec.ServiceConfiguration.Containers["api"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["devicemanager"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["dnsmasq"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["servicemonitor"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["schematransformer"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["analyticsapi"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["collector"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["redis"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["nodemanagerconfig"].Command = command
-	cfg.Spec.ServiceConfiguration.Containers["nodemanageranalytics"].Command = command
+	apiContainer := utils.GetContainerFromList("api", cfg.Spec.ServiceConfiguration.Containers)
+	apiContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	deviceManagerContainer := utils.GetContainerFromList("devicemanager", cfg.Spec.ServiceConfiguration.Containers)
+	deviceManagerContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	dnsmasqContainer := utils.GetContainerFromList("dnsmasq", cfg.Spec.ServiceConfiguration.Containers)
+	dnsmasqContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	servicemonitorContainer := utils.GetContainerFromList("servicemonitor", cfg.Spec.ServiceConfiguration.Containers)
+	servicemonitorContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	schematransformerContainer := utils.GetContainerFromList("schematransformer", cfg.Spec.ServiceConfiguration.Containers)
+	schematransformerContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	analyticsapiContainer := utils.GetContainerFromList("analyticsapi", cfg.Spec.ServiceConfiguration.Containers)
+	analyticsapiContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	collectorContainer := utils.GetContainerFromList("collector", cfg.Spec.ServiceConfiguration.Containers)
+	collectorContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	redisContainer := utils.GetContainerFromList("redis", cfg.Spec.ServiceConfiguration.Containers)
+	redisContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	nodemanagerconfigContainer := utils.GetContainerFromList("nodemanagerconfig", cfg.Spec.ServiceConfiguration.Containers)
+	nodemanagerconfigContainer.Command = []string{"bash", "/runner/run.sh"}
+
+	nodemanageranalyticsContainer := utils.GetContainerFromList("nodemanageranalytics", cfg.Spec.ServiceConfiguration.Containers)
+	nodemanageranalyticsContainer.Command = []string{"bash", "/runner/run.sh"}
 
 	tc := &TestCase{
 		name: "Preset start command for containers",
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -364,6 +400,8 @@ func testcase4() *TestCase {
 			newManager(cfg),
 			zkp,
 			cfg,
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -384,6 +422,9 @@ func testcase5() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -420,6 +461,9 @@ func testcase7() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -430,16 +474,30 @@ func testcase8() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
-	command := []string{"bash", "/runner/run.sh"}
-	cfg.Spec.ServiceConfiguration.Containers["config"].Command = command
-	_, found := cfg.Spec.ServiceConfiguration.Containers["nodemanagerconfig"]
-	if found {
-		delete(cfg.Spec.ServiceConfiguration.Containers, "nodemanagerconfig")
+	configContainer := utils.GetContainerFromList("config", cfg.Spec.ServiceConfiguration.Containers)
+	configContainer.Command = []string{"bash", "/dummy/run.sh"}
+	var nodemanagerconfig *int
+	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
+		if container.Name == "nodemanagerconfig" {
+			val := idx
+			nodemanagerconfig = &val
+		}
+	}
+	if nodemanagerconfig != nil {
+		cfg.Spec.ServiceConfiguration.Containers[*nodemanagerconfig] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
+		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
 	}
 
-	_, found = cfg.Spec.ServiceConfiguration.Containers["nodemanageranalytics"]
-	if found {
-		delete(cfg.Spec.ServiceConfiguration.Containers, "nodemanageranalytics")
+	var nodemanageranalytics *int
+	for idx, container := range cfg.Spec.ServiceConfiguration.Containers {
+		if container.Name == "nodemanageranalytics" {
+			val := idx
+			nodemanageranalytics = &val
+		}
+	}
+	if nodemanageranalytics != nil {
+		cfg.Spec.ServiceConfiguration.Containers[*nodemanageranalytics] = cfg.Spec.ServiceConfiguration.Containers[len(cfg.Spec.ServiceConfiguration.Containers)-1]
+		cfg.Spec.ServiceConfiguration.Containers = cfg.Spec.ServiceConfiguration.Containers[:len(cfg.Spec.ServiceConfiguration.Containers)-1]
 	}
 
 	tc := &TestCase{
@@ -447,6 +505,9 @@ func testcase8() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}
@@ -457,14 +518,17 @@ func testcase9() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
-	command := []string{"bash", "/runner/run.sh"}
-	cfg.Spec.ServiceConfiguration.Containers["init"].Command = command
+	initContainer := utils.GetContainerFromList("init", cfg.Spec.ServiceConfiguration.Containers)
+	initContainer.Command = []string{"bash", "/runner/run.sh"}
 
 	tc := &TestCase{
 		name: "Preset Init command",
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			newZookeeper(),
+			newCassandra(),
+			newRabbitmq(),
 		},
 		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
 	}

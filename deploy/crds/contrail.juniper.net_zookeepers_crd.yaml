@@ -111,7 +111,20 @@ spec:
               properties:
                 clientPort:
                   type: integer
-                containers: {}
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
                 electionPort:
                   type: integer
                 serverPort:

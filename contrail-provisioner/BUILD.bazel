@@ -29,7 +29,7 @@ go_image(
     name = "contrail-provisioner-image",
     embed = [":go_default_library"],
     goos = "linux",
-    base = "@go_image_base//image",
+    base = "@go_debug_image_base//image:image",
     importpath = "github.com/Juniper/contrail-operator/contrail-provisioner",
 )
 
@@ -39,7 +39,7 @@ container_push(
     format = "Docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-provisioner",
-    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}"
+    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
 )
 
 container_push(
@@ -48,22 +48,5 @@ container_push(
     format = "Docker",
     registry = "gcr.io",
     repository = "eng-prod-237922/contrail-provisioner",
-    tag = "{BUILD_SCM_BRANCH}.latest"
-)
-
-go_image(
-    name = "contrail-provisioner-image-debug",
-    embed = [":go_default_library"],
-    goos = "linux",
-    base = "@go_debug_image_base//image:image",
-    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner",
-)
-
-container_push(
-    name = "contrail-provisioner-push-debug",
-    image = ":contrail-provisioner-image-debug",
-    format = "Docker",
-    registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-provisioner",
-    tag = "{BUILD_SCM_VERSION}",
+    tag = "{BUILD_SCM_BRANCH}.latest",
 )
