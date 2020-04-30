@@ -5,56 +5,63 @@ import (
 	"context"
 	"testing"
 
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	meta1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 )
 
-func TestProvisionManagerController(t *testing.T) {
+type TestCase struct {
+	name           string
+	initObjs       []runtime.Object
+	expectedStatus contrail.ProvisionManagerStatus
+}
+
+func TestProvisionManager(t *testing.T) {
+	// func TestProvisionManagerController(t *testing.T) {
 
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 
-	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	metaobj := meta1.ObjectMeta{}
-	or := meta1.OwnerReference{
-		APIVersion:         "v1",
-		Kind:               "owner-kind",
-		Name:               "owner-name",
-		UID:                "owner-uid",
-		Controller:         &falseVal,
-		BlockOwnerDeletion: &falseVal,
-	}
-	ors := []meta1.OwnerReference{or}
-	metaobj.SetOwnerReferences(ors)
-	pod := &core.Pod{
-		ObjectMeta: metaobj,
-	}
+	// wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	// metaobj := meta1.ObjectMeta{}
+	// or := meta1.OwnerReference{
+	// 	APIVersion:         "v1",
+	// 	Kind:               "owner-kind",
+	// 	Name:               "owner-name",
+	// 	UID:                "owner-uid",
+	// 	Controller:         &falseVal,
+	// 	BlockOwnerDeletion: &falseVal,
+	// }
+	// ors := []meta1.OwnerReference{or}
+	// metaobj.SetOwnerReferences(ors)
+	// pod := &core.Pod{
+	// 	ObjectMeta: metaobj,
+	// }
 
-	t.Run("add controller to Manager verification", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme: scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
-		assert.NoError(t, err)
-	})
+	// t.Run("add controller to Manager verification", func(t *testing.T) {
+	// 	mgr := &mocking.MockManager{Scheme: scheme}
+	// 	reconciler := &mocking.MockReconciler{}
+	// 	err := add(mgr, reconciler)
+	// 	assert.NoError(t, err)
+	// })
 
 	tests := []*TestCase{
 		testcase1(),
 		testcase2(),
 		testcase3(),
+		testcase4(),
 	}
 
 	for _, tt := range tests {
@@ -75,6 +82,37 @@ func TestProvisionManagerController(t *testing.T) {
 			err = cl.Get(context.Background(), req.NamespacedName, conf)
 			compareConfigStatus(t, tt.expectedStatus, conf.Status)
 		})
+	}
+}
+
+func TestProvisionManagerController(t *testing.T) {
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+
+	falseVal := false
+
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := meta1.ObjectMeta{}
+	or := meta1.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []meta1.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+
+	// falseVal := false
+	initObjs := []runtime.Object{
+		newProvisionManager(),
 	}
 
 	t.Run("Create event verification", func(t *testing.T) {
@@ -139,12 +177,14 @@ func TestProvisionManagerController(t *testing.T) {
 		hf.GenericFunc(evg, wq)
 		assert.Equal(t, 1, wq.Len())
 	})
-}
 
-type TestCase struct {
-	name           string
-	initObjs       []runtime.Object
-	expectedStatus contrail.ProvisionManagerStatus
+	// t.Run("Add controller to Manager", func(t *testing.T) {
+	// 	cl := fake.NewFakeClientWithScheme(scheme)
+	// 	mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+	// 	err := Add(mgr)
+	// 	assert.NoError(t, err)
+	// })
+
 }
 
 var falseVal = false
@@ -197,7 +237,6 @@ func newManager(pmr *contrail.ProvisionManager) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
 				ProvisionManager: pmr,
-				// provisionmanager: pmr,
 			},
 		},
 		Status: contrail.ManagerStatus{},
@@ -220,6 +259,19 @@ func newConfigInst() *contrail.Config {
 			},
 		},
 		Status: contrail.ConfigStatus{Active: &trueVal},
+	}
+}
+
+func newPodList() *core.PodList {
+	return &core.PodList{
+		Items: []core.Pod{
+			{
+				ObjectMeta: meta1.ObjectMeta{
+					Namespace: "default",
+					Labels:    map[string]string{"contrail_cluster": "config1"},
+				},
+			},
+		},
 	}
 }
 
@@ -272,6 +324,22 @@ func testcase3() *TestCase {
 			newProvisionManager(),
 		},
 		expectedStatus: contrail.ProvisionManagerStatus{Active: &falseVal},
+	}
+	return tc
+}
+
+func testcase4() *TestCase {
+	// falseVal := false
+	trueVal := true
+	pmr := newProvisionManager()
+	tc := &TestCase{
+		name: "Preset provisionmanagerPod Test",
+		initObjs: []runtime.Object{
+			newManager(pmr),
+			pmr,
+			newPodList(),
+		},
+		expectedStatus: contrail.ProvisionManagerStatus{Active: &trueVal},
 	}
 	return tc
 }
