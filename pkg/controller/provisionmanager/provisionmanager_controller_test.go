@@ -27,35 +27,10 @@ type TestCase struct {
 }
 
 func TestProvisionManager(t *testing.T) {
-	// func TestProvisionManagerController(t *testing.T) {
-
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
-
-	// wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	// metaobj := meta1.ObjectMeta{}
-	// or := meta1.OwnerReference{
-	// 	APIVersion:         "v1",
-	// 	Kind:               "owner-kind",
-	// 	Name:               "owner-name",
-	// 	UID:                "owner-uid",
-	// 	Controller:         &falseVal,
-	// 	BlockOwnerDeletion: &falseVal,
-	// }
-	// ors := []meta1.OwnerReference{or}
-	// metaobj.SetOwnerReferences(ors)
-	// pod := &core.Pod{
-	// 	ObjectMeta: metaobj,
-	// }
-
-	// t.Run("add controller to Manager verification", func(t *testing.T) {
-	// 	mgr := &mocking.MockManager{Scheme: scheme}
-	// 	reconciler := &mocking.MockReconciler{}
-	// 	err := add(mgr, reconciler)
-	// 	assert.NoError(t, err)
-	// })
 
 	tests := []*TestCase{
 		testcase1(),
@@ -108,11 +83,6 @@ func TestProvisionManagerController(t *testing.T) {
 	metaobj.SetOwnerReferences(ors)
 	pod := &core.Pod{
 		ObjectMeta: metaobj,
-	}
-
-	// falseVal := false
-	initObjs := []runtime.Object{
-		newProvisionManager(),
 	}
 
 	t.Run("Create event verification", func(t *testing.T) {
@@ -178,12 +148,46 @@ func TestProvisionManagerController(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	// t.Run("Add controller to Manager", func(t *testing.T) {
-	// 	cl := fake.NewFakeClientWithScheme(scheme)
-	// 	mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
-	// 	err := Add(mgr)
-	// 	assert.NoError(t, err)
-	// })
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Failed to Find ProvisionManager Instance", func(t *testing.T) {
+		scheme, err := contrail.SchemeBuilder.Build()
+		require.NoError(t, err, "Failed to build scheme")
+		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+		pmr := newProvisionManager()
+		initObjs := []runtime.Object{
+			newManager(pmr),
+			newConfigInst(),
+			pmr,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+
+		r := &ReconcileProvisionManager{Client: cl, Scheme: scheme}
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "invalid-provisionmanager-instance",
+				Namespace: "default",
+			},
+		}
+
+		res, err := r.Reconcile(req)
+		require.NoError(t, err, "r.Reconcile failed")
+		require.False(t, res.Requeue, "Request was requeued when it should not be")
+
+		// check for success or failure
+		conf := &contrail.ProvisionManager{}
+		err = cl.Get(context.Background(), req.NamespacedName, conf)
+		errmsg := err.Error()
+		require.Contains(t, errmsg, "\"invalid-provisionmanager-instance\" not found",
+			"Error message string is not as expected")
+	})
 
 }
 
@@ -329,7 +333,6 @@ func testcase3() *TestCase {
 }
 
 func testcase4() *TestCase {
-	// falseVal := false
 	trueVal := true
 	pmr := newProvisionManager()
 	tc := &TestCase{
