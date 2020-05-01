@@ -48,13 +48,13 @@ func TestControlController(t *testing.T) {
 		Spec: contrail.ControlSpec{
 			ServiceConfiguration: contrail.ControlConfiguration{
 				Containers: map[string]*contrail.Container{
-					"init":                   {Image: "image1"},
-					"nodemanager":            {Image: "image2"},
-					"control":                {Image: "image3"},
-					"statusmonitor":          {Image: "image4"},
-					"named":                  {Image: "image5"},
-					"dns":                    {Image: "image6"},
-					"nodeinit":               {Image: "image7"},
+					"init":          {Image: "image1"},
+					"nodemanager":   {Image: "image2"},
+					"control":       {Image: "image3"},
+					"statusmonitor": {Image: "image4"},
+					"named":         {Image: "image5"},
+					"dns":           {Image: "image6"},
+					"nodeinit":      {Image: "image7"},
 				},
 				ZookeeperInstance: "zookeeper1",
 				CassandraInstance: "cassandra1",
@@ -123,7 +123,7 @@ func TestControlController(t *testing.T) {
 		},
 	}
 
-	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, zookeeperCR, rabbitmqCR,			 configCR, stsCD)
+	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, zookeeperCR, rabbitmqCR, configCR, stsCD)
 	reconciler := &ReconcileControl{Client: Cl, Scheme: scheme}
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: controlName})
