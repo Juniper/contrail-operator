@@ -160,18 +160,4 @@ func TestControlController(t *testing.T) {
 		assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
 	})
 
-	/*t.Run("should create PrepareSTS for control", func(t *testing.T) {
-                cm := &appsv1.StatefulSet{}
-                err = Cl.Get(context.Background(), types.NamespacedName{
-                        Name:      "test-control-control-preparests",
-                        Namespace: "default",
-                }, cm)
-                assert.NoError(t, err)
-                assert.NotEmpty(t, cm)
-                expectedOwnerRefs := []v1.OwnerReference{{
-                        APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Control", Name: "test-control",
-                        Controller: &trueVal, BlockOwnerDeletion: &trueVal,
-                }}
-                assert.Equal(t, expectedOwnerRefs, cm.OwnerReferences)
-        })*/
 }
