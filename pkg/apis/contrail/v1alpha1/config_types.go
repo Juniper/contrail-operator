@@ -228,7 +228,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		}
 		hostname := podList.Items[idx].Annotations["hostname"]
 		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectNodes,
-			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
+			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace, pod.Name)
 		if err != nil {
 			return err
 		}

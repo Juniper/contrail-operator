@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -25,7 +24,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 
-	//"github.com/Juniper/contrail-operator"
 	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/statusmonitor/uves"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,6 +54,7 @@ type Config struct {
 	KubeConfigPath string     `yaml:"kubeConfigPath,omitempty"`
 	NodeName       string     `yaml:"nodeName,omitempty"`
 	Namespace      string     `yaml:"namespace,omitempty"`
+	PodName        string     `yaml:"podName,omitempty"`
 }
 
 type encryption struct {
@@ -94,7 +93,12 @@ func main() {
 					panic(err)
 				}
 				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
-				getStatus(config)
+				switch config.NodeType {
+				case "control":
+					getControlStatus(config)
+				case "config":
+					getConfigStatus(config)
+				}
 			}
 		}
 	}()
@@ -102,7 +106,33 @@ func main() {
 	fmt.Println("Ticker stopped")
 }
 
-func getStatus(config Config) {
+func getControlStatus(config Config) {
+	client, err := CreateRestClient(config)
+	if err != nil {
+		log.Println("Rest client creation failed")
+		return
+	}
+	clientset, restClient, err := kubeClient(config)
+	check(err)
+	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
+	for _, apiServer := range config.APIServerList {
+		hostnameList, err := getPods(config, clientset)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		GetControlStatusFromApiServer(apiServer, &config, &client, hostnameList, controlStatusMap)
+		if len(controlStatusMap) == len(hostnameList) {
+			break
+		}
+	}
+	err = updateControlStatus(&config, controlStatusMap, restClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func CreateRestClient(config Config) (http.Client, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: config.Encryption.Insecure,
 	}
@@ -114,7 +144,7 @@ func getStatus(config Config) {
 		cer, err := tls.LoadX509KeyPair(*config.Encryption.Cert, *config.Encryption.Key)
 		if err != nil {
 			log.Println(err)
-			return
+			return http.Client{}, err
 		}
 		tlsConfig.Certificates = []tls.Certificate{cer}
 	}
@@ -124,6 +154,11 @@ func getStatus(config Config) {
 	client := http.Client{
 		Transport: &transport,
 	}
+	return client, nil
+}
+
+func GetControlStatusFromApiServer(apiServer string, config *Config, client *http.Client, hostnameList []string,
+	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) {
 	var nodeType string
 	switch config.NodeType {
 	case "config":
@@ -135,76 +170,6 @@ func getStatus(config Config) {
 	case "vrouter":
 		nodeType = "vrouter"
 	}
-	clientset, restClient, err := kubeClient(config)
-	check(err)
-	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
-	var configStatusMap = make(map[string]contrailOperatorTypes.ConfigServiceStatus)
-
-	for _, apiServer := range config.APIServerList {
-		hostnameList, err := getPods(config, clientset)
-		if err != nil {
-			log.Fatal(err)
-		}
-		switch config.NodeType {
-		case "control":
-			GetControlStatusFromApiServer(apiServer, nodeType, &client, hostnameList, controlStatusMap)
-		case "config":
-			GetConfigStatusFromApiServer(apiServer, &client, configStatusMap)
-		}
-		if len(controlStatusMap) == len(hostnameList) {
-			break
-		}
-	}
-	switch config.NodeType {
-	case "control":
-		err = updateControlStatus(&config, controlStatusMap, restClient)
-	case "config":
-		err = updateConfigStatus(&config, configStatusMap, restClient)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func GetConfigStatusFromApiServer(apiServer string, client *http.Client,
-	configStatusMap map[string]contrailOperatorTypes.ConfigServiceStatus) {
-	serviceAddressName := strings.Split(apiServer, "::")
-	serviceAddress := serviceAddressName[0]
-	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
-	resp, err := client.Get(url)
-	if err != nil {
-		moduleName := serviceAddressName[1]
-		moduleNameFmt := strings.Replace(moduleName, "contrail", "", 1)
-		moduleNameFmt = strings.Replace(moduleNameFmt, "-", "", -1)
-		configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
-			NodeName:    "",
-			ModuleName:  moduleName,
-			ModuleState: "connection-error",
-		}
-		fmt.Println(err)
-		return
-	}
-	defer closeResp(resp)
-	if resp != nil {
-		log.Printf("resp not nil %d ", resp.StatusCode)
-		if resp.StatusCode == http.StatusOK {
-			bodyBytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-			configStatus, _, err := getConfigStatus(bodyBytes)
-			if err != nil {
-				log.Printf("warning: getting config status failed: %v", err)
-			}
-			moduleNameFmt := strings.Replace(configStatus.ModuleName, "contrail", "", 1)
-			moduleNameFmt = strings.Replace(moduleNameFmt, "-", "", -1)
-			configStatusMap[moduleNameFmt] = *configStatus
-		}
-	}
-}
-
-func GetControlStatusFromApiServer(apiServer, nodeType string, client *http.Client, hostnameList []string,
-	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) {
 	for _, hostname := range hostnameList {
 		var url string
 		url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
@@ -223,7 +188,7 @@ func GetControlStatusFromApiServer(apiServer, nodeType string, client *http.Clie
 					log.Fatal(err)
 				}
 				fmt.Println("control status")
-				controlStatus := getControlStatus(bodyBytes)
+				controlStatus := getControlStatusFromResponse(bodyBytes)
 				controlStatusMap[hostname] = *controlStatus
 
 				//break
@@ -420,7 +385,7 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 	return nil
 }
 
-func getControlStatus(statusBody []byte) *contrailOperatorTypes.ControlServiceStatus {
+func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.ControlServiceStatus {
 	controlUVEStatus := &uves.ControlUVEStatus{}
 	err := json.Unmarshal(statusBody, controlUVEStatus)
 	if err != nil {
