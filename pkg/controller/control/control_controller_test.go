@@ -8,18 +8,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apps "k8s.io/api/apps/v1"
-	//appsv1 "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	//"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	//"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	//"github.com/Juniper/contrail-operator/pkg/controller/control"
 )
 
 func TestControlController(t *testing.T) {
@@ -56,7 +52,6 @@ func TestControlController(t *testing.T) {
 					{Name: "dns", Image: "image1"},
 					{Name: "nodeinit", Image: "image1"},
 				},
-				ZookeeperInstance: "zookeeper1",
 				CassandraInstance: "cassandra1",
 			},
 			CommonConfiguration: contrail.CommonConfiguration{
@@ -73,16 +68,6 @@ func TestControlController(t *testing.T) {
 			Name:      "cassandra1",
 		},
 		Status: contrail.CassandraStatus{
-			Active: &trueVal,
-		},
-	}
-
-	zookeeperCR := &contrail.Zookeeper{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "zookeeper1",
-		},
-		Status: contrail.ZookeeperStatus{
 			Active: &trueVal,
 		},
 	}
@@ -123,7 +108,7 @@ func TestControlController(t *testing.T) {
 		},
 	}
 
-	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, zookeeperCR, rabbitmqCR, configCR, stsCD)
+	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, rabbitmqCR, configCR, stsCD)
 	reconciler := &ReconcileControl{Client: Cl, Scheme: scheme}
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: controlName})
@@ -158,6 +143,20 @@ func TestControlController(t *testing.T) {
 			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 		}}
 		assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
+	})
+
+	t.Run("should create and check for StatefulSet", func(t *testing.T) {
+		sts := &contrail.Control{}
+		falseVal := false
+		err = Cl.Get(context.Background(), types.NamespacedName{
+			Name:      "test-control",
+			Namespace: "default",
+		}, sts)
+		assert.NoError(t, err)
+		expectedStatus := contrail.ControlStatus{Active: &falseVal}
+		require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
+		require.NotNil(t, sts.Status.Active, "sts.Status.Active Should not be nil")
+		assert.Equal(t, *expectedStatus.Active, *sts.Status.Active)
 	})
 
 }

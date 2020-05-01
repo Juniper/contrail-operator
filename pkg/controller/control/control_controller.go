@@ -156,13 +156,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcZookeeper := &source.Kind{Type: &v1alpha1.Zookeeper{}}
-	zookeeperHandler := resourceHandler(mgr.GetClient())
-	predZookeeperSizeChange := utils.ZookeeperActiveChange()
-	if err = c.Watch(srcZookeeper, zookeeperHandler, predZookeeperSizeChange); err != nil {
-		return err
-	}
-
 	srcSTS := &source.Kind{Type: &appsv1.StatefulSet{}}
 	stsHandler := &handler.EnqueueRequestForOwner{
 		IsController: true,
@@ -195,7 +188,6 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	instanceType := "control"
 	instance := &v1alpha1.Control{}
 	cassandraInstance := v1alpha1.Cassandra{}
-	zookeeperInstance := v1alpha1.Zookeeper{}
 	rabbitmqInstance := v1alpha1.Rabbitmq{}
 	configInstance := v1alpha1.Config{}
 
@@ -209,13 +201,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	cassandraActive := cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
-	zookeeperActive := zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
-		request.Namespace, r.Client)
 	rabbitmqActive := rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
-	if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive {
+	if !configActive || !cassandraActive || !rabbitmqActive {
 		return reconcile.Result{}, nil
 	}
 
