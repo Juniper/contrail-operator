@@ -34,7 +34,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 	}
 	for _, pod := range podList.Items {
 		if pod.Status.PodIP == "" {
-			return fmt.Errorf("%s pod ip still no available", pod.Name)
+			return fmt.Errorf("%s pod IP still no available", pod.Name)
 		}
 
 		if hostNetwork {
