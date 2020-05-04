@@ -97,7 +97,6 @@ spec:
             image: registry:5000/contrail-nightly/contrail-node-init:master.1175
           - name: statusmonitor
             image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.latest
-          zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
         labels:

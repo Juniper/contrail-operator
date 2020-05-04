@@ -94,7 +94,6 @@ spec:
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           - name: statusmonitor
             image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:svl_artifactory-debug.latest
-          zookeeperInstance: zookeeper1
     kubemanagers:
     - metadata:
         labels:
