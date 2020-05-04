@@ -998,13 +998,6 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
 					Command: &commandUpdate,
-					// Cassandras:       []*contrail.Cassandra{cassandra},
-					// Zookeepers:       []*contrail.Zookeeper{zookeeper},
-					// Rabbitmq:         rbt,
-					// ProvisionManager: provisionmanager,
-					// Config:           config,
-					// Controls:         []*contrail.Control{control},
-					// Webui:            webui,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
