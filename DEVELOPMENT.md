@@ -104,7 +104,7 @@ After this change apply changes to k8s cluster:
 
 ### Calculate total code coverage 
 
-    go tool cover -func cov.out | grep total | awk '{print $3}'
+    go tool cover -func cov.out | awk '/total/{print $3}'
 
 ### Display code coverage in the browser
 

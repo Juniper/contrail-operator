@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	errorsS "errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -35,7 +34,7 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 	}
 	for _, pod := range podList.Items {
 		if pod.Status.PodIP == "" {
-			return errorsS.New("not pods ip")
+			return fmt.Errorf("%s pod ip still no available", pod.Name)
 		}
 
 		if hostNetwork {
@@ -57,7 +56,6 @@ func CreateAndSignCsr(client client.Client, request reconcile.Request, scheme *r
 			csrSecret.Data["status-"+pod.Status.PodIP] = []byte("Approved")
 			err = client.Update(context.TODO(), csrSecret)
 			if err != nil {
-				fmt.Println("Failed to update csrSecret after fetching CRT")
 				return err
 			}
 		}
@@ -118,13 +116,4 @@ func getSecret(client client.Client, request reconcile.Request) (*corev1.Secret,
 		return csrSecret, err
 	}
 	return csrSecret, nil
-}
-
-// SigningRequestStatus returns the status of a signing request
-func SigningRequestStatus(secret *corev1.Secret, podIP string) string {
-	approvalStatus, ok := secret.Data["status-"+podIP]
-	if ok {
-		return string(approvalStatus)
-	}
-	return "NoStatus"
 }
