@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "cluster_info.go",
         "config_map.go",
-        "csr_signer_ca_k8s.go",
         "k8s.go",
         "owner.go",
         "secret.go",
@@ -32,7 +31,6 @@ go_test(
     srcs = [
         "cluster_info_test.go",
         "config_map_test.go",
-        "csr_signer_ca_k8s_test.go",
         "owner_test.go",
         "secret_test.go",
     ],
