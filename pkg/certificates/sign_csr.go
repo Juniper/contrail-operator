@@ -86,8 +86,15 @@ func generateCertificateTemplate(client client.Client, object v1.Object, ipAddre
 	notBefore := time.Now()
 	notAfter := notBefore.Add(10 * 364 * 24 * time.Hour)
 
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("fail to generate serial number: %w", err)
+	}
+
 	certificateTemplate := x509.Certificate{
-		SerialNumber: big.NewInt(2),
+		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			CommonName:         ipAddress,
 			Country:            []string{"US"},
