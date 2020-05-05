@@ -47,7 +47,6 @@ type ControlSpec struct {
 type ControlConfiguration struct {
 	Containers        []*Container `json:"containers,omitempty"`
 	CassandraInstance string       `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string       `json:"zookeeperInstance,omitempty"`
 	BGPPort           *int         `json:"bgpPort,omitempty"`
 	ASNNumber         *int         `json:"asnNumber,omitempty"`
 	XMPPPort          *int         `json:"xmppPort,omitempty"`
@@ -135,8 +134,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	zookeeperNodesInformation, err := NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance,
-		request.Namespace, client)
 	if err != nil {
 		return err
 	}
@@ -208,7 +205,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList       string
 			APIServerPort       string
 			CassandraServerList string
-			ZookeeperServerList string
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
@@ -224,7 +220,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
@@ -247,7 +242,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList       string
 			APIServerPort       string
 			CassandraServerList string
-			ZookeeperServerList string
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
@@ -261,7 +255,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,

@@ -315,7 +315,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 						ServiceConfiguration: v1alpha1.ControlConfiguration{
 							CassandraInstance: "cassandra1",
-							ZookeeperInstance: "zookeeper1",
 							Containers: []*v1alpha1.Container{
 								{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + versionMap["control"]},
 								{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["control"]},

@@ -809,8 +809,6 @@ spec:
                                 type: string
                               xmppPort:
                                 type: integer
-                              zookeeperInstance:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration
