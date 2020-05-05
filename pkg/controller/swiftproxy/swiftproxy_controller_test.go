@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -268,7 +268,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 							},
 							Command: []string{"ansible-playbook"},
 							Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -281,7 +281,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-							{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+							{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 							{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 						},
 						Env: []core.EnvVar{{
@@ -387,7 +387,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: cacertificates.CsrSignerCAConfigMapName,
+										Name: certificates.SignerCAConfigMapName,
 									},
 								},
 							},
@@ -436,7 +436,7 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			},
 			Command: []string{"ansible-playbook"},
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -450,7 +450,7 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{

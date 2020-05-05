@@ -16,9 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type stubCSRSignerCA struct {
@@ -275,10 +275,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -578,10 +578,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -859,10 +859,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -930,10 +930,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1026,10 +1026,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1092,10 +1092,10 @@ func TestManagerController(t *testing.T) {
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1172,10 +1172,10 @@ func TestManagerController(t *testing.T) {
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1278,10 +1278,10 @@ func TestManagerController(t *testing.T) {
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1348,10 +1348,10 @@ func TestManagerController(t *testing.T) {
 		expectedSecret := newAdminSecret()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1390,10 +1390,10 @@ func TestManagerController(t *testing.T) {
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1407,7 +1407,7 @@ func TestManagerController(t *testing.T) {
 
 		configMap := &core.ConfigMap{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      cacertificates.CsrSignerCAConfigMapName,
+			Name:      certificates.SignerCAConfigMapName,
 			Namespace: "default",
 		}, configMap)
 
@@ -1447,10 +1447,10 @@ func TestManagerController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
-			client:      fakeClient,
-			scheme:      scheme,
-			kubernetes:  k8s.New(fakeClient, scheme),
-			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+			signerCa:   stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
 		}
 		// when
 		result, err := reconciler.Reconcile(reconcile.Request{
@@ -1754,7 +1754,7 @@ func TestAddManager(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 
-	var csrca cacertificates.CA = stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil}
+	var csrca certificates.CA = stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil}
 	t.Run("add controller to Manager", func(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme)
 		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}

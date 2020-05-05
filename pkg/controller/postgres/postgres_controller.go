@@ -22,9 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
@@ -42,7 +42,8 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	scheme := mgr.GetScheme()
 	claims := volumeclaims.New(client, scheme)
 	config := mgr.GetConfig()
-	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims, config: config}
+	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
+	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims, kubernetes: kubernetes, config: config}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -78,10 +79,11 @@ var _ reconcile.Reconciler = &ReconcilePostgres{}
 type ReconcilePostgres struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-	claims volumeclaims.PersistentVolumeClaims
-	config *rest.Config
+	client     client.Client
+	scheme     *runtime.Scheme
+	claims     volumeclaims.PersistentVolumeClaims
+	kubernetes *k8s.Kubernetes
+	config     *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Postgres object and makes changes based on the state read
@@ -250,7 +252,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						},
 						{
 							Name:      csrSignerCaVolumeName,
-							MountPath: cacertificates.CsrSignerCAMountPath,
+							MountPath: certificates.SignerCAMountPath,
 						},
 					},
 					Env: []core.EnvVar{
@@ -308,7 +310,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 					VolumeSource: core.VolumeSource{
 						ConfigMap: &core.ConfigMapVolumeSource{
 							LocalObjectReference: core.LocalObjectReference{
-								Name: cacertificates.CsrSignerCAConfigMapName,
+								Name: certificates.SignerCAConfigMapName,
 							},
 						},
 					},
@@ -328,7 +330,7 @@ func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres,
 	if postgres.Spec.HostNetwork != nil {
 		hostNetwork = *postgres.Spec.HostNetwork
 	}
-	return certificates.New(r.client, r.scheme, postgres, r.config, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.New(r.client, r.kubernetes, r.scheme, postgres, r.config, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) {
@@ -356,7 +358,7 @@ func getImage(containers []*contrail.Container, containerName string) string {
 
 func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + cacertificates.CsrSignerCAFilepath},
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + certificates.SignerCAFilepath},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 

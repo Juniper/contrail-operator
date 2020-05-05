@@ -10,7 +10,7 @@ go_library(
     deps = [
         "//pkg/apis:go_default_library",
         "//pkg/apis/contrail/v1alpha1:go_default_library",
-        "//pkg/cacertificates:go_default_library",
+        "//pkg/certificates:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/kubemanager:go_default_library",
         "//pkg/controller/manager:go_default_library",

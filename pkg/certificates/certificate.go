@@ -1,8 +1,6 @@
 package certificates
 
 import (
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -10,11 +8,14 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type Certificate struct {
 	client      client.Client
 	scheme      *runtime.Scheme
+	kubernetes  *k8s.Kubernetes
 	owner       v1.Object
 	restConfig  *rest.Config
 	ownerType   string
@@ -22,10 +23,11 @@ type Certificate struct {
 	pods        *core.PodList
 }
 
-func New(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
+func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
 	return &Certificate{
 		client:      cl,
 		scheme:      scheme,
+		kubernetes:  kubernetes,
 		owner:       owner,
 		restConfig:  restConf,
 		ownerType:   ownerType,
@@ -34,19 +36,7 @@ func New(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *re
 	}
 }
 
-func (r *Certificate) EnsureExistsAndIsSigned() error {
-	secretName := r.owner.GetName() + "-secret-certificates"
-	_, err := contrail.CreateSecret(secretName, r.client, r.scheme,
-		reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: r.owner.GetNamespace(),
-				Name:      r.owner.GetName(),
-			},
-		}, r.ownerType, r.owner)
-	if err != nil {
-		return err
-	}
-
+func (r *Certificate) FillSecret(sc *core.Secret) error {
 	return CreateAndSignCsr(r.client,
 		reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -54,4 +44,9 @@ func (r *Certificate) EnsureExistsAndIsSigned() error {
 				Name:      r.owner.GetName(),
 			},
 		}, r.scheme, r.owner, r.restConfig, r.pods, r.hostNetwork)
+}
+
+func (r *Certificate) EnsureExistsAndIsSigned() error {
+	secretName := r.owner.GetName() + "-secret-certificates"
+	return r.kubernetes.Secret(secretName, r.ownerType, r.owner).EnsureExists(r)
 }

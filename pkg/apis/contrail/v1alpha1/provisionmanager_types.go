@@ -18,7 +18,7 @@ import (
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -242,7 +242,7 @@ func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string)
 		AdminUsername: "admin",
 		TenantName:    "admin",
 		Encryption: Encryption{
-			CA:       cacertificates.CsrSignerCAFilepath,
+			CA:       certificates.SignerCAFilepath,
 			Key:      "/etc/certificates/server-key-" + podIP + ".pem",
 			Cert:     "/etc/certificates/server-" + podIP + ".crt",
 			Insecure: false,
@@ -477,7 +477,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
 			APIPort:       apiPort,
 			Encryption: Encryption{
-				CA:       cacertificates.CsrSignerCAFilepath,
+				CA:       certificates.SignerCAFilepath,
 				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
 				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
 				Insecure: false,

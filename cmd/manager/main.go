@@ -22,7 +22,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	managerController "github.com/Juniper/contrail-operator/pkg/controller/manager"
@@ -116,7 +116,7 @@ func main() {
 
 	var cinfo v1alpha1.KubemanagerClusterInfo
 	var cniDirs vrouter.CNIDirectoriesInfo
-	var csrSignerCa cacertificates.CA
+	var csrSignerCa certificates.CA
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		config := openshift.ClusterConfig{Client: clientset.CoreV1()}
 		cinfo = config
