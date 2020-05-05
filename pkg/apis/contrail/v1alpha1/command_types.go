@@ -30,14 +30,14 @@ type CommandSpec struct {
 // CommandConfiguration is the Spec for the Command configuration
 // +k8s:openapi-gen=true
 type CommandConfiguration struct {
-	ClusterName        string                `json:"clusterName,omitempty"`
-	ConfigAPIURL       string                `json:"configAPIURL,omitempty"`
-	TelemetryURL       string                `json:"telemetryURL,omitempty"`
-	PostgresInstance   string                `json:"postgresInstance,omitempty"`
-	SwiftInstance      string                `json:"swiftInstance,omitempty"`
-	KeystoneInstance   string                `json:"keystoneInstance,omitempty"`
-	KeystoneSecretName string                `json:"keystoneSecretName,omitempty"`
-	Containers         map[string]*Container `json:"containers,omitempty"`
+	ClusterName        string       `json:"clusterName,omitempty"`
+	ConfigAPIURL       string       `json:"configAPIURL,omitempty"`
+	TelemetryURL       string       `json:"telemetryURL,omitempty"`
+	PostgresInstance   string       `json:"postgresInstance,omitempty"`
+	SwiftInstance      string       `json:"swiftInstance,omitempty"`
+	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
+	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
+	Containers         []*Container `json:"containers,omitempty"`
 }
 
 // CommandStatus defines the observed state of Command

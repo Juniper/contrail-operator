@@ -2,8 +2,11 @@ package rabbitmq
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -15,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
 
 func TestRabbitmqResourceHandler(t *testing.T) {
@@ -89,14 +91,47 @@ func TestRabbitmqResourceHandler(t *testing.T) {
 		assert.Equal(t, 1, wq.Len())
 	})
 
-	t.Run("add controller to Manager", func(t *testing.T) {
-		mgr := &mocking.MockManager{Scheme:scheme}
-		reconciler := &mocking.MockReconciler{}
-		err := add(mgr, reconciler)
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr)
 		assert.NoError(t, err)
 	})
-}
 
+	t.Run("Failed to Find Rabbitmq Instance", func(t *testing.T) {
+		scheme, err := contrail.SchemeBuilder.Build()
+		require.NoError(t, err, "Failed to build scheme")
+		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+		rbt := newRabbitmq()
+		initObjs := []runtime.Object{
+			newManager(rbt),
+			newConfigInst(),
+			rbt,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+
+		r := &ReconcileRabbitmq{Client: cl, Scheme: scheme}
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "invalid-rabbitmq-instance",
+				Namespace: "default",
+			},
+		}
+
+		res, err := r.Reconcile(req)
+		require.NoError(t, err, "r.Reconcile failed")
+		require.False(t, res.Requeue, "Request was requeued when it should not be")
+
+		// check for success or failure
+		conf := &contrail.Rabbitmq{}
+		err = cl.Get(context.Background(), req.NamespacedName, conf)
+		errmsg := err.Error()
+		require.Contains(t, errmsg, "\"invalid-rabbitmq-instance\" not found",
+			"Error message string is not as expected")
+	})
+}
 
 type TestCase struct {
 	name           string
@@ -115,6 +150,7 @@ func TestRabbitmq(t *testing.T) {
 		testcase2(),
 		testcase3(),
 		testcase4(),
+		testcase5(),
 	}
 
 	for _, tt := range tests {
@@ -164,19 +200,19 @@ func newConfigInst() *contrail.Config {
 				CassandraInstance:  "cassandra-instance",
 				ZookeeperInstance:  "zookeeper-instance",
 				KeystoneSecretName: "keystone-adminpass-secret",
-				Containers: map[string]*contrail.Container{
-					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
-					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"init2":             &contrail.Container{Image: "busybox"},
-					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
-					"redis":             &contrail.Container{Image: "redis"},
-					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
+				Containers: []*contrail.Container{
+					{Name: "analyticsapi", Image: "contrail-analytics-api"},
+					{Name: "api", Image: "contrail-controller-config-api"},
+					{Name: "collector", Image: "contrail-analytics-collector"},
+					{Name: "devicemanager", Image: "contrail-controller-config-devicemgr"},
+					{Name: "dnsmasq", Image: "contrail-controller-config-dnsmasq"},
+					{Name: "init", Image: "python:alpine"},
+					{Name: "init2", Image: "busybox"},
+					{Name: "nodeinit", Image: "contrail-node-init"},
+					{Name: "redis", Image: "redis"},
+					{Name: "schematransformer", Image: "contrail-controller-config-schema"},
+					{Name: "servicemonitor", Image: "contrail-controller-config-svcmonitor"},
+					{Name: "queryengine", Image: "contrail-analytics-query-engine"},
 				},
 			},
 		},
@@ -225,13 +261,26 @@ func newRabbitmq() *contrail.Rabbitmq {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"rabbitmq":          &contrail.Container{Image: "contrail-controller-rabbitmq"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "python:alpine"},
+					{Name: "rabbitmq", Image: "contrail-controller-rabbitmq"},
 				},
 			},
 		},
 		Status: contrail.RabbitmqStatus{Active: &falseVal},
+	}
+}
+
+func newPodList() *core.PodList {
+	return &core.PodList{
+		Items: []core.Pod{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Namespace: "default",
+					Labels:    map[string]string{"contrail_cluster": "config1"},
+				},
+			},
+		},
 	}
 }
 
@@ -280,8 +329,9 @@ func testcase3() *TestCase {
 	falseVal := false
 	rbt := newRabbitmq()
 
-	command := []string{"bash", "/runner/run.sh"}
-	rbt.Spec.ServiceConfiguration.Containers["rabbitmq"].Command = command
+	command := []string{"bash", "/runner/dummy.sh"}
+	utils.GetContainerFromList("rabbitmq", rbt.Spec.ServiceConfiguration.Containers).Command = command
+	utils.GetContainerFromList("init", rbt.Spec.ServiceConfiguration.Containers).Command = command
 
 	tc := &TestCase{
 		name: "Preset Rabbitmq command",
@@ -313,3 +363,17 @@ func testcase4() *TestCase {
 	return tc
 }
 
+func testcase5() *TestCase {
+	falseVal := false
+	rbt := newRabbitmq()
+	tc := &TestCase{
+		name: "Pod Test",
+		initObjs: []runtime.Object{
+			newManager(rbt),
+			rbt,
+			newPodList(),
+		},
+		expectedStatus: contrail.RabbitmqStatus{Active: &falseVal},
+	}
+	return tc
+}

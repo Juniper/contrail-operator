@@ -9,6 +9,7 @@ go_library(
         "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/cacertificates:go_default_library",
         "//pkg/certificates:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "//pkg/volumeclaims:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

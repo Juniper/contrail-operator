@@ -64,30 +64,30 @@ type ConfigSpec struct {
 // ConfigConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
-	Containers                  map[string]*Container `json:"containers,omitempty"`
-	APIPort                     *int                  `json:"apiPort,omitempty"`
-	AnalyticsPort               *int                  `json:"analyticsPort,omitempty"`
-	CollectorPort               *int                  `json:"collectorPort,omitempty"`
-	RedisPort                   *int                  `json:"redisPort,omitempty"`
-	ApiIntrospectPort           *int                  `json:"apiIntrospectPort,omitempty"`
-	SchemaIntrospectPort        *int                  `json:"schemaIntrospectPort,omitempty"`
-	DeviceManagerIntrospectPort *int                  `json:"deviceManagerIntrospectPort,omitempty"`
-	SvcMonitorIntrospectPort    *int                  `json:"svcMonitorIntrospectPort,omitempty"`
-	AnalyticsApiIntrospectPort  *int                  `json:"analyticsMonitorIntrospectPort,omitempty"`
-	CollectorIntrospectPort     *int                  `json:"collectorMonitorIntrospectPort,omitempty"`
-	CassandraInstance           string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance           string                `json:"zookeeperInstance,omitempty"`
-	NodeManager                 *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser                string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword            string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost               string                `json:"rabbitmqVhost,omitempty"`
-	LogLevel                    string                `json:"logLevel,omitempty"`
-	KeystoneSecretName          string                `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance            string                `json:"keystoneInstance,omitempty"`
-	AuthMode                    AuthenticationMode    `json:"authMode,omitempty"`
-	AAAMode                     AAAMode               `json:"aaaMode,omitempty"`
-	Storage                     Storage               `json:"storage,omitempty"`
-	FabricMgmtIP                string                `json:"fabricMgmtIP,omitempty"`
+	Containers                  []*Container       `json:"containers,omitempty"`
+	APIPort                     *int               `json:"apiPort,omitempty"`
+	AnalyticsPort               *int               `json:"analyticsPort,omitempty"`
+	CollectorPort               *int               `json:"collectorPort,omitempty"`
+	RedisPort                   *int               `json:"redisPort,omitempty"`
+	ApiIntrospectPort           *int               `json:"apiIntrospectPort,omitempty"`
+	SchemaIntrospectPort        *int               `json:"schemaIntrospectPort,omitempty"`
+	DeviceManagerIntrospectPort *int               `json:"deviceManagerIntrospectPort,omitempty"`
+	SvcMonitorIntrospectPort    *int               `json:"svcMonitorIntrospectPort,omitempty"`
+	AnalyticsApiIntrospectPort  *int               `json:"analyticsMonitorIntrospectPort,omitempty"`
+	CollectorIntrospectPort     *int               `json:"collectorMonitorIntrospectPort,omitempty"`
+	CassandraInstance           string             `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance           string             `json:"zookeeperInstance,omitempty"`
+	NodeManager                 *bool              `json:"nodeManager,omitempty"`
+	RabbitmqUser                string             `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword            string             `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost               string             `json:"rabbitmqVhost,omitempty"`
+	LogLevel                    string             `json:"logLevel,omitempty"`
+	KeystoneSecretName          string             `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance            string             `json:"keystoneInstance,omitempty"`
+	AuthMode                    AuthenticationMode `json:"authMode,omitempty"`
+	AAAMode                     AAAMode            `json:"aaaMode,omitempty"`
+	Storage                     Storage            `json:"storage,omitempty"`
+	FabricMgmtIP                string             `json:"fabricMgmtIP,omitempty"`
 }
 
 // +k8s:openapi-gen=true

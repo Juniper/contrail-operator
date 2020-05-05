@@ -10,7 +10,6 @@ import (
 	"testing"
 )
 
-
 func TestByOwner(t *testing.T) {
 	trueVal := true
 	falseVal := false

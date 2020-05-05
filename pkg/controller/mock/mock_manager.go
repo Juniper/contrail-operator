@@ -16,74 +16,75 @@ import (
 
 // ------------------------ MOCKED MANAGER ------------------------------------
 type MockManager struct {
-Scheme *runtime.Scheme
+	Scheme *runtime.Scheme
+	Client *client.Client
 }
 
 func (m *MockManager) Add(r manager.Runnable) error {
-if err := m.SetFields(r); err != nil {
-return err
-}
+	if err := m.SetFields(r); err != nil {
+		return err
+	}
 
-return nil
+	return nil
 }
 
 func (m *MockManager) SetFields(i interface{}) error {
-if _, err := inject.SchemeInto(m.Scheme, i); err != nil {
-return err
-}
-if _, err := inject.InjectorInto(m.SetFields, i); err != nil {
-return err
-}
+	if _, err := inject.SchemeInto(m.Scheme, i); err != nil {
+		return err
+	}
+	if _, err := inject.InjectorInto(m.SetFields, i); err != nil {
+		return err
+	}
 
-return nil
+	return nil
 }
 
 func (m *MockManager) AddHealthzCheck(name string, check healthz.Checker) error {
-return nil
+	return nil
 }
 
 func (m *MockManager) AddReadyzCheck(name string, check healthz.Checker) error {
-return nil
+	return nil
 }
 
 func (m *MockManager) Start(<-chan struct{}) error {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetConfig() *rest.Config {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetScheme() *runtime.Scheme {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetClient() client.Client {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetFieldIndexer() client.FieldIndexer {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetCache() cache.Cache {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetEventRecorderFor(name string) record.EventRecorder {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetRESTMapper() apimeta.RESTMapper {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetAPIReader() client.Reader {
-return nil
+	return nil
 }
 
 func (m *MockManager) GetWebhookServer() *webhook.Server {
-return nil
+	return nil
 }
 
 type MockReconciler struct{}

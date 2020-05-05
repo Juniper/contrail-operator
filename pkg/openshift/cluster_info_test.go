@@ -1,7 +1,6 @@
 package openshift_test
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -20,15 +19,71 @@ type ClusterInfoSuite struct {
 	CoreV1Interface typedCorev1.CoreV1Interface
 }
 
+var clusterConfigV1 = `---
+apiVersion: v1
+baseDomain: user.test.com
+compute:
+- hyperthreading: Enabled
+  name: worker
+  platform: {}
+  replicas: 3
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  platform:
+    aws:
+      rootVolume:
+        iops: 0
+        size: 120
+        type: gp2
+      type: m4.large
+      zones:
+      - eu-central-1a
+      - eu-central-1b
+      - eu-central-1c
+  replicas: 1
+metadata:
+  creationTimestamp: null
+  name: test
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineCIDR: 10.0.0.0/16
+  networkType: contrailCNI
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  aws:
+    region: eu-central-1
+publish: External
+pullSecret: ""
+sshKey: |
+  ssh-rsa AAAAAAA test@test-user
+`
+
+var consoleConfig = `---
+apiVersion: console.openshift.io/v1
+auth:
+  clientID: console
+  clientSecretFile: /var/oauth-config/clientSecret
+  oauthEndpointCAFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+clusterInfo:
+  consoleBaseAddress: https://console-openshift-console.apps.test.user.test.com
+  masterPublicURL: https://api.test.user.test.com:6443
+customization:
+  branding: ocp
+  documentationBaseURL: https://docs.openshift.com/container-platform/4.3/
+kind: ConsoleConfig
+providers: {}
+servingInfo:
+  bindAddress: https://0.0.0.0:8443
+  certFile: /var/serving-cert/tls.crt
+  keyFile: /var/serving-cert/tls.key`
+
 func (suite *ClusterInfoSuite) SetupTest() {
-	ccv1Data, err := ioutil.ReadFile("test_files/cluster-config-v1.yml")
-	suite.Assert().NoError(err)
-	ccv1DataString := string(ccv1Data)
-	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", ccv1DataString)
-	consoleData, err := ioutil.ReadFile("test_files/console-config.yml")
-	suite.Assert().NoError(err)
-	consoleDataString := string(consoleData)
-	consoleMap := getConfigMap("console-config", "openshift-console", "console-config.yaml", consoleDataString)
+	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfigV1)
+	consoleMap := getConfigMap("console-config", "openshift-console", "console-config.yaml", consoleConfig)
 	fakeClientset := fake.NewSimpleClientset(ccv1Map, consoleMap)
 	coreV1Interface := fakeClientset.CoreV1()
 	suite.ClusterInfo = openshift.ClusterConfig{Client: coreV1Interface}

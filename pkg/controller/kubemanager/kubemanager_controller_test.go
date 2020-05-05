@@ -46,10 +46,10 @@ func TestKubemanagerController(t *testing.T) {
 		},
 		Spec: contrail.KubemanagerSpec{
 			ServiceConfiguration: contrail.KubemanagerConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":        {Image: "image1"},
-					"kubemanager": {Image: "image2"},
-					"nodeinit":    {Image: "image3"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "image1"},
+					{Name: "kubemanager", Image: "image2"},
+					{Name: "nodeinit", Image: "image3"},
 				},
 				IPFabricForwarding:  &falseVal,
 				IPFabricSnat:        &trueVal,

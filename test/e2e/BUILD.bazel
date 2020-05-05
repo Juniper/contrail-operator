@@ -9,6 +9,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
+    tags=["manual"],
     srcs = [
         "cluster_test.go",
         "command_test.go",
@@ -23,6 +24,7 @@ go_test(
         "//pkg/client/keystone:go_default_library",
         "//pkg/client/kubeproxy:go_default_library",
         "//pkg/client/swift:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "//test/logger:go_default_library",
         "//test/wait:go_default_library",
         "@com_github_ghodss//:go_default_library",
