@@ -4,19 +4,11 @@ import (
 	"net"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
-
-// CNIDirectories is struct with directories containing CNI specific files for k8s cluster
-var CNIDirectories = v1alpha1.VrouterCNIDirectories{
-	BinariesDirectory:    "/opt/cni/bin",
-	ConfigFilesDirectory: "/etc/cni",
-}
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
@@ -118,6 +110,16 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	}
 	serviceSubnets := clusterConfigMap.Networking.ServiceSubnet
 	return serviceSubnets, nil
+}
+
+// CNIBinariesDirectory returns directory containing CNI binaries specific for k8s cluster
+func (c ClusterConfig) CNIBinariesDirectory() string {
+	return "/opt/cni/bin"
+}
+
+// CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
+func (c ClusterConfig) CNIConfigFilesDirectory() string {
+	return "/etc/cni"
 }
 
 type configMap struct {

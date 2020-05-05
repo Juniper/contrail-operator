@@ -494,9 +494,3 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 
 	return vrouterConfiguration
 }
-
-// VrouterCNIDirectories is struct with directories containing CNI specific files
-type VrouterCNIDirectories struct {
-	BinariesDirectory    string
-	ConfigFilesDirectory string
-}

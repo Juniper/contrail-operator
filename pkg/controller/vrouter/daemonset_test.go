@@ -6,14 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 )
 
 func TestGetDaemonset(t *testing.T) {
 	testBinariesPath := "/test/cni/bin"
 	testConfigPath := "/config/test/cni"
-	testCNIDirs := v1alpha1.VrouterCNIDirectories{
+	testCNIDirs := vrouter.CniDirs{
 		BinariesDirectory:    testBinariesPath,
 		ConfigFilesDirectory: testConfigPath,
 	}

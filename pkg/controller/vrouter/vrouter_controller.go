@@ -31,6 +31,11 @@ import (
 
 var log = logf.Log.WithName("controller_vrouter")
 
+type CNIDirectoriesInfo interface {
+	CNIBinariesDirectory() string
+	CNIConfigFilesDirectory() string
+}
+
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
 		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
@@ -92,19 +97,19 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Vrouter Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) error {
+func Add(mgr manager.Manager, cniDirs CNIDirectoriesInfo) error {
 	return add(mgr, newReconciler(mgr, cniDirs))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, cniDirs CNIDirectoriesInfo) reconcile.Reconciler {
 	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), cniDirs)
 }
 
 // NewReconciler returns a new reconcile.Reconciler.
-func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs CNIDirectoriesInfo) reconcile.Reconciler {
 	return &ReconcileVrouter{Client: client, Scheme: scheme,
-		Config: cfg, CNIDirectories: cniDirs}
+		Config: cfg, cniDirectories: cniDirs}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -182,7 +187,7 @@ type ReconcileVrouter struct {
 	Client         client.Client
 	Scheme         *runtime.Scheme
 	Config         *rest.Config
-	CNIDirectories v1alpha1.VrouterCNIDirectories
+	cniDirectories CNIDirectoriesInfo
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -248,7 +253,12 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	daemonSet := GetDaemonset(r.CNIDirectories)
+	cniDirs := CniDirs{
+		BinariesDirectory:    r.cniDirectories.CNIBinariesDirectory(),
+		ConfigFilesDirectory: r.cniDirectories.CNIConfigFilesDirectory(),
+	}
+
+	daemonSet := GetDaemonset(cniDirs)
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}

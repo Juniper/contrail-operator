@@ -4,12 +4,15 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
+type CniDirs struct {
+	BinariesDirectory    string
+	ConfigFilesDirectory string
+}
+
 //GetDaemonset returns DaemonSet object for vRouter
-func GetDaemonset(cniDir v1alpha1.VrouterCNIDirectories) *apps.DaemonSet {
+func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 	var labelsMountPermission int32 = 0644
 	var trueVal = true
 	hostToContainerMountPropagation := core.MountPropagationHostToContainer

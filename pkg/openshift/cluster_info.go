@@ -5,22 +5,14 @@ import (
 	"net/url"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
-
-// CNIDirectories is struct with directories containing CNI specific files for Openshift cluster
-var CNIDirectories = v1alpha1.VrouterCNIDirectories{
-	BinariesDirectory:    "/var/lib/cni/bin",
-	ConfigFilesDirectory: "/etc/kubernetes/cni",
-}
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
@@ -95,6 +87,16 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	}
 	serviceSubnets := serviceNetwork[0]
 	return serviceSubnets, nil
+}
+
+// CNIBinariesDirectory returns directory containing CNI binaries specific for k8s cluster
+func (c ClusterConfig) CNIBinariesDirectory() string {
+	return "/var/lib/cni/bin"
+}
+
+// CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
+func (c ClusterConfig) CNIConfigFilesDirectory() string {
+	return "/etc/kubernetes/cni"
 }
 
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
