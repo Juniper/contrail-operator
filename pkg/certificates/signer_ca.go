@@ -42,10 +42,6 @@ const (
 	privateKeyPemType  = "RSA PRIVATE KEY"
 )
 
-type CA interface {
-	CACert() (string, error)
-}
-
 func GetCaCert(c client.Client, owner metav1.Object) ([]byte, error) {
 	secret, err := getCaCertSecret(c, owner)
 	if err != nil {
