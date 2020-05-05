@@ -36,6 +36,855 @@ func TestManagerController(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	trueVar := true
 
+	//  Verification of create for all
+	t.Run("Verification of create for all", func(t *testing.T) {
+		// given
+		command := &contrail.Command{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "other",
+			},
+		}
+		falseVal1 := false
+		trueVal1 := true
+		createNew := true
+		var replicas int32 = 3
+		cassandra := &contrail.Cassandra{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cassandra",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.CassandraSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.CassandraConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "cassandra", Image: "cassandra:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "cassandra:3.5"},
+					},
+				},
+			},
+		}
+		zookeeper := &contrail.Zookeeper{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "zookeeper",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ZookeeperSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ZookeeperConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "zookeeper", Image: "zookeeper:3.5"},
+						{Name: "init",     Image: "busybox"},
+						{Name: "init2",     Image: "zookeeper:3.5"},
+					},
+				},
+			},
+		}
+		provisionmanager := &contrail.ProvisionManager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+			},
+		}
+		kubemanager := &contrail.Kubemanager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "kubemanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.KubemanagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
+					},
+				},
+			},
+		}
+		webui := &contrail.Webui{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "webui",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.WebuiSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.WebuiConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "webui", Image: "webui:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "webui:3.5"},
+					},
+				},
+			},
+		}
+		config := &contrail.Config{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "config",
+				Namespace: "default",
+				Labels: map[string]string{
+					"contrail_cluster": "cluster1",
+				},
+			},
+			Spec: contrail.ConfigSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ConfigConfiguration{
+					KeystoneSecretName: "keystone-adminpass-secret",
+					AuthMode:           contrail.AuthenticationModeKeystone,
+				},
+			},
+		}
+		control := &contrail.Control{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "control",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ControlSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ControlConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "control", Image: "control"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "control"},
+					},
+				},
+			},
+		}
+		vrouter := &contrail.Vrouter{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "vrouter",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.VrouterSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:   &createNew,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.VrouterConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "vrouter", Image: "vrouter:3.5"},
+						{Name: "init",    Image: "busybox"},
+						{Name: "init2",   Image: "vrouter:3.5"},
+					},
+				},
+			},
+		}
+		rabbitmq := &contrail.Rabbitmq{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "rabbitmq-instance",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVal,
+						BlockOwnerDeletion: &trueVal,
+					},
+				},
+			},
+			Spec: contrail.RabbitmqSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Activate:     &trueVal1,
+					Create:       &createNew,
+					HostNetwork:  &trueVal1,
+					Replicas:     &replicas,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+				ServiceConfiguration: contrail.RabbitmqConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "rabbitmq", Image: "rabbitmq:3.5"},
+						{Name: "init",     Image: "busybox"},
+						{Name: "init2",    Image: "rabbitmq:3.5"},
+					},
+				},
+			},
+			Status: contrail.RabbitmqStatus{Active: &falseVal1},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Command:          command,
+					Cassandras:       []*contrail.Cassandra{cassandra},
+					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Rabbitmq:         rabbitmq,
+					ProvisionManager: provisionmanager,
+					Webui:            webui,
+					Controls:         []*contrail.Control{control},
+					Vrouters:         []*contrail.Vrouter{vrouter},
+					Config:           config,
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+			Status: contrail.ManagerStatus{},
+		}
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+			cassandra,
+			zookeeper,
+			rabbitmq,
+			provisionmanager,
+			kubemanager,
+			webui,
+			control,
+			vrouter,
+			config,
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:      fakeClient,
+			scheme:      scheme,
+			kubernetes:  k8s.New(fakeClient, scheme),
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedCommand := contrail.Command{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
+		}
+		assertCommandDeployed(t, expectedCommand, fakeClient)
+	})
+	// Verification of create for all
+
+	//  Verification of update for all
+	t.Run("Verification of update for all", func(t *testing.T) {
+		// given
+		command := &contrail.Command{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "other",
+			},
+		}
+		createVal := true
+		trueVal1 := true
+		falseVal1 := false
+		cassandra := &contrail.Cassandra{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cassandra",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.CassandraSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+				},
+				ServiceConfiguration: contrail.CassandraConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"cassandra", Image: "cassandra"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "cassandra"},
+					},
+				},
+			},
+		}
+		zookeeper := &contrail.Zookeeper{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "zookeeper",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ZookeeperSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ZookeeperConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"zookeeper", Image: "zookeeper:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "zookeeper:3.5"},
+					},
+				},
+			},
+		}
+		provisionmanager := &contrail.ProvisionManager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+			},
+		}
+		kubemanager := &contrail.Kubemanager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "kubemanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.KubemanagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"kubemanager", Image: "kubemanager"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "kubemanager"},
+					},
+				},
+			},
+		}
+		webui := &contrail.Webui{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "webui",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.WebuiSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.WebuiConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"webui", Image: "webui:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "webui:3.5"},
+					},
+				},
+			},
+		}
+		config := &contrail.Config{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "config",
+				Namespace: "default",
+				Labels: map[string]string{
+					"contrail_cluster": "cluster1",
+				},
+			},
+			Spec: contrail.ConfigSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ConfigConfiguration{
+					KeystoneSecretName: "keystone-adminpass-secret",
+					AuthMode:           contrail.AuthenticationModeKeystone,
+				},
+			},
+		}
+		control := &contrail.Control{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "control",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ControlSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ControlConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"control", Image: "control"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "control"},
+					},
+				},
+			},
+		}
+		vrouter := &contrail.Vrouter{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "vrouter",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.VrouterSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &createVal,
+					// Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.VrouterConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"vrouter", Image: "vrouter:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "vrouter:3.5"},
+					},
+				},
+			},
+		}
+		rabbitmq := &contrail.Rabbitmq{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "rabbitmq-instance",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVal,
+						BlockOwnerDeletion: &trueVal,
+					},
+				},
+			},
+			Spec: contrail.RabbitmqSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Activate:    &trueVal1,
+					Create:      &createVal,
+					HostNetwork: &trueVal1,
+					// Replicas:     &replicas,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+				ServiceConfiguration: contrail.RabbitmqConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"rabbitmq", Image: "rabbitmq:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "rabbitmq:3.5"},
+					},
+				},
+			},
+			Status: contrail.RabbitmqStatus{Active: &falseVal1},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Command:          command,
+					Cassandras:       []*contrail.Cassandra{cassandra},
+					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Rabbitmq:         rabbitmq,
+					ProvisionManager: provisionmanager,
+					Webui:            webui,
+					Controls:         []*contrail.Control{control},
+					Vrouters:         []*contrail.Vrouter{vrouter},
+					Config:           config,
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+			Status: contrail.ManagerStatus{
+				Cassandras:       mgrstatusCassandras,
+				Zookeepers:       mgrstatusZookeeper,
+				Rabbitmq:         mgrstatusRabbitmq,
+				Config:           mgrstatusConfig,
+				Controls:         mgrstatusControl,
+				Vrouters:         mgrstatusVrouter,
+				Webui:            mgrstatusWebui,
+				ProvisionManager: mgrstatusProvisionmanager,
+				Kubemanagers:     mgrstatusKubemanager,
+				// Keystone:         mgrstatusKeystone,
+			},
+		}
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+			cassandra,
+			zookeeper,
+			rabbitmq,
+			provisionmanager,
+			kubemanager,
+			webui,
+			control,
+			vrouter,
+			config,
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:      fakeClient,
+			scheme:      scheme,
+			kubernetes:  k8s.New(fakeClient, scheme),
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedCommand := contrail.Command{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
+		}
+		assertCommandDeployed(t, expectedCommand, fakeClient)
+	})
+	// Verification of update for all
+
+	//  Verification of delete for all
+	t.Run("Verification of delete for all", func(t *testing.T) {
+		// given
+		command := &contrail.Command{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "other",
+			},
+		}
+		setBool := false
+		trueVal1 := true
+		falseVal1 := false
+		cassandra := &contrail.Cassandra{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cassandra",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.CassandraSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.CassandraConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"cassandra", Image: "cassandra"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "cassandra"},
+					},
+				},
+			},
+		}
+		zookeeper := &contrail.Zookeeper{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "zookeeper",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ZookeeperSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.ZookeeperConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"zookeeper", Image: "zookeeper:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "zookeeper:3.5"},
+					},
+				},
+			},
+		}
+		provisionmanager := &contrail.ProvisionManager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+			},
+		}
+		kubemanager := &contrail.Kubemanager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "kubemanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.KubemanagerSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"kubemanager", Image: "kubemanager"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "kubemanager"},
+					},
+				},
+			},
+		}
+		webui := &contrail.Webui{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "webui",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.WebuiSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.WebuiConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"webui", Image: "webui:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "webui:3.5"},
+					},
+				},
+			},
+		}
+		config := &contrail.Config{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "config",
+				Namespace: "default",
+				Labels: map[string]string{
+					"contrail_cluster": "cluster1",
+				},
+			},
+			Spec: contrail.ConfigSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.ConfigConfiguration{
+					KeystoneSecretName: "keystone-adminpass-secret",
+					AuthMode:           contrail.AuthenticationModeKeystone,
+				},
+			},
+		}
+		control := &contrail.Control{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "control",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ControlSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.ControlConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"control", Image: "control"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "control"},
+					},
+				},
+			},
+		}
+		vrouter := &contrail.Vrouter{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "vrouter",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.VrouterSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.VrouterConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"vrouter", Image: "vrouter:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "vrouter:3.5"},
+					},
+				},
+			},
+		}
+		rabbitmq := &contrail.Rabbitmq{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "rabbitmq-instance",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVal,
+						BlockOwnerDeletion: &trueVal,
+					},
+				},
+			},
+			Spec: contrail.RabbitmqSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Activate:     &trueVal1,
+					Create:       &setBool,
+					HostNetwork:  &trueVal1,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+				ServiceConfiguration: contrail.RabbitmqConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"rabbitmq", Image: "rabbitmq:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "rabbitmq:3.5"},
+					},
+				},
+			},
+			Status: contrail.RabbitmqStatus{Active: &falseVal1},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Command:          command,
+					Cassandras:       []*contrail.Cassandra{cassandra},
+					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Rabbitmq:         rabbitmq,
+					ProvisionManager: provisionmanager,
+					Webui:            webui,
+					Controls:         []*contrail.Control{control},
+					Vrouters:         []*contrail.Vrouter{vrouter},
+					Config:           config,
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+			Status: contrail.ManagerStatus{
+				Cassandras:       mgrstatusCassandras,
+				Zookeepers:       mgrstatusZookeeper,
+				Rabbitmq:         mgrstatusRabbitmq,
+				Config:           mgrstatusConfig,
+				Controls:         mgrstatusControl,
+				Vrouters:         mgrstatusVrouter,
+				Webui:            mgrstatusWebui,
+				ProvisionManager: mgrstatusProvisionmanager,
+				Kubemanagers:     mgrstatusKubemanager,
+			},
+		}
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+			cassandra,
+			zookeeper,
+			rabbitmq,
+			provisionmanager,
+			kubemanager,
+			webui,
+			control,
+			vrouter,
+			config,
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:      fakeClient,
+			scheme:      scheme,
+			kubernetes:  k8s.New(fakeClient, scheme),
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedCommand := contrail.Command{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
+		}
+		assertCommandDeployed(t, expectedCommand, fakeClient)
+	})
+	//  Verification of delete for all
+
 	t.Run("should create contrail command CR when manager is reconciled and command CR does not exist", func(t *testing.T) {
 		// given
 		command := &contrail.Command{
@@ -54,31 +903,10 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
 					Command:          command,
-					Cassandras:       []*contrail.Cassandra{cassandra},
-					Zookeepers:       []*contrail.Zookeeper{zookeeper},
-					Rabbitmq:         rbt,
-					Config:           config,
-					Controls:         []*contrail.Control{control},
-					Webui:            webui,
-					Vrouters:         []*contrail.Vrouter{vrouter},
-					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
-					ProvisionManager: provisionmanager,
-					Keystone:         keystone,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
-			Status: contrail.ManagerStatus{
-				Cassandras:       mgrstatusCassandras,
-				Zookeepers:       mgrstatusZookeeper,
-				Rabbitmq:         mgrstatusRabbitmq,
-				Config:           mgrstatusConfig,
-				Controls:         mgrstatusControl,
-				Vrouters:         mgrstatusVrouter,
-				Webui:            mgrstatusWebui,
-				ProvisionManager: mgrstatusProvisionmanager,
-				Kubemanagers:     mgrstatusKubemanager,
-				Keystone:         mgrstatusKeystone,
-			},
+			Status: contrail.ManagerStatus{},
 		}
 		initObjs := []runtime.Object{
 			managerCR,
@@ -324,6 +1152,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
+
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -429,6 +1258,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
+			&keystone,
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -568,6 +1398,83 @@ func TestManagerController(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
+
+	//  Verification of memchache/swift
+	t.Run("Verification of swift/memcached", func(t *testing.T) {
+		// given
+		command := &contrail.Command{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "other",
+			},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Command:    command,
+					Swift:            swift,
+					Memcached:        memcached,
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+			Status: contrail.ManagerStatus{},
+		}
+		initObjs := []runtime.Object{
+			managerCR,
+			swift,
+			memcached,
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:      fakeClient,
+			scheme:      scheme,
+			kubernetes:  k8s.New(fakeClient, scheme),
+			csrSignerCa: stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil},
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedCommand := contrail.Command{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "command",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.CommandSpec{
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
+		}
+		assertCommandDeployed(t, expectedCommand, fakeClient)
+	})
+
+	// Verification of memchache/swift
+
 }
 
 func assertCommandDeployed(t *testing.T, expected contrail.Command, fakeClient client.Client) {
@@ -653,137 +1560,9 @@ func newAdminSecret() *core.Secret {
 }
 
 var (
-	replicas int32 = 3
-	create         = true
 	trueVal        = true
+	falseVal       = false
 )
-
-var cassandra = &contrail.Cassandra{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "cassandra",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.CassandraConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "cassandra", Image: "cassandra:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "cassandra:3.5"},
-			},
-		},
-	},
-}
-
-var zookeeper = &contrail.Zookeeper{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "zookeeper",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.ZookeeperSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.ZookeeperConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "zookeeper", Image: "zookeeper:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "zookeeper:3.5"},
-			},
-		},
-	},
-}
-
-var rbt = newRabbitmq()
-
-var config = &contrail.Config{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "config",
-		Namespace: "default",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-	Spec: contrail.ConfigSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.ConfigConfiguration{
-			KeystoneSecretName: "keystone-adminpass-secret",
-			AuthMode:           contrail.AuthenticationModeKeystone,
-		},
-	},
-}
-
-var control = &contrail.Control{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "control",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.ControlSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.ControlConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "control", Image: "control:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "control:3.5"},
-			},
-		},
-	},
-}
-
-var vrouter = &contrail.Vrouter{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "vrouter",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.VrouterSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.VrouterConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "vrouter", Image: "vrouter:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "vrouter:3.5"},
-			},
-		},
-	},
-}
-
-var webui = &contrail.Webui{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "webui",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.WebuiSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.WebuiConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "webui", Image: "webui:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "webui:3.5"},
-			},
-		},
-	},
-}
 
 var NameValue = "cassandra"
 var managerstatus = &contrail.ServiceStatus{
@@ -866,102 +1645,6 @@ var mgrstatusProvisionmanager = managerstatus7
 var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
 var mgrstatusKeystone = managerstatus9
 
-func newRabbitmq() *contrail.Rabbitmq {
-	trueVal := true
-	falseVal := false
-	replica := int32(1)
-	return &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "rabbitmq-instance",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "cluster1"},
-			OwnerReferences: []meta.OwnerReference{
-				{
-					APIVersion:         "contrail.juniper.net/v1alpha1",
-					Kind:               "Manager",
-					Name:               "test-manager",
-					UID:                "manager-uid-1",
-					Controller:         &trueVal,
-					BlockOwnerDeletion: &trueVal,
-				},
-			},
-		},
-		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
-				HostNetwork:  &trueVal,
-				Replicas:     &replica,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: contrail.RabbitmqConfiguration{
-				Containers: []*contrail.Container{
-					&contrail.Container{Name: "rabbitmq", Image: "rabbitmq:3.5"},
-					&contrail.Container{Name: "init", Image: "busybox"},
-					&contrail.Container{Name: "init2", Image: "rabbitmq:3.5"},
-				},
-			},
-		},
-		Status: contrail.RabbitmqStatus{Active: &falseVal},
-	}
-}
-
-var provisionmanager = &contrail.ProvisionManager{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "provisionmanager",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.ProvisionManagerSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-	},
-}
-
-var kubemanager = &contrail.Kubemanager{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "kubemanager",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.KubemanagerSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.KubemanagerConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "kubemanager", Image: "kubemanager:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "kubemanager:3.5"},
-			},
-		},
-	},
-}
-
-var keystone = &contrail.Keystone{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "keystone",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.KeystoneSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
-			Create:   &create,
-			Replicas: &replicas,
-		},
-		ServiceConfiguration: contrail.KeystoneConfiguration{
-			Containers: []*contrail.Container{
-				&contrail.Container{Name: "keystone", Image: "keystone:3.5"},
-				&contrail.Container{Name: "init", Image: "busybox"},
-				&contrail.Container{Name: "init2", Image: "keystone:3.5"},
-			},
-		},
-	},
-}
-
 func newManager() *contrail.Manager {
 	trueVal := true
 	return &contrail.Manager{
@@ -995,4 +1678,55 @@ func newManager() *contrail.Manager {
 			},
 		},
 	}
+}
+
+var memcached = &contrail.Memcached{
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-memcached",
+	},
+	Spec: contrail.MemcachedSpec{
+		ServiceConfiguration: contrail.MemcachedConfiguration{
+			// Container:       contrail.Container{Image: "localhost:5000/centos-binary-memcached:train"},
+			ListenPort:      11211,
+			ConnectionLimit: 5000,
+			MaxMemory:       256,
+		},
+	},
+	Status: contrail.MemcachedStatus{Active: falseVal},
+}
+
+const credentialsSecretName = "credentials-secret"
+
+var swift = &contrail.Swift{
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-swift",
+	},
+	Spec: contrail.SwiftSpec{
+		ServiceConfiguration: contrail.SwiftConfiguration{
+			Containers: []*contrail.Container{
+				{Name: "ring-reconciler", Image: "ring-reconciler"},
+			},
+			SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+				AccountBindPort:   6001,
+				ContainerBindPort: 6002,
+				ObjectBindPort:    6000,
+				Containers: []*contrail.Container{
+					{Name:"container1", Image: "image1"},
+					{Name:"container2", Image: "image2"},
+				},
+				Device: "dev",
+			},
+			SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+				ListenPort:            5070,
+				KeystoneInstance:      "keystone",
+				CredentialsSecretName: credentialsSecretName,
+				Containers: []*contrail.Container{
+					{Name:"container3", Image: "image3"},
+					{Name:"container4", Image: "image4"},
+				},
+			},
+		},
+	},
 }
