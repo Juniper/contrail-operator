@@ -18,6 +18,9 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+
+	// schemepkg "k8s.io/client-go/kubernetes/scheme"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 )
 
 type stubCSRSignerCA struct {
@@ -329,6 +332,7 @@ func TestManagerController(t *testing.T) {
 		createVal := true
 		trueVal1 := true
 		falseVal1 := false
+		var replicas int32 = 3
 		cassandra := &contrail.Cassandra{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "cassandra",
@@ -338,6 +342,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.CassandraSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
@@ -357,7 +362,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ZookeeperSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
@@ -377,7 +382,14 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ProvisionManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"provisionmanager", Image: "provisionmanager:3.5"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "provisionmanager:3.5"},
+					},
 				},
 			},
 		}
@@ -390,7 +402,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.KubemanagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
@@ -410,7 +422,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.WebuiSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
@@ -432,9 +444,14 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ConfigSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
+					Containers: []*contrail.Container{
+						{Name:"config", Image: "config"},
+						{Name:"init", Image: "busybox"},
+						{Name:"init2", Image: "config"},
+					},
 					KeystoneSecretName: "keystone-adminpass-secret",
 					AuthMode:           contrail.AuthenticationModeKeystone,
 				},
@@ -449,7 +466,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ControlSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
@@ -469,7 +486,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.VrouterSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create: &createVal,
-					// Replicas: &replicas,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
@@ -501,7 +518,7 @@ func TestManagerController(t *testing.T) {
 					Activate:    &trueVal1,
 					Create:      &createVal,
 					HostNetwork: &trueVal1,
-					// Replicas:     &replicas,
+					Replicas:     &replicas,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
@@ -575,6 +592,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 			},
 		})
+		
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
@@ -1572,6 +1590,7 @@ var managerstatus = &contrail.ServiceStatus{
 }
 
 var NameValue1 = "zookeeper"
+var falVal = false
 var managerstatus1 = &contrail.ServiceStatus{
 	Name:    &NameValue1,
 	Active:  &trueVal,
@@ -1730,3 +1749,20 @@ var swift = &contrail.Swift{
 		},
 	},
 }
+
+func TestAddManager(t *testing.T) {
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+
+	var csrca cacertificates.CA = stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil}
+	t.Run("add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr, csrca)
+		assert.NoError(t, err)
+	})
+}
+
