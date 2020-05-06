@@ -18,7 +18,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 )
 
