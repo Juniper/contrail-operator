@@ -37,6 +37,15 @@ func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, o
 }
 
 func (r *Certificate) FillSecret(sc *core.Secret) error {
+	return nil
+}
+
+func (r *Certificate) EnsureExistsAndIsSigned() error {
+	secretName := r.owner.GetName() + "-secret-certificates"
+	err := r.kubernetes.Secret(secretName, r.ownerType, r.owner).EnsureExists(r)
+	if err != nil {
+		return err
+	}
 	return CreateAndSignCsr(r.client,
 		reconcile.Request{
 			NamespacedName: types.NamespacedName{
@@ -44,9 +53,4 @@ func (r *Certificate) FillSecret(sc *core.Secret) error {
 				Name:      r.owner.GetName(),
 			},
 		}, r.scheme, r.owner, r.restConfig, r.pods, r.hostNetwork)
-}
-
-func (r *Certificate) EnsureExistsAndIsSigned() error {
-	secretName := r.owner.GetName() + "-secret-certificates"
-	return r.kubernetes.Secret(secretName, r.ownerType, r.owner).EnsureExists(r)
 }
