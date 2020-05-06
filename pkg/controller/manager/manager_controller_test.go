@@ -19,7 +19,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 
-	// schemepkg "k8s.io/client-go/kubernetes/scheme"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 )
 
