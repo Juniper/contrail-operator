@@ -18,6 +18,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 )
 
 type stubCSRSignerCA struct {
@@ -84,8 +85,8 @@ func TestManagerController(t *testing.T) {
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "zookeeper", Image: "zookeeper:3.5"},
-						{Name: "init",     Image: "busybox"},
-						{Name: "init2",     Image: "zookeeper:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "zookeeper:3.5"},
 					},
 				},
 			},
@@ -196,8 +197,8 @@ func TestManagerController(t *testing.T) {
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init",    Image: "busybox"},
-						{Name: "init2",   Image: "vrouter:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "vrouter:3.5"},
 					},
 				},
 			},
@@ -229,8 +230,8 @@ func TestManagerController(t *testing.T) {
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "rabbitmq", Image: "rabbitmq:3.5"},
-						{Name: "init",     Image: "busybox"},
-						{Name: "init2",    Image: "rabbitmq:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "rabbitmq:3.5"},
 					},
 				},
 			},
@@ -329,6 +330,7 @@ func TestManagerController(t *testing.T) {
 		createVal := true
 		trueVal1 := true
 		falseVal1 := false
+		var replicas int32 = 3
 		cassandra := &contrail.Cassandra{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "cassandra",
@@ -337,13 +339,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.CassandraSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"cassandra", Image: "cassandra"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "cassandra"},
+						{Name: "cassandra", Image: "cassandra"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "cassandra"},
 					},
 				},
 			},
@@ -356,14 +359,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ZookeeperSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"zookeeper", Image: "zookeeper:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "zookeeper:3.5"},
+						{Name: "zookeeper", Image: "zookeeper:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "zookeeper:3.5"},
 					},
 				},
 			},
@@ -376,8 +379,15 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ProvisionManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager:3.5"},
+					},
 				},
 			},
 		}
@@ -389,14 +399,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.KubemanagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"kubemanager", Image: "kubemanager"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "kubemanager"},
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
 					},
 				},
 			},
@@ -409,14 +419,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.WebuiSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"webui", Image: "webui:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "webui:3.5"},
+						{Name: "webui", Image: "webui:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "webui:3.5"},
 					},
 				},
 			},
@@ -431,10 +441,15 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ConfigSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "config", Image: "config"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "config"},
+					},
 					KeystoneSecretName: "keystone-adminpass-secret",
 					AuthMode:           contrail.AuthenticationModeKeystone,
 				},
@@ -448,14 +463,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ControlSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"control", Image: "control"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "control"},
+						{Name: "control", Image: "control"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "control"},
 					},
 				},
 			},
@@ -468,14 +483,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.VrouterSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Create: &createVal,
-					// Replicas: &replicas,
+					Create:   &createVal,
+					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"vrouter", Image: "vrouter:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "vrouter:3.5"},
+						{Name: "vrouter", Image: "vrouter:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "vrouter:3.5"},
 					},
 				},
 			},
@@ -498,17 +513,17 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.RabbitmqSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Activate:    &trueVal1,
-					Create:      &createVal,
-					HostNetwork: &trueVal1,
-					// Replicas:     &replicas,
+					Activate:     &trueVal1,
+					Create:       &createVal,
+					HostNetwork:  &trueVal1,
+					Replicas:     &replicas,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"rabbitmq", Image: "rabbitmq:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "rabbitmq:3.5"},
+						{Name: "rabbitmq", Image: "rabbitmq:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "rabbitmq:3.5"},
 					},
 				},
 			},
@@ -575,6 +590,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 			},
 		})
+
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
@@ -630,9 +646,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"cassandra", Image: "cassandra"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "cassandra"},
+						{Name: "cassandra", Image: "cassandra"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "cassandra"},
 					},
 				},
 			},
@@ -649,9 +665,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"zookeeper", Image: "zookeeper:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "zookeeper:3.5"},
+						{Name: "zookeeper", Image: "zookeeper:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "zookeeper:3.5"},
 					},
 				},
 			},
@@ -680,9 +696,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"kubemanager", Image: "kubemanager"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "kubemanager"},
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
 					},
 				},
 			},
@@ -699,9 +715,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"webui", Image: "webui:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "webui:3.5"},
+						{Name: "webui", Image: "webui:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "webui:3.5"},
 					},
 				},
 			},
@@ -736,9 +752,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"control", Image: "control"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "control"},
+						{Name: "control", Image: "control"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "control"},
 					},
 				},
 			},
@@ -755,9 +771,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"vrouter", Image: "vrouter:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "vrouter:3.5"},
+						{Name: "vrouter", Image: "vrouter:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "vrouter:3.5"},
 					},
 				},
 			},
@@ -787,9 +803,9 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
 					Containers: []*contrail.Container{
-						{Name:"rabbitmq", Image: "rabbitmq:3.5"},
-						{Name:"init", Image: "busybox"},
-						{Name:"init2", Image: "rabbitmq:3.5"},
+						{Name: "rabbitmq", Image: "rabbitmq:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "rabbitmq:3.5"},
 					},
 				},
 			},
@@ -902,7 +918,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:          command,
+					Command: command,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1152,7 +1168,6 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
-
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1417,9 +1432,9 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:    command,
-					Swift:            swift,
-					Memcached:        memcached,
+					Command:   command,
+					Swift:     swift,
+					Memcached: memcached,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1560,8 +1575,8 @@ func newAdminSecret() *core.Secret {
 }
 
 var (
-	trueVal        = true
-	falseVal       = false
+	trueVal  = true
+	falseVal = false
 )
 
 var NameValue = "cassandra"
@@ -1572,6 +1587,7 @@ var managerstatus = &contrail.ServiceStatus{
 }
 
 var NameValue1 = "zookeeper"
+var falVal = false
 var managerstatus1 = &contrail.ServiceStatus{
 	Name:    &NameValue1,
 	Active:  &trueVal,
@@ -1713,8 +1729,8 @@ var swift = &contrail.Swift{
 				ContainerBindPort: 6002,
 				ObjectBindPort:    6000,
 				Containers: []*contrail.Container{
-					{Name:"container1", Image: "image1"},
-					{Name:"container2", Image: "image2"},
+					{Name: "container1", Image: "image1"},
+					{Name: "container2", Image: "image2"},
 				},
 				Device: "dev",
 			},
@@ -1723,10 +1739,26 @@ var swift = &contrail.Swift{
 				KeystoneInstance:      "keystone",
 				CredentialsSecretName: credentialsSecretName,
 				Containers: []*contrail.Container{
-					{Name:"container3", Image: "image3"},
-					{Name:"container4", Image: "image4"},
+					{Name: "container3", Image: "image3"},
+					{Name: "container4", Image: "image4"},
 				},
 			},
 		},
 	},
+}
+
+func TestAddManager(t *testing.T) {
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+
+	var csrca cacertificates.CA = stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil}
+	t.Run("add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr, csrca)
+		assert.NoError(t, err)
+	})
 }
