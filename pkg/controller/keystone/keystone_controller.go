@@ -537,7 +537,11 @@ func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone,
 	if keystone.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *keystone.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.New(r.client, r.kubernetes, r.scheme, keystone, r.restConfig, pods, "keystone", hostNetwork).EnsureExistsAndIsSigned()
+	certificate, err := certificates.New(r.client, r.kubernetes, r.scheme, keystone, r.restConfig, pods, "keystone", hostNetwork)
+	if err != nil {
+		return err
+	}
+	return certificate.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList, error) {

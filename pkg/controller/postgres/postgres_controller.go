@@ -330,7 +330,11 @@ func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres,
 	if postgres.Spec.HostNetwork != nil {
 		hostNetwork = *postgres.Spec.HostNetwork
 	}
-	return certificates.New(r.client, r.kubernetes, r.scheme, postgres, r.config, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
+	certificate, err := certificates.New(r.client, r.kubernetes, r.scheme, postgres, r.config, pods, "postgres", hostNetwork)
+	if err != nil {
+		return err
+	}
+	return certificate.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) {

@@ -530,7 +530,11 @@ func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, po
 	if command.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.New(r.client, r.kubernetes, r.scheme, command, r.config, pods, "command", hostNetwork).EnsureExistsAndIsSigned()
+	certificate, err := certificates.New(r.client, r.kubernetes, r.scheme, command, r.config, pods, "command", hostNetwork)
+	if err != nil {
+		return err
+	}
+	return certificate.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {
