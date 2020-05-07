@@ -59,7 +59,8 @@ func Add(mgr manager.Manager) error {
 		scheme:     mgr.GetScheme(),
 		manager:    mgr,
 		cache:      mgr.GetCache(),
-		kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme())}
+		kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -141,10 +142,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 		}
-	}
-
-	if err := certificates.EnsureCaCertificateExists(r.client, instance, r.scheme); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	if err := r.processCSRSignerCaConfigMap(instance); err != nil {
@@ -1616,12 +1613,18 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 }
 
 func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
+	caCertificate := certificates.NewCACertificate(r.client, r.scheme, manager)
+
+	if err := caCertificate.EnsureExists(); err != nil {
+		return err
+	}
+
 	csrSignerCaConfigMap := &corev1.ConfigMap{}
 	csrSignerCaConfigMap.ObjectMeta.Name = certificates.SignerCAConfigMapName
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := certificates.GetCaCert(r.client, manager)
+		csrSignerCAValue, err := caCertificate.GetCaCert()
 		if err != nil {
 			return err
 		}
