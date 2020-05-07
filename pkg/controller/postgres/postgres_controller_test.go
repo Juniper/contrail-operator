@@ -382,9 +382,9 @@ func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, 
 			Namespace: name.Namespace,
 		},
 		Data: map[string][]byte{
-			"status-" + pod.Status.PodIP:          []byte("Approved"),
-			"server-" + pod.Status.PodIP + ".pem": []byte("Dummy .pem"),
-			"server-" + pod.Status.PodIP + ".crt": []byte("Dummy .crt"),
+			"status-" + pod.Status.PodIP:              []byte("Approved"),
+			"server-key-" + pod.Status.PodIP + ".pem": []byte("Dummy .pem"),
+			"server-" + pod.Status.PodIP + ".crt":     []byte("Dummy .crt"),
 		},
 	}
 	err = cl.Update(context.TODO(), csrSecret)
