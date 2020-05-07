@@ -24,13 +24,6 @@ type SecretFiller interface {
 	FillSecret(sc *core.Secret) error
 }
 
-type EmptySecretFiller struct {
-}
-
-func (EmptySecretFiller) FillSecret(*core.Secret) error {
-	return nil
-}
-
 func (s *Secret) EnsureExists(dataSetter SecretFiller) error {
 	secret, err := s.createNewOrGetExistingSecret()
 

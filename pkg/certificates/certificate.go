@@ -16,7 +16,7 @@ type Certificate struct {
 	client      client.Client
 	scheme      *runtime.Scheme
 	owner       v1.Object
-	secret      *k8s.Secret
+	secret      certSecret
 	restConfig  *rest.Config
 	hostNetwork bool
 	pods        *core.PodList
@@ -28,7 +28,7 @@ func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, o
 		client:      cl,
 		scheme:      scheme,
 		owner:       owner,
-		secret:      kubernetes.Secret(secretName, ownerType, owner),
+		secret:      certSecret{kubernetes.Secret(secretName, ownerType, owner)},
 		restConfig:  restConf,
 		hostNetwork: hostNetwork,
 		pods:        pods,
@@ -36,7 +36,8 @@ func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, o
 }
 
 func (r *Certificate) EnsureExistsAndIsSigned() error {
-	if err := r.secret.EnsureExists(k8s.EmptySecretFiller{}); err != nil {
+	err := r.secret.ensureExists()
+	if err != nil {
 		return err
 	}
 
@@ -47,4 +48,16 @@ func (r *Certificate) EnsureExistsAndIsSigned() error {
 				Name:      r.owner.GetName(),
 			},
 		}, r.scheme, r.owner, r.restConfig, r.pods, r.hostNetwork)
+}
+
+type certSecret struct {
+	sc *k8s.Secret
+}
+
+func (certSecret) FillSecret(*core.Secret) error {
+	return nil
+}
+
+func (s certSecret) ensureExists() error {
+	return s.sc.EnsureExists(s)
 }
