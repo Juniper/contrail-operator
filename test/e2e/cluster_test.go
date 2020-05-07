@@ -12,10 +12,13 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/client/config"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
@@ -52,6 +55,16 @@ func TestCluster(t *testing.T) {
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
 		require.NoError(t, err)
 
+		adminPassWordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cluster1-admin-password",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"password": "test123",
+			},
+		}
+
 		t.Run("when reference cluster is created", func(t *testing.T) {
 
 			err = yaml.Unmarshal(yamlFile, manager)
@@ -67,6 +80,9 @@ func TestCluster(t *testing.T) {
 			utils.GetContainerFromList("provisioner",
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
 				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:" + scmBranch + "." + scmRevision
+
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
@@ -91,6 +107,18 @@ func TestCluster(t *testing.T) {
 				res, err := configProxy.Do(req)
 				assert.NoError(t, err)
 				assert.Equal(t, 401, res.StatusCode)
+			})
+
+			t.Run("then config nodes are created", func(t *testing.T) {
+				keystoneProxy := proxy.NewSecureClient("contrail", "keystone-keystone-statefulset-0", 5555)
+				keystoneClient := keystone.NewClient(keystoneProxy)
+				tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
+				configURL := tokens.EndpointURL("config", "public")
+				configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader, configURL)
+				assert.NoError(t, err)
+				err = configClient.GetResource("/config-nodes")
+				assert.NoError(t, err)
 			})
 		})
 
