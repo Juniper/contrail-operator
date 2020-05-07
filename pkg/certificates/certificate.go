@@ -22,7 +22,7 @@ type Certificate struct {
 	pods        *core.PodList
 }
 
-func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) (*Certificate, error) {
+func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
 	secretName := owner.GetName() + "-secret-certificates"
 	return &Certificate{
 		client:      cl,
@@ -32,7 +32,7 @@ func New(cl client.Client, kubernetes *k8s.Kubernetes, scheme *runtime.Scheme, o
 		restConfig:  restConf,
 		hostNetwork: hostNetwork,
 		pods:        pods,
-	}, nil
+	}
 }
 
 func (r *Certificate) EnsureExistsAndIsSigned() error {
