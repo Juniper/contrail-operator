@@ -18,9 +18,9 @@ import (
 
 func TestCaCertGeneration(t *testing.T) {
 	const (
-		testownername      = "testname"
-		testowneruid       = "testuid"
-		testownernamespace = "testnamespace"
+		testOwnerName      = "testName"
+		testOwnerUID       = "testUID"
+		testOwnerNamespace = "testNamespace"
 	)
 	scheme := runtime.NewScheme()
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))

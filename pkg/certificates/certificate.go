@@ -56,6 +56,10 @@ type certSecret struct {
 }
 
 func (r *certSecret) FillSecret(secret *core.Secret) error {
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+
 	var hostname string
 	for _, pod := range r.pods.Items {
 		if pod.Status.PodIP == "" {
@@ -69,9 +73,6 @@ func (r *certSecret) FillSecret(secret *core.Secret) error {
 		}
 
 		if !certInSecret(secret, pod.Status.PodIP) {
-			if secret.Data == nil {
-				secret.Data = make(map[string][]byte)
-			}
 			certificateTemplate, privateKey, err := generateCertificateTemplate(pod.Status.PodIP, hostname)
 
 			certBytes, err := r.signer.SignCertificate(certificateTemplate, privateKey.Public())
