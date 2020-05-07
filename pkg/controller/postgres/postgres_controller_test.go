@@ -28,7 +28,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
@@ -40,10 +39,9 @@ func TestNewReconciler(t *testing.T) {
 		"empty manager": {
 			manager: &mockManager{},
 			expectedReconciler: &ReconcilePostgres{
-				client:     nil,
-				scheme:     nil,
-				claims:     volumeclaims.New(nil, nil),
-				kubernetes: k8s.New(nil, nil),
+				client: nil,
+				scheme: nil,
+				claims: volumeclaims.New(nil, nil),
 			},
 		},
 	}
@@ -114,11 +112,10 @@ func TestPostgresController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
 		reconcilePostgres := &ReconcilePostgres{
-			client:     fakeClient,
-			scheme:     scheme,
-			claims:     volumeclaims.NewFake(),
-			config:     &rest.Config{},
-			kubernetes: k8s.New(fakeClient, scheme),
+			client: fakeClient,
+			scheme: scheme,
+			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -144,11 +141,10 @@ func TestPostgresController(t *testing.T) {
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
 		reconcilePostgres := &ReconcilePostgres{
-			client:     fakeClient,
-			scheme:     scheme,
-			claims:     volumeclaims.NewFake(),
-			config:     &rest.Config{},
-			kubernetes: k8s.New(fakeClient, scheme),
+			client: fakeClient,
+			scheme: scheme,
+			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		// when
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
@@ -163,11 +159,10 @@ func TestPostgresController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
 		reconcilePostgres := &ReconcilePostgres{
-			client:     fakeClient,
-			scheme:     scheme,
-			claims:     volumeclaims.NewFake(),
-			config:     &rest.Config{},
-			kubernetes: k8s.New(fakeClient, scheme),
+			client: fakeClient,
+			scheme: scheme,
+			claims: volumeclaims.NewFake(),
+			config: &rest.Config{},
 		}
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{
 			NamespacedName: name,
@@ -226,11 +221,10 @@ func TestPostgresController(t *testing.T) {
 				fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
 				claims := volumeclaims.NewFake()
 				reconcilePostgres := &ReconcilePostgres{
-					client:     fakeClient,
-					scheme:     scheme,
-					claims:     claims,
-					config:     &rest.Config{},
-					kubernetes: k8s.New(fakeClient, scheme),
+					client: fakeClient,
+					scheme: scheme,
+					claims: claims,
+					config: &rest.Config{},
 				}
 				_, err = reconcilePostgres.Reconcile(reconcile.Request{
 					NamespacedName: name,
