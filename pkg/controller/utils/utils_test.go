@@ -345,6 +345,12 @@ func TestUtilsSecond(t *testing.T) {
 		// nothing to test
 	})
 
+	t.Run("GetContainerFromList function verification", func(t *testing.T) {
+		value := ""
+		status := tm.GetContainerFromList(value, TestContainers)
+		assert.Nil(t, status)
+	})
+
 }
 
 var (
@@ -653,4 +659,8 @@ var InitContainers = []core.Container{
 			core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 		},
 	},
+}
+
+var TestContainers = []*contrail.Container{
+	{Name: "testinit", Image: "registry:5000/contrail-command"},
 }
