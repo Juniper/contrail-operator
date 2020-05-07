@@ -1,9 +1,9 @@
 package utils_test
 
 import (
+	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	tm "github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -11,6 +11,9 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	// "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	// "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	// "k8s.io/apimachinery/pkg/types"	
 )
 
 func TestUtils(t *testing.T) {
