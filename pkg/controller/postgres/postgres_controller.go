@@ -24,7 +24,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
@@ -42,8 +41,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	scheme := mgr.GetScheme()
 	claims := volumeclaims.New(client, scheme)
 	config := mgr.GetConfig()
-	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
-	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims, kubernetes: kubernetes, config: config}
+	return &ReconcilePostgres{client: client, scheme: scheme, claims: claims, config: config}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -79,11 +77,10 @@ var _ reconcile.Reconciler = &ReconcilePostgres{}
 type ReconcilePostgres struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
-	claims     volumeclaims.PersistentVolumeClaims
-	kubernetes *k8s.Kubernetes
-	config     *rest.Config
+	client client.Client
+	scheme *runtime.Scheme
+	claims volumeclaims.PersistentVolumeClaims
+	config *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Postgres object and makes changes based on the state read
