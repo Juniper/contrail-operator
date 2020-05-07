@@ -335,6 +335,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 				Name:      request.Name + "-" + instanceType + "-keystoneauth-volume",
 				MountPath: "/etc/provision/keystone",
 			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-globalvrouter-volume",
 				MountPath: "/etc/provision/globalvrouter",
