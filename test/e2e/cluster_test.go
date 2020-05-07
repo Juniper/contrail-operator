@@ -100,8 +100,9 @@ func TestCluster(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
+
 			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {
-				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
 				req, err := configProxy.NewRequest(http.MethodGet, "/virtual-networks", nil)
 				assert.NoError(t, err)
 				res, err := configProxy.Do(req)
@@ -112,14 +113,16 @@ func TestCluster(t *testing.T) {
 			t.Run("then config nodes are created", func(t *testing.T) {
 				keystoneProxy := proxy.NewSecureClient("contrail", "keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
-				tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-				configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
+				tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+				assert.NoError(t, err)
 				configURL := tokens.EndpointURL("config", "public")
 				configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader, configURL)
 				assert.NoError(t, err)
-				err = configClient.GetResource("/config-nodes")
+				res, err := configClient.GetResource("/config-nodes")
 				assert.NoError(t, err)
+				assert.NotEmpty(t, res)
 			})
+
 		})
 
 		t.Run("when reference cluster is deleted", func(t *testing.T) {

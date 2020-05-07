@@ -32,20 +32,20 @@ func (c *Client) response(response *http.Response) string {
 	return string(bodyAsString)
 }
 
-func (c *Client) GetResource(resourceName string) error {
+func (c *Client) GetResource(resourceName string) ([]byte, error) {
 	request, err := c.proxy.NewRequest(http.MethodGet, c.path+resourceName, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if c.token != "" {
 		request.Header.Set("X-Auth-Token", c.token)
 	}
 	response, err := c.proxy.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if response.StatusCode != 200 {
-		return fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
+		return nil, fmt.Errorf("invalid status code returned: %d, response: %s", response.StatusCode, c.response(response))
 	}
-	return nil
+	return ioutil.ReadAll(response.Body)
 }
