@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -50,17 +50,17 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, csrca cacertificates.CA) error {
+func Add(mgr manager.Manager, csrca certificates.CA) error {
 	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
 	var r reconcile.Reconciler
 	reconcileManager := ReconcileManager{client: mgr.GetClient(),
-		scheme:      mgr.GetScheme(),
-		manager:     mgr,
-		cache:       mgr.GetCache(),
-		kubernetes:  k8s.New(mgr.GetClient(), mgr.GetScheme()),
-		csrSignerCa: csrca}
+		scheme:     mgr.GetScheme(),
+		manager:    mgr,
+		cache:      mgr.GetCache(),
+		kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+		signerCa:   csrca}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -106,13 +106,13 @@ var _ reconcile.Reconciler = &ReconcileManager{}
 type ReconcileManager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	client      client.Client
-	scheme      *runtime.Scheme
-	manager     manager.Manager
-	controller  controller.Controller
-	cache       cache.Cache
-	kubernetes  *k8s.Kubernetes
-	csrSignerCa cacertificates.CA
+	client     client.Client
+	scheme     *runtime.Scheme
+	manager    manager.Manager
+	controller controller.Controller
+	cache      cache.Cache
+	kubernetes *k8s.Kubernetes
+	signerCa   certificates.CA
 }
 
 // Reconcile reconciles the manager.
@@ -1615,15 +1615,15 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 
 func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
 	csrSignerCaConfigMap := &corev1.ConfigMap{}
-	csrSignerCaConfigMap.ObjectMeta.Name = cacertificates.CsrSignerCAConfigMapName
+	csrSignerCaConfigMap.ObjectMeta.Name = certificates.SignerCAConfigMapName
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := r.csrSignerCa.CACert()
+		csrSignerCAValue, err := r.signerCa.CACert()
 		if err != nil {
 			return err
 		}
-		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCAFilename: csrSignerCAValue}
+		csrSignerCaConfigMap.Data = map[string]string{certificates.SignerCAFilename: csrSignerCAValue}
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
 

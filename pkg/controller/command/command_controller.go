@@ -23,8 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
@@ -247,7 +247,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: cacertificates.CsrSignerCAConfigMapName,
+						Name: certificates.SignerCAConfigMapName,
 					},
 				},
 			},
@@ -381,7 +381,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 							},
 							{
 								Name:      csrSignerCaVolumeName,
-								MountPath: cacertificates.CsrSignerCAMountPath,
+								MountPath: certificates.SignerCAMountPath,
 							},
 						},
 					}},

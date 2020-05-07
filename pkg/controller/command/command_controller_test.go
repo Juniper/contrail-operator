@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -585,7 +585,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								},
 								{
 									Name:      "command-csr-signer-ca",
-									MountPath: cacertificates.CsrSignerCAMountPath,
+									MountPath: certificates.SignerCAMountPath,
 								},
 							},
 						},
@@ -650,7 +650,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: cacertificates.CsrSignerCAConfigMapName,
+										Name: certificates.SignerCAConfigMapName,
 									},
 								},
 							},

@@ -24,12 +24,16 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 var log = logf.Log.WithName("controller_vrouter")
+
+type CNIDirectoriesInfo interface {
+	CNIBinariesDirectory() string
+	CNIConfigFilesDirectory() string
+}
 
 func resourceHandler(myclient client.Client) handler.Funcs {
 	appHandler := handler.Funcs{
@@ -92,19 +96,19 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Vrouter Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) error {
+func Add(mgr manager.Manager, cniDirs CNIDirectoriesInfo) error {
 	return add(mgr, newReconciler(mgr, cniDirs))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, cniDirs CNIDirectoriesInfo) reconcile.Reconciler {
 	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), cniDirs)
 }
 
 // NewReconciler returns a new reconcile.Reconciler.
-func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs v1alpha1.VrouterCNIDirectories) reconcile.Reconciler {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, cniDirs CNIDirectoriesInfo) reconcile.Reconciler {
 	return &ReconcileVrouter{Client: client, Scheme: scheme,
-		Config: cfg, CNIDirectories: cniDirs}
+		Config: cfg, cniDirectories: cniDirs}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -182,7 +186,7 @@ type ReconcileVrouter struct {
 	Client         client.Client
 	Scheme         *runtime.Scheme
 	Config         *rest.Config
-	CNIDirectories v1alpha1.VrouterCNIDirectories
+	cniDirectories CNIDirectoriesInfo
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -248,15 +252,20 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	daemonSet := GetDaemonset(r.CNIDirectories)
+	cniDirs := CniDirs{
+		BinariesDirectory:    r.cniDirectories.CNIBinariesDirectory(),
+		ConfigFilesDirectory: r.cniDirectories.CNIConfigFilesDirectory(),
+	}
+
+	daemonSet := GetDaemonset(cniDirs)
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedDS(daemonSet, map[string]string{
-		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
-		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+		configMap.Name:                     request.Name + "-" + instanceType + "-volume",
+		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedDS(daemonSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -403,7 +412,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: cacertificates.CsrSignerCAMountPath,
+				MountPath: certificates.SignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -479,7 +488,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				volumeMountList = append(volumeMountList, volumeMount)
 				volumeMount = corev1.VolumeMount{
 					Name:      csrSignerCaVolumeName,
-					MountPath: cacertificates.CsrSignerCAMountPath,
+					MountPath: certificates.SignerCAMountPath,
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				(&daemonSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

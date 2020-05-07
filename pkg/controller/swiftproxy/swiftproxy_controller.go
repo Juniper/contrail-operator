@@ -23,8 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -310,7 +310,7 @@ func updatePodTemplate(
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: csrSignerCaVolumeName, MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+				core.VolumeMount{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			},
 			Command: getCommand(containers, "init"),
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -324,7 +324,7 @@ func updatePodTemplate(
 			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			{Name: csrSignerCaVolumeName, MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+			{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
@@ -431,7 +431,7 @@ func updatePodTemplate(
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: cacertificates.CsrSignerCAConfigMapName,
+						Name: certificates.SignerCAConfigMapName,
 					},
 				},
 			},

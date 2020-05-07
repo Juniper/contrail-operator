@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
@@ -261,15 +260,15 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMapConfigNodes.Name:               request.Name + "-" + instanceType + "-confignodes-volume",
-		configMapControlNodes.Name:              request.Name + "-" + instanceType + "-controlnodes-volume",
-		configMapVrouterNodes.Name:              request.Name + "-" + instanceType + "-vrouternodes-volume",
-		configMapAnalyticsNodes.Name:            request.Name + "-" + instanceType + "-analyticsnodes-volume",
-		configMapDatabaseNodes.Name:             request.Name + "-" + instanceType + "-databasenodes-volume",
-		configMapAPIServer.Name:                 request.Name + "-" + instanceType + "-apiserver-volume",
-		configMapKeystoneAuthConf.Name:          request.Name + "-" + instanceType + "-keystoneauth-volume",
-		configMapGlobalVrouterConf.Name:         request.Name + "-" + instanceType + "-globalvrouter-volume",
-		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+		configMapConfigNodes.Name:          request.Name + "-" + instanceType + "-confignodes-volume",
+		configMapControlNodes.Name:         request.Name + "-" + instanceType + "-controlnodes-volume",
+		configMapVrouterNodes.Name:         request.Name + "-" + instanceType + "-vrouternodes-volume",
+		configMapAnalyticsNodes.Name:       request.Name + "-" + instanceType + "-analyticsnodes-volume",
+		configMapDatabaseNodes.Name:        request.Name + "-" + instanceType + "-databasenodes-volume",
+		configMapAPIServer.Name:            request.Name + "-" + instanceType + "-apiserver-volume",
+		configMapKeystoneAuthConf.Name:     request.Name + "-" + instanceType + "-keystoneauth-volume",
+		configMapGlobalVrouterConf.Name:    request.Name + "-" + instanceType + "-globalvrouter-volume",
+		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -343,7 +342,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: cacertificates.CsrSignerCAMountPath,
+				MountPath: certificates.SignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

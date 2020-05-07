@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -170,7 +170,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminUsername:       webUIConfig.AdminUsername,
 			AdminPassword:       webUIConfig.AdminPassword,
 			Manager:             manager,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			CAFilePath:          certificates.SignerCAFilepath,
 			KeystoneIP:          keystoneData.keystoneIP,
 			KeystonePort:        strconv.Itoa(keystoneData.keystonePort),
 		})
