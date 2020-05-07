@@ -1734,11 +1734,10 @@ func TestAddManager(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 
-	var csrca certificates.CA = stubCSRSignerCA{stubCA: "test-ca-value", stubError: nil}
 	t.Run("add controller to Manager", func(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme)
 		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
-		err := Add(mgr, csrca)
+		err := Add(mgr)
 		assert.NoError(t, err)
 	})
 }
