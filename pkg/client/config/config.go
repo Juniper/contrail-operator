@@ -4,27 +4,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
-func NewClient(client *kubeproxy.Client, token, endpointURL string) (*Client, error) {
-	fullURL, err := url.Parse(endpointURL)
-	if err != nil {
-		return nil, err
-	}
+func NewClient(client *kubeproxy.Client, token string) (*Client, error) {
 	return &Client{
 		proxy: client,
 		token: token,
-		path:  fullURL.Path,
 	}, nil
 }
 
 type Client struct {
 	proxy *kubeproxy.Client
 	token string
-	path  string
 }
 
 func (c *Client) response(response *http.Response) string {
@@ -33,7 +26,7 @@ func (c *Client) response(response *http.Response) string {
 }
 
 func (c *Client) GetResource(resourceName string) ([]byte, error) {
-	request, err := c.proxy.NewRequest(http.MethodGet, c.path+resourceName, nil)
+	request, err := c.proxy.NewRequest(http.MethodGet, resourceName, nil)
 	if err != nil {
 		return nil, err
 	}
