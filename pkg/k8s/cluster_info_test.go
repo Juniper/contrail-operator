@@ -51,7 +51,7 @@ networking:
 scheduler: {}`
 
 func (suite *ClusterInfoSuite) SetupTest() {
-	coreV1Interface := getInterfaceWithConfigMap(kubeadmConfig)
+	coreV1Interface := getClientWithConfigMap(kubeadmConfig)
 	suite.ClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
 	suite.CNIDirs = k8s.ClusterConfig{Client: coreV1Interface}
 
@@ -103,7 +103,7 @@ func (suite *ClusterInfoSuite) TestMissingEndpointPort() {
       podSubnet: 192.168.0.1
       serviceSubnet: 10.0.0.0`
 	var ci v1alpha1.KubemanagerClusterInfo
-	ci = k8s.ClusterConfig{Client: getInterfaceWithConfigMap(wrongKubeadmConfig)}
+	ci = k8s.ClusterConfig{Client: getClientWithConfigMap(wrongKubeadmConfig)}
 	_, err := ci.KubernetesAPISSLPort()
 	suite.Assert().Error(err)
 	_, err = ci.KubernetesAPIServer()
@@ -120,7 +120,7 @@ func (suite *ClusterInfoSuite) TestUnmarshableKubeadmConfig() {
 	  serviceSubnet:
         - 10.0.0.0`
 	var ci v1alpha1.KubemanagerClusterInfo
-	ci = k8s.ClusterConfig{Client: getInterfaceWithConfigMap(wrongKubeadmConfig)}
+	ci = k8s.ClusterConfig{Client: getClientWithConfigMap(wrongKubeadmConfig)}
 	_, err := ci.KubernetesAPISSLPort()
 	suite.Assert().Error(err)
 	_, err = ci.KubernetesAPIServer()
@@ -167,7 +167,7 @@ func kubeadmConfigMap(data string) *core.ConfigMap {
 	return cm
 }
 
-func getInterfaceWithConfigMap(config string) typedCorev1.CoreV1Interface {
+func getClientWithConfigMap(config string) typedCorev1.CoreV1Interface {
 	cm := kubeadmConfigMap(config)
 	fakeClientset := fake.NewSimpleClientset(cm)
 	return fakeClientset.CoreV1()

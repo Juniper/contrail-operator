@@ -87,7 +87,7 @@ servingInfo:
   keyFile: /var/serving-cert/tls.key`
 
 func (suite *ClusterInfoSuite) SetupTest() {
-	coreV1Interface := getInterfaceWithConfigMaps(clusterConfigV1, consoleConfig)
+	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, consoleConfig)
 	suite.ClusterInfo = openshift.ClusterConfig{Client: coreV1Interface}
 	suite.CNIDirs = openshift.ClusterConfig{Client: coreV1Interface}
 }
@@ -135,7 +135,7 @@ func (suite *ClusterInfoSuite) TestWrongMasterPublicURL() {
     clusterInfo:
       masterPublicURL: https://api/test/user/test/com:6443`
 	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getInterfaceWithConfigMaps(``, wrongConsoleConfig)}
+	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
 	_, err := ci.KubernetesAPISSLPort()
 	suite.Assert().Error(err)
 	_, err = ci.KubernetesAPIServer()
@@ -147,7 +147,7 @@ func (suite *ClusterInfoSuite) TestWrongMasterURLPortFormat() {
     clusterInfo:
       masterPublicURL: https://api/test/user/test/com:fail`
 	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getInterfaceWithConfigMaps(``, wrongConsoleConfig)}
+	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
 	_, err := ci.KubernetesAPISSLPort()
 	suite.Assert().Error(err)
 	_, err = ci.KubernetesAPIServer()
@@ -159,7 +159,7 @@ func (suite *ClusterInfoSuite) TestUnmarshableMasterPublicURL() {
     clusterInfo:
       - masterPublicURL: https://api.test.user.test.com:6443`
 	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getInterfaceWithConfigMaps(``, wrongConsoleConfig)}
+	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
 	_, err := ci.KubernetesAPISSLPort()
 	suite.Assert().Error(err)
 	_, err = ci.KubernetesAPIServer()
@@ -200,7 +200,7 @@ func getConfigMap(name, namespace, dataKey, data string) *core.ConfigMap {
 	return cm
 }
 
-func getInterfaceWithConfigMaps(clusterConfig, consoleConfig string) typedCorev1.CoreV1Interface {
+func getClientWithConfigMaps(clusterConfig, consoleConfig string) typedCorev1.CoreV1Interface {
 	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfig)
 	consoleMap := getConfigMap("console-config", "openshift-console", "console-config.yaml", consoleConfig)
 	fakeClientset := fake.NewSimpleClientset(ccv1Map, consoleMap)
