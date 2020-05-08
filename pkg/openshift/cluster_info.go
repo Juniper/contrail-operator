@@ -53,7 +53,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	kubernetesClusterName := installConfigMap.Metadata.Name
 	return kubernetesClusterName, nil
@@ -63,7 +63,7 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 func (c ClusterConfig) PodSubnets() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	clusterNetwork := installConfigMap.Networking.ClusterNetwork
 	if len(clusterNetwork) > 1 {
@@ -78,7 +78,7 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 func (c ClusterConfig) ServiceSubnets() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	serviceNetwork := installConfigMap.Networking.ServiceNetwork
 	if len(serviceNetwork) > 1 {
@@ -101,7 +101,10 @@ func (c ClusterConfig) CNIConfigFilesDirectory() string {
 
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
-	consoleCM, _ := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
+	consoleCM, err := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
+	if err != nil {
+		return &url.URL{}, err
+	}
 	consoleConfigSection := consoleCM.Data["console-config.yaml"]
 	consoleConfigByte := []byte(consoleConfigSection)
 	consoleConfigMap := consoleConfig{}
