@@ -228,7 +228,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
+		configMap.Name:                     request.Name + "-" + instanceType + "-volume",
 		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
 	})
 
