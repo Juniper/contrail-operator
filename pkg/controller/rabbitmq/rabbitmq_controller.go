@@ -216,8 +216,8 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
-		configMap2.Name:                         request.Name + "-" + instanceType + "-runner",
+		configMap.Name:                     request.Name + "-" + instanceType + "-volume",
+		configMap2.Name:                    request.Name + "-" + instanceType + "-runner",
 		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
 	},
 	)
