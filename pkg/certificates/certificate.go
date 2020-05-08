@@ -58,7 +58,9 @@ func (r *Certificate) FillSecret(secret *core.Secret) error {
 		if pod.Status.PodIP == "" {
 			return fmt.Errorf("%s pod IP still no available", pod.Name)
 		}
-		r.createCertificateForPod(&pod, secret)
+		if err := r.createCertificateForPod(&pod, secret); err != nil {
+			return err
+		}
 
 	}
 	return nil
