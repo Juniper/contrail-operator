@@ -1,16 +1,16 @@
 package utils_test
 
 import (
+	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	tm "github.com/Juniper/contrail-operator/pkg/controller/utils"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/event"	
 )
 
 func TestUtils(t *testing.T) {
@@ -201,6 +201,20 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, status, expectedStatus)
 	})
 
+	t.Run("Update Event in ManagerSizeChange/CassandraGroupKind2 verification2", func(t *testing.T) {
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: newManagerTwo(),
+			MetaNew:   pod,
+			ObjectNew: newManagerTwo(),
+		}
+		hf := tm.ManagerSizeChange(tm.CassandraGroupKind())
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
 	t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification", func(t *testing.T) {
 		expectedStatus := false
 		status := true
@@ -215,6 +229,20 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, status, expectedStatus)
 	})
 
+	t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification2", func(t *testing.T) {
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: newManagerTwo(),
+			MetaNew:   pod,
+			ObjectNew: newManagerTwo(),
+		}
+		hf := tm.ManagerSizeChange(tm.ZookeeperGroupKind())
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
 	t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification", func(t *testing.T) {
 		expectedStatus := false
 		status := true
@@ -223,6 +251,20 @@ func TestUtilsSecond(t *testing.T) {
 			ObjectOld: newManager(),
 			MetaNew:   pod,
 			ObjectNew: newManager(),
+		}
+		hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
+		status = hf.UpdateFunc(evu)
+		assert.Equal(t, status, expectedStatus)
+	})
+
+	t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification2", func(t *testing.T) {
+		expectedStatus := false
+		status := true
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: newManagerTwo(),
+			MetaNew:   pod,
+			ObjectNew: newManagerTwo(),
 		}
 		hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
 		status = hf.UpdateFunc(evu)
@@ -343,6 +385,12 @@ func TestUtilsSecond(t *testing.T) {
 	t.Run("Update Event in MergeCommonConfiguration verification", func(t *testing.T) {
 		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
 		// nothing to test
+	})
+
+	t.Run("GetContainerFromList function verification", func(t *testing.T) {
+		value := ""
+		status := tm.GetContainerFromList(value, TestContainers)
+		assert.Nil(t, status)
 	})
 
 }
@@ -653,4 +701,77 @@ var InitContainers = []core.Container{
 			core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 		},
 	},
+}
+
+var cassandraTwo = &contrail.Cassandra{
+	ObjectMeta: meta.ObjectMeta{
+		Name:      "cassandra1",
+		Namespace: "default",
+		Labels:    map[string]string{"contrail_cluster": "cluster1"},
+	},
+	Spec: contrail.CassandraSpec{
+		CommonConfiguration: contrail.CommonConfiguration{
+			Activate:     &trueVal,
+		},
+	},
+}
+
+func newZookeeperTwo() *contrail.Zookeeper {
+	trueVal := true
+	// falseVal := false
+	return &contrail.Zookeeper{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "zookeeper-instance",
+			Namespace: "default",
+		},
+		Spec: contrail.ZookeeperSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:     &trueVal,
+			},
+		},
+	}
+}
+
+func newRabbitmqTwo() *contrail.Rabbitmq {
+	trueVal := true
+	return &contrail.Rabbitmq{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "rabbitmq-instance",
+			Namespace: "default",
+		},
+		Spec: contrail.RabbitmqSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:     &trueVal,
+			},
+		},
+	}
+}
+
+func newManagerTwo() *contrail.Manager {
+	return &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config1",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "config1"},
+		},
+		Spec: contrail.ManagerSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Activate:     &trueVal,
+				Create:       &trueVal,
+				HostNetwork:  &trueVal,
+				Replicas:     &replica,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			Services: contrail.Services{
+				Zookeepers: []*contrail.Zookeeper{newZookeeperTwo()},
+				Cassandras: []*contrail.Cassandra{cassandraTwo},
+				Rabbitmq:   newRabbitmqTwo(),
+			},
+		},
+		Status: contrail.ManagerStatus{},
+	}
+}
+
+var TestContainers = []*contrail.Container{
+	{Name: "testinit", Image: "registry:5000/contrail-command"},
 }
