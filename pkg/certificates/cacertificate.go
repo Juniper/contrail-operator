@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/x509"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -32,13 +34,13 @@ type CACertificate struct {
 	secret caCertSecret
 }
 
-func NewCACertificate(client client.Client, scheme *runtime.Scheme, owner metav1.Object) *CACertificate {
+func NewCACertificate(client client.Client, scheme *runtime.Scheme, owner metav1.Object, ownerType string) *CACertificate {
 	kubernetes := k8s.New(client, scheme)
 	return &CACertificate{
 		client: client,
 		owner:  owner,
 		scheme: scheme,
-		secret: caCertSecret{kubernetes.Secret(caSecretName, "contrail", owner)},
+		secret: caCertSecret{kubernetes.Secret(caSecretName, ownerType, owner)},
 	}
 }
 
@@ -114,4 +116,10 @@ func generateCaCerttificate() ([]byte, []byte, error) {
 	}
 
 	return caCertPem, caCertPrivKeyPem, nil
+}
+
+func getCaCertSecret(client client.Client, owner metav1.Object) (*corev1.Secret, error) {
+	secret := &corev1.Secret{}
+	err := client.Get(context.Background(), types.NamespacedName{Name: caSecretName, Namespace: owner.GetNamespace()}, secret)
+	return secret, err
 }

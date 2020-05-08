@@ -39,7 +39,7 @@ func TestCertificateSigning(t *testing.T) {
 		},
 	}
 
-	caCertificate := NewCACertificate(cl, scheme, owner)
+	caCertificate := NewCACertificate(cl, scheme, owner, "ownerType")
 	assert.NoError(t, caCertificate.EnsureExists())
 
 	certPrivKey, _ := rsa.GenerateKey(rand.Reader, 2048)

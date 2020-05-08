@@ -1,27 +1,18 @@
 package certificates
 
 import (
-	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type signer struct {
 	client client.Client
 	owner  metav1.Object
-}
-
-func getCaCertSecret(client client.Client, owner metav1.Object) (*corev1.Secret, error) {
-	secret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: caSecretName, Namespace: owner.GetNamespace()}, secret)
-	return secret, err
 }
 
 func (s *signer) SignCertificate(certTemplate x509.Certificate, publicKey crypto.PublicKey) ([]byte, error) {

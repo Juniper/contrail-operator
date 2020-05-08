@@ -35,8 +35,7 @@ func TestCaCertGeneration(t *testing.T) {
 		},
 	}
 
-	caCertificate := NewCACertificate(cl, scheme, owner)
-
+	caCertificate := NewCACertificate(cl, scheme, owner, "ownerType")
 	assert.NoError(t, caCertificate.EnsureExists())
 
 	key := client.ObjectKey{

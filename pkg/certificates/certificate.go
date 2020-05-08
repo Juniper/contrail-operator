@@ -15,37 +15,6 @@ import (
 )
 
 type Certificate struct {
-	secret certSecret
-}
-
-func New(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
-	secretName := owner.GetName() + "-secret-certificates"
-	kubernetes := k8s.New(cl, scheme)
-	return &Certificate{
-		secret: certSecret{
-			client: cl,
-			scheme: scheme,
-			owner:  owner,
-			sc:     kubernetes.Secret(secretName, ownerType, owner),
-			signer: &signer{
-				client: cl,
-				owner:  owner,
-			},
-			hostNetwork: hostNetwork,
-			pods:        pods,
-		},
-	}
-}
-
-func (r *Certificate) EnsureExistsAndIsSigned() error {
-	return r.secret.ensureExists()
-}
-
-type certificateSigner interface {
-	SignCertificate(certTemplate x509.Certificate, publicKey crypto.PublicKey) ([]byte, error)
-}
-
-type certSecret struct {
 	client      client.Client
 	scheme      *runtime.Scheme
 	owner       v1.Object
@@ -55,37 +24,68 @@ type certSecret struct {
 	pods        *core.PodList
 }
 
-func (r *certSecret) FillSecret(secret *core.Secret) error {
+func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
+	secretName := owner.GetName() + "-secret-certificates"
+	kubernetes := k8s.New(cl, scheme)
+	return &Certificate{
+		client: cl,
+		scheme: scheme,
+		owner:  owner,
+		sc:     kubernetes.Secret(secretName, ownerType, owner),
+		signer: &signer{
+			client: cl,
+			owner:  owner,
+		},
+		hostNetwork: hostNetwork,
+		pods:        pods,
+	}
+}
+
+func (r *Certificate) EnsureExistsAndIsSigned() error {
+	return r.sc.EnsureExists(r)
+}
+
+type certificateSigner interface {
+	SignCertificate(certTemplate x509.Certificate, publicKey crypto.PublicKey) ([]byte, error)
+}
+
+func (r *Certificate) FillSecret(secret *core.Secret) error {
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
 
-	var hostname string
 	for _, pod := range r.pods.Items {
 		if pod.Status.PodIP == "" {
 			return fmt.Errorf("%s pod IP still no available", pod.Name)
 		}
+		r.createCertificateForPod(&pod, secret)
 
-		if r.hostNetwork {
-			hostname = pod.Spec.NodeName
-		} else {
-			hostname = pod.Spec.Hostname
-		}
-
-		if !certInSecret(secret, pod.Status.PodIP) {
-			certificateTemplate, privateKey, err := generateCertificateTemplate(pod.Status.PodIP, hostname)
-
-			certBytes, err := r.signer.SignCertificate(certificateTemplate, privateKey.Public())
-			if err != nil {
-				return fmt.Errorf("fail to generate certificate for %s, %s: %w", hostname, pod.Name, err)
-			}
-
-			certPrivKeyPem, err := encodeInPemFormat(x509.MarshalPKCS1PrivateKey(privateKey), privateKeyPemType)
-			secret.Data[serverPrivateKeyFileName(pod.Status.PodIP)] = certPrivKeyPem
-			secret.Data[serverCertificateFileName(pod.Status.PodIP)] = certBytes
-			secret.Data["status-"+pod.Status.PodIP] = []byte("Approved")
-		}
 	}
+	return nil
+}
+
+func (r *Certificate) createCertificateForPod(pod *core.Pod, secret *core.Secret) error {
+	var hostname string
+	if r.hostNetwork {
+		hostname = pod.Spec.NodeName
+	} else {
+		hostname = pod.Spec.Hostname
+	}
+
+	if certInSecret(secret, pod.Status.PodIP) {
+		return nil
+	}
+	certificateTemplate, privateKey, err := generateCertificateTemplate(pod.Status.PodIP, hostname)
+
+	certBytes, err := r.signer.SignCertificate(certificateTemplate, privateKey.Public())
+	if err != nil {
+		return fmt.Errorf("fail to generate certificate for %s, %s: %w", hostname, pod.Name, err)
+	}
+
+	certPrivKeyPem, err := encodeInPemFormat(x509.MarshalPKCS1PrivateKey(privateKey), privateKeyPemType)
+	secret.Data[serverPrivateKeyFileName(pod.Status.PodIP)] = certPrivKeyPem
+	secret.Data[serverCertificateFileName(pod.Status.PodIP)] = certBytes
+	secret.Data["status-"+pod.Status.PodIP] = []byte("Approved")
 	return nil
 }
 
@@ -101,8 +101,4 @@ func serverPrivateKeyFileName(ip string) string {
 
 func serverCertificateFileName(ip string) string {
 	return fmt.Sprintf("server-%s.crt", ip)
-}
-
-func (s *certSecret) ensureExists() error {
-	return s.sc.EnsureExists(s)
 }

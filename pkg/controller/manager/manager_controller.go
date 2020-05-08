@@ -1613,8 +1613,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 }
 
 func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
-	caCertificate := certificates.NewCACertificate(r.client, r.scheme, manager)
-
+	caCertificate := certificates.NewCACertificate(r.client, r.scheme, manager, "manager")
 	if err := caCertificate.EnsureExists(); err != nil {
 		return err
 	}
