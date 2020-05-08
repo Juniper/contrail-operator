@@ -6,7 +6,7 @@ go_library(
         "cacertificate.go",
         "certificate.go",
         "certificate_templates.go",
-        "pem_helpers.go",
+        "pem.go",
         "sign_csr.go",
         "signer_ca.go",
     ],
