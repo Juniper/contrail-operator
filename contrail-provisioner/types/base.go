@@ -1,6 +1,9 @@
 package types
 
-import contrailTypes "github.com/Juniper/contrail-go-api/types"
+import (
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
+)
 
 // Nodes struct defines all Contrail node types
 type Nodes struct {

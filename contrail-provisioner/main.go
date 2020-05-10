@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,7 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	contrail "github.com/Juniper/contrail-go-api"
-	contrailTypes "github.com/Juniper/contrail-go-api/types"
+	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
 // ProvisionConfig defines the structure of the provison config
@@ -46,6 +48,21 @@ type KeystoneAuthParameters struct {
 	AuthUrl       string     `yaml:"auth_url,omitempty"`
 	TenantName    string     `yaml:"tenant_name,omitempty"`
 	Encryption    encryption `yaml:"encryption,omitempty"`
+}
+
+type EcmpHashingIncludeFields struct {
+	HashingConfigured bool `json:"hashingConfigured,omitempty"`
+	SourceIp          bool `json:"sourceIp,omitempty"`
+	DestinationIp     bool `json:"destinationIp,omitempty"`
+	IpProtocol        bool `json:"ipProtocol,omitempty"`
+	SourcePort        bool `json:"sourcePort,omitempty"`
+	DestinationPort   bool `json:"destinationPort,omitempty"`
+}
+
+type GlobalVrouterConfiguration struct {
+	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
+	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
+	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
 }
 
 func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Client) {
@@ -118,6 +135,7 @@ func main() {
 	databaseNodesPtr := flag.String("databaseNodes", "/provision.yaml", "path to database nodes yaml file")
 	apiserverPtr := flag.String("apiserver", "/provision.yaml", "path to apiserver yaml file")
 	keystoneAuthConfPtr := flag.String("keystoneAuthConf", "/provision.yaml", "path to keystone authentication configuration file")
+	globalVrouterConfPtr := flag.String("globalVrouterConf", "/provision.yaml", "path to global vrouter configuration file")
 	modePtr := flag.String("mode", "watch", "watch/run")
 	flag.Parse()
 
@@ -146,6 +164,36 @@ func main() {
 		})
 		if err != nil {
 			if !connectionError(err) {
+				panic(err)
+			}
+		}
+
+		globalVrouterConfiguration := &GlobalVrouterConfiguration{}
+		if _, err := os.Stat(*globalVrouterConfPtr); err == nil {
+			globalVrouterConfiguration = getGlobalVrouterConfigFromFile(*globalVrouterConfPtr)
+		}
+		globalVrouterConfFQName := []string{"default-global-system-config", "default-global-vrouter-config"}
+		encapPriority := strings.Split(globalVrouterConfiguration.EncapsulationPriorities, ",")
+		encapPriorityObj := &contrailTypes.EncapsulationPrioritiesType{Encapsulation: encapPriority}
+		ecmpObj := globalVrouterConfiguration.EcmpHashingIncludeFields
+		ecmpHashingIncludeFieldsObj := &contrailTypes.EcmpHashingIncludeFields{ecmpObj.HashingConfigured, ecmpObj.SourceIp, ecmpObj.DestinationIp, ecmpObj.IpProtocol, ecmpObj.SourcePort, ecmpObj.DestinationPort}
+		GlobalVrouterConfig := &contrailTypes.GlobalVrouterConfig{}
+		GlobalVrouterConfig.SetFQName("", globalVrouterConfFQName)
+		GlobalVrouterConfig.SetEncapsulationPriorities(encapPriorityObj)
+		GlobalVrouterConfig.SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
+		GlobalVrouterConfig.SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
+		if err = contrailClient.Create(GlobalVrouterConfig); err != nil {
+			if !strings.Contains(err.Error(), "409 Conflict") {
+				panic(err)
+			}
+			obj, err := contrailClient.FindByName("global-vrouter-config", strings.Join(globalVrouterConfFQName, ":"))
+			if err != nil {
+				panic(err)
+			}
+			obj.(*contrailTypes.GlobalVrouterConfig).SetEncapsulationPriorities(encapPriorityObj)
+			obj.(*contrailTypes.GlobalVrouterConfig).SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
+			obj.(*contrailTypes.GlobalVrouterConfig).SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
+			if err = contrailClient.Update(obj); err != nil {
 				panic(err)
 			}
 		}
@@ -889,4 +937,16 @@ func getKeystoneAuthParametersFromFile(authParamsFilePath string) *KeystoneAuthP
 		panic(err)
 	}
 	return keystoneAuthParameters
+}
+
+func getGlobalVrouterConfigFromFile(globalVrouterFilePath string) *GlobalVrouterConfiguration {
+	var globalVrouterConfig *GlobalVrouterConfiguration
+	globalVrouterJson, err := ioutil.ReadFile(globalVrouterFilePath)
+	if err != nil {
+		panic(err)
+	}
+	if err = json.Unmarshal([]byte(globalVrouterJson), &globalVrouterConfig); err != nil {
+		panic(err)
+	}
+	return globalVrouterConfig
 }

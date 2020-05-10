@@ -1,8 +1,6 @@
 package certificates
 
 import (
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -10,39 +8,36 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type Certificate struct {
 	client      client.Client
 	scheme      *runtime.Scheme
 	owner       v1.Object
+	secret      certSecret
 	restConfig  *rest.Config
-	ownerType   string
 	hostNetwork bool
 	pods        *core.PodList
 }
 
 func New(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
+	secretName := owner.GetName() + "-secret-certificates"
+	kubernetes := k8s.New(cl, scheme)
 	return &Certificate{
 		client:      cl,
 		scheme:      scheme,
 		owner:       owner,
+		secret:      certSecret{kubernetes.Secret(secretName, ownerType, owner)},
 		restConfig:  restConf,
-		ownerType:   ownerType,
 		hostNetwork: hostNetwork,
 		pods:        pods,
 	}
 }
 
 func (r *Certificate) EnsureExistsAndIsSigned() error {
-	secretName := r.owner.GetName() + "-secret-certificates"
-	_, err := contrail.CreateSecret(secretName, r.client, r.scheme,
-		reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: r.owner.GetNamespace(),
-				Name:      r.owner.GetName(),
-			},
-		}, r.ownerType, r.owner)
+	err := r.secret.ensureExists()
 	if err != nil {
 		return err
 	}
@@ -54,4 +49,16 @@ func (r *Certificate) EnsureExistsAndIsSigned() error {
 				Name:      r.owner.GetName(),
 			},
 		}, r.scheme, r.owner, r.restConfig, r.pods, r.hostNetwork)
+}
+
+type certSecret struct {
+	sc *k8s.Secret
+}
+
+func (certSecret) FillSecret(*core.Secret) error {
+	return nil
+}
+
+func (s certSecret) ensureExists() error {
+	return s.sc.EnsureExists(s)
 }

@@ -5,11 +5,12 @@ go_library(
     srcs = [
         "certificate.go",
         "sign_csr.go",
+        "signer_ca.go",
     ],
     importpath = "github.com/Juniper/contrail-operator/pkg/certificates",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/k8s:go_default_library",
         "@io_k8s_api//certificates/v1beta1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

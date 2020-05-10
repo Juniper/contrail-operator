@@ -1,4 +1,4 @@
-package vrouter_test
+package vrouter
 
 import (
 	"context"
@@ -17,10 +17,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 )
+
+type cniDirectoriesInfoFake struct {
+	cniBinariesDirectory    string
+	cniConfigFilesDirectory string
+}
+
+func (c cniDirectoriesInfoFake) CNIBinariesDirectory() string {
+	return c.cniBinariesDirectory
+}
+func (c cniDirectoriesInfoFake) CNIConfigFilesDirectory() string {
+	return c.cniConfigFilesDirectory
+}
 
 func TestVrouterController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
@@ -47,14 +57,14 @@ func TestVrouterController(t *testing.T) {
 		},
 		Spec: contrail.VrouterSpec{
 			ServiceConfiguration: contrail.VrouterConfiguration{
-				Containers: map[string]*contrail.Container{
-					"init":                   {Image: "image1"},
-					"nodemanager":            {Image: "image2"},
-					"vrouteragent":           {Image: "image3"},
-					"vroutercni":             {Image: "image4"},
-					"vrouterkernelbuildinit": {Image: "image5"},
-					"vrouterkernelinit":      {Image: "image6"},
-					"nodeinit":               {Image: "image7"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "image1"},
+					{Name: "nodemanager", Image: "image2"},
+					{Name: "vrouteragent", Image: "image3"},
+					{Name: "vroutercni", Image: "image4"},
+					{Name: "vrouterkernelbuildinit", Image: "image5"},
+					{Name: "vrouterkernelinit", Image: "image6"},
+					{Name: "nodeinit", Image: "image7"},
 				},
 				ControlInstance:   "control1",
 				CassandraInstance: "cassandra1",
@@ -101,8 +111,8 @@ func TestVrouterController(t *testing.T) {
 	}
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, vrouterCR, controlCR, cassandraCR, configCR)
-	fakeCNIDirs := v1alpha1.VrouterCNIDirectories{"/cni/bin", "cni/config"}
-	reconciler := vrouter.NewReconciler(fakeClient, scheme, &rest.Config{}, fakeCNIDirs)
+	fakeCNIDirs := cniDirectoriesInfoFake{"/cni/bin", "cni/config"}
+	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeCNIDirs)
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: vrouterName})
 	// then

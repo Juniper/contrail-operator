@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,18 +45,17 @@ type ControlSpec struct {
 // ControlConfiguration is the Spec for the controls API.
 // +k8s:openapi-gen=true
 type ControlConfiguration struct {
-	Containers        map[string]*Container `json:"containers,omitempty"`
-	CassandraInstance string                `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string                `json:"zookeeperInstance,omitempty"`
-	BGPPort           *int                  `json:"bgpPort,omitempty"`
-	ASNNumber         *int                  `json:"asnNumber,omitempty"`
-	XMPPPort          *int                  `json:"xmppPort,omitempty"`
-	DNSPort           *int                  `json:"dnsPort,omitempty"`
-	DNSIntrospectPort *int                  `json:"dnsIntrospectPort,omitempty"`
-	NodeManager       *bool                 `json:"nodeManager,omitempty"`
-	RabbitmqUser      string                `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword  string                `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost     string                `json:"rabbitmqVhost,omitempty"`
+	Containers        []*Container `json:"containers,omitempty"`
+	CassandraInstance string       `json:"cassandraInstance,omitempty"`
+	BGPPort           *int         `json:"bgpPort,omitempty"`
+	ASNNumber         *int         `json:"asnNumber,omitempty"`
+	XMPPPort          *int         `json:"xmppPort,omitempty"`
+	DNSPort           *int         `json:"dnsPort,omitempty"`
+	DNSIntrospectPort *int         `json:"dnsIntrospectPort,omitempty"`
+	NodeManager       *bool        `json:"nodeManager,omitempty"`
+	RabbitmqUser      string       `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword  string       `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost     string       `json:"rabbitmqVhost,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -135,8 +134,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	zookeeperNodesInformation, err := NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance,
-		request.Namespace, client)
 	if err != nil {
 		return err
 	}
@@ -208,7 +205,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList       string
 			APIServerPort       string
 			CassandraServerList string
-			ZookeeperServerList string
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
@@ -224,14 +220,13 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
 
@@ -247,7 +242,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList       string
 			APIServerPort       string
 			CassandraServerList string
-			ZookeeperServerList string
 			RabbitmqServerList  string
 			RabbitmqServerPort  string
 			CollectorServerList string
@@ -261,14 +255,13 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
 			APIServerPort:       configNodesInformation.APIServerPort,
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
-			ZookeeperServerList: zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
 
@@ -284,7 +277,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = controlNodemanagerBuffer.String()
 

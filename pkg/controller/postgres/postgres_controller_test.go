@@ -134,8 +134,8 @@ func TestPostgresController(t *testing.T) {
 				Name:      name.Name,
 			},
 			Spec: contrail.PostgresSpec{
-				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgress"},
+				Containers: []*contrail.Container{
+					{Name: "postgres", Image: "registry:5000/postgres"},
 				},
 			},
 		}
@@ -150,7 +150,7 @@ func TestPostgresController(t *testing.T) {
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
 		assert.NoError(t, err)
-		assertPodExist(t, fakeClient, podName, "registry:5000/postgress")
+		assertPodExist(t, fakeClient, podName, "registry:5000/postgres")
 		// and
 		assertPostgresStatusActive(t, fakeClient, name, false)
 	})

@@ -25,7 +25,7 @@ spec:
         serviceConfiguration:
           containers:
             provisioner:
-              image: kaweue/contrail-provisioner:master.1115
+              image: kaweue/contrail-provisioner:master.1175
             init:
               image: python:alpine
     cassandras:
@@ -159,7 +159,6 @@ spec:
         serviceConfiguration:
           nodeManager: false
           cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
           containers:
             control: 
               image: opencontrailnightly/contrail-controller-control-control:1910-latest

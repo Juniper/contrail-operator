@@ -2,8 +2,9 @@ package utils
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"strings"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -643,4 +644,14 @@ func MergeCommonConfiguration(manager v1alpha1.CommonConfiguration,
 		instance.Replicas = manager.Replicas
 	}
 	return instance
+}
+
+// GetContainerFromList gets a container from a list of container
+func GetContainerFromList(containerName string, containerList []*v1alpha1.Container) *v1alpha1.Container {
+	for _, instanceContainer := range containerList {
+		if containerName == instanceContainer.Name {
+			return instanceContainer
+		}
+	}
+	return nil
 }

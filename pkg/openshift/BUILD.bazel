@@ -9,7 +9,6 @@ go_library(
     importpath = "github.com/Juniper/contrail-operator/pkg/openshift",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@in_gopkg_yaml.v2//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_client_go//kubernetes/typed/core/v1:go_default_library",
@@ -26,7 +25,8 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
-        "//pkg/cacertificates:go_default_library",
+        "//pkg/certificates:go_default_library",
+        "//pkg/controller/vrouter:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//suite:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
