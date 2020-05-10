@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -50,17 +50,17 @@ var resourcesList = []runtime.Object{
 
 // Add creates a new Manager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, csrca cacertificates.CA) error {
+func Add(mgr manager.Manager, csrca certificates.CA) error {
 	if err := apiextensionsv1beta1.AddToScheme(scheme.Scheme); err != nil {
 		return err
 	}
 	var r reconcile.Reconciler
 	reconcileManager := ReconcileManager{client: mgr.GetClient(),
-		scheme:      mgr.GetScheme(),
-		manager:     mgr,
-		cache:       mgr.GetCache(),
-		kubernetes:  k8s.New(mgr.GetClient(), mgr.GetScheme()),
-		csrSignerCa: csrca}
+		scheme:     mgr.GetScheme(),
+		manager:    mgr,
+		cache:      mgr.GetCache(),
+		kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+		signerCa:   csrca}
 	r = &reconcileManager
 	//r := newReconciler(mgr)
 	c, err := createController(mgr, r)
@@ -106,13 +106,13 @@ var _ reconcile.Reconciler = &ReconcileManager{}
 type ReconcileManager struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	client      client.Client
-	scheme      *runtime.Scheme
-	manager     manager.Manager
-	controller  controller.Controller
-	cache       cache.Cache
-	kubernetes  *k8s.Kubernetes
-	csrSignerCa cacertificates.CA
+	client     client.Client
+	scheme     *runtime.Scheme
+	manager    manager.Manager
+	controller controller.Controller
+	cache      cache.Cache
+	kubernetes *k8s.Kubernetes
+	signerCa   certificates.CA
 }
 
 // Reconcile reconciles the manager.
@@ -306,11 +306,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range cassandraService.Spec.ServiceConfiguration.Containers {
-				if cassandraService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = cassandraService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range cassandraService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			if imageChanged || replicasChanged {
@@ -448,11 +452,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range zookeeperService.Spec.ServiceConfiguration.Containers {
-				if zookeeperService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = zookeeperService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range zookeeperService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			if imageChanged || replicasChanged {
@@ -583,11 +591,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range webuiService.Spec.ServiceConfiguration.Containers {
-				if webuiService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = webuiService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range webuiService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			secretParamChanged := false
@@ -715,11 +727,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 
 			imageChanged := false
-			for container := range provisionManagerService.Spec.ServiceConfiguration.Containers {
-				if provisionManagerService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = provisionManagerService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range provisionManagerService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			secretParamChanged := false
@@ -847,12 +863,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-
-			for container := range configService.Spec.ServiceConfiguration.Containers {
-				if configService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = configService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range configService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			secretParamChanged := false
@@ -984,11 +1003,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range kubemanagerService.Spec.ServiceConfiguration.Containers {
-				if kubemanagerService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = kubemanagerService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range kubemanagerService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			if imageChanged || replicasChanged {
@@ -1126,11 +1149,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range controlService.Spec.ServiceConfiguration.Containers {
-				if controlService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = controlService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range controlService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			if imageChanged || replicasChanged {
@@ -1262,11 +1289,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-			for container := range rabbitmqService.Spec.ServiceConfiguration.Containers {
-				if rabbitmqService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = rabbitmqService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range rabbitmqService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
 			if imageChanged || replicasChanged {
@@ -1402,15 +1433,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 			}
 			imageChanged := false
-
-			for container := range vrouterService.Spec.ServiceConfiguration.Containers {
-				if vrouterService.Spec.ServiceConfiguration.Containers[container].Image != cr.Spec.ServiceConfiguration.Containers[container].Image {
-					cr.Spec.ServiceConfiguration.Containers[container].Image = vrouterService.Spec.ServiceConfiguration.Containers[container].Image
-					imageChanged = true
-					break
+			for _, container := range vrouterService.Spec.ServiceConfiguration.Containers {
+				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
+					if crContainer.Name == container.Name {
+						if crContainer.Image != container.Image {
+							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
+							imageChanged = true
+							break
+						}
+					}
 				}
 			}
-
 			if imageChanged || replicasChanged {
 				err = r.client.Update(context.TODO(), cr)
 				if err != nil {
@@ -1582,15 +1615,15 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 
 func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager) error {
 	csrSignerCaConfigMap := &corev1.ConfigMap{}
-	csrSignerCaConfigMap.ObjectMeta.Name = cacertificates.CsrSignerCAConfigMapName
+	csrSignerCaConfigMap.ObjectMeta.Name = certificates.SignerCAConfigMapName
 	csrSignerCaConfigMap.ObjectMeta.Namespace = manager.Namespace
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, csrSignerCaConfigMap, func() error {
-		csrSignerCAValue, err := r.csrSignerCa.CACert()
+		csrSignerCAValue, err := r.signerCa.CACert()
 		if err != nil {
 			return err
 		}
-		csrSignerCaConfigMap.Data = map[string]string{cacertificates.CsrSignerCAFilename: csrSignerCAValue}
+		csrSignerCaConfigMap.Data = map[string]string{certificates.SignerCAFilename: csrSignerCAValue}
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
 

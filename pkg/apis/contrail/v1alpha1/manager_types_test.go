@@ -93,33 +93,6 @@ func TestManagerTypeTwo(t *testing.T) {
 		status := managerCR.IsClusterReady()
 		assert.Equal(t, expected, status)
 	})
-
-	// t.Run("Testing loops of cassandra", func(t *testing.T) {
-	// 	for _, cassandraService := range mgr.Spec.Services.Cassandras {
-	// 		for _, cassandraStatus := range mgr.Status.Cassandras {
-	// 			if cassandraService.Name == *cassandraStatus.Name {
-	// 				// return value
-	// 			}
-	// 		}
-	// 	}
-
-	// 	for _, zookeeperService := range mgr.Spec.Services.Zookeepers {
-	// 		for _, zookeeperStatus := range mgr.Status.Zookeepers {
-	// 			if zookeeperService.Name == *zookeeperStatus.Name {
-	// 				// no need to verify
-	// 			}
-	// 		}
-	// 	}
-	// 	for _, controlService := range mgr.Spec.Services.Controls {
-	// 		for _, controlStatus := range mgr.Status.Controls {
-	// 			if controlService.Name == *controlStatus.Name {
-	// 				// No need to test
-	// 			}
-	// 		}
-	// 	}
-
-	// })
-	//  nothing to verify
 }
 
 var (

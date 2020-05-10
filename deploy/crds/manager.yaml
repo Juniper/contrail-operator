@@ -121,7 +121,6 @@ spec:
         contrailcluster: cluster-1
     spec:
       cassandra: config-db
-      zookeeper: zookeeper
       activate: true
       replicas: 3
       nodeSelector:

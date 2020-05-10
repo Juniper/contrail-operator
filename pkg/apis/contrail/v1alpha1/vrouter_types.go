@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -55,17 +55,17 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers         map[string]*Container `json:"containers,omitempty"`
-	ControlInstance    string                `json:"controlInstance,omitempty"`
-	CassandraInstance  string                `json:"cassandraInstance,omitempty"`
-	Gateway            string                `json:"gateway,omitempty"`
-	PhysicalInterface  string                `json:"physicalInterface,omitempty"`
-	MetaDataSecret     string                `json:"metaDataSecret,omitempty"`
-	NodeManager        *bool                 `json:"nodeManager,omitempty"`
-	Distribution       *Distribution         `json:"distribution,omitempty"`
-	ServiceAccount     string                `json:"serviceAccount,omitempty"`
-	ClusterRole        string                `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string                `json:"clusterRoleBinding,omitempty"`
+	Containers         []*Container  `json:"containers,omitempty"`
+	ControlInstance    string        `json:"controlInstance,omitempty"`
+	CassandraInstance  string        `json:"cassandraInstance,omitempty"`
+	Gateway            string        `json:"gateway,omitempty"`
+	PhysicalInterface  string        `json:"physicalInterface,omitempty"`
+	MetaDataSecret     string        `json:"metaDataSecret,omitempty"`
+	NodeManager        *bool         `json:"nodeManager,omitempty"`
+	Distribution       *Distribution `json:"distribution,omitempty"`
+	ServiceAccount     string        `json:"serviceAccount,omitempty"`
+	ClusterRole        string        `json:"clusterRole,omitempty"`
+	ClusterRoleBinding string        `json:"clusterRoleBinding,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -375,7 +375,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			PhysicalInterfaceMac: physicalInterfaceMac,
 			Gateway:              gateway,
 			MetaDataSecret:       vrouterConfig.MetaDataSecret,
-			CAFilePath:           cacertificates.CsrSignerCAFilepath,
+			CAFilePath:           certificates.SignerCAFilepath,
 		})
 		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
 
@@ -393,7 +393,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          cacertificates.CsrSignerCAFilepath,
+			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 
@@ -493,10 +493,4 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
 
 	return vrouterConfiguration
-}
-
-// VrouterCNIDirectories is struct with directories containing CNI specific files
-type VrouterCNIDirectories struct {
-	BinariesDirectory    string
-	ConfigFilesDirectory string
 }

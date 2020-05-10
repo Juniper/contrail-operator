@@ -22,8 +22,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
@@ -249,7 +249,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						},
 						{
 							Name:      csrSignerCaVolumeName,
-							MountPath: cacertificates.CsrSignerCAMountPath,
+							MountPath: certificates.SignerCAMountPath,
 						},
 					},
 					Env: []core.EnvVar{
@@ -307,7 +307,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 					VolumeSource: core.VolumeSource{
 						ConfigMap: &core.ConfigMapVolumeSource{
 							LocalObjectReference: core.LocalObjectReference{
-								Name: cacertificates.CsrSignerCAConfigMapName,
+								Name: certificates.SignerCAConfigMapName,
 							},
 						},
 					},
@@ -340,28 +340,27 @@ func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) 
 	return pods, nil
 }
 
-func getImage(containers map[string]*contrail.Container, containerName string) string {
+func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
 		"postgres":            "localhost:5000/postgres",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
-
-	c, ok := containers[containerName]
-	if !ok || c == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil {
 		return defaultContainersImages[containerName]
 	}
 
 	return c.Image
 }
 
-func getCommand(containers map[string]*contrail.Container, containerName string) []string {
+func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + cacertificates.CsrSignerCAFilepath},
+		"postgres":            {"/bin/bash", "-c", "docker-entrypoint.sh -h ${MY_POD_IP} -c wal_level=logical -c ssl=on -c ssl_cert_file=/var/lib/ssl_certificates/server-${MY_POD_IP}.crt -c ssl_key_file=/var/lib/ssl_certificates/server-key-${MY_POD_IP}.pem -c ssl_ca_file=" + certificates.SignerCAFilepath},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
-	c, ok := containers[containerName]
-	if !ok || c == nil || c.Command == nil {
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

@@ -6,7 +6,7 @@ import (
 	core "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -59,7 +59,7 @@ func (c *configMaps) ensureInitExists(endpoint string) error {
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
 		SwiftEndpoint:         fmt.Sprintf("%v:%v", endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
-		CAFilePath:            cacertificates.CsrSignerCAFilepath,
+		CAFilePath:            certificates.SignerCAFilepath,
 	}
 	return c.cm.EnsureExists(spc)
 }

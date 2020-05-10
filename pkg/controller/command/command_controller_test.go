@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/controller/command"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -398,10 +398,10 @@ func newCommand() *contrail.Command {
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
-				Containers: map[string]*contrail.Container{
-					"init":                {Image: "registry:5000/contrail-command"},
-					"api":                 {Image: "registry:5000/contrail-command"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "registry:5000/contrail-command"},
+					{Name: "api", Image: "registry:5000/contrail-command"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -546,6 +546,20 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "command",
+										Operator: "In",
+										Values:   []string{"command"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,
@@ -571,7 +585,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 								},
 								{
 									Name:      "command-csr-signer-ca",
-									MountPath: cacertificates.CsrSignerCAMountPath,
+									MountPath: certificates.SignerCAMountPath,
 								},
 							},
 						},
@@ -617,7 +631,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 									Items: []core.KeyToPath{
 										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
 										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-										{Key: "contrail.yml", Path: "contrail.yml"},
+										{Key: "command-app-server.yml", Path: "command-app-server.yml"},
 										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
 									},
 								},
@@ -636,7 +650,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: cacertificates.CsrSignerCAConfigMapName,
+										Name: certificates.SignerCAConfigMapName,
 									},
 								},
 							},
@@ -705,7 +719,7 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		},
 	}, actual.ObjectMeta)
 
-	assert.Equal(t, expectedCommandConfig, actual.Data["contrail.yml"])
+	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server.yml"])
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
@@ -870,8 +884,8 @@ fi
 set -e
 psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
-contrailutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/contrail.yml
-contrailutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/contrail.yml
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `
 
 const expectedCommandInitCluster = `
@@ -1060,7 +1074,7 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "http://0.0.0.0:5080"
-      public_url: "http://0.0.0.0:5080"
+      private_url: "https://0.0.0.0:5080"
+      public_url: "https://0.0.0.0:5080"
     kind: endpoint
 `

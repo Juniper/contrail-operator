@@ -25,6 +25,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
@@ -498,9 +499,8 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
-
-	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if !ok || c == nil {
+	c := utils.GetContainerFromList(containerName, cr.Spec.ServiceConfiguration.Containers)
+	if c == nil {
 		return defaultContainersImages[containerName]
 	}
 
@@ -508,8 +508,8 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 }
 
 func getCommand(cr *contrail.Keystone, containerName string) []string {
-	c, ok := cr.Spec.ServiceConfiguration.Containers[containerName]
-	if !ok || c == nil || c.Command == nil {
+	c := utils.GetContainerFromList(containerName, cr.Spec.ServiceConfiguration.Containers)
+	if c == nil || c.Command == nil {
 		return defaultContainersCommand[containerName]
 	}
 

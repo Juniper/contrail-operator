@@ -5,22 +5,14 @@ import (
 	"net/url"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
-
-// CNIDirectories is struct with directories containing CNI specific files for Openshift cluster
-var CNIDirectories = v1alpha1.VrouterCNIDirectories{
-	BinariesDirectory:    "/var/lib/cni/bin",
-	ConfigFilesDirectory: "/etc/kubernetes/cni",
-}
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
@@ -61,7 +53,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	kubernetesClusterName := installConfigMap.Metadata.Name
 	return kubernetesClusterName, nil
@@ -71,7 +63,7 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 func (c ClusterConfig) PodSubnets() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	clusterNetwork := installConfigMap.Networking.ClusterNetwork
 	if len(clusterNetwork) > 1 {
@@ -86,7 +78,7 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 func (c ClusterConfig) ServiceSubnets() (string, error) {
 	installConfigMap, err := getInstallConfig(c.Client)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	serviceNetwork := installConfigMap.Networking.ServiceNetwork
 	if len(serviceNetwork) > 1 {
@@ -97,9 +89,22 @@ func (c ClusterConfig) ServiceSubnets() (string, error) {
 	return serviceSubnets, nil
 }
 
+// CNIBinariesDirectory returns directory containing CNI binaries specific for k8s cluster
+func (c ClusterConfig) CNIBinariesDirectory() string {
+	return "/var/lib/cni/bin"
+}
+
+// CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
+func (c ClusterConfig) CNIConfigFilesDirectory() string {
+	return "/etc/kubernetes/cni"
+}
+
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
 	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
-	consoleCM, _ := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
+	consoleCM, err := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
+	if err != nil {
+		return &url.URL{}, err
+	}
 	consoleConfigSection := consoleCM.Data["console-config.yaml"]
 	consoleConfigByte := []byte(consoleConfigSection)
 	consoleConfigMap := consoleConfig{}

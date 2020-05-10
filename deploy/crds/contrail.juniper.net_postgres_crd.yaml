@@ -31,7 +31,20 @@ spec:
         spec:
           description: PostgresSpec defines the desired state of Postgres
           properties:
-            containers: {}
+            containers:
+              items:
+                description: Container defines name, image and command.
+                properties:
+                  command:
+                    items:
+                      type: string
+                    type: array
+                  image:
+                    type: string
+                  name:
+                    type: string
+                type: object
+              type: array
             hostNetwork:
               type: boolean
             storage:

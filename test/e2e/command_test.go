@@ -54,9 +54,9 @@ func TestCommandServices(t *testing.T) {
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
 			Spec: contrail.PostgresSpec{
-				Containers: map[string]*contrail.Container{
-					"postgres": {Image: "registry:5000/postgres"},
-					"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+				Containers: []*contrail.Container{
+					{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/postgres:12.2"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 				},
 			},
 		}
@@ -68,7 +68,7 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.MemcachedSpec{
 				ServiceConfiguration: contrail.MemcachedConfiguration{
-					Container: contrail.Container{Image: "registry:5000/centos-binary-memcached:train"},
+					Containers: []*contrail.Container{{Name: "memcached", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"}},
 				},
 			},
 		}
@@ -82,13 +82,13 @@ func TestCommandServices(t *testing.T) {
 					PostgresInstance:   "commandtest-psql",
 					ListenPort:         5555,
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
-					Containers: map[string]*contrail.Container{
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
-						"keystoneDbInit":      {Image: "registry:5000/postgresql-client"},
-						"keystoneInit":        {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystone":            {Image: "registry:5000/centos-binary-keystone:train"},
-						"keystoneSsh":         {Image: "registry:5000/centos-binary-keystone-ssh:train"},
-						"keystoneFernet":      {Image: "registry:5000/centos-binary-keystone-fernet:train"},
+					Containers: []*contrail.Container{
+						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},
+						{Name: "keystoneInit", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
+						{Name: "keystone", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
+						{Name: "keystoneSsh", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone-ssh:train-2005"},
+						{Name: "keystoneFernet", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone-fernet:train-2005"},
 					},
 				},
 			},
@@ -101,8 +101,8 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.SwiftSpec{
 				ServiceConfiguration: contrail.SwiftConfiguration{
-					Containers: map[string]*contrail.Container{
-						"ring-reconciler": {Image: "registry:5000/centos-source-swift-base:train"},
+					Containers: []*contrail.Container{
+						{Name: "ring-reconciler", Image: "registry:5000/common-docker-third-party/contrail/centos-source-swift-base:train-2005"},
 					},
 					CredentialsSecretName: "commandtest-swift-credentials-secret",
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
@@ -110,20 +110,20 @@ func TestCommandServices(t *testing.T) {
 						ContainerBindPort: 6002,
 						ObjectBindPort:    6000,
 						Device:            "d1",
-						Containers: map[string]*contrail.Container{
-							"swiftObjectExpirer":       {Image: "registry:5000/centos-binary-swift-object-expirer:train"},
-							"swiftObjectUpdater":       {Image: "registry:5000/centos-binary-swift-object:train"},
-							"swiftObjectReplicator":    {Image: "registry:5000/centos-binary-swift-object:train"},
-							"swiftObjectAuditor":       {Image: "registry:5000/centos-binary-swift-object:train"},
-							"swiftObjectServer":        {Image: "registry:5000/centos-binary-swift-object:train"},
-							"swiftContainerUpdater":    {Image: "registry:5000/centos-binary-swift-container:train"},
-							"swiftContainerReplicator": {Image: "registry:5000/centos-binary-swift-container:train"},
-							"swiftContainerAuditor":    {Image: "registry:5000/centos-binary-swift-container:train"},
-							"swiftContainerServer":     {Image: "registry:5000/centos-binary-swift-container:train"},
-							"swiftAccountReaper":       {Image: "registry:5000/centos-binary-swift-account:train"},
-							"swiftAccountReplicator":   {Image: "registry:5000/centos-binary-swift-account:train"},
-							"swiftAccountAuditor":      {Image: "registry:5000/centos-binary-swift-account:train"},
-							"swiftAccountServer":       {Image: "registry:5000/centos-binary-swift-account:train"},
+						Containers: []*contrail.Container{
+							{Name: "swiftObjectExpirer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005"},
+							{Name: "swiftObjectUpdater", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
+							{Name: "swiftObjectReplicator", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
+							{Name: "swiftObjectAuditor", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
+							{Name: "swiftObjectServer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
+							{Name: "swiftContainerUpdater", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005"},
+							{Name: "swiftContainerReplicator", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005"},
+							{Name: "swiftContainerAuditor", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005"},
+							{Name: "swiftContainerServer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005"},
+							{Name: "swiftAccountReaper", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005"},
+							{Name: "swiftAccountReplicator", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005"},
+							{Name: "swiftAccountAuditor", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005"},
+							{Name: "swiftAccountServer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005"},
 						},
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
@@ -131,9 +131,10 @@ func TestCommandServices(t *testing.T) {
 						ListenPort:         5080,
 						KeystoneInstance:   "commandtest-keystone",
 						KeystoneSecretName: "commandtest-keystone-adminpass-secret",
-						Containers: map[string]*contrail.Container{
-							"init": {Image: "registry:5000/centos-binary-kolla-toolbox:train"},
-							"api":  {Image: "registry:5000/centos-binary-swift-proxy-server:train"},
+						Containers: []*contrail.Container{
+							{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+							{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005"},
+							{Name: "api", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005"},
 						},
 					},
 				},
@@ -157,10 +158,10 @@ func TestCommandServices(t *testing.T) {
 					TelemetryURL:       "https://kind-control-plane:8081",
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
-					Containers: map[string]*contrail.Container{
-						"init":                {Image: "registry:5000/contrail-command:master.1115"},
-						"api":                 {Image: "registry:5000/contrail-command:master.1115"},
-						"wait-for-ready-conf": {Image: "registry:5000/busybox"},
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:master.1175"},
+						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:master.1175"},
+						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},
 				},
 			},
@@ -280,7 +281,7 @@ func TestCommandServices(t *testing.T) {
 			keystoneClient = keystone.NewClient(keystoneProxy)
 			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			swiftProxyPod := swiftProxyPods.Items[0].Name
-			swiftProxy := proxy.NewClient("contrail", swiftProxyPod, 5080)
+			swiftProxy := proxy.NewSecureClient("contrail", swiftProxyPod, 5080)
 			swiftURL := tokens.EndpointURL("swift", "public")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)

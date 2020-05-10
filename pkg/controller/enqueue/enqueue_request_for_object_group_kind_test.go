@@ -89,9 +89,6 @@ func TestObjectGroupKindFailures(t *testing.T) {
 	}
 	ors := []meta.OwnerReference{or}
 	metaobj.SetOwnerReferences(ors)
-	pod := &corev1.Pod{
-		ObjectMeta: metaobj,
-	}
 	req := RequestForObjectGroupKind{
 		NewGroupKind: schema.GroupKind{
 			Group: "owner-group",
@@ -99,22 +96,13 @@ func TestObjectGroupKindFailures(t *testing.T) {
 		},
 	}
 
-	t.Run("Failed Create Event", func(t *testing.T) {
-		evc := event.CreateEvent{
-			Meta:   pod,
-			Object: nil,
-		}
-		req.Create(evc, wq)
-		assert.Equal(t, 1, wq.Len())
-	})
-
 	t.Run("Failed Create Event - no pod", func(t *testing.T) {
 		evc := event.CreateEvent{
 			Meta:   nil,
 			Object: nil,
 		}
 		req.Create(evc, wq)
-		assert.Equal(t, 1, wq.Len())
+		assert.Equal(t, 0, wq.Len())
 	})
 
 	t.Run("Failed Update Event", func(t *testing.T) {
@@ -125,7 +113,7 @@ func TestObjectGroupKindFailures(t *testing.T) {
 			ObjectNew: nil,
 		}
 		req.Update(evu, wq)
-		assert.Equal(t, 1, wq.Len())
+		assert.Equal(t, 0, wq.Len())
 	})
 
 	t.Run("Failed Delete Event", func(t *testing.T) {
@@ -135,7 +123,7 @@ func TestObjectGroupKindFailures(t *testing.T) {
 			DeleteStateUnknown: false,
 		}
 		req.Delete(evd, wq)
-		assert.Equal(t, 1, wq.Len())
+		assert.Equal(t, 0, wq.Len())
 	})
 
 	t.Run("Failed Delete Event", func(t *testing.T) {
@@ -144,6 +132,6 @@ func TestObjectGroupKindFailures(t *testing.T) {
 			Object: nil,
 		}
 		req.Generic(evg, wq)
-		assert.Equal(t, 1, wq.Len())
+		assert.Equal(t, 0, wq.Len())
 	})
 }

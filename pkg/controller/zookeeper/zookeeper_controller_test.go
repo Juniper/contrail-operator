@@ -2,7 +2,11 @@ package zookeeper
 
 import (
 	"context"
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -10,10 +14,90 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 )
+
+func TestZookeeperResourceHandler(t *testing.T) {
+	falseVal := false
+	initObjs := []runtime.Object{
+		newZookeeper(),
+	}
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := meta.ObjectMeta{}
+	or := meta.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []meta.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	t.Run("Create Event", func(t *testing.T) {
+		evc := event.CreateEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.CreateFunc(evc, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Update Event", func(t *testing.T) {
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: nil,
+			MetaNew:   pod,
+			ObjectNew: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.UpdateFunc(evu, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Delete Event", func(t *testing.T) {
+		evd := event.DeleteEvent{
+			Meta:               pod,
+			Object:             nil,
+			DeleteStateUnknown: false,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.DeleteFunc(evd, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Generic Event", func(t *testing.T) {
+		evg := event.GenericEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.GenericFunc(evg, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr)
+		assert.NoError(t, err)
+	})
+}
 
 type TestCase struct {
 	name           string
@@ -32,6 +116,8 @@ func TestZookeeper(t *testing.T) {
 		testcase2(),
 		testcase3(),
 		testcase4(),
+		testcase5(),
+		testcase6(),
 	}
 
 	for _, tt := range tests {
@@ -43,7 +129,6 @@ func TestZookeeper(t *testing.T) {
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
-					// Name:      "config1",
 					Name:      "zookeeper-instance",
 					Namespace: "default",
 				},
@@ -61,81 +146,8 @@ func TestZookeeper(t *testing.T) {
 	}
 }
 
-func newConfigInst() *contrail.Config {
-	trueVal := true
-	replica := int32(1)
-	return &contrail.Config{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "config1",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-		},
-		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
-				HostNetwork:  &trueVal,
-				Replicas:     &replica,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: contrail.ConfigConfiguration{
-				CassandraInstance:  "cassandra-instance",
-				ZookeeperInstance:  "zookeeper-instance",
-				KeystoneSecretName: "keystone-adminpass-secret",
-				Containers: map[string]*contrail.Container{
-					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
-					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"init2":             &contrail.Container{Image: "busybox"},
-					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
-					"redis":             &contrail.Container{Image: "redis"},
-					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
-				},
-			},
-		},
-	}
-}
-
-func newCassandra() *contrail.Cassandra {
-	trueVal := true
-	return &contrail.Cassandra{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "cassandra-instance",
-			Namespace: "default",
-		},
-		Status: contrail.CassandraStatus{Active: &trueVal},
-	}
-}
-
-func newZookeeperOLD() *contrail.Zookeeper {
-	trueVal := true
-	return &contrail.Zookeeper{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "zookeeper-instance",
-			Namespace: "default",
-		},
-		Status: contrail.ZookeeperStatus{Active: &trueVal},
-	}
-}
-
-func newRabbitmq() *contrail.Rabbitmq {
-	trueVal := true
-	return &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "rabbitmq-instance",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-		},
-		Status: contrail.RabbitmqStatus{Active: &trueVal},
-	}
-}
-
 func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
+	replicas := int32(1)
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -145,6 +157,9 @@ func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
 				Zookeepers: []*contrail.Zookeeper{zoo},
+			},
+			CommonConfiguration: contrail.CommonConfiguration{
+				Replicas: &replicas,
 			},
 		},
 		Status: contrail.ManagerStatus{},
@@ -177,20 +192,9 @@ func newZookeeper() *contrail.Zookeeper {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
-				Containers: map[string]*contrail.Container{
-					"zookeeper":         &contrail.Container{Image: "contrail-controller-zookeeper"},
-					"analyticsapi":      &contrail.Container{Image: "contrail-analytics-api"},
-					"api":               &contrail.Container{Image: "contrail-controller-config-api"},
-					"collector":         &contrail.Container{Image: "contrail-analytics-collector"},
-					"devicemanager":     &contrail.Container{Image: "contrail-controller-config-devicemgr"},
-					"dnsmasq":           &contrail.Container{Image: "contrail-controller-config-dnsmasq"},
-					"init":              &contrail.Container{Image: "python:alpine"},
-					"init2":             &contrail.Container{Image: "busybox"},
-					"nodeinit":          &contrail.Container{Image: "contrail-node-init"},
-					"redis":             &contrail.Container{Image: "redis"},
-					"schematransformer": &contrail.Container{Image: "contrail-controller-config-schema"},
-					"servicemonitor":    &contrail.Container{Image: "contrail-controller-config-svcmonitor"},
-					"queryengine":       &contrail.Container{Image: "contrail-analytics-query-engine"},
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "python:alpine"},
+					{Name: "zookeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},
 		},
@@ -213,9 +217,6 @@ func testcase1() *TestCase {
 		name: "create a new statefulset",
 		initObjs: []runtime.Object{
 			newManager(zoo),
-			newConfigInst(),
-			newCassandra(),
-			newRabbitmq(),
 			zoo,
 		},
 		expectedStatus: contrail.ZookeeperStatus{Active: &falseVal},
@@ -231,9 +232,6 @@ func testcase2() *TestCase {
 		name: "Rabbitmq deletion timestamp set",
 		initObjs: []runtime.Object{
 			newManager(zoo),
-			newConfigInst(),
-			newCassandra(),
-			newRabbitmq(),
 			zoo,
 		},
 		expectedStatus: contrail.ZookeeperStatus{Active: &falseVal},
@@ -245,16 +243,15 @@ func testcase3() *TestCase {
 	falseVal := false
 	zoo := newZookeeper()
 
-	command := []string{"bash", "/runner/run.sh"}
-	zoo.Spec.ServiceConfiguration.Containers["zookeeper"].Command = command
+	// dummy command
+	command := []string{"bash", "/runner/dummy.sh"}
+	utils.GetContainerFromList("zookeeper", zoo.Spec.ServiceConfiguration.Containers).Command = command
+	utils.GetContainerFromList("init", zoo.Spec.ServiceConfiguration.Containers).Command = command
 
 	tc := &TestCase{
 		name: "Preset Rabbitmq command",
 		initObjs: []runtime.Object{
 			newManager(zoo),
-			newConfigInst(),
-			newCassandra(),
-			newRabbitmq(),
 			zoo,
 		},
 		expectedStatus: contrail.ZookeeperStatus{Active: &falseVal},
@@ -270,12 +267,45 @@ func testcase4() *TestCase {
 		name: "Preset Rabbitmq Password",
 		initObjs: []runtime.Object{
 			newManager(zoo),
-			newConfigInst(),
-			newCassandra(),
-			newRabbitmq(),
 			zoo,
 		},
 		expectedStatus: contrail.ZookeeperStatus{Active: &falseVal},
+	}
+	return tc
+}
+
+func testcase5() *TestCase {
+	falseVal := false
+	zk := newZookeeper()
+
+	dt := meta.Now()
+	zk.ObjectMeta.DeletionTimestamp = &dt
+
+	tc := &TestCase{
+		name: "Zookeeper deletion timestamp set",
+		initObjs: []runtime.Object{
+			newManager(zk),
+			zk,
+		},
+		expectedStatus: contrail.ZookeeperStatus{Active: &falseVal},
+	}
+	return tc
+}
+
+func testcase6() *TestCase {
+	trueVal := false
+	zk := newZookeeper()
+
+	// zk.Status.Active := nil
+	zk.Status.Active = nil
+
+	tc := &TestCase{
+		name: "Zookeeper Active field not set",
+		initObjs: []runtime.Object{
+			newManager(zk),
+			zk,
+		},
+		expectedStatus: contrail.ZookeeperStatus{Active: &trueVal},
 	}
 	return tc
 }

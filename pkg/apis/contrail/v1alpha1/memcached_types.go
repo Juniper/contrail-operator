@@ -16,7 +16,7 @@ type MemcachedStatus struct {
 }
 
 type MemcachedConfiguration struct {
-	Container Container `json:"container"`
+	Containers []*Container `json:"containers"`
 	// +optional
 	ListenPort int32 `json:"listenPort,omitempty"`
 	// +optional

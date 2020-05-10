@@ -120,7 +120,6 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
           images:
             control: hub.juniper.net/contrail-nightly/contrail-controller-control-control:1908.47
             dns: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:1908.47

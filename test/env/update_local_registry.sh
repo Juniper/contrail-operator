@@ -12,67 +12,51 @@ pull_image()
 }
 
 while read line; do
-	pull_image opencontrailnightly "${line}"
+	pull_image svl-artifactory.juniper.net "${line}"
 done <<EOF
-contrail-controller-config-api:master.1115
-contrail-controller-config-devicemgr:master.1115
-contrail-controller-config-schema:master.1115
-contrail-controller-config-svcmonitor:master.1115
-contrail-controller-control-control:master.1115
-contrail-controller-control-dns:master.1115
-contrail-controller-control-named:master.1115
-contrail-controller-webui-job:master.1115
-contrail-controller-webui-web:master.1115
-contrail-kubernetes-kube-manager:master.1115
-contrail-kubernetes-cni-init:master.1115
-contrail-node-init:master.1115
-contrail-nodemgr:master.1115
-contrail-analytics-api:master.1115
-contrail-analytics-collector:master.1115
-contrail-analytics-query-engine:master.1115
-contrail-controller-config-devicemgr:master.1115
+contrail-operator.gcr.io/eng-prod-237922/contrail-operator:master.latest
+contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.latest
+contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:master.latest
+contrail-nightly/contrail-controller-config-api:master.1175
+contrail-nightly/contrail-controller-config-devicemgr:master.1175
+contrail-nightly/contrail-controller-config-schema:master.1175
+contrail-nightly/contrail-controller-config-svcmonitor:master.1175
+contrail-nightly/contrail-controller-control-control:master.1175
+contrail-nightly/contrail-controller-control-dns:master.1175
+contrail-nightly/contrail-controller-control-named:master.1175
+contrail-nightly/contrail-controller-webui-job:master.1175
+contrail-nightly/contrail-controller-webui-web:master.1175
+contrail-nightly/contrail-kubernetes-kube-manager:master.1175
+contrail-nightly/contrail-kubernetes-cni-init:master.1175
+contrail-nightly/contrail-node-init:master.1175
+contrail-nightly/contrail-nodemgr:master.1175
+contrail-nightly/contrail-controller-config-dnsmasq:master.1175
+contrail-nightly/contrail-analytics-api:master.1175
+contrail-nightly/contrail-analytics-collector:master.1175
+contrail-nightly/contrail-analytics-query-engine:master.1175
+contrail-nightly/contrail-controller-config-devicemgr:master.1175
+contrail-nightly/contrail-command:master.1175
+common-docker-third-party/contrail/postgresql-client:1.0
+common-docker-third-party/contrail/busybox:1.31
+common-docker-third-party/contrail/cassandra:3.11.4
+common-docker-third-party/contrail/cassandra:3.11.3
+common-docker-third-party/contrail/zookeeper:3.5.5
+common-docker-third-party/contrail/zookeeper:3.5.4-beta
+common-docker-third-party/contrail/postgres:12.2
+common-docker-third-party/contrail/python:3.8.2-alpine
+common-docker-third-party/contrail/redis:4.0.2
+common-docker-third-party/contrail/rabbitmq:3.7
+common-docker-third-party/contrail/rabbitmq:3.7.16
+common-docker-third-party/contrail/centos-binary-keystone-fernet:train-2005
+common-docker-third-party/contrail/centos-binary-keystone:train-2005
+common-docker-third-party/contrail/centos-binary-keystone-ssh:train-2005
+common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+common-docker-third-party/contrail/centos-binary-swift-container:train-2005
+common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
+common-docker-third-party/contrail/centos-binary-swift-object:train-2005
+common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005
+common-docker-third-party/contrail/centos-binary-swift-rsyncd:train-2005
+common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
+common-docker-third-party/contrail/centos-source-swift-base:train-2005
+common-docker-third-party/contrail/centos-binary-memcached:train-2005
 EOF
-
-while read line; do
-	pull_image kolla "${line}"
-done <<EOF
-centos-binary-keystone-fernet:train
-centos-binary-keystone:train
-centos-binary-keystone-ssh:train
-centos-binary-swift-account:train
-centos-binary-swift-container:train
-centos-binary-swift-object-expirer:train
-centos-binary-swift-object:train
-centos-binary-swift-proxy-server:train
-centos-binary-swift-rsyncd:train
-centos-binary-kolla-toolbox:train
-centos-source-swift-base:train
-centos-binary-memcached:train
-EOF
-
-while read line; do
-	pull_image docker.io "${line}"
-done <<EOF
-busybox:latest
-cassandra:3.11.4
-cassandra:3.11.3
-zookeeper:3.5.5
-zookeeper:3.5.4-beta
-postgres
-python:alpine
-redis:4.0.2
-rabbitmq:3.7
-rabbitmq:3.7.16
-EOF
-
-pull_image tmaier postgresql-client
-
-while read line; do
-	pull_image kaweue "${line}"
-done <<EOF
-contrail-statusmonitor:debug
-contrail-provisioner:master.1115
-EOF
-
-pull_image hub.juniper.net/contrail-nightly contrail-command:master.1115
-pull_image hub.juniper.net/contrail-nightly contrail-controller-config-dnsmasq:master.1115

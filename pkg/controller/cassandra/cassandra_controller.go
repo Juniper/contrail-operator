@@ -7,8 +7,8 @@ import (
 	"text/template"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -231,8 +231,8 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
-		configMap.Name:                          request.Name + "-" + instanceType + "-volume",
-		cacertificates.CsrSignerCAConfigMapName: csrSignerCaVolumeName,
+		configMap.Name:                     request.Name + "-" + instanceType + "-volume",
+		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -275,11 +275,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		if container.Name == "cassandra" {
 			command := []string{"bash", "-c",
 				"/docker-entrypoint.sh cassandra -f -Dcassandra.config=file:///mydata/${POD_IP}.yaml"}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = instanceContainer.Command
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			volumeMount := corev1.VolumeMount{
@@ -305,10 +305,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: cacertificates.CsrSignerCAMountPath,
+				MountPath: certificates.SignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			var jvmOpts string
 			if instance.Spec.ServiceConfiguration.MinHeapSize != "" {
@@ -362,16 +362,30 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	cassandraTruststorePassword := string(secret.Data["truststorePassword"])
 
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "In",
+						Values:   []string{request.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 	for idx, container := range statefulSet.Spec.Template.Spec.InitContainers {
 		if container.Name == "init" {
 			command := []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"}
-
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 			}
-			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-init",
@@ -384,19 +398,19 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			err = cassandraInit2CommandTemplate.Execute(&cassandraInit2CommandBuffer, cassandraInit2CommandData{
 				KeystorePassword:   cassandraKeystorePassword,
 				TruststorePassword: cassandraTruststorePassword,
-				CAFilePath:         cacertificates.CsrSignerCAFilepath,
+				CAFilePath:         certificates.SignerCAFilepath,
 			})
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			command := []string{"bash", "-c", cassandraInit2CommandBuffer.String()}
-
-			if instance.Spec.ServiceConfiguration.Containers[container.Name].Command == nil {
+			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = command
 			} else {
-				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instance.Spec.ServiceConfiguration.Containers[container.Name].Command
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 			}
-			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instance.Spec.ServiceConfiguration.Containers[container.Name].Image
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-keystore",
@@ -410,7 +424,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
-				MountPath: cacertificates.CsrSignerCAMountPath,
+				MountPath: certificates.SignerCAMountPath,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 		}

@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ExpansiveWorlds/instrumentedsql v0.0.0-20171218214018-45abb4b1947d // indirect
 	github.com/Juniper/contrail v0.0.0-20200330181744-e78e7561c8fd // indirect
-	github.com/Juniper/contrail-go-api v1.1.0
+	github.com/Juniper/contrail-go-api v1.1.1-0.20200414151206-7bb4264f1da4
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/bazelbuild/bazel-gazelle v0.20.0 // indirect
 	github.com/bazelbuild/rules_docker v0.14.1 // indirect

@@ -372,20 +372,20 @@ func deployPod(t *testing.T, fakeClient client.Client, podIP string, labels map[
 }
 
 func setCustomImages(cr contrail.SwiftStorage) *contrail.SwiftStorage {
-	cr.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"swiftObjectExpirer":       {Image: "image1"},
-		"swiftObjectUpdater":       {Image: "image2"},
-		"swiftObjectReplicator":    {Image: "image3"},
-		"swiftObjectAuditor":       {Image: "image4"},
-		"swiftObjectServer":        {Image: "image5"},
-		"swiftContainerUpdater":    {Image: "image6"},
-		"swiftContainerReplicator": {Image: "image7"},
-		"swiftContainerAuditor":    {Image: "image8"},
-		"swiftContainerServer":     {Image: "image9"},
-		"swiftAccountReaper":       {Image: "image10"},
-		"swiftAccountReplicator":   {Image: "image11"},
-		"swiftAccountAuditor":      {Image: "image12"},
-		"swiftAccountServer":       {Image: "image13"},
+	cr.Spec.ServiceConfiguration.Containers = []*contrail.Container{
+		{Name: "swiftObjectExpirer", Image: "image1"},
+		{Name: "swiftObjectUpdater", Image: "image2"},
+		{Name: "swiftObjectReplicator", Image: "image3"},
+		{Name: "swiftObjectAuditor", Image: "image4"},
+		{Name: "swiftObjectServer", Image: "image5"},
+		{Name: "swiftContainerUpdater", Image: "image6"},
+		{Name: "swiftContainerReplicator", Image: "image7"},
+		{Name: "swiftContainerAuditor", Image: "image8"},
+		{Name: "swiftContainerServer", Image: "image9"},
+		{Name: "swiftAccountReaper", Image: "image10"},
+		{Name: "swiftAccountReplicator", Image: "image11"},
+		{Name: "swiftAccountAuditor", Image: "image12"},
+		{Name: "swiftAccountServer", Image: "image13"},
 	}
 	return &cr
 }

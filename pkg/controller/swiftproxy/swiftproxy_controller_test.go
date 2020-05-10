@@ -12,11 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/cacertificates"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/swiftproxy"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -154,7 +155,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 			kubernetes := k8s.New(cl, scheme)
-			r := swiftproxy.NewReconciler(cl, scheme, kubernetes)
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes, &rest.Config{})
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -233,6 +234,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy-deployment",
@@ -251,12 +253,22 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 				Spec: core.PodSpec{
 					InitContainers: []core.Container{
 						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "localhost:5000/busybox",
+							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
+						{
 							Name:            "init",
 							Image:           "localhost:5000/centos-binary-kolla-toolbox:train",
 							ImagePullPolicy: core.PullAlways,
 							VolumeMounts: []core.VolumeMount{
 								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 							},
 							Command: []string{"ansible-playbook"},
 							Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -269,7 +281,8 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-							{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+							{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+							{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
@@ -277,12 +290,20 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						}, {
 							Name:  "KOLLA_CONFIG_STRATEGY",
 							Value: "COPY_ALWAYS",
+						}, {
+							Name: "POD_IP",
+							ValueFrom: &core.EnvVarSource{
+								FieldRef: &core.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
 						}},
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
-									Path: "/healthcheck",
-									Port: intstr.IntOrString{IntVal: int32(5070)},
+									Path:   "/healthcheck",
+									Scheme: "HTTPS",
+									Port:   intstr.IntOrString{IntVal: int32(5070)},
 								},
 							},
 						},
@@ -328,6 +349,31 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
+							Name: "swiftproxy-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "swiftproxy-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
+								},
+							},
+						},
+						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
@@ -341,7 +387,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: cacertificates.CsrSignerCAConfigMapName,
+										Name: certificates.SignerCAConfigMapName,
 									},
 								},
 							},
@@ -362,9 +408,10 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 
 func newSwiftProxyWithCustomImages() runtime.Object {
 	sp := newSwiftProxy(contrail.SwiftProxyStatus{})
-	sp.Spec.ServiceConfiguration.Containers = map[string]*contrail.Container{
-		"init": {Image: "image1"},
-		"api":  {Image: "image2"},
+	sp.Spec.ServiceConfiguration.Containers = []*contrail.Container{
+		{Name: "init", Image: "image1"},
+		{Name: "api", Image: "image2"},
+		{Name: "wait-for-ready-conf", Image: "image3", Command: []string{"cmd"}},
 	}
 
 	return sp
@@ -374,12 +421,22 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 	deployment := newExpectedDeployment(apps.DeploymentStatus{})
 	deployment.Spec.Template.Spec.InitContainers = []core.Container{
 		{
+			Name:            "wait-for-ready-conf",
+			ImagePullPolicy: core.PullAlways,
+			Image:           "image3",
+			Command:         []string{"cmd"},
+			VolumeMounts: []core.VolumeMount{{
+				Name:      "status",
+				MountPath: "/tmp/podinfo",
+			}},
+		},
+		{
 			Name:            "init",
 			Image:           "image1",
 			ImagePullPolicy: core.PullAlways,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			},
 			Command: []string{"ansible-playbook"},
 			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
@@ -393,13 +450,15 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: cacertificates.CsrSignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
 				HTTPGet: &core.HTTPGetAction{
-					Path: "/healthcheck",
-					Port: intstr.IntOrString{IntVal: int32(5070)},
+					Path:   "/healthcheck",
+					Scheme: "HTTPS",
+					Port:   intstr.IntOrString{IntVal: int32(5070)},
 				},
 			},
 		},
@@ -409,6 +468,13 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		}, {
 			Name:  "KOLLA_CONFIG_STRATEGY",
 			Value: "COPY_ALWAYS",
+		}, {
+			Name: "POD_IP",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
 		}},
 	}}
 
@@ -514,6 +580,9 @@ func newSwiftSecret() *core.Secret {
 
 const boostrapScript = `
 #!/bin/bash
+ln -s /var/lib/kolla/certificates/server-${POD_IP}.crt /etc/swift/proxy.crt
+ln -s /var/lib/kolla/certificates/server-key-${POD_IP}.pem /etc/swift/proxy.key
+
 ln -fs /etc/rings/account.ring.gz /etc/swift/account.ring.gz
 ln -fs /etc/rings/object.ring.gz /etc/swift/object.ring.gz
 ln -fs /etc/rings/container.ring.gz /etc/swift/container.ring.gz
@@ -554,6 +623,8 @@ log_name = swift-proxy-server
 log_facility = local0
 log_level = INFO
 workers = 2
+cert_file = /etc/swift/proxy.crt
+key_file = /etc/swift/proxy.key
 
 [pipeline:main]
 pipeline = catch_errors gatekeeper healthcheck cache container_sync bulk tempurl ratelimit authtoken keystoneauth container_quotas account_quotas slo dlo proxy-server
@@ -650,9 +721,9 @@ const registerPlaybook = `
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "http://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "http://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "https://{{ swift_endpoint }}/v1", interface: "admin" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
+        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
     - name: create service project
       os_project:
         name: "service"
@@ -704,3 +775,5 @@ swift_user: "otherUser"
 
 ca_cert_filepath: "/etc/ssl/certs/kubernetes/ca-bundle.crt"
 `
+
+const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
