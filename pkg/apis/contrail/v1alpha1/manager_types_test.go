@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestManagerTypeTwo(t *testing.T) {
@@ -55,7 +55,7 @@ func TestManagerTypeTwo(t *testing.T) {
 		status := managerCR.Update(cl)
 		if status != nil {
 			t.Fatalf("Testing Update in manager_types.: (%v)", status)
-		}	
+		}
 	})
 
 	t.Run("Testing Delete in manager_types.", func(t *testing.T) {
@@ -121,10 +121,11 @@ func TestManagerTypeTwo(t *testing.T) {
 	// })
 	//  nothing to verify
 }
+
 var (
-createNew = true
-replicas int32 = 3
-falseVal = false
+	createNew       = true
+	replicas  int32 = 3
+	falseVal        = false
 )
 
 var managerCR = &contrail.Manager{
@@ -149,9 +150,9 @@ var managerCR = &contrail.Manager{
 		KeystoneSecretName: "keystone-adminpass-secret",
 	},
 	Status: contrail.ManagerStatus{
-		Cassandras:       mgrstatusCassandras,
-		Zookeepers:       mgrstatusZookeeper,
-		Controls:         mgrstatusControl,
+		Cassandras: mgrstatusCassandras,
+		Zookeepers: mgrstatusZookeeper,
+		Controls:   mgrstatusControl,
 	},
 }
 
@@ -252,9 +253,9 @@ var rabbitmq = &contrail.Rabbitmq{
 	},
 	Spec: contrail.RabbitmqSpec{
 		CommonConfiguration: contrail.CommonConfiguration{
-			Activate:     &trueVal,
-			Create:       &createNew,
-			Replicas:     &replicas,
+			Activate: &trueVal,
+			Create:   &createNew,
+			Replicas: &replicas,
 		},
 	},
 	Status: contrail.RabbitmqStatus{Active: &falseVal},
@@ -321,7 +322,7 @@ var postgres = &contrail.Postgres{
 }
 
 var (
-	trueVal  = true
+	trueVal = true
 )
 
 var NameValue = "cassandra"
