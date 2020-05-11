@@ -10,17 +10,22 @@ type certificateSubject struct {
 	ip       string
 }
 
-func createCertificateSubjects(pods *core.PodList, hostNetwork bool) []certificateSubject {
-	subject := []certificateSubject{}
-	for _, pod := range pods.Items {
+type certificateSubjects struct {
+	pods        *core.PodList
+	hostNetwork bool
+}
+
+func (c certificateSubjects) createCertificateSubjects() []certificateSubject {
+	subjects := []certificateSubject{}
+	for _, pod := range c.pods.Items {
 		var hostname string
-		if hostNetwork {
+		if c.hostNetwork {
 			hostname = pod.Spec.NodeName
 		} else {
 			hostname = pod.Spec.Hostname
 		}
-		subject = append(subject, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP})
+		subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP})
 	}
-	return subject
+	return subjects
 
 }

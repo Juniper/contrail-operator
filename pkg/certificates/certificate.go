@@ -26,6 +26,7 @@ type Certificate struct {
 func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
 	secretName := owner.GetName() + "-secret-certificates"
 	kubernetes := k8s.New(cl, scheme)
+	subjects := certificateSubjects{pods, hostNetwork}
 	return &Certificate{
 		client: cl,
 		scheme: scheme,
@@ -35,7 +36,7 @@ func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, r
 			client: cl,
 			owner:  owner,
 		},
-		certificateSubjects: createCertificateSubjects(pods, hostNetwork),
+		certificateSubjects: subjects.createCertificateSubjects(),
 	}
 }
 

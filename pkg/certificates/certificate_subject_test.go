@@ -88,6 +88,7 @@ func TestCertificateSubject(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, createCertificateSubjects(test.podList, test.hostNetwork), test.expectedSubjects)
+		subs := certificateSubjects{test.podList, test.hostNetwork}
+		assert.Equal(t, subs.createCertificateSubjects(), test.expectedSubjects)
 	}
 }
