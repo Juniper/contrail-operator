@@ -60,7 +60,7 @@ func TestCertificateSigning(t *testing.T) {
 	}
 
 	certSigner := signer{cl, owner}
-	certBytes, err := certSigner.SignCertificate(certificateTemplate, certPrivKey.Public())
+	certBytes, err := certSigner.SignCertificate(certificateTemplate, *certPrivKey)
 	assert.NoError(t, err)
 
 	pemBlock, restData := pem.Decode(certBytes)

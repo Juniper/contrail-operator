@@ -1,12 +1,15 @@
 package certificates
 
 import (
-	"crypto"
+	"context"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -15,8 +18,14 @@ type signer struct {
 	owner  metav1.Object
 }
 
-func (s *signer) SignCertificate(certTemplate x509.Certificate, publicKey crypto.PublicKey) ([]byte, error) {
-	secret, err := getCaCertSecret(s.client, s.owner)
+func (s *signer) getCaCertSecret() (*corev1.Secret, error) {
+	secret := &corev1.Secret{}
+	err := s.client.Get(context.Background(), types.NamespacedName{Name: caSecretName, Namespace: s.owner.GetNamespace()}, secret)
+	return secret, err
+}
+
+func (s *signer) SignCertificate(certTemplate x509.Certificate, privateKey rsa.PrivateKey) ([]byte, error) {
+	secret, err := s.getCaCertSecret()
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret %s with ca cert: %w", caSecretName, err)
@@ -44,7 +53,7 @@ func (s *signer) SignCertificate(certTemplate x509.Certificate, publicKey crypto
 		return nil, fmt.Errorf("failed to parse ca cert: %w", err)
 	}
 
-	certBytes, err := x509.CreateCertificate(rand.Reader, &certTemplate, caCert, publicKey, caCertPrivKey)
+	certBytes, err := x509.CreateCertificate(rand.Reader, &certTemplate, caCert, privateKey.Public(), caCertPrivKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign certificate: %w", err)

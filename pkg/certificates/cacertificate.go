@@ -49,7 +49,7 @@ func (c *CACertificate) EnsureExists() error {
 }
 
 func (c *CACertificate) GetCaCert() ([]byte, error) {
-	secret, err := getCaCertSecret(c.client, c.owner)
+	secret, err := c.getCaCertSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +79,12 @@ func (caCertSecret) FillSecret(secret *corev1.Secret) error {
 		signerCAPrivateKeyFilename: caCertPrivKey,
 	}
 	return nil
+}
+
+func (c *CACertificate) getCaCertSecret() (*corev1.Secret, error) {
+	secret := &corev1.Secret{}
+	err := c.client.Get(context.Background(), types.NamespacedName{Name: caSecretName, Namespace: c.owner.GetNamespace()}, secret)
+	return secret, err
 }
 
 func caCertExistsInSecret(secret *corev1.Secret) bool {
@@ -116,10 +122,4 @@ func generateCaCerttificate() ([]byte, []byte, error) {
 	}
 
 	return caCertPem, caCertPrivKeyPem, nil
-}
-
-func getCaCertSecret(client client.Client, owner metav1.Object) (*corev1.Secret, error) {
-	secret := &corev1.Secret{}
-	err := client.Get(context.Background(), types.NamespacedName{Name: caSecretName, Namespace: owner.GetNamespace()}, secret)
-	return secret, err
 }

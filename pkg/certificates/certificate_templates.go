@@ -16,6 +16,7 @@ const (
 	caCertValidityPeriod = 10 * 365 * 24 * time.Hour // 10 years
 	certValidityPeriod   = 10 * 365 * 24 * time.Hour // 10 years
 	caCertKeyLength      = 2048
+	certKeyLength        = 2048
 )
 
 func generateCaCerttificateTemplate() (x509.Certificate, *rsa.PrivateKey, error) {
@@ -54,7 +55,7 @@ func generateCaCerttificateTemplate() (x509.Certificate, *rsa.PrivateKey, error)
 }
 
 func generateCertificateTemplate(ipAddress string, hostname string) (x509.Certificate, *rsa.PrivateKey, error) {
-	certPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	certPrivKey, err := rsa.GenerateKey(rand.Reader, certKeyLength)
 
 	if err != nil {
 		return x509.Certificate{}, nil, fmt.Errorf("failed to generate private key: %w", err)
