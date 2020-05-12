@@ -57,18 +57,6 @@ func (suite *ClusterInfoSuite) SetupTest() {
 
 }
 
-func (suite *ClusterInfoSuite) TestKubernetesAPISSLPort() {
-	APISSLPort, err := suite.ClusterInfo.KubernetesAPISSLPort()
-	suite.Assert().NoError(err)
-	suite.Assert().Equal(APISSLPort, 6443, "API SSL port should be 6443")
-}
-
-func (suite *ClusterInfoSuite) TestKubernetesAPIServer() {
-	APIServer, err := suite.ClusterInfo.KubernetesAPIServer()
-	suite.Assert().NoError(err)
-	suite.Assert().Equal(APIServer, "10.255.254.3", "API Server should be 10.255.254.3")
-}
-
 func (suite *ClusterInfoSuite) TestKubernetesClusterName() {
 	clusterName, err := suite.ClusterInfo.KubernetesClusterName()
 	suite.Assert().NoError(err)
@@ -95,21 +83,6 @@ func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
 	suite.Assert().Equal(suite.CNIDirs.CNIConfigFilesDirectory(), "/etc/cni", "Path should be /etc/cni")
 }
 
-func (suite *ClusterInfoSuite) TestMissingEndpointPort() {
-	var wrongKubeadmConfig = `---
-    controlPlaneEndpoint: 10.0.0.1
-    clusterName: test
-    networking:
-      podSubnet: 192.168.0.1
-      serviceSubnet: 10.0.0.0`
-	var ci v1alpha1.KubemanagerClusterInfo
-	ci = k8s.ClusterConfig{Client: getClientWithConfigMap(wrongKubeadmConfig)}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-}
-
 func (suite *ClusterInfoSuite) TestUnmarshableKubeadmConfig() {
 	var wrongKubeadmConfig = `---
     - controlPlaneEndpoint: 10.0.0.1:6443
@@ -121,11 +94,7 @@ func (suite *ClusterInfoSuite) TestUnmarshableKubeadmConfig() {
         - 10.0.0.0`
 	var ci v1alpha1.KubemanagerClusterInfo
 	ci = k8s.ClusterConfig{Client: getClientWithConfigMap(wrongKubeadmConfig)}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesClusterName()
+	_, err := ci.KubernetesClusterName()
 	suite.Assert().Error(err)
 	_, err = ci.PodSubnets()
 	suite.Assert().Error(err)
@@ -137,11 +106,7 @@ func (suite *ClusterInfoSuite) TestMissingConfigMap() {
 	fakeClientset := fake.NewSimpleClientset()
 	var ci v1alpha1.KubemanagerClusterInfo
 	ci = k8s.ClusterConfig{Client: fakeClientset.CoreV1()}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesClusterName()
+	_, err := ci.KubernetesClusterName()
 	suite.Assert().Error(err)
 	_, err = ci.PodSubnets()
 	suite.Assert().Error(err)

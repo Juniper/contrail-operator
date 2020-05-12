@@ -67,41 +67,10 @@ sshKey: |
   ssh-rsa AAAAAAA test@test-user
 `
 
-var consoleConfig = `---
-apiVersion: console.openshift.io/v1
-auth:
-  clientID: console
-  clientSecretFile: /var/oauth-config/clientSecret
-  oauthEndpointCAFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-clusterInfo:
-  consoleBaseAddress: https://console-openshift-console.apps.test.user.test.com
-  masterPublicURL: https://api.test.user.test.com:6443
-customization:
-  branding: ocp
-  documentationBaseURL: https://docs.openshift.com/container-platform/4.3/
-kind: ConsoleConfig
-providers: {}
-servingInfo:
-  bindAddress: https://0.0.0.0:8443
-  certFile: /var/serving-cert/tls.crt
-  keyFile: /var/serving-cert/tls.key`
-
 func (suite *ClusterInfoSuite) SetupTest() {
-	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, consoleConfig)
+	coreV1Interface := getClientWithConfigMaps(clusterConfigV1)
 	suite.ClusterInfo = openshift.ClusterConfig{Client: coreV1Interface}
 	suite.CNIDirs = openshift.ClusterConfig{Client: coreV1Interface}
-}
-
-func (suite *ClusterInfoSuite) TestKubernetesAPISSLPort() {
-	APISSLPort, err := suite.ClusterInfo.KubernetesAPISSLPort()
-	suite.Assert().NoError(err)
-	suite.Assert().Equal(APISSLPort, 6443, "API SSL port should be 6443")
-}
-
-func (suite *ClusterInfoSuite) TestKubernetesAPIServer() {
-	APIServer, err := suite.ClusterInfo.KubernetesAPIServer()
-	suite.Assert().NoError(err)
-	suite.Assert().Equal(APIServer, "api.test.user.test.com", "API Server should be api.test.user.test.com")
 }
 
 func (suite *ClusterInfoSuite) TestKubernetesClusterName() {
@@ -130,51 +99,11 @@ func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
 	suite.Assert().Equal(suite.CNIDirs.CNIConfigFilesDirectory(), "/etc/kubernetes/cni", "Path should be /etc/kubernetes/cni")
 }
 
-func (suite *ClusterInfoSuite) TestWrongMasterPublicURL() {
-	var wrongConsoleConfig = `---
-    clusterInfo:
-      masterPublicURL: https://api/test/user/test/com:6443`
-	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-}
-
-func (suite *ClusterInfoSuite) TestWrongMasterURLPortFormat() {
-	var wrongConsoleConfig = `---
-    clusterInfo:
-      masterPublicURL: https://api/test/user/test/com:fail`
-	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-}
-
-func (suite *ClusterInfoSuite) TestUnmarshableMasterPublicURL() {
-	var wrongConsoleConfig = `---
-    clusterInfo:
-      - masterPublicURL: https://api.test.user.test.com:6443`
-	var ci v1alpha1.KubemanagerClusterInfo
-	ci = openshift.ClusterConfig{Client: getClientWithConfigMaps(``, wrongConsoleConfig)}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-}
-
 func (suite *ClusterInfoSuite) TestMissingConfigMap() {
 	fakeClientset := fake.NewSimpleClientset()
 	var ci v1alpha1.KubemanagerClusterInfo
 	ci = openshift.ClusterConfig{Client: fakeClientset.CoreV1()}
-	_, err := ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesClusterName()
+	_, err := ci.KubernetesClusterName()
 	suite.Assert().Error(err)
 	_, err = ci.PodSubnets()
 	suite.Assert().Error(err)
@@ -200,9 +129,8 @@ func getConfigMap(name, namespace, dataKey, data string) *core.ConfigMap {
 	return cm
 }
 
-func getClientWithConfigMaps(clusterConfig, consoleConfig string) typedCorev1.CoreV1Interface {
+func getClientWithConfigMaps(clusterConfig string) typedCorev1.CoreV1Interface {
 	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfig)
-	consoleMap := getConfigMap("console-config", "openshift-console", "console-config.yaml", consoleConfig)
-	fakeClientset := fake.NewSimpleClientset(ccv1Map, consoleMap)
+	fakeClientset := fake.NewSimpleClientset(ccv1Map)
 	return fakeClientset.CoreV1()
 }

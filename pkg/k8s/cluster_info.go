@@ -1,9 +1,6 @@
 package k8s
 
 import (
-	"net"
-	"strconv"
-
 	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,52 +10,6 @@ import (
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
 	Client typedCorev1.CoreV1Interface
-}
-
-// KubernetesAPISSLPort gathers SSL Port from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
-	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
-	if err != nil {
-		return 0, err
-	}
-	clusterConfig := kcm.Data["ClusterConfiguration"]
-	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMap{}
-	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
-		return 0, err
-	}
-	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint
-	_, kubernetesAPISSLPort, err := net.SplitHostPort(controlPlaneEndpoint)
-	if err != nil {
-		return 0, err
-	}
-	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
-	if err != nil {
-		return 0, err
-	}
-	return kubernetesAPISSLPortInt, nil
-}
-
-// KubernetesAPIServer gathers API Server from Kubernetes Cluster via kubeadm-config ConfigMap
-func (c ClusterConfig) KubernetesAPIServer() (string, error) {
-	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	clusterConfig := kcm.Data["ClusterConfiguration"]
-	clusterConfigByte := []byte(clusterConfig)
-	clusterConfigMap := configMap{}
-	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
-		return "", err
-	}
-	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint
-	kubernetesAPIServer, _, err := net.SplitHostPort(controlPlaneEndpoint)
-	if err != nil {
-		return "", err
-	}
-	return kubernetesAPIServer, nil
 }
 
 // KubernetesClusterName gathers cluster name from Kubernetes Cluster via kubeadm-config ConfigMap
@@ -123,9 +74,8 @@ func (c ClusterConfig) CNIConfigFilesDirectory() string {
 }
 
 type configMap struct {
-	ControlPlaneEndpoint string     `yaml:"controlPlaneEndpoint"`
-	ClusterName          string     `yaml:"clusterName"`
-	Networking           networking `yaml:"networking"`
+	ClusterName string     `yaml:"clusterName"`
+	Networking  networking `yaml:"networking"`
 }
 
 type networking struct {

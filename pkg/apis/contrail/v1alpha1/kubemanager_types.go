@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
+	"net"
+	"net/url"
 	"sort"
 	"strconv"
 
@@ -157,16 +159,21 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
-		apiSSLPort, err := cinfo.KubernetesAPISSLPort()
+		clientConfig, err := GetClientConfig()
+		endpointURL, err := url.Parse(clientConfig.Host)
 		if err != nil {
 			return err
 		}
-		kubemanagerConfig.KubernetesAPISSLPort = &apiSSLPort
-		APIServer, err := cinfo.KubernetesAPIServer()
+		kubernetesAPIServer, kubernetesAPISSLPort, err := net.SplitHostPort(endpointURL.Host)
 		if err != nil {
 			return err
 		}
-		kubemanagerConfig.KubernetesAPIServer = APIServer
+		kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
+		if err != nil {
+			return err
+		}
+		kubemanagerConfig.KubernetesAPISSLPort = &kubernetesAPISSLPortInt
+		kubemanagerConfig.KubernetesAPIServer = kubernetesAPIServer
 		clusterName, err := cinfo.KubernetesClusterName()
 		if err != nil {
 			return err
@@ -467,8 +474,6 @@ func (c *Kubemanager) ConfigurationParameters() interface{} {
 
 //KubemanagerClusterInfo is interface for gathering information about cluster
 type KubemanagerClusterInfo interface {
-	KubernetesAPISSLPort() (int, error)
-	KubernetesAPIServer() (string, error)
 	KubernetesClusterName() (string, error)
 	PodSubnets() (string, error)
 	ServiceSubnets() (string, error)
