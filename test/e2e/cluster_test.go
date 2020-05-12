@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -119,7 +120,10 @@ func TestCluster(t *testing.T) {
 				assert.NoError(t, err)
 				res, err := configClient.GetResource("/config-nodes")
 				assert.NoError(t, err)
-				assert.NotEmpty(t, res)
+				var configResponse config.ConfigNodeResponse
+				err = json.Unmarshal(res, &configResponse)
+				assert.NoError(t, err)
+				assert.True(t, configResponse.IsValidConfigApiResponse())
 			})
 
 		})
