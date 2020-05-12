@@ -96,7 +96,8 @@ func init() {
 func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client,
-	cinfo KubemanagerClusterInfo) error {
+	cinfo KubemanagerClusterInfo,
+	endpointIP string, endpointPort int) error {
 	instanceConfigMapName := request.Name + "-" + "kubemanager" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	if err := client.Get(
@@ -157,16 +158,8 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	}
 
 	if *kubemanagerConfig.UseKubeadmConfig {
-		apiSSLPort, err := cinfo.KubernetesAPISSLPort()
-		if err != nil {
-			return err
-		}
-		kubemanagerConfig.KubernetesAPISSLPort = &apiSSLPort
-		APIServer, err := cinfo.KubernetesAPIServer()
-		if err != nil {
-			return err
-		}
-		kubemanagerConfig.KubernetesAPIServer = APIServer
+		kubemanagerConfig.KubernetesAPISSLPort = &endpointPort
+		kubemanagerConfig.KubernetesAPIServer = endpointIP
 		clusterName, err := cinfo.KubernetesClusterName()
 		if err != nil {
 			return err

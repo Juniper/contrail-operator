@@ -3,6 +3,9 @@ package kubemanager
 import (
 	"context"
 	"reflect"
+	"net"
+	"net/url"
+	"strconv"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
@@ -492,7 +495,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 	if len(podIPList.Items) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo); err != nil {
+		endpointIP, endpointPort, err := getEndpointInfo(r.Config.Host)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.clusterInfo, endpointIP, endpointPort); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -537,4 +544,20 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		}
 	}
 	return reconcile.Result{}, nil
+}
+
+func getEndpointInfo(host string) (string, int, error) {
+	endpointURL, err := url.Parse(host)
+	if err != nil {
+		return "", 0, err
+	}
+	kubernetesAPISSLIP, kubernetesAPISSLPort, err := net.SplitHostPort(endpointURL.Host)
+	if err != nil {
+		return "", 0, err
+	}
+	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
+	if err != nil {
+		return "", 0, err
+	}
+	return kubernetesAPISSLIP, kubernetesAPISSLPortInt, nil
 }
