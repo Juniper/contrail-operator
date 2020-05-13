@@ -115,6 +115,7 @@ func main() {
 	var cinfo v1alpha1.KubemanagerClusterInfo
 	var cniDirs vrouter.CNIDirectoriesInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
+		clientset.
 		config := openshift.ClusterConfig{Client: clientset.CoreV1()}
 		cinfo = config
 		cniDirs = config

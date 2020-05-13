@@ -3,13 +3,15 @@ package openshift
 import (
 	"net"
 	"net/url"
-	"strconv"
+	"errors"
 
 	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	openshiftv1 "github.com/openshift/api/build/v1"
+	buildv1 "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
@@ -20,24 +22,24 @@ type ClusterConfig struct {
 }
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
-func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
-	masterPublicURL, err := getMasterPublicURL(c.Client)
+func (c ClusterConfig) KubernetesAPISSLPort() (int32, error) {
+	endpointsClient := c.Client.Endpoints("default")
+	kubernetesEndpoint, err := endpointsClient.Get("kubernetes", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
-	_, kubernetesAPISSLPort, err := net.SplitHostPort(masterPublicURL.Host)
-	if err != nil {
-		return 0, err
+	endpointPorts := kubernetesEndpoint.Subsets[0].Ports
+	for _, port := range endpointPorts {
+		if port.Name == "https" {
+			return port.Port, nil
+		}
 	}
-	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
-	if err != nil {
-		return 0, err
-	}
-	return kubernetesAPISSLPortInt, nil
+	return 0, errors.New("No https port found")
 }
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
+	dnsClient := c.Client.
 	masterPublicURL, err := getMasterPublicURL(c.Client)
 	if err != nil {
 		return "", err
@@ -100,6 +102,7 @@ func (c ClusterConfig) CNIConfigFilesDirectory() string {
 }
 
 func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
+	
 	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
 	consoleCM, err := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
 	if err != nil {
