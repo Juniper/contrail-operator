@@ -133,7 +133,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(command, commandPods); err != nil {
+	if err := r.ensureCertificatesExist(command, commandPods, instanceType); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -525,12 +525,12 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	return nil
 }
 
-func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, pods *core.PodList) error {
+func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, pods *core.PodList, instanceType string) error {
 	hostNetwork := true
 	if command.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.New(r.client, r.scheme, command, r.config, pods, "command", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificate(r.client, r.scheme, command, r.config, pods, instanceType, hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {

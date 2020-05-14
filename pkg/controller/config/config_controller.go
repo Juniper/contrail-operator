@@ -706,7 +706,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if config.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *config.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, config, r.Manager.GetConfig(), podIPList, hostNetwork); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, config, r.Manager.GetConfig(), podIPList, hostNetwork, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 

@@ -2,10 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "cluster_info.go",
-        "csr_signer_ca_openshift.go",
-    ],
+    srcs = ["cluster_info.go"],
     importpath = "github.com/Juniper/contrail-operator/pkg/openshift",
     visibility = ["//visibility:public"],
     deps = [
@@ -18,16 +15,11 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "cluster_info_test.go",
-        "csr_signer_ca_openshift_test.go",
-    ],
+    srcs = ["cluster_info_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
-        "//pkg/certificates:go_default_library",
         "//pkg/controller/vrouter:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//suite:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
