@@ -206,6 +206,9 @@ func (m Manager) IsClusterReady() bool {
 	if m.Spec.Services.Swift != nil && !m.Status.Swift.ready() {
 		return false
 	}
+	if m.Spec.Services.Memcached != nil && !m.Status.Memcached.ready() {
+		return false
+	}
 	return true
 }
 
