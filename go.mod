@@ -47,7 +47,6 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
 	github.com/shopspring/decimal v0.0.0-20191009025716-f1972eb1d1f5 // indirect
-	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
 	github.com/sigma/go-inotify v0.0.0-20181102212354-c87b6cf5033d // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71 // indirect
@@ -58,7 +57,7 @@ require (
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible // indirect
 	github.com/yudai/hcl v0.0.0-20151013225006-5fa2393b3552 // indirect
 	go.starlark.net v0.0.0-20200326215636-e8819e807894 // indirect
-	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
+	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
 	google.golang.org/genproto v0.0.0-20200218151345-dad8c97a84f5 // indirect
 	google.golang.org/grpc v1.27.1 // indirect
@@ -67,13 +66,14 @@ require (
 	gopkg.in/volatiletech/null.v6 v6.0.0-20170828023728-0bef4e07ae1b // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4
-	k8s.io/apiextensions-apiserver v0.0.0
+	k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery v0.17.4
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c
 	k8s.io/kubernetes v1.16.2
-	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/kind v0.7.0
+	sigs.k8s.io/cluster-api v0.3.5
+	sigs.k8s.io/controller-runtime v0.5.2
+	sigs.k8s.io/kind v0.7.1-0.20200303021537-981bd80d3802
 )
 
 // Pinned to kubernetes-1.16.2

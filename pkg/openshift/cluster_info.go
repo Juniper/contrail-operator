@@ -1,17 +1,22 @@
 package openshift
 
 import (
-	"net"
+	// "net"
 	"net/url"
 	"errors"
 
 	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	openshiftv1 "github.com/openshift/api/build/v1"
-	buildv1 "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
+	"sigs.k8s.io/cluster-api/api/v1alpha2"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
+	"k8s.io/apimachinery/pkg/runtime"
+	// openshiftv1 "github.com/openshift/api/build/v1"
+	// buildv1 "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
@@ -22,7 +27,7 @@ type ClusterConfig struct {
 }
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
-func (c ClusterConfig) KubernetesAPISSLPort() (int32, error) {
+func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	endpointsClient := c.Client.Endpoints("default")
 	kubernetesEndpoint, err := endpointsClient.Get("kubernetes", metav1.GetOptions{})
 	if err != nil {
@@ -31,7 +36,7 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int32, error) {
 	endpointPorts := kubernetesEndpoint.Subsets[0].Ports
 	for _, port := range endpointPorts {
 		if port.Name == "https" {
-			return port.Port, nil
+			return int(port.Port), nil
 		}
 	}
 	return 0, errors.New("No https port found")
@@ -39,16 +44,26 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int32, error) {
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
-	dnsClient := c.Client.
-	masterPublicURL, err := getMasterPublicURL(c.Client)
-	if err != nil {
-		return "", err
-	}
-	kubernetesAPIServer, _, err := net.SplitHostPort(masterPublicURL.Host)
-	if err != nil {
-		return "", err
-	}
-	return kubernetesAPIServer, nil
+	config, _ := rest.InClusterConfig()
+	dynClient, _ := dynamic.NewForConfig(config)
+	resourceScheme := v1alpha2.SchemeBuilder.GroupVersion.WithResource("dnses")
+	resp, _ := dynClient.Resource(resourceScheme).Namespace("default").Get("cluster", metav1.GetOptions{})
+	unstr := resp.UnstructuredContent()
+	var dns dnsType
+	_ = runtime.DefaultUnstructuredConverter.FromUnstructured(unstr, &dns)
+	netLogger := log.WithValues("APIServer", dns.Spec.BaseDomain)
+	netLogger.Info("I was able to make dns resource with this domain")
+
+	return dns.Spec.BaseDomain, nil
+	// masterPublicURL, err := getMasterPublicURL(c.Client)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// kubernetesAPIServer, _, err := net.SplitHostPort(masterPublicURL.Host)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// return kubernetesAPIServer, nil
 }
 
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap
@@ -161,4 +176,14 @@ type networking struct {
 
 type clusterNetwork struct {
 	CIDR string `yaml:"cidr"`
+}
+
+type dnsType struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec dnsSpec `json:"spec,omitempty"`
+}
+
+type dnsSpec struct {
+	BaseDomain string `json:"baseDomain,omitempty"`
 }
