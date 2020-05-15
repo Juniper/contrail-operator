@@ -40,10 +40,23 @@ func (c *VrouterNode) Create(nodeList []*VrouterNode, nodeName string, contrailC
 				for _, gsc := range gscObjects {
 					gscObject = gsc
 					vncNode := &contrailTypes.VirtualRouter{}
-					vncNode.SetFQName("", []string{"default-global-system-config", nodeName})
+					vncNode.SetFQName(node.Hostname, []string{"default-global-system-config", nodeName})
 					vncNode.SetVirtualRouterIpAddress(node.IPAddress)
 					vncNode.SetParent(gscObject)
 					err := contrailClient.Create(vncNode)
+					if err != nil {
+						return err
+					}
+					network, err := contrailTypes.VirtualNetworkByName(contrailClient, "default-domain:default-project:ip-fabric")
+					if err != nil {
+						return err
+					}
+					vncVMI := &contrailTypes.VirtualMachineInterface{}
+					vncVMI.SetFQName("virtual-router", []string{node.Hostname + "vhost0"})
+					vncVMI.SetParent(vncNode)
+					vncVMI.SetVirtualNetworkList([]contrail.ReferencePair{{Object: network}})
+					vncVMI.SetVirtualMachineInterfaceDisablePolicy(false)
+					err = contrailClient.Create(vncVMI)
 					if err != nil {
 						return err
 					}
