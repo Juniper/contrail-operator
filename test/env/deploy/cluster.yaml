@@ -124,7 +124,7 @@ spec:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: provisioner
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:master.latest
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:master.latest
     rabbitmq:
       metadata:
         labels:
