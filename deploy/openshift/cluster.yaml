@@ -104,7 +104,7 @@ spec:
             init:
               image: python:alpine
             provisioner:
-              image: dysproz/contrail-provisioner
+              image: dysproz/contrail-operator-provisioner
     rabbitmq:
       metadata:
         labels:
