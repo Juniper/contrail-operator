@@ -78,14 +78,14 @@ func TestManager(t *testing.T) {
 }
 
 var initialVersionMap = map[string]string{
-	"rabbitmq":               "3.7.16",
-	"cassandra":              "3.11.3",
-	"zookeeper":              "3.5.4-beta",
-	"config":                 "master.1175",
-	"control":                "master.1175",
-	"kubemanager":            "master.1175",
-	"contrail-provisioner":   scmBranch + "." + scmRevision,
-	"contrail-statusmonitor": scmBranch + "." + scmRevision,
+	"rabbitmq":                      "3.7.16",
+	"cassandra":                     "3.11.3",
+	"zookeeper":                     "3.5.4-beta",
+	"config":                        "2005.11",
+	"control":                       "2005.11",
+	"kubemanager":                   "2005.11",
+	"contrail-operator-provisioner": scmBranch + "." + scmRevision,
+	"contrail-statusmonitor":        scmBranch + "." + scmRevision,
 }
 
 var targetVersionMap = map[string]string{
@@ -342,7 +342,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
 							Containers: []*v1alpha1.Container{
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
-								{Name: "provisioner", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:" + versionMap["contrail-provisioner"]},
+								{Name: "provisioner", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
 							},
 						},
 					},
