@@ -80,7 +80,10 @@ func TestCluster(t *testing.T) {
 
 			utils.GetContainerFromList("provisioner",
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:" + scmBranch + "." + scmRevision
+
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
