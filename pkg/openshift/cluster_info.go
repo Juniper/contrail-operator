@@ -1,7 +1,6 @@
 package openshift
 
 import (
-	// "net"
 	"errors"
 
 	yaml "gopkg.in/yaml.v2"
