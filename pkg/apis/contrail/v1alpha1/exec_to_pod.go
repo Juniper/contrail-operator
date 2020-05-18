@@ -13,7 +13,6 @@ import (
 
 	// "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
@@ -103,28 +102,6 @@ func GetClientset() (*kubernetes.Clientset, error) {
 	}
 
 	return GetClientsetFromConfig(config)
-}
-
-// GetDynamicClientFromConfig takes REST config and Create a dynamic client based on that return that client.
-func GetDynamicClientFromConfig(config *rest.Config) (dynamic.Interface, error) {
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	return dynamicClient, nil
-}
-
-// GetDynamicClient first tries to get REST config object which uses the service account kubernetes gives to pods,
-// if it is called from a process running in a kubernetes environment.
-// Otherwise, it tries to build config from a default kubeconfig filepath if it fails, it fallback to the default config.
-// Once it get the config, it creates a new Dynamic Client for the given config and returns the client.
-func GetDynamicClient() (dynamic.Interface, error) {
-	config, err := GetClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return GetDynamicClientFromConfig(config)
 }
 
 // GetRESTClient first tries to get a config object which uses the service account kubernetes gives to pods,

@@ -145,13 +145,3 @@ type networking struct {
 type clusterNetwork struct {
 	CIDR string `yaml:"cidr"`
 }
-
-type dnsType struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              dnsSpec `json:"spec,omitempty"`
-}
-
-type dnsSpec struct {
-	BaseDomain string `json:"baseDomain,omitempty"`
-}
