@@ -2,28 +2,24 @@ package openshift
 
 import (
 	// "net"
-	"net/url"
 	"errors"
 
 	yaml "gopkg.in/yaml.v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/cluster-api/api/v1alpha2"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
-	"k8s.io/apimachinery/pkg/runtime"
-	// openshiftv1 "github.com/openshift/api/build/v1"
-	// buildv1 "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 )
 
 var log = logf.Log.WithName("openshift_cluster_info")
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
-	Client typedCorev1.CoreV1Interface
+	Client        typedCorev1.CoreV1Interface
+	DynamicClient dynamic.Interface
 }
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
@@ -44,26 +40,20 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
-	config, _ := rest.InClusterConfig()
-	dynClient, _ := dynamic.NewForConfig(config)
-	resourceScheme := v1alpha2.SchemeBuilder.GroupVersion.WithResource("dnses")
-	resp, _ := dynClient.Resource(resourceScheme).Namespace("default").Get("cluster", metav1.GetOptions{})
-	unstr := resp.UnstructuredContent()
-	var dns dnsType
-	_ = runtime.DefaultUnstructuredConverter.FromUnstructured(unstr, &dns)
-	netLogger := log.WithValues("APIServer", dns.Spec.BaseDomain)
-	netLogger.Info("I was able to make dns resource with this domain")
-
-	return dns.Spec.BaseDomain, nil
-	// masterPublicURL, err := getMasterPublicURL(c.Client)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// kubernetesAPIServer, _, err := net.SplitHostPort(masterPublicURL.Host)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// return kubernetesAPIServer, nil
+	gvr := schema.GroupVersionResource{
+		Group:    "config.openshift.io",
+		Version:  "v1",
+		Resource: "dnses",
+	}
+	u, err := c.DynamicClient.Resource(gvr).Get("cluster", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	apiServer, _, err := unstructured.NestedString(u.Object, "spec", "baseDomain")
+	if err != nil {
+		return "", err
+	}
+	return apiServer, nil
 }
 
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap
@@ -116,27 +106,6 @@ func (c ClusterConfig) CNIConfigFilesDirectory() string {
 	return "/etc/kubernetes/cni"
 }
 
-func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
-	
-	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
-	consoleCM, err := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
-	if err != nil {
-		return &url.URL{}, err
-	}
-	consoleConfigSection := consoleCM.Data["console-config.yaml"]
-	consoleConfigByte := []byte(consoleConfigSection)
-	consoleConfigMap := consoleConfig{}
-	if err := yaml.Unmarshal(consoleConfigByte, &consoleConfigMap); err != nil {
-		return &url.URL{}, err
-	}
-	masterPublicURL := consoleConfigMap.ClusterInfo.MasterPublicURL
-	parsedMasterPublicURL, err := url.Parse(masterPublicURL)
-	if err != nil {
-		return &url.URL{}, err
-	}
-	return parsedMasterPublicURL, nil
-}
-
 func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
 	ccm, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
@@ -179,9 +148,9 @@ type clusterNetwork struct {
 }
 
 type dnsType struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec dnsSpec `json:"spec,omitempty"`
+	Spec              dnsSpec `json:"spec,omitempty"`
 }
 
 type dnsSpec struct {
