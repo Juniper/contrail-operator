@@ -43,31 +43,31 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: analyticsapi
-            image: registry:5000/contrail-nightly/contrail-analytics-api:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-api:2005.11
           - name: api
-            image: registry:5000/contrail-nightly/contrail-controller-config-api:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-api:2005.11
           - name: collector
-            image: registry:5000/contrail-nightly/contrail-analytics-collector:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-collector:2005.11
           - name: devicemanager
-            image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:2005.11
           - name: dnsmasq
-            image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:2005.11
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: init2
             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
           - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:2005.11
           - name: schematransformer
-            image: registry:5000/contrail-nightly/contrail-controller-config-schema:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-schema:2005.11
           - name: servicemonitor
-            image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:2005.11
           - name: queryengine
-            image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master.1175
+            image: registry:5000/contrail-nightly/contrail-analytics-query-engine:2005.11
           - name: redis
             image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: statusmonitor
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.latest
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:R2005.latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
           authMode: keystone
@@ -86,17 +86,17 @@ spec:
           cassandraInstance: cassandra1
           containers:
           - name: control
-            image: registry:5000/contrail-nightly/contrail-controller-control-control:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-control:2005.11
           - name: dns
-            image: registry:5000/contrail-nightly/contrail-controller-control-dns:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-dns:2005.11
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: named
-            image: registry:5000/contrail-nightly/contrail-controller-control-named:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-control-named:2005.11
           - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:2005.11
           - name: statusmonitor
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:master.latest
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:R2005.latest
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -125,7 +125,7 @@ spec:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: provisioner
-            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-provisioner:master.latest
+            image: registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:R2005.latest
     rabbitmq:
       metadata:
         labels:
@@ -159,13 +159,13 @@ spec:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:master.1175
+            image: registry:5000/contrail-nightly/contrail-node-init:2005.11
           - name: redis
             image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: webuijob
-            image: registry:5000/contrail-nightly/contrail-controller-webui-job:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-webui-job:2005.11
           - name: webuiweb
-            image: registry:5000/contrail-nightly/contrail-controller-webui-web:master.1175
+            image: registry:5000/contrail-nightly/contrail-controller-webui-web:2005.11
     zookeepers:
     - metadata:
         labels:
@@ -207,9 +207,9 @@ spec:
           keystoneInstance: keystone
           containers:
           - name: api
-            image: registry:5000/contrail-nightly/contrail-command:master.1175
+            image: registry:5000/contrail-nightly/contrail-command:2005.11
           - name: init
-            image: registry:5000/contrail-nightly/contrail-command:master.1175
+            image: registry:5000/contrail-nightly/contrail-command:2005.11
           - name: wait-for-ready-conf
             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
     keystone:
