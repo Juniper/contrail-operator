@@ -790,13 +790,13 @@ func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode
 			actionMap[vncNode.Hostname] = "delete"
 		}
 	}
-	for k, v := range actionMap {
-		switch v {
+	for hostname, action := range actionMap {
+		switch action {
 		case "update":
 			for _, node := range nodeList {
-				if node.Hostname == k {
+				if node.Hostname == hostname {
 					fmt.Println("updating node ", node.Hostname)
-					err = node.Update(nodeList, k, contrailClient)
+					err = node.Update(contrailClient)
 					if err != nil {
 						return err
 					}
@@ -804,9 +804,9 @@ func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode
 			}
 		case "create":
 			for _, node := range nodeList {
-				if node.Hostname == k {
+				if node.Hostname == hostname {
 					fmt.Println("creating node ", node.Hostname)
-					err = node.Create(nodeList, node.Hostname, contrailClient)
+					err = node.Create(contrailClient)
 					if err != nil {
 
 						return err
@@ -814,12 +814,12 @@ func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode
 				}
 			}
 		case "delete":
-			node := &types.VrouterNode{}
-			err = node.Delete(k, contrailClient)
+			node := &types.VrouterNode{Hostname: hostname}
+			err = node.Delete(contrailClient)
 			if err != nil {
 				return err
 			}
-			fmt.Println("deleting node ", k)
+			fmt.Println("deleting node ", hostname)
 		}
 	}
 	return nil
