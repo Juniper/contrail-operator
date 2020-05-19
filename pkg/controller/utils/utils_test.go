@@ -419,7 +419,7 @@ var cassandra = &contrail.Cassandra{
 			},
 		},
 	},
-	Status: contrail.CassandraStatus{Active: &trueVal},
+	Status: contrail.CassandraStatus{Active: &falseVal},
 }
 
 func newRabbitmq() *contrail.Rabbitmq {
