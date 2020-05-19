@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const debug = true
+const debug = false
 
 // Kubernetes is used to create and update meaningful objects
 type Kubernetes struct {
