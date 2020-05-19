@@ -13,6 +13,47 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+func TestManagerTypeOne(t *testing.T) {
+	var (
+		name      = "test-manager"
+		namespace = "default"
+	)
+
+	// Objects to track in the fake client.
+	objs := []runtime.Object{}
+
+	// Register operator types with the runtime scheme.
+	s := scheme.Scheme
+	s.AddKnownTypes(contrail.SchemeGroupVersion, managerCR)
+
+	// Create a fake client to mock API calls.
+	cl := fake.NewFakeClient(objs...)
+
+	req := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	var mgr = managerCR
+	t.Run("Testing get types with context2.", func(t *testing.T) {
+		status := mgr.Get(cl, req)
+		if status == nil {
+			t.Fatalf("Get with context failed: (%v)", status)
+		}
+	})
+
+	t.Run("Testing Create in manager_types2.", func(t *testing.T) {
+		status := managerCR.Create(cl)
+		if status != nil {
+			t.Fatalf("Testing Create in manager_types: (%v)", status)
+		}
+	})
+
+}
+
+
 func TestManagerTypeTwo(t *testing.T) {
 	var (
 		name      = "test-manager"
@@ -40,6 +81,13 @@ func TestManagerTypeTwo(t *testing.T) {
 	t.Run("Testing get types with context.", func(t *testing.T) {
 		status := mgr.Get(cl, req)
 		if status != nil {
+			t.Fatalf("Get with context failed: (%v)", status)
+		}
+	})
+
+	t.Run("Testing get types with context.", func(t *testing.T) {
+		status := mgr.Cassandra()
+		if status == nil {
 			t.Fatalf("Get with context failed: (%v)", status)
 		}
 	})
