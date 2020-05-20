@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const debug = true
+const debug = false
 
 // Kubernetes is used to create and update meaningful objects
 type Kubernetes struct {
@@ -81,7 +81,6 @@ func getClientConfig() (*rest.Config, error) {
 func getDynamicClientFromConfig(config *rest.Config) (dynamic.Interface, error) {
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		err = fmt.Errorf("failed creating dynamic client. Error: %+v", err)
 		return nil, err
 	}
 	return dynamicClient, nil
