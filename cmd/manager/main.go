@@ -112,7 +112,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	dynamicClient, err := k8s.GetDynamicClient()
+	dynamicClient, err := v1alpha1.GetDynamicClient()
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
