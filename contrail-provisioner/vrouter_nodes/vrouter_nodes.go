@@ -25,15 +25,28 @@ type NodeWithAction struct {
 }
 
 func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*types.VrouterNode) error {
+	nodesInApiServer, err := getVrouterNodesInApiServer(contrailClient)
+	if err != nil {
+		return err
+	}
+	actionMap := createVrouterNodesActionMap(nodesInApiServer, requiredNodes)
+	err = executeActionMap(&actionMap, contrailClient)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getVrouterNodesInApiServer(contrailClient types.ApiClient) ([]*types.VrouterNode, error) {
 	nodesInApiServer := []*types.VrouterNode{}
 	vncNodeList, err := contrailClient.List(nodeType)
 	if err != nil {
-		return err
+		return nodesInApiServer, err
 	}
 	for _, vncNode := range vncNodeList {
 		obj, err := contrailClient.ReadListResult(nodeType, &vncNode)
 		if err != nil {
-			return err
+			return nodesInApiServer, err
 		}
 		typedNode := obj.(*contrailTypes.VirtualRouter)
 
@@ -44,13 +57,7 @@ func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*type
 		nodesInApiServer = append(nodesInApiServer, node)
 	}
 
-	actionMap := createVrouterNodesActionMap(nodesInApiServer, requiredNodes)
-	err = executeActionMap(&actionMap, contrailClient)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return nodesInApiServer, nil
 }
 
 func createVrouterNodesActionMap(nodesInApiServer []*types.VrouterNode, requiredNodes []*types.VrouterNode) map[string]NodeWithAction {
@@ -60,15 +67,13 @@ func createVrouterNodesActionMap(nodesInApiServer []*types.VrouterNode, required
 	}
 	for _, nodeInApiServer := range nodesInApiServer {
 		if requiredNodeWithAction, ok := actionMap[nodeInApiServer.Hostname]; ok {
-			if requiredNodeWithAction.node.Hostname == nodeInApiServer.Hostname {
-				requiredAction := noopAction
-				if requiredNodeWithAction.node.IPAddress != nodeInApiServer.IPAddress {
-					requiredAction = updateAction
-				}
-				actionMap[nodeInApiServer.Hostname] = NodeWithAction{
-					node:   requiredNodeWithAction.node,
-					action: requiredAction,
-				}
+			requiredAction := noopAction
+			if requiredNodeWithAction.node.IPAddress != nodeInApiServer.IPAddress {
+				requiredAction = updateAction
+			}
+			actionMap[nodeInApiServer.Hostname] = NodeWithAction{
+				node:   requiredNodeWithAction.node,
+				action: requiredAction,
 			}
 		} else {
 			actionMap[nodeInApiServer.Hostname] = NodeWithAction{
@@ -81,7 +86,7 @@ func createVrouterNodesActionMap(nodesInApiServer []*types.VrouterNode, required
 }
 
 func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient types.ApiClient) error {
-	for hostname, nodeWithAction := range *actionMap {
+	for _, nodeWithAction := range *actionMap {
 		var err error
 		switch nodeWithAction.action {
 		case updateAction:
@@ -91,7 +96,7 @@ func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient types
 			fmt.Println("creating vrouter node ", nodeWithAction.node.Hostname)
 			err = nodeWithAction.node.Create(contrailClient)
 		case deleteAction:
-			fmt.Println("deleting vrouter node ", hostname)
+			fmt.Println("deleting vrouter node ", nodeWithAction.node.Hostname)
 			err = nodeWithAction.node.Delete(contrailClient)
 		}
 		if err != nil {
