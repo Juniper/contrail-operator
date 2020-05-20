@@ -52,11 +52,10 @@ func TestManagerTypeTwo(t *testing.T) {
 				UID:       "manager-uid-1",
 			},
 		}
-		mgr1.Cassandra()
-		// status := mgr1.Cassandra()
-		// if status == nil {
-		// 	t.Fatalf("Get with context failed: (%v)", status)
-		// }
+		status := mgr1.Cassandra()
+		if status == nil {
+			t.Fatalf("Getting null, Cassandra failed: (%v)", status)
+		}
 	})
 
 	t.Run("Testing Create in manager_types.", func(t *testing.T) {
