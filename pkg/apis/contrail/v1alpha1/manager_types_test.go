@@ -20,14 +20,15 @@ func TestManagerTypeOne(t *testing.T) {
 	)
 
 	// Objects to track in the fake client.
-	objs := []runtime.Object{}
+	// objs := []runtime.Object{}
 
 	// Register operator types with the runtime scheme.
 	s := scheme.Scheme
 	s.AddKnownTypes(contrail.SchemeGroupVersion, managerCR)
 
 	// Create a fake client to mock API calls.
-	cl := fake.NewFakeClient(objs...)
+	// cl := fake.NewFakeClient(objs...)
+	cl := fake.NewFakeClient()
 
 	req := reconcile.Request{
 		NamespacedName: types.NamespacedName{
