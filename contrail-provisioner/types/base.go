@@ -1,7 +1,7 @@
 package types
 
 import (
-	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrail "github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
@@ -14,3 +14,10 @@ type Nodes struct {
 	ConfigNodes    []*ConfigNode              `yaml:"configNodes,omitempty"`
 	DatabaseNodes  []*DatabaseNode            `yaml:"databaseNodes,omitempty"`
 }
+
+type ApiClient interface {
+	contrail.ApiClient
+	ReadListResult(string, *contrail.ListResult) (contrail.IObject, error)
+}
+
+var _ ApiClient = &contrail.Client{}

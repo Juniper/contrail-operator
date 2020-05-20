@@ -15,7 +15,7 @@ type VrouterNode struct {
 }
 
 // Create creates a VrouterNode instance
-func (c *VrouterNode) Create(contrailClient *contrail.Client) error {
+func (c *VrouterNode) Create(contrailClient ApiClient) error {
 	gscObjects := []*contrailTypes.GlobalSystemConfig{}
 	gscObjectsList, err := contrailClient.List("global-system-config")
 	if err != nil {
@@ -62,7 +62,7 @@ func (c *VrouterNode) Create(contrailClient *contrail.Client) error {
 }
 
 // Update updates a VrouterNode instance
-func (c *VrouterNode) Update(contrailClient *contrail.Client) error {
+func (c *VrouterNode) Update(contrailClient ApiClient) error {
 	vncNodeList, err := contrailClient.List("virtual-router")
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (c *VrouterNode) Update(contrailClient *contrail.Client) error {
 }
 
 // Delete deletes a VrouterNode instance and it's vhost0 VirtualMachineInterfaces
-func (c *VrouterNode) Delete(contrailClient *contrail.Client) error {
+func (c *VrouterNode) Delete(contrailClient ApiClient) error {
 	vncNodeList, err := contrailClient.List("virtual-router")
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (c *VrouterNode) Delete(contrailClient *contrail.Client) error {
 	return nil
 }
 
-func deleteVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient *contrail.Client) error {
+func deleteVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
 	vhost0VMIFQName := vhost0VirtualMachineInterfaceFQName(virtualRouter)
 	vhost0VMI, err := contrailClient.FindByName("virtual-machine-interface", strings.Join(vhost0VMIFQName, ":"))
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
 
-	contrail "github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
@@ -25,7 +24,7 @@ type NodeWithAction struct {
 	action Action
 }
 
-func ReconcileVrouterNodes(contrailClient *contrail.Client, requiredNodes []*types.VrouterNode) error {
+func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*types.VrouterNode) error {
 	nodesInApiServer := []*types.VrouterNode{}
 	vncNodeList, err := contrailClient.List(nodeType)
 	if err != nil {
@@ -46,24 +45,11 @@ func ReconcileVrouterNodes(contrailClient *contrail.Client, requiredNodes []*typ
 	}
 
 	actionMap := createVrouterNodesActionMap(nodesInApiServer, requiredNodes)
-
-	for hostname, nodeWithAction := range actionMap {
-		var err error
-		switch nodeWithAction.action {
-		case updateAction:
-			fmt.Println("updating vrouter node ", nodeWithAction.node.Hostname)
-			err = nodeWithAction.node.Update(contrailClient)
-		case createAction:
-			fmt.Println("creating vrouter node ", nodeWithAction.node.Hostname)
-			err = nodeWithAction.node.Create(contrailClient)
-		case deleteAction:
-			fmt.Println("deleting vrouter node ", hostname)
-			err = nodeWithAction.node.Delete(contrailClient)
-		}
-		if err != nil {
-			return err
-		}
+	err = executeActionMap(&actionMap, contrailClient)
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 
@@ -94,6 +80,23 @@ func createVrouterNodesActionMap(nodesInApiServer []*types.VrouterNode, required
 	return actionMap
 }
 
-func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient *contrail.Client) {
-
+func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient types.ApiClient) error {
+	for hostname, nodeWithAction := range *actionMap {
+		var err error
+		switch nodeWithAction.action {
+		case updateAction:
+			fmt.Println("updating vrouter node ", nodeWithAction.node.Hostname)
+			err = nodeWithAction.node.Update(contrailClient)
+		case createAction:
+			fmt.Println("creating vrouter node ", nodeWithAction.node.Hostname)
+			err = nodeWithAction.node.Create(contrailClient)
+		case deleteAction:
+			fmt.Println("deleting vrouter node ", hostname)
+			err = nodeWithAction.node.Delete(contrailClient)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
