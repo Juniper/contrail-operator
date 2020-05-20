@@ -85,7 +85,7 @@ func TestManagerTypeTwo(t *testing.T) {
 		}
 	})
 
-	t.Run("Testing get types with context.", func(t *testing.T) {
+	t.Run("Testing get types with Cassandra.", func(t *testing.T) {
 		status := mgr.Cassandra()
 		if status == nil {
 			t.Fatalf("Get with context failed: (%v)", status)
