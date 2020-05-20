@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+
 func TestManagerTypeTwo(t *testing.T) {
 	var (
 		name      = "test-manager"
