@@ -44,12 +44,12 @@ func TestManagerTypeTwo(t *testing.T) {
 		}
 	})
 
-	t.Run("Testing get types with Cassandra.", func(t *testing.T) {
-		status := mgr.Cassandra()
-		if status == nil {
-			t.Fatalf("Get with context failed: (%v)", status)
-		}
-	})
+	// t.Run("Testing get types with Cassandra.", func(t *testing.T) {
+	// 	status := mgr.Cassandra()
+	// 	if status == nil {
+	// 		t.Fatalf("Get with context failed: (%v)", status)
+	// 	}
+	// })
 
 	t.Run("Testing Create in manager_types.", func(t *testing.T) {
 		status := managerCR.Create(cl)
