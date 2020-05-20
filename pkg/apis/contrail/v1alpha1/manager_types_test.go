@@ -44,6 +44,20 @@ func TestManagerTypeTwo(t *testing.T) {
 		}
 	})
 
+	t.Run("Testing get types with Cassandra.", func(t *testing.T) {
+		var mgr1 = &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+		}
+		status := mgr1.Cassandra()
+		if status == nil {
+			t.Fatalf("Getting null, Cassandra failed: (%v)", status)
+		}
+	})
+
 	t.Run("Testing Create in manager_types.", func(t *testing.T) {
 		status := managerCR.Create(cl)
 		if status == nil {
