@@ -36,9 +36,9 @@ func TestManagerTypeOne(t *testing.T) {
 		},
 	}
 
-	var mgr = managerCR
+	// var mgr = managerCR
 	t.Run("Testing get types with context2.", func(t *testing.T) {
-		status := mgr.Get(cl, req)
+		status := managerCR.Get(cl, req)
 		if status == nil {
 			t.Fatalf("Get with context failed: (%v)", status)
 		}
