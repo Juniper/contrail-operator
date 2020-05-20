@@ -178,7 +178,6 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 			fmt.Println(err)
 		}
 		fmt.Print(url)
-		//defer resp.Body.Close()
 		defer closeResp(resp)
 		if resp != nil {
 			fmt.Printf("resp not nil %d ", resp.StatusCode)
@@ -187,11 +186,8 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 				if err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println("control status")
 				controlStatus := getControlStatusFromResponse(bodyBytes)
 				controlStatusMap[hostname] = *controlStatus
-
-				//break
 			}
 		}
 	}
@@ -257,7 +253,7 @@ func kubeClient(config Config) (*kubernetes.Clientset, *rest.RESTClient, error) 
 	// create the clientset
 	err = contrailOperatorTypes.SchemeBuilder.AddToScheme(scheme.Scheme)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
 	}
 
 	crdConfig := kubeConfig

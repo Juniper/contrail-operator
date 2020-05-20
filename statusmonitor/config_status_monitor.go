@@ -26,6 +26,7 @@ type ServiceStatus struct {
 	NodeName       string           `xml:"NodeStatusUVE>data>NodeStatus>name"`
 	ModuleName     string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>module_id"`
 	ModuleState    string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>state"`
+	Description    string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>description"`
 	ConnectionInfo []ConnectionInfo `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>connection_infos>list>ConnectionInfo"`
 }
 
@@ -36,6 +37,17 @@ var ContainerServiceNameMap = map[string]string{
 	"servicemonitor":    "contrail-svc-monitor",
 	"schematransformer": "contrail-schema",
 	"collector":         "contrail-collector",
+}
+
+func IsBackupImplementedService(fullServiceName string) bool {
+	switch fullServiceName {
+	case
+		"contrail-schema",
+		"contrail-svc-monitor",
+		"contrail-device-manager":
+		return true
+	}
+	return false
 }
 
 func getConfigStatus(config Config) {
@@ -87,11 +99,15 @@ func GetConfigStatusFromApiServer(serviceAddress, serviceName string, client *ht
 	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 	resp, err := client.Get(url)
 	if err != nil {
+		state := "connection-error"
+		if IsBackupImplementedService(serviceName) {
+			state = "backup"
+		}
 		moduleNameFmt := FormatServiceName(serviceName)
 		configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
 			NodeName:    "",
 			ModuleName:  serviceName,
-			ModuleState: "connection-error",
+			ModuleState: state,
 		}
 		fmt.Println(err)
 		return
@@ -213,5 +229,8 @@ func getConfigStatusFromResponse(statusBody []byte) (*contrailOperatorTypes.Conf
 	}
 	configServiceStatus.ModuleName = serviceStatus.ModuleName
 	configServiceStatus.ModuleState = serviceStatus.ModuleState
+	if serviceStatus.ModuleState == "Non-Functional" {
+		configServiceStatus.Description = serviceStatus.Description
+	}
 	return &configServiceStatus, serviceStatus.NodeName, nil
 }

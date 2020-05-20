@@ -112,6 +112,7 @@ type ConfigServiceStatus struct {
 	NodeName    string `json:"nodeName,omitempty"`
 	ModuleName  string `json:"moduleName,omitempty"`
 	ModuleState string `json:"state"`
+	Description string `json:"description,omitempty"`
 }
 
 type ConfigStatusPorts struct {
