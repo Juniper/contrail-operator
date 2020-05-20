@@ -15,110 +15,109 @@ import (
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-    var trueVal = true
-	var falseVal = false
-	var replicas int32 = 3
+var trueVal = true
+var falseVal = false
+var replicas int32 = 3
 
-	var kubemanagerName = types.NamespacedName{
+var kubemanagerName = types.NamespacedName{
+	Namespace: "default",
+	Name:      "test-kubemanager",
+}
+
+var kubemanagerCR = &contrail.Kubemanager{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: kubemanagerName.Namespace,
+		Name:      kubemanagerName.Name,
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Spec: contrail.KubemanagerSpec{
+		ServiceConfiguration: contrail.KubemanagerConfiguration{
+			Containers: []*contrail.Container{
+				{Name: "init", Image: "image1"},
+				{Name: "kubemanager", Image: "image2"},
+				{Name: "nodeinit", Image: "image3"},
+			},
+			IPFabricForwarding:  &falseVal,
+			IPFabricSnat:        &trueVal,
+			KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+			UseKubeadmConfig:    &trueVal,
+			ZookeeperInstance:   "zookeeper1",
+			CassandraInstance:   "cassandra1",
+		},
+		CommonConfiguration: contrail.CommonConfiguration{
+			Create:       &trueVal,
+			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			Replicas:     &replicas,
+		},
+	},
+}
+
+var cassandraCR = &contrail.Cassandra{
+	ObjectMeta: v1.ObjectMeta{
 		Namespace: "default",
-		Name:      "test-kubemanager",
-	}
+		Name:      "cassandra1",
+	},
+	Status: contrail.CassandraStatus{
+		Active: &trueVal,
+	},
+}
 
-	var kubemanagerCR = &contrail.Kubemanager{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: kubemanagerName.Namespace,
-			Name:      kubemanagerName.Name,
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Spec: contrail.KubemanagerSpec{
-			ServiceConfiguration: contrail.KubemanagerConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "image1"},
-					{Name: "kubemanager", Image: "image2"},
-					{Name: "nodeinit", Image: "image3"},
-				},
-				IPFabricForwarding:  &falseVal,
-				IPFabricSnat:        &trueVal,
-				KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-				UseKubeadmConfig:    &trueVal,
-				ZookeeperInstance:   "zookeeper1",
-				CassandraInstance:   "cassandra1",
-			},
-			CommonConfiguration: contrail.CommonConfiguration{
-				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				Replicas:     &replicas,
-			},
-		},
-	}
+var zookeeperCR = &contrail.Zookeeper{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "zookeeper1",
+	},
+	Status: contrail.ZookeeperStatus{
+		Active: &trueVal,
+	},
+}
 
-	var cassandraCR = &contrail.Cassandra{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "cassandra1",
+var rabbitmqCR = &contrail.Rabbitmq{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "rabbitmq1",
+		Labels: map[string]string{
+			"contrail_cluster": "test",
 		},
-		Status: contrail.CassandraStatus{
-			Active: &trueVal,
-		},
-	}
+	},
+	Status: contrail.RabbitmqStatus{
+		Active: &trueVal,
+	},
+}
 
-	var zookeeperCR = &contrail.Zookeeper{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "zookeeper1",
+var configCR = &contrail.Config{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "config1",
+		Labels: map[string]string{
+			"contrail_cluster": "test",
 		},
-		Status: contrail.ZookeeperStatus{
-			Active: &trueVal,
-		},
-	}
+	},
+	Status: contrail.ConfigStatus{
+		Active: &trueVal,
+	},
+}
 
-	var rabbitmqCR = &contrail.Rabbitmq{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "rabbitmq1",
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Status: contrail.RabbitmqStatus{
-			Active: &trueVal,
-		},
-	}
-
-	var configCR = &contrail.Config{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "config1",
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Status: contrail.ConfigStatus{
-			Active: &trueVal,
-		},
-	}
-
-	var stsCD = &apps.StatefulSet{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test-kubemanager-kubemanager-statefulset",
-		},
-		Spec: apps.StatefulSetSpec{
-			Replicas: &replicas,
-		},
-	}
-
+var stsCD = &apps.StatefulSet{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-kubemanager-kubemanager-statefulset",
+	},
+	Spec: apps.StatefulSetSpec{
+		Replicas: &replicas,
+	},
+}
 
 func TestKubemanagerController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
@@ -129,7 +128,6 @@ func TestKubemanagerController(t *testing.T) {
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, kubemanagerCR, cassandraCR, zookeeperCR,
 		rabbitmqCR, configCR, stsCD)
-	// reconciler := kubemanager.NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo.Cluster{})
 	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo.Cluster{})
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: kubemanagerName})
@@ -231,7 +229,7 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 			kubemanagerCR,
 			configCR,
 		}
-		
+
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		hf := resourceHandler(cl)
 		hf.CreateFunc(evc, wq)
@@ -300,7 +298,6 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 		require.NoError(t, err, "Failed to build scheme")
 		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
-		// var kgr = kubemanagerCR
 		initObjs := []runtime.Object{
 			managerKube,
 			configCR,
@@ -339,14 +336,14 @@ var managerKube = &contrail.Manager{
 	},
 	Spec: contrail.ManagerSpec{
 		Services: contrail.Services{
-			Kubemanagers:     []*contrail.Kubemanager{kubemanagerCR},
-			Cassandras:       []*contrail.Cassandra{cassandraCR},
-			Zookeepers:       []*contrail.Zookeeper{zookeeperCR},
+			Kubemanagers: []*contrail.Kubemanager{kubemanagerCR},
+			Cassandras:   []*contrail.Cassandra{cassandraCR},
+			Zookeepers:   []*contrail.Zookeeper{zookeeperCR},
 		},
 		KeystoneSecretName: "keystone-adminpass-secret",
 	},
 	Status: contrail.ManagerStatus{
-		Kubemanagers:     mgrstatusKubemanager,
+		Kubemanagers: mgrstatusKubemanager,
 	},
 }
 
@@ -358,6 +355,3 @@ var managerstatus8 = &contrail.ServiceStatus{
 }
 
 var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
-
-
-
