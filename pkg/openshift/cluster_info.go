@@ -52,7 +52,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return apiServer, nil
+	return "api." + apiServer, nil
 }
 
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap

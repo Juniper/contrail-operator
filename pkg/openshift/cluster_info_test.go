@@ -73,7 +73,7 @@ var endpointPorts = []core.EndpointPort{{Name: "https", Port: 6443}}
 
 func (suite *ClusterInfoSuite) SetupTest() {
 	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts)
-	dynamicClient, err := getDynamicClientWithDNS("cluster", "api.test.user.test.com")
+	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	suite.ClusterInfo = openshift.ClusterConfig{
 		Client:        coreV1Interface,
@@ -122,7 +122,7 @@ func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
 
 func (suite *ClusterInfoSuite) TestMissingConfigMap() {
 	fakeClientset := fake.NewSimpleClientset(getEndpoint("kubernetes", endpointPorts))
-	dynamicClient, err := getDynamicClientWithDNS("cluster", "api.test.user.test.com")
+	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        fakeClientset.CoreV1(),
@@ -143,7 +143,7 @@ func (suite *ClusterInfoSuite) TestMissingConfigMap() {
 func (suite *ClusterInfoSuite) TestMissingEndpoint() {
 	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfigV1)
 	fakeClientset := fake.NewSimpleClientset(ccv1Map)
-	dynamicClient, err := getDynamicClientWithDNS("cluster", "api.test.user.test.com")
+	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        fakeClientset.CoreV1(),
@@ -163,7 +163,7 @@ func (suite *ClusterInfoSuite) TestMissingEndpoint() {
 
 func (suite *ClusterInfoSuite) TestMissingDNS() {
 	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts)
-	dynamicClient, err := getDynamicClientWithDNS("NOTcluster", "api.test.user.test.com")
+	dynamicClient, err := getDynamicClientWithDNS("NOTcluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        coreV1Interface,
@@ -185,7 +185,7 @@ func (suite *ClusterInfoSuite) TestMissingDNS() {
 func (suite *ClusterInfoSuite) TestMissingEndpointHttpsPort() {
 	epPorts := []core.EndpointPort{{Name: "http", Port: 6443}}
 	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, epPorts)
-	dynamicClient, err := getDynamicClientWithDNS("cluster", "api.test.user.test.com")
+	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        coreV1Interface,
