@@ -44,12 +44,20 @@ func TestManagerTypeTwo(t *testing.T) {
 		}
 	})
 
-	// t.Run("Testing get types with Cassandra.", func(t *testing.T) {
-	// 	status := mgr.Cassandra()
-	// 	if status == nil {
-	// 		t.Fatalf("Get with context failed: (%v)", status)
-	// 	}
-	// })
+	t.Run("Testing get types with Cassandra.", func(t *testing.T) {
+		var mgr1 = &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+		}
+		mgr1.Cassandra()
+		// status := mgr1.Cassandra()
+		// if status == nil {
+		// 	t.Fatalf("Get with context failed: (%v)", status)
+		// }
+	})
 
 	t.Run("Testing Create in manager_types.", func(t *testing.T) {
 		status := managerCR.Create(cl)
