@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["vrouter_nodes.go"],
+    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner/vrouter_nodes",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//contrail-provisioner/contrail-go-types:go_default_library",
+        "//contrail-provisioner/types:go_default_library",
+        "@com_github_juniper_contrail_go_api//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["vrouter_nodes_test.go"],
+    embed = [":go_default_library"],
+)

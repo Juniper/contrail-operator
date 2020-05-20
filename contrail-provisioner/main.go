@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/vrouter_nodes"
 	"gopkg.in/yaml.v2"
 
 	contrail "github.com/Juniper/contrail-go-api"
-	//contrailTypes "github.com/Juniper/contrail-go-api/types"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
@@ -105,7 +105,7 @@ func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Cli
 		if err != nil {
 			panic(err)
 		}
-		if err = vrouterNodes(contrailClient, nodeList); err != nil {
+		if err = vrouter_nodes.ReconcileVrouterNodes(contrailClient, nodeList); err != nil {
 			panic(err)
 		}
 	case "database":
@@ -234,7 +234,7 @@ func main() {
 			if !os.IsNotExist(err) {
 				nodeManager(vrouterNodesPtr, "vrouter", contrailClient)
 			} else if os.IsNotExist(err) {
-				vrouterNodes(contrailClient, []*types.VrouterNode{})
+				vrouter_nodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
 			}
 			fmt.Println("setting up vrouter node watcher")
 			watchFile := strings.Split(*vrouterNodesPtr, "/")
@@ -245,7 +245,7 @@ func main() {
 				if !os.IsNotExist(err) {
 					nodeManager(vrouterNodesPtr, "vrouter", contrailClient)
 				} else if os.IsNotExist(err) {
-					vrouterNodes(contrailClient, []*types.VrouterNode{})
+					vrouter_nodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
 				}
 			})
 			check(err)
@@ -421,7 +421,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			if err = vrouterNodes(contrailClient, vrouterNodeList); err != nil {
+			if err = vrouter_nodes.ReconcileVrouterNodes(contrailClient, vrouterNodeList); err != nil {
 				panic(err)
 			}
 		}
@@ -747,79 +747,6 @@ func analyticsNodes(contrailClient *contrail.Client, nodeList []*types.Analytics
 				return err
 			}
 			fmt.Println("deleting node ", k)
-		}
-	}
-	return nil
-}
-
-func vrouterNodes(contrailClient *contrail.Client, nodeList []*types.VrouterNode) error {
-	var actionMap = make(map[string]string)
-	nodeType := "virtual-router"
-	vncNodes := []*types.VrouterNode{}
-	vncNodeList, err := contrailClient.List(nodeType)
-	if err != nil {
-		return err
-	}
-	for _, vncNode := range vncNodeList {
-		obj, err := contrailClient.ReadListResult(nodeType, &vncNode)
-		if err != nil {
-			return err
-		}
-		typedNode := obj.(*contrailTypes.VirtualRouter)
-
-		node := &types.VrouterNode{
-			IPAddress: typedNode.GetVirtualRouterIpAddress(),
-			Hostname:  typedNode.GetName(),
-		}
-		vncNodes = append(vncNodes, node)
-	}
-	for _, node := range nodeList {
-		actionMap[node.Hostname] = "create"
-	}
-	for _, vncNode := range vncNodes {
-		if _, ok := actionMap[vncNode.Hostname]; ok {
-			for _, node := range nodeList {
-				if node.Hostname == vncNode.Hostname {
-					actionMap[node.Hostname] = "noop"
-					if node.IPAddress != vncNode.IPAddress {
-						actionMap[node.Hostname] = "update"
-					}
-				}
-			}
-		} else {
-			actionMap[vncNode.Hostname] = "delete"
-		}
-	}
-	for hostname, action := range actionMap {
-		switch action {
-		case "update":
-			for _, node := range nodeList {
-				if node.Hostname == hostname {
-					fmt.Println("updating node ", node.Hostname)
-					err = node.Update(contrailClient)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		case "create":
-			for _, node := range nodeList {
-				if node.Hostname == hostname {
-					fmt.Println("creating node ", node.Hostname)
-					err = node.Create(contrailClient)
-					if err != nil {
-
-						return err
-					}
-				}
-			}
-		case "delete":
-			node := &types.VrouterNode{Hostname: hostname}
-			err = node.Delete(contrailClient)
-			if err != nil {
-				return err
-			}
-			fmt.Println("deleting node ", hostname)
 		}
 	}
 	return nil
