@@ -8,7 +8,6 @@ go_library(
     deps = [
         "//contrail-provisioner/contrail-go-types:go_default_library",
         "//contrail-provisioner/types:go_default_library",
-        "@com_github_juniper_contrail_go_api//:go_default_library",
     ],
 )
 
@@ -16,4 +15,8 @@ go_test(
     name = "go_default_test",
     srcs = ["vrouter_nodes_test.go"],
     embed = [":go_default_library"],
+    deps = [
+        "//contrail-provisioner/types:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
 )
