@@ -34,6 +34,10 @@ func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*type
 	if err != nil {
 		return err
 	}
+	err = ensureVMIVhost0InterfaceForVirtualRouters(contrailClient)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -101,6 +105,32 @@ func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient types
 		}
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func ensureVMIVhost0InterfaceForVirtualRouters(contrailClient types.ApiClient) error {
+	virtualRouterList, err := contrailClient.List(nodeType)
+	if err != nil {
+		return err
+	}
+	for _, virtualRouter := range virtualRouterList {
+		obj, err := contrailClient.ReadListResult(nodeType, &virtualRouter)
+		if err != nil {
+			return err
+		}
+		typedVirtualRouter := obj.(*contrailTypes.VirtualRouter)
+
+		vhost0VMIPresent, err := types.Vhost0VMIPresent(typedVirtualRouter, contrailClient)
+		if err != nil {
+			return err
+		}
+		if !vhost0VMIPresent {
+			err = types.CreateVhost0VMI(typedVirtualRouter, contrailClient)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

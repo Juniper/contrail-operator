@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
@@ -14,7 +13,14 @@ type VrouterNode struct {
 	Hostname  string `yaml:"hostname,omitempty"`
 }
 
-// Create creates a VrouterNode instance
+const (
+	ipFabricNetworkFQName       = "default-domain:default-project:ip-fabric"
+	vhost0VMIName               = "vhost0"
+	virtualMachineInterfaceType = "virtual-machine-interface"
+	virtualRouterType           = "virtual-router"
+)
+
+// Create creates a VrouterRouter instance
 func (c *VrouterNode) Create(contrailClient ApiClient) error {
 	gscObjects := []*contrailTypes.GlobalSystemConfig{}
 	gscObjectsList, err := contrailClient.List("global-system-config")
@@ -35,24 +41,10 @@ func (c *VrouterNode) Create(contrailClient ApiClient) error {
 	}
 	for _, gsc := range gscObjects {
 		vncNode := &contrailTypes.VirtualRouter{}
-		vncNode.SetFQName("global-system-config", []string{"default-global-system-config", c.Hostname})
 		vncNode.SetVirtualRouterIpAddress(c.IPAddress)
 		vncNode.SetParent(gsc)
+		vncNode.SetName(c.Hostname)
 		err := contrailClient.Create(vncNode)
-		if err != nil {
-			return err
-		}
-		network, err := contrailTypes.VirtualNetworkByName(contrailClient, "default-domain:default-project:ip-fabric")
-		if err != nil {
-			return err
-		}
-		vncVMI := &contrailTypes.VirtualMachineInterface{}
-		vncVMI.SetFQName("virtual-router", vhost0VirtualMachineInterfaceFQName(vncNode))
-		vncVMI.SetParent(vncNode)
-		vncVMI.SetVirtualNetworkList([]contrail.ReferencePair{{Object: network}})
-		vncVMI.SetVirtualMachineInterfaceDisablePolicy(false)
-		vncVMI.SetName("vhost0")
-		err = contrailClient.Create(vncVMI)
 		if err != nil {
 			return err
 		}
@@ -63,18 +55,17 @@ func (c *VrouterNode) Create(contrailClient ApiClient) error {
 
 // Update updates a VrouterNode instance
 func (c *VrouterNode) Update(contrailClient ApiClient) error {
-	vncNodeList, err := contrailClient.List("virtual-router")
+	vncNodeList, err := contrailClient.List(virtualRouterType)
 	if err != nil {
 		return err
 	}
 	for _, vncNode := range vncNodeList {
-		obj, err := contrailClient.ReadListResult("virtual-router", &vncNode)
+		obj, err := contrailClient.ReadListResult(virtualRouterType, &vncNode)
 		if err != nil {
 			return err
 		}
 		typedNode := obj.(*contrailTypes.VirtualRouter)
 		if typedNode.GetName() == c.Hostname {
-			typedNode.SetFQName("global-system-config", []string{"default-global-system-config", c.Hostname})
 			typedNode.SetVirtualRouterIpAddress(c.IPAddress)
 			err := contrailClient.Update(typedNode)
 			if err != nil {
@@ -87,43 +78,73 @@ func (c *VrouterNode) Update(contrailClient ApiClient) error {
 
 // Delete deletes a VrouterNode instance and it's vhost0 VirtualMachineInterfaces
 func (c *VrouterNode) Delete(contrailClient ApiClient) error {
-	vncNodeList, err := contrailClient.List("virtual-router")
+	vncNodeList, err := contrailClient.List(virtualRouterType)
 	if err != nil {
 		return err
 	}
 	for _, vncNode := range vncNodeList {
-		obj, err := contrailClient.ReadListResult("virtual-router", &vncNode)
+		obj, err := contrailClient.ReadListResult(virtualRouterType, &vncNode)
 		if err != nil {
 			return err
 		}
 		if obj.GetName() == c.Hostname {
-			deleteVhost0VMI(obj.(*contrailTypes.VirtualRouter), contrailClient)
+			deleteVMIs(obj.(*contrailTypes.VirtualRouter), contrailClient)
+			fmt.Println("Deleting VirtualRouter ", obj.GetFQName())
 			err = contrailClient.Delete(obj)
 			if err != nil {
 				return err
 			}
 		}
-
 	}
 	return nil
 }
 
-func deleteVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
-	vhost0VMIFQName := vhost0VirtualMachineInterfaceFQName(virtualRouter)
-	vhost0VMI, err := contrailClient.FindByName("virtual-machine-interface", strings.Join(vhost0VMIFQName, ":"))
+func Vhost0VMIPresent(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) (bool, error) {
+	vmiList, err := virtualRouter.GetVirtualMachineInterfaces()
+	if err != nil {
+		return false, err
+	}
+	for _, vmiRef := range vmiList {
+		vmiObj, err := contrailClient.FindByUuid(virtualMachineInterfaceType, vmiRef.Uuid)
+		if err != nil {
+			return false, err
+		}
+		if vmiObj.GetName() == vhost0VMIName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func CreateVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
+	network, err := contrailTypes.VirtualNetworkByName(contrailClient, ipFabricNetworkFQName)
 	if err != nil {
 		return err
 	}
-	err = contrailClient.Delete(vhost0VMI)
+	vncVMI := &contrailTypes.VirtualMachineInterface{}
+	fmt.Println("Creating vhost0 VMI for VirtualRouter: ", virtualRouter.GetFQName())
+	vncVMI.SetParent(virtualRouter)
+	vncVMI.SetVirtualNetworkList([]contrail.ReferencePair{{Object: network}})
+	vncVMI.SetVirtualMachineInterfaceDisablePolicy(false)
+	vncVMI.SetName(vhost0VMIName)
+	err = contrailClient.Create(vncVMI)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func vhost0VirtualMachineInterfaceFQName(virtualRouter *contrailTypes.VirtualRouter) []string {
-	var vhost0VMIFQName []string
-	copy(vhost0VMIFQName, virtualRouter.GetFQName())
-	vhost0VMIFQName = append(vhost0VMIFQName, "vhost0")
-	return vhost0VMIFQName
+func deleteVMIs(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
+	vmiList, err := virtualRouter.GetVirtualMachineInterfaces()
+	if err != nil {
+		return err
+	}
+	for _, vmiRef := range vmiList {
+		fmt.Println("Deleting VMI interface ", vmiRef.Href)
+		err = contrailClient.DeleteByUuid(virtualMachineInterfaceType, vmiRef.Uuid)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
