@@ -71,6 +71,12 @@ func TestCreateVrouterNodesActionMap(t *testing.T) {
 				"second-node": {modifiedRequiredNodeTwo, updateAction},
 			},
 		},
+		{
+			name:              "Empty action map when there are no vrouter nodes",
+			nodesInApiServer:  []*types.VrouterNode{},
+			requiredNodes:     []*types.VrouterNode{},
+			expectedActionMap: map[string]NodeWithAction{},
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {

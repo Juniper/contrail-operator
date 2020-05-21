@@ -89,7 +89,7 @@ func (c *VrouterNode) Delete(contrailClient ApiClient) error {
 		}
 		if obj.GetName() == c.Hostname {
 			deleteVMIs(obj.(*contrailTypes.VirtualRouter), contrailClient)
-			fmt.Println("Deleting VirtualRouter ", obj.GetFQName())
+			fmt.Println("Deleting VirtualRouter ", obj.GetName())
 			err = contrailClient.Delete(obj)
 			if err != nil {
 				return err
@@ -122,7 +122,7 @@ func CreateVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient 
 		return err
 	}
 	vncVMI := &contrailTypes.VirtualMachineInterface{}
-	fmt.Println("Creating vhost0 VMI for VirtualRouter: ", virtualRouter.GetFQName())
+	fmt.Println("Creating vhost0 VMI for VirtualRouter: ", virtualRouter.GetName())
 	vncVMI.SetParent(virtualRouter)
 	vncVMI.SetVirtualNetworkList([]contrail.ReferencePair{{Object: network}})
 	vncVMI.SetVirtualMachineInterfaceDisablePolicy(false)
@@ -140,7 +140,7 @@ func deleteVMIs(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiCl
 		return err
 	}
 	for _, vmiRef := range vmiList {
-		fmt.Println("Deleting VMI interface ", vmiRef.Href)
+		fmt.Println("Deleting VMI interface ", vmiRef.Uuid)
 		err = contrailClient.DeleteByUuid(virtualMachineInterfaceType, vmiRef.Uuid)
 		if err != nil {
 			return err
