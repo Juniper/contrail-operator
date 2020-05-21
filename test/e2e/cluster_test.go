@@ -72,15 +72,15 @@ func TestCluster(t *testing.T) {
 			require.NoError(t, err)
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Config.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
 
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
 
 			utils.GetContainerFromList("provisioner",
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-operator-provisioner:" + scmBranch + "." + scmRevision
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)

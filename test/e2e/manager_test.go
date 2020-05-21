@@ -294,7 +294,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 								{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 							},
 						},
 					},
@@ -319,7 +319,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + versionMap["control"]},
 								{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["control"]},
 								{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + versionMap["control"]},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["control"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 							},
@@ -341,7 +341,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
 							Containers: []*v1alpha1.Container{
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
-								{Name: "provisioner", Image: "registry:5000/contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
+								{Name: "provisioner", Image: "registry:5000/contrail-operator.gcr.io/engprod-269421/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
 							},
 						},
 					},
