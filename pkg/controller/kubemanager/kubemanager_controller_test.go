@@ -328,30 +328,30 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 
 }
 
-var managerKube = &contrail.Manager{
-	ObjectMeta: v1.ObjectMeta{
-		Name:      "test-manager",
-		Namespace: "default",
-		UID:       "manager-uid-1",
-	},
-	Spec: contrail.ManagerSpec{
-		Services: contrail.Services{
-			Kubemanagers: []*contrail.Kubemanager{kubemanagerCR},
-			Cassandras:   []*contrail.Cassandra{cassandraCR},
-			Zookeepers:   []*contrail.Zookeeper{zookeeperCR},
-		},
-		KeystoneSecretName: "keystone-adminpass-secret",
-	},
-	Status: contrail.ManagerStatus{
-		Kubemanagers: mgrstatusKubemanager,
-	},
-}
+// var managerKube = &contrail.Manager{
+// 	ObjectMeta: v1.ObjectMeta{
+// 		Name:      "test-manager",
+// 		Namespace: "default",
+// 		UID:       "manager-uid-1",
+// 	},
+// 	Spec: contrail.ManagerSpec{
+// 		Services: contrail.Services{
+// 			Kubemanagers: []*contrail.Kubemanager{kubemanagerCR},
+// 			Cassandras:   []*contrail.Cassandra{cassandraCR},
+// 			Zookeepers:   []*contrail.Zookeeper{zookeeperCR},
+// 		},
+// 		KeystoneSecretName: "keystone-adminpass-secret",
+// 	},
+// 	Status: contrail.ManagerStatus{
+// 		Kubemanagers: mgrstatusKubemanager,
+// 	},
+// }
 
-var NameValueKube = "kubemanager"
-var managerstatus8 = &contrail.ServiceStatus{
-	Name:    &NameValueKube,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
+// var NameValueKube = "kubemanager"
+// var managerstatus8 = &contrail.ServiceStatus{
+// 	Name:    &NameValueKube,
+// 	Active:  &trueVal,
+// 	Created: &trueVal,
+// }
 
-var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
+// var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
