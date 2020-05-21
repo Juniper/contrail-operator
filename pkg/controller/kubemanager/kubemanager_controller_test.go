@@ -293,38 +293,38 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Failed to Find kubemanager Instance", func(t *testing.T) {
-		scheme, err := contrail.SchemeBuilder.Build()
-		require.NoError(t, err, "Failed to build scheme")
-		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
-		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
-		initObjs := []runtime.Object{
-			managerKube,
-			configCR,
-			kubemanagerCR,
-		}
-		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+	// t.Run("Failed to Find kubemanager Instance", func(t *testing.T) {
+	// 	scheme, err := contrail.SchemeBuilder.Build()
+	// 	require.NoError(t, err, "Failed to build scheme")
+	// 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	// 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	// 	initObjs := []runtime.Object{
+	// 		managerKube,
+	// 		configCR,
+	// 		kubemanagerCR,
+	// 	}
+	// 	cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 
-		r := &ReconcileKubemanager{Client: cl, Scheme: scheme}
+	// 	r := &ReconcileKubemanager{Client: cl, Scheme: scheme}
 
-		req := reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name:      "invalid-kubemanagerCR-instance",
-				Namespace: "default",
-			},
-		}
+	// 	req := reconcile.Request{
+	// 		NamespacedName: types.NamespacedName{
+	// 			Name:      "invalid-kubemanagerCR-instance",
+	// 			Namespace: "default",
+	// 		},
+	// 	}
 
-		res, err := r.Reconcile(req)
-		require.NoError(t, err, "r.Reconcile failed")
-		require.False(t, res.Requeue, "Request was requeued when it should not be")
+	// 	res, err := r.Reconcile(req)
+	// 	require.NoError(t, err, "r.Reconcile failed")
+	// 	require.False(t, res.Requeue, "Request was requeued when it should not be")
 
-		// check for success or failure
-		conf := &contrail.Kubemanager{}
-		err = cl.Get(context.Background(), req.NamespacedName, conf)
-		errmsg := err.Error()
-		require.Contains(t, errmsg, "\"invalid-kubemanagerCR-instance\" not found",
-			"Error message string is not as expected")
-	})
+	// 	// check for success or failure
+	// 	conf := &contrail.Kubemanager{}
+	// 	err = cl.Get(context.Background(), req.NamespacedName, conf)
+	// 	errmsg := err.Error()
+	// 	require.Contains(t, errmsg, "\"invalid-kubemanagerCR-instance\" not found",
+	// 		"Error message string is not as expected")
+	// })
 
 }
 
