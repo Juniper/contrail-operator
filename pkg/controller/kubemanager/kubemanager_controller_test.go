@@ -299,7 +299,6 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 		initObjs := []runtime.Object{
-			// managerKube,
 			configCR,
 			kubemanagerCR,
 		}
@@ -327,31 +326,3 @@ func TestKubemanagerControllerTwo(t *testing.T) {
 	})
 
 }
-
-// var managerKube = &contrail.Manager{
-// 	ObjectMeta: v1.ObjectMeta{
-// 		Name:      "test-manager",
-// 		Namespace: "default",
-// 		UID:       "manager-uid-1",
-// 	},
-// 	Spec: contrail.ManagerSpec{
-// 		Services: contrail.Services{
-// 			Kubemanagers: []*contrail.Kubemanager{kubemanagerCR},
-// 			Cassandras:   []*contrail.Cassandra{cassandraCR},
-// 			Zookeepers:   []*contrail.Zookeeper{zookeeperCR},
-// 		},
-// 		KeystoneSecretName: "keystone-adminpass-secret",
-// 	},
-// 	Status: contrail.ManagerStatus{
-// 		Kubemanagers: mgrstatusKubemanager,
-// 	},
-// }
-
-// var NameValueKube = "kubemanager"
-// var managerstatus8 = &contrail.ServiceStatus{
-// 	Name:    &NameValueKube,
-// 	Active:  &trueVal,
-// 	Created: &trueVal,
-// }
-
-// var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
