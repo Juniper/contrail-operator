@@ -1,11 +1,12 @@
-package kubemanager_test
+package kubemanager
 
 import (
 	"context"
 	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+
 	fakeClusterInfo "github.com/Juniper/contrail-operator/pkg/controller/kubemanager/fake"
 
 	"github.com/stretchr/testify/assert"
@@ -14,11 +15,109 @@ import (
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+var trueVal = true
+var falseVal = false
+var replicas int32 = 3
+
+var kubemanagerName = types.NamespacedName{
+	Namespace: "default",
+	Name:      "test-kubemanager",
+}
+
+var kubemanagerCR = &contrail.Kubemanager{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: kubemanagerName.Namespace,
+		Name:      kubemanagerName.Name,
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Spec: contrail.KubemanagerSpec{
+		ServiceConfiguration: contrail.KubemanagerConfiguration{
+			Containers: []*contrail.Container{
+				{Name: "init", Image: "image1"},
+				{Name: "kubemanager", Image: "image2"},
+				{Name: "nodeinit", Image: "image3"},
+			},
+			IPFabricForwarding:  &falseVal,
+			IPFabricSnat:        &trueVal,
+			KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+			UseKubeadmConfig:    &trueVal,
+			ZookeeperInstance:   "zookeeper1",
+			CassandraInstance:   "cassandra1",
+		},
+		CommonConfiguration: contrail.CommonConfiguration{
+			Create:       &trueVal,
+			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			Replicas:     &replicas,
+		},
+	},
+}
+
+var cassandraCR = &contrail.Cassandra{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "cassandra1",
+	},
+	Status: contrail.CassandraStatus{
+		Active: &trueVal,
+	},
+}
+
+var zookeeperCR = &contrail.Zookeeper{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "zookeeper1",
+	},
+	Status: contrail.ZookeeperStatus{
+		Active: &trueVal,
+	},
+}
+
+var rabbitmqCR = &contrail.Rabbitmq{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "rabbitmq1",
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Status: contrail.RabbitmqStatus{
+		Active: &trueVal,
+	},
+}
+
+var configCR = &contrail.Config{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "config1",
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Status: contrail.ConfigStatus{
+		Active: &trueVal,
+	},
+}
+
+var stsCD = &apps.StatefulSet{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "test-kubemanager-kubemanager-statefulset",
+	},
+	Spec: apps.StatefulSetSpec{
+		Replicas: &replicas,
+	},
+}
 
 func TestKubemanagerController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
@@ -27,104 +126,9 @@ func TestKubemanagerController(t *testing.T) {
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
-	trueVal := true
-	falseVal := false
-	var replicas int32 = 3
-
-	kubemanagerName := types.NamespacedName{
-		Namespace: "default",
-		Name:      "test-kubemanager",
-	}
-
-	kubemanagerCR := &contrail.Kubemanager{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: kubemanagerName.Namespace,
-			Name:      kubemanagerName.Name,
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Spec: contrail.KubemanagerSpec{
-			ServiceConfiguration: contrail.KubemanagerConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "image1"},
-					{Name: "kubemanager", Image: "image2"},
-					{Name: "nodeinit", Image: "image3"},
-				},
-				IPFabricForwarding:  &falseVal,
-				IPFabricSnat:        &trueVal,
-				KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-				UseKubeadmConfig:    &trueVal,
-				ZookeeperInstance:   "zookeeper1",
-				CassandraInstance:   "cassandra1",
-			},
-			CommonConfiguration: contrail.CommonConfiguration{
-				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				Replicas:     &replicas,
-			},
-		},
-	}
-
-	cassandraCR := &contrail.Cassandra{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "cassandra1",
-		},
-		Status: contrail.CassandraStatus{
-			Active: &trueVal,
-		},
-	}
-
-	zookeeperCR := &contrail.Zookeeper{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "zookeeper1",
-		},
-		Status: contrail.ZookeeperStatus{
-			Active: &trueVal,
-		},
-	}
-
-	rabbitmqCR := &contrail.Rabbitmq{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "rabbitmq1",
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Status: contrail.RabbitmqStatus{
-			Active: &trueVal,
-		},
-	}
-
-	configCR := &contrail.Config{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "config1",
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Status: contrail.ConfigStatus{
-			Active: &trueVal,
-		},
-	}
-
-	stsCD := &apps.StatefulSet{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test-kubemanager-kubemanager-statefulset",
-		},
-		Spec: apps.StatefulSetSpec{
-			Replicas: &replicas,
-		},
-	}
-
 	fakeClient := fake.NewFakeClientWithScheme(scheme, kubemanagerCR, cassandraCR, zookeeperCR,
 		rabbitmqCR, configCR, stsCD)
-	reconciler := kubemanager.NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo.Cluster{})
+	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo.Cluster{})
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: kubemanagerName})
 	// then
@@ -189,4 +193,136 @@ func TestKubemanagerController(t *testing.T) {
 		}}
 		assert.Equal(t, expectedOwnerRefs, sa.OwnerReferences)
 	})
+}
+
+func TestKubemanagerControllerTwo(t *testing.T) {
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+
+	falseVal := false
+
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	metaobj := v1.ObjectMeta{}
+	or := v1.OwnerReference{
+		APIVersion:         "v1",
+		Kind:               "owner-kind",
+		Name:               "owner-name",
+		UID:                "owner-uid",
+		Controller:         &falseVal,
+		BlockOwnerDeletion: &falseVal,
+	}
+	ors := []v1.OwnerReference{or}
+	metaobj.SetOwnerReferences(ors)
+	pod := &core.Pod{
+		ObjectMeta: metaobj,
+	}
+
+	t.Run("Create event verification", func(t *testing.T) {
+		evc := event.CreateEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		initObjs := []runtime.Object{
+			kubemanagerCR,
+			configCR,
+		}
+
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.CreateFunc(evc, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Update event verification", func(t *testing.T) {
+		initObjs := []runtime.Object{
+			kubemanagerCR,
+			configCR,
+		}
+		evu := event.UpdateEvent{
+			MetaOld:   pod,
+			ObjectOld: nil,
+			MetaNew:   pod,
+			ObjectNew: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.UpdateFunc(evu, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Delete event verification", func(t *testing.T) {
+		initObjs := []runtime.Object{
+			kubemanagerCR,
+			configCR,
+		}
+		evd := event.DeleteEvent{
+			Meta:               pod,
+			Object:             nil,
+			DeleteStateUnknown: false,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.DeleteFunc(evd, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	t.Run("Generic event verification", func(t *testing.T) {
+		initObjs := []runtime.Object{
+			kubemanagerCR,
+			configCR,
+		}
+		evg := event.GenericEvent{
+			Meta:   pod,
+			Object: nil,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		hf := resourceHandler(cl)
+		hf.GenericFunc(evg, wq)
+		assert.Equal(t, 1, wq.Len())
+	})
+
+	var ci contrail.KubemanagerClusterInfo
+
+	t.Run("Add controller to Manager", func(t *testing.T) {
+		cl := fake.NewFakeClientWithScheme(scheme)
+		mgr := &mocking.MockManager{Client: &cl, Scheme: scheme}
+		err := Add(mgr, ci)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Failed to Find kubemanager Instance", func(t *testing.T) {
+		scheme, err := contrail.SchemeBuilder.Build()
+		require.NoError(t, err, "Failed to build scheme")
+		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
+		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+		initObjs := []runtime.Object{
+			configCR,
+			kubemanagerCR,
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+
+		r := &ReconcileKubemanager{Client: cl, Scheme: scheme}
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "invalid-kubemanagerCR-instance",
+				Namespace: "default",
+			},
+		}
+
+		res, err := r.Reconcile(req)
+		require.NoError(t, err, "r.Reconcile failed")
+		require.False(t, res.Requeue, "Request was requeued when it should not be")
+
+		// check for success or failure
+		conf := &contrail.Kubemanager{}
+		err = cl.Get(context.Background(), req.NamespacedName, conf)
+		errmsg := err.Error()
+		require.Contains(t, errmsg, "\"invalid-kubemanagerCR-instance\" not found",
+			"Error message string is not as expected")
+	})
+
 }
