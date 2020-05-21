@@ -30,7 +30,7 @@ func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*type
 		return err
 	}
 	actionMap := createVrouterNodesActionMap(nodesInApiServer, requiredNodes)
-	err = executeActionMap(&actionMap, contrailClient)
+	err = executeActionMap(actionMap, contrailClient)
 	if err != nil {
 		return err
 	}
@@ -89,8 +89,8 @@ func createVrouterNodesActionMap(nodesInApiServer []*types.VrouterNode, required
 	return actionMap
 }
 
-func executeActionMap(actionMap *map[string]NodeWithAction, contrailClient types.ApiClient) error {
-	for _, nodeWithAction := range *actionMap {
+func executeActionMap(actionMap map[string]NodeWithAction, contrailClient types.ApiClient) error {
+	for _, nodeWithAction := range actionMap {
 		var err error
 		switch nodeWithAction.action {
 		case updateAction:
