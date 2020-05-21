@@ -15,9 +15,10 @@ type Nodes struct {
 	DatabaseNodes  []*DatabaseNode            `yaml:"databaseNodes,omitempty"`
 }
 
+// ApiClient interface extends contrail.ApiClient by a missing ReadListResult
+// to enable passing ApiClient interface instead of the struct to ease
+// mocking in unit test
 type ApiClient interface {
 	contrail.ApiClient
 	ReadListResult(string, *contrail.ListResult) (contrail.IObject, error)
 }
-
-var _ ApiClient = &contrail.Client{}

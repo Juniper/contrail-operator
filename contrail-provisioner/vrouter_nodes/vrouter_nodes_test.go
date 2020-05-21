@@ -3,9 +3,56 @@ package vrouter_nodes
 import (
 	"testing"
 
-	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
 	"github.com/stretchr/testify/assert"
+
+	contrail "github.com/Juniper/contrail-go-api"
+	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/mock"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
 )
+
+func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
+	mockContrailClient := mock.GetDefaultMockContrailClient()
+	mockContrailClient.ListMock = func(string) ([]contrail.ListResult, error) {
+		return []contrail.ListResult{{}, {}}, nil
+	}
+	virtualRouterOne := contrailTypes.VirtualRouter{}
+	virtualRouterOne.SetVirtualRouterIpAddress("1.1.1.1")
+	virtualRouterOne.SetName("virtual-router-one")
+	mockContrailClient.ReadListResultMock = func(string, *contrail.ListResult) (contrail.IObject, error) {
+		return &virtualRouterOne, nil
+	}
+
+	expectedVirtualRouterNodes := []*types.VrouterNode{
+		{IPAddress: "1.1.1.1", Hostname: "virtual-router-one"},
+		{IPAddress: "1.1.1.1", Hostname: "virtual-router-one"},
+	}
+	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(mockContrailClient)
+
+	assert.NoError(t, err)
+	assert.Len(t, actualVirtualRouterNodes, len(expectedVirtualRouterNodes))
+	for i := 0; i < len(expectedVirtualRouterNodes); i++ {
+		assert.Equal(t, *expectedVirtualRouterNodes[i], *actualVirtualRouterNodes[i])
+	}
+}
+
+func TestGetVrouterNodesInApiServerReturnsEmptyListWhenNoNodesInApiServer(t *testing.T) {
+	mockContrailClient := mock.GetDefaultMockContrailClient()
+	mockContrailClient.ListMock = func(string) ([]contrail.ListResult, error) {
+		return []contrail.ListResult{}, nil
+	}
+	virtualRouterOne := contrailTypes.VirtualRouter{}
+	virtualRouterOne.SetVirtualRouterIpAddress("1.1.1.1")
+	virtualRouterOne.SetName("virtual-router-one")
+	mockContrailClient.ReadListResultMock = func(string, *contrail.ListResult) (contrail.IObject, error) {
+		return &virtualRouterOne, nil
+	}
+
+	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(mockContrailClient)
+
+	assert.NoError(t, err)
+	assert.Len(t, actualVirtualRouterNodes, 0)
+}
 
 func TestCreateVrouterNodesActionMap(t *testing.T) {
 	requiredNodeOne := &types.VrouterNode{

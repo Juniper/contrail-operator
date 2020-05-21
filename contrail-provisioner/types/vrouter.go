@@ -20,7 +20,7 @@ const (
 	virtualRouterType           = "virtual-router"
 )
 
-// Create creates a VrouterRouter instance
+// Create creates a VirtualRouter instance
 func (c *VrouterNode) Create(contrailClient ApiClient) error {
 	gscObjects := []*contrailTypes.GlobalSystemConfig{}
 	gscObjectsList, err := contrailClient.List("global-system-config")
@@ -53,7 +53,7 @@ func (c *VrouterNode) Create(contrailClient ApiClient) error {
 	return nil
 }
 
-// Update updates a VrouterNode instance
+// Update updates a VirtualRouter instance
 func (c *VrouterNode) Update(contrailClient ApiClient) error {
 	vncNodeList, err := contrailClient.List(virtualRouterType)
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *VrouterNode) Update(contrailClient ApiClient) error {
 	return nil
 }
 
-// Delete deletes a VrouterNode instance and it's vhost0 VirtualMachineInterfaces
+// Delete deletes a VirtualRouter instance and it's vhost0 VirtualMachineInterfaces
 func (c *VrouterNode) Delete(contrailClient ApiClient) error {
 	vncNodeList, err := contrailClient.List(virtualRouterType)
 	if err != nil {
@@ -99,7 +99,36 @@ func (c *VrouterNode) Delete(contrailClient ApiClient) error {
 	return nil
 }
 
-func Vhost0VMIPresent(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) (bool, error) {
+// EnsureVMIVhost0InterfaceForVirtualRouters checks whether each VirtualRouter
+// instance has a "vhost0" VirtualMachineInterface assigned to it and creates
+// any missing VirtualMachineInterfaces
+func EnsureVMIVhost0InterfaceForVirtualRouters(contrailClient ApiClient) error {
+	virtualRouterList, err := contrailClient.List(virtualRouterType)
+	if err != nil {
+		return err
+	}
+	for _, virtualRouter := range virtualRouterList {
+		obj, err := contrailClient.ReadListResult(virtualRouterType, &virtualRouter)
+		if err != nil {
+			return err
+		}
+		typedVirtualRouter := obj.(*contrailTypes.VirtualRouter)
+
+		vhost0VMIPresent, err := vhost0VMIPresent(typedVirtualRouter, contrailClient)
+		if err != nil {
+			return err
+		}
+		if !vhost0VMIPresent {
+			err = createVhost0VMI(typedVirtualRouter, contrailClient)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func vhost0VMIPresent(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) (bool, error) {
 	vmiList, err := virtualRouter.GetVirtualMachineInterfaces()
 	if err != nil {
 		return false, err
@@ -116,7 +145,7 @@ func Vhost0VMIPresent(virtualRouter *contrailTypes.VirtualRouter, contrailClient
 	return false, nil
 }
 
-func CreateVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
+func createVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiClient) error {
 	network, err := contrailTypes.VirtualNetworkByName(contrailClient, ipFabricNetworkFQName)
 	if err != nil {
 		return err
