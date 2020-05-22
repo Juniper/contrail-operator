@@ -23,9 +23,9 @@ type NodeWithAction struct {
 	action Action
 }
 
-// ReconcileVrouterNodes creates, deletes or updates VirtualRouter
-// and VirtualMachineInterface objects in Contrail Api Server
-// based on the list of requiredNodes and current objects in the Api Server
+// ReconcileVrouterNodes creates, deletes or updates VirtualRouter and 
+// VirtualMachineInterface objects in Contrail Api Server based on the
+// list of requiredNodes and current objects in the Api Server
 func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*types.VrouterNode) error {
 	nodesInApiServer, err := getVrouterNodesInApiServer(contrailClient)
 	if err != nil {
