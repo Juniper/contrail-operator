@@ -159,8 +159,8 @@ func TestCommandServices(t *testing.T) {
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: []*contrail.Container{
-						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:2005.11"},
-						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:2005.11"},
+						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:2005.42"},
+						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:2005.42"},
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},
 				},
