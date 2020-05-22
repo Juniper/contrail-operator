@@ -13,7 +13,7 @@ go_library(
     deps = [
         "//contrail-provisioner/contrail-go-types:go_default_library",
         "//contrail-provisioner/types:go_default_library",
-        "//contrail-provisioner/vrouter_nodes:go_default_library",
+        "//contrail-provisioner/vrouternodes:go_default_library",
         "@com_github_juniper_contrail_go_api//:go_default_library",
         "@in_gopkg_fsnotify_v1//:go_default_library",
         "@in_gopkg_yaml.v2//:go_default_library",

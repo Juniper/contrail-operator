@@ -1,4 +1,4 @@
-package vrouter_nodes
+package vrouternodes
 
 import (
 	"fmt"

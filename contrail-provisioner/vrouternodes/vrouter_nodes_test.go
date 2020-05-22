@@ -1,4 +1,4 @@
-package vrouter_nodes
+package vrouternodes
 
 import (
 	"testing"
@@ -7,19 +7,19 @@ import (
 
 	contrail "github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
-	"github.com/Juniper/contrail-operator/contrail-provisioner/mock"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/fake"
 	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
 )
 
 func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
-	mockContrailClient := mock.GetDefaultMockContrailClient()
-	mockContrailClient.ListMock = func(string) ([]contrail.ListResult, error) {
+	fakeContrailClient := fake.GetDefaultFakeContrailClient()
+	fakeContrailClient.ListFake = func(string) ([]contrail.ListResult, error) {
 		return []contrail.ListResult{{}, {}}, nil
 	}
 	virtualRouterOne := contrailTypes.VirtualRouter{}
 	virtualRouterOne.SetVirtualRouterIpAddress("1.1.1.1")
 	virtualRouterOne.SetName("virtual-router-one")
-	mockContrailClient.ReadListResultMock = func(string, *contrail.ListResult) (contrail.IObject, error) {
+	fakeContrailClient.ReadListResultFake = func(string, *contrail.ListResult) (contrail.IObject, error) {
 		return &virtualRouterOne, nil
 	}
 
@@ -27,7 +27,7 @@ func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
 		{IPAddress: "1.1.1.1", Hostname: "virtual-router-one"},
 		{IPAddress: "1.1.1.1", Hostname: "virtual-router-one"},
 	}
-	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(mockContrailClient)
+	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(fakeContrailClient)
 
 	assert.NoError(t, err)
 	assert.Len(t, actualVirtualRouterNodes, len(expectedVirtualRouterNodes))
@@ -37,18 +37,18 @@ func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
 }
 
 func TestGetVrouterNodesInApiServerReturnsEmptyListWhenNoNodesInApiServer(t *testing.T) {
-	mockContrailClient := mock.GetDefaultMockContrailClient()
-	mockContrailClient.ListMock = func(string) ([]contrail.ListResult, error) {
+	fakeContrailClient := fake.GetDefaultFakeContrailClient()
+	fakeContrailClient.ListFake = func(string) ([]contrail.ListResult, error) {
 		return []contrail.ListResult{}, nil
 	}
 	virtualRouterOne := contrailTypes.VirtualRouter{}
 	virtualRouterOne.SetVirtualRouterIpAddress("1.1.1.1")
 	virtualRouterOne.SetName("virtual-router-one")
-	mockContrailClient.ReadListResultMock = func(string, *contrail.ListResult) (contrail.IObject, error) {
+	fakeContrailClient.ReadListResultFake = func(string, *contrail.ListResult) (contrail.IObject, error) {
 		return &virtualRouterOne, nil
 	}
 
-	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(mockContrailClient)
+	actualVirtualRouterNodes, err := getVrouterNodesInApiServer(fakeContrailClient)
 
 	assert.NoError(t, err)
 	assert.Len(t, actualVirtualRouterNodes, 0)

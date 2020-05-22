@@ -2,8 +2,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["mock_contrail_client.go"],
-    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner/mock",
+    srcs = ["fake_contrail_client.go"],
+    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner/fake",
     visibility = ["//visibility:public"],
     deps = ["@com_github_juniper_contrail_go_api//:go_default_library"],
 )

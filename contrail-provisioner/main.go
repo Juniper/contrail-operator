@@ -14,12 +14,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
-	"github.com/Juniper/contrail-operator/contrail-provisioner/vrouter_nodes"
 	"gopkg.in/yaml.v2"
 
 	contrail "github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/vrouternodes"
 )
 
 // ProvisionConfig defines the structure of the provison config
@@ -105,7 +105,7 @@ func nodeManager(nodesPtr *string, nodeType string, contrailClient *contrail.Cli
 		if err != nil {
 			panic(err)
 		}
-		if err = vrouter_nodes.ReconcileVrouterNodes(contrailClient, nodeList); err != nil {
+		if err = vrouternodes.ReconcileVrouterNodes(contrailClient, nodeList); err != nil {
 			panic(err)
 		}
 	case "database":
@@ -234,7 +234,7 @@ func main() {
 			if !os.IsNotExist(err) {
 				nodeManager(vrouterNodesPtr, "vrouter", contrailClient)
 			} else if os.IsNotExist(err) {
-				vrouter_nodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
+				vrouternodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
 			}
 			fmt.Println("setting up vrouter node watcher")
 			watchFile := strings.Split(*vrouterNodesPtr, "/")
@@ -245,7 +245,7 @@ func main() {
 				if !os.IsNotExist(err) {
 					nodeManager(vrouterNodesPtr, "vrouter", contrailClient)
 				} else if os.IsNotExist(err) {
-					vrouter_nodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
+					vrouternodes.ReconcileVrouterNodes(contrailClient, []*types.VrouterNode{})
 				}
 			})
 			check(err)
@@ -421,7 +421,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			if err = vrouter_nodes.ReconcileVrouterNodes(contrailClient, vrouterNodeList); err != nil {
+			if err = vrouternodes.ReconcileVrouterNodes(contrailClient, vrouterNodeList); err != nil {
 				panic(err)
 			}
 		}
