@@ -112,15 +112,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	dynamicClient, err := v1alpha1.GetDynamicClient()
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
 	var cinfo v1alpha1.KubemanagerClusterInfo
 	var cniDirs vrouter.CNIDirectoriesInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
+		dynamicClient, err := v1alpha1.GetDynamicClient()
+		if err != nil {
+			log.Error(err, "Dynamic client could not be gathered")
+			os.Exit(1)
+		}
 		config := openshift.ClusterConfig{
 			Client:        clientset.CoreV1(),
 			DynamicClient: dynamicClient,

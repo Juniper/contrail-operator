@@ -141,8 +141,7 @@ func (suite *ClusterInfoSuite) TestMissingConfigMap() {
 }
 
 func (suite *ClusterInfoSuite) TestMissingEndpoint() {
-	ccv1Map := getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfigV1)
-	fakeClientset := fake.NewSimpleClientset(ccv1Map)
+	fakeClientset := fake.NewSimpleClientset(getConfigMap("cluster-config-v1", "kube-system", "install-config", clusterConfigV1))
 	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
@@ -233,8 +232,8 @@ func getConfigMap(name, namespace, dataKey, data string) *core.ConfigMap {
 	return cm
 }
 
-func getDNS(name, baseDomain string) *openshiftv1.DNS {
-	dns := &openshiftv1.DNS{
+func dns(name, baseDomain string) *openshiftv1.DNS {
+	return &openshiftv1.DNS{
 		ObjectMeta: meta.ObjectMeta{
 			Name: name,
 		},
@@ -246,11 +245,10 @@ func getDNS(name, baseDomain string) *openshiftv1.DNS {
 			BaseDomain: baseDomain,
 		},
 	}
-	return dns
 }
 
 func getEndpoint(name string, ports []core.EndpointPort) *core.Endpoints {
-	endpoint := &core.Endpoints{
+	return &core.Endpoints{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -260,12 +258,11 @@ func getEndpoint(name string, ports []core.EndpointPort) *core.Endpoints {
 			APIVersion: "v1",
 		},
 		Subsets: []core.EndpointSubset{
-			core.EndpointSubset{
+			{
 				Ports: ports,
 			},
 		},
 	}
-	return endpoint
 }
 
 func getClientWithConfigMaps(clusterConfig string, epPorts []core.EndpointPort) typedCorev1.CoreV1Interface {
@@ -276,7 +273,6 @@ func getClientWithConfigMaps(clusterConfig string, epPorts []core.EndpointPort) 
 }
 
 func getDynamicClientWithDNS(dnsName, dnsURL string) (dynamic.Interface, error) {
-	dns := getDNS(dnsName, dnsURL)
 	scheme, err := v1alpha1.SchemeBuilder.Build()
 	if err != nil {
 		return nil, err
@@ -284,5 +280,5 @@ func getDynamicClientWithDNS(dnsName, dnsURL string) (dynamic.Interface, error) 
 	if err = openshiftv1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	return dynamicFake.NewSimpleDynamicClient(scheme, dns), nil
+	return dynamicFake.NewSimpleDynamicClient(scheme, dns(dnsName, dnsURL)), nil
 }

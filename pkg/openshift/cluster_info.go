@@ -5,10 +5,11 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -23,13 +24,14 @@ type ClusterConfig struct {
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
-	endpointsClient := c.Client.Endpoints("default")
-	kubernetesEndpoint, err := endpointsClient.Get("kubernetes", metav1.GetOptions{})
+	kubernetesEndpoint, err := c.Client.Endpoints("default").Get("kubernetes", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
-	endpointPorts := kubernetesEndpoint.Subsets[0].Ports
-	for _, port := range endpointPorts {
+	if len(kubernetesEndpoint.Subsets) == 0 {
+		return 0, errors.New("No subsets found")
+	}
+	for _, port := range kubernetesEndpoint.Subsets[0].Ports {
 		if port.Name == "https" {
 			return int(port.Port), nil
 		}
