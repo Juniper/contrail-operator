@@ -44,8 +44,7 @@ func (c *VrouterNode) Create(contrailClient ApiClient) error {
 		vncNode.SetVirtualRouterIpAddress(c.IPAddress)
 		vncNode.SetParent(gsc)
 		vncNode.SetName(c.Hostname)
-		err := contrailClient.Create(vncNode)
-		if err != nil {
+		if err := contrailClient.Create(vncNode); err != nil {
 			return err
 		}
 		return nil
@@ -67,8 +66,7 @@ func (c *VrouterNode) Update(contrailClient ApiClient) error {
 		typedNode := obj.(*contrailTypes.VirtualRouter)
 		if typedNode.GetName() == c.Hostname {
 			typedNode.SetVirtualRouterIpAddress(c.IPAddress)
-			err := contrailClient.Update(typedNode)
-			if err != nil {
+			if err := contrailClient.Update(typedNode); err != nil {
 				return err
 			}
 		}
@@ -90,8 +88,7 @@ func (c *VrouterNode) Delete(contrailClient ApiClient) error {
 		if obj.GetName() == c.Hostname {
 			deleteVMIs(obj.(*contrailTypes.VirtualRouter), contrailClient)
 			fmt.Println("Deleting VirtualRouter ", obj.GetName())
-			err = contrailClient.Delete(obj)
-			if err != nil {
+			if err = contrailClient.Delete(obj); err != nil {
 				return err
 			}
 		}
@@ -119,8 +116,7 @@ func EnsureVMIVhost0InterfaceForVirtualRouters(contrailClient ApiClient) error {
 			return err
 		}
 		if !vhost0VMIPresent {
-			err = createVhost0VMI(typedVirtualRouter, contrailClient)
-			if err != nil {
+			if err = createVhost0VMI(typedVirtualRouter, contrailClient); err != nil {
 				return err
 			}
 		}
@@ -156,8 +152,7 @@ func createVhost0VMI(virtualRouter *contrailTypes.VirtualRouter, contrailClient 
 	vncVMI.SetVirtualNetworkList([]contrail.ReferencePair{{Object: network}})
 	vncVMI.SetVirtualMachineInterfaceDisablePolicy(false)
 	vncVMI.SetName(vhost0VMIName)
-	err = contrailClient.Create(vncVMI)
-	if err != nil {
+	if err = contrailClient.Create(vncVMI); err != nil {
 		return err
 	}
 	return nil
@@ -170,8 +165,7 @@ func deleteVMIs(virtualRouter *contrailTypes.VirtualRouter, contrailClient ApiCl
 	}
 	for _, vmiRef := range vmiList {
 		fmt.Println("Deleting VMI interface ", vmiRef.Uuid)
-		err = contrailClient.DeleteByUuid(virtualMachineInterfaceType, vmiRef.Uuid)
-		if err != nil {
+		if err = contrailClient.DeleteByUuid(virtualMachineInterfaceType, vmiRef.Uuid); err != nil {
 			return err
 		}
 	}

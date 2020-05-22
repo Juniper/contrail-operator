@@ -3,9 +3,8 @@ package vrouternodes
 import (
 	"fmt"
 
-	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
-
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
+	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
 )
 
 const nodeType string = "virtual-router"
@@ -33,12 +32,10 @@ func ReconcileVrouterNodes(contrailClient types.ApiClient, requiredNodes []*type
 		return err
 	}
 	actionMap := createVrouterNodesActionMap(nodesInApiServer, requiredNodes)
-	err = executeActionMap(actionMap, contrailClient)
-	if err != nil {
+	if err = executeActionMap(actionMap, contrailClient); err != nil {
 		return err
 	}
-	err = types.EnsureVMIVhost0InterfaceForVirtualRouters(contrailClient)
-	if err != nil {
+	if err = types.EnsureVMIVhost0InterfaceForVirtualRouters(contrailClient); err != nil {
 		return err
 	}
 	return nil

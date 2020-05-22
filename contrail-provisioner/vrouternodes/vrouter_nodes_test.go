@@ -31,8 +31,8 @@ func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, actualVirtualRouterNodes, len(expectedVirtualRouterNodes))
-	for i := 0; i < len(expectedVirtualRouterNodes); i++ {
-		assert.Equal(t, *expectedVirtualRouterNodes[i], *actualVirtualRouterNodes[i])
+	for idx, expectedNode := range expectedVirtualRouterNodes {
+		assert.Equal(t, *expectedNode, *actualVirtualRouterNodes[idx])
 	}
 }
 
