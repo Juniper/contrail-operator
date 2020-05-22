@@ -69,7 +69,7 @@ read_config() {
         echo "Couldn't find DOCKER_CONFIG parameter. Exiting..."
         exit 1
     fi
-    OPERATOR_IMAGE="${OPERATOR_IMAGE##OPERATOR_IMAGE=}"
+    OPERATOR_IMAGE="${OPERATOR_IMAGE##CONTRAIL_OPERATOR_IMAGE=}"
     DOCKER_CONFIG="${DOCKER_CONFIG##DOCKER_CONFIG=}"
     echo '[INFO] Config properly consumed'
 }
