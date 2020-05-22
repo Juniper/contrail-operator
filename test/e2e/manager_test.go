@@ -81,9 +81,9 @@ var initialVersionMap = map[string]string{
 	"rabbitmq":                      "3.7.16",
 	"cassandra":                     "3.11.3",
 	"zookeeper":                     "3.5.4-beta",
-	"config":                        "2005.11",
-	"control":                       "2005.11",
-	"kubemanager":                   "2005.11",
+	"config":                        "2005.42",
+	"control":                       "2005.42",
+	"kubemanager":                   "2005.42",
 	"contrail-operator-provisioner": scmBranch + "." + scmRevision,
 	"contrail-statusmonitor":        scmBranch + "." + scmRevision,
 }
