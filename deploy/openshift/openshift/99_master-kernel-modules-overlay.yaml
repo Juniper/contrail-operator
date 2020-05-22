@@ -1,0 +1,24 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 02-master-modules
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    storage:
+      directories:
+        - filesystem: "root"
+          path: "/opt/modules"
+          mode: 0755
+        - filesystem: "root"
+          path: "/opt/modules.wd"
+          mode: 0755
+      files:
+        - filesystem: "root"
+          path: "/etc/fstab"
+          mode: 0644
+          contents:
+            source: "data:,overlay%20/lib/modules%20overlay%20lowerdir=/lib/modules,upperdir=/opt/modules,workdir=/opt/modules.wd%200%200"
