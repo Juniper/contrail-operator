@@ -97,22 +97,22 @@ Run this command to start Openshift install:
 
 9. Open security groups:
 
-Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. Do the same for the security group attached to worker nodes, after they are created. 
+Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. Do the same for the security group attached to worker nodes, after they are created.
 
 10. Create link-local service:
 
 After *openshift-install* says that kubernetes API is up, with a message similar to this:
 ```
-./4.3.5/openshift-install create cluster --dir ./psykulski3/                                                                                                                                                
-INFO Consuming Openshift Manifests from target directory                                                                                                                                                    
-INFO Consuming Master Machines from target directory                                                                                                                                                        
-INFO Consuming Common Manifests from target directory                                                                                                                                                       
-INFO Consuming Worker Machines from target directory                                                                                                                                                        
-INFO Consuming OpenShift Install (Manifests) from target directory                                                                                                                                          
-INFO Creating infrastructure resources...                                                                                                                                                                   
-INFO Waiting up to 30m0s for the Kubernetes API at https://api.psykulski3.psykulski.jnpr.com:6443...                                                                                                        
-INFO API v1.16.2 up                                                                                                                                                                                         
-INFO Waiting up to 30m0s for bootstrapping to complete...  
+./4.3.5/openshift-install create cluster --dir ./psykulski3/
+INFO Consuming Openshift Manifests from target directory
+INFO Consuming Master Machines from target directory
+INFO Consuming Common Manifests from target directory
+INFO Consuming Worker Machines from target directory
+INFO Consuming OpenShift Install (Manifests) from target directory
+INFO Creating infrastructure resources...
+INFO Waiting up to 30m0s for the Kubernetes API at https://api.psykulski3.psykulski.jnpr.com:6443...
+INFO API v1.16.2 up
+INFO Waiting up to 30m0s for bootstrapping to complete...
 ```
 
 Export KUBECONFIG variable to point to use *kubectl* (for instruction see the *Access cluster* section)
@@ -130,6 +130,14 @@ kubectl -n openshift-etcd describe service etcd
 ```
 
 Login to the Contrail webui and use details from the command above to create two link-local services.
+
+Example window in web UI to add link local.
+![link-local-add](example_link-local.png)
+
+Example of expected link locals created in web UI.
+![link-local-all](example_all-link-local.png)
+
+**NOTE**: Default domain link local should be created automatically by kubemanager - there's no need to manually add it.
 
 # Access cluster
 In order to access export **KUBECONFIG** environment variable.
