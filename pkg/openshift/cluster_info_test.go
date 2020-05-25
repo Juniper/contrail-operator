@@ -69,10 +69,20 @@ sshKey: |
   ssh-rsa AAAAAAA test@test-user
 `
 
-var endpointPorts = []core.EndpointPort{{Name: "https", Port: 6443}}
+func endpointPorts() []core.EndpointPort {
+	return []core.EndpointPort{{Name: "https", Port: 6443}}
+}
+
+func (suite *ClusterInfoSuite) AssertJustNoError(_ interface{}, err error) {
+	suite.Assert().NoError(err)
+}
+
+func (suite *ClusterInfoSuite) AssertJustError(_ interface{}, err error) {
+	suite.Assert().Error(err)
+}
 
 func (suite *ClusterInfoSuite) SetupTest() {
-	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts)
+	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts())
 	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	suite.ClusterInfo = openshift.ClusterConfig{
@@ -121,23 +131,18 @@ func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
 }
 
 func (suite *ClusterInfoSuite) TestMissingConfigMap() {
-	fakeClientset := fake.NewSimpleClientset(getEndpoint("kubernetes", endpointPorts))
+	fakeClientset := fake.NewSimpleClientset(getEndpoint("kubernetes", endpointPorts()))
 	dynamicClient, err := getDynamicClientWithDNS("cluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        fakeClientset.CoreV1(),
 		DynamicClient: dynamicClient,
 	}
-	_, err = ci.KubernetesAPISSLPort()
-	suite.Assert().NoError(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().NoError(err)
-	_, err = ci.KubernetesClusterName()
-	suite.Assert().Error(err)
-	_, err = ci.PodSubnets()
-	suite.Assert().Error(err)
-	_, err = ci.ServiceSubnets()
-	suite.Assert().Error(err)
+	suite.AssertJustNoError(ci.KubernetesAPISSLPort())
+	suite.AssertJustNoError(ci.KubernetesAPIServer())
+	suite.AssertJustError(ci.KubernetesClusterName())
+	suite.AssertJustError(ci.PodSubnets())
+	suite.AssertJustError(ci.ServiceSubnets())
 }
 
 func (suite *ClusterInfoSuite) TestMissingEndpoint() {
@@ -148,36 +153,26 @@ func (suite *ClusterInfoSuite) TestMissingEndpoint() {
 		Client:        fakeClientset.CoreV1(),
 		DynamicClient: dynamicClient,
 	}
-	_, err = ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().NoError(err)
-	_, err = ci.KubernetesClusterName()
-	suite.Assert().NoError(err)
-	_, err = ci.PodSubnets()
-	suite.Assert().NoError(err)
-	_, err = ci.ServiceSubnets()
-	suite.Assert().NoError(err)
+	suite.AssertJustError(ci.KubernetesAPISSLPort())
+	suite.AssertJustNoError(ci.KubernetesAPIServer())
+	suite.AssertJustNoError(ci.KubernetesClusterName())
+	suite.AssertJustNoError(ci.PodSubnets())
+	suite.AssertJustNoError(ci.ServiceSubnets())
 }
 
 func (suite *ClusterInfoSuite) TestMissingDNS() {
-	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts)
+	coreV1Interface := getClientWithConfigMaps(clusterConfigV1, endpointPorts())
 	dynamicClient, err := getDynamicClientWithDNS("NOTcluster", "test.user.test.com")
 	suite.Assert().NoError(err)
 	ci := openshift.ClusterConfig{
 		Client:        coreV1Interface,
 		DynamicClient: dynamicClient,
 	}
-	_, err = ci.KubernetesAPISSLPort()
-	suite.Assert().NoError(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesClusterName()
-	suite.Assert().NoError(err)
-	_, err = ci.PodSubnets()
-	suite.Assert().NoError(err)
-	_, err = ci.ServiceSubnets()
-	suite.Assert().NoError(err)
+	suite.AssertJustNoError(ci.KubernetesAPISSLPort())
+	suite.AssertJustError(ci.KubernetesAPIServer())
+	suite.AssertJustNoError(ci.KubernetesClusterName())
+	suite.AssertJustNoError(ci.PodSubnets())
+	suite.AssertJustNoError(ci.ServiceSubnets())
 
 }
 
@@ -190,16 +185,11 @@ func (suite *ClusterInfoSuite) TestMissingEndpointHttpsPort() {
 		Client:        coreV1Interface,
 		DynamicClient: dynamicClient,
 	}
-	_, err = ci.KubernetesAPISSLPort()
-	suite.Assert().Error(err)
-	_, err = ci.KubernetesAPIServer()
-	suite.Assert().NoError(err)
-	_, err = ci.KubernetesClusterName()
-	suite.Assert().NoError(err)
-	_, err = ci.PodSubnets()
-	suite.Assert().NoError(err)
-	_, err = ci.ServiceSubnets()
-	suite.Assert().NoError(err)
+	suite.AssertJustError(ci.KubernetesAPISSLPort())
+	suite.AssertJustNoError(ci.KubernetesAPIServer())
+	suite.AssertJustNoError(ci.KubernetesClusterName())
+	suite.AssertJustNoError(ci.PodSubnets())
+	suite.AssertJustNoError(ci.ServiceSubnets())
 }
 
 func (suite *ClusterInfoSuite) TestMultipleEndpointPorts() {

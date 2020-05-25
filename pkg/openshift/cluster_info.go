@@ -41,12 +41,12 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
-	gvr := schema.GroupVersionResource{
-		Group:    "config.openshift.io",
-		Version:  "v1",
-		Resource: "dnses",
-	}
-	u, err := c.DynamicClient.Resource(gvr).Get("cluster", metav1.GetOptions{})
+	u, err := c.DynamicClient.Resource(
+		schema.GroupVersionResource{
+			Group:    "config.openshift.io",
+			Version:  "v1",
+			Resource: "dnses",
+		}).Get("cluster", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
