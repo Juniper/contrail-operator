@@ -482,6 +482,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                contrailVersion:
+                  type: string
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -1707,6 +1709,8 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            contrailVersion:
+                              type: string
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -2712,6 +2716,28 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            globalVrouterConfiguration:
+                              properties:
+                                ecmpHashingIncludeFields:
+                                  properties:
+                                    destinationIp:
+                                      type: boolean
+                                    destinationPort:
+                                      type: boolean
+                                    hashingConfigured:
+                                      type: boolean
+                                    ipProtocol:
+                                      type: boolean
+                                    sourceIp:
+                                      type: boolean
+                                    sourcePort:
+                                      type: boolean
+                                  type: object
+                                encapPriority:
+                                  type: string
+                                vxlanNetworkIdentifierMode:
+                                  type: string
+                              type: object
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -4021,6 +4047,28 @@ spec:
                         type: string
                     type: object
                   type: array
+                globalVrouterConfiguration:
+                  properties:
+                    ecmpHashingIncludeFields:
+                      properties:
+                        destinationIp:
+                          type: boolean
+                        destinationPort:
+                          type: boolean
+                        hashingConfigured:
+                          type: boolean
+                        ipProtocol:
+                          type: boolean
+                        sourceIp:
+                          type: boolean
+                        sourcePort:
+                          type: boolean
+                      type: object
+                    encapPriority:
+                      type: string
+                    vxlanNetworkIdentifierMode:
+                      type: string
+                  type: object
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -5094,7 +5142,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: svl-artifactory.juniper.net/contrail-operator.gcr.io/eng-prod-237922/contrail-operator:master.latest
+          image: registry:5000/contrail-operator:latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

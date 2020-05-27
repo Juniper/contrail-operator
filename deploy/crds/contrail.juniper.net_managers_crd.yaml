@@ -424,6 +424,8 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            contrailVersion:
+                              type: string
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
