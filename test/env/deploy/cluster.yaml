@@ -205,6 +205,7 @@ spec:
           swiftProxyPort: 5080
           keystonePort: 5555
           keystoneInstance: keystone
+          contrailVersion: "2005.42"
           containers:
           - name: api
             image: registry:5000/contrail-nightly/contrail-command:2005.42
