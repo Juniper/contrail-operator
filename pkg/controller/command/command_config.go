@@ -101,7 +101,7 @@ resources:
             value: 'no'
           - key: UPGRADE_KERNEL
             value: 'no'
-      contrail_version: {{ .ContrailVersion }}
+      contrail_version: "{{ .ContrailVersion }}"
       display_name: {{ .ClusterName }}
       high_availability: false
       name: {{ .ClusterName | ToLower }}

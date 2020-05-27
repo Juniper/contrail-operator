@@ -917,7 +917,7 @@ resources:
             value: 'no'
           - key: UPGRADE_KERNEL
             value: 'no'
-      contrail_version: 1.2.3
+      contrail_version: "1.2.3"
       display_name: cluster1
       high_availability: false
       name: cluster1
