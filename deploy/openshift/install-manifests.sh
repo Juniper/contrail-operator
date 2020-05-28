@@ -75,8 +75,8 @@ read_config() {
 }
 
 apply_config() {
-    sed -i 's|<OPERATOR_IMAGE>|'$OPERATOR_IMAGE'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml
-    sed -i 's|<DOCKER_CONFIG>|'$DOCKER_CONFIG'|g' ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml
+    sed -i.bak 's|<OPERATOR_IMAGE>|'$OPERATOR_IMAGE'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml.bak
+    sed -i.bak 's|<DOCKER_CONFIG>|'$DOCKER_CONFIG'|g' ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml.bak
     echo '[INFO] Set proper parameters from config in manifests'
 }
 
