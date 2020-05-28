@@ -1,5 +1,6 @@
 # Development
 
+
 This file contains more detailed description of the development process. For quickstart guide see [README.md](README.md). For description of E2E test environment see [E2E test guide](test/env/README.md).
 
 ## Repository structure overview
