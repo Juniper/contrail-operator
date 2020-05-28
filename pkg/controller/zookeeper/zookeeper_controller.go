@@ -11,6 +11,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -417,6 +418,21 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
+		}
+		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
+		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
+		pvcList := &corev1.PersistentVolumeClaimList{}
+		err = r.Client.List(context.TODO(), pvcList, listOps)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		for _, pvc := range pvcList.Items {
+			if err = controllerutil.SetControllerReference(instance, &pvc, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err = r.Client.Update(context.TODO(), &pvc); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 	}
 	if instance.Status.Active == nil {
