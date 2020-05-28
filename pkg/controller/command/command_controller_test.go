@@ -404,6 +404,7 @@ func newCommand() *contrail.Command {
 					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
+				ContrailVersion: "1.2.3",
 			},
 		},
 	}
@@ -916,7 +917,7 @@ resources:
             value: 'no'
           - key: UPGRADE_KERNEL
             value: 'no'
-      contrail_version: latest
+      contrail_version: "1.2.3"
       display_name: cluster1
       high_availability: false
       name: cluster1

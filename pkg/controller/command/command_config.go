@@ -9,20 +9,21 @@ import (
 )
 
 type commandConf struct {
-	ClusterName    string
-	ConfigAPIURL   string
-	TelemetryURL   string
-	AdminUsername  string
-	AdminPassword  string
-	SwiftUsername  string
-	SwiftPassword  string
-	PostgresUser   string
-	PostgresDBName string
-	HostIP         string
-	CAFilePath     string
-	PGPassword     string
-	KeystoneIP     string
-	KeystonePort   int
+	ClusterName     string
+	ConfigAPIURL    string
+	TelemetryURL    string
+	AdminUsername   string
+	AdminPassword   string
+	SwiftUsername   string
+	SwiftPassword   string
+	PostgresUser    string
+	PostgresDBName  string
+	HostIP          string
+	CAFilePath      string
+	PGPassword      string
+	KeystoneIP      string
+	KeystonePort    int
+	ContrailVersion string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -100,7 +101,7 @@ resources:
             value: 'no'
           - key: UPGRADE_KERNEL
             value: 'no'
-      contrail_version: latest
+      contrail_version: "{{ .ContrailVersion }}"
       display_name: {{ .ClusterName }}
       high_availability: false
       name: {{ .ClusterName | ToLower }}
