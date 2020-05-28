@@ -1,7 +1,7 @@
 package types
 
 import (
-	//contrailTypes "github.com/Juniper/contrail-go-api/types"
+	contrail "github.com/Juniper/contrail-go-api"
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 
@@ -13,4 +13,12 @@ type Nodes struct {
 	VrouterNodes   []*VrouterNode             `yaml:"vrouterNodes,omitempty"`
 	ConfigNodes    []*ConfigNode              `yaml:"configNodes,omitempty"`
 	DatabaseNodes  []*DatabaseNode            `yaml:"databaseNodes,omitempty"`
+}
+
+// ApiClient interface extends contrail.ApiClient by a missing ReadListResult
+// to enable passing ApiClient interface instead of the struct to ease
+// mocking in unit test
+type ApiClient interface {
+	contrail.ApiClient
+	ReadListResult(string, *contrail.ListResult) (contrail.IObject, error)
 }

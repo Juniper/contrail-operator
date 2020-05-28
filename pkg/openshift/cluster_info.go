@@ -1,11 +1,13 @@
 package openshift
 
 import (
-	"net"
-	"net/url"
-	"strconv"
+	"errors"
 
 	yaml "gopkg.in/yaml.v2"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -16,37 +18,43 @@ var log = logf.Log.WithName("openshift_cluster_info")
 
 // ClusterConfig is a struct that incorporates v1alpha1.KubemanagerClusterInfo interface
 type ClusterConfig struct {
-	Client typedCorev1.CoreV1Interface
+	Client        typedCorev1.CoreV1Interface
+	DynamicClient dynamic.Interface
 }
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
-	masterPublicURL, err := getMasterPublicURL(c.Client)
+	kubernetesEndpoint, err := c.Client.Endpoints("default").Get("kubernetes", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
-	_, kubernetesAPISSLPort, err := net.SplitHostPort(masterPublicURL.Host)
-	if err != nil {
-		return 0, err
+	if len(kubernetesEndpoint.Subsets) == 0 {
+		return 0, errors.New("No subsets found")
 	}
-	kubernetesAPISSLPortInt, err := strconv.Atoi(kubernetesAPISSLPort)
-	if err != nil {
-		return 0, err
+	for _, port := range kubernetesEndpoint.Subsets[0].Ports {
+		if port.Name == "https" {
+			return int(port.Port), nil
+		}
 	}
-	return kubernetesAPISSLPortInt, nil
+	return 0, errors.New("No https port found")
 }
 
 // KubernetesAPIServer gathers API Server name from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
-	masterPublicURL, err := getMasterPublicURL(c.Client)
+	u, err := c.DynamicClient.Resource(
+		schema.GroupVersionResource{
+			Group:    "config.openshift.io",
+			Version:  "v1",
+			Resource: "dnses",
+		}).Get("cluster", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	kubernetesAPIServer, _, err := net.SplitHostPort(masterPublicURL.Host)
+	apiServer, _, err := unstructured.NestedString(u.Object, "spec", "baseDomain")
 	if err != nil {
 		return "", err
 	}
-	return kubernetesAPIServer, nil
+	return "api." + apiServer, nil
 }
 
 // KubernetesClusterName gathers cluster name from Openshift Cluster via cluster-config-v1 ConfigMap
@@ -97,26 +105,6 @@ func (c ClusterConfig) CNIBinariesDirectory() string {
 // CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
 func (c ClusterConfig) CNIConfigFilesDirectory() string {
 	return "/etc/kubernetes/cni"
-}
-
-func getMasterPublicURL(client typedCorev1.CoreV1Interface) (*url.URL, error) {
-	openshiftConsoleMapClient := client.ConfigMaps("openshift-console")
-	consoleCM, err := openshiftConsoleMapClient.Get("console-config", metav1.GetOptions{})
-	if err != nil {
-		return &url.URL{}, err
-	}
-	consoleConfigSection := consoleCM.Data["console-config.yaml"]
-	consoleConfigByte := []byte(consoleConfigSection)
-	consoleConfigMap := consoleConfig{}
-	if err := yaml.Unmarshal(consoleConfigByte, &consoleConfigMap); err != nil {
-		return &url.URL{}, err
-	}
-	masterPublicURL := consoleConfigMap.ClusterInfo.MasterPublicURL
-	parsedMasterPublicURL, err := url.Parse(masterPublicURL)
-	if err != nil {
-		return &url.URL{}, err
-	}
-	return parsedMasterPublicURL, nil
 }
 
 func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {
