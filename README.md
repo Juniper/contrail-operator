@@ -254,4 +254,3 @@ System tests can be run using operator-sdk tool
     # From contrail-operator root directory
     operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
 
-
