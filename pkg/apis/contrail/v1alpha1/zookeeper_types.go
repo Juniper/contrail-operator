@@ -36,6 +36,7 @@ type ZookeeperConfiguration struct {
 	ClientPort   *int         `json:"clientPort,omitempty"`
 	ElectionPort *int         `json:"electionPort,omitempty"`
 	ServerPort   *int         `json:"serverPort,omitempty"`
+	Storage      Storage      `json:"storage,omitempty"`
 }
 
 // ZookeeperStatus defines the status of the zookeeper object.
@@ -133,14 +134,23 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
 		}
 		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
 
-		configtemplates.ZookeeperConfig.Execute(&zookeeperConfigBuffer, struct {
+		err = configtemplates.ZookeeperConfig.Execute(&zookeeperConfigBuffer, struct {
 			ClientPort string
 		}{
 			ClientPort: strconv.Itoa(*zookeeperConfig.ClientPort),
 		})
+		if err != nil {
+			return err
+		}
 
-		configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
-		configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
+		err = configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
+		if err != nil {
+			return err
+		}
+		err = configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
+		if err != nil {
+			return err
+		}
 		data := map[string]string{
 			"zoo.cfg":           zookeeperConfigBuffer.String(),
 			"log4j.properties":  zookeeperLogBuffer.String(),
@@ -280,6 +290,17 @@ func (c *Zookeeper) ConfigurationParameters() interface{} {
 	var clientPort int
 	var electionPort int
 	var serverPort int
+	if c.Spec.ServiceConfiguration.Storage.Path == "" {
+		zookeeperConfiguration.Storage.Path = "/data"
+	} else {
+		zookeeperConfiguration.Storage.Path = c.Spec.ServiceConfiguration.Storage.Path
+	}
+	if c.Spec.ServiceConfiguration.Storage.Size == "" {
+		zookeeperConfiguration.Storage.Size = "10Gi"
+	} else {
+		zookeeperConfiguration.Storage.Size = c.Spec.ServiceConfiguration.Storage.Size
+	}
+
 	if c.Spec.ServiceConfiguration.ClientPort != nil {
 		clientPort = *c.Spec.ServiceConfiguration.ClientPort
 	} else {

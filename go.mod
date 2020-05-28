@@ -23,7 +23,6 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/gogo/googleapis v1.3.2 // indirect
 	github.com/golang/dep v0.5.4 // indirect
-	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-containerregistry v0.0.0-20200320200342-35f57d7d4930 // indirect
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/hashicorp/terraform v0.12.24 // indirect
@@ -37,7 +36,6 @@ require (
 	github.com/mitchellh/iochan v1.0.0 // indirect
 	github.com/nightlyone/lockfile v1.0.0 // indirect
 	github.com/operator-framework/operator-sdk v0.14.1
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/sftp v1.11.0 // indirect
 	github.com/pmylund/go-cache v2.1.0+incompatible
 	github.com/pseudomuto/protoc-gen-doc v1.3.1
