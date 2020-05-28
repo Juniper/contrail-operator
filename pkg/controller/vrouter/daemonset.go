@@ -291,11 +291,10 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				},
 			},
 		},
-		core.Volume{
-			Name: "host-bin",
+		core.Volume{Name: "host-bin",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
-					Path: "/bin",
+					Path: "/usr/local/bin",
 				},
 			},
 		},
