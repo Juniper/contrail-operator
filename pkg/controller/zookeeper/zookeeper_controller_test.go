@@ -4,13 +4,11 @@ import (
 	"context"
 	"testing"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,6 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 func TestZookeeperResourceHandler(t *testing.T) {
@@ -110,6 +112,7 @@ func TestZookeeper(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storagev1.SchemeBuilder.AddToScheme(scheme), "Failed storagev1.SchemeBuilder.AddToScheme()")
 
 	tests := []*TestCase{
 		testcase1(),
