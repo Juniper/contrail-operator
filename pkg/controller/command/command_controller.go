@@ -183,8 +183,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	contrailVersion := getContrailVersion(command)
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort, contrailVersion); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -542,12 +541,4 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
-}
-
-func getContrailVersion(command *contrail.Command) string {
-	if command.Spec.ServiceConfiguration.ContrailVersion == "" {
-		return "latest"
-	}
-
-	return command.Spec.ServiceConfiguration.ContrailVersion
 }
