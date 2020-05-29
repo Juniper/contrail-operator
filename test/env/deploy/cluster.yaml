@@ -263,6 +263,7 @@ spec:
           containers:
           - name: memcached
             image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"
+          debugLogsEnabled: false
     swift:
       metadata:
         name: swift
