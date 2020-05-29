@@ -1,0 +1,32 @@
+
+apiVersion: v1
+baseDomain: developer.jnpr.com
+compute:
+- hyperthreading: Enabled
+  name: worker
+  platform: {}
+  replicas: 3
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  platform: 
+    aws:
+      type: m5.2xlarge
+  replicas: 1
+metadata:
+  creationTimestamp: null
+  name: developer
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineCIDR: 10.0.0.0/16
+  networkType: Contrail
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  aws:
+    region: eu-west-2
+publish: External
+pullSecret: <FILLED AUTOMATICALLY WHEN CREATING INSTALL-CONFIG WITH OPENSHIFT-INSTALL BINARY>
+shKey: <FILLED AUTOMATICALLY WHEN CREATING INSTALL-CONFIG WITH OPENSHIFT-INSTALL BINARY>
