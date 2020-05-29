@@ -23,10 +23,15 @@ func (r *ReconcileMemcached) configMap(configMapName string, memcached *contrail
 }
 
 func (c *configMaps) ensureExists() error {
+	logLevelFlag := "-v"
+	if c.memcachedSpec.ServiceConfiguration.DebugLogsEnabled {
+		logLevelFlag = "-vv"
+	}
 	spc := &memcachedConfig{
 		ListenPort:      c.memcachedSpec.ServiceConfiguration.GetListenPort(),
 		ConnectionLimit: c.memcachedSpec.ServiceConfiguration.GetConnectionLimit(),
 		MaxMemory:       c.memcachedSpec.ServiceConfiguration.GetMaxMemory(),
+		LogLevelFlag:    logLevelFlag,
 	}
 	return c.cm.EnsureExists(spc)
 }
@@ -35,6 +40,7 @@ type memcachedConfig struct {
 	ListenPort      int32
 	ConnectionLimit int32
 	MaxMemory       int32
+	LogLevelFlag    string
 }
 
 func (c *memcachedConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -52,6 +58,6 @@ func (c *memcachedConfig) String() string {
 
 // -l 127.0.0.1 makes memcached available only on localhost
 const memcachedConfigTemplate = `{
-	"command": "/usr/bin/memcached -vv -l 127.0.0.1 -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
+	"command": "/usr/bin/memcached {{ .LogLevelFlag }} -l 127.0.0.1 -p {{ .ListenPort }} -c {{ .ConnectionLimit }} -U 0 -m {{ .MaxMemory }}",
 	"config_files": []
 }`

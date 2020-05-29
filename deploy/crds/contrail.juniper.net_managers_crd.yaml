@@ -1249,6 +1249,8 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        debugLogsEnabled:
+                          type: boolean
                         node:
                           type: string
                       type: object

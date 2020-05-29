@@ -11,8 +11,9 @@ type MemcachedSpec struct {
 
 // MemcachedStatus defines the observed state of Memcached
 type MemcachedStatus struct {
-	Active bool   `json:"active,omitempty"`
-	Node   string `json:"node,omitempty"`
+	Active           bool   `json:"active,omitempty"`
+	Node             string `json:"node,omitempty"`
+	DebugLogsEnabled bool   `json:"debugLogsEnabled,omitempty"`
 }
 
 type MemcachedConfiguration struct {
