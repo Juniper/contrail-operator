@@ -1230,6 +1230,8 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            debugLogsEnabled:
+                              type: boolean
                             listenPort:
                               format: int32
                               type: integer
@@ -2249,6 +2251,14 @@ spec:
                                 type: integer
                               serverPort:
                                 type: integer
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                             type: object
                         required:
                         - commonConfiguration
