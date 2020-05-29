@@ -14,13 +14,17 @@ go_library(
         "@com_github_ghodss//:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//storage/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/resource:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@io_k8s_client_go//util/workqueue:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/controller:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/controller/controllerutil:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/event:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/handler:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
@@ -32,10 +36,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "zookeeper_controller_test.go",
-        "zookeeper_test.go",
-    ],
+    srcs = ["zookeeper_controller_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
@@ -45,6 +46,7 @@ go_test(
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_api//storage/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",

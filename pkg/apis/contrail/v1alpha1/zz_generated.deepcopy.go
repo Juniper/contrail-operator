@@ -3298,6 +3298,7 @@ func (in *ZookeeperConfiguration) DeepCopyInto(out *ZookeeperConfiguration) {
 		*out = new(int)
 		**out = **in
 	}
+	out.Storage = in.Storage
 	return
 }
 
