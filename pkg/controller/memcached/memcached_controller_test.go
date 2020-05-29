@@ -38,7 +38,7 @@ func TestMemcachedController(t *testing.T) {
 			assertValidMemcachedDeploymentExists(t, fakeClient)
 		})
 		t.Run("should create Memcached Config Map", func(t *testing.T) {
-			assertValidMemcachedConfigMapExists(t, fakeClient)
+			assertValidMemcachedConfigMapExists(t, fakeClient, expectedMemcachedConfigWithoutDebugLogs)
 		})
 	})
 
@@ -55,7 +55,7 @@ func TestMemcachedController(t *testing.T) {
 			assertValidMemcachedDeploymentExists(t, fakeClient)
 		})
 		t.Run("should create Memcached Config Map", func(t *testing.T) {
-			assertValidMemcachedConfigMapExists(t, fakeClient)
+			assertValidMemcachedConfigMapExists(t, fakeClient, expectedMemcachedConfigWithoutDebugLogs)
 		})
 	})
 
@@ -63,7 +63,7 @@ func TestMemcachedController(t *testing.T) {
 		// given
 		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		existingMemcachedDeployment := newExpectedDeployment()
-		existingMemcachedConfigMap := newExpectedMemcachedConfigMap()
+		existingMemcachedConfigMap := newExpectedMemcachedConfigMap(expectedMemcachedConfigWithoutDebugLogs)
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment, existingMemcachedConfigMap)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
 		// when
@@ -74,7 +74,7 @@ func TestMemcachedController(t *testing.T) {
 			assertValidMemcachedDeploymentExists(t, fakeClient)
 		})
 		t.Run("should not create nor update Memcached Config Map", func(t *testing.T) {
-			assertValidMemcachedConfigMapExists(t, fakeClient)
+			assertValidMemcachedConfigMapExists(t, fakeClient, expectedMemcachedConfigWithoutDebugLogs)
 		})
 	})
 
@@ -83,7 +83,7 @@ func TestMemcachedController(t *testing.T) {
 		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		changedMemcachedDeployment := newExpectedDeployment()
 		changedMemcachedDeployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 10000
-		changedMemcachedConfigMap := newExpectedMemcachedConfigMap()
+		changedMemcachedConfigMap := newExpectedMemcachedConfigMap(expectedMemcachedConfigWithoutDebugLogs)
 		changedMemcachedConfigMap.Data["config.json"] = ""
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, changedMemcachedDeployment, changedMemcachedConfigMap)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
@@ -95,7 +95,7 @@ func TestMemcachedController(t *testing.T) {
 			assertValidMemcachedDeploymentExists(t, fakeClient)
 		})
 		t.Run("should update Memcached Config Map", func(t *testing.T) {
-			assertValidMemcachedConfigMapExists(t, fakeClient)
+			assertValidMemcachedConfigMapExists(t, fakeClient, expectedMemcachedConfigWithoutDebugLogs)
 		})
 	})
 
@@ -131,6 +131,22 @@ func TestMemcachedController(t *testing.T) {
 			assertMemcachedIsInactive(t, fakeClient)
 		})
 	})
+
+	t.Run("when log level in existing Memcached deployment is changed from info to debug", func(t *testing.T) {
+		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: true})
+		memcachedCR.Spec.ServiceConfiguration.DebugLogsEnabled = true
+		existingMemcachedDeployment := newExpectedDeployment()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should set debug logging flag in configmap", func(t *testing.T) {
+			assertValidMemcachedConfigMapExists(t, fakeClient, expectedMemcachedConfigWithDebugLogs)
+		})
+	})
 }
 
 func setMemcachedDeploymentStatus(t *testing.T, c client.Client, status apps.DeploymentStatus) {
@@ -164,7 +180,7 @@ func assertValidMemcachedDeploymentExists(t *testing.T, c client.Client) {
 	assert.Equal(t, expectedDeployment, deployment)
 }
 
-func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
+func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client, expectedConfig string) {
 	configMap := &core.ConfigMap{}
 	err := c.Get(context.Background(), types.NamespacedName{
 		Name:      "test-memcached-config",
@@ -172,7 +188,7 @@ func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
 	}, configMap)
 	assert.NoError(t, err)
 	configMap.SetResourceVersion("")
-	assert.Equal(t, newExpectedMemcachedConfigMap(), configMap)
+	assert.Equal(t, newExpectedMemcachedConfigMap(expectedConfig), configMap)
 }
 
 func assertMemcachedIsActiveAndNodeStatusIsSet(t *testing.T, c client.Client) {
@@ -263,12 +279,18 @@ func newExpectedDeployment() *apps.Deployment {
 	}
 }
 
-func newExpectedMemcachedConfigMap() *core.ConfigMap {
-	trueVal := true
-	expectedConfig := `{
+const expectedMemcachedConfigWithoutDebugLogs = `{
+	"command": "/usr/bin/memcached -v -l 127.0.0.1 -p 11211 -c 5000 -U 0 -m 256",
+	"config_files": []
+}`
+
+const expectedMemcachedConfigWithDebugLogs = `{
 	"command": "/usr/bin/memcached -vv -l 127.0.0.1 -p 11211 -c 5000 -U 0 -m 256",
 	"config_files": []
 }`
+
+func newExpectedMemcachedConfigMap(expectedConfig string) *core.ConfigMap {
+	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
 			"config.json": expectedConfig,
@@ -294,7 +316,7 @@ func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
 				ListenPort:       11211,
 				ConnectionLimit:  5000,
 				MaxMemory:        256,
-				DebugLogsEnabled: true,
+				DebugLogsEnabled: false,
 			},
 		},
 		Status: status,
@@ -306,8 +328,7 @@ func newMemcachedCRWithDefaultValues() *contrail.Memcached {
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
 			ServiceConfiguration: contrail.MemcachedConfiguration{
-				Containers:       []*contrail.Container{{Name: "memcached", Image: "localhost:5000/centos-binary-memcached:train"}},
-				DebugLogsEnabled: true,
+				Containers: []*contrail.Container{{Name: "memcached", Image: "localhost:5000/centos-binary-memcached:train"}},
 			},
 		},
 	}
