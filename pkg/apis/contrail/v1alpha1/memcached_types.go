@@ -23,6 +23,8 @@ type MemcachedConfiguration struct {
 	ConnectionLimit int32 `json:"connectionLimit,omitempty"`
 	// +optional
 	MaxMemory int32 `json:"maxMemory,omitempty"`
+	// +optional
+	DebugLogsEnabled bool `json:"debugLogsEnabled,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
