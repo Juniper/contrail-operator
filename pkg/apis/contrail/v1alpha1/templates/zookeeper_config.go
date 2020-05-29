@@ -6,7 +6,6 @@ import "text/template"
 var ZookeeperConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
 clientPortAddress=
 dataDir=/data
-dataLogDir=/datalog
 tickTime=2000
 initLimit=5
 syncLimit=2
