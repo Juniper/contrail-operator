@@ -3,9 +3,10 @@ steps:
     args:
       - "run"
       - "--volume=/var/run/docker.sock:/var/run/docker.sock"
+      - "--volume=/workspace:/workspace"
       - "kaweue/testrunner:4"
       - "-c"
-      - 'kind delete cluster; kind create cluster; IP=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" kind-control-plane); echo $$IP; kubectl config set-cluster kind-kind --server=https://$$IP:6443 --insecure-skip-tls-verify; kubectl cluster-info; kind delete cluster;'
+      - "/workspace/test/gcb/run_e2e_test.sh"
 
 timeout: "600s"
 options:
