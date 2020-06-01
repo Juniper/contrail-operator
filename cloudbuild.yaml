@@ -4,7 +4,7 @@ steps:
       - "run"
       - "--volume=/var/run/docker.sock:/var/run/docker.sock"
       - "--volume=/workspace:/workspace"
-      - "kaweue/testrunner:4"
+      - "kaweue/testrunner:gcb"
       - "-c"
       - "/workspace/test/gcb/run_e2e_test.sh"
 
