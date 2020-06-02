@@ -350,7 +350,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			gateway = podList.Items[idx].Annotations["gateway"]
 		}
 		data2["PHYSICAL_INTERFACE"] = physicalInterface
-		data2["ORCHESTRATOR"] = "kubernetes"
+		data2["CLOUD_ORCHESTRATOR"] = "kubernetes"
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
