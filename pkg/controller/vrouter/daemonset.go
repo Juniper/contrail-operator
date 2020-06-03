@@ -87,7 +87,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 					MountPath: "/etc/sysconfig/network-scripts",
 				},
 				core.VolumeMount{
-					Name:      "host-bin",
+					Name:      "host-usr-local-bin",
 					MountPath: "/host/bin",
 				},
 				core.VolumeMount{
@@ -127,7 +127,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 					MountPath: "/etc/sysconfig/network-scripts",
 				},
 				core.VolumeMount{
-					Name:      "host-bin",
+					Name:      "host-usr-local-bin",
 					MountPath: "/host/bin",
 				},
 				core.VolumeMount{
@@ -288,14 +288,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: "/usr/src",
-				},
-			},
-		},
-		core.Volume{
-			Name: "host-bin",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/bin",
 				},
 			},
 		},
