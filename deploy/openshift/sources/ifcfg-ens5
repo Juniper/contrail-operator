@@ -1,0 +1,5 @@
+BOOTPROTO=dhcp
+DEVICE=ens5
+ONBOOT=yes
+NAME=ens5
+TYPE=Ethernet

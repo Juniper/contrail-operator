@@ -1,0 +1,17 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 02-master-ifcfg-physical-interface
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    storage:
+      files:
+        - filesystem: "root"
+          path: "/etc/sysconfig/network-scripts/ifcfg-ens5"
+          mode: 0644
+          contents:
+            source: "data:,BOOTPROTO%3Ddhcp%0ADEVICE%3Dens5%0AONBOOT%3Dyes%0ANAME%3Dens5%0ATYPE%3DEthernet"
