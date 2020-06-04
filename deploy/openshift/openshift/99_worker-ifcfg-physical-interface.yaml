@@ -14,4 +14,4 @@ spec:
           path: "/etc/sysconfig/network-scripts/ifcfg-ens5"
           mode: 0644
           contents:
-            source: "data:,BOOTPROTO%3Ddhcp%0ADEVICE%3Dens5%0AONBOOT%3Dyes%0ANAME%3Dens5%0ATYPE%3DEthernet"
+            source: "data:,BOOTPROTO%3Ddhcp%0ADEVICE%3Dens5%0AONBOOT%3Dyes%0ANAME%3Dens5%0ATYPE%3DEthernet%0A"
