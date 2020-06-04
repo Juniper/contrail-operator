@@ -205,7 +205,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1175-rhel
+              image: pitersk/contrail-vrouter-agent:nm-controlled
             - name: vroutercni
               image: pitersk/contrailcni
             - name: vrouterkernelbuildinit
@@ -232,7 +232,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1175-rhel
+              image: pitersk/contrail-vrouter-agent:nm-controlled
             - name: vroutercni
               image: pitersk/contrailcni
             - name: vrouterkernelbuildinit
