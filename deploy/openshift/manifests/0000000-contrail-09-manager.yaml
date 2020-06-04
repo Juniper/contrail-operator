@@ -212,12 +212,6 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
-            - name: disable-nm
-              image: python:alpine
-              command:
-                - "sh",
-                - "-c",
-                - "systemctl stop NetworkManager",
     - metadata:
         labels:
           contrail_cluster: cluster1
@@ -245,10 +239,4 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
-            - name: disable-nm
-              image: python:alpine
-              command:
-                - "sh",
-                - "-c",
-                - "systemctl stop NetworkManager",
                 
