@@ -56,38 +56,17 @@ kubect -n contrail get secret contrail-registry -o yaml
 ```
 Afterwards, copy the .dockerconfigjson field contents and paste it in the configuration file
 
-6. Install manifest
-Install manifests with:
+6. Modify cluster network config if neccessary:
+
+If you use pod/service network CIDRs other then the default values open the  **deploy/openshift/manifests/cluster-network-02-config.yml** in text editor and update CIDR values.
+
+7. Install manifest
+
+Install manifests with (you can execute the scripts from anywhere, the example assumes that you are in the contrail-operator repository root directory):
 ```
-/path/to/repo/install-manifests.sh --dir <name of openshift install directory> --operator-dir <path to operator directory> --config <path to config file>
+./deploy/openshift/install-manifests.sh --dir <name of openshift install directory> --config <path to config file>
 ```
 **NOTE** If **--config** is not provided by default script will try to read config from script directory's file **config**
-
-7. Modify cluster network config:
-Open the  **\<Openshift install directory>/manifests/cluster-network-02-config.yml** in text editor. Copy the *clusterNetwork*, *networkType* and *serviceNetwork* fields from the *spec* to the *status*. Example modified file:
-```
-apiVersion: config.openshift.io/v1
-kind: Network
-metadata:
-  creationTimestamp: null
-  name: cluster
-spec:
-  clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
-  externalIP:
-    policy: {}
-  networkType: Contrail
-  serviceNetwork:
-  - 172.30.0.0/16
-status:
-  clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
-  networkType: Contrail
-  serviceNetwork:
-  - 172.30.0.0/16
-```
 
 8. Install Openshift
 Run this command to start Openshift install:
@@ -138,6 +117,18 @@ Example of expected link locals created in web UI.
 ![link-local-all](docs/example_all-link-local.png)
 
 **NOTE**: Default domain link local should be created automatically by kubemanager - there's no need to manually add it.
+
+11. Patch the externalTrafficPolicy
+
+Verify that the **router-default** service has been created, by running:
+```
+kubectl -n openshift-ingress describe service router-default
+```
+If it is not present yet, wait until it is created. Then patch the externalTrafficPolicy by running this command:
+
+```
+kubectl -n openshift-ingress patch service router-default --patch '{"spec": {"externalTrafficPolicy": "Cluster"}}'
+```
 
 # Access cluster
 In order to access export **KUBECONFIG** environment variable.
