@@ -132,10 +132,10 @@ kubectl -n openshift-etcd describe service etcd
 Login to the Contrail webui and use details from the command above to create two link-local services.
 
 Example window in web UI to add link local.
-![link-local-add](example_link-local.png)
+![link-local-add](docs/example_link-local.png)
 
 Example of expected link locals created in web UI.
-![link-local-all](example_all-link-local.png)
+![link-local-all](docs/example_all-link-local.png)
 
 **NOTE**: Default domain link local should be created automatically by kubemanager - there's no need to manually add it.
 
