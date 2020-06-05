@@ -424,6 +424,8 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            contrailVersion:
+                              type: string
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -2247,6 +2249,14 @@ spec:
                                 type: integer
                               serverPort:
                                 type: integer
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                             type: object
                         required:
                         - commonConfiguration

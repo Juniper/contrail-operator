@@ -2,11 +2,16 @@ package zookeeper
 
 import (
 	"context"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strconv"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -202,6 +207,31 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume", configMap2.Name: request.Name + "-" + instanceType + "-volume-1"})
 
+	zookeeperDefaultConfigurationInterface := instance.ConfigurationParameters()
+	zookeeperDefaultConfiguration := zookeeperDefaultConfigurationInterface.(v1alpha1.ZookeeperConfiguration)
+
+	storageResource := corev1.ResourceStorage
+	diskSize, err := resource.ParseQuantity(zookeeperDefaultConfiguration.Storage.Size)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	storageClassName := "local-storage"
+	statefulSet.Spec.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pvc",
+			Namespace: request.Namespace,
+			Labels:    map[string]string{"contrail_manager": instanceType, instanceType: request.Name},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				"ReadWriteOnce",
+			},
+			StorageClassName: &storageClassName,
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{storageResource: diskSize},
+			},
+		},
+	}}
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 
 		if container.Name == "zookeeper" {
@@ -229,12 +259,29 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: "/mydata",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      "pvc",
+				MountPath: "/data",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 
 		}
 
 	}
+	initHostPathType := corev1.HostPathType("DirectoryOrCreate")
+	initHostPathSource := &corev1.HostPathVolumeSource{
+		Path: zookeeperDefaultConfiguration.Storage.Path,
+		Type: &initHostPathType,
+	}
+	initVolume := corev1.Volume{
+		Name: request.Name + "-" + instanceType + "-init",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: initHostPathSource,
+		},
+	}
+	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
 	// Configure InitContainers.
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
@@ -256,7 +303,95 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
+		if container.Name == "init" {
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-init",
+				MountPath: zookeeperDefaultConfiguration.Storage.Path,
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
 	}
+
+	volumeBindingMode := storagev1.VolumeBindingMode("WaitForFirstConsumer")
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "local-storage",
+			Namespace: instance.Namespace,
+		},
+		Provisioner:       "kubernetes.io/no-provisioner",
+		VolumeBindingMode: &volumeBindingMode,
+	}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: storageClass.Name}, storageClass)
+	if err != nil && errors.IsNotFound(err) {
+		if err = controllerutil.SetControllerReference(instance, storageClass, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		err = r.Client.Create(context.TODO(), storageClass)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
+	volumeMode := corev1.PersistentVolumeMode("Filesystem")
+	nodeSelectorMatchExpressions := []corev1.NodeSelectorRequirement{}
+	for k, v := range instance.Spec.CommonConfiguration.NodeSelector {
+		valueList := []string{v}
+		expression := corev1.NodeSelectorRequirement{
+			Key:      k,
+			Operator: corev1.NodeSelectorOperator("In"),
+			Values:   valueList,
+		}
+		nodeSelectorMatchExpressions = append(nodeSelectorMatchExpressions, expression)
+	}
+	nodeSelectorTerm := corev1.NodeSelector{
+		NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+			MatchExpressions: nodeSelectorMatchExpressions,
+		}},
+	}
+	volumeNodeAffinity := corev1.VolumeNodeAffinity{
+		Required: &nodeSelectorTerm,
+	}
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	localVolumeSource := corev1.LocalVolumeSource{
+		Path: zookeeperDefaultConfiguration.Storage.Path,
+	}
+
+	replicasInt := int(*instance.Spec.CommonConfiguration.Replicas)
+	for i := 0; i < replicasInt; i++ {
+		pv := &corev1.PersistentVolume{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
+				Namespace: instance.Namespace,
+			},
+			Spec: corev1.PersistentVolumeSpec{
+				Capacity:   corev1.ResourceList{storageResource: diskSize},
+				VolumeMode: &volumeMode,
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimPolicy("Delete"),
+				StorageClassName:              "local-storage",
+				NodeAffinity:                  &volumeNodeAffinity,
+				PersistentVolumeSource: corev1.PersistentVolumeSource{
+					Local: &localVolumeSource,
+				},
+			},
+		}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pv.Name, Namespace: request.Namespace}, pv)
+		if err != nil && errors.IsNotFound(err) {
+			if err = controllerutil.SetControllerReference(instance, pv, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err = r.Client.Create(context.TODO(), pv); err != nil && !errors.IsAlreadyExists(err) {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -283,6 +418,21 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
+		}
+		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
+		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
+		pvcList := &corev1.PersistentVolumeClaimList{}
+		err = r.Client.List(context.TODO(), pvcList, listOps)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		for _, pvc := range pvcList.Items {
+			if err = controllerutil.SetControllerReference(instance, &pvc, r.Scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err = r.Client.Update(context.TODO(), &pvc); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 	}
 	if instance.Status.Active == nil {

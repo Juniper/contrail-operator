@@ -1,0 +1,2 @@
+CONTRAIL_OPERATOR_IMAGE=example-repo/contrail-operator
+DOCKER_CONFIG=example_json_config

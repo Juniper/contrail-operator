@@ -42,6 +42,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneIP string, 
 		PGPassword:     "contrail123",
 		KeystoneIP:     keystoneIP,
 		KeystonePort:   keystonePort,
+		ContrailVersion: c.ccSpec.ServiceConfiguration.ContrailVersion,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

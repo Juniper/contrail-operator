@@ -1,4 +1,3 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,12 +16,14 @@ spec:
       serviceAccountName: contrail-operator
       hostNetwork: true
       tolerations:
-        - key: node.kubernetes.io/not-ready
-          operator: "Exists"
-          effect: "NoSchedule"
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
       containers:
         - name: contrail-operator
-          image: pitersk/contrail-operator:dev
+          # Replace this with the built image name
+          image: <OPERATOR_IMAGE>
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
