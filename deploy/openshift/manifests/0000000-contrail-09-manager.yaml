@@ -153,6 +153,8 @@ spec:
         commonConfiguration:
           create: true
         serviceConfiguration:
+          storage:
+            path: /usr/local/zookeper-data
           containers:
             - name: init
               image: python:alpine
