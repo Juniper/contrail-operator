@@ -1,0 +1,38 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 10-worker-NM-stop-service
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: nm-stop.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Stop NetworkManager if vhost0 interface is present
+          After=syslog.target
+          AssertPathExists=/etc/contrail/nm_stop.sh
+
+          [Service]
+          Type=simple
+          ExecStart=/etc/contrail/nm_stop.sh
+          StandardOutput=syslog
+          StandardError=syslog
+
+          [Install]
+          WantedBy=multi-user.target
+    storage:
+      files:
+      - filesystem: root
+        path: /etc/contrail/nm_stop.sh
+        mode: 0744
+        user:
+          name: root
+        contents:
+          # 'data:,' and URL encoded openshift-install/sources/nm_stop.sh
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Awhile%20true%3B%0Ado%0A%20%20if%20%5B%5B%20-L%20%22%2Fsys%2Fclass%2Fnet%2Fvhost0%22%20%5D%5D%3B%0A%20%20then%0A%20%20%20%20%20%20%20%20%20%20echo%20%22%5BINFO%5D%20Detected%20vhost0%20interface.%20Stopping%20NetworkManager...%22%0A%20%20%20%20%20%20%20%20%20%20systemctl%20stop%20NetworkManager%0A%20%20%20%20%20%20%20%20%20%20echo%20%22%5BINFO%5D%20Networkmanager%20stopped.%22%0A%20%20fi%0A%20%20sleep%2010%0Adone
