@@ -7,8 +7,6 @@ spec:
   commonConfiguration:
     hostNetwork: true
     replicas: 1
-    nodeSelector:
-      node-role.kubernetes.io/master: ""
     keystoneSecretInstance : cluster1-admin-password
     imagePullSecrets:
       - contrail-registry
@@ -21,6 +19,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: cassandra
@@ -37,6 +37,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -77,6 +79,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -103,6 +107,8 @@ spec:
         commonConfiguration:
           create: true
           replicas: 1
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -117,6 +123,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -131,6 +139,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -152,6 +162,8 @@ spec:
       spec:
         commonConfiguration:
           create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           storage:
             path: /usr/local/zookeper-data
@@ -194,6 +206,7 @@ spec:
           create: true
           imagePullSecrets:
             - contrail-registry
+          nodeSelector: {}
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
