@@ -14,9 +14,9 @@ pull_image()
 while read line; do
 	pull_image svl-artifactory.juniper.net "${line}"
 done <<EOF
-contrail-operator.gcr.io/eng-prod-237922/contrail-operator:R2005.latest
-contrail-operator.gcr.io/eng-prod-237922/contrail-statusmonitor:R2005.latest
-contrail-operator.gcr.io/eng-prod-237922/contrail-operator-provisioner:R2005.latest
+contrail-operator/engprod-269421/contrail-operator:R2005.latest
+contrail-operator/engprod-269421/contrail-statusmonitor:R2005.latest
+contrail-operator/engprod-269421/contrail-operator-provisioner:R2005.latest
 contrail-nightly/contrail-controller-config-api:2005.42
 contrail-nightly/contrail-controller-config-devicemgr:2005.42
 contrail-nightly/contrail-controller-config-schema:2005.42

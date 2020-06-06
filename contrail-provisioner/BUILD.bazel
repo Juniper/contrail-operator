@@ -39,7 +39,7 @@ container_push(
     image = ":contrail-provisioner-image",
     format = "Docker",
     registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-operator-provisioner",
+    repository = "engprod-269421/contrail-operator-provisioner",
     tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
 )
 
@@ -48,6 +48,6 @@ container_push(
     image = ":contrail-provisioner-image",
     format = "Docker",
     registry = "gcr.io",
-    repository = "eng-prod-237922/contrail-operator-provisioner",
+    repository = "engprod-269421/contrail-operator-provisioner",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
