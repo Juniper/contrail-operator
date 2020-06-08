@@ -12,8 +12,8 @@ get_parameters() {
 			--operator-dir)
 				OPERATOR_DIR=$2
 				;;
-            --config)
-                CONFIG=$2
+			--config)
+				CONFIG=$2
                 ;;
 		esac
 		shift
@@ -21,19 +21,18 @@ get_parameters() {
 
 	if [ -z $OPERATOR_DIR ]
 	then
-		usage
-		exit 1
+        OPERATOR_DIR="${SCRIPT_DIR}/../../"
 	fi
 
-        if [ -z $CONFIG ]
-        then
-                 CONFIG="${SCRIPT_DIR}/config"
-        fi
+    if [ -z $CONFIG ]
+    then
+       CONFIG="${SCRIPT_DIR}/config"
+    fi
 }
 
 usage ()
 {
-    echo "usage: $0 [--dir <output-dir>][--config <config file>] --operator-dir <contrail-operator project directory>"
+    echo "usage: $0 [--dir <output-dir>][--config <config file>][--operator-dir <contrail-operator project directory>]"
 }
 
 copy_manifests() {
@@ -41,7 +40,7 @@ copy_manifests() {
 	cp -v ${SCRIPT_DIR}/openshift/* "${DIRECTORY}/openshift"
 	mkdir -p "$DIRECTORY/manifests"
 	cp -v ${SCRIPT_DIR}/manifests/* "${DIRECTORY}/manifests"
-        echo "[INFO] Manifests have been copied to ${DIRECTORY}"
+	echo "[INFO] Manifests have been copied to ${DIRECTORY}"
 }
 
 copy_and_rename_crds() {
@@ -50,7 +49,7 @@ copy_and_rename_crds() {
 		f_filename=$(basename $f)
 		cp -v ${f} "${DIRECTORY}/manifests/0000000-contrail-07-${f_filename}"
 	done
-        echo '[INFO] Manifests CRDs have been properly renamed'
+	echo '[INFO] Manifests CRDs have been properly renamed'
 }
 
 read_config() {
