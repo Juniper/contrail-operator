@@ -740,12 +740,13 @@ func getPodInitStatus(reconcileClient client.Client,
 						if initStatus.State.Running != nil {
 							var annotationMap = make(map[string]string)
 							if getHostname {
-								command := []string{"/bin/sh", "-c", "python -c \"import socket;print(socket.getfqdn('" + pod.Status.PodIP + "'))\""}
-								hostname, _, err := ExecToPodThroughAPI(command, "init", pod.Name, pod.Namespace, nil)
-								if err != nil {
-									return map[string]string{}, fmt.Errorf("failed getting hostname")
+								var hostname string
+								if pod.Spec.HostNetwork {
+									hostname = pod.Spec.NodeName
+								} else {
+									hostname = pod.Spec.Hostname
 								}
-								annotationMap["hostname"] = strings.Trim(hostname, "\n")
+								annotationMap["hostname"] = hostname
 							}
 							if getInterface {
 								command := []string{"/bin/sh", "-c", "ifconfig | sed -n '/addr:" + pod.Status.PodIP + "/{g;h;p};h;x'  |awk '{print $1}'"}
