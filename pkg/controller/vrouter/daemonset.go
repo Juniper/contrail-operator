@@ -146,6 +146,10 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 					Name:      "var-crashes",
 					MountPath: "/var/contrail/crashes",
 				},
+				core.VolumeMount{
+					Name:      "resolv-conf",
+					MountPath: "/etc/resolv.conf",
+				},
 			},
 			ImagePullPolicy: "Always",
 			SecurityContext: &core.SecurityContext{
@@ -320,6 +324,14 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: "/var/run/contrail",
+				},
+			},
+		},
+		core.Volume{
+			Name: "resolv-conf",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/etc/resolv.conf",
 				},
 			},
 		},
