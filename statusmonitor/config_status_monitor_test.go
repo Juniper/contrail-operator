@@ -1,7 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"errors"
+	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+
+	"net/http"
 	"testing"
 )
 
@@ -16,6 +22,122 @@ func TestParseIntrospectResp(t *testing.T) {
 	assert.Equal(t, data.ConnectionInfo[0].ServerAddress[0], "172.17.0.3:2181")
 	assert.Equal(t, data.ConnectionInfo[0].Status, "Up")
 
+}
+
+type RoundTripFunc func(req *http.Request) *http.Response
+
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
+}
+
+func NewTestClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
+}
+
+type RoundTripFuncErr func(req *http.Request) *http.Response
+
+func (f RoundTripFuncErr) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), errors.New("client error")
+}
+
+func NewTestClientErr(fn RoundTripFuncErr) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
+}
+
+func TestGetConfigStatusFromApiServer(t *testing.T) {
+	serviceAddress := "0.0.0.0"
+	serviceName := "contrail-api"
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		assert.Equal(t, "https://0.0.0.0/Snh_SandeshUVECacheReq?x=NodeStatus", req.URL.String())
+		return &http.Response{
+			StatusCode: 200,
+			// Send response to be tested
+			Body: ioutil.NopCloser(bytes.NewBuffer(introspectData())),
+			// Must be set to non-nil value or it panics
+			Header: make(http.Header),
+		}
+	})
+	configStatusMap := map[string]contrailOperatorTypes.ConfigServiceStatus{}
+	getConfigStatusFromApiServer(serviceAddress, serviceName, client, configStatusMap)
+	assert.Equal(t, "contrail-api", configStatusMap["api"].ModuleName)
+	assert.Equal(t, "Functional", configStatusMap["api"].ModuleState)
+}
+
+func TestGetConfigStatusFromApiServerClientErr(t *testing.T) {
+	serviceAddress := "0.0.0.0"
+	serviceName := "contrail-api"
+	client := NewTestClientErr(func(req *http.Request) *http.Response {
+		// Test request parameters
+		assert.Equal(t, "https://0.0.0.0/Snh_SandeshUVECacheReq?x=NodeStatus", req.URL.String())
+		return &http.Response{}
+	})
+	configStatusMap := map[string]contrailOperatorTypes.ConfigServiceStatus{}
+	getConfigStatusFromApiServer(serviceAddress, serviceName, client, configStatusMap)
+	assert.Equal(t, "contrail-api", configStatusMap["api"].ModuleName)
+	assert.Equal(t, "connection-error", configStatusMap["api"].ModuleState)
+}
+
+type readErr struct{}
+
+func (readErr) Read(_ []byte) (n int, err error) {
+	return 0, errors.New("read test error")
+}
+
+func TestGetConfigStatusFromApiServerReadErr(t *testing.T) {
+	serviceAddress := "0.0.0.0"
+	serviceName := "contrail-api"
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		assert.Equal(t, "https://0.0.0.0/Snh_SandeshUVECacheReq?x=NodeStatus", req.URL.String())
+		return &http.Response{
+			StatusCode: 200,
+			// Send response to be tested
+			Body:   ioutil.NopCloser(readErr{}),
+			Header: make(http.Header),
+		}
+	})
+	configStatusMap := map[string]contrailOperatorTypes.ConfigServiceStatus{}
+	getConfigStatusFromApiServer(serviceAddress, serviceName, client, configStatusMap)
+	assert.Equal(t, "contrail-api", configStatusMap["api"].ModuleName)
+	assert.Equal(t, "read-response-error", configStatusMap["api"].ModuleState)
+}
+
+func TestGetConfigStatusFromApiServerParsingErr(t *testing.T) {
+	serviceAddress := "0.0.0.0"
+	serviceName := "contrail-api"
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		assert.Equal(t, "https://0.0.0.0/Snh_SandeshUVECacheReq?x=NodeStatus", req.URL.String())
+		return &http.Response{
+			StatusCode: 200,
+			// Send response to be tested
+			Body:   ioutil.NopCloser(bytes.NewBufferString("")),
+			Header: make(http.Header),
+		}
+	})
+	configStatusMap := map[string]contrailOperatorTypes.ConfigServiceStatus{}
+	getConfigStatusFromApiServer(serviceAddress, serviceName, client, configStatusMap)
+	assert.Equal(t, "contrail-api", configStatusMap["api"].ModuleName)
+	assert.Equal(t, "status-parsing-error", configStatusMap["api"].ModuleState)
+}
+
+func TestGetConfigStatusFromApiServerClientErrBackup(t *testing.T) {
+	serviceAddress := "0.0.0.0"
+	serviceName := "contrail-schema"
+	client := NewTestClientErr(func(req *http.Request) *http.Response {
+		// Test request parameters
+		assert.Equal(t, "https://0.0.0.0/Snh_SandeshUVECacheReq?x=NodeStatus", req.URL.String())
+		return &http.Response{}
+	})
+	configStatusMap := map[string]contrailOperatorTypes.ConfigServiceStatus{}
+	getConfigStatusFromApiServer(serviceAddress, serviceName, client, configStatusMap)
+	assert.Equal(t, "contrail-schema", configStatusMap["schema"].ModuleName)
+	assert.Equal(t, "backup", configStatusMap["schema"].ModuleState)
 }
 
 func introspectData() []byte {

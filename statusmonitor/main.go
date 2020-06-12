@@ -92,12 +92,20 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
+				client, err := CreateRestClient(config)
+				if err != nil {
+					log.Fatalf("rest client creation failed: %v", err)
+				}
+				clientset, restClient, err := kubeClient(config)
+				if err != nil {
+					log.Fatalf("kubernates client creation failed: %v", err)
+				}
 				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
 				switch config.NodeType {
 				case "control":
-					getControlStatus(config)
+					getControlStatus(client, clientset, restClient, config)
 				case "config":
-					getConfigStatus(config)
+					getConfigStatus(client, clientset, restClient, config)
 				}
 			}
 		}
@@ -106,14 +114,7 @@ func main() {
 	fmt.Println("Ticker stopped")
 }
 
-func getControlStatus(config Config) {
-	client, err := CreateRestClient(config)
-	if err != nil {
-		log.Println("Rest client creation failed")
-		return
-	}
-	clientset, restClient, err := kubeClient(config)
-	check(err)
+func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) {
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
@@ -121,12 +122,15 @@ func getControlStatus(config Config) {
 			log.Fatal(err)
 		}
 
-		GetControlStatusFromApiServer(apiServer, &config, &client, hostnameList, controlStatusMap)
+		err = GetControlStatusFromApiServer(apiServer, &config, &client, hostnameList, controlStatusMap)
+		if err != nil {
+			log.Printf("warning: getting control nodes status failed: %v", err)
+		}
 		if len(controlStatusMap) == len(hostnameList) {
 			break
 		}
 	}
-	err = updateControlStatus(&config, controlStatusMap, restClient)
+	err := updateControlStatus(&config, controlStatusMap, restClient)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,7 +162,7 @@ func CreateRestClient(config Config) (http.Client, error) {
 }
 
 func GetControlStatusFromApiServer(apiServer string, config *Config, client *http.Client, hostnameList []string,
-	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) {
+	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) error {
 	var nodeType string
 	switch config.NodeType {
 	case "config":
@@ -175,22 +179,25 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 		url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
 		resp, err := client.Get(url)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
+			return err
 		}
-		fmt.Print(url)
+		log.Print(url)
 		defer closeResp(resp)
 		if resp != nil {
-			fmt.Printf("resp not nil %d ", resp.StatusCode)
+			log.Printf("resp not nil %d ", resp.StatusCode)
 			if resp.StatusCode == http.StatusOK {
 				bodyBytes, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					return err
 				}
 				controlStatus := getControlStatusFromResponse(bodyBytes)
 				controlStatusMap[hostname] = *controlStatus
 			}
 		}
 	}
+	return nil
 }
 
 func closeResp(resp *http.Response) {

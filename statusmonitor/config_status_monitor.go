@@ -6,6 +6,7 @@ import (
 	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
@@ -39,7 +40,7 @@ var ContainerServiceNameMap = map[string]string{
 	"collector":         "contrail-collector",
 }
 
-func IsBackupImplementedService(fullServiceName string) bool {
+func isBackupImplementedService(fullServiceName string) bool {
 	switch fullServiceName {
 	case
 		"contrail-schema",
@@ -50,14 +51,7 @@ func IsBackupImplementedService(fullServiceName string) bool {
 	return false
 }
 
-func getConfigStatus(config Config) {
-	client, err := CreateRestClient(config)
-	if err != nil {
-		log.Printf("Rest client creation failed: %s", err)
-		return
-	}
-	clientset, restClient, err := kubeClient(config)
-	check(err)
+func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) {
 	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(config.PodName, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Getting pod failed: %s", err)
@@ -76,11 +70,11 @@ func getConfigStatus(config Config) {
 		serviceFullName := ContainerServiceNameMap[containerStatus.Name]
 		if containerStatus.Ready {
 			serviceAddress := ServiceAddressMap[serviceFullName]
-			GetConfigStatusFromApiServer(serviceAddress, serviceFullName, &client, configStatusMap)
+			getConfigStatusFromApiServer(serviceAddress, serviceFullName, &client, configStatusMap)
 			continue
 		}
 		if !containerStatus.Ready {
-			moduleNameFmt := FormatServiceName(serviceFullName)
+			moduleNameFmt := formatServiceName(serviceFullName)
 			configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
 				NodeName:    "",
 				ModuleName:  serviceFullName,
@@ -94,22 +88,23 @@ func getConfigStatus(config Config) {
 	}
 }
 
-func GetConfigStatusFromApiServer(serviceAddress, serviceName string, client *http.Client,
+// gets status for specific service from config pod using introspect port
+func getConfigStatusFromApiServer(serviceAddress, serviceName string, client *http.Client,
 	configStatusMap map[string]contrailOperatorTypes.ConfigServiceStatus) {
 	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
+	moduleNameFmt := formatServiceName(serviceName)
 	resp, err := client.Get(url)
 	if err != nil {
 		state := "connection-error"
-		if IsBackupImplementedService(serviceName) {
+		if isBackupImplementedService(serviceName) {
 			state = "backup"
 		}
-		moduleNameFmt := FormatServiceName(serviceName)
 		configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
 			NodeName:    "",
 			ModuleName:  serviceName,
 			ModuleState: state,
 		}
-		fmt.Println(err)
+		log.Printf("warning: to get status for %s address %s failed: %v", serviceName, serviceAddress, err)
 		return
 	}
 	defer closeResp(resp)
@@ -118,19 +113,31 @@ func GetConfigStatusFromApiServer(serviceAddress, serviceName string, client *ht
 		if resp.StatusCode == http.StatusOK {
 			bodyBytes, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("warning: read respnce for %s address %s failed: %v", serviceName, serviceAddress, err)
+				configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+					NodeName:    "",
+					ModuleName:  serviceName,
+					ModuleState: "read-response-error",
+				}
+				return
 			}
 			configStatus, _, err := getConfigStatusFromResponse(bodyBytes)
 			if err != nil {
 				log.Printf("warning: getting config status failed: %v", err)
+				configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+					NodeName:    "",
+					ModuleName:  serviceName,
+					ModuleState: "status-parsing-error",
+				}
+				return
 			}
-			moduleNameFmt := FormatServiceName(configStatus.ModuleName)
+			moduleNameFmt := formatServiceName(configStatus.ModuleName)
 			configStatusMap[moduleNameFmt] = *configStatus
 		}
 	}
 }
 
-func FormatServiceName(serviceName string) string {
+func formatServiceName(serviceName string) string {
 	serviceNameFmt := strings.Replace(serviceName, "contrail", "", 1)
 	serviceNameFmt = strings.Replace(serviceNameFmt, "-", "", -1)
 	return serviceNameFmt
