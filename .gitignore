@@ -2,3 +2,8 @@ build/contrail-api-client
 build/contrail-go-api
 bazel-*
 .vscode
+.DS_Store
+build/_output/
+main
+.idea
+statusmonitor/statusmonitor

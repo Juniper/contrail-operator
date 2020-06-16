@@ -112,6 +112,7 @@ type ConfigServiceStatus struct {
 	NodeName    string `json:"nodeName,omitempty"`
 	ModuleName  string `json:"moduleName,omitempty"`
 	ModuleState string `json:"state"`
+	Description string `json:"description,omitempty"`
 }
 
 type ConfigStatusPorts struct {
@@ -208,24 +209,27 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	redisServerSpaceSeparatedList = redisServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.RedisPort)
 
 	var data = make(map[string]string)
-	for idx := range podList.Items {
+	for idx, pod := range podList.Items {
 		configAuth, err := c.AuthParameters(client)
 		if err != nil {
 			return err
 		}
 		configIntrospectNodes := make([]string, 0)
-		introspectPorts := []int{*configConfig.ApiIntrospectPort, *configConfig.SchemaIntrospectPort,
-			*configConfig.DeviceManagerIntrospectPort, *configConfig.SvcMonitorIntrospectPort,
-			*configConfig.AnalyticsApiIntrospectPort, *configConfig.CollectorIntrospectPort}
-		for _, port := range introspectPorts {
-			nodesPortStr := strings.Join(podIPList, ":"+strconv.Itoa(port)+" ")
-			nodesPortStr = nodesPortStr + ":" + strconv.Itoa(port)
-			nodePortList := strings.Split(nodesPortStr, " ")
-			configIntrospectNodes = append(configIntrospectNodes, nodePortList...)
+		introspectPorts := map[string]int{
+			"contrail-api":            *configConfig.ApiIntrospectPort,
+			"contrail-schema":         *configConfig.SchemaIntrospectPort,
+			"contrail-device-manager": *configConfig.DeviceManagerIntrospectPort,
+			"contrail-svc-monitor":    *configConfig.SvcMonitorIntrospectPort,
+			"contrail-analytics-api":  *configConfig.AnalyticsApiIntrospectPort,
+			"contrail-collector":      *configConfig.CollectorIntrospectPort,
+		}
+		for service, port := range introspectPorts {
+			nodesPortStr := pod.Status.PodIP + ":" + strconv.Itoa(port) + "::" + service
+			configIntrospectNodes = append(configIntrospectNodes, nodesPortStr)
 		}
 		hostname := podList.Items[idx].Annotations["hostname"]
 		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectNodes,
-			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace)
+			podList.Items[idx].Status.PodIP, "config", request.Name, request.Namespace, pod.Name)
 		if err != nil {
 			return err
 		}

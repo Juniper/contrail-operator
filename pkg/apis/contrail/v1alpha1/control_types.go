@@ -190,7 +190,8 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 				configNodesList[idx] = configNode + ":" + configNodesInformation.APIServerPort
 			}
 		*/
-		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP, "control", request.Name, request.Namespace)
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP,
+			"control", request.Name, request.Namespace, podList.Items[idx].Name)
 		if err != nil {
 			return err
 		}

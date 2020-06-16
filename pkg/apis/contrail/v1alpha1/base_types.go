@@ -47,6 +47,7 @@ type MonitorConfig struct {
 	KubeConfigPath string            `yaml:"kubeConfigPath,omitempty"`
 	NodeName       string            `yaml:"nodeName,omitempty"`
 	Namespace      string            `yaml:"namespace,omitempty"`
+	PodName        string            `yaml:"podName,omitempty"`
 }
 
 type MonitorEncryption struct {
@@ -255,7 +256,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 	return nil
 }
 
-func StatusMonitorConfig(hostname string, configNodeList []string, podIP string, nodeType string, nodeName string, namespace string) (string, error) {
+func StatusMonitorConfig(hostname string, configNodeList []string, podIP, nodeType, nodeName, namespace, podName string) (string, error) {
 	cert := "/etc/certificates/server-" + podIP + ".crt"
 	key := "/etc/certificates/server-key-" + podIP + ".pem"
 	ca := certificates.SignerCAFilepath
@@ -274,6 +275,7 @@ func StatusMonitorConfig(hostname string, configNodeList []string, podIP string,
 		InCluster: &inCluster,
 		NodeName:  nodeName,
 		Namespace: namespace,
+		PodName:   podName,
 	}
 
 	monitorYaml, err := yaml.Marshal(monitorConfig)

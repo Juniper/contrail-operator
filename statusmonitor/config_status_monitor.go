@@ -4,11 +4,16 @@ import (
 	"encoding/xml"
 	"fmt"
 	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
+	"log"
+	"net/http"
 	"reflect"
+	"strings"
 )
 
 type ConnectionInfo struct {
@@ -22,7 +27,120 @@ type ServiceStatus struct {
 	NodeName       string           `xml:"NodeStatusUVE>data>NodeStatus>name"`
 	ModuleName     string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>module_id"`
 	ModuleState    string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>state"`
+	Description    string           `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>description"`
 	ConnectionInfo []ConnectionInfo `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>connection_infos>list>ConnectionInfo"`
+}
+
+var ContainerServiceNameMap = map[string]string{
+	"analyticsapi":      "contrail-analytics-api",
+	"api":               "contrail-api",
+	"devicemanager":     "contrail-device-manager",
+	"servicemonitor":    "contrail-svc-monitor",
+	"schematransformer": "contrail-schema",
+	"collector":         "contrail-collector",
+}
+
+func isBackupImplementedService(fullServiceName string) bool {
+	switch fullServiceName {
+	case
+		"contrail-schema",
+		"contrail-svc-monitor",
+		"contrail-device-manager":
+		return true
+	}
+	return false
+}
+
+func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) {
+	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(config.PodName, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Getting pod failed: %s", err)
+		return
+	}
+	ServiceAddressMap := map[string]string{}
+	for _, ServicePort := range config.APIServerList {
+		ServicePortList := strings.Split(ServicePort, "::")
+		ServiceAddressMap[ServicePortList[1]] = ServicePortList[0]
+	}
+	var configStatusMap = make(map[string]contrailOperatorTypes.ConfigServiceStatus)
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if _, ok := ContainerServiceNameMap[containerStatus.Name]; !ok {
+			continue
+		}
+		serviceFullName := ContainerServiceNameMap[containerStatus.Name]
+		if containerStatus.Ready {
+			serviceAddress := ServiceAddressMap[serviceFullName]
+			getConfigStatusFromApiServer(serviceAddress, serviceFullName, &client, configStatusMap)
+			continue
+		}
+		if !containerStatus.Ready {
+			moduleNameFmt := formatServiceName(serviceFullName)
+			configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+				NodeName:    "",
+				ModuleName:  serviceFullName,
+				ModuleState: "initializing",
+			}
+		}
+	}
+	err = updateConfigStatus(&config, configStatusMap, restClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// gets status for specific service from config pod using introspect port
+func getConfigStatusFromApiServer(serviceAddress, serviceName string, client *http.Client,
+	configStatusMap map[string]contrailOperatorTypes.ConfigServiceStatus) {
+	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
+	moduleNameFmt := formatServiceName(serviceName)
+	resp, err := client.Get(url)
+	if err != nil {
+		state := "connection-error"
+		if isBackupImplementedService(serviceName) {
+			state = "backup"
+		}
+		configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+			NodeName:    "",
+			ModuleName:  serviceName,
+			ModuleState: state,
+		}
+		log.Printf("warning: to get status for %s address %s failed: %v", serviceName, serviceAddress, err)
+		return
+	}
+	defer closeResp(resp)
+	if resp != nil {
+		log.Printf("resp not nil %d ", resp.StatusCode)
+		if resp.StatusCode == http.StatusOK {
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Printf("warning: read respnce for %s address %s failed: %v", serviceName, serviceAddress, err)
+				configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+					NodeName:    "",
+					ModuleName:  serviceName,
+					ModuleState: "read-response-error",
+				}
+				return
+			}
+			configStatus, _, err := getConfigStatusFromResponse(bodyBytes)
+			if err != nil {
+				log.Printf("warning: getting config status failed: %v", err)
+				configStatusMap[moduleNameFmt] = contrailOperatorTypes.ConfigServiceStatus{
+					NodeName:    "",
+					ModuleName:  serviceName,
+					ModuleState: "status-parsing-error",
+				}
+				return
+			}
+			moduleNameFmt := formatServiceName(configStatus.ModuleName)
+			configStatusMap[moduleNameFmt] = *configStatus
+		}
+	}
+}
+
+func formatServiceName(serviceName string) string {
+	serviceNameFmt := strings.Replace(serviceName, "contrail", "", 1)
+	serviceNameFmt = strings.Replace(serviceNameFmt, "-", "", -1)
+	return serviceNameFmt
 }
 
 func ParseIntrospectResp(statusBody []byte) (*ServiceStatus, error) {
@@ -67,7 +185,7 @@ func (c *configClient) UpdateStatus(name string, object *contrailOperatorTypes.C
 	return &result, err
 }
 
-func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
+func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTypes.ConfigServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 		configClient := &configClient{
@@ -78,16 +196,20 @@ func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrail
 		check(err)
 		update := false
 		if configObject.Status.ServiceStatus == nil {
-			configObject.Status.ServiceStatus = StatusMap
+			configObject.Status.ServiceStatus = map[string]map[string]contrailOperatorTypes.ConfigServiceStatus{}
+			configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 			update = true
-		} else {
-			same := reflect.DeepEqual(configObject.Status.ServiceStatus, StatusMap)
-			if !same {
-				configObject.Status.ServiceStatus = StatusMap
+		}
+		if !update {
+			if _, ok := configObject.Status.ServiceStatus[config.Hostname]; !ok {
+				configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 				update = true
-
-			} else {
-				configObject.Status.ServiceStatus = StatusMap
+			}
+		}
+		if !update {
+			same := reflect.DeepEqual(configObject.Status.ServiceStatus[config.Hostname], StatusMap)
+			if !same {
+				configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 				update = true
 			}
 		}
@@ -106,7 +228,7 @@ func updateConfigStatus(config *Config, StatusMap map[string]map[string]contrail
 	return nil
 }
 
-func getConfigStatus(statusBody []byte) (*contrailOperatorTypes.ConfigServiceStatus, string, error) {
+func getConfigStatusFromResponse(statusBody []byte) (*contrailOperatorTypes.ConfigServiceStatus, string, error) {
 	configServiceStatus := contrailOperatorTypes.ConfigServiceStatus{}
 	serviceStatus, err := ParseIntrospectResp(statusBody)
 	if err != nil {
@@ -114,5 +236,8 @@ func getConfigStatus(statusBody []byte) (*contrailOperatorTypes.ConfigServiceSta
 	}
 	configServiceStatus.ModuleName = serviceStatus.ModuleName
 	configServiceStatus.ModuleState = serviceStatus.ModuleState
+	if serviceStatus.ModuleState == "Non-Functional" {
+		configServiceStatus.Description = serviceStatus.Description
+	}
 	return &configServiceStatus, serviceStatus.NodeName, nil
 }
