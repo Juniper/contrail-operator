@@ -72,12 +72,6 @@ If command is not found, then reload `~/.zshrc` (on Mac OS) or `~/.bashrc` (on L
 
 Instruction for Ubuntu (other distros are available as well): https://docs.docker.com/install/linux/docker-ce/ubuntu/ 
 
-## Log into contrail-nightly docker registry
-
-This is needed for downloading Contrail Command Docker image. 
-
-    docker login hub.juniper.net/contrail-nightly
-
 ## Create Kind test environment
 
 Following commands will create Kubernetes cluster.
