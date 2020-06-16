@@ -200,13 +200,14 @@ spec:
     - metadata:
         labels:
           contrail_cluster: cluster1
-        name: vrouternodes
+        name: vroutermaster
       spec:
         commonConfiguration:
           create: true
           imagePullSecrets:
             - contrail-registry
-          nodeSelector: {}
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
@@ -223,3 +224,31 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: vrouternodes
+      spec:
+        commonConfiguration:
+          create: true
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/worker: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          controlInstance: control1
+          containers:
+            - name: init
+              image: python:alpine
+            - name: nodeinit
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
+            - name: vrouteragent
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1175-rhel
+            - name: vroutercni
+              image: pitersk/contrailcni
+            - name: vrouterkernelbuildinit
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
+            - name: vrouterkernelinit
+              image: pitersk/vrouter-kernel-init
+
