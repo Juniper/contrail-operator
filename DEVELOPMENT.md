@@ -63,13 +63,13 @@ On Linux:
 ### Build containers and push them to local registry
 In order to change parameters, for example registry to push to, edit file:
 
-    contrail-provisioner/BUILD.bazel, rule contrail-provisioner-push-localhost
-    statusmonitor/BUILD.bazel, rule contrail-statusmonitor-push-localhost
+    contrail-provisioner/BUILD.bazel, rule contrail-provisioner-push-local
+    statusmonitor/BUILD.bazel, rule contrail-statusmonitor-push-local
 
 Make sure that the registry (by default localhost:5000) is up and you have write access to it and then run:
 
-    bazel run //contrail-provisioner:contrail-provisioner-push-localhost # for contrail-operator-provisioner
-    bazel run //statusmonitor:contrail-statusmonitor-push-localhost # for contrail-statusmonitor
+    bazel run //contrail-provisioner:contrail-provisioner-push-local
+    bazel run //statusmonitor:contrail-statusmonitor-push-local
 
 
 ### Change images that are used in Contrail cluster

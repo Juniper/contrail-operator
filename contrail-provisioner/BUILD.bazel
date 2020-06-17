@@ -53,7 +53,7 @@ container_push(
 )
 
 container_push(
-    name = "contrail-provisioner-push-localhost",
+    name = "contrail-provisioner-push-local",
     image = ":contrail-provisioner-image",
     format = "Docker",
     registry = "localhost:5000",

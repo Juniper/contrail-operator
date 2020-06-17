@@ -58,7 +58,7 @@ container_push(
 )
 
 container_push(
-    name = "contrail-statusmonitor-push-localhost",
+    name = "contrail-statusmonitor-push-local",
     image = ":contrail-statusmonitor-image",
     format = "Docker",
     registry = "localhost:5000",
