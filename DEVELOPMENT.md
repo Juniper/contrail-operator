@@ -45,33 +45,37 @@ The last line `./create_manifest.sh` generates file `deploy/1-create-operator.ya
     operator-sdk build contrail-operator
     # optionally: docker tag and docker push
 
-## Building contrail-provisioner
+## Building contrail-operator-provisioner and contrail-statusmonitor
 
-### Generate contrail-api-client
-First, install Python2 and the following Python libraries:
+Containers contrail-operator-provisioner and contrail-statusmonitor are services which have source code in this repository (directories contrail-provisioner and statusmonitor). The only officially supported way to build them now is with bazel.
 
-    pip install future lxml
+### Install bazel
+On Mac:
 
-Then, generate `contrail-api-client` files:
+    brew install bazel
 
-    make generate
+On Linux:
 
-`make generate` will also change go.mod file, so that locally generated `contrail-api-client` can be imported. This needs to be run only once.
-
-### Build contrail-provisioner
-
-    make provisioner
-
-### Push contrail-provisioner to local registry
-Assuming you have kind-registry running on port 5000 (on how to setup this, see
-[E2E test guide](test/env/README.md)):
-
-    docker tag contrail-provisioner:latest localhost:5000/contrail-provisioner:latest
-    docker push localhost:5000/contrail-provisioner:latest
+    wget https://github.com/bazelbuild/bazel/releases/download/0.29.1/bazel-0.29.1-installer-linux-x86_64.sh
+    sudo ./bazel-0.29.1-installer-linux-x86_64.sh
 
 
-### Change contrail-provisioner image that is used in Contrail cluster
-If you add tag other than `latest` to contrail-provisioner, image that is deployed in kind cluster needs to be changed. Edit file `test/env/deploy/cluster.yaml`, find `provisionManager` and change `provisioner` image. Similarly, you can also change configuration of other services in file `test/env/deploy/cluster.yaml`.
+### Build containers and push them to local registry
+In order to change parameters, for example registry to push to, edit file:
+
+    contrail-provisioner/BUILD.bazel, rule contrail-provisioner-push-localhost
+    statusmonitor/BUILD.bazel, rule contrail-statusmonitor-push-localhost
+
+Make sure that the registry (by default localhost:5000) is up and you have write access to it and then run:
+
+    bazel run //contrail-provisioner:contrail-provisioner-push-localhost # for contrail-operator-provisioner
+    bazel run //statusmonitor:contrail-statusmonitor-push-localhost # for contrail-statusmonitor
+
+
+### Change images that are used in Contrail cluster
+Edit file `test/env/deploy/cluster.yaml`, find proper images and change them.  
+  
+For example for contrail-operator-provisioner - find `provisionManager` section and change `provisioner` image (by default it is `registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:master.latest`).  
 
     provisionManager:
       metadata:
@@ -85,13 +89,26 @@ If you add tag other than `latest` to contrail-provisioner, image that is deploy
             node-role.kubernetes.io/master: ""
           replicas: 1
         serviceConfiguration:
+          keystoneInstance: keystone
+          globalVrouterConfiguration:
+            ecmpHashingIncludeFields:
+              destinationIp: true
+              destinationPort: true
+              hashingConfigured: true
+              ipProtocol: true
+              sourceIp: true
+              sourcePort: true
+            encapPriority: VXLAN,MPLSoGRE,MPLSoUDP
+            vxlanNetworkIdentifierMode: automatic
           containers:
-            init:
-              image: registry:5000/python:alpine
-            provisioner:
-              image: registry:5000/contrail-provisioner:latest
+          - name: init
+            image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
+          - name: provisioner
+            image: registry:5000/contrail-operator-provisioner:latest
 
-After this change apply changes to k8s cluster:
+In order to change contrail-statusmonitor - change `registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest`. Similarly, you can also change configuration of other services in file `test/env/deploy/cluster.yaml`.  
+
+After making changes apply changes to k8s cluster:
 
     cd test/env
     ./apply_contrail_cluster.sh
