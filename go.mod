@@ -21,6 +21,7 @@ require (
 	github.com/friendsofgo/errors v0.9.2 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
+	github.com/go-pg/pg/v10 v10.0.0-beta.2 // indirect
 	github.com/gogo/googleapis v1.3.2 // indirect
 	github.com/golang/dep v0.5.4 // indirect
 	github.com/google/go-containerregistry v0.0.0-20200320200342-35f57d7d4930 // indirect
@@ -55,10 +56,8 @@ require (
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible // indirect
 	github.com/yudai/hcl v0.0.0-20151013225006-5fa2393b3552 // indirect
 	go.starlark.net v0.0.0-20200326215636-e8819e807894 // indirect
-	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
-	google.golang.org/genproto v0.0.0-20200218151345-dad8c97a84f5 // indirect
-	google.golang.org/grpc v1.27.1 // indirect
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/volatiletech/null.v6 v6.0.0-20170828023728-0bef4e07ae1b // indirect
