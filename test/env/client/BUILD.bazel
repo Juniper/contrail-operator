@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["postgres.go"],
+    importpath = "github.com/Juniper/contrail-operator/test/env/client",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_go_pg_pg_v10//:go_default_library",
+        "@com_github_go_pg_pg_v10//orm:go_default_library",
+    ],
+)
