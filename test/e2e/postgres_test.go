@@ -115,18 +115,15 @@ func TestPostgresDataPersistence(t *testing.T) {
 			t.Run("and when Postgres pod is deleted", func(t *testing.T) {
 				err = f.KubeClient.CoreV1().Pods("contrail").Delete(psql.Name + "-pod", &meta.DeleteOptions{})
 				assert.NoError(t, err)
-				err = k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
-					_, err = f.KubeClient.CoreV1().Pods("contrail").Get(psql.Name + "-pod", meta.GetOptions{})
-					if err != nil {
-						if apierrors.IsNotFound(err) {
-							return true, nil
-						}
-						return false, err
-					}
-					t.Log(err)
-					return false, nil
+				t.Run("then Postgres is inactive in 5 minutes", func(t *testing.T) {
+					err := wait.Contrail{
+						Namespace:     namespace,
+						Timeout:       2 * time.Minute,
+						RetryInterval: 1 * time.Second,
+						Client:        f.Client,
+					}.ForPostgresInactive(psql.Name)
+					require.NoError(t, err)
 				})
-				assert.NoError(t, err)
 
 				t.Run("then Postgres pod is recreated and Postgres becomes active again in 5 minutes", func(t *testing.T) {
 					err := wait.Contrail{

@@ -89,6 +89,26 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
+// ForPostgresInActive is used to wait until Postgres is inactive
+func (c Contrail) ForPostgresInactive(name string) error {
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+		s := &contrail.Postgres{}
+		err = c.Client.Get(context.Background(), types.NamespacedName{
+			Namespace: c.Namespace,
+			Name:      name,
+		}, s)
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		if s.Status.Active {
+			return false, nil
+		}
+		return true, err
+	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
 
 // ForManagerDeletion is used to wait until manager is deleted
 func (c Contrail) ForManagerDeletion(name string) error {
