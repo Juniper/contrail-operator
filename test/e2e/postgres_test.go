@@ -5,19 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/operator-framework/operator-sdk/pkg/test"
-	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8swait "k8s.io/apimachinery/pkg/util/wait"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	testClient "github.com/Juniper/contrail-operator/test/env/client"
 	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/Juniper/contrail-operator/test/wait"
+	"github.com/operator-framework/operator-sdk/pkg/test"
+	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestPostgresDataPersistence(t *testing.T) {
@@ -113,18 +109,34 @@ func TestPostgresDataPersistence(t *testing.T) {
 			})
 
 			t.Run("and when Postgres pod is deleted", func(t *testing.T) {
-				err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
-					_, err = f.KubeClient.CoreV1().Pods("contrail").Get(psql.Name + "-pod", meta.GetOptions{})
-					if err != nil {
-						if apierrors.IsNotFound(err) {
-							return true, nil
-						}
-						return false, err
-					}
-					t.Log(err)
-					return false, nil
+				f.KubeClient.CoreV1().Pods("contrail").Delete("postgrestest-psql-pod", &meta.DeleteOptions{})
+
+				t.Run("then Postgres is inactive in 5 minutes", func(t *testing.T) {
+					err := wait.Contrail{
+						Namespace:     namespace,
+						Timeout:       2 * time.Minute,
+						RetryInterval: 1 * time.Second,
+						Client:        f.Client,
+					}.ForPostgresInactive(psql.Name)
+					require.NoError(t, err)
 				})
-				assert.NoError(t, err)
+
+				//err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+				//	//_, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				//	//	LabelSelector: "app="+psql.Name,
+				//	//})
+				//
+				//	_, err = f.KubeClient.CoreV1().Pods("contrail").Get(psql.Name + "-pod", meta.GetOptions{})
+				//	if err != nil {
+				//		if apierrors.IsGone(err) {
+				//			return true, nil
+				//		}
+				//		return false, err
+				//	}
+				//	t.Log(err)
+				//	return false, nil
+				//})
+				//assert.NoError(t, err)
 
 				t.Run("then Postgres pod is recreated and Postgres becomes active again in 5 minutes", func(t *testing.T) {
 					err := wait.Contrail{
