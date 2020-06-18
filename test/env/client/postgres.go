@@ -41,7 +41,7 @@ func (p *Postgres) CreateTestTable(ctx context.Context) error {
 	if err := p.ping(ctx); err != nil {
 		return err
 	}
-	model := TestUser{}
+	model := &TestUser{}
 	return p.db.CreateTable(model, &orm.CreateTableOptions{
 		Temp: false,
 		IfNotExists: true,
