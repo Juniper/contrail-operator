@@ -51,3 +51,12 @@ container_push(
     repository = "engprod-269421/contrail-operator-provisioner",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
+
+container_push(
+    name = "contrail-provisioner-push-local",
+    image = ":contrail-provisioner-image",
+    format = "Docker",
+    registry = "localhost:5000",
+    repository = "contrail-operator-provisioner",
+    tag = "latest",
+)

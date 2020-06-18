@@ -57,6 +57,15 @@ container_push(
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
+container_push(
+    name = "contrail-statusmonitor-push-local",
+    image = ":contrail-statusmonitor-image",
+    format = "Docker",
+    registry = "localhost:5000",
+    repository = "contrail-statusmonitor",
+    tag = "latest",
+)
+
 go_test(
     name = "go_default_test",
     srcs = [
