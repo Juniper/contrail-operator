@@ -87,7 +87,13 @@ func TestPostgresDataPersistence(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			psqlAddress := psql.Status.Node
+			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				LabelSelector: "app="+psql.Name,
+			})
+			assert.NoError(t, err)
+			assert.NotEmpty(t, psqlPods.Items)
+
+			psqlAddress := psqlPods.Items[0].Status.PodIP
 			psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "contrail_test")
 			require.NoError(t, err)
 			require.NotNil(t, psqlClient)

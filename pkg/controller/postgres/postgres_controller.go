@@ -256,7 +256,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						{Name: "POSTGRES_USER", Value: "root"},
 						{Name: "POSTGRES_PASSWORD", Value: "contrail123"},
 						{Name: "POSTGRES_DB", Value: db},
-						{Name: "PGDATA", Value: "/var/lib/postgresql/data/pgdata"},
+						{Name: "PGDATA", Value: "/var/lib/postgresql/data/postgres"},
 						{
 							Name: "MY_POD_IP",
 							ValueFrom: &core.EnvVarSource{
