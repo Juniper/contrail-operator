@@ -291,7 +291,7 @@ func (c *Zookeeper) ConfigurationParameters() interface{} {
 	var electionPort int
 	var serverPort int
 	if c.Spec.ServiceConfiguration.Storage.Path == "" {
-		zookeeperConfiguration.Storage.Path = "/data"
+		zookeeperConfiguration.Storage.Path = "/var/lib/zookeeper"
 	} else {
 		zookeeperConfiguration.Storage.Path = c.Spec.ServiceConfiguration.Storage.Path
 	}

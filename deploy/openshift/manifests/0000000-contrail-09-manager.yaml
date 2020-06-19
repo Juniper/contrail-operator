@@ -165,8 +165,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
-          storage:
-            path: /usr/local/zookeper-data
           containers:
             - name: init
               image: python:alpine
