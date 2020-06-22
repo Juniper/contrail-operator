@@ -93,8 +93,8 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
-// ForPostgresPodUidChange is used to wait until Postgres pod has a new Uid
-func (c Contrail) ForPostgresPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
+// ForPodUidChange is used to wait until pod has a new Uid
+func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, getErr error) {
 		pod, getErr := kubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
 		if getErr != nil {

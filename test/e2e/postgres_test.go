@@ -127,7 +127,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 						RetryInterval: retryInterval,
 						Client:        f.Client,
 						Logger:			log,
-					}.ForPostgresPodUidChange(f.KubeClient, podName, uid)
+					}.ForPodUidChange(f.KubeClient, podName, uid)
 					require.NoError(t, err)
 				})
 
