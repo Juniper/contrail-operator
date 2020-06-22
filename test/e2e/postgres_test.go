@@ -81,6 +81,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:			log,
 				}.ForPostgresActive(psql.Name)
 				require.NoError(t, err)
 			})
@@ -111,15 +112,22 @@ func TestPostgresDataPersistence(t *testing.T) {
 			})
 
 			t.Run("and when Postgres pod is deleted", func(t *testing.T) {
-				err = f.KubeClient.CoreV1().Pods("contrail").Delete(psql.Name + "-pod", &meta.DeleteOptions{})
+				podName := psql.Name + "-pod"
+				pod, err := f.KubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
+				require.NoError(t, err)
+				uid := pod.UID
+
+				err = f.KubeClient.CoreV1().Pods("contrail").Delete(podName, &meta.DeleteOptions{})
 				assert.NoError(t, err)
-				t.Run("then Postgres is inactive in 5 minutes", func(t *testing.T) {
+
+				t.Run("then Postgres pod is replaced", func(t *testing.T) {
 					err := wait.Contrail{
 						Namespace:     namespace,
-						Timeout:       2 * time.Minute,
-						RetryInterval: 1 * time.Second,
+						Timeout:       5 * time.Minute,
+						RetryInterval: retryInterval,
 						Client:        f.Client,
-					}.ForPostgresInactive(psql.Name)
+						Logger:			log,
+					}.ForPostgresPodUidChange(f.KubeClient, podName, uid)
 					require.NoError(t, err)
 				})
 
@@ -129,6 +137,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 						Timeout:       5 * time.Minute,
 						RetryInterval: retryInterval,
 						Client:        f.Client,
+						Logger:			log,
 					}.ForPostgresActive(psql.Name)
 					require.NoError(t, err)
 				})
@@ -171,6 +180,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:			log,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})

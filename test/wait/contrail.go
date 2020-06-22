@@ -3,13 +3,17 @@ package wait
 import (
 	"context"
 	"github.com/Juniper/contrail-operator/test/logger"
+	"strings"
 	"time"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/test"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Contrail is used to wait until certain contrail resources reach some condition
@@ -89,21 +93,16 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
-// ForPostgresInActive is used to wait until Postgres is inactive
-func (c Contrail) ForPostgresInactive(name string) error {
-	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
-		s := &contrail.Postgres{}
-		err = c.Client.Get(context.Background(), types.NamespacedName{
-			Namespace: c.Namespace,
-			Name:      name,
-		}, s)
-		if apierrors.IsNotFound(err) {
-			return true, nil
-		}
-		if s.Status.Active {
+// ForPostgresPodUidChange is used to wait until Postgres pod has a new Uid
+func (c Contrail) ForPostgresPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, getErr error) {
+		pod, getErr := kubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
+		if getErr != nil {
 			return false, nil
 		}
-		return true, err
+		newUid := pod.UID
+
+		return !strings.EqualFold(string(oldUid), string(newUid)), nil 
 	})
 	c.dumpPodsOnError(err)
 	return err
