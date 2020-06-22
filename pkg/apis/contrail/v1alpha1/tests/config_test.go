@@ -1117,7 +1117,7 @@ auto_bootstrap: true
 
 var zookeeperConfig = `clientPort=2181
 clientPortAddress=
-dataDir=/data
+dataDir=/var/lib/zookeeper
 tickTime=2000
 initLimit=5
 syncLimit=2
