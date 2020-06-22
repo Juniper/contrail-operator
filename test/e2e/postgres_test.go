@@ -71,7 +71,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			},
 		}
 
-		t.Run("when manager resource with command and dependencies is created", func(t *testing.T) {
+		t.Run("when manager resource with Postgres is created", func(t *testing.T) {
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
