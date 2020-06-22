@@ -4715,3 +4715,10 @@ go_repository(
     sum = "h1:WaYQLsW/cWywevmveTnnHnGGnumFCJ4E9nrPsCd0N9c=",
     version = "v0.0.0-20200326215636-e8819e807894",
 )
+
+go_repository(
+    name = "com_github_go_pg_pg_v10",
+    importpath = "github.com/go-pg/pg/v10",
+    sum = "h1:8tNEJLtOEw5/Df0BLLBOHCiLaYAiu4uhdngjK955MK8=",
+    version = "v10.0.0-beta.2",
+)
