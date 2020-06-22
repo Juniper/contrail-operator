@@ -229,6 +229,16 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: "/mydata",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      "zookeeper-data",
+				MountPath: "/var/lib/zookeeper",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      "zookeeper-logs",
+				MountPath: "/var/log/zookeeper",
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 
