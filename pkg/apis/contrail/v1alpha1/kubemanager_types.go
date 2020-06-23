@@ -5,6 +5,7 @@ import (
 	"context"
 	"sort"
 	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -187,6 +188,15 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = map[string]string{}
 	for idx := range podList.Items {
+		hostname := podList.Items[idx].Annotations["hostname"]
+		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP,
+			"kubemanager", request.Name, request.Namespace, podList.Items[idx].Name)
+		if err != nil {
+			return err
+		}
+		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
+
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
 		if err = client.Get(context.TODO(), types.NamespacedName{Name: "kubemanagersecret", Namespace: request.Namespace}, secret); err != nil {

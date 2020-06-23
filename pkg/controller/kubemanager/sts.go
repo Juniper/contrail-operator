@@ -1,111 +1,196 @@
 package kubemanager
 
 import (
-	"github.com/ghodss/yaml"
-	appsv1 "k8s.io/api/apps/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var yamlDatakubemanager_sts = `
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: kubemanager
-spec:
-  selector:
-    matchLabels:
-      app: kubemanager
-  serviceName: "kubemanager"
-  replicas: 1
-  template:
-    metadata:
-    labels:
-      app: kubemanager
-      contrail_manager: kubemanager
-    spec:
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      serviceAccount: contrail-service-account-kubemanager
-      serviceAccountName: contrail-service-account-kubemanager
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
-      initContainers:
-        - name: init
-          image: busybox
-          command:
-            - sh
-            - -c
-            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          volumeMounts:
-            - mountPath: /tmp/podinfo
-              name: status
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-          imagePullPolicy: Always
-        - name: nodeinit
-          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-          volumeMounts:
-            - mountPath: /host/usr/bin
-              name: host-usr-local-bin
-          securityContext:
-            privileged: true
-          imagePullPolicy: Always
-      containers:
-        - name: kubemanager
-          image: docker.io/michaelhenkel/contrail-kubernetes-kube-manager:5.2.0-dev1
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: kubemanager-logs
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-      tolerations:
-        - effect: NoSchedule
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
-      volumes:
-        - hostPath:
-            path: /var/log/contrail/kubemanager
-            type: ""
-          name: kubemanager-logs
-        - hostPath:
-            path: /usr/local/bin
-            type: ""
-          name: host-usr-local-bin
-        - downwardAPI:
-            defaultMode: 420
-            items:
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labels
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labelsx
-          name: status`
+// GetSTS returns StatefulSet with Kubemanager
+func GetSTS() *apps.StatefulSet {
+	var replicas = int32(1)
+	var labelsMountPermission int32 = 0644
+	var trueVal = true
 
-// GetSTS returns StatesfulSet object created from yamlDatakubemanager_sts
-func GetSTS() *appsv1.StatefulSet {
-	sts := appsv1.StatefulSet{}
-	err := yaml.Unmarshal([]byte(yamlDatakubemanager_sts), &sts)
-	if err != nil {
-		panic(err)
+	var podIPEnv = core.EnvVar{
+		Name: "POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
+			},
+		},
 	}
-	jsonData, err := yaml.YAMLToJSON([]byte(yamlDatakubemanager_sts))
-	if err != nil {
-		panic(err)
+
+	var kubemanagerLogsMount = core.VolumeMount{
+		Name:      "kubemanager-logs",
+		MountPath: "/var/log/contrail",
 	}
-	err = yaml.Unmarshal([]byte(jsonData), &sts)
-	if err != nil {
-		panic(err)
+
+	var contrailStatusImageEnv = core.EnvVar{
+		Name:  "CONTRAIL_STATUS_IMAGE",
+		Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
 	}
-	return &sts
+
+	var podInitContainers = []core.Container{
+		{
+			Name:  "init",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
+			},
+			Env: []core.EnvVar{
+				contrailStatusImageEnv,
+				podIPEnv,
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "status",
+					MountPath: "/tmp/podinfo",
+				},
+			},
+			ImagePullPolicy: "Always",
+		},
+		{
+			Name:  "nodeinit",
+			Image: "docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				contrailStatusImageEnv,
+				podIPEnv,
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "host-usr-local-bin",
+					MountPath: "/host/usr/bin",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+		},
+	}
+
+	var podContainers = []core.Container{
+		{
+			Name:  "kubemanager",
+			Image: "docker.io/michaelhenkel/contrail-kubernetes-kube-manager:5.2.0-dev1",
+			VolumeMounts: []core.VolumeMount{
+				kubemanagerLogsMount,
+			},
+			Env: []core.EnvVar{
+				podIPEnv,
+			},
+			ImagePullPolicy: "Always",
+		},
+		{
+			Name:  "statusmonitor",
+			Image: "docker.io/kaweue/contrail-statusmonitor:debug",
+			VolumeMounts: []core.VolumeMount{
+				kubemanagerLogsMount,
+			},
+			Env: []core.EnvVar{
+				podIPEnv,
+			},
+			ImagePullPolicy: "Always",
+		},
+	}
+
+	var podVolumes = []core.Volume{
+		{
+			Name: "kubemanager-logs",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/log/contrail/kubemanager",
+				},
+			},
+		},
+		{
+			Name: "host-usr-local-bin",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/usr/local/bin",
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labels",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labelsx",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+					},
+					DefaultMode: &labelsMountPermission,
+				},
+			},
+		},
+	}
+
+	var podTolerations = []core.Toleration{
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoSchedule",
+		},
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoExecute",
+		},
+	}
+
+	var podSpec = core.PodSpec{
+		Volumes:            podVolumes,
+		InitContainers:     podInitContainers,
+		Containers:         podContainers,
+		RestartPolicy:      "Always",
+		DNSPolicy:          "ClusterFirst",
+		HostNetwork:        true,
+		Tolerations:        podTolerations,
+		NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
+		ServiceAccountName: "contrail-service-account-kubemanager",
+	}
+
+	var stsTemplate = core.PodTemplateSpec{
+		ObjectMeta: meta.ObjectMeta{
+			Labels: map[string]string{
+				"app":              "kubemanager",
+				"contrail_manager": "kubemanager",
+			},
+		},
+		Spec: podSpec,
+	}
+
+	var stsSelector = meta.LabelSelector{
+		MatchLabels: map[string]string{"app": "kubemanager"},
+	}
+
+	return &apps.StatefulSet{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "StatefulSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "",
+			Namespace: "default",
+		},
+		Spec: apps.StatefulSetSpec{
+			Selector:    &stsSelector,
+			ServiceName: "kubemanager",
+			Replicas:    &replicas,
+			Template:    stsTemplate,
+		},
+	}
 }

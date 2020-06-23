@@ -365,6 +365,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "kubemanager", Image: "registry:5000/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
 								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["kubemanager"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+								{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 							},
 						},
 					},
