@@ -5,7 +5,7 @@ import "text/template"
 // ZookeeperConfig is the template of the Zookeeper service configuration.
 var ZookeeperConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
 clientPortAddress=
-dataDir=/data
+dataDir=/var/lib/zookeeper
 tickTime=2000
 initLimit=5
 syncLimit=2
@@ -75,9 +75,9 @@ var ZookeeperXslConfig = template.Must(template.New("").Parse(`<?xml version="1.
 
 // ZookeeperRunnerConfig is the script to start zookeeper service.
 var ZookeeperRunnerConfig = template.Must(template.New("").Parse(`#!/bin/bash
-grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000 |sed -e 's/.*server.\(.*\)=.*/\1/' > /data/myid
+grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000 |sed -e 's/.*server.\(.*\)=.*/\1/' > /var/lib/zookeeper/myid
 sed -i "s/clientPortAddress=.*/clientPortAddress=${POD_IP}/g" /conf/zoo.cfg
-cat /mydata/zoo.cfg.dynamic.100000000 | grep -v ${POD_IP} | sed -e 's/.*server.\(.*\)=.*/\1/' > /data/myid
+cat /mydata/zoo.cfg.dynamic.100000000 | grep -v ${POD_IP} | sed -e 's/.*server.\(.*\)=.*/\1/' > /var/lib/zookeeper/myid
 zkServer.sh --config /conf start-foreground
 `))
 

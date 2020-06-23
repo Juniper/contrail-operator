@@ -237,7 +237,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		if container.Name == "zookeeper" {
 			command := []string{
 				"bash", "-c", "grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000|" +
-					"sed -e 's/.*server.\\(.*\\)=.*/\\1/' > /data/myid && " +
+					"sed -e 's/.*server.\\(.*\\)=.*/\\1/' > /var/lib/zookeeper/myid && " +
 					"cp /conf-1/* /conf/ && " +
 					"sed -i \"s/clientPortAddress=.*/clientPortAddress=${POD_IP}/g\" /conf/zoo.cfg && " +
 					"zkServer.sh --config /conf start-foreground"}
@@ -261,7 +261,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      "pvc",
-				MountPath: "/data",
+				MountPath: "/var/lib/zookeeper",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
