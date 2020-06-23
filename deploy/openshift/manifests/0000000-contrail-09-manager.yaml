@@ -190,6 +190,8 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.1175-rhel
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
+            - name: statusmonitor
+              image: pitersk/statusmonitor:master.latest
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
