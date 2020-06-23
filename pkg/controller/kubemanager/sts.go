@@ -65,6 +65,17 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
           imagePullPolicy: Always
+        - name: statusmonitor
+          image: docker.io/kaweue/contrail-statusmonitor:debug
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /var/log/contrail
+              name: control-logs
       tolerations:
         - effect: NoSchedule
           operator: Exists

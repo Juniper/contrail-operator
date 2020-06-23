@@ -404,7 +404,7 @@ func newCommand() *contrail.Command {
 					{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
-				ContrailVersion: "1.2.3",
+				ContrailVersion:    "1.2.3",
 			},
 		},
 	}
