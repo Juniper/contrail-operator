@@ -70,6 +70,18 @@ func check(err error) {
 	}
 }
 
+func getText(resp []interface{}) string {
+	for _, respObject := range resp {
+		response, ok := respObject.(map[string]string)
+		if ok {
+			fmt.Println("got Text:", response["#text"])
+			return response["#text"]
+		}
+	}
+	fmt.Println("Defaulting to empty")
+	return ""
+}
+
 func main() {
 	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
@@ -426,36 +438,37 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 	state := "down"
 
 	if controlUVEStatus != nil {
-		if len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0]) > 0 && controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0][0].Text != "" {
-			numDownStaticRoutes = controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0][0].Text
+		if len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && getText(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) != "" {
+			numDownStaticRoutes = getText(controlUVEStatus.BgpRouterState.NumDownStaticRoutes)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumStaticRoutes[0]) > 0 && controlUVEStatus.BgpRouterState.NumStaticRoutes[0][0].Text != "" {
-			numStaticRoutes = controlUVEStatus.BgpRouterState.NumStaticRoutes[0][0].Text
+		if len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && getText(controlUVEStatus.BgpRouterState.NumStaticRoutes) != "" {
+			numStaticRoutes = getText(controlUVEStatus.BgpRouterState.NumStaticRoutes)
 		}
 		staticRoutes = contrailOperatorTypes.StaticRoutes{
 			Down:   numDownStaticRoutes,
 			Number: numStaticRoutes,
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpBgpPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumUpBgpPeer[0][0].Text != "" {
-			numUpBgpPeer = controlUVEStatus.BgpRouterState.NumUpBgpPeer[0][0].Text
+		if len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumUpBgpPeer) != "" {
+			numUpBgpPeer = getText(controlUVEStatus.BgpRouterState.NumUpBgpPeer)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumBgpPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumBgpPeer[0][0].Text != "" {
-			numBgpPeer = controlUVEStatus.BgpRouterState.NumBgpPeer[0][0].Text
+		if len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumBgpPeer) != "" {
+			numBgpPeer = getText(controlUVEStatus.BgpRouterState.NumBgpPeer)
 		}
 		bgpPeer = contrailOperatorTypes.BGPPeer{
 			Up:     numUpBgpPeer,
 			Number: numBgpPeer,
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0][0].Text != "" {
-			numUpXMPPPeer = controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0][0].Text
+
+		if len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) != "" {
+			numUpXMPPPeer = getText(controlUVEStatus.BgpRouterState.NumUpXMPPPeer)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && len(controlUVEStatus.BgpRouterState.NumRoutingInstance[0]) > 0 && controlUVEStatus.BgpRouterState.NumRoutingInstance[0][0].Text != "" {
-			numRoutingInstance = controlUVEStatus.BgpRouterState.NumRoutingInstance[0][0].Text
+		if len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && getText(controlUVEStatus.BgpRouterState.NumRoutingInstance) != "" {
+			numRoutingInstance = getText(controlUVEStatus.BgpRouterState.NumRoutingInstance)
 		}
 		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
 			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text

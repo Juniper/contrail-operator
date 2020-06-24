@@ -77,16 +77,16 @@ type ControlUVEStatus struct {
 	BgpRouterState struct {
 		NumDownServiceChains      [][]interface{}         `json:"num_down_service_chains"`
 		BgpRouterIPList           [][]interface{}         `json:"bgp_router_ip_list"`
-		NumUpXMPPPeer             [][]NumUpXMPPPeer       `json:"num_up_xmpp_peer"`
+		NumUpXMPPPeer             []interface{}       `json:"num_up_xmpp_peer"`
 		OutputQueueDepth          [][]interface{}         `json:"output_queue_depth"`
-		NumDownStaticRoutes       [][]NumDownStaticRoutes `json:"num_down_static_routes"`
+		NumDownStaticRoutes       []interface{} `json:"num_down_static_routes"`
 		Uptime                    [][]interface{}         `json:"uptime"`
 		NumDeletingXMPPPeer       [][]interface{}         `json:"num_deleting_xmpp_peer"`
 		LocalAsn                  [][]interface{}         `json:"local_asn"`
 		DbConnInfo                [][]interface{}         `json:"db_conn_info"`
 		NumXMPPPeer               [][]interface{}         `json:"num_xmpp_peer"`
 		NumDeletingBgpPeer        [][]interface{}         `json:"num_deleting_bgp_peer"`
-		NumStaticRoutes           [][]NumStaticRoutes     `json:"num_static_routes"`
+		NumStaticRoutes           []interface{}     `json:"num_static_routes"`
 		RouterID                  [][]interface{}         `json:"router_id"`
 		AdminDown                 [][]interface{}         `json:"admin_down"`
 		NumUpBgpaasPeer           [][]interface{}         `json:"num_up_bgpaas_peer"`
@@ -94,13 +94,13 @@ type ControlUVEStatus struct {
 		NumDeletedRoutingInstance [][]interface{}         `json:"num_deleted_routing_instance"`
 		NumServiceChains          [][]interface{}         `json:"num_service_chains"`
 		GlobalAsn                 [][]interface{}         `json:"global_asn"`
-		NumRoutingInstance        [][]NumRoutingInstance  `json:"num_routing_instance"`
+		NumRoutingInstance        []interface{}  `json:"num_routing_instance"`
 		BuildInfo                 [][]interface{}         `json:"build_info"`
 		IfmapServerInfo           [][]interface{}         `json:"ifmap_server_info"`
-		NumUpBgpPeer              [][]NumUpBgpPeer        `json:"num_up_bgp_peer"`
+		NumUpBgpPeer              []interface{}        `json:"num_up_bgp_peer"`
 		AmqpConnInfo              [][]interface{}         `json:"amqp_conn_info"`
 		NumBgpaasPeer             [][]interface{}         `json:"num_bgpaas_peer"`
-		NumBgpPeer                [][]NumBgpPeer          `json:"num_bgp_peer"`
+		NumBgpPeer                []interface{}          `json:"num_bgp_peer"`
 		NumDeletingBgpaasPeer     [][]interface{}         `json:"num_deleting_bgpaas_peer"`
 	} `json:"BgpRouterState"`
 	ContrailConfig struct {
