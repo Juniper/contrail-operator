@@ -117,11 +117,11 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				},
 				core.VolumeMount{
 					Name:      "cni-config-files",
-					MountPath: "/host/etc_kubernetes_cni",
+					MountPath: "/host/etc_cni",
 				},
 				core.VolumeMount{
 					Name:      "cni-bin",
-					MountPath: "/host/var_lib_cni_bin",
+					MountPath: "/host/opt_cni_bin",
 				},
 				core.VolumeMount{
 					Name:      "var-log-contrail-cni",
