@@ -40,6 +40,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Keystone{},
 	&v1alpha1.Swift{},
 	&v1alpha1.Memcached{},
+	&v1alpha1.Vrouter{},
 	&corev1.ConfigMap{},
 }
 
