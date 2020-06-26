@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -71,7 +70,7 @@ func check(err error) {
 	}
 }
 
-	func main() {
+func main() {
 	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")
@@ -422,12 +421,12 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 	state := "down"
 
 	if controlUVEStatus != nil {
-		numDownStaticRoutes, err := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.status()
+		numDownStaticRoutes, err := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.Status()
 		if err != nil {
 			log.Fatalf("numDownStaticRoutes", err)
 		}
 
-		numStaticRoutes, err := controlUVEStatus.BgpRouterState.NumStaticRoutes.status()
+		numStaticRoutes, err := controlUVEStatus.BgpRouterState.NumStaticRoutes.Status()
 		if err != nil {
 			log.Fatalf("numStaticRoutes", err)
 		}
@@ -437,12 +436,12 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 			Number: numStaticRoutes,
 		}
 
-		numUpBgpPeer, err := controlUVEStatus.BgpRouterState.NumUpBgpPeer.status()
+		numUpBgpPeer, err := controlUVEStatus.BgpRouterState.NumUpBgpPeer.Status()
 		if err != nil {
 			log.Fatalf("numUpBgpPeer", err)
 		}
 
-		numBgpPeer, err := controlUVEStatus.BgpRouterState.NumBgpPeer.status()
+		numBgpPeer, err := controlUVEStatus.BgpRouterState.NumBgpPeer.Status()
 		if err != nil {
 			log.Fatalf("numBgpPeer", err)
 		}
@@ -452,12 +451,12 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 			Number: numBgpPeer,
 		}
 
-		numUpXMPPPeer, err = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.status()
+		numUpXMPPPeer, err = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.Status()
 		if err != nil {
 			log.Fatalf("numUpXMPPPeer", err)
 		}
 
-		numRoutingInstance, err = controlUVEStatus.BgpRouterState.NumRoutingInstance.status()
+		numRoutingInstance, err = controlUVEStatus.BgpRouterState.NumRoutingInstance.Status()
 		if err != nil {
 			log.Fatalf("numRoutingInstance", err)
 		}

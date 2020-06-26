@@ -20,7 +20,7 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: cassandra
@@ -38,36 +38,36 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
             - name: analyticsapi
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-api:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-analytics-api:master.1175-rhel
             - name: api
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-api:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-config-api:master.1175-rhel
             - name: collector
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-collector:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-analytics-collector:master.1175-rhel
             - name: devicemanager
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:master.1175-rhel
             - name: dnsmasq
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:master.1175-rhel
             - name: init
               image: python:alpine
             - name: init2
               image: busybox
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: redis
               image: redis:4.0.2
             - name: schematransformer
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:master.1175-rhel
             - name: servicemonitor
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:master.1175-rhel
             - name: queryengine
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-query-engine:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-analytics-query-engine:master.1175-rhel
             - name: statusmonitor
-              image: dysproz/contrail-statusmonitor:dev
+              image: pitersk/statusmonitor:master.latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -80,22 +80,23 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
             - name: control
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-control:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-control-control:master.1175-rhel
             - name: dns
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:master.1175-rhel
             - name: init
               image: python:alpine
             - name: named
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-named:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-control-named:master.1175-rhel
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: statusmonitor
-              image: dysproz/contrail-statusmonitor:dev
+              image: busybox
+              command: ["/bin/sh","-c", "while true; do echo hello; sleep 10;done"] 
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -107,7 +108,7 @@ spec:
           create: true
           replicas: 1
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -123,7 +124,7 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -139,20 +140,20 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
             - name: init
               image: python:alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: redis
               image: redis:4.0.2
             - name: webuijob
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:master.1175-rhel
             - name: webuiweb
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:master.1175-rhel
     zookeepers:
     - metadata:
         labels:
@@ -162,7 +163,7 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: init
@@ -178,7 +179,7 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            contrail-master: ""
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
@@ -186,11 +187,11 @@ spec:
             - name: init
               image: python:alpine
             - name: kubemanager
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.1175-rhel
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: statusmonitor
-              image: dysproz/contrail-statusmonitor:dev
+              image: pitersk/statusmonitor:master.latest
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -214,13 +215,13 @@ spec:
             - name: init
               image: python:alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1175-rhel
             - name: vroutercni
               image: pitersk/contrailcni
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
     - metadata:
@@ -241,13 +242,13 @@ spec:
             - name: init
               image: python:alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:master.1175-rhel
             - name: vroutercni
               image: pitersk/contrailcni
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1258-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:master.1175-rhel
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
 
