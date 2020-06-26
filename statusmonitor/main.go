@@ -415,7 +415,8 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 		}
 	}
 
-	var numUpXMPPPeer, numRoutingInstance string
+	numUpXMPPPeer := "0"
+	numRoutingInstance := "0"
 	staticRoutes := contrailOperatorTypes.StaticRoutes{}
 	bgpPeer := contrailOperatorTypes.BGPPeer{}
 	state := "down"
@@ -464,9 +465,6 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
 			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text
 		}
-	} else {
-		numUpXMPPPeer = "0"
-		numRoutingInstance = "0"
 	}
 
 	controlStatus := contrailOperatorTypes.ControlServiceStatus{
