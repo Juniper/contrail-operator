@@ -21,6 +21,13 @@ containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:5000"]
     endpoint = ["http://registry:5000"]
+networking:
+  # the default CNI will not be installed
+  disableDefaultCNI: true
+nodes:
+- role: control-plane
+- role: control-plane
+- role: control-plane
 EOF
 
 # add the registry to /etc/hosts on each node
