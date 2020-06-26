@@ -422,46 +422,20 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 	state := "down"
 
 	if controlUVEStatus != nil {
-		numDownStaticRoutes, err := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.Status()
-		if err != nil {
-			log.Fatalf("numDownStaticRoutes", err)
-		}
-
-		numStaticRoutes, err := controlUVEStatus.BgpRouterState.NumStaticRoutes.Status()
-		if err != nil {
-			log.Fatalf("numStaticRoutes", err)
-		}
-
+		numDownStaticRoutes := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.Status()
+		numStaticRoutes := controlUVEStatus.BgpRouterState.NumStaticRoutes.Status()
 		staticRoutes = contrailOperatorTypes.StaticRoutes{
 			Down:   numDownStaticRoutes,
 			Number: numStaticRoutes,
 		}
-
-		numUpBgpPeer, err := controlUVEStatus.BgpRouterState.NumUpBgpPeer.Status()
-		if err != nil {
-			log.Fatalf("numUpBgpPeer", err)
-		}
-
-		numBgpPeer, err := controlUVEStatus.BgpRouterState.NumBgpPeer.Status()
-		if err != nil {
-			log.Fatalf("numBgpPeer", err)
-		}
-
+		numUpBgpPeer := controlUVEStatus.BgpRouterState.NumUpBgpPeer.Status()
+		numBgpPeer := controlUVEStatus.BgpRouterState.NumBgpPeer.Status()
 		bgpPeer = contrailOperatorTypes.BGPPeer{
 			Up:     numUpBgpPeer,
 			Number: numBgpPeer,
 		}
-
-		numUpXMPPPeer, err = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.Status()
-		if err != nil {
-			log.Fatalf("numUpXMPPPeer", err)
-		}
-
-		numRoutingInstance, err = controlUVEStatus.BgpRouterState.NumRoutingInstance.Status()
-		if err != nil {
-			log.Fatalf("numRoutingInstance", err)
-		}
-
+		numUpXMPPPeer = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.Status()
+		numRoutingInstance = controlUVEStatus.BgpRouterState.NumRoutingInstance.Status()
 		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
 			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text
 		}

@@ -1,20 +1,14 @@
 package uves
 
-import (
-	"errors"
-)
-
 const (
 	statusKey = "#text"
 )
 
 type statusData [][]interface{}
 
-func (s statusData) Status() (string, error) {
-	if len(s) > 1 {
-		return "", errors.New("Status payload has more fields than expected")
-	} else if len(s) == 0 {
-		return "0", nil
+func (s statusData) Status() string {
+	if len(s) != 1 {
+		return "0"
 	}
 	for _, v := range s[0] {
 		response, ok := v.(map[string]string)
@@ -28,9 +22,9 @@ func (s statusData) Status() (string, error) {
 		if val == "" {
 			val = "0"
 		}
-		return val, nil
+		return val
 	}
-	return "", errors.New("Status is missing key: " + statusKey)
+	return "0"
 }
 
 // ControlUVEStatus is the structure of Control UVEs

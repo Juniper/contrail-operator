@@ -4,10 +4,9 @@ import "testing"
 
 func Test_statusData_Status(t *testing.T) {
 	tests := []struct {
-		name    string
-		s       statusData
-		want    string
-		wantErr bool
+		name string
+		s    statusData
+		want string
 	}{
 		{
 			name: "Single filled status",
@@ -19,8 +18,7 @@ func Test_statusData_Status(t *testing.T) {
 					},
 				},
 			},
-			want:    "5",
-			wantErr: false,
+			want: "5",
 		},
 		{
 			name: "Single empty status",
@@ -32,8 +30,7 @@ func Test_statusData_Status(t *testing.T) {
 					},
 				},
 			},
-			want:    "0",
-			wantErr: false,
+			want: "0",
 		},
 		{
 			name: "Filled status with second string",
@@ -46,14 +43,12 @@ func Test_statusData_Status(t *testing.T) {
 					"ip-10.0.12.13-ec2-instance.internal",
 				},
 			},
-			want:    "5",
-			wantErr: false,
+			want: "5",
 		},
 		{
-			name:    "Empty status list",
-			s:       [][]interface{}{},
-			want:    "0",
-			wantErr: false,
+			name: "Empty status list",
+			s:    [][]interface{}{},
+			want: "0",
 		},
 		{
 			name: "Too long status list",
@@ -71,8 +66,7 @@ func Test_statusData_Status(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want: "0",
 		},
 		{
 			name: "Missing status field",
@@ -83,17 +77,12 @@ func Test_statusData_Status(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want: "0",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.s.Status()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("statusData.Status() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := tt.s.Status()
 			if got != tt.want {
 				t.Errorf("statusData.Status() = %v, want %v", got, tt.want)
 			}
