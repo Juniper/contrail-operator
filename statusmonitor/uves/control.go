@@ -1,14 +1,15 @@
 package uves
 
 const (
-	statusKey = "#text"
+	statusKey     = "#text"
+	defaultStatus = "0"
 )
 
 type statusData [][]interface{}
 
 func (s statusData) Status() string {
 	if len(s) != 1 {
-		return "0"
+		return defaultStatus
 	}
 	for _, v := range s[0] {
 		response, ok := v.(map[string]string)
@@ -20,11 +21,11 @@ func (s statusData) Status() string {
 			continue
 		}
 		if val == "" {
-			val = "0"
+			val = defaultStatus
 		}
 		return val
 	}
-	return "0"
+	return defaultStatus
 }
 
 // ControlUVEStatus is the structure of Control UVEs
