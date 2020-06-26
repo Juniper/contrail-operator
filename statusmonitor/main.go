@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -70,19 +71,7 @@ func check(err error) {
 	}
 }
 
-func getText(resp []interface{}) string {
-	for _, respObject := range resp {
-		response, ok := respObject.(map[string]string)
-		if ok {
-			fmt.Println("got Text:", response["#text"])
-			return response["#text"]
-		}
-	}
-	fmt.Println("Defaulting to empty")
-	return ""
-}
-
-func main() {
+	func main() {
 	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")
@@ -427,52 +416,58 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 		}
 	}
 
-	numDownStaticRoutes := "0"
-	numStaticRoutes := "0"
-	numUpBgpPeer := "0"
-	numBgpPeer := "0"
-	numUpXMPPPeer := "0"
-	numRoutingInstance := "0"
+	var numUpXMPPPeer, numRoutingInstance string
 	staticRoutes := contrailOperatorTypes.StaticRoutes{}
 	bgpPeer := contrailOperatorTypes.BGPPeer{}
 	state := "down"
 
 	if controlUVEStatus != nil {
-		if len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && getText(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) != "" {
-			numDownStaticRoutes = getText(controlUVEStatus.BgpRouterState.NumDownStaticRoutes)
+		numDownStaticRoutes, err := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.status()
+		if err != nil {
+			log.Fatalf("numDownStaticRoutes", err)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && getText(controlUVEStatus.BgpRouterState.NumStaticRoutes) != "" {
-			numStaticRoutes = getText(controlUVEStatus.BgpRouterState.NumStaticRoutes)
+		numStaticRoutes, err := controlUVEStatus.BgpRouterState.NumStaticRoutes.status()
+		if err != nil {
+			log.Fatalf("numStaticRoutes", err)
 		}
+
 		staticRoutes = contrailOperatorTypes.StaticRoutes{
 			Down:   numDownStaticRoutes,
 			Number: numStaticRoutes,
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumUpBgpPeer) != "" {
-			numUpBgpPeer = getText(controlUVEStatus.BgpRouterState.NumUpBgpPeer)
+		numUpBgpPeer, err := controlUVEStatus.BgpRouterState.NumUpBgpPeer.status()
+		if err != nil {
+			log.Fatalf("numUpBgpPeer", err)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumBgpPeer) != "" {
-			numBgpPeer = getText(controlUVEStatus.BgpRouterState.NumBgpPeer)
+		numBgpPeer, err := controlUVEStatus.BgpRouterState.NumBgpPeer.status()
+		if err != nil {
+			log.Fatalf("numBgpPeer", err)
 		}
+
 		bgpPeer = contrailOperatorTypes.BGPPeer{
 			Up:     numUpBgpPeer,
 			Number: numBgpPeer,
 		}
 
-
-		if len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && getText(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) != "" {
-			numUpXMPPPeer = getText(controlUVEStatus.BgpRouterState.NumUpXMPPPeer)
+		numUpXMPPPeer, err = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.status()
+		if err != nil {
+			log.Fatalf("numUpXMPPPeer", err)
 		}
 
-		if len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && getText(controlUVEStatus.BgpRouterState.NumRoutingInstance) != "" {
-			numRoutingInstance = getText(controlUVEStatus.BgpRouterState.NumRoutingInstance)
+		numRoutingInstance, err = controlUVEStatus.BgpRouterState.NumRoutingInstance.status()
+		if err != nil {
+			log.Fatalf("numRoutingInstance", err)
 		}
+
 		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
 			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text
 		}
+	} else {
+		numUpXMPPPeer = "0"
+		numRoutingInstance = "0"
 	}
 
 	controlStatus := contrailOperatorTypes.ControlServiceStatus{
