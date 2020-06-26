@@ -31,7 +31,7 @@ func (s statusData) Status() string {
 // ControlUVEStatus is the structure of Control UVEs
 type ControlUVEStatus struct {
 	NodeStatus struct {
-		T             statusData `json:"__T"`
+		T             [][]interface{} `json:"__T"`
 		ProcessStatus struct {
 			Aggtype string `json:"@aggtype"`
 			List    struct {
@@ -103,37 +103,37 @@ type ControlUVEStatus struct {
 	} `json:"NodeStatus"`
 
 	BgpRouterState struct {
-		NumDownServiceChains      statusData `json:"num_down_service_chains"`
-		BgpRouterIPList           statusData `json:"bgp_router_ip_list"`
-		NumUpXMPPPeer             statusData `json:"num_up_xmpp_peer"`
-		OutputQueueDepth          statusData `json:"output_queue_depth"`
-		NumDownStaticRoutes       statusData `json:"num_down_static_routes"`
-		Uptime                    statusData `json:"uptime"`
-		NumDeletingXMPPPeer       statusData `json:"num_deleting_xmpp_peer"`
-		LocalAsn                  statusData `json:"local_asn"`
-		DbConnInfo                statusData `json:"db_conn_info"`
-		NumXMPPPeer               statusData `json:"num_xmpp_peer"`
-		NumDeletingBgpPeer        statusData `json:"num_deleting_bgp_peer"`
-		NumStaticRoutes           statusData `json:"num_static_routes"`
-		RouterID                  statusData `json:"router_id"`
-		AdminDown                 statusData `json:"admin_down"`
-		NumUpBgpaasPeer           statusData `json:"num_up_bgpaas_peer"`
-		T                         statusData `json:"__T"`
-		NumDeletedRoutingInstance statusData `json:"num_deleted_routing_instance"`
-		NumServiceChains          statusData `json:"num_service_chains"`
-		GlobalAsn                 statusData `json:"global_asn"`
-		NumRoutingInstance        statusData `json:"num_routing_instance"`
-		BuildInfo                 statusData `json:"build_info"`
-		IfmapServerInfo           statusData `json:"ifmap_server_info"`
-		NumUpBgpPeer              statusData `json:"num_up_bgp_peer"`
-		AmqpConnInfo              statusData `json:"amqp_conn_info"`
-		NumBgpaasPeer             statusData `json:"num_bgpaas_peer"`
-		NumBgpPeer                statusData `json:"num_bgp_peer"`
-		NumDeletingBgpaasPeer     statusData `json:"num_deleting_bgpaas_peer"`
+		NumDownServiceChains      [][]interface{} `json:"num_down_service_chains"`
+		BgpRouterIPList           [][]interface{} `json:"bgp_router_ip_list"`
+		NumUpXMPPPeer             statusData      `json:"num_up_xmpp_peer"`
+		OutputQueueDepth          [][]interface{} `json:"output_queue_depth"`
+		NumDownStaticRoutes       statusData      `json:"num_down_static_routes"`
+		Uptime                    [][]interface{} `json:"uptime"`
+		NumDeletingXMPPPeer       [][]interface{} `json:"num_deleting_xmpp_peer"`
+		LocalAsn                  [][]interface{} `json:"local_asn"`
+		DbConnInfo                [][]interface{} `json:"db_conn_info"`
+		NumXMPPPeer               [][]interface{} `json:"num_xmpp_peer"`
+		NumDeletingBgpPeer        [][]interface{} `json:"num_deleting_bgp_peer"`
+		NumStaticRoutes           statusData      `json:"num_static_routes"`
+		RouterID                  [][]interface{} `json:"router_id"`
+		AdminDown                 [][]interface{} `json:"admin_down"`
+		NumUpBgpaasPeer           [][]interface{} `json:"num_up_bgpaas_peer"`
+		T                         [][]interface{} `json:"__T"`
+		NumDeletedRoutingInstance [][]interface{} `json:"num_deleted_routing_instance"`
+		NumServiceChains          [][]interface{} `json:"num_service_chains"`
+		GlobalAsn                 [][]interface{} `json:"global_asn"`
+		NumRoutingInstance        statusData      `json:"num_routing_instance"`
+		BuildInfo                 [][]interface{} `json:"build_info"`
+		IfmapServerInfo           [][]interface{} `json:"ifmap_server_info"`
+		NumUpBgpPeer              statusData      `json:"num_up_bgp_peer"`
+		AmqpConnInfo              [][]interface{} `json:"amqp_conn_info"`
+		NumBgpaasPeer             [][]interface{} `json:"num_bgpaas_peer"`
+		NumBgpPeer                statusData      `json:"num_bgp_peer"`
+		NumDeletingBgpaasPeer     [][]interface{} `json:"num_deleting_bgpaas_peer"`
 	} `json:"BgpRouterState"`
 	ContrailConfig struct {
-		Deleted  statusData `json:"deleted"`
-		T        statusData `json:"__T"`
-		Elements statusData `json:"elements"`
+		Deleted  [][]interface{} `json:"deleted"`
+		T        [][]interface{} `json:"__T"`
+		Elements [][]interface{} `json:"elements"`
 	} `json:"ContrailConfig"`
 }
