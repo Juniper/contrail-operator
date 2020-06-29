@@ -30,8 +30,6 @@ spec:
             - -c
             - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: CONTRAIL_STATUS_IMAGE
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           imagePullPolicy: Always
@@ -51,8 +49,6 @@ spec:
         - name: nodeinit
           image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: CONTRAIL_STATUS_IMAGE
               value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
           imagePullPolicy: Always
@@ -65,8 +61,6 @@ spec:
         - name: api
           image: docker.io/michaelhenkel/contrail-controller-config-api:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -83,8 +77,6 @@ spec:
         - name: devicemanager
           image: docker.io/michaelhenkel/contrail-controller-config-devicemgr:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -96,8 +88,6 @@ spec:
         - name: dnsmasq
           image: docker.io/michaelhenkel/contrail-external-dnsmasq:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -113,8 +103,6 @@ spec:
         - name: schematransformer
           image: docker.io/michaelhenkel/contrail-controller-config-schema:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -126,8 +114,6 @@ spec:
         - name: servicemonitor
           image: docker.io/michaelhenkel/contrail-controller-config-svcmonitor:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -139,8 +125,6 @@ spec:
         - name: analyticsapi
           image: docker.io/michaelhenkel/contrail-analytics-api:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -156,8 +140,6 @@ spec:
         - name: queryengine
           image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -169,8 +151,6 @@ spec:
         - name: collector
           image: docker.io/michaelhenkel/contrail-analytics-collector:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -182,8 +162,6 @@ spec:
         - name: redis
           image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -197,8 +175,6 @@ spec:
         - name: nodemanagerconfig
           image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: DOCKER_HOST
               value: unix://mnt/docker.sock
             - name: NODE_TYPE
@@ -218,8 +194,6 @@ spec:
         - name: nodemanageranalytics
           image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: DOCKER_HOST
               value: unix://mnt/docker.sock
             - name: NODE_TYPE
@@ -239,8 +213,6 @@ spec:
         - name: statusmonitor
           image: docker.io/kaweue/contrail-statusmonitor:debug
           env:
-            - name: CLOUD_ORCHESTRATOR
-              value: kubernetes
             - name: POD_IP
               valueFrom:
                 fieldRef:
