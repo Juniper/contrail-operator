@@ -187,7 +187,7 @@ spec:
             - name: init
               image: python:alpine
             - name: kubemanager
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.1175-rhel
+              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.1258-rhel
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:master.1175-rhel
             - name: statusmonitor
@@ -196,6 +196,7 @@ spec:
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
           useKubeadmConfig: true
+          hostNetworkService: true
     vrouters:
     - metadata:
         labels:
