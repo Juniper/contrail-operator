@@ -15,7 +15,6 @@ import (
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
@@ -35,7 +34,7 @@ type NodeType string
 const (
 	//VROUTER nodetype
 	VROUTER NodeType = "vrouter"
-	//CONFIG nodetypesd
+	//CONFIG nodetype
 	CONFIG = "config"
 	//ANALYTICS nodetype
 	ANALYTICS = "analytics"
