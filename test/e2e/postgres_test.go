@@ -36,7 +36,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -66,7 +66,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					HostNetwork: &trueVal,
 				},
 				Services: contrail.Services{
-					Postgres:  psql,
+					Postgres: psql,
 				},
 			},
 		}
@@ -81,13 +81,13 @@ func TestPostgresDataPersistence(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
-					Logger:			log,
+					Logger:        log,
 				}.ForPostgresActive(psql.Name)
 				require.NoError(t, err)
 			})
 
 			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-				LabelSelector: "app="+psql.Name,
+				LabelSelector: "app=" + psql.Name,
 			})
 			assert.NoError(t, err)
 			assert.NotEmpty(t, psqlPods.Items)
@@ -126,7 +126,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 						Timeout:       5 * time.Minute,
 						RetryInterval: retryInterval,
 						Client:        f.Client,
-						Logger:			log,
+						Logger:        log,
 					}.ForPodUidChange(f.KubeClient, podName, uid)
 					require.NoError(t, err)
 				})
@@ -137,12 +137,12 @@ func TestPostgresDataPersistence(t *testing.T) {
 						Timeout:       5 * time.Minute,
 						RetryInterval: retryInterval,
 						Client:        f.Client,
-						Logger:			log,
+						Logger:        log,
 					}.ForPostgresActive(psql.Name)
 					require.NoError(t, err)
 				})
 				psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "app="+psql.Name,
+					LabelSelector: "app=" + psql.Name,
 				})
 				assert.NoError(t, err)
 				assert.NotEmpty(t, psqlPods.Items)
@@ -151,7 +151,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 				psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "contrail_test")
 				require.NoError(t, err)
 				require.NotNil(t, psqlClient)
-				
+
 				t.Run("then test data is persistent", func(t *testing.T) {
 					var gotData string
 					gotData, err = psqlClient.GetTestUserName(context.TODO(), 1)
@@ -180,7 +180,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
-					Logger:			log,
+					Logger:        log,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})
