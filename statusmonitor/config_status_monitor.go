@@ -3,17 +3,19 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"io/ioutil"
+	"log"
+	"net/http"
+	"reflect"
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"log"
-	"net/http"
-	"reflect"
-	"strings"
+
+	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type ConnectionInfo struct {
