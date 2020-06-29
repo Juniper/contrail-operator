@@ -7,6 +7,8 @@
 ## Create a test env
     export KIND_CLUSTER_NAME=kind
     export INTERNAL_INSECURE_REGISTRY_PORT=6000
+    # number of intended cluster nodes, defaults to 1 (if you want to run multi-node cluster use odd number e.g. 3)
+    export NODES=1
     ./create_testenv.sh
 
 It creates Kubernetes IN Docker cluster with a docker registry. This docker registry is accessible from host at `localhost:6000` and from inside the cluster at `registry:5000`
