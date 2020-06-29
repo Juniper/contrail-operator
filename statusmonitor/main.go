@@ -35,7 +35,7 @@ type NodeType string
 const (
 	//VROUTER nodetype
 	VROUTER NodeType = "vrouter"
-	//CONFIG nodetype
+	//CONFIG nodetypesd
 	CONFIG = "config"
 	//ANALYTICS nodetype
 	ANALYTICS = "analytics"
