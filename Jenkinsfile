@@ -8,16 +8,14 @@ node('contrail-operator-node') {
                     userRemoteConfigs: [[credentialsId: 'acitalkey', 
                     url: 'git@github.com:Juniper/contrail-operator.git']]])
 
-            sh "go build cmd/manager/main.go"
-            sh "go test -race -v ./pkg/..."
-
             try {
-                sh "./test/env/create_k8s_cluster.sh ${ghprbPullId} ${registry}"
+                sh "kind delete cluster --name=${testEnvPrefix}${ghprbPullId} || true"
+                sh "./test/env/create_k8s_cluster.sh ${testEnvPrefix}${ghprbPullId} ${registry}"
                 sh "kubectl create namespace contrail"
                 sh 'BUILD_SCM_REVISION=`echo "${ghprbActualCommit}" | head -c 7` BUILD_SCM_BRANCH=${GIT_BRANCH} ./test/env/run_e2e_tests.sh'
             } finally {
                 sh "kubectl delete namespace contrail"
-                sh "kind delete cluster --name=${ghprbPullId}"
+                sh "kind delete cluster --name=${testEnvPrefix}${ghprbPullId}"
             }
         }
     }
