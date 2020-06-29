@@ -1,4 +1,3 @@
-a
 # Contrail Operator
 This is first check-in to R2005
 
