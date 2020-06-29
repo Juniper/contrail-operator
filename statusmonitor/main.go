@@ -415,10 +415,6 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 		}
 	}
 
-	numDownStaticRoutes := "0"
-	numStaticRoutes := "0"
-	numUpBgpPeer := "0"
-	numBgpPeer := "0"
 	numUpXMPPPeer := "0"
 	numRoutingInstance := "0"
 	staticRoutes := contrailOperatorTypes.StaticRoutes{}
@@ -426,37 +422,20 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 	state := "down"
 
 	if controlUVEStatus != nil {
-		if len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0]) > 0 && controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0][0].Text != "" {
-			numDownStaticRoutes = controlUVEStatus.BgpRouterState.NumDownStaticRoutes[0][0].Text
-		}
-
-		if len(controlUVEStatus.BgpRouterState.NumStaticRoutes) > 0 && len(controlUVEStatus.BgpRouterState.NumStaticRoutes[0]) > 0 && controlUVEStatus.BgpRouterState.NumStaticRoutes[0][0].Text != "" {
-			numStaticRoutes = controlUVEStatus.BgpRouterState.NumStaticRoutes[0][0].Text
-		}
+		numDownStaticRoutes := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.Status()
+		numStaticRoutes := controlUVEStatus.BgpRouterState.NumStaticRoutes.Status()
 		staticRoutes = contrailOperatorTypes.StaticRoutes{
 			Down:   numDownStaticRoutes,
 			Number: numStaticRoutes,
 		}
-
-		if len(controlUVEStatus.BgpRouterState.NumUpBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpBgpPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumUpBgpPeer[0][0].Text != "" {
-			numUpBgpPeer = controlUVEStatus.BgpRouterState.NumUpBgpPeer[0][0].Text
-		}
-
-		if len(controlUVEStatus.BgpRouterState.NumBgpPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumBgpPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumBgpPeer[0][0].Text != "" {
-			numBgpPeer = controlUVEStatus.BgpRouterState.NumBgpPeer[0][0].Text
-		}
+		numUpBgpPeer := controlUVEStatus.BgpRouterState.NumUpBgpPeer.Status()
+		numBgpPeer := controlUVEStatus.BgpRouterState.NumBgpPeer.Status()
 		bgpPeer = contrailOperatorTypes.BGPPeer{
 			Up:     numUpBgpPeer,
 			Number: numBgpPeer,
 		}
-
-		if len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer) > 0 && len(controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0]) > 0 && controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0][0].Text != "" {
-			numUpXMPPPeer = controlUVEStatus.BgpRouterState.NumUpXMPPPeer[0][0].Text
-		}
-
-		if len(controlUVEStatus.BgpRouterState.NumRoutingInstance) > 0 && len(controlUVEStatus.BgpRouterState.NumRoutingInstance[0]) > 0 && controlUVEStatus.BgpRouterState.NumRoutingInstance[0][0].Text != "" {
-			numRoutingInstance = controlUVEStatus.BgpRouterState.NumRoutingInstance[0][0].Text
-		}
+		numUpXMPPPeer = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.Status()
+		numRoutingInstance = controlUVEStatus.BgpRouterState.NumRoutingInstance.Status()
 		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
 			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text
 		}
