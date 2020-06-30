@@ -18,7 +18,6 @@ if [[ $BUILD_SCM_REVISION != "latest" ]] ; then
     done
 fi
 
-exit 0
 
 DIR="$(cd "$(dirname "$0")" && pwd)/../../"
 pushd $DIR
