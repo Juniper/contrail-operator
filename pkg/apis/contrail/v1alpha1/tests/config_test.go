@@ -716,13 +716,17 @@ func TestWebuiConfig(t *testing.T) {
 	}
 }
 
+
+
 func TestVrouterConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
 	environment := SetupEnv()
 	cl := *environment.client
+	clientset := kubernetes.Clientset{}
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}}, &environment.vrouterPodList, cl)
+	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()})
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}

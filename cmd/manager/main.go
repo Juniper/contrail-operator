@@ -112,8 +112,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	var cinfo v1alpha1.KubemanagerClusterInfo
-	var cniDirs vrouter.CNIDirectoriesInfo
+	var kubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
+	var vrouterClusterInfo v1alpha1.VrouterClusterInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		dynamicClient, err := v1alpha1.GetDynamicClient()
 		if err != nil {
@@ -124,12 +124,12 @@ func main() {
 			Client:        clientset.CoreV1(),
 			DynamicClient: dynamicClient,
 		}
-		cinfo = config
-		cniDirs = config
+		kubemanagerClusterInfo = config
+		vrouterClusterInfo = config
 	} else {
 		config := k8s.ClusterConfig{Client: clientset.CoreV1()}
-		cinfo = config
-		cniDirs = config
+		kubemanagerClusterInfo = config
+		vrouterClusterInfo = config
 	}
 
 	// Setup all Controllers.
@@ -138,12 +138,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := kubemanager.Add(mgr, cinfo); err != nil {
+	if err := kubemanager.Add(mgr, kubemanagerClusterInfo); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
-	if err := vrouter.Add(mgr, cniDirs); err != nil {
+	if err := vrouter.Add(mgr, vrouterClusterInfo); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
