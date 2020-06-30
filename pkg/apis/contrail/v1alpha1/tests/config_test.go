@@ -716,17 +716,31 @@ func TestWebuiConfig(t *testing.T) {
 	}
 }
 
+type vrouterClusterInfoFake struct {
+	clusterName             string
+	cniBinariesDirectory    string
+	cniConfigFilesDirectory string
+}
 
+func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
+	return c.clusterName, nil
+}
+
+func (c vrouterClusterInfoFake) CNIBinariesDirectory() string {
+	return c.cniBinariesDirectory
+}
+func (c vrouterClusterInfoFake) CNIConfigFilesDirectory() string {
+	return c.cniConfigFilesDirectory
+}
 
 func TestVrouterConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
 	environment := SetupEnv()
 	cl := *environment.client
-	clientset := kubernetes.Clientset{}
 
 	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()})
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
@@ -745,6 +759,11 @@ func TestVrouterConfig(t *testing.T) {
 	if environment.vrouterConfigMap.Data["vrouter.1.1.8.1"] != vrouterConfig {
 		configDiff := diff.Diff(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"], vrouterConfig)
 		t.Fatalf("get vrouter config: \n%v\n", configDiff)
+	}
+
+	if environment.vrouterConfigMap.Data["10-contrail.conf"] != vrouterCniConfig {
+		configDiff := diff.Diff(environment.vrouterConfigMap.Data["10-contrail.conf"], vrouterCniConfig)
+		t.Fatalf("get vrouter cni config: \n%v\n", configDiff)
 	}
 }
 
@@ -1788,6 +1807,23 @@ fabric_snat_hash_table_size = 4096
 [SESSION]
 slo_destination = collector
 sample_destination = collector`
+
+var vrouterCniConfig = `{
+  "cniVersion": "0.3.1",
+  "contrail" : {
+      "cluster-name"  : "test-cluster",
+      "meta-plugin"   : "multus",
+      "vrouter-ip"    : "127.0.0.1",
+      "vrouter-port"  : 9091,
+      "config-dir"    : "/var/lib/contrail/ports/vm",
+      "poll-timeout"  : 5,
+      "poll-retries"  : 15,
+      "log-file"      : "/var/log/contrail/cni/opencontrail.log",
+      "log-level"     : "4"
+  },
+  "name": "contrail-k8s-cni",
+  "type": "contrail-k8s-cni"
+}`
 
 var devicemanagerWithFabricConfig = `[DEFAULTS]
 host_ip=2.2.2.2

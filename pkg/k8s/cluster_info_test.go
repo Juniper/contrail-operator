@@ -10,15 +10,14 @@ import (
 	typedCorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type ClusterInfoSuite struct {
 	suite.Suite
-	ClusterInfo     v1alpha1.KubemanagerClusterInfo
-	CNIDirs         vrouter.CNIDirectoriesInfo
-	CoreV1Interface typedCorev1.CoreV1Interface
+	KubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
+	VrouterClusterInfo     v1alpha1.VrouterClusterInfo
+	CoreV1Interface        typedCorev1.CoreV1Interface
 }
 
 var kubeadmConfig = `---
@@ -52,47 +51,53 @@ scheduler: {}`
 
 func (suite *ClusterInfoSuite) SetupTest() {
 	coreV1Interface := getClientWithConfigMap(kubeadmConfig)
-	suite.ClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
-	suite.CNIDirs = k8s.ClusterConfig{Client: coreV1Interface}
+	suite.KubemanagerClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
+	suite.VrouterClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
 
 }
 
 func (suite *ClusterInfoSuite) TestKubernetesAPISSLPort() {
-	APISSLPort, err := suite.ClusterInfo.KubernetesAPISSLPort()
+	APISSLPort, err := suite.KubemanagerClusterInfo.KubernetesAPISSLPort()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(APISSLPort, 6443, "API SSL port should be 6443")
 }
 
 func (suite *ClusterInfoSuite) TestKubernetesAPIServer() {
-	APIServer, err := suite.ClusterInfo.KubernetesAPIServer()
+	APIServer, err := suite.KubemanagerClusterInfo.KubernetesAPIServer()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(APIServer, "10.255.254.3", "API Server should be 10.255.254.3")
 }
 
-func (suite *ClusterInfoSuite) TestKubernetesClusterName() {
-	clusterName, err := suite.ClusterInfo.KubernetesClusterName()
+func (suite *ClusterInfoSuite) TestKubernetesClusterNameInKubernetesClusterInfo() {
+	clusterName, err := suite.KubemanagerClusterInfo.KubernetesClusterName()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(clusterName, "test", "Cluster name should be test")
 }
 
 func (suite *ClusterInfoSuite) TestPodSubnets() {
-	podSubnets, err := suite.ClusterInfo.PodSubnets()
+	podSubnets, err := suite.KubemanagerClusterInfo.PodSubnets()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(podSubnets, "10.244.0.0/16", "Pod subnets should be 10.244.0.0/16")
 }
 
 func (suite *ClusterInfoSuite) TestServiceSubnets() {
-	serviceSubnets, err := suite.ClusterInfo.ServiceSubnets()
+	serviceSubnets, err := suite.KubemanagerClusterInfo.ServiceSubnets()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(serviceSubnets, "10.96.0.0/12", "Service subnets should be 10.96.0.0/12")
 }
 
+func (suite *ClusterInfoSuite) TestKubernetesClusterNameInVrouterClusterInfo() {
+	clusterName, err := suite.VrouterClusterInfo.KubernetesClusterName()
+	suite.Assert().NoError(err)
+	suite.Assert().Equal(clusterName, "test", "Cluster name should be test")
+}
+
 func (suite *ClusterInfoSuite) TestCNIBinariesDirectory() {
-	suite.Assert().Equal(suite.CNIDirs.CNIBinariesDirectory(), "/opt/cni/bin", "Path should be /opt/cni/bin")
+	suite.Assert().Equal(suite.VrouterClusterInfo.CNIBinariesDirectory(), "/opt/cni/bin", "Path should be /opt/cni/bin")
 }
 
 func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
-	suite.Assert().Equal(suite.CNIDirs.CNIConfigFilesDirectory(), "/etc/cni", "Path should be /etc/cni")
+	suite.Assert().Equal(suite.VrouterClusterInfo.CNIConfigFilesDirectory(), "/etc/cni", "Path should be /etc/cni")
 }
 
 func (suite *ClusterInfoSuite) TestMissingEndpointPort() {
