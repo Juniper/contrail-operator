@@ -485,9 +485,9 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			command := []string{"sh", "-c",
 				"mkdir -p /host/etc_cni/net.d && " +
 					"mkdir -p /var/lib/contrail/ports/vm && " +
-					"cp /usr/bin/contrail-k8s-cni /host/opt_cni_bin && " +
+					"cp -f /usr/bin/contrail-k8s-cni /host/opt_cni_bin && " +
 					"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
-					"cp /etc/mycontrail/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
+					"cp -f /etc/mycontrail/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
 					"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
