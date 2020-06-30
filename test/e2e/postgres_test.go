@@ -27,7 +27,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
@@ -36,7 +36,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, RetryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -72,14 +72,14 @@ func TestPostgresDataPersistence(t *testing.T) {
 		}
 
 		t.Run("when manager resource with Postgres is created", func(t *testing.T) {
-			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 			assert.NoError(t, err)
 
 			t.Run("then Postgres is active in 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: retryInterval,
+					RetryInterval: RetryInterval,
 					Client:        f.Client,
 					Logger:        log,
 				}.ForPostgresActive(psql.Name)
@@ -124,7 +124,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					err := wait.Contrail{
 						Namespace:     namespace,
 						Timeout:       5 * time.Minute,
-						RetryInterval: retryInterval,
+						RetryInterval: RetryInterval,
 						Client:        f.Client,
 						Logger:        log,
 					}.ForPodUidChange(f.KubeClient, podName, uid)
@@ -135,7 +135,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					err := wait.Contrail{
 						Namespace:     namespace,
 						Timeout:       5 * time.Minute,
-						RetryInterval: retryInterval,
+						RetryInterval: RetryInterval,
 						Client:        f.Client,
 						Logger:        log,
 					}.ForPostgresActive(psql.Name)
@@ -178,7 +178,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: retryInterval,
+					RetryInterval: RetryInterval,
 					Client:        f.Client,
 					Logger:        log,
 				}.ForManagerDeletion(cluster.Name)

@@ -33,7 +33,7 @@ func TestOpenstackServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
@@ -42,7 +42,7 @@ func TestOpenstackServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, RetryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -136,19 +136,19 @@ func TestOpenstackServices(t *testing.T) {
 
 		t.Run("when manager resource with psql and keystone is created", func(t *testing.T) {
 
-			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 			assert.NoError(t, err)
 
-			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 			assert.NoError(t, err)
 
-			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 			assert.NoError(t, err)
 
 			wait := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       waitTimeout,
-				RetryInterval: retryInterval,
+				Timeout:       WaitTimeout,
+				RetryInterval: RetryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -174,8 +174,8 @@ func TestOpenstackServices(t *testing.T) {
 
 			wait := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       waitTimeout,
-				RetryInterval: retryInterval,
+				Timeout:       WaitTimeout,
+				RetryInterval: RetryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -287,7 +287,7 @@ func TestOpenstackServices(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: retryInterval,
+					RetryInterval: RetryInterval,
 					Client:        f.Client,
 					Logger:        log,
 				}.ForManagerDeletion(cluster.Name)

@@ -108,7 +108,7 @@ func ManagerCluster(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
 
@@ -123,41 +123,41 @@ func ManagerCluster(t *testing.T) {
 	var hostNetwork = false
 	manager := getManager(namespace, replicas, hostNetwork, initialVersionMap)
 
-	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, retryInterval, waitTimeout)
+	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForRabbitmq(t, f, ctx, namespace, "rabbitmq1", 1, retryInterval, waitTimeout)
+	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
+	err = waitForRabbitmq(t, f, ctx, namespace, "rabbitmq1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForControl(t, f, ctx, namespace, "control1", 1, retryInterval, waitTimeout)
+	err = waitForConfig(t, f, ctx, namespace, "config1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForKubemanager(t, f, ctx, namespace, "kubemanager1", 1, retryInterval, waitTimeout)
+	err = waitForControl(t, f, ctx, namespace, "control1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForManager(t, f, ctx, namespace, "cluster1", retryInterval, waitTimeout)
+	err = waitForKubemanager(t, f, ctx, namespace, "kubemanager1", 1, RetryInterval, WaitTimeout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = waitForManager(t, f, ctx, namespace, "cluster1", RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func ManagerCluster(t *testing.T) {
 	err = contrailwait.Contrail{
 		Namespace:     namespace,
 		Timeout:       5 * time.Minute,
-		RetryInterval: retryInterval,
+		RetryInterval: RetryInterval,
 		Client:        f.Client,
 		Logger:        log,
 	}.ForManagerDeletion(manager.Name)
@@ -381,7 +381,7 @@ func RabbitmqCluster(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
@@ -413,11 +413,11 @@ func RabbitmqCluster(t *testing.T) {
 		},
 	}
 
-	err = f.Client.Create(goctx.TODO(), rabbitmq, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	err = f.Client.Create(goctx.TODO(), rabbitmq, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 1, retryInterval, waitTimeout)
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -435,22 +435,22 @@ func upgradeZookeeper(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 	if err != nil {
 		return err
 	}
-	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, retryInterval, waitTimeout)
+	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
+	err = waitForConfig(t, f, ctx, namespace, "config1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForControl(t, f, ctx, namespace, "control1", 1, retryInterval, waitTimeout)
+	err = waitForControl(t, f, ctx, namespace, "control1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForKubemanager(t, f, ctx, namespace, "kubemanager1", 1, retryInterval, waitTimeout)
+	err = waitForKubemanager(t, f, ctx, namespace, "kubemanager1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -505,12 +505,12 @@ func upgradeCassandra(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 	if err != nil {
 		return err
 	}
-	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, retryInterval, waitTimeout)
+	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
+	err = waitForConfig(t, f, ctx, namespace, "config1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -528,26 +528,26 @@ func imageUpgradeTest(t *testing.T, f *test.Framework, ctx *test.TestCtx) error 
 		return fmt.Errorf("could not get manager: %v", err)
 	}
 	manager = getManager(namespace, 1, false, targetVersionMap)
-	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, retryInterval, waitTimeout)
+	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForRabbitmq(t, f, ctx, namespace, "rabbitmq1", 1, retryInterval, waitTimeout)
+	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
+	err = waitForRabbitmq(t, f, ctx, namespace, "rabbitmq1", 1, RetryInterval, WaitTimeout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = waitForConfig(t, f, ctx, namespace, "config1", 1, RetryInterval, WaitTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -570,12 +570,12 @@ func managerScaleTest(t *testing.T, f *test.Framework, ctx *test.TestCtx) error 
 	if err != nil {
 		return fmt.Errorf("could not update manager: %v", err)
 	}
-	waitTimeout = time.Second * 120
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 3, retryInterval, waitTimeout)
+	WaitTimeout = time.Second * 120
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 3, RetryInterval, WaitTimeout)
 	if err != nil {
 		return fmt.Errorf("rabbitmq deployment is wrong: %v", err)
 	}
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "zookeeper1-zookeeper-deployment", 3, retryInterval, waitTimeout)
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "zookeeper1-zookeeper-deployment", 3, RetryInterval, WaitTimeout)
 	if err != nil {
 		return fmt.Errorf("zookeeper deployment is wrong: %v", err)
 	}

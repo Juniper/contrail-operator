@@ -3,9 +3,9 @@ package e2e
 import "time"
 
 var (
-	retryInterval          = time.Second * 5
-	waitTimeout            = time.Second * 240
+	RetryInterval          = time.Second * 5
+	WaitTimeout            = time.Second * 240
+	CleanupRetryInterval   = time.Second * 1
+	CleanupTimeout         = time.Second * 5
 	waitForOperatorTimeout = time.Minute * 10
-	cleanupRetryInterval   = time.Second * 1
-	cleanupTimeout         = time.Second * 5
 )

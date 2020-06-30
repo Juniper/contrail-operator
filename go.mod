@@ -24,7 +24,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
+	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4

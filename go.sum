@@ -430,6 +430,7 @@ github.com/golangplus/testing v0.0.0-20180327235837-af21d9c3145e/go.mod h1:0AA//
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0 h1:0udJVsspx3VBr5FwtLhQQtuAsVc79tTq0ocGIPAU6qo=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
+github.com/google/cadvisor v0.34.0 h1:No7G6U/TasplR9uNqyc5Jj0Bet5VSYsK5xLygOf4pUw=
 github.com/google/cadvisor v0.34.0/go.mod h1:1nql6U13uTHaLYB8rLS5x9IJc2qT6Xd/Tr1sTX6NE48=
 github.com/google/certificate-transparency-go v1.0.21/go.mod h1:QeJfpSbVSfYc7RgB3gJFj9cbuQMMchQxrWXz8Ruopmg=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
@@ -714,6 +715,7 @@ github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible h1:6i
 github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b h1:E++qQ7W1/EdvuMo+YGVbMPn4HihEp7YT5Rghh0VmA9A=
 github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
+github.com/openshift/origin v0.0.0-20160503220234-8f127d736703 h1:KLVRXtjLhZHVtrcdnuefaI2Bf182EEiTfEVDHokoyng=
 github.com/openshift/origin v0.0.0-20160503220234-8f127d736703/go.mod h1:0Rox5r9C8aQn6j1oAOQ0c1uC86mYbUFObzjBRvUKHII=
 github.com/openshift/prom-label-proxy v0.1.1-0.20191016113035-b8153a7f39f1/go.mod h1:p5MuxzsYP1JPsNGwtjtcgRHHlGziCJJfztff91nNixw=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
@@ -1258,13 +1260,16 @@ k8s.io/cli-runtime v0.0.0-20191016114015-74ad18325ed5 h1:8ZfMjkMBzcXEawLsYHg9lDM
 k8s.io/cli-runtime v0.0.0-20191016114015-74ad18325ed5/go.mod h1:sDl6WKSQkDM6zS1u9F49a0VooQ3ycYFBFLqd2jf2Xfo=
 k8s.io/client-go v0.0.0-20191016111102-bec269661e48 h1:C2XVy2z0dV94q9hSSoCuTPp1KOG7IegvbdXuz9VGxoU=
 k8s.io/client-go v0.0.0-20191016111102-bec269661e48/go.mod h1:hrwktSwYGI4JK+TJA3dMaFyyvHVi/aLarVHpbs8bgCU=
+k8s.io/cloud-provider v0.0.0-20191016115326-20453efc2458 h1:rP/89rnWN2l+2b7Jckg4VXi2dhgu7xs3S+1bKWKrqGE=
 k8s.io/cloud-provider v0.0.0-20191016115326-20453efc2458/go.mod h1:O5SO5xcgxrjJV9EC9R/47RuBpbk5YX9URDBlg++FA5o=
 k8s.io/cluster-bootstrap v0.0.0-20191016115129-c07a134afb42/go.mod h1:MzCL6kLExQuHruGaqibd8cugC8nw8QRxm3+lzR5l8SI=
 k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894 h1:NMYlxaF7rYQJk2E2IyrUhaX81zX24+dmoZdkPw0gJqI=
 k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894/go.mod h1:mJUgkl06XV4kstAnLHAIzJPVCOzVR+ZcfPIv4fUsFCY=
 k8s.io/component-base v0.0.0-20191016111319-039242c015a9 h1:2D+G/CCNVdYc0h9D+tX+0SmtcyQmby6uzNityrps1s0=
 k8s.io/component-base v0.0.0-20191016111319-039242c015a9/go.mod h1:SuWowIgd/dtU/m/iv8OD9eOxp3QZBBhTIiWMsBQvKjI=
+k8s.io/cri-api v0.0.0-20190828162817-608eb1dad4ac h1:ikDtGPX1DVIhl4E36+khq6RVyA65ycfiieBHecQiaX0=
 k8s.io/cri-api v0.0.0-20190828162817-608eb1dad4ac/go.mod h1:BvtUaNBr0fEpzb11OfrQiJLsLPtqbmulpo1fPwcpP6Q=
+k8s.io/csi-translation-lib v0.0.0-20191016115521-756ffa5af0bd h1:8St7hlu0fkur/6TRtIYgTqjNGvxFqcTxKywmlAvMiVo=
 k8s.io/csi-translation-lib v0.0.0-20191016115521-756ffa5af0bd/go.mod h1:lf1VBseeLanBpSXD0N9tuPx1ylI8sA0j6f+rckCKiIk=
 k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20190822140433-26a664648505/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
@@ -1299,6 +1304,7 @@ k8s.io/kubelet v0.0.0-20191016114556-7841ed97f1b2/go.mod h1:SBvrtLbuePbJygVXGGCM
 k8s.io/kubernetes v1.16.0/go.mod h1:nlP2zevWKRGKuaaVbKIwozU0Rjg9leVDXkL4YTtjmVs=
 k8s.io/kubernetes v1.16.2 h1:k0f/OVp6Yfv+UMTm6VYKhqjRgcvHh4QhN9coanjrito=
 k8s.io/kubernetes v1.16.2/go.mod h1:SmhGgKfQ30imqjFVj8AI+iW+zSyFsswNErKYeTfgoH0=
+k8s.io/kubernetes v1.18.5 h1:sLbTilDIc02vNzrTORdW2YakzrPCOtmffaUXCwQHsRc=
 k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b h1:cgLCVtQnxjALxIUjjEkiMaKlQZW5sGj6P3+3K5Y/d+8=
 k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b/go.mod h1:tKW3pKqdRW8pMveUTpF5pJuCjQxg6a25iLo+Z9BXVH0=
 k8s.io/metrics v0.0.0-20191016113814-3b1a734dba6e/go.mod h1:ve7/vMWeY5lEBkZf6Bt5TTbGS3b8wAxwGbdXAsufjRs=
