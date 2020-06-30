@@ -15,6 +15,7 @@ kind_cluster_name="$1"
 insecure_registry_address="$2"
 number_of_nodes="$3"
 
+# TODO disable CNI when PV won't require storage provisioner
 kindConfig="$(cat << EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -23,7 +24,7 @@ containerdConfigPatches:
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:5000"]
     endpoint = ["http://registry:5000"]
 networking:
-  disableDefaultCNI: true
+  disableDefaultCNI: false
 nodes:
 EOF
 )"
