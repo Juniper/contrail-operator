@@ -20,15 +20,20 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-type cniDirectoriesInfoFake struct {
+type vrouterClusterInfoFake struct {
+	clusterName             string
 	cniBinariesDirectory    string
 	cniConfigFilesDirectory string
 }
 
-func (c cniDirectoriesInfoFake) CNIBinariesDirectory() string {
+func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
+	return c.clusterName, nil
+}
+
+func (c vrouterClusterInfoFake) CNIBinariesDirectory() string {
 	return c.cniBinariesDirectory
 }
-func (c cniDirectoriesInfoFake) CNIConfigFilesDirectory() string {
+func (c vrouterClusterInfoFake) CNIConfigFilesDirectory() string {
 	return c.cniConfigFilesDirectory
 }
 
@@ -111,8 +116,8 @@ func TestVrouterController(t *testing.T) {
 	}
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, vrouterCR, controlCR, cassandraCR, configCR)
-	fakeCNIDirs := cniDirectoriesInfoFake{"/cni/bin", "cni/config"}
-	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeCNIDirs)
+	fakeClusterInfo := vrouterClusterInfoFake{"test-cluster", "/cni/bin", "cni/config"}
+	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo)
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: vrouterName})
 	// then

@@ -15,7 +15,6 @@ type CniDirs struct {
 func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 	var labelsMountPermission int32 = 0644
 	var trueVal = true
-	hostToContainerMountPropagation := core.MountPropagationHostToContainer
 
 	var contrailStatusImageEnv = core.EnvVar{
 		Name:  "CONTRAIL_STATUS_IMAGE",
@@ -97,6 +96,40 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				core.VolumeMount{
 					Name:      "lib-modules",
 					MountPath: "/lib/modules",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+		},
+		core.Container{
+			Name:  "vroutercni",
+			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				contrailStatusImageEnv,
+				podIPEnv,
+			},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "var-lib-contrail",
+					MountPath: "/var/lib/contrail",
+				},
+				core.VolumeMount{
+					Name:      "cni-config-files",
+					MountPath: "/host/etc_cni",
+				},
+				core.VolumeMount{
+					Name:      "cni-bin",
+					MountPath: "/host/opt_cni_bin",
+				},
+				core.VolumeMount{
+					Name:      "var-log-contrail-cni",
+					MountPath: "/host/log_cni",
+				},
+				core.VolumeMount{
+					Name:      "vrouter-logs",
+					MountPath: "/var/log/contrail",
 				},
 			},
 			ImagePullPolicy: "Always",
@@ -188,37 +221,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				},
 			},
 			ImagePullPolicy: "Always",
-		},
-		core.Container{
-			Name:  "vroutercni",
-			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
-			Env: []core.EnvVar{
-				contrailStatusImageEnv,
-				podIPEnv,
-			},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
-					Name:      "cni-config-files",
-					MountPath: "/host/etc_cni",
-				},
-				core.VolumeMount{
-					Name:      "cni-bin",
-					MountPath: "/host/opt_cni_bin",
-				},
-				core.VolumeMount{
-					Name:             "docker-unix-socket",
-					MountPath:        "/var/run",
-					MountPropagation: &hostToContainerMountPropagation,
-				},
-				core.VolumeMount{
-					Name:      "var-log-contrail-cni",
-					MountPath: "/var/log/contrail/cni",
-				},
-			},
-			ImagePullPolicy: "Always",
-			SecurityContext: &core.SecurityContext{
-				Privileged: &trueVal,
-			},
 		},
 	}
 

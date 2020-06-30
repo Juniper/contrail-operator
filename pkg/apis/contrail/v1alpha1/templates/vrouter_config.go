@@ -53,14 +53,15 @@ sample_destination = collector`))
 var ContrailCNIConfig = template.Must(template.New("").Parse(`{
   "cniVersion": "0.3.1",
   "contrail" : {
+      "cluster-name"  : "{{ .KubernetesClusterName }}",
+      "meta-plugin"   : "multus",
       "vrouter-ip"    : "127.0.0.1",
       "vrouter-port"  : 9091,
       "config-dir"    : "/var/lib/contrail/ports/vm",
       "poll-timeout"  : 5,
-      "poll-retries"  : 5,
+      "poll-retries"  : 15,
       "log-file"      : "/var/log/contrail/cni/opencontrail.log",
-      "log-level"     : "4",
-      "cnisocket-path": "/var/run/contrail/cni.socket"
+      "log-level"     : "4"
   },
   "name": "contrail-k8s-cni",
   "type": "contrail-k8s-cni"
@@ -85,34 +86,3 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
 sandesh_ca_cert={{ .CAFilePath }}`))
-
-// VrouterProvisionConfig is the template of the Vrouter provision script.
-var VrouterProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
-sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /etc/contrail/contrail-vrouter-nodemgr.conf
-servers=$(echo {{ .APIServerList }} | tr ',' ' ')
-for i in {1..5}; do
-  for server in $servers ; do
-    python /opt/contrail/utils/provision_vrouter.py --oper $1 \
-    --host_ip {{ .ListenAddress }} \
-    --api_server_ip $server \
-    --api_server_port {{ .APIServerPort }} \
-    --host_name {{ .Hostname }}
-    if [[ $? -eq 0 ]]; then
-      break 2
-    fi
-  done
-  sleep 2
-done`))
-
-// VrouterDeProvisionConfig is the template of the Control de-provision script.
-var VrouterDeProvisionConfig = template.Must(template.New("").Parse(`#!/usr/bin/python
-from vnc_api import vnc_api
-import socket
-vncServerList = [{{ .APIServerList }}]
-vnc_client = vnc_api.VncApi(
-            username = '{{ .User }}',
-            password = '{{ .Password }}',
-            tenant_name = '{{ .Tenant }}',
-            api_server_host= vncServerList[0],
-            api_server_port={{ .APIServerPort }})
-vnc_client.vrouter_delete(fq_name=['default-domain','default-project','ip-fabric','__default__', '{{ .Hostname }}' ])`))

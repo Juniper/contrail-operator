@@ -289,7 +289,8 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
-	client client.Client) error {
+	client client.Client,
+	clusterInfo VrouterClusterInfo) error {
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(),
@@ -319,6 +320,11 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, client)
+	if err != nil {
+		return err
+	}
+
+	clusterName, err := clusterInfo.KubernetesClusterName()
 	if err != nil {
 		return err
 	}
@@ -397,41 +403,12 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 
-		var vrouterProvisionBuffer bytes.Buffer
-		configtemplates.VrouterProvisionConfig.Execute(&vrouterProvisionBuffer, struct {
-			ListenAddress string
-			APIServerList string
-			APIServerPort string
-			Hostname      string
-		}{
-			ListenAddress: podList.Items[idx].Status.PodIP,
-			APIServerList: configNodesInformation.APIServerListCommaSeparated,
-			APIServerPort: configNodesInformation.APIServerPort,
-			Hostname:      hostname,
-		})
-		data["provision.sh."+podList.Items[idx].Status.PodIP] = vrouterProvisionBuffer.String()
-
-		var vrouterDeProvisionBuffer bytes.Buffer
-		configtemplates.VrouterDeProvisionConfig.Execute(&vrouterDeProvisionBuffer, struct {
-			User          string
-			Password      string
-			Tenant        string
-			APIServerList string
-			APIServerPort string
-			Hostname      string
-		}{
-			User:          KeystoneAuthAdminUser,
-			Password:      KeystoneAuthAdminPassword,
-			Tenant:        KeystoneAuthAdminTenant,
-			APIServerList: configNodesInformation.APIServerListQuotedCommaSeparated,
-			APIServerPort: configNodesInformation.APIServerPort,
-			Hostname:      hostname,
-		})
-		data["deprovision.py."+podList.Items[idx].Status.PodIP] = vrouterDeProvisionBuffer.String()
-
 		var contrailCNIBuffer bytes.Buffer
 		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
-		}{})
+			KubernetesClusterName string
+		}{
+			KubernetesClusterName: clusterName,
+		})
 		data["10-contrail.conf"] = contrailCNIBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
@@ -493,4 +470,10 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
 
 	return vrouterConfiguration
+}
+
+type VrouterClusterInfo interface {
+	KubernetesClusterName() (string, error)
+	CNIBinariesDirectory() string
+	CNIConfigFilesDirectory() string
 }
