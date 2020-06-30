@@ -1,6 +1,6 @@
 FROM golang:1.13
 
-RUN apt update && apt install -y docker.io
+RUN apt update && apt install -y docker.io && apt install -y jq
 
 RUN git clone --branch v0.13.x https://github.com/operator-framework/operator-sdk $GOPATH/src/operator-framework/operator-sdk
 RUN cd $GOPATH/src/operator-framework/operator-sdk; make install

@@ -1,5 +1,5 @@
 node('contrail-operator-node') {
-    docker.image('kaweue/testrunner:2').inside("--user root -v /var/run/docker.sock:/var/run/docker.sock --net host") {
+    docker.image('kaweue/testrunner:5').inside("--user root -v /var/run/docker.sock:/var/run/docker.sock --net host") {
         stage('e2e test') {
             checkout([$class: 'GitSCM', branches: [[name: "*/${ghprbSourceBranch}"]], 
                     doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'PreBuildMerge', 
