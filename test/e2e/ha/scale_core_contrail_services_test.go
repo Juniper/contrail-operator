@@ -3,7 +3,6 @@ package ha
 import (
 	"context"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
@@ -19,16 +18,6 @@ import (
 	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
-
-var scmRevision = getEnv("BUILD_SCM_REVISION", "latest")
-var scmBranch = getEnv("BUILD_SCM_BRANCH", "master")
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
 
 var versionMap = map[string]string{
 	"cassandra":                     "3.11.4",
