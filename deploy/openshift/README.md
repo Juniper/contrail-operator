@@ -27,17 +27,7 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 ./openshift-install create manifests --dir <name of desired directory>
 ```
 
-3. Build contrail-operator
-Go to cloned directory with contrail-operator project and build operator
-```
-operator-sdk build <your container registry>/<name of your container>:<tag of container>
-```
-Afterwards push container
-```
-docker push <repo>/<name>:<tag>
-```
-
-4. Create configuration file
+3. Create configuration file
 Create file with configuration parameters that looks similar to this:
 ```
 CONTRAIL_OPERATOR_IMAGE=example/contrail-operator
@@ -56,11 +46,13 @@ kubect -n contrail get secret contrail-registry -o yaml
 ```
 Afterwards, copy the .dockerconfigjson field contents and paste it in the configuration file
 
-6. Modify cluster network config if neccessary:
+4. Modify manifests if neccessary:
 
 If you use pod/service network CIDRs other then the default values open the  **deploy/openshift/manifests/cluster-network-02-config.yml** in text editor and update CIDR values.
+If you deploy more/less master nodes than the default value of 3, modify the **deploy/openshift/manifests/0000000-contrail-09-manager.yaml** in text editor and set the
+spec.commonConfiguration.replicas field to the number of master nodes (modify only the top-level replicas field in the file).
 
-7. Install manifest
+5. Install manifest
 
 Install manifests with (you can execute the scripts from anywhere, the example assumes that you are in the contrail-operator repository root directory):
 ```
@@ -68,57 +60,18 @@ Install manifests with (you can execute the scripts from anywhere, the example a
 ```
 **NOTE** If **--config** is not provided by default script will try to read config from script directory's file **config**
 
-8. Install Openshift
+6. Install Openshift
 Run this command to start Openshift install:
 ```
 ./openshift-install create cluster --dir <name of openshift install directory>
 ```
 
-9. Open security groups:
+7. Open security groups:
 
 Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. Do the same for the security group attached to worker nodes, after they are created.
 
-10. Create link-local service:
 
-After *openshift-install* says that kubernetes API is up, with a message similar to this:
-```
-./4.3.5/openshift-install create cluster --dir ./psykulski3/
-INFO Consuming Openshift Manifests from target directory
-INFO Consuming Master Machines from target directory
-INFO Consuming Common Manifests from target directory
-INFO Consuming Worker Machines from target directory
-INFO Consuming OpenShift Install (Manifests) from target directory
-INFO Creating infrastructure resources...
-INFO Waiting up to 30m0s for the Kubernetes API at https://api.psykulski3.psykulski.jnpr.com:6443...
-INFO API v1.16.2 up
-INFO Waiting up to 30m0s for bootstrapping to complete...
-```
-
-Export KUBECONFIG variable to point to use *kubectl* (for instruction see the *Access cluster* section)
-
-Run:
-```
-kubectl -n contrail get pods
-```
-
-Wait until all pods, except the *vrouter* pods are running.
-
-Run:
-```
-kubectl -n openshift-etcd describe service etcd
-```
-
-Login to the Contrail webui and use details from the command above to create two link-local services.
-
-Example window in web UI to add link local.
-![link-local-add](docs/example_link-local.png)
-
-Example of expected link locals created in web UI.
-![link-local-all](docs/example_all-link-local.png)
-
-**NOTE**: Default domain link local should be created automatically by kubemanager - there's no need to manually add it.
-
-11. Patch the externalTrafficPolicy
+8. Patch the externalTrafficPolicy
 
 Verify that the **router-default** service has been created, by running:
 ```

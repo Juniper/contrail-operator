@@ -1,2 +1,2 @@
-CONTRAIL_OPERATOR_IMAGE=example-repo/contrail-operator
+CONTRAIL_VERSION=master.1269
 DOCKER_CONFIG=example_json_config

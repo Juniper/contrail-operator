@@ -58,9 +58,9 @@ read_config() {
         exit 1
     fi
 
-    OPERATOR_IMAGE=$(grep "CONTRAIL_OPERATOR_IMAGE" $CONFIG)
+    CONTRAIL_VERSION=$(grep "CONTRAIL_VERSION" $CONFIG)
     if [ $? -ne 0 ]; then
-        echo "Couldn't find CONTRAIL_OPERATOR_IMAGE parameter. Exiting..."
+        echo "Couldn't find CONTRAIL_VERSION parameter. Exiting..."
         exit 1
     fi
     DOCKER_CONFIG=$(grep "DOCKER_CONFIG" $CONFIG)
@@ -68,13 +68,14 @@ read_config() {
         echo "Couldn't find DOCKER_CONFIG parameter. Exiting..."
         exit 1
     fi
-    OPERATOR_IMAGE="${OPERATOR_IMAGE##CONTRAIL_OPERATOR_IMAGE=}"
+    CONTRAIL_VERSION="${CONTRAIL_VERSION##CONTRAIL_VERSION=}"
     DOCKER_CONFIG="${DOCKER_CONFIG##DOCKER_CONFIG=}"
     echo '[INFO] Config properly consumed'
 }
 
 apply_config() {
-    sed -i.bak 's|<OPERATOR_IMAGE>|'$OPERATOR_IMAGE'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml.bak
+    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml.bak
+    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml.bak
     sed -i.bak 's|<DOCKER_CONFIG>|'$DOCKER_CONFIG'|g' ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml.bak
     echo '[INFO] Set proper parameters from config in manifests'
 }
