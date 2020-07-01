@@ -16,7 +16,12 @@ kubectl apply -f deploy/cluster_role_binding.yaml
 
 if [[ $SKIP_TEST != "yes" ]]; then
     operator-sdk test local ./test/e2e/ --image "$operator_image" --namespace contrail --go-test-flags "-v -timeout=30m"
+else
+    operator-sdk test local ./test/e2e/ha --image "$operator_image" --namespace contrail --go-test-flags "-v -timeout=30m"
 fi
+    
+
+
 
 kubectl delete -f deploy/cluster_role.yaml
 kubectl delete -f deploy/cluster_role_binding.yaml

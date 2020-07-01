@@ -4,13 +4,15 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
@@ -58,7 +60,6 @@ func TestHACoreContrailServices(t *testing.T) {
 		assert.NoError(t, err)
 
 		trueVal := true
-		oneVal := int32(1)
 
 		cassandras := []*contrail.Cassandra{{
 			ObjectMeta: meta.ObjectMeta{
@@ -69,7 +70,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			Spec: contrail.CassandraSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create:       &trueVal,
-					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -92,7 +92,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			Spec: contrail.ZookeeperSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create:       &trueVal,
-					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -134,7 +133,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			Spec: contrail.ConfigSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create:       &trueVal,
-					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -169,7 +167,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			Spec: contrail.WebuiSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create:       &trueVal,
-					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -196,7 +193,6 @@ func TestHACoreContrailServices(t *testing.T) {
 				CommonConfiguration: contrail.CommonConfiguration{
 					Create:       &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-					Replicas:     &oneVal,
 				},
 				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 					Containers: []*contrail.Container{
@@ -214,7 +210,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:    &oneVal,
 					HostNetwork: &trueVal,
 				},
 				Services: contrail.Services{
@@ -228,8 +223,14 @@ func TestHACoreContrailServices(t *testing.T) {
 			},
 		}
 
-		t.Run("when manager resource with Config and dependencies is created", func(t *testing.T) {
-			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: e2e.CleanupTimeout, RetryInterval: e2e.CleanupRetryInterval})
+		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
+			t.Skip()
+			var replicas int32 = 1
+			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
+				cluster.Spec.CommonConfiguration.Replicas = &replicas
+				return nil
+			})
+
 			assert.NoError(t, err)
 
 			w := wait.Wait{
@@ -241,123 +242,98 @@ func TestHACoreContrailServices(t *testing.T) {
 			}
 
 			t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
 			})
 
 			t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
 			})
 
 			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 			})
 
 			t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 			})
 
 			t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
 			})
-
-			t.Run("and when zookeeper is scaled up from 1 to 3 node", func(t *testing.T) {
-				zookeeperInstance := &contrail.Zookeeper{}
-				err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "hatest-zookeeper", Namespace: namespace}, zookeeperInstance)
-				assert.NoError(t, err)
-
-				var replicas int32 = 3
-				zookeeperInstance.Spec.CommonConfiguration.Replicas = &replicas
-				err = f.Client.Update(context.TODO(), zookeeperInstance)
-				assert.NoError(t, err)
-
-				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset"))
-				})
-
-			})
-
-			t.Run("and when Cassandra is scaled up from 1 to 3 node", func(t *testing.T) {
-				cassandraInstance := &contrail.Cassandra{}
-				err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "hatest-cassandra", Namespace: namespace}, cassandraInstance)
-				assert.NoError(t, err)
-
-				var replicas int32 = 3
-				cassandraInstance.Spec.CommonConfiguration.Replicas = &replicas
-				err = f.Client.Update(context.TODO(), cassandraInstance)
-				assert.NoError(t, err)
-
-				t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset"))
-				})
-
-			})
-
-			t.Run("and when config is scaled up from 1 to 3 node", func(t *testing.T) {
-				configInstance := &contrail.Config{}
-				err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "hatest-config", Namespace: namespace}, configInstance)
-				assert.NoError(t, err)
-
-				var replicas int32 = 3
-				configInstance.Spec.CommonConfiguration.Replicas = &replicas
-				err = f.Client.Update(context.TODO(), configInstance)
-				assert.NoError(t, err)
-
-				t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset"))
-				})
-
-				t.Run("then all Config pods can process requests", func(t *testing.T) {
-					configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-						LabelSelector: "config=hatest-config",
-					})
-					assert.NoError(t, err)
-					require.NotEmpty(t, configPods.Items)
-
-					for _, pod := range configPods.Items {
-						configProxy := proxy.NewSecureClient("contrail", pod.Name, 8082)
-						req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
-						assert.NoError(t, err)
-						res, err := configProxy.Do(req)
-						assert.NoError(t, err)
-						assert.Equal(t, 200, res.StatusCode)
-					}
-				})
-
-			})
-
-			t.Run("and when webui is scaled up from 1 to 3 node", func(t *testing.T) {
-				webuiInstance := &contrail.Webui{}
-				err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "hatest-webui", Namespace: namespace}, webuiInstance)
-				assert.NoError(t, err)
-
-				var replicas int32 = 3
-				webuiInstance.Spec.CommonConfiguration.Replicas = &replicas
-				err = f.Client.Update(context.TODO(), webuiInstance)
-				assert.NoError(t, err)
-
-				t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset"))
-				})
-
-			})
-
-			t.Run("and when provisionmanager is scaled up from 1 to 3 node", func(t *testing.T) {
-				provisionManagerInstance := &contrail.ProvisionManager{}
-				err = f.Client.Get(context.TODO(), types.NamespacedName{Name: "hatest-provmanager", Namespace: namespace}, provisionManagerInstance)
-				assert.NoError(t, err)
-
-				var replicas int32 = 3
-				provisionManagerInstance.Spec.CommonConfiguration.Replicas = &replicas
-				err = f.Client.Update(context.TODO(), provisionManagerInstance)
-				assert.NoError(t, err)
-
-				t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset"))
-				})
-
-			})
-
 		})
 
+		t.Run("when replicas is set to 3 in manager", func(t *testing.T) {
+			var replicas int32 = 3
+			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
+				cluster.Spec.CommonConfiguration.Replicas = &replicas
+				return nil
+			})
+
+			assert.NoError(t, err)
+
+			w := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       e2e.WaitTimeout,
+				RetryInterval: e2e.RetryInterval,
+				KubeClient:    f.KubeClient,
+				Logger:        log,
+			}
+
+			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
+				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
+				})
+
+				t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
+				})
+
+				t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
+				})
+
+				t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
+				})
+
+				t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
+				})
+			})
+
+			t.Run("then all Config pods can process requests", func(t *testing.T) {
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+					LabelSelector: "config=hatest-config",
+				})
+				assert.NoError(t, err)
+				require.NotEmpty(t, configPods.Items)
+
+				for _, pod := range configPods.Items {
+					configProxy := proxy.NewSecureClient("contrail", pod.Name, 8082)
+					req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
+					assert.NoError(t, err)
+					res, err := configProxy.Do(req)
+					assert.NoError(t, err)
+					assert.Equal(t, 200, res.StatusCode)
+				}
+			})
+		})
+		t.Run("when reference cluster is deleted", func(t *testing.T) {
+			pp := meta.DeletePropagationForeground
+			err = f.Client.Delete(context.TODO(), cluster, &client.DeleteOptions{
+				PropagationPolicy: &pp,
+			})
+			assert.NoError(t, err)
+
+			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
+				err := wait.Contrail{
+					Namespace:     namespace,
+					Timeout:       5 * time.Minute,
+					RetryInterval: e2e.RetryInterval,
+					Client:        f.Client,
+				}.ForManagerDeletion(cluster.Name)
+				require.NoError(t, err)
+			})
+		})
 	})
 }

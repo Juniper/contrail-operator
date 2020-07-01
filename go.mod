@@ -22,6 +22,7 @@ require (
 	github.com/spf13/cobra v0.0.6 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
+	go.etcd.io/etcd v3.3.22+incompatible
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f

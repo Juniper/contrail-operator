@@ -228,7 +228,7 @@ func TestCommandServices(t *testing.T) {
 			}
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset"))
+				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))
 			})
 
 			t.Run("then Swift should become active", func(t *testing.T) {

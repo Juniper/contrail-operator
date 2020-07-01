@@ -154,7 +154,7 @@ func TestOpenstackServices(t *testing.T) {
 			}
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-keystone-keystone-statefulset", 1))
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestOpenstackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then a SwiftStorage StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-swift-storage-statefulset"))
+				assert.NoError(t, wait.ForReadyStatefulSet("openstacktest-swift-storage-statefulset", 1))
 			})
 
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {

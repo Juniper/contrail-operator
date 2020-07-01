@@ -1,8 +1,9 @@
 package wait
 
 import (
-	"github.com/Juniper/contrail-operator/test/logger"
 	"time"
+
+	"github.com/Juniper/contrail-operator/test/logger"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ type Wait struct {
 }
 
 // ForReadyStatefulSet is used to wait until StatefulSet is ready
-func (w Wait) ForReadyStatefulSet(name string) error {
+func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		statefulSet, err := w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(name, meta.GetOptions{})
 		if err != nil {
@@ -29,12 +30,7 @@ func (w Wait) ForReadyStatefulSet(name string) error {
 			}
 			return false, err
 		}
-		replicas := int32(1)
-		if statefulSet.Spec.Replicas != nil {
-			replicas = *statefulSet.Spec.Replicas
-		}
-
-		if statefulSet.Status.ReadyReplicas == replicas {
+		if statefulSet.Status.ReadyReplicas == expectedReplicas {
 			return true, nil
 		}
 		return false, nil
