@@ -16,7 +16,6 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
-	"github.com/Juniper/contrail-operator/test/e2e"
 	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
@@ -42,7 +41,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: e2e.CleanupTimeout, RetryInterval: e2e.CleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
@@ -53,7 +52,7 @@ func TestHACoreContrailServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, e2e.RetryInterval, e2e.WaitForOperatorTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, RetryInterval, WaitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -235,8 +234,8 @@ func TestHACoreContrailServices(t *testing.T) {
 
 			w := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       e2e.WaitTimeout,
-				RetryInterval: e2e.RetryInterval,
+				Timeout:       WaitTimeout,
+				RetryInterval: RetryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -273,8 +272,8 @@ func TestHACoreContrailServices(t *testing.T) {
 
 			w := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       e2e.WaitTimeout,
-				RetryInterval: e2e.RetryInterval,
+				Timeout:       WaitTimeout,
+				RetryInterval: RetryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -329,7 +328,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: e2e.RetryInterval,
+					RetryInterval: RetryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
