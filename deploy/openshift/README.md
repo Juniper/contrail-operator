@@ -69,7 +69,7 @@ Run this command to start Openshift install:
 
 7. Open security groups:
 
-Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. **Do the same for the security group attached to worker nodes, after they are created.**
+Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. Do the same for the security group attached to worker nodes, after they are created.
 
 
 8. Patch the externalTrafficPolicy
