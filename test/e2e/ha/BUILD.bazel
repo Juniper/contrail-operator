@@ -6,6 +6,7 @@ go_test(
         "main_test.go",
         "scale_core_contrail_services_test.go",
     ],
+    tags = ["manual"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/client/kubeproxy:go_default_library",
