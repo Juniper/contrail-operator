@@ -30,10 +30,10 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 3. Create configuration file
 Create file with configuration parameters that looks similar to this:
 ```
-CONTRAIL_OPERATOR_IMAGE=example/contrail-operator
+CONTRAIL_VERSION=master.1269
 DOCKER_CONFIG=example_json_config
 ```
-Under *CONTRAIL_OPERATOR_IMAGE* field enter proper container image with the parameters of your pushed container.
+Under *CONTRAIL_VERSION* field enter proper Contrail container build tag, available in the hub.juniper.net/contrail-nightly registry.
 
 *DOCKER_CONFIG* is configuration for registry secret to hub.juniper.net/contrail-nightly
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
