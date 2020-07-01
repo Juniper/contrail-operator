@@ -24,11 +24,11 @@ spec:
         serviceConfiguration:
           containers:
             - name: cassandra
-              image: cassandra:3.11.4
+              image: hub.juniper.net/contrail-nightly/contrail-external-cassandra:<CONTRAIL_VERSION>
             - name: init
               image: python:3.8.2-alpine
             - name: init2
-              image: cassandra:3.11.4
+              image: hub.juniper.net/contrail-nightly/contrail-external-cassandra:<CONTRAIL_VERSION>
     config:
       metadata:
         labels:
@@ -59,7 +59,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>
             - name: redis
-              image: redis:4.0.2
+              image: hub.juniper.net/contrail-nightly/contrail-external-redis:<CONTRAIL_VERSION>
             - name: schematransformer
               image: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:<CONTRAIL_VERSION>
             - name: servicemonitor
@@ -129,7 +129,7 @@ spec:
           - name: init
             image: python:3.8.2-alpine
           - name: rabbitmq
-            image: rabbitmq:3.7
+            image: hub.juniper.net/contrail-nightly/contrail-external-rabbitmq:<CONTRAIL_VERSION>
     webui:
       metadata:
         labels:
@@ -148,7 +148,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>
             - name: redis
-              image: redis:4.0.2
+              image: hub.juniper.net/contrail-nightly/contrail-external-redis:<CONTRAIL_VERSION>
             - name: webuijob
               image: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:<CONTRAIL_VERSION>
             - name: webuiweb
@@ -168,7 +168,7 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: zookeeper
-              image: docker.io/zookeeper:3.5.5
+              image: hub.juniper.net/contrail-nightly/contrail-external-zookeeper:<CONTRAIL_VERSION>
     kubemanagers:
     - metadata:
         labels:
