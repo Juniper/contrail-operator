@@ -7,5 +7,5 @@ var (
 	WaitTimeout            = time.Second * 240
 	CleanupRetryInterval   = time.Second * 1
 	CleanupTimeout         = time.Second * 5
-	waitForOperatorTimeout = time.Minute * 10
+	WaitForOperatorTimeout = time.Minute * 10
 )
