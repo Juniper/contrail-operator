@@ -14,7 +14,7 @@ node('contrail-operator-node') {
                     while : ; do
                         check_suites=$(curl -u $TOKEN -s -H "Accept: application/vnd.github.antiope-preview+json" https://api.github.com/repos/Juniper/contrail-operator/commits/${ghprbActualCommit}/check-suites)
                         status=$(echo $check_suites | jq -cr '.check_suites[]|select(.app.slug == "google-cloud-build").status')
-                        [[ $status != "completed" ]] && echo "Waiting for upstream job. Current status: $status" && sleep 2 && continue
+                        [[ $status != "completed" ]] && echo "Waiting for upstream job. Current status: $status" && sleep 5 && continue
                         conclusion=$(echo "$check_suites" | jq -cr '.check_suites[]|select(.app.slug == "google-cloud-build").conclusion')
                         [[ $conclusion == "success" ]] && break
                         echo "Upstream job failed with conclusion: $conclusion"
