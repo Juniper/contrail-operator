@@ -41,7 +41,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
@@ -52,7 +52,7 @@ func TestHACoreContrailServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, RetryInterval, WaitForOperatorTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -234,8 +234,8 @@ func TestHACoreContrailServices(t *testing.T) {
 
 			w := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       WaitTimeout,
-				RetryInterval: RetryInterval,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -272,8 +272,8 @@ func TestHACoreContrailServices(t *testing.T) {
 
 			w := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       WaitTimeout,
-				RetryInterval: RetryInterval,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -328,7 +328,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: RetryInterval,
+					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)

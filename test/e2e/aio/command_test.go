@@ -32,7 +32,7 @@ func TestCommandServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval}); err != nil {
+	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
@@ -42,7 +42,7 @@ func TestCommandServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, RetryInterval, WaitForOperatorTimeout)
+		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
 		}
@@ -210,19 +210,19 @@ func TestCommandServices(t *testing.T) {
 		}
 
 		t.Run("when manager resource with command and dependencies is created", func(t *testing.T) {
-			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
-			err = f.Client.Create(context.TODO(), swiftCredentialsSecret, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), swiftCredentialsSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
-			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: CleanupTimeout, RetryInterval: CleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			w := wait.Wait{
 				Namespace:     namespace,
-				Timeout:       WaitTimeout,
-				RetryInterval: RetryInterval,
+				Timeout:       waitTimeout,
+				RetryInterval: retryInterval,
 				KubeClient:    f.KubeClient,
 				Logger:        log,
 			}
@@ -235,7 +235,7 @@ func TestCommandServices(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: RetryInterval,
+					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForSwiftActive(command.Spec.ServiceConfiguration.SwiftInstance)
 				require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestCommandServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then swift container should be created", func(t *testing.T) {
-				err := k8swait.Poll(RetryInterval, WaitTimeout, func() (done bool, err error) {
+				err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
 					err = swiftClient.GetContainer("contrail_container")
 					if err == nil {
 						return true, nil
@@ -324,7 +324,7 @@ func TestCommandServices(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       5 * time.Minute,
-					RetryInterval: RetryInterval,
+					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
