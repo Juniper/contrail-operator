@@ -222,6 +222,14 @@ func TestHACoreContrailServices(t *testing.T) {
 			},
 		}
 
+		w := wait.Wait{
+			Namespace:     namespace,
+			Timeout:       waitTimeout,
+			RetryInterval: retryInterval,
+			KubeClient:    f.KubeClient,
+			Logger:        log,
+		}
+
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
 			t.Skip()
 			var replicas int32 = 1
@@ -231,14 +239,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			assert.NoError(t, err)
-
-			w := wait.Wait{
-				Namespace:     namespace,
-				Timeout:       waitTimeout,
-				RetryInterval: retryInterval,
-				KubeClient:    f.KubeClient,
-				Logger:        log,
-			}
 
 			t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
@@ -269,14 +269,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			assert.NoError(t, err)
-
-			w := wait.Wait{
-				Namespace:     namespace,
-				Timeout:       waitTimeout,
-				RetryInterval: retryInterval,
-				KubeClient:    f.KubeClient,
-				Logger:        log,
-			}
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
 				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
