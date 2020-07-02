@@ -238,7 +238,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				return nil
 			})
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
@@ -268,7 +268,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				return nil
 			})
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
 				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
