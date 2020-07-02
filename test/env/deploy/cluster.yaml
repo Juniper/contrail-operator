@@ -15,6 +15,10 @@ spec:
         operator: Exists
         key: node.kubernetes.io/unreachable
         tolerationSeconds: 5
+      - effect: NoExecute
+        operator: Exists
+        key: e2e.test/failure
+        tolerationSeconds: 5
   services:
     cassandras:
       - metadata:

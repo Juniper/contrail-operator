@@ -10,6 +10,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -317,6 +318,52 @@ func TestHACoreContrailServices(t *testing.T) {
 				}
 			})
 		})
+
+		t.Run("when one of the nodes fails", func(t *testing.T) {
+
+			w := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       WaitTimeout,
+				RetryInterval: RetryInterval,
+				KubeClient:    f.KubeClient,
+				Logger:        log,
+			}
+
+			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
+				LabelSelector: "node-role.kubernetes.io/master=",
+			})
+			assert.NoError(t, err)
+			assert.NotEmpty(t, nodes.Items)
+			node := nodes.Items[0]
+			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
+				Key:    "e2e.test/failure",
+				Effect: core.TaintEffectNoExecute,
+			})
+			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
+				replicas := int32(2)
+
+				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
+				})
+
+				t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
+				})
+
+				t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
+				})
+
+				t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
+				})
+
+				t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
+				})
+			})
+		})
+
 		t.Run("when reference cluster is deleted", func(t *testing.T) {
 			pp := meta.DeletePropagationForeground
 			err = f.Client.Delete(context.TODO(), cluster, &client.DeleteOptions{
