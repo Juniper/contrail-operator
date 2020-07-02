@@ -248,6 +248,10 @@ func TestHACoreContrailServices(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
 			})
 
+			t.Run("then a ready Rabbitmq StatefulSet should be created", func(t *testing.T) {
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbitmq-rabbitmq-statefulset", replicas))
+			})
+
 			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 			})
@@ -277,6 +281,10 @@ func TestHACoreContrailServices(t *testing.T) {
 
 				t.Run("then Cassandra StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
+				})
+
+				t.Run("then Rabbitmq StatefulSet should be scaled and ready", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbitmq-rabbitmq-statefulset", replicas))
 				})
 
 				t.Run("then Config StatefulSet should be scaled and ready", func(t *testing.T) {
