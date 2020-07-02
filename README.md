@@ -247,5 +247,7 @@ Then you have to create a new one plus a `contrail` namespace:
 System tests can be run using operator-sdk tool
 
     # From contrail-operator root directory
-    operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
-
+    # To run aio e2e test
+    operator-sdk test local ./test/e2e/aio/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
+    # To run ha e2e test
+    operator-sdk test local ./test/e2e/ha/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
