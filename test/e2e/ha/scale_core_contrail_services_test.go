@@ -252,11 +252,11 @@ func TestHACoreContrailServices(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 			})
 
-			t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
+			t.Run("then a ready WebUI StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 			})
 
-			t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
+			t.Run("then a ready ProvisionManager StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
 			})
 		})
@@ -283,11 +283,11 @@ func TestHACoreContrailServices(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 				})
 
-				t.Run("then webui StatefulSet should be scaled and ready", func(t *testing.T) {
+				t.Run("then WebUI StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 				})
 
-				t.Run("then provisionmanager StatefulSet should be scaled and ready", func(t *testing.T) {
+				t.Run("then ProvisionManager StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
 				})
 			})
