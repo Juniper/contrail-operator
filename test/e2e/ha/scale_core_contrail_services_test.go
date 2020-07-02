@@ -271,23 +271,23 @@ func TestHACoreContrailServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
-				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
+				t.Run("then Zookeeper StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
 				})
 
-				t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
+				t.Run("then Cassandra StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
 				})
 
-				t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+				t.Run("then Config StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 				})
 
-				t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
+				t.Run("then webui StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 				})
 
-				t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
+				t.Run("then provisionmanager StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
 				})
 			})
