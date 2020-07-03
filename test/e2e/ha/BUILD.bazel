@@ -5,6 +5,7 @@ go_test(
     srcs = [
         "main_test.go",
         "scale_core_contrail_services_test.go",
+        "upgrade_core_contrail_services_test.go",
     ],
     embed = [":go_default_library"],
     tags = ["manual"],

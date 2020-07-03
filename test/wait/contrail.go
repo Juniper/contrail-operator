@@ -93,6 +93,26 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
+// ForZookeeperActive is used to wait until Postgres is active
+func (c Contrail) ForZookeeperActive(name string) error {
+	s := &contrail.Zookeeper{}
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+		err = c.Client.Get(context.Background(), types.NamespacedName{
+			Namespace: c.Namespace,
+			Name:      name,
+		}, s)
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		if *s.Status.Active {
+			return true, nil
+		}
+		return false, err
+	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
 // ForPodUidChange is used to wait until pod has a new Uid
 func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, getErr error) {
@@ -102,12 +122,11 @@ func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName strin
 		}
 		newUid := pod.UID
 
-		return !strings.EqualFold(string(oldUid), string(newUid)), nil 
+		return !strings.EqualFold(string(oldUid), string(newUid)), nil
 	})
 	c.dumpPodsOnError(err)
 	return err
 }
-
 
 // ForManagerDeletion is used to wait until manager is deleted
 func (c Contrail) ForManagerDeletion(name string) error {
