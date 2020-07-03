@@ -2,6 +2,7 @@ package ha
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -211,6 +213,12 @@ func TestHACoreContrailServices(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
 					HostNetwork: &trueVal,
+					Tolerations: []core.Toleration{
+						{
+							Effect:   core.TaintEffectNoSchedule,
+							Operator: core.TolerationOpExists,
+						},
+					},
 				},
 				Services: contrail.Services{
 					Cassandras:       cassandras,
@@ -321,14 +329,6 @@ func TestHACoreContrailServices(t *testing.T) {
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
 
-			w := wait.Wait{
-				Namespace:     namespace,
-				Timeout:       WaitTimeout,
-				RetryInterval: RetryInterval,
-				KubeClient:    f.KubeClient,
-				Logger:        log,
-			}
-
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: "node-role.kubernetes.io/master=",
 			})
@@ -339,28 +339,39 @@ func TestHACoreContrailServices(t *testing.T) {
 				Key:    "e2e.test/failure",
 				Effect: core.TaintEffectNoExecute,
 			})
+
+			w := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       time.Minute * 2,
+				RetryInterval: time.Second * 10,
+				KubeClient:    f.KubeClient,
+				Logger:        log,
+			}
+
+			_, err = f.KubeClient.CoreV1().Nodes().Update(&node)
+			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				replicas := int32(2)
 
-				t.Run("then a ready Zookeeper StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
-				})
+				assertReplicasReady(t, w, replicas)
+			})
+		})
 
-				t.Run("then a ready Cassandra StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", replicas))
-				})
+		t.Run("when all nodes are back operational", func(t *testing.T) {
+			err := untaintNodes(f.KubeClient, "e2e.test/failure")
+			assert.NoError(t, err)
 
-				t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
-				})
+			w := wait.Wait{
+				Namespace:     namespace,
+				Timeout:       time.Minute * 2,
+				RetryInterval: retryInterval,
+				KubeClient:    f.KubeClient,
+				Logger:        log,
+			}
 
-				t.Run("then a ready webui StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
-				})
-
-				t.Run("then a ready provisionmanager StatefulSet should be created", func(t *testing.T) {
-					assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
-				})
+			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
+				replicas := int32(3)
+				assertReplicasReady(t, w, replicas)
 			})
 		})
 
@@ -381,5 +392,58 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NoError(t, err)
 			})
 		})
+	})
+}
+
+func untaintNodes(k kubernetes.Interface, taintKey string) error {
+	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+		LabelSelector: "node-role.kubernetes.io/master=",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, n := range nodes.Items {
+		for i, tn := range n.Spec.Taints {
+			if tn.Key != "e2e.test/failure" {
+				continue
+			}
+			s := n.Spec.Taints
+			s[len(s)-1], s[i] = s[i], s[len(s)-1]
+			n.Spec.Taints = s[:len(s)-1]
+			_, err = k.CoreV1().Nodes().Update(&n)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
+}
+
+func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
+	t.Run(fmt.Sprintf("then a Zookeeper StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", r))
+	})
+
+	t.Run(fmt.Sprintf("then a Cassandra StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-cassandra-cassandra-statefulset", r))
+	})
+
+	t.Run(fmt.Sprintf("then a Rabbit StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbit-rabbit-statefulset", r))
+	})
+
+	t.Run(fmt.Sprintf("then a Config StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", r))
+	})
+
+	t.Run(fmt.Sprintf("then a WebUI StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", r))
+	})
+
+	t.Run(fmt.Sprintf("then a ProvisionManager StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", r))
 	})
 }
