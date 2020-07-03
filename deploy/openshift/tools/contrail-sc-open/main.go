@@ -67,7 +67,11 @@ func setRules(svc *ec2.EC2, group *string) error {
 			},
 		})
 		if err != nil {
-			return err
+			if aerr, ok := err.(awserr.Error); ok {
+				if aerr.Code() != "InvalidPermission.Duplicate" {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -148,12 +152,8 @@ func main() {
 		log.Print("Adding rules for security group: ", *group.GroupName)
 		err := setRules(svc, group.GroupId)
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() != "InvalidPermission.Duplicate" {
-					log.Fatal("Unable to set rules for security groups, ", *group.GroupName, "\nError: ", err)
-					os.Exit(1)
-				}
-			}
+			log.Fatal("Unable to set rules for security groups, ", *group.GroupName, "\nError: ", err)
+			os.Exit(1)
 		}
 		log.Print("Rules added for scurity group: ", *group.GroupName)
 	}
