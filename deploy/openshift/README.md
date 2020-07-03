@@ -30,7 +30,7 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 3. Create configuration file
 Create file with configuration parameters that looks similar to this:
 ```
-CONTRAIL_VERSION=master.1269
+CONTRAIL_VERSION=master.1274
 DOCKER_CONFIG=example_json_config
 ```
 Under *CONTRAIL_VERSION* field enter proper Contrail container build tag, available in the hub.juniper.net/contrail-nightly registry.
