@@ -81,13 +81,13 @@ func setRules(svc *ec2.EC2, group string) error {
 
 func main() {
 	clusterName := flag.String("cluster-name", "", "Openshift cluster name.")
+	region := flag.String("region", "eu-central-1", "AWS region where security groups are located.")
+	flag.Parse()
+
 	if *clusterName == "" {
 		log.Fatal("No cluster name has been specified.")
 		os.Exit(1)
 	}
-
-	region := flag.String("region", "eu-central-1", "AWS region where security groups are located.")
-	flag.Parse()
 
 	clusterRegex := *clusterName + "-*"
 	sess, err := session.NewSession(&aws.Config{
