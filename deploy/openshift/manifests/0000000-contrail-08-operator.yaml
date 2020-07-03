@@ -25,7 +25,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: pitersk/contrail-operator:<CONTRAIL_VERSION>
+          image: hub.juniper.net/contrail-nightly/contrail-operator:<CONTRAIL_VERSION>
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
