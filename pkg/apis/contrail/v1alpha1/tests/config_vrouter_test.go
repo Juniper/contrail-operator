@@ -51,6 +51,7 @@ func TestVrouterConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
+	t.Errorf("%v", environment.vrouterConfigMap2.Data)
 	if environment.vrouterConfigMap.Data["vrouter.1.1.8.1"] != vrouterConfig {
 		configDiff := diff.Diff(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"], vrouterConfig)
 		t.Fatalf("get vrouter config: \n%v\n", configDiff)
@@ -60,6 +61,10 @@ func TestVrouterConfig(t *testing.T) {
 		configDiff := diff.Diff(environment.vrouterConfigMap.Data["10-contrail.conf"], vrouterCniConfig)
 		t.Fatalf("get vrouter cni config: \n%v\n", configDiff)
 	}
+}
+
+func TestVrouterConfigEnvVariablesConfigMap(t *testing.T) {
+
 }
 
 var vrouterConfig = `[CONTROL-NODE]

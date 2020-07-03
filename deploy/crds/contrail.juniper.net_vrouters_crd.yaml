@@ -143,6 +143,8 @@ spec:
                   type: string
                 serviceAccount:
                   type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - commonConfiguration

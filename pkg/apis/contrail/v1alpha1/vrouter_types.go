@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"sort"
+	"strconv"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
@@ -66,6 +67,7 @@ type VrouterConfiguration struct {
 	ServiceAccount     string        `json:"serviceAccount,omitempty"`
 	ClusterRole        string        `json:"clusterRole,omitempty"`
 	ClusterRoleBinding string        `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption  bool          `json:"vrouterEncryption,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -357,6 +359,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		}
 		data2["PHYSICAL_INTERFACE"] = physicalInterface
 		data2["CLOUD_ORCHESTRATOR"] = "kubernetes"
+		data2["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
@@ -463,6 +466,10 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	} else {
 		nodeManager := true
 		vrouterConfiguration.NodeManager = &nodeManager
+	}
+
+	if c.Spec.ServiceConfiguration.VrouterEncryption != false {
+		vrouterConfiguration.VrouterEncryption = true
 	}
 
 	vrouterConfiguration.PhysicalInterface = physicalInterface
