@@ -16,7 +16,7 @@ In order to setup that follow these [docs](https://docs.aws.amazon.com/cli/lates
 
 In order to use it run:
 ```
-./contrail-sc-open -cluster-name <name of your Openshift cluster> -region <AWS region wherhe cluster is located>
+./contrail-sc-open -cluster-name <name of your Openshift cluster> -region <AWS region where cluster is located>
 ```
 
 Tool will log all security groups found and status whether it successfuly added new rules for Contrail ports.
