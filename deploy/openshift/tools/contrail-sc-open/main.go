@@ -71,6 +71,8 @@ func setRules(svc *ec2.EC2, group *string) error {
 				if aerr.Code() != "InvalidPermission.Duplicate" {
 					return err
 				}
+			} else {
+				return err
 			}
 		}
 	}
@@ -79,13 +81,13 @@ func setRules(svc *ec2.EC2, group *string) error {
 
 func main() {
 	clusterName := flag.String("cluster-name", "", "Openshift cluster name.")
-	region := flag.String("region", "eu-central-1", "AWS region where security groups are located.")
-	flag.Parse()
-
 	if *clusterName == "" {
 		log.Fatal("No cluster name has been specified.")
 		os.Exit(1)
 	}
+
+	region := flag.String("region", "eu-central-1", "AWS region where security groups are located.")
+	flag.Parse()
 
 	clusterRegex := *clusterName + "-*"
 	sess, err := session.NewSession(&aws.Config{
@@ -132,10 +134,7 @@ func main() {
 	})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case "InvalidGroupId.Malformed":
-				fallthrough
-			case "InvalidGroup.NotFound":
+			if aerr.Code() == "InvalidGroupId.Malformed" || aerr.Code() == "InvalidGroup.NotFound" {
 				log.Fatal(aerr.Message())
 				os.Exit(1)
 			}
@@ -150,8 +149,7 @@ func main() {
 			continue
 		}
 		log.Print("Adding rules for security group: ", *group.GroupName)
-		err := setRules(svc, group.GroupId)
-		if err != nil {
+		if err := setRules(svc, group.GroupId); err != nil {
 			log.Fatal("Unable to set rules for security groups, ", *group.GroupName, "\nError: ", err)
 			os.Exit(1)
 		}
