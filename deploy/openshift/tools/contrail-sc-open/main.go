@@ -12,8 +12,8 @@ import (
 )
 
 type port struct {
-	From, To int64
-	Protocol string
+	from, to int64
+	protocol string
 }
 
 const (
@@ -48,16 +48,16 @@ var ports = [...]port{
 	{4789, 4789, protocolUDP},
 }
 
-func setRules(svc *ec2.EC2, group *string) error {
+func setRules(svc *ec2.EC2, group string) error {
 	ruleCIDR := "0.0.0.0/0"
 	for portIndex := range ports {
 		_, err := svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-			GroupId: group,
+			GroupId: &group,
 			IpPermissions: []*ec2.IpPermission{
 				&ec2.IpPermission{
-					IpProtocol: &ports[portIndex].Protocol,
-					FromPort:   &ports[portIndex].From,
-					ToPort:     &ports[portIndex].To,
+					IpProtocol: &ports[portIndex].protocol,
+					FromPort:   &ports[portIndex].from,
+					ToPort:     &ports[portIndex].to,
 					IpRanges: []*ec2.IpRange{
 						&ec2.IpRange{
 							CidrIp: &ruleCIDR,
@@ -149,7 +149,7 @@ func main() {
 			continue
 		}
 		log.Print("Adding rules for security group: ", *group.GroupName)
-		if err := setRules(svc, group.GroupId); err != nil {
+		if err := setRules(svc, *group.GroupId); err != nil {
 			log.Fatal("Unable to set rules for security groups, ", *group.GroupName, "\nError: ", err)
 			os.Exit(1)
 		}
