@@ -93,21 +93,27 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
-// ForZookeeperActive is used to wait until Postgres is active
-func (c Contrail) ForZookeeperActive(name string) error {
-	s := &contrail.Zookeeper{}
+// ForPodImageChange is used to wait until Image is updated
+func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, name string, newImage string, container string) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
-		err = c.Client.Get(context.Background(), types.NamespacedName{
-			Namespace: c.Namespace,
-			Name:      name,
-		}, s)
-		if apierrors.IsNotFound(err) {
+		podList, err := kubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+			LabelSelector: "contrail_manager=" + name,
+		})
+		if err != nil {
 			return false, nil
 		}
-		if *s.Status.Active {
+		imageUpdatedCount := 0
+		for _, pod := range podList.Items {
+			for _, c := range pod.Spec.Containers {
+				if c.Name == container && c.Image == newImage {
+					imageUpdatedCount++
+				}
+			}
+		}
+		if imageUpdatedCount == len(podList.Items) {
 			return true, nil
 		}
-		return false, err
+		return false, nil
 	})
 	c.dumpPodsOnError(err)
 	return err
