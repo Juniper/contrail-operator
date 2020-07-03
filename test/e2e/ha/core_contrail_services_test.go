@@ -105,7 +105,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NotEmpty(t, configPods.Items)
 
 				for _, pod := range configPods.Items {
-					assertConfigIsHealthy(t, &pod)
+					assertConfigIsHealthy(t, proxy, &pod)
 				}
 			})
 		})
@@ -148,7 +148,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				for _, pod := range configPods.Items {
 					for _, c := range pod.Status.Conditions {
 						if c.Type == core.PodReady && c.Status == core.ConditionTrue {
-							assertConfigIsHealthy(t, &pod)
+							assertConfigIsHealthy(t, proxy, &pod)
 							healthyConfigs++
 						}
 					}
@@ -158,7 +158,6 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
-			//TODO fix failover scenario
 			err := untaintNodes(f.KubeClient, "e2e.test/failure")
 			assert.NoError(t, err)
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
@@ -180,7 +179,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NotEmpty(t, configPods.Items)
 
 				for _, pod := range configPods.Items {
-					assertConfigIsHealthy(t, &pod)
+					assertConfigIsHealthy(t, proxy, &pod)
 				}
 			})
 		})
@@ -264,7 +263,7 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	})
 }
 
-func assertConfigIsHealthy(t *testing.T, p *core.Pod) {
+func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod) {
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
 	req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
 	assert.NoError(t, err)
