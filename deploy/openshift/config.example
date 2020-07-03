@@ -1,2 +1,2 @@
-CONTRAIL_VERSION=master.1269
+CONTRAIL_VERSION=master.1274
 DOCKER_CONFIG=example_json_config

@@ -67,7 +67,7 @@ spec:
             - name: queryengine
               image: hub.juniper.net/contrail-nightly/contrail-analytics-query-engine:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: pitersk/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -95,7 +95,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: pitersk/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -113,7 +113,7 @@ spec:
           - name: init
             image: python:3.8.2-alpine
           - name: provisioner
-            image: pitersk/contrail-operator-provisioner:<CONTRAIL_VERSION>
+            image: hub.juniper.net/contrail-nightly/contrail-operator-provisioner:<CONTRAIL_VERSION>
     rabbitmq:
       metadata:
         labels:
@@ -190,7 +190,7 @@ spec:
             - name: nodeinit
               image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: pitersk/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
