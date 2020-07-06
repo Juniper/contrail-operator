@@ -10,5 +10,4 @@ import (
 // CreateAndSignCsr creates and signs the Certificate
 func CreateAndSignCsr(client client.Client, scheme *runtime.Scheme, object v1.Object, podList *corev1.PodList, hostNetwork bool, ownerType string) error {
 	return NewCertificate(client, scheme, object, podList, ownerType, hostNetwork).EnsureExistsAndIsSigned()
-
 }

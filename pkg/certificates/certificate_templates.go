@@ -54,7 +54,7 @@ func generateCaCerttificateTemplate() (x509.Certificate, *rsa.PrivateKey, error)
 
 }
 
-func generateCertificateTemplate(ipAddress string, hostname string) (x509.Certificate, *rsa.PrivateKey, error) {
+func generateCertificateTemplate(ipAddress string, serviceIPs []string, hostname string) (x509.Certificate, *rsa.PrivateKey, error) {
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, certKeyLength)
 
 	if err != nil {
@@ -69,6 +69,15 @@ func generateCertificateTemplate(ipAddress string, hostname string) (x509.Certif
 		return x509.Certificate{}, nil, fmt.Errorf("fail to generate serial number: %w", err)
 	}
 
+	var ips []net.IP
+	ips = append(ips, net.ParseIP(ipAddress))
+	for _, ip := range serviceIPs {
+		if ip == "" {
+			continue
+		}
+		ips = append(ips, net.ParseIP(ip))
+	}
+
 	certificateTemplate := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
@@ -80,7 +89,7 @@ func generateCertificateTemplate(ipAddress string, hostname string) (x509.Certif
 			OrganizationalUnit: []string{"Contrail"},
 		},
 		DNSNames:    []string{hostname},
-		IPAddresses: []net.IP{net.ParseIP(ipAddress)},
+		IPAddresses: ips,
 		NotBefore:   notBefore,
 		NotAfter:    notAfter,
 		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
