@@ -54,7 +54,7 @@ var ContrailCNIConfig = template.Must(template.New("").Parse(`{
   "cniVersion": "0.3.1",
   "contrail" : {
       "cluster-name"  : "{{ .KubernetesClusterName }}",
-      "meta-plugin"   : "multus",
+      "meta-plugin"   : "{{ .CniMetaPlugin }}",
       "vrouter-ip"    : "127.0.0.1",
       "vrouter-port"  : 9091,
       "config-dir"    : "/var/lib/contrail/ports/vm",
