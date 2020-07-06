@@ -115,6 +115,8 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
+                cniMetaPlugin:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
