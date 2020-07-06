@@ -68,6 +68,7 @@ type VrouterConfiguration struct {
 	ClusterRole        string        `json:"clusterRole,omitempty"`
 	ClusterRoleBinding string        `json:"clusterRoleBinding,omitempty"`
 	VrouterEncryption  bool          `json:"vrouterEncryption,omitempty"`
+	CniMetaPlugin      string        `json:"cniMetaPlugin,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -86,6 +87,8 @@ const (
 	CENTOS Distribution = "centos"
 	UBUNTU Distribution = "ubuntu"
 )
+
+const DefaultCniMetaPlugin = "multus"
 
 func init() {
 	SchemeBuilder.Register(&Vrouter{}, &VrouterList{})
@@ -302,11 +305,11 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	instanceConfigMapName2 := request.Name + "-" + "vrouter" + "-configmap-1"
-	configMapInstanceDynamicConfig2 := &corev1.ConfigMap{}
+	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
+	envVariablesConfigMap := &corev1.ConfigMap{}
 	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName2, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig2)
+		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
+		envVariablesConfigMap)
 	if err != nil {
 		return err
 	}
@@ -340,7 +343,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
-	var data2 = make(map[string]string)
+	var envVariables = make(map[string]string)
 	for idx := range podList.Items {
 		hostname := podList.Items[idx].Annotations["hostname"]
 		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
@@ -357,9 +360,9 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		} else {
 			gateway = podList.Items[idx].Annotations["gateway"]
 		}
-		data2["PHYSICAL_INTERFACE"] = physicalInterface
-		data2["CLOUD_ORCHESTRATOR"] = "kubernetes"
-		data2["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
+		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
+		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
@@ -409,8 +412,10 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		var contrailCNIBuffer bytes.Buffer
 		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
 			KubernetesClusterName string
+			CniMetaPlugin         string
 		}{
 			KubernetesClusterName: clusterName,
+			CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
 		})
 		data["10-contrail.conf"] = contrailCNIBuffer.String()
 	}
@@ -419,8 +424,8 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
-	configMapInstanceDynamicConfig2.Data = data2
-	err = client.Update(context.TODO(), configMapInstanceDynamicConfig2)
+	envVariablesConfigMap.Data = envVariables
+	err = client.Update(context.TODO(), envVariablesConfigMap)
 	if err != nil {
 		return err
 	}
@@ -468,10 +473,13 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 		vrouterConfiguration.NodeManager = &nodeManager
 	}
 
-	if c.Spec.ServiceConfiguration.VrouterEncryption != false {
-		vrouterConfiguration.VrouterEncryption = true
+	if c.Spec.ServiceConfiguration.CniMetaPlugin != "" {
+		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
+	} else {
+		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
 	}
 
+	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption
 	vrouterConfiguration.PhysicalInterface = physicalInterface
 	vrouterConfiguration.Gateway = gateway
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
