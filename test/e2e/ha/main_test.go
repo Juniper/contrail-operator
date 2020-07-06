@@ -25,6 +25,7 @@ var scmRevision = getEnv("BUILD_SCM_REVISION", "latest")
 var scmBranch = getEnv("BUILD_SCM_BRANCH", "master")
 
 func TestMain(m *testing.M) {
+	os.Setenv("TEST_NAMESPACE", "contrail")
 	f.MainEntry(m)
 }
 
