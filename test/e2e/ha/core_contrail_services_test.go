@@ -54,7 +54,7 @@ func TestHACoreContrailServices(t *testing.T) {
 	proxy, err := kubeproxy.New(f.KubeConfig)
 	require.NoError(t, err)
 
-	t.Run("given contrail-operator is running", func(t *testing.T) {
+	t.Run("given contrail operator is running", func(t *testing.T) {
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
@@ -117,7 +117,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				LabelSelector: "node-role.kubernetes.io/master=",
 			})
 			assert.NoError(t, err)
-			assert.NotEmpty(t, nodes.Items)
+			require.NotEmpty(t, nodes.Items)
 			node := nodes.Items[0]
 			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
 				Key:    "e2e.test/failure",
