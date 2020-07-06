@@ -35,21 +35,14 @@ func TestVrouterConfig(t *testing.T) {
 	environment := SetupEnv()
 	cl := *environment.client
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"},
-		&environment.vrouterConfigMap)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"},
-		&environment.vrouterConfigMap2)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 	if environment.vrouterConfigMap.Data["vrouter.1.1.8.1"] != vrouterConfig {
@@ -69,15 +62,11 @@ func TestVrouterDefaultCniConfigValues(t *testing.T) {
 	environment := SetupEnv()
 	cl := *environment.client
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"},
-		&environment.vrouterConfigMap)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 	expectedVrouterCniConfig := `{
@@ -109,15 +98,11 @@ func TestVrouterCustomCniConfigValues(t *testing.T) {
 	cl := *environment.client
 	environment.vrouterResource.Spec.ServiceConfiguration.CniMetaPlugin = "test-meta-plugin"
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"},
-		&environment.vrouterConfigMap)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 	expectedVrouterCniConfig := `{
@@ -148,15 +133,11 @@ func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
 	environment := SetupEnv()
 	cl := *environment.client
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"},
-		&environment.vrouterConfigMap2)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 
@@ -176,15 +157,11 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 
 	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"},
-		&environment.vrouterConfigMap2)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 
