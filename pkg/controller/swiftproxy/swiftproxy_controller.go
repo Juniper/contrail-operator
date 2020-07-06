@@ -236,7 +236,7 @@ func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.P
 }
 
 func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList) error {
-	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, r.mgrConfig, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
+	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Keystone, error) {

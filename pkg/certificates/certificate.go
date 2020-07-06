@@ -8,7 +8,6 @@ import (
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -23,7 +22,7 @@ type Certificate struct {
 	certificateSubjects []certificateSubject
 }
 
-func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, restConf *rest.Config, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
+func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
 	secretName := owner.GetName() + "-secret-certificates"
 	kubernetes := k8s.New(cl, scheme)
 	subjects := certificateSubjects{pods, hostNetwork}
