@@ -327,9 +327,6 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when Cassandra is updated with newer image", func(t *testing.T) {
-			//Cassandra upgrade is skipped since this fails.
-			//TODO: Include this test after fixing cassandra issues
-			t.Skip()
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				csContainer := utils.GetContainerFromList("cassandra", cluster.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Containers)
 				csContainer.Image = "registry:5000/common-docker-third-party/contrail/cassandra:" + intendedVersionMap["cassandra"]
