@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -34,21 +35,14 @@ func TestVrouterConfig(t *testing.T) {
 	environment := SetupEnv()
 	cl := *environment.client
 
-	err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
-		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"})
-	if err != nil {
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"},
-		&environment.vrouterConfigMap)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"},
-		&environment.vrouterConfigMap2)
-	if err != nil {
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 	if environment.vrouterConfigMap.Data["vrouter.1.1.8.1"] != vrouterConfig {
@@ -60,6 +54,123 @@ func TestVrouterConfig(t *testing.T) {
 		configDiff := diff.Diff(environment.vrouterConfigMap.Data["10-contrail.conf"], vrouterCniConfig)
 		t.Fatalf("get vrouter cni config: \n%v\n", configDiff)
 	}
+}
+
+func TestVrouterDefaultCniConfigValues(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
+	environment := SetupEnv()
+	cl := *environment.client
+
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	expectedVrouterCniConfig := `{
+  "cniVersion": "0.3.1",
+  "contrail" : {
+      "cluster-name"  : "test-cluster",
+      "meta-plugin"   : "multus",
+      "vrouter-ip"    : "127.0.0.1",
+      "vrouter-port"  : 9091,
+      "config-dir"    : "/var/lib/contrail/ports/vm",
+      "poll-timeout"  : 5,
+      "poll-retries"  : 15,
+      "log-file"      : "/var/log/contrail/cni/opencontrail.log",
+      "log-level"     : "4"
+  },
+  "name": "contrail-k8s-cni",
+  "type": "contrail-k8s-cni"
+}`
+	if environment.vrouterConfigMap.Data["10-contrail.conf"] != expectedVrouterCniConfig {
+		configDiff := diff.Diff(environment.vrouterConfigMap.Data["10-contrail.conf"], expectedVrouterCniConfig)
+		t.Fatalf("get vrouter cni config: \n%v\n", configDiff)
+	}
+}
+
+func TestVrouterCustomCniConfigValues(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
+	environment := SetupEnv()
+	cl := *environment.client
+	environment.vrouterResource.Spec.ServiceConfiguration.CniMetaPlugin = "test-meta-plugin"
+
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	expectedVrouterCniConfig := `{
+  "cniVersion": "0.3.1",
+  "contrail" : {
+      "cluster-name"  : "test-cluster",
+      "meta-plugin"   : "test-meta-plugin",
+      "vrouter-ip"    : "127.0.0.1",
+      "vrouter-port"  : 9091,
+      "config-dir"    : "/var/lib/contrail/ports/vm",
+      "poll-timeout"  : 5,
+      "poll-retries"  : 15,
+      "log-file"      : "/var/log/contrail/cni/opencontrail.log",
+      "log-level"     : "4"
+  },
+  "name": "contrail-k8s-cni",
+  "type": "contrail-k8s-cni"
+}`
+	if environment.vrouterConfigMap.Data["10-contrail.conf"] != expectedVrouterCniConfig {
+		configDiff := diff.Diff(environment.vrouterConfigMap.Data["10-contrail.conf"], expectedVrouterCniConfig)
+		t.Fatalf("get vrouter cni config: \n%v\n", configDiff)
+	}
+}
+
+func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
+	environment := SetupEnv()
+	cl := *environment.client
+
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+
+	expectedVrouterEnvVariables := map[string]string{
+		"PHYSICAL_INTERFACE": "eth0",
+		"CLOUD_ORCHESTRATOR": "kubernetes",
+		"VROUTER_ENCRYPTION": "false",
+	}
+	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+}
+
+func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
+	environment := SetupEnv()
+	cl := *environment.client
+
+	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
+
+	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+		&environment.vrouterPodList, cl, vrouterClusterInfoFake{clusterName: "test-cluster"}); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+
+	expectedVrouterEnvVariables := map[string]string{
+		"PHYSICAL_INTERFACE": "eth0",
+		"CLOUD_ORCHESTRATOR": "kubernetes",
+		"VROUTER_ENCRYPTION": "true",
+	}
+	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
 }
 
 var vrouterConfig = `[CONTROL-NODE]

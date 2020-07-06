@@ -115,6 +115,8 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
+                cniMetaPlugin:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -143,6 +145,8 @@ spec:
                   type: string
                 serviceAccount:
                   type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - commonConfiguration
