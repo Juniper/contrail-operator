@@ -13,26 +13,40 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/Juniper/contrail-operator/test/wait"
 )
 
 var versionMap = map[string]string{
-	"cassandra":                     "3.11.4",
-	"zookeeper":                     "3.5.5",
-	"cemVersion":                    "2005.42",
+	"cassandra":                     "3.11.3",
+	"zookeeper":                     "3.5.4-beta",
+	"cemVersion":                    "2005.11",
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",
 	"rabbitmq":                      "3.7",
 	"contrail-statusmonitor":        scmBranch + "." + scmRevision,
 	"contrail-operator-provisioner": scmBranch + "." + scmRevision,
+}
+
+var targetVersionMap = map[string]string{
+	"cassandra":                     "3.11.4",
+	"zookeeper":                     "3.5.5",
+	"cemVersion":                    "2005.42",
+	"python":                        "3.8.2-alpine",
+	"redis":                         "4.0.2",
+	"busybox":                       "1.31",
+	"rabbitmq":                      "3.7.16",
+	"contrail-statusmonitor":        "R2005.latest",
+	"contrail-operator-provisioner": "R2005.latest",
 }
 
 func TestHACoreContrailServices(t *testing.T) {
@@ -107,6 +121,41 @@ func TestHACoreContrailServices(t *testing.T) {
 				for _, pod := range configPods.Items {
 					assertConfigIsHealthy(t, proxy, &pod)
 				}
+			})
+		})
+
+		t.Run("when manager resource is upgraded", func(t *testing.T) {
+			//TODO: Include this test after fixing upgrade issues
+			t.Skip()
+			var replicas int32 = 3
+			instance := &contrail.Manager{}
+			err := f.Client.Get(context.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, instance)
+			assert.NoError(t, err)
+
+			updateManagerImages(t, f, instance)
+
+			t.Run("then all Pods have updated image", func(t *testing.T) {
+				requirePodsHaveUpdatedImages(t, f, namespace, log)
+			})
+
+			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
+				assertReplicasReady(t, w, replicas)
+			})
+
+			t.Run("then Config pod can process requests", func(t *testing.T) {
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+					LabelSelector: "config=hatest-config",
+				})
+				assert.NoError(t, err)
+				require.NotEmpty(t, configPods.Items)
+
+				configProxy := proxy.NewSecureClient("contrail", configPods.Items[0].Name, 8082)
+				req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
+				assert.NoError(t, err)
+				res, err := configProxy.Do(req)
+				assert.NoError(t, err)
+				assert.Equal(t, 200, res.StatusCode)
+
 			})
 		})
 
@@ -442,4 +491,127 @@ func getHACluster(namespace string) *contrail.Manager {
 			},
 		},
 	}
+}
+
+func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace string, log logger.Logger) {
+	t.Run("then Zookeeper has updated image", func(t *testing.T) {
+		t.Parallel()
+		zkContainerImage := "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "zookeeper", zkContainerImage, "zookeeper")
+		require.NoError(t, err)
+	})
+
+	t.Run("then Rabbitmq has updated image", func(t *testing.T) {
+		t.Parallel()
+		rmqContainerImage := "registry:5000/common-docker-third-party/contrail/rabbitmq:" + targetVersionMap["rabbitmq"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "rabbitmq", rmqContainerImage, "rabbitmq")
+		require.NoError(t, err)
+	})
+
+	t.Run("then Cassandra has updated image", func(t *testing.T) {
+		t.Parallel()
+		csContainerImage := "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "cassandra", csContainerImage, "cassandra")
+		require.NoError(t, err)
+	})
+
+	t.Run("then Config has updated image", func(t *testing.T) {
+		t.Parallel()
+		apiContainerImage := "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "config", apiContainerImage, "api")
+		require.NoError(t, err)
+	})
+
+	t.Run("then Webui has updated image", func(t *testing.T) {
+		t.Parallel()
+		webuijobContainerImage := "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "webui", webuijobContainerImage, "webuijob")
+		require.NoError(t, err)
+	})
+
+	t.Run("then ProvisionManager has updated image", func(t *testing.T) {
+		t.Parallel()
+		pmContainerImage := "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "provisionmanager", pmContainerImage, "provisioner")
+		require.NoError(t, err)
+	})
+}
+
+func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Manager) {
+	zkContainer := utils.GetContainerFromList("zookeeper", instance.Spec.Services.Zookeepers[0].Spec.ServiceConfiguration.Containers)
+	zkContainer.Image = "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
+
+	rmqContainer := utils.GetContainerFromList("rabbitmq", instance.Spec.Services.Rabbitmq.Spec.ServiceConfiguration.Containers)
+	rmqContainer.Image = "registry:5000/common-docker-third-party/contrail/rabbitmq:" + targetVersionMap["rabbitmq"]
+
+	csContainer := utils.GetContainerFromList("cassandra", instance.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Containers)
+	csContainer.Image = "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
+
+	apiContainer := utils.GetContainerFromList("api", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	devicemanagerContainer := utils.GetContainerFromList("devicemanager", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	dnsmasqContainer := utils.GetContainerFromList("dnsmasq", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	schematransformerContainer := utils.GetContainerFromList("schematransformer", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	servicemonitorContainer := utils.GetContainerFromList("servicemonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	analyticsapiContainer := utils.GetContainerFromList("analyticsapi", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	collectorContainer := utils.GetContainerFromList("collector", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	queryengineContainer := utils.GetContainerFromList("queryengine", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	//Status monitor upgrade is skipped since this fails.
+	//TODO: Uncomment this after fixing Statusmonitor issues
+	//statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	apiContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
+	devicemanagerContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + targetVersionMap["cemVersion"]
+	dnsmasqContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + targetVersionMap["cemVersion"]
+	schematransformerContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-schema:" + targetVersionMap["cemVersion"]
+	servicemonitorContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:" + targetVersionMap["cemVersion"]
+	analyticsapiContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-api:" + targetVersionMap["cemVersion"]
+	collectorContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-collector:" + targetVersionMap["cemVersion"]
+	queryengineContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + targetVersionMap["cemVersion"]
+	//statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + intendedVersionMap["contrail-statusmonitor"]
+
+	webuijobContainer := utils.GetContainerFromList("webuijob", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
+	webuiwebContainer := utils.GetContainerFromList("webuiweb", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
+	webuijobContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
+	webuiwebContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-web:" + targetVersionMap["cemVersion"]
+
+	pmContainer := utils.GetContainerFromList("provisioner", instance.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers)
+	pmContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
+
+	err := f.Client.Update(context.TODO(), instance)
+	require.NoError(t, err)
 }

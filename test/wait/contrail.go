@@ -93,6 +93,32 @@ func (c Contrail) ForPostgresActive(name string) error {
 	return err
 }
 
+// ForPodImageChange is used to wait until Image is updated
+func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, name string, newImage string, container string) error {
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+		podList, err := kubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+			LabelSelector: "contrail_manager=" + name,
+		})
+		if err != nil {
+			return false, nil
+		}
+		imageUpdatedCount := 0
+		for _, pod := range podList.Items {
+			for _, c := range pod.Spec.Containers {
+				if c.Name == container && c.Image == newImage {
+					imageUpdatedCount++
+				}
+			}
+		}
+		if imageUpdatedCount == len(podList.Items) {
+			return true, nil
+		}
+		return false, nil
+	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
 // ForPodUidChange is used to wait until pod has a new Uid
 func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, getErr error) {
@@ -102,12 +128,11 @@ func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName strin
 		}
 		newUid := pod.UID
 
-		return !strings.EqualFold(string(oldUid), string(newUid)), nil 
+		return !strings.EqualFold(string(oldUid), string(newUid)), nil
 	})
 	c.dumpPodsOnError(err)
 	return err
 }
-
 
 // ForManagerDeletion is used to wait until manager is deleted
 func (c Contrail) ForManagerDeletion(name string) error {
