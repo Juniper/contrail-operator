@@ -312,7 +312,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		switch container.Name {
 		case "api":
 			command := []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-api --conf_file /etc/mycontrail/api.${POD_IP} --conf_file /etc/mycontrail/contrail-keystone-auth.conf --worker_id 0"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-api --conf_file /etc/contrailconfigmaps/api.${POD_IP} --conf_file /etc/contrailconfigmaps/contrail-keystone-auth.conf --worker_id 0"}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -323,7 +323,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -337,10 +337,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		case "devicemanager":
-			deviceManagerCommand := `/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;
-/usr/bin/rm -f /etc/contrail/contrail-keystone-auth.conf; ln -s /etc/mycontrail/contrail-keystone-auth.conf /etc/contrail/contrail-keystone-auth.conf;
-/usr/bin/rm -f /etc/contrail/contrail-fabric-ansible.conf; ln -s /etc/mycontrail/contrail-fabric-ansible.conf.${POD_IP} /etc/contrail/contrail-fabric-ansible.conf;
-/usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/mycontrail/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf
+			deviceManagerCommand := `/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;
+/usr/bin/rm -f /etc/contrail/contrail-keystone-auth.conf; ln -s /etc/contrailconfigmaps/contrail-keystone-auth.conf /etc/contrail/contrail-keystone-auth.conf;
+/usr/bin/rm -f /etc/contrail/contrail-fabric-ansible.conf; ln -s /etc/contrailconfigmaps/contrail-fabric-ansible.conf.${POD_IP} /etc/contrail/contrail-fabric-ansible.conf;
+/usr/bin/python /usr/bin/contrail-device-manager --conf_file /etc/contrailconfigmaps/devicemanager.${POD_IP} --conf_file /etc/contrail/contrail-keystone-auth.conf
 `
 			command := []string{"bash", "-c", deviceManagerCommand}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
@@ -358,7 +358,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -382,8 +382,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		case "dnsmasq":
 			container := &statefulSet.Spec.Template.Spec.Containers[idx]
 			container.Command = []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini;ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;" +
-					"dnsmasq -k -p0 --conf-file=/etc/mycontrail/dnsmasq.${POD_IP}"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini;ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;" +
+					"dnsmasq -k -p0 --conf-file=/etc/contrailconfigmaps/dnsmasq.${POD_IP}"}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command != nil {
 				container.Command = instanceContainer.Command
@@ -397,7 +397,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -436,7 +436,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			container.Image = instanceContainer.Image
 		case "servicemonitor":
 			command := []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-svc-monitor --conf_file /etc/mycontrail/servicemonitor.${POD_IP} --conf_file /etc/mycontrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-svc-monitor --conf_file /etc/contrailconfigmaps/servicemonitor.${POD_IP} --conf_file /etc/contrailconfigmaps/contrail-keystone-auth.conf"}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -447,7 +447,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -462,7 +462,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		case "schematransformer":
 			command := []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-schema --conf_file /etc/mycontrail/schematransformer.${POD_IP}  --conf_file /etc/mycontrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-schema --conf_file /etc/contrailconfigmaps/schematransformer.${POD_IP}  --conf_file /etc/contrailconfigmaps/contrail-keystone-auth.conf"}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -473,7 +473,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -488,7 +488,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		case "analyticsapi":
 			command := []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-analytics-api -c /etc/mycontrail/analyticsapi.${POD_IP} -c /etc/mycontrail/contrail-keystone-auth.conf"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini; /usr/bin/python /usr/bin/contrail-analytics-api -c /etc/contrailconfigmaps/analyticsapi.${POD_IP} -c /etc/contrailconfigmaps/contrail-keystone-auth.conf"}
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -499,7 +499,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -516,12 +516,12 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			queryEngineContainer := &statefulSet.Spec.Template.Spec.Containers[idx]
 			queryEngineContainer.Command = []string{"bash", "-c",
-				"/usr/bin/contrail-query-engine --conf_file /etc/mycontrail/queryengine.${POD_IP}"}
+				"/usr/bin/contrail-query-engine --conf_file /etc/contrailconfigmaps/queryengine.${POD_IP}"}
 			volumeMountList := statefulSet.Spec.Template.Spec.Containers[idx].VolumeMounts
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -537,7 +537,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		case "collector":
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			command := []string{"bash", "-c",
-				"/usr/bin/contrail-collector --conf_file /etc/mycontrail/collector.${POD_IP}"}
+				"/usr/bin/contrail-collector --conf_file /etc/contrailconfigmaps/collector.${POD_IP}"}
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -547,7 +547,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 				corev1.VolumeMount{
 					Name:      request.Name + "-secret-certificates",
@@ -573,7 +573,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			volumeMountList = append(volumeMountList,
 				corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -582,7 +582,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			if configNodeMgr {
 				instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 				command := []string{"bash", "-c",
-					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-config"}
+					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/contrailconfigmaps/nodemanagerconfig.${POD_IP} > /etc/contrail/contrail-config-nodemgr.conf; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-config"}
 
 				if instanceContainer.Command == nil {
 					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -593,7 +593,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				volumeMountList = append(volumeMountList,
 					corev1.VolumeMount{
 						Name:      request.Name + "-" + instanceType + "-volume",
-						MountPath: "/etc/mycontrail",
+						MountPath: "/etc/contrailconfigmaps",
 					},
 				)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -603,7 +603,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			if analyticsNodeMgr {
 				instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 				command := []string{"bash", "-c",
-					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/mycontrail/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;/usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-analytics"}
+					"sed \"s/hostip=.*/hostip=${POD_IP}/g\" /etc/contrailconfigmaps/nodemanageranalytics.${POD_IP} > /etc/contrail/contrail-analytics-nodemgr.conf;/usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-analytics"}
 
 				if instanceContainer.Command == nil {
 					(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -614,7 +614,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 				volumeMountList = append(volumeMountList,
 					corev1.VolumeMount{
 						Name:      request.Name + "-" + instanceType + "-volume",
-						MountPath: "/etc/mycontrail",
+						MountPath: "/etc/contrailconfigmaps",
 					},
 				)
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -624,7 +624,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		case "statusmonitor":
 			instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 			command := []string{"sh", "-c",
-				"/app/statusmonitor/contrail-statusmonitor-image.binary -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
+				"/app/statusmonitor/contrail-statusmonitor-image.binary -config /etc/contrailconfigmaps/monitorconfig.${POD_IP}.yaml"}
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
 			} else {
@@ -637,7 +637,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{

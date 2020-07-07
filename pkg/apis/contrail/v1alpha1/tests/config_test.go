@@ -716,7 +716,6 @@ func TestWebuiConfig(t *testing.T) {
 	}
 }
 
-
 func TestCassandraConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
@@ -1527,7 +1526,7 @@ sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
 
 var dnsConfig = `[DEFAULT]
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
-named_config_file = /etc/mycontrail/named.1.1.5.1
+named_config_file = /etc/contrailconfigmaps/named.1.1.5.1
 named_config_directory = /etc/contrail/dns
 named_log_file = /var/log/contrail/contrail-named.log
 rndc_config_file = contrail-rndc.conf
@@ -1631,7 +1630,7 @@ logging {
 };`
 
 var controlProvisioningConfig = `#!/bin/bash
-sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
+sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
 servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
@@ -1710,7 +1709,6 @@ sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.6.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.6.1.crt
 sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
-
 
 var devicemanagerWithFabricConfig = `[DEFAULTS]
 host_ip=2.2.2.2
