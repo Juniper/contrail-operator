@@ -91,7 +91,7 @@ logging {
 // ControlDNSConfig is the template of the Dns service configuration.
 var ControlDNSConfig = template.Must(template.New("").Parse(`[DEFAULT]
 collectors={{ .CollectorServerList }}
-named_config_file = /etc/mycontrail/named.{{ .ListenAddress }}
+named_config_file = /etc/contrailconfigmaps/named.{{ .ListenAddress }}
 named_config_directory = /etc/contrail/dns
 named_log_file = /var/log/contrail/contrail-named.log
 rndc_config_file = contrail-rndc.conf
@@ -161,7 +161,7 @@ sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
-sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/mycontrail/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
+sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
