@@ -452,7 +452,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	for idx, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == "kubemanager" {
 			command := []string{"bash", "-c",
-				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/mycontrail/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;/usr/bin/python /usr/bin/contrail-kube-manager -c /etc/mycontrail/kubemanager.${POD_IP}"}
+				"/usr/bin/rm -f /etc/contrail/vnc_api_lib.ini; ln -s /etc/contrailconfigmaps/vnc.${POD_IP} /etc/contrail/vnc_api_lib.ini;/usr/bin/python /usr/bin/contrail-kube-manager -c /etc/contrailconfigmaps/kubemanager.${POD_IP}"}
 			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
@@ -467,7 +467,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
@@ -485,7 +485,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		}
 		if container.Name == "statusmonitor" {
 			command := []string{"sh", "-c",
-				"/app/statusmonitor/contrail-statusmonitor-image.binary -config /etc/mycontrail/monitorconfig.${POD_IP}.yaml"}
+				"/app/statusmonitor/contrail-statusmonitor-image.binary -config /etc/contrailconfigmaps/monitorconfig.${POD_IP}.yaml"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -499,7 +499,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{

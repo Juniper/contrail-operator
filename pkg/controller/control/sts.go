@@ -129,7 +129,7 @@ spec:
             preStop:
               exec:
                 command:
-                  - python /etc/mycontrail/deprovision.sh.${POD_IP}
+                  - python /etc/contrailconfigmaps/deprovision.sh.${POD_IP}
           volumeMounts:
             - mountPath: /var/log/contrail
               name: control-logs
