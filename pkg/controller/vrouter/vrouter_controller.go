@@ -381,7 +381,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	for idx, container := range daemonSet.Spec.Template.Spec.Containers {
 		if container.Name == "vrouteragent" {
 			command := []string{"bash", "-c",
-				"/entrypoint.sh /usr/bin/contrail-vrouter-agent --config_file /etc/mycontrail/vrouter.${POD_IP}"}
+				"/entrypoint.sh /usr/bin/contrail-vrouter-agent --config_file /etc/contrailconfigmaps/vrouter.${POD_IP}"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -394,7 +394,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
@@ -420,7 +420,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		if container.Name == "nodemanager" {
 			if nodemgr {
 				command := []string{"bash", "-c",
-					"bash /etc/mycontrail/provision.sh.${POD_IP} add; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-vrouter"}
+					"bash /etc/contrailconfigmaps/provision.sh.${POD_IP} add; /usr/bin/python /usr/bin/contrail-nodemgr --nodetype=contrail-vrouter"}
 				instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 				if instanceContainer.Command == nil {
 					(&daemonSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -434,7 +434,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				}
 				volumeMount := corev1.VolumeMount{
 					Name:      request.Name + "-" + instanceType + "-volume",
-					MountPath: "/etc/mycontrail",
+					MountPath: "/etc/contrailconfigmaps",
 				}
 				volumeMountList = append(volumeMountList, volumeMount)
 				volumeMount = corev1.VolumeMount{
@@ -487,7 +487,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 					"mkdir -p /var/lib/contrail/ports/vm && " +
 					"cp -f /usr/bin/contrail-k8s-cni /host/opt_cni_bin && " +
 					"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
-					"cp -f /etc/mycontrail/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
 					"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
@@ -501,7 +501,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
