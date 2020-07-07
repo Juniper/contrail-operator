@@ -7,7 +7,6 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"math/big"
-	"net"
 	"time"
 )
 
@@ -52,51 +51,6 @@ func generateCaCerttificateTemplate() (x509.Certificate, *rsa.PrivateKey, error)
 	}
 	return caCertTemplate, caPrivKey, nil
 
-}
-
-func generateCertificateTemplate(ipAddress string, serviceIPs []string, hostname string) (x509.Certificate, *rsa.PrivateKey, error) {
-	certPrivKey, err := rsa.GenerateKey(rand.Reader, certKeyLength)
-
-	if err != nil {
-		return x509.Certificate{}, nil, fmt.Errorf("failed to generate private key: %w", err)
-	}
-
-	notBefore := time.Now()
-	notAfter := notBefore.Add(certValidityPeriod)
-
-	serialNumber, err := generateSerialNumber()
-	if err != nil {
-		return x509.Certificate{}, nil, fmt.Errorf("fail to generate serial number: %w", err)
-	}
-
-	var ips []net.IP
-	ips = append(ips, net.ParseIP(ipAddress))
-	for _, ip := range serviceIPs {
-		if ip == "" {
-			continue
-		}
-		ips = append(ips, net.ParseIP(ip))
-	}
-
-	certificateTemplate := x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject: pkix.Name{
-			CommonName:         ipAddress,
-			Country:            []string{"US"},
-			Province:           []string{"CA"},
-			Locality:           []string{"Sunnyvale"},
-			Organization:       []string{"Juniper Networks"},
-			OrganizationalUnit: []string{"Contrail"},
-		},
-		DNSNames:    []string{hostname},
-		IPAddresses: ips,
-		NotBefore:   notBefore,
-		NotAfter:    notAfter,
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
-	}
-
-	return certificateTemplate, certPrivKey, nil
 }
 
 func generateSerialNumber() (*big.Int, error) {

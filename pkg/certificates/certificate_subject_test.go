@@ -53,15 +53,15 @@ func TestCertificateSubject(t *testing.T) {
 		expectedSubjects []certificateSubject
 	}{
 		{
-			name:    "should create not host network subjects",
+			name:    "should not create host network subjects",
 			podList: pods,
 			expectedSubjects: []certificateSubject{
-				certificateSubject{
+				{
 					name:     firstPodName,
 					hostname: firstPodHostname,
 					ip:       firstPodIp,
 				},
-				certificateSubject{
+				{
 					name:     secondPodName,
 					hostname: secondPodHostname,
 					ip:       secondPodIp,
@@ -73,12 +73,12 @@ func TestCertificateSubject(t *testing.T) {
 			hostNetwork: true,
 			podList:     pods,
 			expectedSubjects: []certificateSubject{
-				certificateSubject{
+				{
 					name:     firstPodName,
 					hostname: firstPodNodeName,
 					ip:       firstPodIp,
 				},
-				certificateSubject{
+				{
 					name:     secondPodName,
 					hostname: secondPodNodeName,
 					ip:       secondPodIp,

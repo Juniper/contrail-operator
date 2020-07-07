@@ -20,7 +20,7 @@ type Certificate struct {
 	sc                  *k8s.Secret
 	signer              certificateSigner
 	certificateSubjects []certificateSubject
-	serviceIPs []string
+	serviceIP           string
 }
 
 func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
@@ -40,7 +40,7 @@ func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, p
 	}
 }
 
-func NewCertificateWithServiceIP(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, serviceIPs []string, ownerType string, hostNetwork bool) *Certificate {
+func NewCertificateWithServiceIP(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, serviceIP string, ownerType string, hostNetwork bool) *Certificate {
 	secretName := owner.GetName() + "-secret-certificates"
 	kubernetes := k8s.New(cl, scheme)
 	subjects := certificateSubjects{pods, hostNetwork}
@@ -53,7 +53,7 @@ func NewCertificateWithServiceIP(cl client.Client, scheme *runtime.Scheme, owner
 			client: cl,
 			owner:  owner,
 		},
-		serviceIPs: serviceIPs,
+		serviceIP:           serviceIP,
 		certificateSubjects: subjects.createCertificateSubjects(),
 	}
 }
@@ -86,7 +86,7 @@ func (r *Certificate) createCertificateForPod(subject certificateSubject, secret
 	if certInSecret(secret, subject.ip) {
 		return nil
 	}
-	certificateTemplate, privateKey, err := generateCertificateTemplate(subject.ip, r.serviceIPs, subject.hostname)
+	certificateTemplate, privateKey, err := subject.generateCertificateTemplate(r.serviceIP)
 	if err != nil {
 		return fmt.Errorf("failed to generate certificate template for %s, %s: %w", subject.hostname, subject.name, err)
 	}
