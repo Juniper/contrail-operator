@@ -166,7 +166,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureExists(memcached.Status.Node); err != nil {
+	if err = cm.ensureExists(memcached.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 

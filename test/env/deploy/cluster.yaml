@@ -259,6 +259,9 @@ spec:
         name: memcached
         namespace: contrail
       spec:
+        commonConfiguration:
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: memcached

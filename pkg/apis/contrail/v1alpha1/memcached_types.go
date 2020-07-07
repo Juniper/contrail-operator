@@ -6,13 +6,14 @@ import (
 
 // MemcachedSpec defines the desired state of Memcached
 type MemcachedSpec struct {
+	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
 	ServiceConfiguration MemcachedConfiguration `json:"serviceConfiguration"`
 }
 
 // MemcachedStatus defines the observed state of Memcached
 type MemcachedStatus struct {
-	Active bool   `json:"active,omitempty"`
-	Node   string `json:"node,omitempty"`
+	Active   bool   `json:"active,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
 }
 
 type MemcachedConfiguration struct {

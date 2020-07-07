@@ -503,7 +503,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "zookeeper", zkContainerImage, "zookeeper")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=zookeeper", zkContainerImage, "zookeeper")
 		require.NoError(t, err)
 	})
 
@@ -516,7 +516,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "rabbitmq", rmqContainerImage, "rabbitmq")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=rabbitmq", rmqContainerImage, "rabbitmq")
 		require.NoError(t, err)
 	})
 
@@ -529,7 +529,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "cassandra", csContainerImage, "cassandra")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=cassandra", csContainerImage, "cassandra")
 		require.NoError(t, err)
 	})
 
@@ -542,7 +542,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "config", apiContainerImage, "api")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=config", apiContainerImage, "api")
 		require.NoError(t, err)
 	})
 
@@ -555,7 +555,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "webui", webuijobContainerImage, "webuijob")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=webui", webuijobContainerImage, "webuijob")
 		require.NoError(t, err)
 	})
 
@@ -568,7 +568,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "provisionmanager", pmContainerImage, "provisioner")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", pmContainerImage, "provisioner")
 		require.NoError(t, err)
 	})
 }

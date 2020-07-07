@@ -2,9 +2,10 @@ package wait
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/test/logger"
 	"strings"
 	"time"
+
+	"github.com/Juniper/contrail-operator/test/logger"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/test"
@@ -94,10 +95,10 @@ func (c Contrail) ForPostgresActive(name string) error {
 }
 
 // ForPodImageChange is used to wait until Image is updated
-func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, name string, newImage string, container string) error {
+func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, labelSelector string, newImage string, container string) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
 		podList, err := kubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-			LabelSelector: "contrail_manager=" + name,
+			LabelSelector: labelSelector,
 		})
 		if err != nil {
 			return false, nil
