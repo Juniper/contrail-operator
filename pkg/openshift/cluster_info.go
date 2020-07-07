@@ -104,7 +104,7 @@ func (c ClusterConfig) CNIBinariesDirectory() string {
 
 // CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
 func (c ClusterConfig) CNIConfigFilesDirectory() string {
-	return "/etc/kubernetes/cni"
+	return "/etc/cni"
 }
 
 func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {

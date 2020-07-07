@@ -52,6 +52,28 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			ImagePullPolicy: "Always",
 		},
 		core.Container{
+			Name: "multusconfig",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"mkdir -p /etc/kubernetes/cni/net.d && " +
+				"cp -f /etc/mycontrail/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+				"mkdir -p /var/run/multus/cni/net.d && " +
+				"cp -f /etc/mycontrail/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "etc-kubernetes-cni",
+					MountPath: "/etc/kubernetes/cni",
+				},
+				core.VolumeMount{
+					Name:      "multus-cni",
+					MountPath: "/var/run/multus",
+				},
+			},
+			ImagePullPolicy: "Always",
+		},
+		core.Container{
 			Name:  "nodeinit",
 			Image: "docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
 			Env: []core.EnvVar{
@@ -334,6 +356,22 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: "/etc/resolv.conf",
+				},
+			},
+		},
+		core.Volume{
+			Name: "etc-kubernetes-cni",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/etc/kubernetes/cni",
+				},
+			},
+		},
+		core.Volume{
+			Name: "multus-cni",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/run/multus",
 				},
 			},
 		},
