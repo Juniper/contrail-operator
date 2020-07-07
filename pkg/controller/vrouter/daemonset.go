@@ -7,8 +7,8 @@ import (
 )
 
 type CniDirs struct {
-	BinariesDirectory    string
-	ConfigFilesDirectory string
+	BinariesDirectory string
+	DeploymentType    string
 }
 
 //GetDaemonset returns DaemonSet object for vRouter
@@ -47,28 +47,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				core.VolumeMount{
 					Name:      "status",
 					MountPath: "/tmp/podinfo",
-				},
-			},
-			ImagePullPolicy: "Always",
-		},
-		core.Container{
-			Name: "multusconfig",
-			Image: "busybox",
-			Command: []string{
-				"sh",
-				"-c",
-				"mkdir -p /etc/kubernetes/cni/net.d && " +
-				"cp -f /etc/mycontrail/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
-				"mkdir -p /var/run/multus/cni/net.d && " +
-				"cp -f /etc/mycontrail/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
-					Name:      "etc-kubernetes-cni",
-					MountPath: "/etc/kubernetes/cni",
-				},
-				core.VolumeMount{
-					Name:      "multus-cni",
-					MountPath: "/var/run/multus",
 				},
 			},
 			ImagePullPolicy: "Always",
@@ -159,6 +137,31 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				Privileged: &trueVal,
 			},
 		},
+	}
+
+	if cniDir.DeploymentType == "openshift" {
+		podInitContainers = append(podInitContainers, core.Container{
+			Name:  "multusconfig",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"mkdir -p /etc/kubernetes/cni/net.d && " +
+					"cp -f /etc/mycontrail/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+					"mkdir -p /var/run/multus/cni/net.d && " +
+					"cp -f /etc/mycontrail/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "etc-kubernetes-cni",
+					MountPath: "/etc/kubernetes/cni",
+				},
+				core.VolumeMount{
+					Name:      "multus-cni",
+					MountPath: "/var/run/multus",
+				},
+			},
+			ImagePullPolicy: "Always",
+		})
 	}
 
 	var podContainers = []core.Container{
@@ -283,7 +286,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			Name: "cni-config-files",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
-					Path: cniDir.ConfigFilesDirectory,
+					Path: "/etc/cni",
 				},
 			},
 		},
