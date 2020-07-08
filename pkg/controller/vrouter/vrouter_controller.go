@@ -524,7 +524,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}}
 		}
 		if container.Name == "multusconfig" {
-			reqLogger.Info("I detected multusconfig")
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			volumeMountList := []corev1.VolumeMount{}
 			if len((&daemonSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts) > 0 {
@@ -532,7 +531,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			volumeMount := corev1.VolumeMount{
 				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/etc/mycontrail",
+				MountPath: "/etc/contrailconfigmaps",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = volumeMountList

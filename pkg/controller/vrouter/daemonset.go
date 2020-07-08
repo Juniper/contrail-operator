@@ -147,9 +147,9 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				"sh",
 				"-c",
 				"mkdir -p /etc/kubernetes/cni/net.d && " +
-					"cp -f /etc/mycontrail/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
 					"mkdir -p /var/run/multus/cni/net.d && " +
-					"cp -f /etc/mycontrail/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
 					Name:      "etc-kubernetes-cni",
