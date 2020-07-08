@@ -223,7 +223,7 @@ spec:
             - name: vrouterkernelbuildinit
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
             - name: vrouterkernelinit
-              image: pitersk/vrouter-kernel-init
+              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
             - name: multusconfig
               image: busybox:1.31
     - metadata:
