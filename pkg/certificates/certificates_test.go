@@ -130,7 +130,6 @@ func TestCertificate(t *testing.T) {
 
 func assertSecretDataEqual(t *testing.T, secretData map[string][]byte, expected map[string][]byte) bool {
 	return ((secretData == nil || len(secretData) == 0) && len(expected) == 0) || assert.Equal(t, secretData, expected)
-
 }
 
 func getExpectedCertificates(t *testing.T, spy *signerSpy, expectedSubjects []certificateSubject) map[string][]byte {
