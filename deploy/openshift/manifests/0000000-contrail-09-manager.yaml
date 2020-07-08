@@ -224,6 +224,8 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
+            - name: multusconfig
+              image: busybox:1.31
     - metadata:
         labels:
           contrail_cluster: cluster1
@@ -251,3 +253,5 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>
             - name: vrouterkernelinit
               image: pitersk/vrouter-kernel-init
+            - name: multusconfig
+              image: busybox:1.31

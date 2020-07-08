@@ -130,8 +130,8 @@ func (suite *ClusterInfoSuite) TestCNIBinariesDirectory() {
 	suite.Assert().Equal(suite.VrouterClusterInfo.CNIBinariesDirectory(), "/var/lib/cni/bin", "Path should be /var/lib/cni/bin")
 }
 
-func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.CNIConfigFilesDirectory(), "/etc/kubernetes/cni", "Path should be /etc/kubernetes/cni")
+func (suite *ClusterInfoSuite) TestDeploymentType() {
+	suite.Assert().Equal(suite.VrouterClusterInfo.DeploymentType(), "openshift", "Path should be openshift")
 }
 
 func (suite *ClusterInfoSuite) TestMissingConfigMap() {

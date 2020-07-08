@@ -96,8 +96,8 @@ func (suite *ClusterInfoSuite) TestCNIBinariesDirectory() {
 	suite.Assert().Equal(suite.VrouterClusterInfo.CNIBinariesDirectory(), "/opt/cni/bin", "Path should be /opt/cni/bin")
 }
 
-func (suite *ClusterInfoSuite) TestCNIConfigFilesDirectory() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.CNIConfigFilesDirectory(), "/etc/cni", "Path should be /etc/cni")
+func (suite *ClusterInfoSuite) TestDeploymentType() {
+	suite.Assert().Equal(suite.VrouterClusterInfo.DeploymentType(), "k8s", "Path should be k8si")
 }
 
 func (suite *ClusterInfoSuite) TestMissingEndpointPort() {
