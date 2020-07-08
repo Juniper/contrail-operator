@@ -5,9 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Juniper/contrail-operator/test/logger"
-
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

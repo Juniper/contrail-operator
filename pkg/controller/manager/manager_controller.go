@@ -1605,7 +1605,6 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	memcached := &v1alpha1.Memcached{}
 	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta
 	memcached.ObjectMeta.Namespace = manager.Namespace
-
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
 		memcached.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, memcached.Spec.CommonConfiguration)

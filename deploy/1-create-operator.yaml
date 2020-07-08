@@ -3867,6 +3867,16 @@ kind: CustomResourceDefinition
 metadata:
   name: memcacheds.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
+  - JSONPath: .status.endpoint
+    name: Endpoint
+    type: string
   group: contrail.juniper.net
   names:
     kind: Memcached
