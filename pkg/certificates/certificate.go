@@ -41,21 +41,9 @@ func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, p
 }
 
 func NewCertificateWithServiceIP(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, serviceIP string, ownerType string, hostNetwork bool) *Certificate {
-	secretName := owner.GetName() + "-secret-certificates"
-	kubernetes := k8s.New(cl, scheme)
-	subjects := certificateSubjects{pods, hostNetwork}
-	return &Certificate{
-		client: cl,
-		scheme: scheme,
-		owner:  owner,
-		sc:     kubernetes.Secret(secretName, ownerType, owner),
-		signer: &signer{
-			client: cl,
-			owner:  owner,
-		},
-		serviceIP:           serviceIP,
-		certificateSubjects: subjects.createCertificateSubjects(),
-	}
+	certificate := NewCertificate(cl, scheme, owner, pods, ownerType, hostNetwork)
+	certificate.serviceIP = serviceIP
+	return certificate
 }
 
 func (r *Certificate) EnsureExistsAndIsSigned() error {

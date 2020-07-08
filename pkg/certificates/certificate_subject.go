@@ -6,9 +6,10 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	core "k8s.io/api/core/v1"
 	"net"
 	"time"
+
+	core "k8s.io/api/core/v1"
 )
 
 type certificateSubject struct {
