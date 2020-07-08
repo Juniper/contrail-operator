@@ -1,6 +1,9 @@
 package certificates
 
 import (
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCertificateSubject(t *testing.T) {
+func TestCreateCertificateSubject(t *testing.T) {
 	firstPodName := "first"
 	firstPodNodeName := "nodeName1"
 	firstPodHostname := "hostName1"
@@ -91,4 +94,79 @@ func TestCertificateSubject(t *testing.T) {
 		subs := certificateSubjects{test.podList, test.hostNetwork}
 		assert.Equal(t, subs.createCertificateSubjects(), test.expectedSubjects)
 	}
+}
+
+func TestSubjectGenerateCertificateTemplate(t *testing.T) {
+	testPodName := "first"
+	testPodNodeName := "nodeName1"
+	testPodIP := "1.1.1.1"
+
+	tests := []struct {
+		name string
+		serviceIP string
+		subject    certificateSubject
+		expectedCert x509.Certificate
+	}{
+		{
+			name:    "should create Certificate with one IP",
+			subject: certificateSubject{
+					name:     testPodName,
+					hostname: testPodNodeName,
+					ip:       testPodIP,
+			},
+			expectedCert: x509.Certificate{
+			Subject: pkix.Name{
+			CommonName:         testPodIP,
+			Country:            []string{"US"},
+			Province:           []string{"CA"},
+			Locality:           []string{"Sunnyvale"},
+			Organization:       []string{"Juniper Networks"},
+			OrganizationalUnit: []string{"Contrail"},
+		},
+			DNSNames:    []string{testPodNodeName},
+			IPAddresses: []net.IP{net.ParseIP(testPodIP)},
+			KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		},
+		},
+		{
+			name:        "should create Certificate with IP and Service IP",
+			subject: certificateSubject{
+				name:     testPodName,
+				hostname: testPodNodeName,
+				ip:       testPodIP,
+			},
+			serviceIP: "2.2.2.2",
+			expectedCert: x509.Certificate{
+			Subject: pkix.Name{
+				CommonName:         testPodIP,
+				Country:            []string{"US"},
+				Province:           []string{"CA"},
+				Locality:           []string{"Sunnyvale"},
+				Organization:       []string{"Juniper Networks"},
+				OrganizationalUnit: []string{"Contrail"},
+			},
+			DNSNames:    []string{testPodNodeName},
+			IPAddresses: []net.IP{net.ParseIP(testPodIP), net.ParseIP("2.2.2.2")},
+			KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		},
+		},
+
+	}
+
+	for _, test := range tests {
+		cert, _, err := test.subject.generateCertificateTemplate(test.serviceIP)
+		assert.NoError(t, err)
+		assertCertificatesEqual(t, test.expectedCert, cert)
+	}
+}
+
+
+func assertCertificatesEqual(t *testing.T, expectedCert, actualCert x509.Certificate) {
+	assert.Equal(t, expectedCert.Subject, actualCert.Subject)
+	assert.Equal(t, expectedCert.DNSNames, actualCert.DNSNames)
+	assert.Equal(t, expectedCert.IPAddresses, actualCert.IPAddresses)
+	assert.Equal(t, expectedCert.KeyUsage, actualCert.KeyUsage)
+	assert.Equal(t, expectedCert.ExtKeyUsage, actualCert.ExtKeyUsage)
 }
