@@ -102,9 +102,9 @@ func (c ClusterConfig) CNIBinariesDirectory() string {
 	return "/var/lib/cni/bin"
 }
 
-// CNIConfigFilesDirectory returns directory containing CNI config files specific for k8s cluster
-func (c ClusterConfig) CNIConfigFilesDirectory() string {
-	return "/etc/kubernetes/cni"
+// DeploymentType returns deployment type
+func (c ClusterConfig) DeploymentType() string {
+	return "openshift"
 }
 
 func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {
