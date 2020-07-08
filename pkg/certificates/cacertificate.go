@@ -97,7 +97,7 @@ func caCertExistsInSecret(secret *corev1.Secret) bool {
 }
 
 func generateCaCertificate() ([]byte, []byte, error) {
-	caCertTemplate, caPrivKey, err := generateCaCerttificateTemplate()
+	caCertTemplate, caPrivKey, err := generateCaCertificateTemplate()
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create certificate template: %w", err)

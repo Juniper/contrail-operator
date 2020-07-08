@@ -18,7 +18,7 @@ const (
 	certKeyLength        = 2048
 )
 
-func generateCaCerttificateTemplate() (x509.Certificate, *rsa.PrivateKey, error) {
+func generateCaCertificateTemplate() (x509.Certificate, *rsa.PrivateKey, error) {
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, caCertKeyLength)
 
 	if err != nil {
