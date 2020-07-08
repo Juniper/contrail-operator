@@ -7,8 +7,8 @@ import (
 )
 
 type CniDirs struct {
-	BinariesDirectory    string
-	ConfigFilesDirectory string
+	BinariesDirectory string
+	DeploymentType    string
 }
 
 //GetDaemonset returns DaemonSet object for vRouter
@@ -139,6 +139,31 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 		},
 	}
 
+	if cniDir.DeploymentType == "openshift" {
+		podInitContainers = append(podInitContainers, core.Container{
+			Name:  "multusconfig",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"mkdir -p /etc/kubernetes/cni/net.d && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+					"mkdir -p /var/run/multus/cni/net.d && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "etc-kubernetes-cni",
+					MountPath: "/etc/kubernetes/cni",
+				},
+				core.VolumeMount{
+					Name:      "multus-cni",
+					MountPath: "/var/run/multus",
+				},
+			},
+			ImagePullPolicy: "Always",
+		})
+	}
+
 	var podContainers = []core.Container{
 		core.Container{
 			Name:  "vrouteragent",
@@ -261,7 +286,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			Name: "cni-config-files",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
-					Path: cniDir.ConfigFilesDirectory,
+					Path: "/etc/cni",
 				},
 			},
 		},
@@ -334,6 +359,22 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: "/etc/resolv.conf",
+				},
+			},
+		},
+		core.Volume{
+			Name: "etc-kubernetes-cni",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/etc/kubernetes/cni",
+				},
+			},
+		},
+		core.Volume{
+			Name: "multus-cni",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/run/multus",
 				},
 			},
 		},

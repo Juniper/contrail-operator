@@ -490,5 +490,5 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 type VrouterClusterInfo interface {
 	KubernetesClusterName() (string, error)
 	CNIBinariesDirectory() string
-	CNIConfigFilesDirectory() string
+	DeploymentType() string
 }
