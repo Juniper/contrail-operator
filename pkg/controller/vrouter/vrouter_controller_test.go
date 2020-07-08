@@ -21,9 +21,9 @@ import (
 )
 
 type vrouterClusterInfoFake struct {
-	clusterName             string
-	cniBinariesDirectory    string
-	cniConfigFilesDirectory string
+	clusterName          string
+	cniBinariesDirectory string
+	deploymentType       string
 }
 
 func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
@@ -33,8 +33,8 @@ func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
 func (c vrouterClusterInfoFake) CNIBinariesDirectory() string {
 	return c.cniBinariesDirectory
 }
-func (c vrouterClusterInfoFake) CNIConfigFilesDirectory() string {
-	return c.cniConfigFilesDirectory
+func (c vrouterClusterInfoFake) DeploymentType() string {
+	return c.deploymentType
 }
 
 func TestVrouterController(t *testing.T) {
@@ -116,7 +116,7 @@ func TestVrouterController(t *testing.T) {
 	}
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, vrouterCR, controlCR, cassandraCR, configCR)
-	fakeClusterInfo := vrouterClusterInfoFake{"test-cluster", "/cni/bin", "cni/config"}
+	fakeClusterInfo := vrouterClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
 	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo)
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: vrouterName})

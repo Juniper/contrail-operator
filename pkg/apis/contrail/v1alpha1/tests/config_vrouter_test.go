@@ -13,9 +13,9 @@ import (
 )
 
 type vrouterClusterInfoFake struct {
-	clusterName             string
-	cniBinariesDirectory    string
-	cniConfigFilesDirectory string
+	clusterName          string
+	cniBinariesDirectory string
+	deploymentType       string
 }
 
 func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
@@ -25,8 +25,8 @@ func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
 func (c vrouterClusterInfoFake) CNIBinariesDirectory() string {
 	return c.cniBinariesDirectory
 }
-func (c vrouterClusterInfoFake) CNIConfigFilesDirectory() string {
-	return c.cniConfigFilesDirectory
+func (c vrouterClusterInfoFake) DeploymentType() string {
+	return c.deploymentType
 }
 
 func TestVrouterConfig(t *testing.T) {

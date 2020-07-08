@@ -9,30 +9,56 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 )
 
-func TestGetDaemonset(t *testing.T) {
-	testBinariesPath := "/test/cni/bin"
-	testConfigPath := "/config/test/cni"
+var multusContainer = v1.Container{
+	Name:  "multusconfig",
+	Image: "busybox",
+	Command: []string{
+		"sh",
+		"-c",
+		"mkdir -p /etc/kubernetes/cni/net.d && " +
+			"cp -f /etc/mycontrail/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+			"mkdir -p /var/run/multus/cni/net.d && " +
+			"cp -f /etc/mycontrail/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+	VolumeMounts: []v1.VolumeMount{
+		v1.VolumeMount{
+			Name:      "etc-kubernetes-cni",
+			MountPath: "/etc/kubernetes/cni",
+		},
+		v1.VolumeMount{
+			Name:      "multus-cni",
+			MountPath: "/var/run/multus",
+		},
+	},
+	ImagePullPolicy: "Always",
+}
+
+var testBinariesPath = "/test/cni/bin"
+
+var expectedCniBinVolume = v1.Volume{
+	Name: "cni-bin",
+	VolumeSource: v1.VolumeSource{
+		HostPath: &v1.HostPathVolumeSource{
+			Path: testBinariesPath,
+		},
+	},
+}
+
+func TestGetDaemonsetK8s(t *testing.T) {
 	testCNIDirs := vrouter.CniDirs{
-		BinariesDirectory:    testBinariesPath,
-		ConfigFilesDirectory: testConfigPath,
+		BinariesDirectory: testBinariesPath,
+		DeploymentType:    "k8s",
 	}
 	ds := vrouter.GetDaemonset(testCNIDirs)
-	expectedCniBinVolume := v1.Volume{
-		Name: "cni-bin",
-		VolumeSource: v1.VolumeSource{
-			HostPath: &v1.HostPathVolumeSource{
-				Path: testBinariesPath,
-			},
-		},
-	}
-	expectedCniConfigVolume := v1.Volume{
-		Name: "cni-config-files",
-		VolumeSource: v1.VolumeSource{
-			HostPath: &v1.HostPathVolumeSource{
-				Path: testConfigPath,
-			},
-		},
-	}
 	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
-	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniConfigVolume)
+	assert.NotContains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
+}
+
+func TestGetDaemonsetOpenshift(t *testing.T) {
+	testCNIDirs := vrouter.CniDirs{
+		BinariesDirectory: testBinariesPath,
+		DeploymentType:    "openshift",
+	}
+	ds := vrouter.GetDaemonset(testCNIDirs)
+	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
+	assert.Contains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
 }
