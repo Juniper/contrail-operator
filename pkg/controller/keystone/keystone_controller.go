@@ -120,12 +120,26 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
+	keystoneService := newKeystoneService(keystone)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error { return nil })
+
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(keystone, keystonePods); err != nil {
+	keystoneServiceList := &core.ServiceList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"service": keystone.Name})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), keystoneServiceList, &listOpts); err != nil {
+		return reconcile.Result{}, err
+	}
+	var keystoneClusterIP string
+	if len(keystoneServiceList.Items) > 0 {
+		keystoneClusterIP = keystoneServiceList.Items[0].Spec.ClusterIP
+	}
+
+	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -216,7 +230,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(keystone, sts)
+	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
@@ -320,7 +334,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 
 func (r *ReconcileKeystone) updateStatus(
 	k *contrail.Keystone,
-	sts *apps.StatefulSet,
+	sts *apps.StatefulSet, cip string,
 ) error {
 	k.Status = contrail.KeystoneStatus{}
 	intendentReplicas := int32(1)
@@ -343,7 +357,7 @@ func (r *ReconcileKeystone) updateStatus(
 			k.Status.IPs = append(k.Status.IPs, pod.Status.PodIP)
 		}
 	}
-
+	k.Status.ClusterIP = cip
 	return r.client.Status().Update(context.Background(), k)
 }
 
@@ -532,13 +546,12 @@ psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSW
 createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
 psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
-func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList) error {
+func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
 	if keystone.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *keystone.Spec.CommonConfiguration.HostNetwork
 	}
-	//TODO replace empty serviceIP with Cluster IP when it will be created
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, "", "keystone", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, serviceIP, "keystone", hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList, error) {
@@ -549,4 +562,20 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+func newKeystoneService(cr *contrail.Keystone) *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      cr.Name + "-service",
+			Namespace: cr.Namespace,
+			Labels:    map[string]string{"service": cr.Name},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 5555, Protocol: "TCP"},
+			},
+			Selector: map[string]string{"keystone": cr.Name},
+		},
+	}
 }

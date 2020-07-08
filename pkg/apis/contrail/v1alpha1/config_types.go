@@ -580,7 +580,7 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 			return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
 		}
 		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
-		w.KeystoneIP = keystone.Status.IPs[0]
+		w.KeystoneIP = keystone.Status.ClusterIP
 	}
 
 	return w, nil

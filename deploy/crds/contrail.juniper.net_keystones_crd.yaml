@@ -149,6 +149,8 @@ spec:
           properties:
             active:
               type: boolean
+            clusterIP:
+              type: string
             ips:
               items:
                 type: string

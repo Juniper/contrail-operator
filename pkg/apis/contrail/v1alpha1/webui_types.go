@@ -323,7 +323,7 @@ func (c *Webui) getKeystoneEndpoint(k *keystoneEndpoint, client client.Client) e
 	if len(keystone.Status.IPs) == 0 {
 		return fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
 	}
-	k.keystoneIP = keystone.Status.IPs[0]
+	k.keystoneIP = keystone.Status.ClusterIP
 	k.keystonePort = keystone.Spec.ServiceConfiguration.ListenPort
 	return nil
 }
