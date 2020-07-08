@@ -18,7 +18,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 
 	var contrailStatusImageEnv = core.EnvVar{
 		Name:  "CONTRAIL_STATUS_IMAGE",
-		Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+		Value: "docker.io/opencontrailnightly/contrail-status:latest",
 	}
 
 	var podIPEnv = core.EnvVar{
