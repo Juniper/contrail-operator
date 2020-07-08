@@ -469,8 +469,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
 		if container.Name == "vrouterkernelinit" {
-			reqLogger.Info("I detected vrouterkernelinit")
-
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
 					LocalObjectReference: corev1.LocalObjectReference{
@@ -483,8 +481,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 		}
 		if container.Name == "vroutercni" {
-			reqLogger.Info("I detected vroutercni")
-
 			// vroutercni container command is based on the entrypoint.sh script in the contrail-kubernetes-cni-init container
 			command := []string{"sh", "-c",
 				"mkdir -p /host/etc_cni/net.d && " +
