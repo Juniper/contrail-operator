@@ -28,7 +28,7 @@ func GetSTS() *apps.StatefulSet {
 
 	var contrailStatusImageEnv = core.EnvVar{
 		Name:  "CONTRAIL_STATUS_IMAGE",
-		Value: "docker.io/michaelhenkel/contrail-status:5.2.0-dev1",
+		Value: "docker.io/opencontrailnightly/contrail-status:latest",
 	}
 
 	var podInitContainers = []core.Container{
