@@ -52,7 +52,11 @@ var targetVersionMap = map[string]string{
 func TestHACoreContrailServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
-	log := logger.New(t, "contrail", test.Global.Client)
+
+	namespace, err := ctx.GetNamespace()
+	require.NoError(t, err)
+
+	log := logger.New(t, namespace, test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -61,8 +65,7 @@ func TestHACoreContrailServices(t *testing.T) {
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
-	namespace, err := ctx.GetNamespace()
-	assert.NoError(t, err)
+
 	f := test.Global
 
 	proxy, err := kubeproxy.New(f.KubeConfig)
@@ -503,7 +506,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "zookeeper", zkContainerImage, "zookeeper")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=zookeeper", zkContainerImage, "zookeeper")
 		require.NoError(t, err)
 	})
 
@@ -516,7 +519,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "rabbitmq", rmqContainerImage, "rabbitmq")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=rabbitmq", rmqContainerImage, "rabbitmq")
 		require.NoError(t, err)
 	})
 
@@ -529,7 +532,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "cassandra", csContainerImage, "cassandra")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=cassandra", csContainerImage, "cassandra")
 		require.NoError(t, err)
 	})
 
@@ -542,7 +545,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "config", apiContainerImage, "api")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=config", apiContainerImage, "api")
 		require.NoError(t, err)
 	})
 
@@ -555,7 +558,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "webui", webuijobContainerImage, "webuijob")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=webui", webuijobContainerImage, "webuijob")
 		require.NoError(t, err)
 	})
 
@@ -568,7 +571,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "provisionmanager", pmContainerImage, "provisioner")
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", pmContainerImage, "provisioner")
 		require.NoError(t, err)
 	})
 }

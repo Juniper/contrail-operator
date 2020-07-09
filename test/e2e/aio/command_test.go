@@ -242,7 +242,7 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment"))
+				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment", 1))
 			})
 
 			var commandPods *core.PodList

@@ -80,4 +80,5 @@ common-docker-third-party/contrail/centos-binary-swift-rsyncd:train-2005
 common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
 common-docker-third-party/contrail/centos-source-swift-base:train-2005
 common-docker-third-party/contrail/centos-binary-memcached:train-2005
+common-docker-third-party/contrail/centos-binary-memcached:train
 EOF

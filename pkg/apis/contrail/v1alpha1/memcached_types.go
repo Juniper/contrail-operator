@@ -6,13 +6,14 @@ import (
 
 // MemcachedSpec defines the desired state of Memcached
 type MemcachedSpec struct {
+	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
 	ServiceConfiguration MemcachedConfiguration `json:"serviceConfiguration"`
 }
 
 // MemcachedStatus defines the observed state of Memcached
 type MemcachedStatus struct {
-	Active bool   `json:"active,omitempty"`
-	Node   string `json:"node,omitempty"`
+	Active   bool   `json:"active,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
 }
 
 type MemcachedConfiguration struct {
@@ -30,6 +31,9 @@ type MemcachedConfiguration struct {
 // Memcached is the Schema for the memcacheds API
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=memcacheds,scope=Namespaced
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
+// +kubebuilder:printcolumn:name="Endpoint",type=string,JSONPath=`.status.endpoint`
 type Memcached struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

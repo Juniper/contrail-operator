@@ -394,7 +394,7 @@ func newMemcached() *contrail.Memcached {
 			Name:      "memcached-instance",
 			Namespace: "default",
 		},
-		Status: contrail.MemcachedStatus{Active: true, Node: "localhost:11211"},
+		Status: contrail.MemcachedStatus{Active: true, Endpoint: "localhost:11211"},
 	}
 }
 

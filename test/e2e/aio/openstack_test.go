@@ -235,7 +235,7 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then a SwiftProxy deployment should be created", func(t *testing.T) {
-				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment"))
+				assert.NoError(t, wait.ForReadyDeployment("openstacktest-swift-proxy-deployment", 1))
 			})
 
 			t.Run("then a SwiftProxy pod should be created", func(t *testing.T) {

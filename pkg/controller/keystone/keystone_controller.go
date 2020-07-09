@@ -187,12 +187,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		ips = []string{"0.0.0.0"}
 	}
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node, ips[0]); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kfcName := keystone.Name + "-keystone-fernet"
-	if err = r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
+	if err = r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -202,7 +202,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node, ips[0]); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
 		return reconcile.Result{}, err
 	}
 
