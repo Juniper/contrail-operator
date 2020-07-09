@@ -35,6 +35,8 @@ DOCKER_CONFIG=example_json_config
 ```
 Under *CONTRAIL_VERSION* field enter proper Contrail container build tag, available in the hub.juniper.net/contrail-nightly registry.
 
+**NOTE** Do not specify the *-rhel* suffix in the build tag, it will be appended automatically where needed.
+
 *DOCKER_CONFIG* is configuration for registry secret to hub.juniper.net/contrail-nightly
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
 
