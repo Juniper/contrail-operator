@@ -60,7 +60,6 @@ func TestHAOpenStackServices(t *testing.T) {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
 				return nil
 			})
-
 			require.NoError(t, err)
 			assertOpenStackReplicasReady(t, w, 1)
 		})
@@ -71,9 +70,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
 				return nil
 			})
-
 			require.NoError(t, err)
-
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
 				assertOpenStackReplicasReady(t, w, 3)
 			})
@@ -83,11 +80,11 @@ func TestHAOpenStackServices(t *testing.T) {
 			manager := &contrail.Manager{}
 			err := f.Client.Get(context.TODO(), types.NamespacedName{Name: "openstack", Namespace: namespace}, manager)
 			assert.NoError(t, err)
-
-			updateOpenStackManagerImages(t, f, manager)
+			err = updateOpenStackManagerImages(f, manager)
+			assert.NoError(t, err)
 
 			t.Run("then all Pods have updated image", func(t *testing.T) {
-				requireOpenStackPodsHaveUpdatedImages(t, f, manager, log)
+				assertOpenStackPodsHaveUpdatedImages(t, f, manager, log)
 			})
 
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
@@ -113,7 +110,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
 					Timeout:       time.Minute * 5,
-					RetryInterval: time.Second * 15,
+					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
 				}
@@ -146,7 +143,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       time.Minute * 5,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
@@ -163,14 +160,13 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	})
 }
 
-func updateOpenStackManagerImages(t *testing.T, f *test.Framework, manager *contrail.Manager) {
+func updateOpenStackManagerImages(f *test.Framework, manager *contrail.Manager) error {
 	memcached := utils.GetContainerFromList("memcached", manager.Spec.Services.Memcached.Spec.ServiceConfiguration.Containers)
 	memcached.Image = "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
-	err := f.Client.Update(context.TODO(), manager)
-	require.NoError(t, err)
+	return f.Client.Update(context.TODO(), manager)
 }
 
-func requireOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
+func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
 	t.Run("then Memcached has updated image", func(t *testing.T) {
 		t.Parallel()
 		mmContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
@@ -181,7 +177,7 @@ func requireOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, mana
 			Client:        f.Client,
 			Logger:        log,
 		}.ForPodImageChange(f.KubeClient, "Memcached="+manager.Spec.Services.Memcached.Name, mmContainerImage, "memcached")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	})
 }
 
