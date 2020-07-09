@@ -42,7 +42,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -51,7 +51,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -65,7 +65,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
 				newKeystone(
-					contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+					contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 					[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 				),
 				newExpectedDeployment(apps.DeploymentStatus{}),
@@ -79,7 +79,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -92,7 +92,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
@@ -104,7 +104,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
@@ -116,7 +116,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{Active: true}),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
 				newAdminSecret(),
@@ -126,7 +126,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 		},
@@ -135,7 +135,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxyWithCustomImages(),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -144,7 +144,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeploymentWithCustomImages(),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}},
+				contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 		},
@@ -652,7 +652,7 @@ use = egg:swift#proxy_logging
 
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-auth_url = https://10.0.2.15:5555
+auth_url = https://10.0.2.16:5555
 auth_type = password
 auth_protocol = https
 insecure = true
@@ -762,7 +762,7 @@ const registerPlaybook = `
 
 var registerConfig = `
 openstack_auth:
-  auth_url: "https://10.0.2.15:5555/v3"
+  auth_url: "https://10.0.2.16:5555/v3"
   username: "admin"
   password: "test123"
   project_name: "admin"
