@@ -175,7 +175,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneIP := keystone.Status.IPs[0]
+	keystoneIP := keystone.Status.ClusterIP
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 
 	commandConfigName := command.Name + "-command-configmap"
