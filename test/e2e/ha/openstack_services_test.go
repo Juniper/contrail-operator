@@ -6,10 +6,6 @@ import (
 	"testing"
 	"time"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"github.com/Juniper/contrail-operator/test/logger"
-	"github.com/Juniper/contrail-operator/test/wait"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/test/logger"
+	"github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestHAOpenStackServices(t *testing.T) {
@@ -34,7 +35,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
 	namespace, err := ctx.GetNamespace()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	f := test.Global
 
 	t.Run("given contrail operator is running", func(t *testing.T) {
@@ -42,7 +43,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		if err != nil {
 			log.DumpPods()
 		}
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		w := wait.Wait{
 			Namespace:     namespace,
@@ -54,14 +55,16 @@ func TestHAOpenStackServices(t *testing.T) {
 
 		cluster := getHAOpenStackCluster(namespace)
 
-		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
+		t.Run("when manager resource with OpenStack services and dependencies is created", func(t *testing.T) {
 			var replicas int32 = 1
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
 				return nil
 			})
 			require.NoError(t, err)
-			assertOpenStackReplicasReady(t, w, 1)
+			t.Run("then OpenStack services have single replica ready", func(t *testing.T) {
+				assertOpenStackReplicasReady(t, w, 1)
+			})
 		})
 
 		t.Run("when replicas is set to 3 in manager", func(t *testing.T) {

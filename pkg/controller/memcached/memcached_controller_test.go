@@ -100,7 +100,7 @@ func TestMemcachedController(t *testing.T) {
 		})
 	})
 
-	t.Run("when Memcached CR is scaled and Memcached Deployment exist (changed)", func(t *testing.T) {
+	t.Run("when Memcached CR is scaled and Memcached Deployment already exists", func(t *testing.T) {
 		// given
 		replicas := int32(3)
 		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
