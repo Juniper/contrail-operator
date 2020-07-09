@@ -25,7 +25,11 @@ import (
 func TestHAOpenStackServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
-	log := logger.New(t, "contrail", test.Global.Client)
+
+	namespace, err := ctx.GetNamespace()
+
+	require.NoError(t, err)
+	log := logger.New(t, namespace, test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -34,8 +38,7 @@ func TestHAOpenStackServices(t *testing.T) {
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
-	namespace, err := ctx.GetNamespace()
-	require.NoError(t, err)
+
 	f := test.Global
 
 	t.Run("given contrail operator is running", func(t *testing.T) {
@@ -55,7 +58,7 @@ func TestHAOpenStackServices(t *testing.T) {
 
 		cluster := getHAOpenStackCluster(namespace)
 
-		t.Run("when manager resource with OpenStack services and dependencies is created", func(t *testing.T) {
+		t.Run("when cluster with OpenStack services and dependencies is created", func(t *testing.T) {
 			var replicas int32 = 1
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
@@ -67,7 +70,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 		})
 
-		t.Run("when replicas is set to 3 in manager", func(t *testing.T) {
+		t.Run("when cluster is scaled from 1 to 3", func(t *testing.T) {
 			var replicas int32 = 3
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
@@ -79,15 +82,15 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 		})
 
-		t.Run("when manager resource is upgraded", func(t *testing.T) {
-			manager := &contrail.Manager{}
-			err := f.Client.Get(context.TODO(), types.NamespacedName{Name: "openstack", Namespace: namespace}, manager)
+		t.Run("when cluster services are upgraded", func(t *testing.T) {
+			cluster := &contrail.Manager{}
+			err := f.Client.Get(context.TODO(), types.NamespacedName{Name: "openstack", Namespace: namespace}, cluster)
 			assert.NoError(t, err)
-			err = updateOpenStackManagerImages(f, manager)
+			err = updateOpenStackManagerImages(f, cluster)
 			assert.NoError(t, err)
 
 			t.Run("then all Pods have updated image", func(t *testing.T) {
-				assertOpenStackPodsHaveUpdatedImages(t, f, manager, log)
+				assertOpenStackPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
@@ -143,7 +146,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
+			t.Run("then cluster is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
 					Timeout:       time.Minute * 5,

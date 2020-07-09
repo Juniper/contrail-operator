@@ -52,7 +52,11 @@ var targetVersionMap = map[string]string{
 func TestHACoreContrailServices(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
-	log := logger.New(t, "contrail", test.Global.Client)
+
+	namespace, err := ctx.GetNamespace()
+	require.NoError(t, err)
+
+	log := logger.New(t, namespace, test.Global.Client)
 
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
@@ -61,8 +65,7 @@ func TestHACoreContrailServices(t *testing.T) {
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
-	namespace, err := ctx.GetNamespace()
-	assert.NoError(t, err)
+
 	f := test.Global
 
 	proxy, err := kubeproxy.New(f.KubeConfig)
