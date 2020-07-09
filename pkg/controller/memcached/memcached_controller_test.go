@@ -118,7 +118,7 @@ func TestMemcachedController(t *testing.T) {
 		})
 	})
 
-	t.Run("when Memcached CR image is updated and Memcached Deployment exist (changed)", func(t *testing.T) {
+	t.Run("when Memcached CR image is updated and Memcached Deployment already exists", func(t *testing.T) {
 		// given
 		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		memcachedCR.Spec.ServiceConfiguration.Containers = []*contrail.Container{
