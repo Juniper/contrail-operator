@@ -79,7 +79,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
+	if err != nil {
+		return err
+	}
 
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Keystone{},
+	})
 	return err
 }
 
