@@ -584,12 +584,10 @@ func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone,
 ) error {
 	keystoneService := newKeystoneService(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
-		/*keystoneService.Spec = core.ServiceSpec{
-			Ports: []core.ServicePort{
-				{Port: 5555, Protocol: "TCP"},
-			},
-			Selector: map[string]string{"keystone": keystone.Name},
-		}*/
+		keystoneService.Spec.Ports = []core.ServicePort{
+			{Port: 5555, Protocol: "TCP"},
+		}
+		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
 		return nil
 	})
 	return err
@@ -601,12 +599,6 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 			Name:      cr.Name + "-service",
 			Namespace: cr.Namespace,
 			Labels:    map[string]string{"service": cr.Name},
-		},
-		Spec: core.ServiceSpec{
-			Ports: []core.ServicePort{
-				{Port: 5555, Protocol: "TCP"},
-			},
-			Selector: map[string]string{"keystone": cr.Name},
 		},
 	}
 }
