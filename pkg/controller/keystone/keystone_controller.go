@@ -120,24 +120,24 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	keystoneService := newKeystoneService(keystone)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error { return nil })
+	if err := r.ensureServiceExists(keystone); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	keystoneServiceList := &core.ServiceList{}
-	labelSelector := labels.SelectorFromSet(map[string]string{"service": keystone.Name})
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	if err := r.client.List(context.TODO(), keystoneServiceList, &listOpts); err != nil {
-		return reconcile.Result{}, err
+	keystoneServices, err := r.listKeystoneServices(keystone.Name)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to list keystone services: %v", err)
 	}
-	var keystoneClusterIP string
-	if len(keystoneServiceList.Items) > 0 {
-		keystoneClusterIP = keystoneServiceList.Items[0].Spec.ClusterIP
+
+	if len(keystoneServices.Items) == 0 {
+		return reconcile.Result{}, nil
 	}
+	keystoneClusterIP := keystoneServices.Items[0].Spec.ClusterIP
 
 	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
@@ -564,18 +564,37 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 	return pods, nil
 }
 
+func (r *ReconcileKeystone) listKeystoneServices(keystoneName string) (*core.ServiceList, error) {
+	keystoneServiceList := &core.ServiceList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"service": keystoneName})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), keystoneServiceList, &listOpts); err != nil {
+		return &core.ServiceList{}, err
+	}
+	return keystoneServiceList, nil
+}
+
+func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone,
+) error {
+	keystoneService := newKeystoneService(keystone)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
+		keystoneService.Spec = core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 5555, Protocol: "TCP"},
+			},
+			Selector: map[string]string{"keystone": keystone.Name},
+		}
+		return nil
+	})
+	return err
+}
+
 func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	return &core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-service",
 			Namespace: cr.Namespace,
 			Labels:    map[string]string{"service": cr.Name},
-		},
-		Spec: core.ServiceSpec{
-			Ports: []core.ServicePort{
-				{Port: 5555, Protocol: "TCP"},
-			},
-			Selector: map[string]string{"keystone": cr.Name},
 		},
 	}
 }
