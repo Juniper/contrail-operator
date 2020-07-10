@@ -241,10 +241,6 @@ spec:
             image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005
           - name: keystone
             image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005
-          - name: keystoneSsh
-            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone-ssh:train-2005
-          - name: keystoneFernet
-            image: registry:5000/common-docker-third-party/contrail/centos-binary-keystone-fernet:train-2005
     postgres:
       metadata:
         name: postgres

@@ -201,16 +201,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	kfcName := keystone.Name + "-keystone-fernet"
-	if err = r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Endpoint); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	kscName := keystone.Name + "-keystone-ssh"
-	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(keystonePodIP); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	kciName := keystone.Name + "-keystone-init"
 	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
@@ -221,7 +211,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, keySecretName, claimName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, keySecretName, claimName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -230,7 +220,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kfcName, kscName, kciName, secretName string,
+	kcName, kciName, secretName string,
 	claimName types.NamespacedName,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
@@ -251,26 +241,6 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
 							Name: kcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-fernet-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kfcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-ssh-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kscName,
 						},
 					},
 				},
@@ -410,8 +380,8 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Env:             newKollaEnvs("keystone"),
 							Command:         getCommand(cr, "keystoneInit"),
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 					},
@@ -423,9 +393,9 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Env:             newKollaEnvs("keystone"),
 							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: cr.Name + "-secret-certificates", MountPath: "/etc/certificates"},
+								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: cr.Name + "-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
@@ -441,30 +411,6 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 								Requests: core.ResourceList{
 									"cpu": resource.MustParse("2"),
 								},
-							},
-						},
-						{
-							Name:            "keystone-ssh",
-							Image:           getImage(cr, "keystoneSsh"),
-							Command:         getCommand(cr, "keystoneSsh"),
-							ImagePullPolicy: core.PullAlways,
-							Env:             newKollaEnvs("keystone-ssh"),
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
-						{
-							Name:            "keystone-fernet",
-							Image:           getImage(cr, "keystoneFernet"),
-							Command:         getCommand(cr, "keystoneFernet"),
-							ImagePullPolicy: core.PullAlways,
-							Env:             newKollaEnvs("keystone-fernet"),
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
 							},
 						},
 					},
@@ -493,8 +439,6 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 		"keystoneDbInit":      "localhost:5000/postgresql-client",
 		"keystoneInit":        "localhost:5000/centos-binary-keystone:train",
 		"keystone":            "localhost:5000/centos-binary-keystone:train",
-		"keystoneSsh":         "localhost:5000/centos-binary-keystone-ssh:train",
-		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 	c := utils.GetContainerFromList(containerName, cr.Spec.ServiceConfiguration.Containers)

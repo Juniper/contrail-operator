@@ -44,21 +44,3 @@ func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string,
 
 	return c.cm.EnsureExists(cc)
 }
-
-func (c *configMaps) ensureKeystoneFernetConfigMap(postgresNode, memcachedNode string) error {
-	cc := &keystoneFernetConf{
-		RabbitMQServer:   "localhost:5672",
-		PostgreSQLServer: postgresNode,
-		MemcacheServer:   memcachedNode,
-	}
-
-	return c.cm.EnsureExists(cc)
-}
-
-func (c *configMaps) ensureKeystoneSSHConfigMap(podIP string) error {
-	cc := &keystoneSSHConf{
-		ListenAddress: podIP,
-	}
-
-	return c.cm.EnsureExists(cc)
-}

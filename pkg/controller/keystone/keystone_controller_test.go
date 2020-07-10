@@ -54,8 +54,6 @@ func TestKeystone(t *testing.T) {
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -84,8 +82,6 @@ func TestKeystone(t *testing.T) {
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -102,8 +98,6 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				newExpectedSTS(),
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -118,8 +112,6 @@ func TestKeystone(t *testing.T) {
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -480,8 +472,8 @@ func newExpectedSTS() *apps.StatefulSet {
 								Value: "COPY_ALWAYS",
 							}},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 					},
@@ -498,9 +490,9 @@ func newExpectedSTS() *apps.StatefulSet {
 								Value: "COPY_ALWAYS",
 							}},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
+								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
@@ -518,44 +510,10 @@ func newExpectedSTS() *apps.StatefulSet {
 								},
 							},
 						},
-						{
-							Image:           "localhost:5000/centos-binary-keystone-ssh:train",
-							Name:            "keystone-ssh",
-							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone-ssh",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
-						{
-							Image:           "localhost:5000/centos-binary-keystone-fernet:train",
-							Name:            "keystone-fernet",
-							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone-fernet",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
 					},
 					Tolerations: []core.Toleration{
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 					Volumes: []core.Volume{
 						{
@@ -572,26 +530,6 @@ func newExpectedSTS() *apps.StatefulSet {
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "keystone-keystone",
-									},
-								},
-							},
-						},
-						{
-							Name: "keystone-fernet-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "keystone-keystone-fernet",
-									},
-								},
-							},
-						},
-						{
-							Name: "keystone-ssh-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "keystone-keystone-ssh",
 									},
 								},
 							},
@@ -762,49 +700,6 @@ func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	}
 }
 
-func newExpectedKeystoneFernetConfigMap() *core.ConfigMap {
-	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{
-			"config.json":         expectedKeystoneFernetKollaServiceConfig,
-			"keystone.conf":       expectedKeystoneConfig,
-			"crontab":             expectedCrontab,
-			"fernet-node-sync.sh": expectedFernetNodeSyncScript,
-			"fernet-push.sh":      expectedFernetPushScript,
-			"fernet-rotate.sh":    expectedFernetRotateScript,
-			"ssh_config":          expectedSshConfig,
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-fernet",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-	}
-}
-
-func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
-	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{
-			"config.json": expectedkeystoneSSHKollaServiceConfig,
-			"sshd_config": expectedSSHDConfig,
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-ssh",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-	}
-}
-
 func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
@@ -839,14 +734,6 @@ func newKeystoneWithCustomImages() *contrail.Keystone {
 		{
 			Name:  "keystone",
 			Image: "image3",
-		},
-		{
-			Name:  "keystoneSsh",
-			Image: "image4",
-		},
-		{
-			Name:  "keystoneFernet",
-			Image: "image5",
 		},
 	}
 
@@ -932,40 +819,6 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 				Requests: core.ResourceList{
 					"cpu": resource.MustParse("2"),
 				},
-			},
-		},
-		{
-			Image:           "image4",
-			Name:            "keystone-ssh",
-			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone-ssh",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-			},
-		},
-		{
-			Image:           "image5",
-			Name:            "keystone-fernet",
-			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone-fernet",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
 			},
 		},
 	}

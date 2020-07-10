@@ -4,10 +4,8 @@ go_library(
     name = "go_default_library",
     srcs = [
         "keystone_config.go",
-        "keystone_config_fernet.go",
         "keystone_config_init.go",
         "keystone_config_maps.go",
-        "keystone_config_ssh.go",
         "keystone_controller.go",
         "keystone_keys.go",
     ],
