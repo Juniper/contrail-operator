@@ -6,9 +6,9 @@ import (
 
 // FernetKeyManagerSpec defines the desired state of FernetKeyManager
 type FernetKeyManagerSpec struct {
-	TokenExpiration int `json:"tokenExpiration"`
+	TokenExpiration         int `json:"tokenExpiration"`
 	TokenAllowExpiredWindow int `json:"tokenAllowExpiredWindow"`
-	RotationFrequency int `json:"rotationFrequency"`
+	RotationInterval        int `json:"rotationFrequency"`
 }
 
 // FernetKeyManagerStatus defines the observed state of FernetKeyManager
