@@ -128,9 +128,6 @@ spec:
           containers:
           - name: init
             image: python:3.8.2-alpine
-            env:
-              - name: CONTRAIL_STATUS_IMAGE
-                value: dysproz/contrail-status:dev
           - name: rabbitmq
             image: rabbitmq:3.7
     webui:
