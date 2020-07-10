@@ -10,6 +10,7 @@ spec:
     keystoneSecretInstance : cluster1-admin-password
     imagePullSecrets:
       - contrail-registry
+    contrailStatusImage: dysproz/contrail-status:dev
   services:
     cassandras:
     - metadata:

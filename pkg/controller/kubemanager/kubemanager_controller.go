@@ -523,6 +523,15 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
+		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+				{
+					Name: "CONTRAIL_STATUS_IMAGE",
+					Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+				},
+			}
+		}
+
 	}
 
 	configChanged := false

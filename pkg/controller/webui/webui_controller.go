@@ -452,6 +452,15 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
+		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+				{
+					Name: "CONTRAIL_STATUS_IMAGE",
+					Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+				},
+			}
+		}
+
 	}
 
 	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request,

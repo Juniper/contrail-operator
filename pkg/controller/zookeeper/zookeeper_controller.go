@@ -309,6 +309,14 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: zookeeperDefaultConfiguration.Storage.Path,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			if instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+				(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+					{
+						Name: "CONTRAIL_STATUS_IMAGE",
+						Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+					},
+				}
+			}
 		}
 	}
 

@@ -678,6 +678,14 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
+		if container.Name == "init" && config.Spec.CommonConfiguration.ContrailStatusImage != "" {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+				{
+					Name: "CONTRAIL_STATUS_IMAGE",
+					Value: config.Spec.CommonConfiguration.ContrailStatusImage,
+				},
+			}
+		}
 	}
 
 	configChanged := false

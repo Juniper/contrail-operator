@@ -41,6 +41,9 @@ spec:
                   description: Activate defines if the service will be activated by
                     Manager.
                   type: boolean
+                contrailStatusImage:
+                  description: Contrail Status Container Image.
+                  type: string
                 create:
                   description: Create defines if the service will be created by Manager.
                   type: boolean
@@ -144,6 +147,9 @@ spec:
                                 description: Activate defines if the service will
                                   be activated by Manager.
                                 type: boolean
+                              contrailStatusImage:
+                                description: Contrail Status Container Image.
+                                type: string
                               create:
                                 description: Create defines if the service will be
                                   created by Manager.
@@ -326,6 +332,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -480,6 +489,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -694,6 +706,9 @@ spec:
                                 description: Activate defines if the service will
                                   be activated by Manager.
                                 type: boolean
+                              contrailStatusImage:
+                                description: Contrail Status Container Image.
+                                type: string
                               create:
                                 description: Create defines if the service will be
                                   created by Manager.
@@ -872,6 +887,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -1030,6 +1048,9 @@ spec:
                                 description: Activate defines if the service will
                                   be activated by Manager.
                                 type: boolean
+                              contrailStatusImage:
+                                description: Contrail Status Container Image.
+                                type: string
                               create:
                                 description: Create defines if the service will be
                                   created by Manager.
@@ -1335,6 +1356,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -1508,6 +1532,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -1815,6 +1842,9 @@ spec:
                                 description: Activate defines if the service will
                                   be activated by Manager.
                                 type: boolean
+                              contrailStatusImage:
+                                description: Contrail Status Container Image.
+                                type: string
                               create:
                                 description: Create defines if the service will be
                                   created by Manager.
@@ -1995,6 +2025,9 @@ spec:
                               description: Activate defines if the service will be
                                 activated by Manager.
                               type: boolean
+                            contrailStatusImage:
+                              description: Contrail Status Container Image.
+                              type: string
                             create:
                               description: Create defines if the service will be created
                                 by Manager.
@@ -2150,6 +2183,9 @@ spec:
                                 description: Activate defines if the service will
                                   be activated by Manager.
                                 type: boolean
+                              contrailStatusImage:
+                                description: Contrail Status Container Image.
+                                type: string
                               create:
                                 description: Create defines if the service will be
                                   created by Manager.

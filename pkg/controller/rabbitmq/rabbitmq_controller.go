@@ -288,6 +288,15 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
+		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+				{
+					Name: "CONTRAIL_STATUS_IMAGE",
+					Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+				},
+			}
+		}
+
 	}
 
 	//err = r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: instance.Namespace}, secret)

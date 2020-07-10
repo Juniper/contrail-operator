@@ -533,6 +533,15 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = volumeMountList
 			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 		}
+		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
+				{
+					Name: "CONTRAIL_STATUS_IMAGE",
+					Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+				},
+			}
+		}
+
 
 	}
 	if err = instance.CreateDS(daemonSet, &instance.Spec.CommonConfiguration, instanceType, request,
