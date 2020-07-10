@@ -135,7 +135,6 @@ var keystone = &v1alpha1.Keystone{
 		},
 	},
 	Status: v1alpha1.KeystoneStatus{
-		IPs:       []string{"10.11.12.13"},
 		ClusterIP: "10.11.12.14",
 	},
 }

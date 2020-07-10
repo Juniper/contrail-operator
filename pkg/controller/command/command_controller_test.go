@@ -46,7 +46,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwiftWithEmptyCredentialsSecretName(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 		"no Swift": {
@@ -86,7 +86,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 		"no Keystone": {
@@ -104,7 +104,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 		"no admin secret": {
@@ -113,7 +113,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 		"no Swift container exists": {
@@ -123,7 +123,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 		},
 	}
@@ -152,7 +152,7 @@ func TestCommand(t *testing.T) {
 			newAdminSecret(),
 			newSwiftSecret(),
 			newSwiftWithEmptyCredentialsSecretName(false),
-			newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+			newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		conf := &rest.Config{}
@@ -185,7 +185,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -200,7 +200,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -216,7 +216,7 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 				newPodList(),
 			},
 			expectedStatus:     contrail.CommandStatus{},
@@ -235,7 +235,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -253,7 +253,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 			expectedStatus:     contrail.CommandStatus{},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -271,7 +271,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newKeystone(contrail.KeystoneStatus{Active: true, IPs: []string{"10.0.2.15"}, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Active: true,

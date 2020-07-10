@@ -148,7 +148,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 			return reconcile.Result{}, err
 		}
 	}
-
 	psql, err := r.getPostgres(keystone)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -195,12 +194,10 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	ips := keystone.Status.IPs
-	if len(ips) == 0 {
-		ips = []string{"0.0.0.0"}
-	}
+	keystonePodIP := keystonePods.Items[0].Status.PodIP
+
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -210,12 +207,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kscName := keystone.Name + "-keystone-ssh"
-	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(ips[0]); err != nil {
+	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -340,21 +337,9 @@ func (r *ReconcileKeystone) updateStatus(
 	if sts.Spec.Replicas != nil {
 		intendentReplicas = *sts.Spec.Replicas
 	}
-
-	pods := core.PodList{}
-	var labels client.MatchingLabels = sts.Spec.Selector.MatchLabels
-	if err := r.client.List(context.Background(), &pods, labels); err != nil {
-		return err
-	}
 	if sts.Status.ReadyReplicas == intendentReplicas {
 		k.Status.Active = true
 		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
-	}
-	k.Status.IPs = []string{}
-	for _, pod := range pods.Items {
-		if pod.Status.PodIP != "" {
-			k.Status.IPs = append(k.Status.IPs, pod.Status.PodIP)
-		}
 	}
 	k.Status.ClusterIP = cip
 	return r.client.Status().Update(context.Background(), k)

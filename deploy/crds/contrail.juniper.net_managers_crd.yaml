@@ -994,10 +994,6 @@ spec:
                           type: boolean
                         clusterIP:
                           type: string
-                        ips:
-                          items:
-                            type: string
-                          type: array
                         port:
                           type: integer
                       type: object
