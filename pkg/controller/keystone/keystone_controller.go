@@ -127,24 +127,16 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.ensureServiceExists(keystone); err != nil {
+	keystoneService, err := r.ensureServiceExists(keystone)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	keystoneServices, err := r.listKeystoneServices(keystone.Name)
-	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("failed to list keystone services: %v", err)
-	}
-
-	if len(keystoneServices.Items) == 0 {
-		return reconcile.Result{}, nil
-	}
-	keystoneClusterIP := keystoneServices.Items[0].Spec.ClusterIP
+	keystoneClusterIP := keystoneService.Spec.ClusterIP
 
 	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
@@ -571,18 +563,7 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 	return pods, nil
 }
 
-func (r *ReconcileKeystone) listKeystoneServices(keystoneName string) (*core.ServiceList, error) {
-	keystoneServiceList := &core.ServiceList{}
-	labelSelector := labels.SelectorFromSet(map[string]string{"service": keystoneName})
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	if err := r.client.List(context.TODO(), keystoneServiceList, &listOpts); err != nil {
-		return &core.ServiceList{}, err
-	}
-	return keystoneServiceList, nil
-}
-
-func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone,
-) error {
+func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone) (*core.Service, error) {
 	keystoneService := newKeystoneService(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
 		keystoneService.Spec.Ports = []core.ServicePort{
@@ -592,10 +573,10 @@ func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone,
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)
-	return err
+	return keystoneService, err
 }
 
 func newKeystoneService(cr *contrail.Keystone) *core.Service {
