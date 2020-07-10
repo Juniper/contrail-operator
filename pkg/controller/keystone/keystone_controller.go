@@ -84,7 +84,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
-		OwnerType: &contrail.Keystone{},
+		IsController: true,
+		OwnerType:    &contrail.Keystone{},
 	})
 	return err
 }
@@ -590,6 +591,10 @@ func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone,
 		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	err = controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)
 	return err
 }
 
