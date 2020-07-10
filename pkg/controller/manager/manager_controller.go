@@ -375,6 +375,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		zookeeperService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
+
 		cr := cr.GetZookeeperCr()
 		cr.ObjectMeta = zookeeperService.ObjectMeta
 		cr.Labels = zookeeperService.ObjectMeta.Labels
@@ -382,7 +384,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = zookeeperService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Zookeeper"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		for _, zookeeperStatus := range instance.Status.Zookeepers {
 			if zookeeperService.Name == *zookeeperStatus.Name {
 				if *zookeeperService.Spec.CommonConfiguration.Create && *zookeeperStatus.Created {
@@ -522,7 +523,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		webuiService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
 		cr.Labels = webuiService.ObjectMeta.Labels
@@ -530,7 +534,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = webuiService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Webui"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		if instance.Status.Webui != nil {
 			if *webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
 				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -657,7 +660,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *provisionManagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
+		provisionManagerService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetProvisionManagerCr()
 		cr.ObjectMeta = provisionManagerService.ObjectMeta
 		cr.Labels = provisionManagerService.ObjectMeta.Labels
@@ -665,7 +671,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = provisionManagerService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "ProvisionManager"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		if instance.Status.ProvisionManager != nil {
 			if *provisionManagerService.Spec.CommonConfiguration.Create && *instance.Status.ProvisionManager.Created {
 				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -794,7 +799,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		configService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
 		cr.Labels = configService.ObjectMeta.Labels
@@ -802,7 +809,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = configService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Config"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 
 		if instance.Status.Config != nil {
 			if *configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
@@ -930,6 +936,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		kubemanagerService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
+
 		cr := cr.GetKubemanagerCr()
 		cr.ObjectMeta = kubemanagerService.ObjectMeta
 		cr.Labels = kubemanagerService.ObjectMeta.Labels
@@ -937,7 +945,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Kubemanager"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		for _, kubemanagerStatus := range instance.Status.Kubemanagers {
 			if kubemanagerService.Name == *kubemanagerStatus.Name {
 				if *kubemanagerService.Spec.CommonConfiguration.Create && *kubemanagerStatus.Created {
@@ -1077,6 +1084,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		controlService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
+
 		cr := cr.GetControlCr()
 		cr.ObjectMeta = controlService.ObjectMeta
 		cr.Labels = controlService.ObjectMeta.Labels
@@ -1084,7 +1093,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = controlService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Control"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		for _, controlStatus := range instance.Status.Controls {
 			if controlService.Name == *controlStatus.Name {
 				if *controlService.Spec.CommonConfiguration.Create && *controlStatus.Created {
@@ -1226,6 +1234,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		rabbitmqService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
+
 		cr := cr.GetRabbitmqCr()
 		cr.ObjectMeta = rabbitmqService.ObjectMeta
 		cr.Labels = rabbitmqService.ObjectMeta.Labels
@@ -1233,7 +1243,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = rabbitmqService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Rabbitmq"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		if instance.Status.Rabbitmq != nil {
 			if *rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
 				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
@@ -1353,6 +1362,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
+		vrouterService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
+
 		cr := cr.GetVrouterCr()
 		cr.ObjectMeta = vrouterService.ObjectMeta
 		cr.Labels = vrouterService.ObjectMeta.Labels
@@ -1360,7 +1371,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		cr.Spec.ServiceConfiguration = vrouterService.Spec.ServiceConfiguration
 		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
 		cr.TypeMeta.Kind = "Vrouter"
-		cr.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		for _, vrouterStatus := range instance.Status.Vrouters {
 			if vrouterService.Name == *vrouterStatus.Name {
 				if *vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
