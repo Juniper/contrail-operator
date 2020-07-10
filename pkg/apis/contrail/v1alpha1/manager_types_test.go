@@ -297,7 +297,6 @@ var memcached = &contrail.Memcached{
 			MaxMemory:       256,
 		},
 	},
-	Status: contrail.MemcachedStatus{Active: falseVal},
 }
 
 var postgres = &contrail.Postgres{
