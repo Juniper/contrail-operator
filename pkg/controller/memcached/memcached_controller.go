@@ -135,18 +135,10 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	if err != nil {
 		return err
 	}
-	expectedReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		expectedReplicas = *deployment.Spec.Replicas
-	}
-	if deployment.Status.ReadyReplicas == expectedReplicas {
-		ip := "127.0.0.1" // memcached is available only on localhost for security reasons, after configuring SSL this should be changed to pods.Items[0].Status.PodIP
-		port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
-		memcachedCR.Status.Endpoint = fmt.Sprintf("%s:%d", ip, port)
-		memcachedCR.Status.Active = true
-	} else {
-		memcachedCR.Status.Active = false
-	}
+	ip := "127.0.0.1" // memcached is available only on localhost for security reasons, after configuring SSL this should be changed to pods.Items[0].Status.PodIP
+	port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
+	memcachedCR.Status.Endpoint = fmt.Sprintf("%s:%d", ip, port)
+	memcachedCR.Status.Status.FromDeployment(deployment)
 	return r.client.Status().Update(context.Background(), memcachedCR)
 }
 

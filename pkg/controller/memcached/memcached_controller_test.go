@@ -141,7 +141,7 @@ func TestMemcachedController(t *testing.T) {
 
 	t.Run("when Memcached Deployment ReadyReplicas count is equal expected Replicas count", func(t *testing.T) {
 		// given
-		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: false})
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		existingMemcachedDeployment := newExpectedDeployment()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
@@ -158,7 +158,7 @@ func TestMemcachedController(t *testing.T) {
 
 	t.Run("when Memcached Deployment ReadyReplicas count is not equal expected Replicas count", func(t *testing.T) {
 		// given
-		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: true})
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Status: contrail.Status{Active: true}, Endpoint: ""})
 		existingMemcachedDeployment := newExpectedDeployment()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
@@ -244,6 +244,8 @@ func assertMemcachedIsActiveAndNodeStatusIsSet(t *testing.T, c client.Client) {
 	assert.NoError(t, err)
 	assert.True(t, memcachedCR.Status.Active)
 	assert.Equal(t, "127.0.0.1:11211", memcachedCR.Status.Endpoint)
+	assert.Equal(t, 1, int(memcachedCR.Status.Replicas))
+	assert.Equal(t, 1, int(memcachedCR.Status.ReadyReplicas))
 }
 
 func assertMemcachedIsInactive(t *testing.T, c client.Client) {
@@ -251,6 +253,8 @@ func assertMemcachedIsInactive(t *testing.T, c client.Client) {
 	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
 	assert.NoError(t, err)
 	assert.False(t, memcachedCR.Status.Active)
+	assert.Equal(t, 1, int(memcachedCR.Status.Replicas))
+	assert.Equal(t, 0, int(memcachedCR.Status.ReadyReplicas))
 }
 
 func newExpectedDeployment() *apps.Deployment {
