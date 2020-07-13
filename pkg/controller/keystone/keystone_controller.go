@@ -126,7 +126,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if !keystone.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
+	keystoneClusterIP := "0.0.0.0"
 	keystoneService, err := r.ensureServiceExists(keystone)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -136,13 +136,15 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	keystoneClusterIP := keystoneService.Spec.ClusterIP
+	keystoneClusterIP = keystoneService.Spec.ClusterIP
 
 	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
+	keystonePodIP := "0.0.0.0"
 	if len(keystonePods.Items) > 0 {
+		keystonePodIP = keystonePods.Items[0].Status.PodIP
 		err = contrail.SetPodsToReady(keystonePods, r.client)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -193,8 +195,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
-
-	keystonePodIP := keystonePods.Items[0].Status.PodIP
 
 	kcName := keystone.Name + "-keystone"
 	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, keystonePodIP); err != nil {

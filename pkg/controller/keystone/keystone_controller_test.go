@@ -49,6 +49,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -64,6 +65,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
+			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
 		{
 			name: "set active status",
@@ -76,8 +78,9 @@ func TestKeystone(t *testing.T) {
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
@@ -110,6 +113,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
@@ -125,6 +129,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
+			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
 		{
 			name: "statefulset shouldn't be created when postgres is not active",
@@ -135,6 +140,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS:     &apps.StatefulSet{},
 			expectedConfigs: []*core.ConfigMap{},
@@ -157,6 +163,7 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
 			expectedConfigs: []*core.ConfigMap{},
@@ -167,6 +174,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 			},
+			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
 		{
 			name: "create secret with ssh keys pair",
@@ -178,9 +186,10 @@ func TestKeystone(t *testing.T) {
 				},
 				newMemcached(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{},
+			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
@@ -203,9 +212,10 @@ func TestKeystone(t *testing.T) {
 				newMemcached(),
 				newExpectedSecretWithKeys(),
 				newAdminSecret(),
+				newKeystoneService(),
 			},
 			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{},
+			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 			expectedPostgres: &contrail.Postgres{
 				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
@@ -663,6 +673,26 @@ func newAdminSecret() *core.Secret {
 		},
 		Data: map[string][]byte{
 			"password": []byte("test123"),
+		},
+	}
+}
+
+func newKeystoneService() *core.Service {
+	trueVal := true
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-service",
+			Namespace: "default",
+			Labels:    map[string]string{"service": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 5555, Protocol: "TCP"},
+			},
+			ClusterIP: "10.10.10.10",
 		},
 	}
 }
