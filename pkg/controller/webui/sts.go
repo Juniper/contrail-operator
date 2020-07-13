@@ -1,160 +1,215 @@
 package webui
 
 import (
-	"github.com/ghodss/yaml"
-	appsv1 "k8s.io/api/apps/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var yamlDatawebui_sts = `
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: webui
-spec:
-  selector:
-    matchLabels:
-      app: webui
-  serviceName: "webui"
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: webui
-        contrail_manager: webui
-    spec:
-      initContainers:
-        - name: nodeinit
-          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/opencontrailnightly/contrail-status:latest
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          securityContext:
-            privileged: true
-          volumeMounts:
-            - mountPath: /host/usr/bin
-              name: host-usr-local-bin
-        - name: init
-          image: busybox
-          command:
-            - sh
-            - -c
-            - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: hub.juniper.net/contrail-nightly/contrail-status:5.2.0-0.740
-          imagePullPolicy: Always
-          resources: {}
-          securityContext:
-            privileged: false
-            procMount: Default
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-          volumeMounts:
-            - mountPath: /tmp/podinfo
-              name: status
-      containers:
-        - name: webuiweb
-          image: docker.io/michaelhenkel/contrail-controller-webui-web:5.2.0-dev1
-          env:
-            - name: WEBUI_SSL_KEY_FILE
-              value: /etc/contrail/webui_ssl/cs-key.pem
-            - name: WEBUI_SSL_CERT_FILE
-              value: /etc/contrail/webui_ssl/cs-cert.pem
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: ANALYTICSDB_ENABLE
-              value: "true"
-            - name: ANALYTICS_SNMP_ENABLE
-              value: "true"
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: webui-logs
-        - name: webuijob
-          image: docker.io/michaelhenkel/contrail-controller-webui-job:5.2.0-dev1
-          env:
-            - name: WEBUI_SSL_KEY_FILE
-              value: /etc/contrail/webui_ssl/cs-key.pem
-            - name: WEBUI_SSL_CERT_FILE
-              value: /etc/contrail/webui_ssl/cs-cert.pem
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: webui-logs
-        - name: redis
-          image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: webui-logs
-            - mountPath: /var/lib/redis
-              name: webui-data
-      dnsPolicy: ClusterFirst
-      hostNetwork: true
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      restartPolicy: Always
-      tolerations:
-        - effect: NoSchedule
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
-      volumes:
-        - hostPath:
-            path: /var/lib/contrail/webui
-            type: ""
-          name: webui-data
-        - hostPath:
-            path: /var/log/contrail/webui
-            type: ""
-          name: webui-logs
-        - hostPath:
-            path: /usr/local/bin
-            type: ""
-          name: host-usr-local-bin
-        - downwardAPI:
-            defaultMode: 420
-            items:
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labels
-              - fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.labels
-                path: pod_labelsx
-          name: status`
+// GetSTS returns StatesfulSet sample object of webUI
+func GetSTS() *apps.StatefulSet {
+	var replicas = int32(1)
+	var labelsMountPermission int32 = 0644
+	var trueVal = true
 
-// GetSTS returns StatesfulSet object created from YAML yamlDatawebui_sts
-func GetSTS() *appsv1.StatefulSet {
-	sts := appsv1.StatefulSet{}
-	err := yaml.Unmarshal([]byte(yamlDatawebui_sts), &sts)
-	if err != nil {
-		panic(err)
+	var podIPEnv = core.EnvVar{
+		Name: "POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
+			},
+		},
 	}
-	jsonData, err := yaml.YAMLToJSON([]byte(yamlDatawebui_sts))
-	if err != nil {
-		panic(err)
+
+	var webuiLogsMount = core.VolumeMount{
+		Name:      "webui-logs",
+		MountPath: "/var/log/contrail",
 	}
-	err = yaml.Unmarshal([]byte(jsonData), &sts)
-	if err != nil {
-		panic(err)
+
+	var contrailStatusImageEnv = core.EnvVar{
+		Name:  "CONTRAIL_STATUS_IMAGE",
+		Value: "docker.io/opencontrailnightly/contrail-status:latest",
 	}
-	return &sts
+
+	var podInitContainers = []core.Container{
+		{
+			Name:  "nodeinit",
+			Image: " docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
+			Env: []core.EnvVar{
+				contrailStatusImageEnv,
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "host-usr-local-bin",
+					MountPath: "/host/usr/bin",
+				},
+			},
+		},
+		{
+			Name:  "init",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
+			},
+			Env: []core.EnvVar{
+				contrailStatusImageEnv,
+			},
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "status",
+					MountPath: "/tmp/podinfo",
+				},
+			},
+			ImagePullPolicy: "Always",
+			SecurityContext: &core.SecurityContext{
+				Privileged: &trueVal,
+			},
+			TerminationMessagePath:   "/dev/termination-log",
+			TerminationMessagePolicy: core.TerminationMessageReadFile,
+		},
+	}
+
+	var podContainers = []core.Container{
+		{
+			Name:  "webui",
+			Image: "docker.io/michaelhenkel/contrail-controller-webui-web:5.2.0-dev1",
+			VolumeMounts: []core.VolumeMount{
+				webuiLogsMount,
+			},
+			Env: []core.EnvVar{
+				podIPEnv,
+				{
+					Name:  "WEBUI_SSL_KEY_FILE",
+					Value: "/etc/contrail/webui_ssl/cs-key.pem",
+				},
+				{
+					Name:  "WEBUI_SSL_CERT_FILE",
+					Value: "/etc/contrail/webui_ssl/cs-cert.pem",
+				},
+			},
+			ImagePullPolicy: "Always",
+		},
+		{
+			Name:  "redis",
+			Image: "docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1",
+			VolumeMounts: []core.VolumeMount{
+				webuiLogsMount,
+			},
+			Env: []core.EnvVar{
+				podIPEnv,
+			},
+			ImagePullPolicy: "Always",
+		},
+	}
+
+	var podTolerations = []core.Toleration{
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoSchedule",
+		},
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoExecute",
+		},
+	}
+
+	var podVolumes = []core.Volume{
+		{
+			Name: "webui-data",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/lib/contrail/webui",
+				},
+			},
+		},
+		{
+			Name: "webui-logs",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/var/log/contrail/webui",
+				},
+			},
+		},
+		{
+			Name: " host-usr-local-bin",
+			VolumeSource: core.VolumeSource{
+				HostPath: &core.HostPathVolumeSource{
+					Path: "/usr/local/bin",
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labels",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+						core.DownwardAPIVolumeFile{
+							Path: "pod_labelsx",
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+						},
+					},
+					DefaultMode: &labelsMountPermission,
+				},
+			},
+		},
+	}
+
+	var podSpec = core.PodSpec{
+		Volumes:            podVolumes,
+		InitContainers:     podInitContainers,
+		Containers:         podContainers,
+		RestartPolicy:      "Always",
+		DNSPolicy:          "ClusterFirst",
+		HostNetwork:        true,
+		Tolerations:        podTolerations,
+		NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
+		ServiceAccountName: "",
+	}
+
+	var stsTemplate = core.PodTemplateSpec{
+		ObjectMeta: meta.ObjectMeta{
+			Labels: map[string]string{
+				"app":              "webui",
+				"contrail_manager": "webui",
+			},
+		},
+		Spec: podSpec,
+	}
+
+	var stsSelector = meta.LabelSelector{
+		MatchLabels: map[string]string{"app": "webui"},
+	}
+
+	return &apps.StatefulSet{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "StatefulSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "",
+			Namespace: "default",
+		},
+		Spec: apps.StatefulSetSpec{
+			Selector:    &stsSelector,
+			ServiceName: "webui",
+			Replicas:    &replicas,
+			Template:    stsTemplate,
+		},
+	}
 }
