@@ -2,8 +2,6 @@ package fernetkeymanager
 
 import (
 	"crypto/rand"
-	"encoding/hex"
-
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	core "k8s.io/api/core/v1"
 
@@ -22,7 +20,7 @@ func (s *secret) FillSecret(sc *core.Secret) error {
 	if err != nil {
 		return err
 	}
-	sc.StringData = map[string]string{
+	sc.Data = map[string][]byte{
 		"0": key,
 	}
 	return nil
@@ -34,14 +32,14 @@ func (r *ReconcileFernetKeyManager) secret(secretName, ownerType string, fernetK
 	}
 }
 
-func generateKey() (string, error){
+func generateKey() ([]byte, error){
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
-	keyStr := hex.EncodeToString(key)
-	return keyStr, nil
+	//keyStr := hex.EncodeToString(key)
+	return key, nil
 }
 
 func (s *secret) ensureSecretKeyExist() error {

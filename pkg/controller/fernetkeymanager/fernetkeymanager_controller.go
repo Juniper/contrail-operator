@@ -94,6 +94,11 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, nil
 	}
 
+	keySecretName := "fernet-keys-repository"
+	if err = r.secret(keySecretName, "fernetKeyManager", fernetKeyManager).ensureSecretKeyExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	tokenExpiration := fernetKeyManager.Spec.TokenExpiration
 	if tokenExpiration == 0 {
 		tokenExpiration = 86400
@@ -109,11 +114,6 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 
 	maxActiveKeys := ((tokenExpiration + allowExpiredWindow + rotationInterval - 1) / rotationInterval) + 2
 	fernetKeyManager.Status.MaxActiveKeys = maxActiveKeys
-
-	keySecretName := "fernet-keys-repository"
-	if err = r.secret(keySecretName, "fernetKeyManager", fernetKeyManager).ensureSecretKeyExist(); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	keySecret, err := r.getSecret(keySecretName, fernetKeyManager.Namespace)
 	if err != nil {
@@ -146,8 +146,8 @@ func (r *ReconcileFernetKeyManager) getSecret(secretName, secretNamespace string
 
 
 func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys int) error {
-	keys := sc.StringData
-	existingKeysIndices := make([]int, len(keys))
+	keys := sc.Data
+	existingKeysIndices := make([]int, 0, len(keys))
 	for k := range keys {
 		key, err := strconv.Atoi(k)
 		if err != nil {
