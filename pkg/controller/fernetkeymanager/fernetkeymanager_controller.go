@@ -179,11 +179,12 @@ func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys in
 	keys[stagedKeyIndex] = newKey
 	log.Info("Promoted key 0 to be primary key")
 
-	if len(sc.StringData) > maxActiveKeys - 1 {
+	if len(keys) > maxActiveKeys - 1 {
 		minKeyIndex := existingKeysIndices[1]
 		log.Info("Excess key to purge: ", minKeyIndex)
 		delete(keys, strconv.Itoa(minKeyIndex))
 	}
 
-	return nil
+	sc.Data = keys
+	return r.client.Update(context.TODO(), sc)
 }

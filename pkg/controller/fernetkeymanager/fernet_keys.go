@@ -2,6 +2,7 @@ package fernetkeymanager
 
 import (
 	"crypto/rand"
+	base64 "encoding/base64"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	core "k8s.io/api/core/v1"
 
@@ -38,8 +39,10 @@ func generateKey() ([]byte, error){
 	if err != nil {
 		return []byte{}, err
 	}
+	b := make([]byte, base64.StdEncoding.EncodedLen(len(key)))
+	base64.StdEncoding.Encode(b, key)
 	//keyStr := hex.EncodeToString(key)
-	return key, nil
+	return b, nil
 }
 
 func (s *secret) ensureSecretKeyExist() error {
