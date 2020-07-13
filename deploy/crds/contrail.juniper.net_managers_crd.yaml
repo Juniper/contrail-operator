@@ -974,14 +974,6 @@ spec:
                               type: string
                             postgresInstance:
                               type: string
-                            storage:
-                              properties:
-                                path:
-                                  type: string
-                                size:
-                                  pattern: ^([0-9]+)([KMGTPE]i)?$
-                                  type: string
-                              type: object
                           type: object
                       required:
                       - commonConfiguration

@@ -1319,7 +1319,6 @@ func (in *KeystoneConfiguration) DeepCopyInto(out *KeystoneConfiguration) {
 			}
 		}
 	}
-	out.Storage = in.Storage
 	return
 }
 

@@ -13,7 +13,7 @@ import (
 type secret struct {
 	sc *k8s.Secret
 }
-
+// Fill secret initializes key repository with staged key
 func (s *secret) FillSecret(sc *core.Secret) error {
 	if sc.Data != nil {
 		return nil
@@ -22,7 +22,6 @@ func (s *secret) FillSecret(sc *core.Secret) error {
 	if err != nil {
 		return err
 	}
-	//TODO generate proper number of keys
 	sc.StringData = map[string]string{
 		"0": key,
 	}

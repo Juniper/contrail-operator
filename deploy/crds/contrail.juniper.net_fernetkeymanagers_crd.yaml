@@ -47,8 +47,11 @@ spec:
           properties:
             maxActiveKeys:
               type: integer
+            secretName:
+              type: string
           required:
           - maxActiveKeys
+          - secretName
           type: object
       type: object
   version: v1alpha1

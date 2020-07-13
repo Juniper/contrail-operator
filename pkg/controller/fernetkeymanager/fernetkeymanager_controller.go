@@ -2,7 +2,10 @@ package fernetkeymanager
 
 import (
 	"context"
-
+	"k8s.io/apimachinery/pkg/types"
+	"sort"
+	"fmt"
+	"strconv"
 	"time"
 
 	core "k8s.io/api/core/v1"
@@ -75,7 +78,6 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling FernetKeyManager")
 
-	// Fetch the FernetKeyManager fernetKeyManager
 	fernetKeyManager := &contrailv1alpha1.FernetKeyManager{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, fernetKeyManager)
 	if err != nil {
@@ -86,6 +88,10 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
+	}
+
+	if !fernetKeyManager.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
 	}
 
 	tokenExpiration := fernetKeyManager.Spec.TokenExpiration
@@ -103,6 +109,20 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 
 	maxActiveKeys := ((tokenExpiration + allowExpiredWindow + rotationInterval - 1) / rotationInterval) + 2
 	fernetKeyManager.Status.MaxActiveKeys = maxActiveKeys
+
+	keySecretName := "fernet-keys-repository"
+	if err = r.secret(keySecretName, "fernetKeyManager", fernetKeyManager).ensureSecretKeyExist(); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	keySecret, err := r.getSecret(keySecretName, fernetKeyManager.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := r.rotateKeys(keySecret, maxActiveKeys); err != nil {
+		return reconcile.Result{}, err
+	}
+	fernetKeyManager.Status.SecretName = keySecretName
 	if err := r.client.Status().Update(context.TODO(), fernetKeyManager); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -115,7 +135,55 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	}, nil
 }
 
+func (r *ReconcileFernetKeyManager) getSecret(secretName, secretNamespace string) (*core.Secret, error) {
+	secret := &core.Secret{}
+	namespacedName := types.NamespacedName{Name: secretName, Namespace: secretNamespace}
+	if err := r.client.Get(context.Background(), namespacedName, secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
+}
 
-func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret) {
 
+func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys int) error {
+	keys := sc.StringData
+	existingKeysIndices := make([]int, len(keys))
+	for k := range keys {
+		key, err := strconv.Atoi(k)
+		if err != nil {
+			return err
+		}
+		existingKeysIndices = append(existingKeysIndices, key)
+	}
+
+	activeKeysNumber := len(existingKeysIndices)
+	if activeKeysNumber == 0 {
+		return fmt.Errorf("key repository not initialized, secret is empty")
+	}
+	log.Info("Starting rotation with: %d keys", activeKeysNumber)
+
+	sort.Ints(existingKeysIndices)
+	maxKeyIndex := existingKeysIndices[activeKeysNumber - 1]
+	log.Info("Current primary is:", maxKeyIndex)
+	log.Info("Next primary key will be:", maxKeyIndex + 1)
+
+	stagedKeyIndex := strconv.Itoa(0)
+	newPrimary := keys[stagedKeyIndex]
+	keys[strconv.Itoa(maxKeyIndex + 1)] = newPrimary
+	delete(keys, stagedKeyIndex)
+
+	newKey, err := generateKey()
+	if err != nil {
+		return err
+	}
+	keys[stagedKeyIndex] = newKey
+	log.Info("Promoted key 0 to be primary key")
+
+	if len(sc.StringData) > maxActiveKeys - 1 {
+		minKeyIndex := existingKeysIndices[1]
+		log.Info("Excess key to purge: ", minKeyIndex)
+		delete(keys, strconv.Itoa(minKeyIndex))
+	}
+
+	return nil
 }

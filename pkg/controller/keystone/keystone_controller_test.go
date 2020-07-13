@@ -226,7 +226,7 @@ func TestKeystone(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := keystone.NewReconciler(
-				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme), &rest.Config{},
+				cl, scheme, k8s.New(cl, scheme), &rest.Config{},
 			)
 
 			req := reconcile.Request{
@@ -320,8 +320,6 @@ func TestKeystone(t *testing.T) {
 		for testName, test := range tests {
 			t.Run(testName, func(t *testing.T) {
 				k := newKeystone()
-				k.Spec.ServiceConfiguration.Storage.Path = test.path
-				k.Spec.ServiceConfiguration.Storage.Size = test.size
 				postgres := &contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
@@ -331,7 +329,7 @@ func TestKeystone(t *testing.T) {
 				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached, adminSecret)
 				claims := volumeclaims.NewFake()
 				r := keystone.NewReconciler(
-					cl, scheme, k8s.New(cl, scheme), claims, &rest.Config{},
+					cl, scheme, k8s.New(cl, scheme), &rest.Config{},
 				)
 				// when
 				_, err := r.Reconcile(reconcile.Request{
@@ -473,7 +471,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							}},
 							VolumeMounts: []core.VolumeMount{
 								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 					},
@@ -491,7 +489,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							}},
 							VolumeMounts: []core.VolumeMount{
 								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 								{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
@@ -517,10 +515,10 @@ func newExpectedSTS() *apps.StatefulSet {
 					},
 					Volumes: []core.Volume{
 						{
-							Name: "keystone-fernet-tokens-volume",
+							Name: "keystone-fernet-keys",
 							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: "keystone-pv-claim",
+								Secret: &core.SecretVolumeSource{
+									SecretName: "fernet-keys-repository",
 								},
 							},
 						},
@@ -783,7 +781,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			}},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 			},
 		},
 	}
@@ -802,7 +800,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			}},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 				core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 			},
 			ReadinessProbe: &core.Probe{

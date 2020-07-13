@@ -27,7 +27,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_keystone")
@@ -41,7 +40,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return NewReconciler(
-		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()), mgr.GetConfig(),
+		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), mgr.GetConfig(),
 	)
 }
 
@@ -76,6 +75,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to secondary resource Postgres and requeue the owner Keystone
+	err = c.Watch(&source.Kind{Type: &contrail.FernetKeyManager{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Keystone{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
@@ -98,15 +105,14 @@ type ReconcileKeystone struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     volumeclaims.PersistentVolumeClaims
 	restConfig *rest.Config
 }
 
 // NewReconciler is used to create a new ReconcileKeystone
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims, restConfig *rest.Config,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, restConfig *rest.Config,
 ) *ReconcileKeystone {
-	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims, restConfig: restConfig}
+	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes,restConfig: restConfig}
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -126,6 +132,13 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if !keystone.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
+
+	fernetKeyManagerName := keystone.Name + "fernet-key-manager"
+
+	if err := r.ensureFernetKeyManagerExists(fernetKeyManagerName, keystone.Namespace); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	keystoneClusterIP := "0.0.0.0"
 	keystoneService, err := r.ensureServiceExists(keystone)
 	if err != nil {
@@ -172,24 +185,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	claimName := types.NamespacedName{
-		Namespace: keystone.Namespace,
-		Name:      keystone.Name + "-pv-claim",
-	}
-	claim := r.claims.New(claimName, keystone)
-	if keystone.Spec.ServiceConfiguration.Storage.Size != "" {
-		var size resource.Quantity
-		size, err = keystone.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		claim.SetStorageSize(size)
-	}
-	claim.SetStoragePath(keystone.Spec.ServiceConfiguration.Storage.Path)
-	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err = claim.EnsureExists(); err != nil {
-		return reconcile.Result{}, err
-	}
 	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
 	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
@@ -211,7 +206,19 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, keySecretName, claimName)
+	fernetKeyManager, err := r.getFernetKeyManager(fernetKeyManagerName, keystone.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(keystone).EnsureOwns(fernetKeyManager); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if fernetKeyManager.Status.SecretName == "" {
+		return reconcile.Result{}, nil
+	}
+
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, keySecretName, fernetKeyManager.Status.SecretName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -219,19 +226,41 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
 }
 
+func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
+	keyManager := &contrail.FernetKeyManager{
+		ObjectMeta: meta.ObjectMeta{
+			Name: name,
+			Namespace: namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keyManager, func() error {
+		keyManager.Spec.TokenExpiration = 86400
+		keyManager.Spec.TokenAllowExpiredWindow = 172800
+		return nil
+	})
+	return err
+}
+
+func (r *ReconcileKeystone) getFernetKeyManager (name, namespace string) (*contrail.FernetKeyManager, error) {
+	keyManager := &contrail.FernetKeyManager{}
+	namespacedName := types.NamespacedName{Name: name, Namespace: namespace}
+	err := r.client.Get(context.Background(), namespacedName, keyManager)
+	return keyManager, err
+}
+
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kciName, secretName string,
-	claimName types.NamespacedName,
+	keysSecretName string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	var labelsMountPermission int32 = 0644
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
 		sts.Spec.Template.Spec.Volumes = []core.Volume{
 			{
-				Name: "keystone-fernet-tokens-volume",
+				Name: "keystone-fernet-keys",
 				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName.Name,
+					Secret: &core.SecretVolumeSource{
+						SecretName: keysSecretName,
 					},
 				},
 			},
@@ -255,6 +284,7 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 					},
 				},
 			},
+			//TODO delete them
 			{
 				Name: "keystone-keys-volume",
 				VolumeSource: core.VolumeSource{
@@ -327,10 +357,10 @@ func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgr
 }
 
 func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memcached, error) {
-	key := &contrail.Memcached{}
+	memcached := &contrail.Memcached{}
 	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
-	err := r.client.Get(context.Background(), name, key)
-	return key, err
+	err := r.client.Get(context.Background(), name, memcached)
+	return memcached, err
 }
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
@@ -381,7 +411,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Command:         getCommand(cr, "keystoneInit"),
 							VolumeMounts: []core.VolumeMount{
 								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 					},
@@ -394,7 +424,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
 								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 								{Name: cr.Name + "-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
