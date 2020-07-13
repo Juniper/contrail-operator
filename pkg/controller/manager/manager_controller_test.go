@@ -1689,7 +1689,6 @@ var memcached = &contrail.Memcached{
 			MaxMemory:       256,
 		},
 	},
-	Status: contrail.MemcachedStatus{Active: falseVal},
 }
 
 const credentialsSecretName = "credentials-secret"
