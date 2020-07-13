@@ -43,31 +43,31 @@ spec:
           cassandraInstance: cassandra1
           containers:
             - name: analyticsapi
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-api:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-rhel
             - name: api
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-api:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>-rhel
             - name: collector
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-collector:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-rhel
             - name: devicemanager
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-rhel
             - name: dnsmasq
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-rhel
             - name: init
               image: python:3.8.2-alpine
             - name: init2
               image: busybox:1.31
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: redis
               image: redis:4.0.2
             - name: schematransformer
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>-rhel
             - name: servicemonitor
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-rhel
             - name: queryengine
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-query-engine:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>-rhel
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -85,17 +85,17 @@ spec:
           cassandraInstance: cassandra1
           containers:
             - name: control
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-control:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-control:<CONTRAIL_VERSION>-rhel
             - name: dns
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-dns:<CONTRAIL_VERSION>-rhel
             - name: init
               image: python:3.8.2-alpine
             - name: named
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-named:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>-rhel
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -113,7 +113,7 @@ spec:
           - name: init
             image: python:3.8.2-alpine
           - name: provisioner
-            image: hub.juniper.net/contrail-nightly/contrail-operator-provisioner:<CONTRAIL_VERSION>
+            image: <CONTRAIL_REGISTRY>/contrail-operator-provisioner:<CONTRAIL_VERSION>
     rabbitmq:
       metadata:
         labels:
@@ -146,13 +146,13 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: redis
               image: redis:4.0.2
             - name: webuijob
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-job:<CONTRAIL_VERSION>-rhel
             - name: webuiweb
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-web:<CONTRAIL_VERSION>-rhel
     zookeepers:
     - metadata:
         labels:
@@ -186,11 +186,11 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: kubemanager
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-rhel
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -215,15 +215,15 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
             - name: vrouterkernelinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
             - name: multusconfig
               image: busybox:1.31
     - metadata:
@@ -244,14 +244,14 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
             - name: vrouterkernelinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
             - name: multusconfig
               image: busybox:1.31

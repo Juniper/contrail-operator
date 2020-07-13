@@ -31,13 +31,16 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 Create file with configuration parameters that looks similar to this:
 ```
 CONTRAIL_VERSION=master.1274
+CONTRAIL_REGISTRY=hub.juniper.net/contrail-nightly
 DOCKER_CONFIG=example_json_config
 ```
 Under *CONTRAIL_VERSION* field enter proper Contrail container build tag, available in the hub.juniper.net/contrail-nightly registry.
 
 **NOTE** Do not specify the *-rhel* suffix in the build tag, it will be appended automatically where needed.
 
-*DOCKER_CONFIG* is configuration for registry secret to hub.juniper.net/contrail-nightly
+Choose source registry for container images with *CONTRAIL_REGISTRY* field.
+
+*DOCKER_CONFIG* is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required)
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
 
 **NOTE:** You may create dummy secret on Kind in order to get proper base64 value:
