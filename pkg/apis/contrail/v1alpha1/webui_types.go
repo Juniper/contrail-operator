@@ -320,10 +320,10 @@ func (c *Webui) getKeystoneEndpoint(k *keystoneEndpoint, client client.Client) e
 	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 		return err
 	}
-	if len(keystone.Status.IPs) == 0 {
-		return fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
+	if keystone.Status.ClusterIP == "" {
+		return fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
 	}
-	k.keystoneIP = keystone.Status.IPs[0]
+	k.keystoneIP = keystone.Status.ClusterIP
 	k.keystonePort = keystone.Spec.ServiceConfiguration.ListenPort
 	return nil
 }

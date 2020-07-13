@@ -135,7 +135,7 @@ var keystone = &v1alpha1.Keystone{
 		},
 	},
 	Status: v1alpha1.KeystoneStatus{
-		IPs: []string{"10.11.12.13"},
+		ClusterIP: "10.11.12.14",
 	},
 }
 
@@ -790,7 +790,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "https://10.11.12.13:5555/v3";
+config.regions.RegionOne = "https://10.11.12.14:5555/v3";
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -814,7 +814,7 @@ config.computeManager.apiVersion = ['v1.1', 'v2'];
 config.computeManager.strictSSL = false;
 config.computeManager.ca = "";
 config.identityManager = {};
-config.identityManager.ip = "10.11.12.13";
+config.identityManager.ip = "10.11.12.14";
 config.identityManager.port = "5555";
 config.identityManager.authProtocol = "https";
 config.identityManager.apiVersion = ['v3'];
@@ -1763,7 +1763,7 @@ cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 [auth]
 AUTHN_TYPE = keystone
 AUTHN_PROTOCOL = https
-AUTHN_SERVER = 10.11.12.13
+AUTHN_SERVER = 10.11.12.14
 AUTHN_PORT = 5555
 AUTHN_URL = /v3/auth/tokens
 AUTHN_DOMAIN = Default

@@ -171,11 +171,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneIP := keystone.Status.IPs[0]
+	keystoneIP := keystone.Status.ClusterIP
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 
 	commandConfigName := command.Name + "-command-configmap"

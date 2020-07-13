@@ -135,11 +135,11 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.IPs[0], keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
+	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 
 	memcached, err := r.getMemcached(swiftProxy)
 	if err != nil {

@@ -79,7 +79,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
+	if err != nil {
+		return err
+	}
 
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.Keystone{},
+	})
 	return err
 }
 
@@ -119,23 +126,30 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if !keystone.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
+	keystoneClusterIP := "0.0.0.0"
+	keystoneService, err := r.ensureServiceExists(keystone)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(keystone, keystonePods); err != nil {
+	keystoneClusterIP = keystoneService.Spec.ClusterIP
+
+	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
+	keystonePodIP := "0.0.0.0"
 	if len(keystonePods.Items) > 0 {
+		keystonePodIP = keystonePods.Items[0].Status.PodIP
 		err = contrail.SetPodsToReady(keystonePods, r.client)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 	}
-
 	psql, err := r.getPostgres(keystone)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -182,12 +196,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	ips := keystone.Status.IPs
-	if len(ips) == 0 {
-		ips = []string{"0.0.0.0"}
-	}
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -197,12 +207,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kscName := keystone.Name + "-keystone-ssh"
-	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(ips[0]); err != nil {
+	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, ips[0]); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -216,7 +226,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(keystone, sts)
+	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
@@ -320,30 +330,18 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 
 func (r *ReconcileKeystone) updateStatus(
 	k *contrail.Keystone,
-	sts *apps.StatefulSet,
+	sts *apps.StatefulSet, cip string,
 ) error {
 	k.Status = contrail.KeystoneStatus{}
 	intendentReplicas := int32(1)
 	if sts.Spec.Replicas != nil {
 		intendentReplicas = *sts.Spec.Replicas
 	}
-
-	pods := core.PodList{}
-	var labels client.MatchingLabels = sts.Spec.Selector.MatchLabels
-	if err := r.client.List(context.Background(), &pods, labels); err != nil {
-		return err
-	}
 	if sts.Status.ReadyReplicas == intendentReplicas {
 		k.Status.Active = true
 		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
-	k.Status.IPs = []string{}
-	for _, pod := range pods.Items {
-		if pod.Status.PodIP != "" {
-			k.Status.IPs = append(k.Status.IPs, pod.Status.PodIP)
-		}
-	}
-
+	k.Status.ClusterIP = cip
 	return r.client.Status().Update(context.Background(), k)
 }
 
@@ -532,13 +530,12 @@ psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSW
 createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
 psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
-func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList) error {
+func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
 	if keystone.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *keystone.Spec.CommonConfiguration.HostNetwork
 	}
-	//TODO replace empty serviceIP with Cluster IP when it will be created
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, "", "keystone", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, serviceIP, "keystone", hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList, error) {
@@ -549,4 +546,30 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone) (*core.Service, error) {
+	keystoneService := newKeystoneService(keystone)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
+		keystoneService.Spec.Ports = []core.ServicePort{
+			{Port: 5555, Protocol: "TCP"},
+		}
+		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)
+	return keystoneService, err
+}
+
+func newKeystoneService(cr *contrail.Keystone) *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      cr.Name + "-service",
+			Namespace: cr.Namespace,
+			Labels:    map[string]string{"service": cr.Name},
+		},
+	}
 }

@@ -149,10 +149,8 @@ spec:
           properties:
             active:
               type: boolean
-            ips:
-              items:
-                type: string
-              type: array
+            clusterIP:
+              type: string
             port:
               type: integer
           type: object

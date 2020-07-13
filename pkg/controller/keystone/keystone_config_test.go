@@ -267,7 +267,7 @@ keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
-  --bootstrap-admin-url https://0.0.0.0:5555/v3/ \
-  --bootstrap-internal-url https://0.0.0.0:5555/v3/ \
-  --bootstrap-public-url https://0.0.0.0:5555/v3/
+  --bootstrap-admin-url https://10.10.10.10:5555/v3/ \
+  --bootstrap-internal-url https://10.10.10.10:5555/v3/ \
+  --bootstrap-public-url https://10.10.10.10:5555/v3/
 `
