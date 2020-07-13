@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +20,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/keystone"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 func TestKeystone(t *testing.T) {
@@ -47,8 +45,13 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
@@ -74,9 +77,14 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
 				newKeystoneService(),
+				newFernetSecret(),
 			},
 			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
@@ -105,8 +113,13 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
@@ -130,9 +143,14 @@ func TestKeystone(t *testing.T) {
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
 				newKeystoneService(),
+				newFernetSecret(),
 			},
 			expectedSTS:     &apps.StatefulSet{},
 			expectedConfigs: []*core.ConfigMap{},
@@ -153,8 +171,13 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
@@ -176,8 +199,13 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS:    newExpectedSTS(),
@@ -201,9 +229,14 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
-				newMemcached(),
 				newExpectedSecretWithKeys(),
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
+				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS:    newExpectedSTS(),
@@ -293,65 +326,6 @@ func TestKeystone(t *testing.T) {
 		})
 	}
 
-	t.Run("should create pvc", func(t *testing.T) {
-		quantity5Gi := resource.MustParse("5Gi")
-		quantity1Gi := resource.MustParse("1Gi")
-		tests := map[string]struct {
-			size         string
-			path         string
-			expectedSize *resource.Quantity
-		}{
-			"no size and path given": {},
-			"only size given": {
-				size:         "1Gi",
-				expectedSize: &quantity1Gi,
-			},
-			"size and path given": {
-				size:         "5Gi",
-				path:         "/path",
-				expectedSize: &quantity5Gi,
-			},
-			"size and path given 2": {
-				size:         "1Gi",
-				path:         "/other",
-				expectedSize: &quantity1Gi,
-			},
-		}
-		for testName, test := range tests {
-			t.Run(testName, func(t *testing.T) {
-				k := newKeystone()
-				postgres := &contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				}
-				memcached := newMemcached()
-				adminSecret := newAdminSecret()
-				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached, adminSecret)
-				claims := volumeclaims.NewFake()
-				r := keystone.NewReconciler(
-					cl, scheme, k8s.New(cl, scheme), &rest.Config{},
-				)
-				// when
-				_, err := r.Reconcile(reconcile.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      "keystone",
-						Namespace: "default",
-					},
-				})
-				require.NoError(t, err)
-				// then
-				claimName := types.NamespacedName{
-					Name:      "keystone-pv-claim",
-					Namespace: "default",
-				}
-				claim, ok := claims.Claim(claimName)
-				require.True(t, ok, "missing claim")
-				assert.Equal(t, test.path, claim.StoragePath())
-				assert.Equal(t, test.expectedSize, claim.StorageSize())
-				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
-			})
-		}
-	})
 }
 
 func newKeystone() *contrail.Keystone {
@@ -609,6 +583,23 @@ func newAdminSecret() *core.Secret {
 		},
 		Data: map[string][]byte{
 			"password": []byte("test123"),
+		},
+	}
+}
+
+func newFernetSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "fernet-keys-repository",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "fernetKeyManager", "fernetKeyManager": "keystone-fernet-key-manager"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "FernetKeyManager", "keystone-fernet-key-manager", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"0": []byte("test123"),
 		},
 	}
 }

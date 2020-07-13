@@ -133,7 +133,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	fernetKeyManagerName := keystone.Name + "fernet-key-manager"
+	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"
 
 	if err := r.ensureFernetKeyManagerExists(fernetKeyManagerName, keystone.Namespace); err != nil {
 		return reconcile.Result{}, err
