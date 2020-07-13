@@ -389,6 +389,7 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, &trueVal, mergedConfiguration.HostNetwork)
 		assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mergedConfiguration.NodeSelector)
 		assert.Equal(t, []string{"contrail-nightly"}, mergedConfiguration.ImagePullSecrets)
+		assert.Equal(t, &contrailStatusImage, mergedConfiguration.ContrailStatusImage)
 		assert.Equal(t, []core.Toleration{
 			{
 				Effect:   core.TaintEffectNoSchedule,
