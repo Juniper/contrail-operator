@@ -26,11 +26,6 @@ func GetSTS() *apps.StatefulSet {
 		MountPath: "/var/log/contrail",
 	}
 
-	var contrailStatusImageEnv = core.EnvVar{
-		Name:  "CONTRAIL_STATUS_IMAGE",
-		Value: "docker.io/opencontrailnightly/contrail-status:latest",
-	}
-
 	var podInitContainers = []core.Container{
 		{
 			Name:  "init",
@@ -41,7 +36,6 @@ func GetSTS() *apps.StatefulSet {
 				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
 			},
 			Env: []core.EnvVar{
-				contrailStatusImageEnv,
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
@@ -51,24 +45,6 @@ func GetSTS() *apps.StatefulSet {
 				},
 			},
 			ImagePullPolicy: "Always",
-		},
-		{
-			Name:  "nodeinit",
-			Image: "docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1",
-			Env: []core.EnvVar{
-				contrailStatusImageEnv,
-				podIPEnv,
-			},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
-					Name:      "host-usr-local-bin",
-					MountPath: "/host/usr/bin",
-				},
-			},
-			ImagePullPolicy: "Always",
-			SecurityContext: &core.SecurityContext{
-				Privileged: &trueVal,
-			},
 		},
 	}
 

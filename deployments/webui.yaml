@@ -59,22 +59,6 @@ spec:
           name: webui-data
       dnsPolicy: ClusterFirst
       hostNetwork: true
-      initContainers:
-      - env:
-        - name: CONTRAIL_STATUS_IMAGE
-          value: docker.io/michaelhenkel/contrail-status:5.2.0-dev1
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-        imagePullPolicy: Always
-        name: nodeinit
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /host/usr/bin
-          name: host-usr-local-bin
       nodeSelector:
         node-role.kubernetes.io/master: ""
       restartPolicy: Always
