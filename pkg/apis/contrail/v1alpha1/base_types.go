@@ -126,7 +126,7 @@ type CommonConfiguration struct {
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	// Contrail Status Container Image.
 	// + optional
-	ContrailStatusImage string `json:"contrailStatusImage,omitempty"`
+	ContrailStatusImage *string `json:"contrailStatusImage,omitempty"`
 }
 
 func (ss *ServiceStatus) ready() bool {

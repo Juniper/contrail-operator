@@ -383,8 +383,22 @@ func TestUtilsSecond(t *testing.T) {
 	})
 
 	t.Run("Update Event in MergeCommonConfiguration verification", func(t *testing.T) {
-		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
-		// nothing to test
+		mergedConfiguration := tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
+		assert.Equal(t, &trueVal, mergedConfiguration.Activate)
+		assert.Equal(t, &trueVal, mergedConfiguration.Create)
+		assert.Equal(t, &trueVal, mergedConfiguration.HostNetwork)
+		assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mergedConfiguration.NodeSelector)
+		assert.Equal(t, []string{"contrail-nightly"}, mergedConfiguration.ImagePullSecrets)
+		assert.Equal(t, []core.Toleration{
+			{
+				Effect:   core.TaintEffectNoSchedule,
+				Operator: core.TolerationOpExists,
+			},
+			{
+				Effect:   core.TaintEffectNoExecute,
+				Operator: core.TolerationOpExists,
+			},
+		}, mergedConfiguration.Tolerations)
 	})
 
 	t.Run("GetContainerFromList function verification", func(t *testing.T) {
@@ -630,14 +644,16 @@ func newStatefulSet() *apps.StatefulSet {
 var replica = int32(1)
 var trueVal = true
 var falseVal = false
+var contrailStatusImage = "localhost:5000/contrail-status"
 
 var managerCommonConfiguration = contrail.CommonConfiguration{
-	Activate:         &trueVal,
-	Create:           &trueVal,
-	HostNetwork:      &trueVal,
-	Replicas:         &replica,
-	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
-	ImagePullSecrets: []string{"contrail-nightly"},
+	Activate:            &trueVal,
+	Create:              &trueVal,
+	HostNetwork:         &trueVal,
+	Replicas:            &replica,
+	NodeSelector:        map[string]string{"node-role.kubernetes.io/master": ""},
+	ImagePullSecrets:    []string{"contrail-nightly"},
+	ContrailStatusImage: &contrailStatusImage,
 	Tolerations: []core.Toleration{
 		{
 			Effect:   core.TaintEffectNoSchedule,

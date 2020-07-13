@@ -372,11 +372,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		if instanceContainer.Command != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = instanceContainer.Command
 		}
-		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != "" {
+		if container.Name == "init" && instance.Spec.CommonConfiguration.ContrailStatusImage != nil {
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Env = []corev1.EnvVar{
 				{
-					Name: "CONTRAIL_STATUS_IMAGE",
-					Value: instance.Spec.CommonConfiguration.ContrailStatusImage,
+					Name:  "CONTRAIL_STATUS_IMAGE",
+					Value: *instance.Spec.CommonConfiguration.ContrailStatusImage,
 				},
 			}
 		}
