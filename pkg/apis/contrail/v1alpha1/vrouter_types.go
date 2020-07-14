@@ -363,6 +363,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
 		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
 		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+		envVariables["VROUTER_MODULE_OPTIONS"] = "vr_close_flow_on_tcp_rst=1"
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string

@@ -59,9 +59,9 @@ container_push(
     name = "contrail-operator-push-latest",
     image = ":contrail-operator-image",
     format = "Docker",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator",
-    tag = "{BUILD_SCM_BRANCH}.latest",
+    registry = "docker.io",
+    repository = "pitersk/contrail-operator",
+    tag = "2008.vroutermod",
 )
 
 container_push(
