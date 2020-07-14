@@ -126,7 +126,6 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	if err := r.client.Status().Update(context.TODO(), fernetKeyManager); err != nil {
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("Reconciled at: ", time.Now())
 
 	//TODO Requeue after rotationInterval
 	return reconcile.Result{
@@ -160,12 +159,12 @@ func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys in
 	if activeKeysNumber == 0 {
 		return fmt.Errorf("key repository not initialized, secret is empty")
 	}
-	log.Info("Starting rotation with: %d keys", activeKeysNumber)
+	log.Info(fmt.Sprintf("Starting rotation with %d keys", activeKeysNumber))
 
 	sort.Ints(existingKeysIndices)
 	maxKeyIndex := existingKeysIndices[activeKeysNumber - 1]
-	log.Info("Current primary is:", maxKeyIndex)
-	log.Info("Next primary key will be:", maxKeyIndex + 1)
+	log.Info(fmt.Sprintf("Current primary is: %d", maxKeyIndex))
+	log.Info(fmt.Sprintf("Next primary key will be: %d", maxKeyIndex + 1))
 
 	stagedKeyIndex := strconv.Itoa(0)
 	newPrimary := keys[stagedKeyIndex]
@@ -181,7 +180,7 @@ func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys in
 
 	if len(keys) > maxActiveKeys - 1 {
 		minKeyIndex := existingKeysIndices[1]
-		log.Info("Excess key to purge: ", minKeyIndex)
+		log.Info(fmt.Sprintf("Excess key to purge: %d", minKeyIndex))
 		delete(keys, strconv.Itoa(minKeyIndex))
 	}
 

@@ -36,11 +36,6 @@ const expectedKeystoneKollaServiceConfig = `{
             "owner": "keystone:kolla"
         },
         {
-            "path": "/etc/keystone/fernet-keys",
-            "owner": "keystone:keystone",
-            "perm": "0770"
-        },
-        {
             "path": "/etc/keystone/domains",
             "owner": "keystone:keystone",
             "perm": "0700"
@@ -133,11 +128,6 @@ const expectedKeystoneInitKollaServiceConfig = `{
         {
             "path": "/var/log/kolla",
             "owner": "keystone:kolla"
-        },
-        {
-            "path": "/etc/keystone/fernet-keys",
-            "owner": "keystone:keystone",
-            "perm": "0770"
         },
         {
             "path": "/etc/keystone/domains",
