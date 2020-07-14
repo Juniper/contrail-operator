@@ -389,7 +389,6 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, &trueVal, mergedConfiguration.HostNetwork)
 		assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mergedConfiguration.NodeSelector)
 		assert.Equal(t, []string{"contrail-nightly"}, mergedConfiguration.ImagePullSecrets)
-		assert.Equal(t, &contrailStatusImage, mergedConfiguration.ContrailStatusImage)
 		assert.Equal(t, []core.Toleration{
 			{
 				Effect:   core.TaintEffectNoSchedule,
@@ -645,16 +644,14 @@ func newStatefulSet() *apps.StatefulSet {
 var replica = int32(1)
 var trueVal = true
 var falseVal = false
-var contrailStatusImage = "localhost:5000/contrail-status"
 
 var managerCommonConfiguration = contrail.CommonConfiguration{
-	Activate:            &trueVal,
-	Create:              &trueVal,
-	HostNetwork:         &trueVal,
-	Replicas:            &replica,
-	NodeSelector:        map[string]string{"node-role.kubernetes.io/master": ""},
-	ImagePullSecrets:    []string{"contrail-nightly"},
-	ContrailStatusImage: &contrailStatusImage,
+	Activate:         &trueVal,
+	Create:           &trueVal,
+	HostNetwork:      &trueVal,
+	Replicas:         &replica,
+	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
+	ImagePullSecrets: []string{"contrail-nightly"},
 	Tolerations: []core.Toleration{
 		{
 			Effect:   core.TaintEffectNoSchedule,

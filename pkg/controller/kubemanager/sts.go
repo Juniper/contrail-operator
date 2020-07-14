@@ -10,7 +10,6 @@ import (
 func GetSTS() *apps.StatefulSet {
 	var replicas = int32(1)
 	var labelsMountPermission int32 = 0644
-	var trueVal = true
 
 	var podIPEnv = core.EnvVar{
 		Name: "POD_IP",

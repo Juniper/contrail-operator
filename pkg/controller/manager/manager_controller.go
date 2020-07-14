@@ -375,8 +375,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		zookeeperService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
-
 		cr := cr.GetZookeeperCr()
 		cr.ObjectMeta = zookeeperService.ObjectMeta
 		cr.Labels = zookeeperService.ObjectMeta.Labels
@@ -524,7 +522,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		webuiService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 
 		cr := cr.GetWebuiCr()
@@ -661,7 +658,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		provisionManagerService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 
 		cr := cr.GetProvisionManagerCr()
@@ -799,7 +795,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		configService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 
 		cr := cr.GetConfigCr()
@@ -935,8 +930,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *kubemanagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
-		kubemanagerService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 
 		cr := cr.GetKubemanagerCr()
 		cr.ObjectMeta = kubemanagerService.ObjectMeta
@@ -1083,8 +1076,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *controlService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
-		controlService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 
 		cr := cr.GetControlCr()
 		cr.ObjectMeta = controlService.ObjectMeta
@@ -1234,8 +1225,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		delete := false
 		update := false
 
-		rabbitmqService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
-
 		cr := cr.GetRabbitmqCr()
 		cr.ObjectMeta = rabbitmqService.ObjectMeta
 		cr.Labels = rabbitmqService.ObjectMeta.Labels
@@ -1361,8 +1350,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *vrouterService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
-
-		vrouterService.Spec.CommonConfiguration.ContrailStatusImage = instance.Spec.CommonConfiguration.ContrailStatusImage
 
 		cr := cr.GetVrouterCr()
 		cr.ObjectMeta = vrouterService.ObjectMeta

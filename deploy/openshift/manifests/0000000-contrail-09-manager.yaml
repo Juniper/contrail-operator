@@ -10,7 +10,6 @@ spec:
     keystoneSecretInstance : cluster1-admin-password
     imagePullSecrets:
       - contrail-registry
-    contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
   services:
     cassandras:
     - metadata:
@@ -212,6 +211,7 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:
             - name: init
               image: python:3.8.2-alpine
@@ -241,6 +241,7 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:
             - name: init
               image: python:3.8.2-alpine

@@ -643,9 +643,6 @@ func MergeCommonConfiguration(manager v1alpha1.CommonConfiguration,
 	if instance.Replicas == nil && manager.Replicas != nil {
 		instance.Replicas = manager.Replicas
 	}
-	if instance.ContrailStatusImage == nil && manager.ContrailStatusImage != nil {
-		instance.ContrailStatusImage = manager.ContrailStatusImage
-	}
 	return instance
 }
 
