@@ -56,8 +56,6 @@ spec:
               image: python:3.8.2-alpine
             - name: init2
               image: busybox:1.31
-            - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: redis
               image: redis:4.0.2
             - name: schematransformer
@@ -92,8 +90,6 @@ spec:
               image: python:3.8.2-alpine
             - name: named
               image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>-rhel
-            - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           zookeeperInstance: zookeeper1
@@ -145,8 +141,6 @@ spec:
           containers:
             - name: init
               image: python:3.8.2-alpine
-            - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: redis
               image: redis:4.0.2
             - name: webuijob
@@ -187,8 +181,6 @@ spec:
               image: python:3.8.2-alpine
             - name: kubemanager
               image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-rhel
-            - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           ipFabricForwarding: false

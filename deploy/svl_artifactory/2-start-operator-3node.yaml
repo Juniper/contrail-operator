@@ -54,8 +54,6 @@ spec:
             image: python:alpine
           - name: init2
             image: busybox
-          - name: nodeinit
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           - name: redis
             image: redis:4.0.2
           - name: schematransformer
@@ -90,8 +88,6 @@ spec:
             image: python:alpine
           - name: named
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-controller-control-named:master.latest
-          - name: nodeinit
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           - name: statusmonitor
             image: svl-artifactory.juniper.net/contrail-operator/engprod-269421/contrail-statusmonitor:svl_artifactory-debug.latest
     kubemanagers:
@@ -111,8 +107,6 @@ spec:
             image: python:alpine
           - name: kubemanager
             image: svl-artifactory.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:master.latest
-          - name: nodeinit
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -217,8 +211,6 @@ spec:
           containers:
           - name: init
             image: python:alpine
-          - name: nodeinit
-            image: svl-artifactory.juniper.net/contrail-nightly/contrail-node-init:master.latest
           - name: redis
             image: redis:4.0.2
           - name: webuijob

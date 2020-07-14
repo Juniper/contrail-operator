@@ -50,7 +50,6 @@ func TestControlController(t *testing.T) {
 					{Name: "statusmonitor", Image: "image1"},
 					{Name: "named", Image: "image1"},
 					{Name: "dns", Image: "image1"},
-					{Name: "nodeinit", Image: "image1"},
 				},
 				CassandraInstance: "cassandra1",
 			},

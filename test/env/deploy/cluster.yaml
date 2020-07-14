@@ -56,8 +56,6 @@ spec:
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: init2
             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
-          - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:2005.42
           - name: schematransformer
             image: registry:5000/contrail-nightly/contrail-controller-config-schema:2005.42
           - name: servicemonitor
@@ -93,8 +91,6 @@ spec:
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: named
             image: registry:5000/contrail-nightly/contrail-controller-control-named:2005.42
-          - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:2005.42
           - name: statusmonitor
             image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
           zookeeperInstance: zookeeper1
@@ -158,8 +154,6 @@ spec:
           containers:
           - name: init
             image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
-          - name: nodeinit
-            image: registry:5000/contrail-nightly/contrail-node-init:2005.42
           - name: redis
             image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
           - name: webuijob
