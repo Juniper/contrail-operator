@@ -141,7 +141,6 @@ const expectedkeystoneInitBootstrapScript = `
 #!/bin/bash
 
 keystone-manage db_sync
-#keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \

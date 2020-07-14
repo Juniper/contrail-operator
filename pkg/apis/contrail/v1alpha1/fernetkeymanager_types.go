@@ -13,7 +13,6 @@ type FernetKeyManagerSpec struct {
 
 // FernetKeyManagerStatus defines the observed state of FernetKeyManager
 type FernetKeyManagerStatus struct {
-	MaxActiveKeys int `json:"maxActiveKeys"`
 	SecretName string `json:"secretName"`
 }
 

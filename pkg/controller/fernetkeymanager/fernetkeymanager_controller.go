@@ -2,15 +2,15 @@ package fernetkeymanager
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
-	"sort"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -25,7 +25,6 @@ import (
 
 var log = logf.Log.WithName("controller_fernetkeymanager")
 
-
 // Add creates a new FernetKeyManager Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -34,7 +33,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(),mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()))
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()))
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -59,10 +58,8 @@ var _ reconcile.Reconciler = &ReconcileFernetKeyManager{}
 
 // ReconcileFernetKeyManager reconciles a FernetKeyManager object
 type ReconcileFernetKeyManager struct {
-	// This client, initialized using mgr.Client() above, is a split client
-	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client     client.Client
+	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
 }
 
@@ -82,9 +79,6 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	err := r.client.Get(context.TODO(), request.NamespacedName, fernetKeyManager)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
@@ -95,7 +89,7 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	}
 
 	keySecretName := "fernet-keys-repository"
-	if err = r.secret(keySecretName, "fernetKeyManager", fernetKeyManager).ensureSecretKeyExist(); err != nil {
+	if err = r.secret(keySecretName, "fernetKeyManager", fernetKeyManager).ensureKeysRepoSecretExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -109,12 +103,10 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	}
 	rotationInterval := fernetKeyManager.Spec.RotationInterval
 	if rotationInterval == 0 {
-		rotationInterval= tokenExpiration + allowExpiredWindow
+		rotationInterval = tokenExpiration + allowExpiredWindow
 	}
 
 	maxActiveKeys := ((tokenExpiration + allowExpiredWindow + rotationInterval - 1) / rotationInterval) + 2
-	fernetKeyManager.Status.MaxActiveKeys = maxActiveKeys
-
 	keySecret, err := r.getSecret(keySecretName, fernetKeyManager.Namespace)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -122,15 +114,15 @@ func (r *ReconcileFernetKeyManager) Reconcile(request reconcile.Request) (reconc
 	if err := r.rotateKeys(keySecret, maxActiveKeys); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	fernetKeyManager.Status.SecretName = keySecretName
 	if err := r.client.Status().Update(context.TODO(), fernetKeyManager); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	//TODO Requeue after rotationInterval
 	return reconcile.Result{
-		Requeue: true,
-		RequeueAfter: time.Second * 30,
+		Requeue:      true,
+		RequeueAfter: time.Second * time.Duration(rotationInterval),
 	}, nil
 }
 
@@ -142,7 +134,6 @@ func (r *ReconcileFernetKeyManager) getSecret(secretName, secretNamespace string
 	}
 	return secret, nil
 }
-
 
 func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys int) error {
 	keys := sc.Data
@@ -162,13 +153,13 @@ func (r *ReconcileFernetKeyManager) rotateKeys(sc *core.Secret, maxActiveKeys in
 	log.Info(fmt.Sprintf("Starting rotation with %d keys", activeKeysNumber))
 
 	sort.Ints(existingKeysIndices)
-	maxKeyIndex := existingKeysIndices[activeKeysNumber - 1]
+	maxKeyIndex := existingKeysIndices[activeKeysNumber-1]
 	log.Info(fmt.Sprintf("Current primary is: %d", maxKeyIndex))
-	log.Info(fmt.Sprintf("Next primary key will be: %d", maxKeyIndex + 1))
+	log.Info(fmt.Sprintf("Next primary key will be: %d", maxKeyIndex+1))
 
 	stagedKeyIndex := strconv.Itoa(0)
 	newPrimary := keys[stagedKeyIndex]
-	keys[strconv.Itoa(maxKeyIndex + 1)] = newPrimary
+	keys[strconv.Itoa(maxKeyIndex+1)] = newPrimary
 	delete(keys, stagedKeyIndex)
 
 	newKey, err := generateKey()

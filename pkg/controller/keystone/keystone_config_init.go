@@ -63,7 +63,6 @@ var keystoneInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
 
 keystone-manage db_sync
-#keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
   --bootstrap-region-id RegionOne \
