@@ -191,67 +191,6 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
-		{
-			name: "create secret with ssh keys pair",
-			initObjs: []runtime.Object{
-				newKeystone(),
-				&contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				},
-				&contrail.FernetKeyManager{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
-					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
-				},
-				newMemcached(),
-				newAdminSecret(),
-				newFernetSecret(),
-				newKeystoneService(),
-			},
-			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
-			expectedPostgres: &contrail.Postgres{
-				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
-					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
-				},
-				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-			},
-			expectedSecrets: []*core.Secret{
-				newExpectedSecret(),
-			},
-		},
-		{
-			name: "secret remains unchanged if already exists",
-			initObjs: []runtime.Object{
-				newKeystone(),
-				&contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				},
-				newExpectedSecretWithKeys(),
-				&contrail.FernetKeyManager{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
-					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
-				},
-				newMemcached(),
-				newAdminSecret(),
-				newFernetSecret(),
-				newKeystoneService(),
-			},
-			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
-			expectedPostgres: &contrail.Postgres{
-				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
-					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
-				},
-				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-			},
-			expectedSecrets: []*core.Secret{
-				newExpectedSecretWithKeys(),
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -513,14 +452,6 @@ func newExpectedSTS() *apps.StatefulSet {
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "keystone-keystone-init",
 									},
-								},
-							},
-						},
-						{
-							Name: "keystone-keys-volume",
-							VolumeSource: core.VolumeSource{
-								Secret: &core.SecretVolumeSource{
-									SecretName: "keystone-keystone-keys",
 								},
 							},
 						},

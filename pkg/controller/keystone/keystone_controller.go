@@ -201,11 +201,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	keySecretName := keystone.Name + "-keystone-keys"
-	if err = r.secret(keySecretName, "keystone", keystone).ensureSecretKeyExist(); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	fernetKeyManager, err := r.getFernetKeyManager(fernetKeyManagerName, keystone.Namespace)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -218,7 +213,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, keySecretName, fernetKeyManager.Status.SecretName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, fernetKeyManager.Status.SecretName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -249,8 +244,7 @@ func (r *ReconcileKeystone) getFernetKeyManager (name, namespace string) (*contr
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kciName, secretName string,
-	keysSecretName string,
+	kcName, kciName, keysSecretName string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
 	var labelsMountPermission int32 = 0644
@@ -281,15 +275,6 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 						LocalObjectReference: core.LocalObjectReference{
 							Name: kciName,
 						},
-					},
-				},
-			},
-			//TODO delete them
-			{
-				Name: "keystone-keys-volume",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: secretName,
 					},
 				},
 			},
