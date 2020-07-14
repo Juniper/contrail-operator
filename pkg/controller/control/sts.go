@@ -32,8 +32,6 @@ spec:
             - -c
             - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
           env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/opencontrailnightly/contrail-status:latest
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -42,21 +40,6 @@ spec:
           volumeMounts:
             - mountPath: /tmp/podinfo
               name: status
-        - name: nodeinit
-          image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-          env:
-            - name: CONTRAIL_STATUS_IMAGE
-              value: docker.io/opencontrailnightly/contrail-status:latest
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          securityContext:
-            privileged: true
-          volumeMounts:
-            - mountPath: /host/usr/bin
-              name: host-usr-local-bin
       containers:
         - name: control
           image: docker.io/michaelhenkel/contrail-controller-control-control:5.2.0-dev1

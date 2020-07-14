@@ -37,14 +37,14 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            cassandra: 
+            cassandra:
               image: cassandra:3.11.4
-            init2: 
+            init2:
               image: cassandra:3.11.4
-            init: 
+            init:
               image: python:alpine
             #maxHeapSize: 1024M
             #minHeapSize: 100M
@@ -57,12 +57,12 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            zookeeper: 
+            zookeeper:
               image: docker.io/zookeeper:3.5.5
-            init: 
+            init:
               image: python:alpine
     rabbitmq:
       metadata:
@@ -73,10 +73,10 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
-            rabbitmq: 
+            rabbitmq:
               image: rabbitmq:3.7
             init:
               image: python:alpine
@@ -89,7 +89,7 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           nodeManager: false
           cassandraInstance: cassandra1
@@ -117,8 +117,6 @@ spec:
               image: busybox
             init:
               image: python:alpine
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
             queryengine:
               image: opencontrailnightly/contrail-analytics-query-engine:1910-latest
     kubemanagers:
@@ -130,16 +128,14 @@ spec:
         commonConfiguration:
           create: false
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
           containers:
             kubemanager:
               image: michaelhenkel/contrail-kubernetes-kube-manager:1910-latest
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
-            init: 
+            init:
               image: python:alpine
           useKubeadmConfig: true
           ipFabricForwarding: false
@@ -155,21 +151,19 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           nodeManager: false
           cassandraInstance: cassandra1
           containers:
-            control: 
+            control:
               image: opencontrailnightly/contrail-controller-control-control:1910-latest
             dns:
               image: opencontrailnightly/contrail-controller-control-dns:1910-latest
-            named: 
+            named:
               image: opencontrailnightly/contrail-controller-control-named:1910-latest
             nodemanager:
               image: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
             init:
               image: python:alpine
     webui:
@@ -181,18 +175,16 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""   
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
-            webuiweb: 
+            webuiweb:
               image: opencontrailnightly/contrail-controller-webui-web:1910-latest
             webuijob:
               image: opencontrailnightly/contrail-controller-webui-job:1910-latest
             redis:
               image: redis:4.0.2
-            nodeinit:
-              image: opencontrailnightly/contrail-node-init:1910-latest
             init:
               image: python:alpine
     vrouters:
@@ -204,12 +196,12 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.kubernetes.io/master: ""    
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
           containers:
-            vrouteragent: 
+            vrouteragent:
               image: opencontrailnightly/contrail-vrouter-agent:1910-latest
             vrouterkernelinit:
               image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
@@ -219,10 +211,10 @@ spec:
               image: michaelhenkel/contrailcni:v0.0.1
             nodemanager:
               image: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: 
+            nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
-            init: 
-              image: python:alpine  
+            init:
+              image: python:alpine
     - metadata:
         name: vrouternodes
         labels:
@@ -231,12 +223,12 @@ spec:
         commonConfiguration:
           create: true
           nodeSelector:
-            node-role.opencontrail.org: "vrouter"  
+            node-role.opencontrail.org: "vrouter"
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
           containers:
-            vrouteragent: 
+            vrouteragent:
               image: opencontrailnightly/contrail-vrouter-agent:1910-latest
             vrouterkernelinit:
               image: opencontrailnightly/contrail-vrouter-kernel-init:1910-latest
@@ -246,8 +238,8 @@ spec:
               image: michaelhenkel/contrailcni:v0.0.1
             nodemanager:
               image: opencontrailnightly/contrail-nodemgr:1910-latest
-            nodeinit: 
+            nodeinit:
               image: opencontrailnightly/contrail-node-init:1910-latest
-            init: 
-              image: python:alpine          
+            init:
+              image: python:alpine
 

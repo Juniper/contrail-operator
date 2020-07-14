@@ -40,7 +40,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				"until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done",
 			},
 			Env: []core.EnvVar{
-				contrailStatusImageEnv,
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
@@ -73,7 +72,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			Name:  "vrouterkernelinit",
 			Image: "docker.io/michaelhenkel/contrail-vrouter-kernel-init:5.2.0-dev1",
 			Env: []core.EnvVar{
-				contrailStatusImageEnv,
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
@@ -107,7 +105,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			Name:  "vroutercni",
 			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
 			Env: []core.EnvVar{
-				contrailStatusImageEnv,
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{

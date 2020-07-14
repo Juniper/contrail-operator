@@ -75,7 +75,6 @@ spec:
             redis: redis:4.0.2
             nodemanagerconfig: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
             nodemanageranalytics: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
             init: python:alpine
     kubemanagers:
     - metadata:
@@ -92,7 +91,6 @@ spec:
           zookeeperInstance: zookeeper1
           images:
             kubemanager: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
             init: python:alpine
           useKubeadmConfig: true
           #serviceAccount: contrail-service-account
@@ -125,7 +123,6 @@ spec:
             dns: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:1908.47
             named: hub.juniper.net/contrail-nightly/contrail-controller-control-named:1908.47
             nodemanager: hub.juniper.net/contrail-nightly/contrail-nodemgr:1908.47
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
             init: python:alpine
     webui:
       metadata:
@@ -143,7 +140,6 @@ spec:
             webuiweb: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:1908.47
             webuijob: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:1908.47
             redis: redis:4.0.2
-            nodeinit: hub.juniper.net/contrail-nightly/contrail-node-init:1908.47
     vrouters:
     - metadata:
         name: vroutermaster
