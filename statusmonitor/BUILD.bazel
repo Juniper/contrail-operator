@@ -52,9 +52,9 @@ container_push(
     name = "contrail-statusmonitor-push-latest",
     image = ":contrail-statusmonitor-image",
     format = "Docker",
-    registry = "docker.io",
-    repository = "pitersk/contrail-statusmonitor",
-    tag = "master.latest",
+    registry = "gcr.io",
+    repository = "engprod-269421/contrail-statusmonitor",
+    tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
 container_push(

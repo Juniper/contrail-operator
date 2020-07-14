@@ -47,9 +47,9 @@ container_push(
     name = "contrail-provisioner-push-latest",
     image = ":contrail-provisioner-image",
     format = "Docker",
-    registry = "docker.io",
-    repository = "pitersk/contrail-provisioner",
-    tag = "master.latest",
+    registry = "gcr.io",
+    repository = "engprod-269421/contrail-operator-provisioner",
+    tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
 container_push(
