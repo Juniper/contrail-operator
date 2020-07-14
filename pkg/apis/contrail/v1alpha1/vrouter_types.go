@@ -363,6 +363,11 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
 		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
 		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+		//This vrouter kernel module option has to be enabled so that flows will be deleted after
+		//receiving tcp reset. Without that, in case of many linklocal connections, many file
+		//descriptors were created and with enough connections the fd limit was hit what caused a
+		//restart of the vrouter agent. In future releases it may be set as a default option.
+		envVariables["VROUTER_MODULE_OPTIONS"] = "vr_close_flow_on_tcp_rst=1"
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
