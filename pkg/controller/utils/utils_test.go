@@ -383,8 +383,22 @@ func TestUtilsSecond(t *testing.T) {
 	})
 
 	t.Run("Update Event in MergeCommonConfiguration verification", func(t *testing.T) {
-		tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
-		// nothing to test
+		mergedConfiguration := tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
+		assert.Equal(t, &trueVal, mergedConfiguration.Activate)
+		assert.Equal(t, &trueVal, mergedConfiguration.Create)
+		assert.Equal(t, &trueVal, mergedConfiguration.HostNetwork)
+		assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mergedConfiguration.NodeSelector)
+		assert.Equal(t, []string{"contrail-nightly"}, mergedConfiguration.ImagePullSecrets)
+		assert.Equal(t, []core.Toleration{
+			{
+				Effect:   core.TaintEffectNoSchedule,
+				Operator: core.TolerationOpExists,
+			},
+			{
+				Effect:   core.TaintEffectNoExecute,
+				Operator: core.TolerationOpExists,
+			},
+		}, mergedConfiguration.Tolerations)
 	})
 
 	t.Run("GetContainerFromList function verification", func(t *testing.T) {

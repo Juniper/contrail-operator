@@ -522,7 +522,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *webuiService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
 		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetWebuiCr()
 		cr.ObjectMeta = webuiService.ObjectMeta
 		cr.Labels = webuiService.ObjectMeta.Labels
@@ -656,7 +658,9 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		create := *provisionManagerService.Spec.CommonConfiguration.Create
 		delete := false
 		update := false
+
 		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetProvisionManagerCr()
 		cr.ObjectMeta = provisionManagerService.ObjectMeta
 		cr.Labels = provisionManagerService.ObjectMeta.Labels
@@ -793,6 +797,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		update := false
 
 		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+
 		cr := cr.GetConfigCr()
 		cr.ObjectMeta = configService.ObjectMeta
 		cr.Labels = configService.ObjectMeta.Labels
