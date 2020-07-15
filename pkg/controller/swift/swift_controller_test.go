@@ -11,7 +11,6 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/swift"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +24,7 @@ import (
 )
 
 const credentialsSecretName = "credentials-secret"
+const ringConfigMapName = "test-swift-ring"
 
 func TestSwiftController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
@@ -85,8 +85,7 @@ func TestSwiftController(t *testing.T) {
 					},
 				}
 				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR)
-				claims := volumeclaims.NewFake()
-				reconciler := swift.NewReconciler(fakeClient, scheme, claims)
+				reconciler := swift.NewReconciler(fakeClient, scheme)
 				// when
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 				// then
@@ -130,24 +129,28 @@ func TestSwiftController(t *testing.T) {
 					assert.Equal(t, credentialsSecretName, swiftCR.Status.CredentialsSecretName)
 				})
 
+				t.Run("should create ring config map", func(t *testing.T) {
+					cm := &core.ConfigMap{}
+					err = fakeClient.Get(context.Background(), types.NamespacedName{
+						Name:      ringConfigMapName,
+						Namespace: "default",
+					}, cm)
+					assert.NoError(t, err)
+					assert.NotNil(t, cm)
+					assert.Empty(t, cm.Data)
+					trueVal := true
+					expectedOwnerRefs := []v1.OwnerReference{{
+						APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Swift", Name: "test-swift", Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+					}}
+					assert.Equal(t, expectedOwnerRefs, cm.OwnerReferences)
+				})
+
 				t.Run("should create SwiftStorage CR", func(t *testing.T) {
 					assertSwiftStorageCRExists(t, fakeClient, swiftCR)
 				})
 
 				t.Run("should create SwiftProxy CR", func(t *testing.T) {
 					assertSwiftProxyCRExists(t, fakeClient, swiftCR)
-				})
-
-				t.Run("should create rings persistent volume claim", func(t *testing.T) {
-					claimName := types.NamespacedName{
-						Name:      "test-swift-rings",
-						Namespace: swiftName.Namespace,
-					}
-					claim, ok := claims.Claim(claimName)
-					require.True(t, ok, "missing claim")
-					assert.Equal(t, test.path, claim.StoragePath())
-					assert.Equal(t, test.expectedSize, claim.StorageSize())
-					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
 				})
 			})
 		}
@@ -226,8 +229,7 @@ func TestSwiftController(t *testing.T) {
 			}}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
-		claims := volumeclaims.NewFake()
-		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
+		reconciler := swift.NewReconciler(fakeClient, scheme)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then
@@ -289,8 +291,7 @@ func TestSwiftController(t *testing.T) {
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftCR, existingSwiftProxy, existingSwiftStorage)
-		claims := volumeclaims.NewFake()
-		reconciler := swift.NewReconciler(fakeClient, scheme, claims)
+		reconciler := swift.NewReconciler(fakeClient, scheme)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: swiftName})
 		// then

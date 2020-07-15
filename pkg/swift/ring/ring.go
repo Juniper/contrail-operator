@@ -11,10 +11,18 @@ import (
 )
 
 func New(configMap types.NamespacedName, ringType string) (*Ring, error) {
+	if configMap.Name == "" {
+		return nil, errors.New("empty config map name type")
+	}
 
 	if ringType == "" {
 		return nil, errors.New("empty ring type")
 	}
+
+	if configMap.Namespace == "" {
+		configMap.Namespace = "default"
+	}
+
 	return &Ring{
 		configMap: configMap,
 		ringType:  ringType,
@@ -40,6 +48,9 @@ func (d Device) Formatted() string {
 }
 
 func (r *Ring) AddDevice(device Device) error {
+	if r == nil {
+		return errors.New("nil ring")
+	}
 	if device.Region == "" {
 		return errors.New("empty region")
 	}
@@ -57,6 +68,9 @@ func (r *Ring) AddDevice(device Device) error {
 }
 
 func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
+	if r == nil {
+		return batch.Job{}, errors.New("nil ring")
+	}
 	if len(r.devices) == 0 {
 		return batch.Job{}, errors.New("no devices added")
 	}
@@ -97,6 +111,9 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 }
 
 func (r *Ring) args() []string {
+	if r == nil {
+		return []string{}
+	}
 	var argz []string
 	argz = append(argz, r.configMap.Namespace+"/"+r.configMap.Name, r.ringType)
 	for _, device := range r.devices {

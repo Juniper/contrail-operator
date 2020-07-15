@@ -224,6 +224,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				CredentialsSecretName: "swift-secret",
 				SwiftConfSecretName:   "test-secret",
 				KeystoneSecretName:    "keystone-adminpass-secret",
+				RingConfigMapName:     "test-ring",
 				Endpoint:              "10.255.254.4",
 			},
 		},
@@ -375,9 +376,10 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: "test-rings-claim",
-									ReadOnly:  true,
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "test-ring",
+									},
 								},
 							},
 						},

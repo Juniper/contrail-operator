@@ -50,6 +50,7 @@ func TestSwiftStorageController(t *testing.T) {
 				ContainerBindPort: 6002,
 				ObjectBindPort:    6000,
 				Device:            "dev",
+				RingConfigMapName: "test-ring",
 			},
 		},
 	}
@@ -188,6 +189,7 @@ func TestSwiftStorageController(t *testing.T) {
 								Size: test.size,
 								Path: test.path,
 							},
+							RingConfigMapName: "test-ring",
 						},
 					},
 				}
@@ -226,9 +228,10 @@ func TestSwiftStorageController(t *testing.T) {
 					expectedVolume := core.Volume{
 						Name: "rings",
 						VolumeSource: core.VolumeSource{
-							PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-								ClaimName: "test-rings-claim",
-								ReadOnly:  true,
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: "test-ring",
+								},
 							},
 						},
 					}

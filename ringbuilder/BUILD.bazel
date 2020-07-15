@@ -20,7 +20,6 @@ py3_image(
     main = "main.py",
 )
 
-
 container_push(
     name = "ringbuilder-push",
     image = ":ringbuilder",

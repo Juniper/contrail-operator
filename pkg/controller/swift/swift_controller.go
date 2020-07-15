@@ -24,7 +24,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/job"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/swift/ring"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swift")
@@ -37,15 +36,14 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()))
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme())
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcileSwift {
 	return &ReconcileSwift{
 		client:     client,
 		scheme:     scheme,
-		claims:     claims,
 		kubernetes: k8s.New(client, scheme),
 	}
 }
@@ -103,7 +101,6 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client     client.Client
 	scheme     *runtime.Scheme
-	claims     volumeclaims.PersistentVolumeClaims
 	kubernetes *k8s.Kubernetes
 }
 
@@ -127,10 +124,6 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	if !swift.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
-	}
-
-	if err = contrail.CreateAccount("ringbuilder", request.Namespace, r.client, r.scheme, swift); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	swiftConfSecretName := "swift-conf"
