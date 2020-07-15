@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +20,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/keystone"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 func TestKeystone(t *testing.T) {
@@ -47,15 +45,18 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -76,16 +77,19 @@ func TestKeystone(t *testing.T) {
 					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
 				newKeystoneService(),
+				newFernetSecret(),
 			},
 			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -102,8 +106,6 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				newExpectedSTS(),
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
@@ -111,15 +113,18 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS: newExpectedSTS(),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
-				newExpectedKeystoneFernetConfigMap(),
-				newExpectedKeystoneSSHConfigMap(),
 				newExpectedKeystoneInitConfigMap(),
 			},
 			expectedPostgres: &contrail.Postgres{
@@ -138,9 +143,14 @@ func TestKeystone(t *testing.T) {
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
 				newKeystoneService(),
+				newFernetSecret(),
 			},
 			expectedSTS:     &apps.StatefulSet{},
 			expectedConfigs: []*core.ConfigMap{},
@@ -161,8 +171,13 @@ func TestKeystone(t *testing.T) {
 					},
 					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
 				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
 				newMemcached(),
 				newAdminSecret(),
+				newFernetSecret(),
 				newKeystoneService(),
 			},
 			expectedSTS:     newExpectedSTSWithCustomImages(),
@@ -176,57 +191,6 @@ func TestKeystone(t *testing.T) {
 			},
 			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
-		{
-			name: "create secret with ssh keys pair",
-			initObjs: []runtime.Object{
-				newKeystone(),
-				&contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				},
-				newMemcached(),
-				newAdminSecret(),
-				newKeystoneService(),
-			},
-			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
-			expectedPostgres: &contrail.Postgres{
-				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
-					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
-				},
-				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-			},
-			expectedSecrets: []*core.Secret{
-				newExpectedSecret(),
-			},
-		},
-		{
-			name: "secret remains unchanged if already exists",
-			initObjs: []runtime.Object{
-				newKeystone(),
-				&contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				},
-				newMemcached(),
-				newExpectedSecretWithKeys(),
-				newAdminSecret(),
-				newKeystoneService(),
-			},
-			expectedSTS:    newExpectedSTS(),
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
-			expectedPostgres: &contrail.Postgres{
-				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
-					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
-				},
-				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-			},
-			expectedSecrets: []*core.Secret{
-				newExpectedSecretWithKeys(),
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -234,7 +198,7 @@ func TestKeystone(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := keystone.NewReconciler(
-				cl, scheme, k8s.New(cl, scheme), volumeclaims.New(cl, scheme), &rest.Config{},
+				cl, scheme, k8s.New(cl, scheme), &rest.Config{},
 			)
 
 			req := reconcile.Request{
@@ -301,67 +265,6 @@ func TestKeystone(t *testing.T) {
 		})
 	}
 
-	t.Run("should create pvc", func(t *testing.T) {
-		quantity5Gi := resource.MustParse("5Gi")
-		quantity1Gi := resource.MustParse("1Gi")
-		tests := map[string]struct {
-			size         string
-			path         string
-			expectedSize *resource.Quantity
-		}{
-			"no size and path given": {},
-			"only size given": {
-				size:         "1Gi",
-				expectedSize: &quantity1Gi,
-			},
-			"size and path given": {
-				size:         "5Gi",
-				path:         "/path",
-				expectedSize: &quantity5Gi,
-			},
-			"size and path given 2": {
-				size:         "1Gi",
-				path:         "/other",
-				expectedSize: &quantity1Gi,
-			},
-		}
-		for testName, test := range tests {
-			t.Run(testName, func(t *testing.T) {
-				k := newKeystone()
-				k.Spec.ServiceConfiguration.Storage.Path = test.path
-				k.Spec.ServiceConfiguration.Storage.Size = test.size
-				postgres := &contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
-				}
-				memcached := newMemcached()
-				adminSecret := newAdminSecret()
-				cl := fake.NewFakeClientWithScheme(scheme, k, postgres, memcached, adminSecret)
-				claims := volumeclaims.NewFake()
-				r := keystone.NewReconciler(
-					cl, scheme, k8s.New(cl, scheme), claims, &rest.Config{},
-				)
-				// when
-				_, err := r.Reconcile(reconcile.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      "keystone",
-						Namespace: "default",
-					},
-				})
-				require.NoError(t, err)
-				// then
-				claimName := types.NamespacedName{
-					Name:      "keystone-pv-claim",
-					Namespace: "default",
-				}
-				claim, ok := claims.Claim(claimName)
-				require.True(t, ok, "missing claim")
-				assert.Equal(t, test.path, claim.StoragePath())
-				assert.Equal(t, test.expectedSize, claim.StorageSize())
-				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
-			})
-		}
-	})
 }
 
 func newKeystone() *contrail.Keystone {
@@ -480,8 +383,8 @@ func newExpectedSTS() *apps.StatefulSet {
 								Value: "COPY_ALWAYS",
 							}},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 							},
 						},
 					},
@@ -498,9 +401,9 @@ func newExpectedSTS() *apps.StatefulSet {
 								Value: "COPY_ALWAYS",
 							}},
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
+								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
@@ -518,51 +421,17 @@ func newExpectedSTS() *apps.StatefulSet {
 								},
 							},
 						},
-						{
-							Image:           "localhost:5000/centos-binary-keystone-ssh:train",
-							Name:            "keystone-ssh",
-							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone-ssh",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
-						{
-							Image:           "localhost:5000/centos-binary-keystone-fernet:train",
-							Name:            "keystone-fernet",
-							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone-fernet",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
 					},
 					Tolerations: []core.Toleration{
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						core.Toleration{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
 					},
 					Volumes: []core.Volume{
 						{
-							Name: "keystone-fernet-tokens-volume",
+							Name: "keystone-fernet-keys",
 							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: "keystone-pv-claim",
+								Secret: &core.SecretVolumeSource{
+									SecretName: "fernet-keys-repository",
 								},
 							},
 						},
@@ -577,40 +446,12 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
-							Name: "keystone-fernet-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "keystone-keystone-fernet",
-									},
-								},
-							},
-						},
-						{
-							Name: "keystone-ssh-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "keystone-keystone-ssh",
-									},
-								},
-							},
-						},
-						{
 							Name: "keystone-init-config-volume",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "keystone-keystone-init",
 									},
-								},
-							},
-						},
-						{
-							Name: "keystone-keys-volume",
-							VolumeSource: core.VolumeSource{
-								Secret: &core.SecretVolumeSource{
-									SecretName: "keystone-keystone-keys",
 								},
 							},
 						},
@@ -673,6 +514,23 @@ func newAdminSecret() *core.Secret {
 		},
 		Data: map[string][]byte{
 			"password": []byte("test123"),
+		},
+	}
+}
+
+func newFernetSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "fernet-keys-repository",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "fernetKeyManager", "fernetKeyManager": "keystone-fernet-key-manager"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "FernetKeyManager", "keystone-fernet-key-manager", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"0": []byte("test123"),
 		},
 	}
 }
@@ -762,49 +620,6 @@ func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	}
 }
 
-func newExpectedKeystoneFernetConfigMap() *core.ConfigMap {
-	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{
-			"config.json":         expectedKeystoneFernetKollaServiceConfig,
-			"keystone.conf":       expectedKeystoneConfig,
-			"crontab":             expectedCrontab,
-			"fernet-node-sync.sh": expectedFernetNodeSyncScript,
-			"fernet-push.sh":      expectedFernetPushScript,
-			"fernet-rotate.sh":    expectedFernetRotateScript,
-			"ssh_config":          expectedSshConfig,
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-fernet",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-	}
-}
-
-func newExpectedKeystoneSSHConfigMap() *core.ConfigMap {
-	trueVal := true
-	return &core.ConfigMap{
-		Data: map[string]string{
-			"config.json": expectedkeystoneSSHKollaServiceConfig,
-			"sshd_config": expectedSSHDConfig,
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-ssh",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-	}
-}
-
 func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
@@ -839,14 +654,6 @@ func newKeystoneWithCustomImages() *contrail.Keystone {
 		{
 			Name:  "keystone",
 			Image: "image3",
-		},
-		{
-			Name:  "keystoneSsh",
-			Image: "image4",
-		},
-		{
-			Name:  "keystoneFernet",
-			Image: "image5",
 		},
 	}
 
@@ -896,7 +703,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			}},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 			},
 		},
 	}
@@ -915,7 +722,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			}},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 				core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 			},
 			ReadinessProbe: &core.Probe{
@@ -932,40 +739,6 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 				Requests: core.ResourceList{
 					"cpu": resource.MustParse("2"),
 				},
-			},
-		},
-		{
-			Image:           "image4",
-			Name:            "keystone-ssh",
-			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone-ssh",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-			},
-		},
-		{
-			Image:           "image5",
-			Name:            "keystone-fernet",
-			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone-fernet",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-				core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
 			},
 		},
 	}

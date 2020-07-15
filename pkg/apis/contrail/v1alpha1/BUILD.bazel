@@ -11,6 +11,7 @@ go_library(
         "defaults.go",
         "doc.go",
         "exec_to_pod.go",
+        "fernetkeymanager_types.go",
         "keystone_types.go",
         "kubemanager_types.go",
         "manager_types.go",

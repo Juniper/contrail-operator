@@ -1,0 +1,6 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: FernetKeyManager
+metadata:
+  name: example-fernetkeymanager
+spec:
+  # Add fields here
