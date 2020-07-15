@@ -75,7 +75,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to secondary resource Postgres and requeue the owner Keystone
+	// Watch for changes to secondary resource FernetKeyManager and requeue the owner Keystone
 	err = c.Watch(&source.Kind{Type: &contrail.FernetKeyManager{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
