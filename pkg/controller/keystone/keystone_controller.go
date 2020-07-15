@@ -229,8 +229,12 @@ func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string)
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keyManager, func() error {
+		// One day
 		keyManager.Spec.TokenExpiration = 86400
+		// Two days
 		keyManager.Spec.TokenAllowExpiredWindow = 172800
+		// Three days
+		keyManager.Spec.RotationInterval = 259200
 		return nil
 	})
 	return err
