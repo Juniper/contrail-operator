@@ -576,11 +576,11 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 		if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 			return nil, err
 		}
-		if len(keystone.Status.IPs) == 0 {
-			return nil, fmt.Errorf("%q Status.IPs empty", keystoneInstanceName)
+		if keystone.Status.ClusterIP == "" {
+			return nil, fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
 		}
 		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
-		w.KeystoneIP = keystone.Status.IPs[0]
+		w.KeystoneIP = keystone.Status.ClusterIP
 	}
 
 	return w, nil

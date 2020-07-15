@@ -171,11 +171,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneIP := keystone.Status.IPs[0]
+	keystoneIP := keystone.Status.ClusterIP
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 
 	commandConfigName := command.Name + "-command-configmap"
@@ -530,7 +530,7 @@ func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, po
 	if command.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.NewCertificate(r.client, r.scheme, command, r.config, pods, instanceType, hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificate(r.client, r.scheme, command, pods, instanceType, hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {

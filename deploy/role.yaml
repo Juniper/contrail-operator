@@ -59,6 +59,7 @@ rules:
   - keystones
   - swifts
   - memcacheds
+  - fernetkeymanagers
   verbs:
   - '*'
 - apiGroups:

@@ -36,11 +36,6 @@ const expectedKeystoneKollaServiceConfig = `{
             "owner": "keystone:kolla"
         },
         {
-            "path": "/etc/keystone/fernet-keys",
-            "owner": "keystone:keystone",
-            "perm": "0770"
-        },
-        {
             "path": "/etc/keystone/domains",
             "owner": "keystone:keystone",
             "perm": "0700"
@@ -48,52 +43,6 @@ const expectedKeystoneKollaServiceConfig = `{
     ]
 }`
 
-const expectedKeystoneFernetKollaServiceConfig = `
-{
-	"command": "crond -s -n",
-	"config_files": [{
-			"source": "/var/lib/kolla/config_files/keystone.conf",
-			"dest": "/etc/keystone/keystone.conf",
-			"owner": "keystone",
-			"perm": "0600"
-		},
-		{
-			"source": "/var/lib/kolla/config_files/crontab",
-			"dest": "/var/spool/cron/root",
-			"owner": "root",
-			"perm": "0600"
-		},
-		{
-			"source": "/var/lib/kolla/config_files/fernet-rotate.sh",
-			"dest": "/usr/bin/fernet-rotate.sh",
-			"owner": "root",
-			"perm": "0755"
-		},
-		{
-			"source": "/var/lib/kolla/config_files/fernet-node-sync.sh",
-			"dest": "/usr/bin/fernet-node-sync.sh",
-			"owner": "root",
-			"perm": "0755"
-		},
-		{
-			"source": "/var/lib/kolla/config_files/fernet-push.sh",
-			"dest": "/usr/bin/fernet-push.sh",
-			"owner": "root",
-			"perm": "0755"
-		},
-		{
-			"source": "/var/lib/kolla/config_files/ssh_config",
-			"dest": "/var/lib/keystone/.ssh/config",
-			"owner": "keystone",
-			"perm": "0600"
-		},
-		{
-			"source": "/var/lib/kolla/ssh_files/id_rsa",
-			"dest": "/var/lib/keystone/.ssh/id_rsa",
-			"owner": "keystone",
-			"perm": "0600"
-		}    ]
-}`
 
 const expectedKeystoneConfig = `
 [DEFAULT]
@@ -159,72 +108,6 @@ TraceEnable off
 </VirtualHost>
 `
 
-const expectedCrontab = `
-0 0 * * 0 /usr/bin/fernet-rotate.sh
-0 0 * * 3 /usr/bin/fernet-rotate.sh
-`
-
-const expectedFernetNodeSyncScript = `
-#!/bin/bash
-
-# Get data on the fernet tokens
-TOKEN_CHECK=$(/usr/bin/fetch_fernet_tokens.py -t 86400 -n 2)
-
-# Ensure the primary token exists and is not stale
-if $(echo "$TOKEN_CHECK" | grep -q '"update_required":"false"'); then
-    exit 0;
-fi
-
-# For each host node sync tokens
-`
-
-const expectedFernetPushScript = `
-#!/bin/bash
-
-`
-
-const expectedFernetRotateScript = `
-#!/bin/bash
-
-keystone-manage --config-file /etc/keystone/keystone.conf fernet_rotate --keystone-user keystone --keystone-group keystone
-
-/usr/bin/fernet-push.sh
-`
-
-const expectedSshConfig = `
-Host *
-  StrictHostKeyChecking no
-  UserKnownHostsFile /dev/null
-  Port 8023
-`
-
-const expectedkeystoneSSHKollaServiceConfig = `
-{
-    "command": "/usr/sbin/sshd -D",
-    "config_files": [
-        {
-            "source": "/var/lib/kolla/config_files/sshd_config",
-            "dest": "/etc/ssh/sshd_config",
-            "owner": "root",
-            "perm": "0600"
-        },
-        {
-            "source": "/var/lib/kolla/ssh_files/id_rsa.pub",
-            "dest": "/var/lib/keystone/.ssh/authorized_keys",
-            "owner": "keystone",
-            "perm": "0600"
-        }
-    ]
-}`
-
-const expectedSSHDConfig = `
-Port 8023
-ListenAddress 0.0.0.0
-
-SyslogFacility AUTHPRIV
-UsePAM yes
-`
-
 const expectedKeystoneInitKollaServiceConfig = `{
     "command": "/usr/bin/bootstrap.sh",
     "config_files": [
@@ -247,11 +130,6 @@ const expectedKeystoneInitKollaServiceConfig = `{
             "owner": "keystone:kolla"
         },
         {
-            "path": "/etc/keystone/fernet-keys",
-            "owner": "keystone:keystone",
-            "perm": "0770"
-        },
-        {
             "path": "/etc/keystone/domains",
             "owner": "keystone:keystone",
             "perm": "0700"
@@ -263,11 +141,10 @@ const expectedkeystoneInitBootstrapScript = `
 #!/bin/bash
 
 keystone-manage db_sync
-keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
-  --bootstrap-admin-url https://0.0.0.0:5555/v3/ \
-  --bootstrap-internal-url https://0.0.0.0:5555/v3/ \
-  --bootstrap-public-url https://0.0.0.0:5555/v3/
+  --bootstrap-admin-url https://10.10.10.10:5555/v3/ \
+  --bootstrap-internal-url https://10.10.10.10:5555/v3/ \
+  --bootstrap-public-url https://10.10.10.10:5555/v3/
 `

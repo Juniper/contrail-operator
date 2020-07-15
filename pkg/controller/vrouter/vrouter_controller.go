@@ -573,7 +573,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
 
-		if err = certificates.CreateAndSignCsr(r.Client, request, r.Scheme, instance, r.Config, podIPList, hostNetwork, instanceType); err != nil {
+		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 

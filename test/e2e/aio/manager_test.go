@@ -98,7 +98,6 @@ var targetVersionMap = map[string]string{
 }
 
 func ManagerCluster(t *testing.T) {
-	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
@@ -373,7 +372,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 }
 
 func RabbitmqCluster(t *testing.T) {
-	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()

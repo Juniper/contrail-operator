@@ -73,17 +73,6 @@ type ServiceStatus struct {
 	Created *bool   `json:"created,omitempty"`
 }
 
-// Status is the status of the service.
-// +k8s:openapi-gen=true
-type Status struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster.
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file.
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html.
-	Active *bool             `json:"active,omitempty"`
-	Nodes  map[string]string `json:"nodes,omitempty"`
-	Ports  map[string]string `json:"ports,omitempty"`
-}
-
 // ActiveStatus signals the current status
 type ActiveStatus struct {
 	Active *bool `json:"active,omitempty"`

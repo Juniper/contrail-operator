@@ -22,6 +22,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -1611,6 +1612,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	memcached.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
+		memcached.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, memcached.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

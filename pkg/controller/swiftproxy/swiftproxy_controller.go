@@ -135,11 +135,11 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.IPs[0], keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
+	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 
 	memcached, err := r.getMemcached(swiftProxy)
 	if err != nil {
@@ -166,7 +166,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureExists(memcached.Status.Node); err != nil {
+	if err = cm.ensureExists(memcached.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -236,7 +236,7 @@ func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.P
 }
 
 func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList) error {
-	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, r.mgrConfig, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
+	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Keystone, error) {
