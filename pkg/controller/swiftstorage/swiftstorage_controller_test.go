@@ -46,11 +46,10 @@ func TestSwiftStorageController(t *testing.T) {
 		},
 		Spec: contrail.SwiftStorageSpec{
 			ServiceConfiguration: contrail.SwiftStorageConfiguration{
-				AccountBindPort:           6001,
-				ContainerBindPort:         6002,
-				ObjectBindPort:            6000,
-				Device:                    "dev",
-				RingPersistentVolumeClaim: "test-rings-claim",
+				AccountBindPort:   6001,
+				ContainerBindPort: 6002,
+				ObjectBindPort:    6000,
+				Device:            "dev",
 			},
 		},
 	}
@@ -185,7 +184,6 @@ func TestSwiftStorageController(t *testing.T) {
 					},
 					Spec: contrail.SwiftStorageSpec{
 						ServiceConfiguration: contrail.SwiftStorageConfiguration{
-							RingPersistentVolumeClaim: "test-rings-claim",
 							Storage: contrail.Storage{
 								Size: test.size,
 								Path: test.path,

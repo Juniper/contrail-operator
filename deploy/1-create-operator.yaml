@@ -3137,7 +3137,7 @@ spec:
                                   type: integer
                                 memcachedInstance:
                                   type: string
-                                ringPersistentVolumeClaim:
+                                ringConfigMapName:
                                   type: string
                                 swiftConfSecretName:
                                   type: string
@@ -3169,7 +3169,7 @@ spec:
                                   type: string
                                 objectBindPort:
                                   type: integer
-                                ringPersistentVolumeClaim:
+                                ringConfigMapName:
                                   type: string
                                 storage:
                                   properties:
@@ -4575,7 +4575,7 @@ spec:
                   type: integer
                 memcachedInstance:
                   type: string
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 swiftConfSecretName:
                   type: string
@@ -4688,7 +4688,7 @@ spec:
                       type: integer
                     memcachedInstance:
                       type: string
-                    ringPersistentVolumeClaim:
+                    ringConfigMapName:
                       type: string
                     swiftConfSecretName:
                       type: string
@@ -4719,7 +4719,7 @@ spec:
                       type: string
                     objectBindPort:
                       type: integer
-                    ringPersistentVolumeClaim:
+                    ringConfigMapName:
                       type: string
                     storage:
                       properties:
@@ -4817,7 +4817,7 @@ spec:
                   type: string
                 objectBindPort:
                   type: integer
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 storage:
                   properties:

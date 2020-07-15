@@ -3,7 +3,6 @@ package ring
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
@@ -11,30 +10,20 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func New(claimName string, path string, ringType string) (*Ring, error) {
-	if claimName == "" {
-		return nil, errors.New("empty claim name")
-	}
-	if path == "" {
-		return nil, errors.New("empty path")
-	}
-	if strings.HasSuffix(path, "/") {
-		path = path[:len(path)-1]
-	}
+func New(configMap types.NamespacedName, ringType string) (*Ring, error) {
+
 	if ringType == "" {
 		return nil, errors.New("empty ring type")
 	}
 	return &Ring{
-		claimName: claimName,
-		path:      path,
+		configMap: configMap,
 		ringType:  ringType,
 	}, nil
 }
 
 type Ring struct {
+	configMap types.NamespacedName
 	devices   []Device
-	claimName string
-	path      string
 	ringType  string
 }
 
@@ -77,6 +66,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 	if name.Name == "" {
 		return batch.Job{}, errors.New("no job name given")
 	}
+
 	return batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,
@@ -85,35 +75,15 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
-					HostNetwork:   true,
-					RestartPolicy: core.RestartPolicyNever,
-					Volumes: []core.Volume{
-						{
-							Name: "rings",
-							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: r.claimName,
-									ReadOnly:  false,
-								},
-							},
-						},
-					},
+					HostNetwork:        true,
+					RestartPolicy:      core.RestartPolicyNever,
+					ServiceAccountName: "contrail-operator",
 					Containers: []core.Container{
 						{
-							Name:  "ring-reconciler",
-							Image: "localhost:5000/centos-source-swift-base:train",
-							VolumeMounts: []core.VolumeMount{
-								{
-									Name:      "rings",
-									MountPath: r.path,
-								},
-							},
-							Command: []string{
-								"python",
-								"-c",
-								reconcileRingScript,
-							},
-							Args: r.args(),
+							Name:            "ringbuilder",
+							Image:           "localhost:5000/contrail-operator/engprod-269421/ringbuilder:master.latest",
+							ImagePullPolicy: core.PullAlways,
+							Args:            r.args(),
 						},
 					},
 					Tolerations: []core.Toleration{
@@ -128,8 +98,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 
 func (r *Ring) args() []string {
 	var argz []string
-	ringFileName := r.path + "/" + r.ringType
-	argz = append(argz, ringFileName)
+	argz = append(argz, r.configMap.Namespace+"/"+r.configMap.Name, r.ringType)
 	for _, device := range r.devices {
 		argz = append(argz, device.Formatted())
 	}

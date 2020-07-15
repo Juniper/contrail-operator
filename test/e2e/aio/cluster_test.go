@@ -31,6 +31,8 @@ func TestCluster(t *testing.T) {
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
 
+	buildTag := scmBranch + "." + scmRevision
+
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
@@ -72,15 +74,19 @@ func TestCluster(t *testing.T) {
 			require.NoError(t, err)
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Config.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag
 
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag
 
 			utils.GetContainerFromList("provisioner",
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + buildTag
+
+			utils.GetContainerFromList("ringbuilder",
+				manager.Spec.Services.Swift.Spec.ServiceConfiguration.Containers).Image =
+				"registry:5000/contrail-operator/engprod-269421/ringbuilder:" + buildTag
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)

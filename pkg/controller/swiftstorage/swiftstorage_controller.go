@@ -130,8 +130,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	ringsClaim := swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaim)
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -160,7 +159,11 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
+func (r *ReconcileSwiftStorage) createOrUpdateSts(
+	request reconcile.Request,
+	swiftStorage *contrail.SwiftStorage,
+	claimName string,
+) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
@@ -196,9 +199,10 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 			{
 				Name: "rings",
 				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: ringsClaimName,
-						ReadOnly:  true,
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: swiftStorage.Spec.ServiceConfiguration.RingConfigMapName,
+						},
 					},
 				},
 			},

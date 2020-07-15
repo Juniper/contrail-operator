@@ -47,13 +47,32 @@ rules_proto_toolchains()
 
 http_archive(
     name = "rules_python",
-    sha256 = "aa96a691d3a8177f3215b14b0edc9641787abaaa30363a080165d06ab65e1161",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.1/rules_python-0.0.1.tar.gz",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
+    strip_prefix = "rules_python-0.0.2", 
+    sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
 )
-
 load("@rules_python//python:repositories.bzl", "py_repositories")
 
 py_repositories()
+
+load(
+    "@rules_python//python:pip.bzl",
+    "pip_import",
+    "pip3_import",
+    "pip_repositories",
+)
+
+pip_repositories()
+
+pip3_import(
+    name = "ringbuilder",
+    extra_pip_args = ["--no-deps",],
+    requirements = "//ringbuilder:requirements.txt",
+)
+
+load("@ringbuilder//:requirements.bzl", gravity_pip_install = "pip_install")
+
+gravity_pip_install()
 
 http_archive(
     name = "io_bazel_rules_docker",
@@ -90,6 +109,33 @@ load(
 )
 
 _go_image_repos()
+
+load(
+    "@io_bazel_rules_docker//python:image.bzl",
+    _py_image_repos = "repositories",
+)
+
+_py_image_repos()
+
+load(
+    "@io_bazel_rules_docker//python3:image.bzl",
+    _py3_image_repos = "repositories",
+)
+
+_py3_image_repos()
+
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
+
+container_pull(
+    name = "swift_base",
+    registry = "kolla",
+    repository = "centos-binary-keystone",
+    # 'tag' is also supported, but digest is encouraged for reproducibility.
+    tag = "train",
+)
 
 http_archive(
     name = "bazel_toolchains",

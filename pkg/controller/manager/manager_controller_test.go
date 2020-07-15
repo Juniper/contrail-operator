@@ -1701,7 +1701,7 @@ var swift = &contrail.Swift{
 	Spec: contrail.SwiftSpec{
 		ServiceConfiguration: contrail.SwiftConfiguration{
 			Containers: []*contrail.Container{
-				{Name: "ring-reconciler", Image: "ring-reconciler"},
+				{Name: "ringbuilder", Image: "ringbuilder"},
 			},
 			SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 				AccountBindPort:   6001,

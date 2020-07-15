@@ -331,7 +331,7 @@ func newSwift(swiftName types.NamespacedName) *contrail.Swift {
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
-					{Name: "ring-reconciler", Image: "ring-reconciler"},
+					{Name: "ringbuilder", Image: "ringbuilder"},
 				},
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 					AccountBindPort:   6001,
@@ -386,7 +386,6 @@ func assertSwiftStorageCRExists(t *testing.T, c client.Client, swiftCR *contrail
 	require.Equal(t, expectedSwiftStorageConf.ContainerBindPort, swiftStorage.Spec.ServiceConfiguration.ContainerBindPort)
 	require.Equal(t, expectedSwiftStorageConf.ObjectBindPort, swiftStorage.Spec.ServiceConfiguration.ObjectBindPort)
 	assert.Equal(t, expectedSwiftStorageConf.Containers, swiftStorage.Spec.ServiceConfiguration.Containers)
-	assert.Equal(t, swiftCR.Name+"-rings", swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 
 }
 
@@ -415,7 +414,6 @@ func assertSwiftProxyCRExists(t *testing.T, c client.Client, swiftCR *contrail.S
 	assert.Equal(t, expectedSwiftProxyConf.ListenPort, swiftProxy.Spec.ServiceConfiguration.ListenPort)
 	assert.Equal(t, swiftCR.Status.CredentialsSecretName, swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName)
 	assert.Equal(t, expectedSwiftProxyConf.Containers, swiftProxy.Spec.ServiceConfiguration.Containers)
-	assert.Equal(t, swiftCR.Name+"-rings", swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim)
 }
 
 func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.NamespacedName) {
@@ -425,5 +423,5 @@ func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.Names
 		Namespace: jobName.Namespace,
 	}, job)
 	require.NoError(t, err, "job %v does not exist", jobName)
-	assert.Equal(t, "ring-reconciler", job.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, "ringbuilder", job.Spec.Template.Spec.Containers[0].Image)
 }

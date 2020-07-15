@@ -100,7 +100,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.SwiftSpec{
 				ServiceConfiguration: contrail.SwiftConfiguration{
 					Containers: []*contrail.Container{
-						{Name: "ring-reconciler", Image: "registry:5000/common-docker-third-party/contrail/centos-source-swift-base:train-2005"},
+						{Name: "ringbuilder", Image: "registry:5000/contrail-operator/engprod-269421/ringbuilder:master.latest"},
 					},
 					CredentialsSecretName: "commandtest-swift-credentials-secret",
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
