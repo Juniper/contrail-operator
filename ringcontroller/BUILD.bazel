@@ -1,8 +1,8 @@
 load("@io_bazel_rules_docker//python3:image.bzl", "py3_image")
 load("@io_bazel_rules_docker//python:image.bzl", "py_layer")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@ringbuilder//:requirements.bzl", "all_requirements")
+load("@ringcontroller//:requirements.bzl", "all_requirements")
 
 py_layer(
     name = "external_deps",
@@ -10,9 +10,16 @@ py_layer(
     filter = "@",
 )
 
+py_test(
+    name = "ring_controller_test",
+    srcs = ["ring_controller_test.py", "ring_controller.py"],
+    python_version = "PY3",
+    deps = all_requirements,
+)
+
 py3_image(
-    name = "ringbuilder",
-    srcs = ["main.py"],
+    name = "ringcontroller",
+    srcs = ["main.py", "ring_controller.py"],
     layers = [
         ":external_deps",
     ],
@@ -21,28 +28,28 @@ py3_image(
 )
 
 container_push(
-    name = "ringbuilder-push",
-    image = ":ringbuilder",
+    name = "ringcontroller-push",
+    image = ":ringcontroller",
     format = "Docker",
     registry = "gcr.io",
-    repository = "engprod-269421/ringbuilder",
+    repository = "engprod-269421/ringcontroller",
     tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
 )
 
 container_push(
-    name = "ringbuilder-push-latest",
-    image = ":ringbuilder",
+    name = "ringcontroller-push-latest",
+    image = ":ringcontroller",
     format = "Docker",
     registry = "gcr.io",
-    repository = "engprod-269421/ringbuilder",
+    repository = "engprod-269421/ringcontroller",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
 container_push(
-    name = "ringbuilder-push-local",
-    image = ":ringbuilder",
+    name = "ringcontroller-push-local",
+    image = ":ringcontroller",
     format = "Docker",
     registry = "localhost:5000",
-    repository = "contrail-operator/engprod-269421/ringbuilder",
+    repository = "contrail-operator/engprod-269421/ringcontroller",
     tag = "master.latest",
 )

@@ -94,8 +94,8 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 					ServiceAccountName: "contrail-operator",
 					Containers: []core.Container{
 						{
-							Name:            "ringbuilder",
-							Image:           "localhost:5000/contrail-operator/engprod-269421/ringbuilder:master.latest",
+							Name:            "ringcontroller",
+							Image:           "localhost:5000/contrail-operator/engprod-269421/ringcontroller:master.latest",
 							ImagePullPolicy: core.PullAlways,
 							Args:            r.args(),
 						},

@@ -82,9 +82,9 @@ func TestCluster(t *testing.T) {
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
 				"registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + buildTag
 
-			utils.GetContainerFromList("ringbuilder",
+			utils.GetContainerFromList("ringcontroller",
 				manager.Spec.Services.Swift.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/ringbuilder:" + buildTag
+				"registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)

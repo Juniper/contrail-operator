@@ -332,7 +332,7 @@ func newSwift(swiftName types.NamespacedName) *contrail.Swift {
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
-					{Name: "ringbuilder", Image: "ringbuilder"},
+					{Name: "ringcontroller", Image: "ringcontroller"},
 				},
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 					AccountBindPort:   6001,
@@ -424,5 +424,5 @@ func assertJobExists(t *testing.T, fakeClient client.Client, jobName types.Names
 		Namespace: jobName.Namespace,
 	}, job)
 	require.NoError(t, err, "job %v does not exist", jobName)
-	assert.Equal(t, "ringbuilder", job.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, "ringcontroller", job.Spec.Template.Spec.Containers[0].Image)
 }

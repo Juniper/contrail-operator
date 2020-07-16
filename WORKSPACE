@@ -65,12 +65,12 @@ load(
 pip_repositories()
 
 pip3_import(
-    name = "ringbuilder",
+    name = "ringcontroller",
     extra_pip_args = ["--no-deps",],
-    requirements = "//ringbuilder:requirements.txt",
+    requirements = "//ringcontroller:requirements.txt",
 )
 
-load("@ringbuilder//:requirements.bzl", ringbuilder_pip_install = "pip_install")
+load("@ringcontroller//:requirements.bzl", ringbuilder_pip_install = "pip_install")
 
 ringbuilder_pip_install()
 

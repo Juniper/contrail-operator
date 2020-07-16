@@ -76,10 +76,6 @@ func TestRing_BuildJob(t *testing.T) {
 		_, err := ring.New(types.NamespacedName{Name: ""}, "account")
 		assert.Error(t, err)
 	})
-	t.Run("should return error when ringType not given", func(t *testing.T) {
-		_, err := ring.New(types.NamespacedName{Name: "rings"}, "")
-		assert.Error(t, err)
-	})
 	t.Run("should pass namespace name of config map", func(t *testing.T) {
 		tests := map[string]struct {
 			configMap            types.NamespacedName
@@ -112,6 +108,22 @@ func TestRing_BuildJob(t *testing.T) {
 				assert.Equal(t, test.expectedRingFileName, args[0])
 			})
 		}
+	})
+	t.Run("should return error when ringType not given", func(t *testing.T) {
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "")
+		assert.Error(t, err)
+	})
+	t.Run("should pass ringType", func(t *testing.T) {
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		_ = account.AddDevice(device)
+		// when
+		job, _ := account.BuildJob(jobName)
+		// then
+		containers := job.Spec.Template.Spec.Containers
+		require.Len(t, containers, 1)
+		args := containers[0].Args
+		require.NotEmpty(t, args)
+		assert.Equal(t, "account", args[1])
 	})
 	t.Run("should pass formatted devices arguments", func(t *testing.T) {
 		tests := map[string]struct {
