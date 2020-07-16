@@ -2,7 +2,7 @@
 Deployment depends strongly on Openshift installation which is described in this [documentation](https://docs.openshift.com/container-platform/4.1/installing/installing_aws/installing-aws-customizations.html)
 
 Prerequisities that have to be fulfilled in order to dpeloy Contrail with operator on Openshift:
-* openshift-install binary ([download](https://cloud.redhat.com/openshift/install))
+* openshift-install binary (>=4.4.8) ([download](https://cloud.redhat.com/openshift/install))
 * Openshift pull secrets ([download](https://cloud.redhat.com/openshift/install/pull-secret))
 * Configured AWS account with proper permissions and resolvable base domain configured in Route53 ([documentation](https://docs.openshift.com/container-platform/4.3/installing/installing_aws/installing-aws-account.html#installing-aws-account))
 * Any SSH key generated on local machine to provide during installation
@@ -31,11 +31,16 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 Create file with configuration parameters that looks similar to this:
 ```
 CONTRAIL_VERSION=master.1274
+CONTRAIL_REGISTRY=hub.juniper.net/contrail-nightly
 DOCKER_CONFIG=example_json_config
 ```
 Under *CONTRAIL_VERSION* field enter proper Contrail container build tag, available in the hub.juniper.net/contrail-nightly registry.
 
-*DOCKER_CONFIG* is configuration for registry secret to hub.juniper.net/contrail-nightly
+**NOTE** Do not specify the *-rhel* suffix in the build tag, it will be appended automatically where needed.
+
+Choose source registry for container images with *CONTRAIL_REGISTRY* field.
+
+*DOCKER_CONFIG* is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required)
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
 
 **NOTE:** You may create dummy secret on Kind in order to get proper base64 value:

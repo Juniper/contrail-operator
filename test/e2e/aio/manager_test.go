@@ -289,7 +289,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "analyticsapi", Image: "registry:5000/contrail-nightly/contrail-analytics-api:" + versionMap["config"]},
 								{Name: "collector", Image: "registry:5000/contrail-nightly/contrail-analytics-collector:" + versionMap["config"]},
 								{Name: "queryengine", Image: "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + versionMap["config"]},
-								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["config"]},
 								{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 								{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
@@ -319,7 +318,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 								{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["control"]},
 								{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + versionMap["control"]},
 								{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
-								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["control"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 							},
 						},
@@ -362,7 +360,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 
 							Containers: []*v1alpha1.Container{
 								{Name: "kubemanager", Image: "registry:5000/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
-								{Name: "nodeinit", Image: "registry:5000/contrail-nightly/contrail-node-init:" + versionMap["kubemanager"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 								{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
 							},

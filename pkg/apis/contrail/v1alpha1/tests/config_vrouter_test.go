@@ -142,9 +142,10 @@ func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
 	}
 
 	expectedVrouterEnvVariables := map[string]string{
-		"PHYSICAL_INTERFACE": "eth0",
-		"CLOUD_ORCHESTRATOR": "kubernetes",
-		"VROUTER_ENCRYPTION": "false",
+		"PHYSICAL_INTERFACE":     "eth0",
+		"CLOUD_ORCHESTRATOR":     "kubernetes",
+		"VROUTER_ENCRYPTION":     "false",
+		"VROUTER_MODULE_OPTIONS": "vr_close_flow_on_tcp_rst=1",
 	}
 	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
 }
@@ -166,9 +167,10 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 	}
 
 	expectedVrouterEnvVariables := map[string]string{
-		"PHYSICAL_INTERFACE": "eth0",
-		"CLOUD_ORCHESTRATOR": "kubernetes",
-		"VROUTER_ENCRYPTION": "true",
+		"PHYSICAL_INTERFACE":     "eth0",
+		"CLOUD_ORCHESTRATOR":     "kubernetes",
+		"VROUTER_ENCRYPTION":     "true",
+		"VROUTER_MODULE_OPTIONS": "vr_close_flow_on_tcp_rst=1",
 	}
 	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
 }

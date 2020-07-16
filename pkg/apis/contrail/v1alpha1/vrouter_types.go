@@ -56,19 +56,20 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers         []*Container  `json:"containers,omitempty"`
-	ControlInstance    string        `json:"controlInstance,omitempty"`
-	CassandraInstance  string        `json:"cassandraInstance,omitempty"`
-	Gateway            string        `json:"gateway,omitempty"`
-	PhysicalInterface  string        `json:"physicalInterface,omitempty"`
-	MetaDataSecret     string        `json:"metaDataSecret,omitempty"`
-	NodeManager        *bool         `json:"nodeManager,omitempty"`
-	Distribution       *Distribution `json:"distribution,omitempty"`
-	ServiceAccount     string        `json:"serviceAccount,omitempty"`
-	ClusterRole        string        `json:"clusterRole,omitempty"`
-	ClusterRoleBinding string        `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption  bool          `json:"vrouterEncryption,omitempty"`
-	CniMetaPlugin      string        `json:"cniMetaPlugin,omitempty"`
+	Containers          []*Container  `json:"containers,omitempty"`
+	ControlInstance     string        `json:"controlInstance,omitempty"`
+	CassandraInstance   string        `json:"cassandraInstance,omitempty"`
+	Gateway             string        `json:"gateway,omitempty"`
+	PhysicalInterface   string        `json:"physicalInterface,omitempty"`
+	MetaDataSecret      string        `json:"metaDataSecret,omitempty"`
+	NodeManager         *bool         `json:"nodeManager,omitempty"`
+	Distribution        *Distribution `json:"distribution,omitempty"`
+	ServiceAccount      string        `json:"serviceAccount,omitempty"`
+	ClusterRole         string        `json:"clusterRole,omitempty"`
+	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
+	CniMetaPlugin       string        `json:"cniMetaPlugin,omitempty"`
+	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -363,6 +364,11 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
 		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
 		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+		//This vrouter kernel module option has to be enabled so that flows will be deleted after
+		//receiving tcp reset. Without that, in case of many linklocal connections, many file
+		//descriptors were created and with enough connections the fd limit was hit what caused a
+		//restart of the vrouter agent. In future releases it may be set as a default option.
+		envVariables["VROUTER_MODULE_OPTIONS"] = "vr_close_flow_on_tcp_rst=1"
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string

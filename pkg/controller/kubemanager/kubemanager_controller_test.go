@@ -46,7 +46,6 @@ var kubemanagerCR = &contrail.Kubemanager{
 			Containers: []*contrail.Container{
 				{Name: "init", Image: "image1"},
 				{Name: "kubemanager", Image: "image2"},
-				{Name: "nodeinit", Image: "image3"},
 				{Name: "statusmonitor", Image: "image4"},
 			},
 			IPFabricForwarding:  &falseVal,

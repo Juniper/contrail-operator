@@ -131,6 +131,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                contrailStatusImage:
+                  type: string
                 controlInstance:
                   type: string
                 distribution:

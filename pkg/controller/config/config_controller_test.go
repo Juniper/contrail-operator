@@ -196,7 +196,6 @@ func newConfigInst() *contrail.Config {
 					{Name: "dnsmasq", Image: "contrail-controller-config-dnsmasq"},
 					{Name: "init", Image: "python:alpine"},
 					{Name: "init2", Image: "busybox"},
-					{Name: "nodeinit", Image: "contrail-node-init"},
 					{Name: "redis", Image: "redis"},
 					{Name: "schematransformer", Image: "contrail-controller-config-schema"},
 					{Name: "servicemonitor", Image: "contrail-controller-config-svcmonitor"},
