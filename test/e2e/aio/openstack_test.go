@@ -186,7 +186,7 @@ func TestOpenstackServices(t *testing.T) {
 				Spec: contrail.SwiftSpec{
 					ServiceConfiguration: contrail.SwiftConfiguration{
 						Containers: []*contrail.Container{
-							{Name: "ringbuilder", Image: "registry:5000/contrail-operator/engprod-269421/ringbuilder:" + scmBranch + "." + scmRevision},
+							{Name: "ringbuilder", Image: "registry:5000/contrail-operator/engprod-269421/ringbuilder:" + buildTag},
 						},
 						CredentialsSecretName: "openstacktest-swift-credentials-secret",
 						SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{

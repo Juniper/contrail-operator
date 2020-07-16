@@ -31,8 +31,6 @@ func TestCluster(t *testing.T) {
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
 
-	buildTag := scmBranch + "." + scmRevision
-
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
