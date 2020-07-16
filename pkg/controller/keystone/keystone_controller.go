@@ -112,7 +112,7 @@ type ReconcileKeystone struct {
 func NewReconciler(
 	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, restConfig *rest.Config,
 ) *ReconcileKeystone {
-	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes,restConfig: restConfig}
+	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, restConfig: restConfig}
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -218,13 +218,18 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	strategy := "deleteFirst"
+	if err = contrail.UpdateSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", request, r.scheme, r.client, strategy); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
 }
 
 func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
 	keyManager := &contrail.FernetKeyManager{
 		ObjectMeta: meta.ObjectMeta{
-			Name: name,
+			Name:      name,
 			Namespace: namespace,
 		},
 	}
@@ -240,7 +245,7 @@ func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string)
 	return err
 }
 
-func (r *ReconcileKeystone) getFernetKeyManager (name, namespace string) (*contrail.FernetKeyManager, error) {
+func (r *ReconcileKeystone) getFernetKeyManager(name, namespace string) (*contrail.FernetKeyManager, error) {
 	keyManager := &contrail.FernetKeyManager{}
 	namespacedName := types.NamespacedName{Name: name, Namespace: namespace}
 	err := r.client.Get(context.Background(), namespacedName, keyManager)
@@ -251,64 +256,8 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 	kcName, kciName, keysSecretName string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
-	var labelsMountPermission int32 = 0644
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
-		sts.Spec.Template.Spec.Volumes = []core.Volume{
-			{
-				Name: "keystone-fernet-keys",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: keysSecretName,
-					},
-				},
-			},
-			{
-				Name: "keystone-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-init-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kciName,
-						},
-					},
-				},
-			},
-			{
-				Name: keystone.Name + "-secret-certificates",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: keystone.Name + "-secret-certificates",
-					},
-				},
-			},
-			{
-				Name: "status",
-				VolumeSource: core.VolumeSource{
-					DownwardAPI: &core.DownwardAPIVolumeSource{
-						Items: []core.DownwardAPIVolumeFile{
-							{
-								FieldRef: &core.ObjectFieldSelector{
-									APIVersion: "v1",
-									FieldPath:  "metadata.labels",
-								},
-								Path: "pod_labels",
-							},
-						},
-						DefaultMode: &labelsMountPermission,
-					},
-				},
-			},
-		}
-
+		updateKeystoneSTS(keystone, sts, kcName, kciName, keysSecretName)
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
@@ -535,4 +484,67 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 			Labels:    map[string]string{"service": cr.Name},
 		},
 	}
+}
+
+func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, kciName, keysSecretName string) {
+	var labelsMountPermission int32 = 0644
+	newSTS := newKeystoneSTS(keystone)
+	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
+	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
+	sts.Spec.Template.Spec.Volumes = []core.Volume{
+		{
+			Name: "keystone-fernet-keys",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: keysSecretName,
+				},
+			},
+		},
+		{
+			Name: "keystone-config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: kcName,
+					},
+				},
+			},
+		},
+		{
+			Name: "keystone-init-config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: kciName,
+					},
+				},
+			},
+		},
+		{
+			Name: keystone.Name + "-secret-certificates",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: keystone.Name + "-secret-certificates",
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						{
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+							Path: "pod_labels",
+						},
+					},
+					DefaultMode: &labelsMountPermission,
+				},
+			},
+		},
+	}
+
 }
