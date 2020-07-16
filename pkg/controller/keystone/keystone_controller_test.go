@@ -269,6 +269,7 @@ func TestKeystone(t *testing.T) {
 
 func newKeystone() *contrail.Keystone {
 	trueVal := true
+	oneVal := int32(1)
 	return &contrail.Keystone{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone",
@@ -276,6 +277,7 @@ func newKeystone() *contrail.Keystone {
 		},
 		Spec: contrail.KeystoneSpec{
 			CommonConfiguration: contrail.CommonConfiguration{
+				Replicas:    &oneVal,
 				Activate:    &trueVal,
 				Create:      &trueVal,
 				HostNetwork: &trueVal,
@@ -319,6 +321,7 @@ func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
 
 func newExpectedSTS() *apps.StatefulSet {
 	trueVal := true
+	oneVal := int32(1)
 	var labelsMountPermission int32 = 0644
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -331,6 +334,7 @@ func newExpectedSTS() *apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
+			Replicas: &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 			},
