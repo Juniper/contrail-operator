@@ -43,13 +43,8 @@ Choose source registry for container images with *CONTRAIL_REGISTRY* field.
 *DOCKER_CONFIG* is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required)
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
 
-**NOTE:** You may create dummy secret on Kind in order to get proper base64 value:
-```
-kubectl create secret docker-registry contrail-registry --docker-server=hub.juniper.net/contrail-nightly --docker-username=<username> --docker-password=<password> --docker-email=<mail for registry> -n contrail
-
-kubect -n contrail get secret contrail-registry -o yaml
-```
-Afterwards, copy the .dockerconfigjson field contents and paste it in the configuration file
+**NOTE:** You may create base64 encoded value for config with script provided in *deploy/openshift/tools/docker-config-generate* directory.
+Copy output of the script and paste into config used to install-manifests script.
 
 4. Modify manifests if neccessary:
 
