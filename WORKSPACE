@@ -70,9 +70,9 @@ pip3_import(
     requirements = "//ringbuilder:requirements.txt",
 )
 
-load("@ringbuilder//:requirements.bzl", gravity_pip_install = "pip_install")
+load("@ringbuilder//:requirements.bzl", ringbuilder_pip_install = "pip_install")
 
-gravity_pip_install()
+ringbuilder_pip_install()
 
 http_archive(
     name = "io_bazel_rules_docker",
@@ -123,19 +123,6 @@ load(
 )
 
 _py3_image_repos()
-
-load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
-)
-
-container_pull(
-    name = "swift_base",
-    registry = "kolla",
-    repository = "centos-binary-keystone",
-    # 'tag' is also supported, but digest is encouraged for reproducibility.
-    tag = "train",
-)
 
 http_archive(
     name = "bazel_toolchains",
