@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if [[ "$OSTYPE" == "darwin"* ]]; then
+        BASE64_COMMAND='base64'
+else
+        BASE64_COMMAND='base64 -w 0'
+fi
+
 get_parameters() {
     read -p "Docker registry: "  REGISTRY
     read -p "Docker username: "  USERNAME
@@ -7,9 +13,9 @@ get_parameters() {
 }
 
 generate_base64() {
-    AUTH=$(echo $USERNAME:$SECRET | base64 -w 0)
+    AUTH=$(echo $USERNAME:$SECRET | $BASE64_COMMAND)
     RENDERED_JSON=$(echo {\"auths\":{\"${REGISTRY}\":{\"username\": \"${USERNAME}\",\"password\":\"${SECRET}\",\"auth\":\"${AUTH}\"}}})
-    DOCKER_CONFIG=$(echo $RENDERED_JSON | base64 -w 0)
+    DOCKER_CONFIG=$(echo $RENDERED_JSON | $BASE64_COMMAND)
 }
 
 get_parameters
