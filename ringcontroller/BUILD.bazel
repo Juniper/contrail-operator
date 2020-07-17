@@ -11,8 +11,8 @@ py_layer(
 )
 
 py_test(
-    name = "ring_controller_test",
-    srcs = ["ring_controller_test.py", "ring_controller.py"],
+    name = "test_ring_controller",
+    srcs = ["test_ring_controller.py", "ring_controller.py"],
     python_version = "PY3",
     deps = all_requirements,
 )

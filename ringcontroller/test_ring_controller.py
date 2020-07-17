@@ -1,9 +1,10 @@
-import unittest
 import base64
 import io
+import unittest
+from gzip import decompress
+
 from swift.common.ring import RingBuilder
 from swift.common.ring.utils import parse_add_value
-from gzip import decompress
 
 from ring_controller import RingController
 
@@ -16,7 +17,7 @@ class TestRingController(unittest.TestCase):
         r = RingController(b, "object")
 
         # when new devices are added
-        ds = ["r1z1-192.168.0.2:6000/d3", "r1z2-192.168.2.2:5000/d1"]
+        ds = ["r1z1-192.168.0.2:6000/d3", "r1z1-192.168.2.2:5000/d1"]
         r.reconcile(ds)
 
         # then new devices are present
@@ -30,7 +31,7 @@ class TestRingController(unittest.TestCase):
                          }, {
                              'device': 'd1', 'id': 1, 'ip': '192.168.2.2', 'meta': '',
                              'parts': 512, 'parts_wanted': 0, 'port': 5000, 'region': 1,
-                             'replication_ip': None, 'replication_port': None, 'weight': 1.0, 'zone': 2
+                             'replication_ip': None, 'replication_port': None, 'weight': 1.0, 'zone': 1
                          }])
 
     def test_reconcile_remove_device(self):
