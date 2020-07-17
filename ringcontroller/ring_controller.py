@@ -2,36 +2,43 @@ import base64
 import io
 import os
 import tempfile
+import logging
 
 from swift.common.ring.utils import parse_add_value
 from gzip import GzipFile
 
 
 class RingController(object):
-    def __init__(self, builder, ring_type):
+    def __init__(self, builder, ring_type, logger=None):
         self.builder = builder
         self.ring_type = ring_type
+        self.logger = logger or logging.getLogger('RingController')
 
     def reconcile(self, devices):
         def format_device(d):
             return 'r%(region)sz%(zone)s-%(ip)s:%(port)s/%(device)s' % d
 
-         # Add new devices
+        changed = False
+        # Add new devices
         for dev_string in devices:
             dev = parse_add_value(dev_string)
             if len(self.builder.search_devs(dev)) == 0:
+                changed = True
                 dev['weight'] = 1
                 self.builder.add_dev(dev)
-                print("Adding " + dev_string)
+                self.logger.info("adding %s", dev_string)
 
         # Remove devices
         for dev in self.builder.search_devs([]):
             dev_string = format_device(dev)
             if dev_string not in devices:
+                changed = True
                 self.builder.remove_dev(dev['id'])
-                print("Removing " + dev_string)
-
-        self.builder.rebalance()
+                self.logger.info("removing " + dev_string)
+        if changed:
+            self.builder.rebalance()
+        else:
+            self.logger.info("no change")
 
     def _serialize_ring(self, filename):
         buf = io.BytesIO()

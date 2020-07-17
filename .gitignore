@@ -8,4 +8,4 @@ bazel-*
 build/_output/
 main
 .idea
-statusmonitor/statusmonitor
+__pycache__
