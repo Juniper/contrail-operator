@@ -57,7 +57,6 @@ py_repositories()
 
 load(
     "@rules_python//python:pip.bzl",
-    "pip_import",
     "pip3_import",
     "pip_repositories",
 )
