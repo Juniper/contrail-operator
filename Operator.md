@@ -28,4 +28,41 @@ Commonly, it creates, deletes or updates standard Kubernetes resources like pods
 
 ## How does it work here?
 
-This operator implements custom resources for 
+This operator implements custom resources for Contrail deployment.
+Before contrail-operator there was only project contrail-ansible-deployer which contained
+set of ansible playbooks that configured instances based on file with 
+
+```
+$ kubectl get po -n contrail
+NAME                                          READY   STATUS             RESTARTS   AGE
+cassandra1-cassandra-statefulset-0            0/1     Running            0          39m
+cassandra1-cassandra-statefulset-1            0/1     Running            0          39m
+cassandra1-cassandra-statefulset-2            0/1     Running            0          39m
+config1-config-statefulset-0                  10/10   Running            0          38m
+config1-config-statefulset-1                  10/10   Running            0          38m
+config1-config-statefulset-2                  0/10    Running            0          39m
+contrail-operator-dd5bb5c-klqwb               1/1     Running            0          42m
+control1-control-statefulset-0                4/4     Running            0          30m
+control1-control-statefulset-1                4/4     Running            0          30m
+control1-control-statefulset-2                4/4     Running            0          30m
+kubemanager1-kubemanager-statefulset-0        2/2     Running            0          30m
+kubemanager1-kubemanager-statefulset-1        2/2     Running            0          30m
+kubemanager1-kubemanager-statefulset-2        2/2     Running            0          30m
+provmanager1-provisionmanager-statefulset-0   1/1     Running            0          30m
+rabbitmq1-rabbitmq-statefulset-0              1/1     Running            0          39m
+rabbitmq1-rabbitmq-statefulset-1              1/1     Running            0          39m
+rabbitmq1-rabbitmq-statefulset-2              1/1     Running            0          39m
+vroutermasternodes-vrouter-daemonset-rgl4t    1/1     Running            0          28m
+vroutermasternodes-vrouter-daemonset-ttc7c    1/1     Running            0          28m
+vroutermasternodes-vrouter-daemonset-wn6qg    1/1     Running            0          28m
+vrouterworkernodes-vrouter-daemonset-gs4bw    1/1     Running            0          5m
+vrouterworkernodes-vrouter-daemonset-p7zkw    1/1     Running            0          5m
+vrouterworkernodes-vrouter-daemonset-pqfw9    1/1     Running            0          5m
+webui1-webui-statefulset-0                    3/3     Running            0          30m
+webui1-webui-statefulset-1                    2/3     Running            0          30m
+webui1-webui-statefulset-2                    2/3     Running            0          30m
+zookeeper1-zookeeper-statefulset-0            1/1     Running            0          8m
+zookeeper1-zookeeper-statefulset-1            1/1     Running            0          8m
+zookeeper1-zookeeper-statefulset-2            1/1     Running            0          8m
+
+```
