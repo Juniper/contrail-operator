@@ -480,7 +480,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
-				Namespace: instance.Namespace,
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
@@ -498,9 +497,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pv.Name, Namespace: request.Namespace}, pv)
 		if err != nil && errors.IsNotFound(err) {
-			if err = controllerutil.SetControllerReference(instance, pv, r.Scheme); err != nil {
-				return reconcile.Result{}, err
-			}
 			if err = r.Client.Create(context.TODO(), pv); err != nil && !errors.IsAlreadyExists(err) {
 				return reconcile.Result{}, err
 			}
