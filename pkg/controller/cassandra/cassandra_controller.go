@@ -435,16 +435,12 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "local-storage",
-			Namespace: instance.Namespace,
 		},
 		Provisioner:       "kubernetes.io/no-provisioner",
 		VolumeBindingMode: &volumeBindingMode,
 	}
 	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: storageClass.Name}, storageClass)
 	if err != nil && errors.IsNotFound(err) {
-		if err = controllerutil.SetControllerReference(instance, storageClass, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
 		err = r.Client.Create(context.TODO(), storageClass)
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
