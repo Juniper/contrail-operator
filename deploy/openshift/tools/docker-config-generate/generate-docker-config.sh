@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-        BASE64_COMMAND='base64'
+        BASE64_COMMAND='base64 -w 0'
 else
         BASE64_COMMAND='base64 -w 0'
 fi
@@ -13,9 +13,9 @@ get_parameters() {
 }
 
 generate_base64() {
-    AUTH=$(echo $USERNAME:$SECRET | $BASE64_COMMAND)
-    RENDERED_JSON=$(echo {\"auths\":{\"${REGISTRY}\":{\"username\": \"${USERNAME}\",\"password\":\"${SECRET}\",\"auth\":\"${AUTH}\"}}})
-    DOCKER_CONFIG=$(echo $RENDERED_JSON | $BASE64_COMMAND)
+    AUTH=$(echo -n $USERNAME:$SECRET | $BASE64_COMMAND)
+    RENDERED_JSON=$(echo -n {\"auths\":{\"${REGISTRY}\":{\"username\": \"${USERNAME}\",\"password\":\"${SECRET}\",\"auth\":\"${AUTH}\"}}})
+    DOCKER_CONFIG=$(echo -n $RENDERED_JSON | $BASE64_COMMAND)
 }
 
 get_parameters
