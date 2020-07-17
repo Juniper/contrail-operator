@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-        BASE64_COMMAND='base64 -w 0'
+        BASE64_COMMAND='base64'
 else
         BASE64_COMMAND='base64 -w 0'
 fi
