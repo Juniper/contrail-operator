@@ -192,12 +192,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, keystonePodIP); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Endpoint, memcached.Status.Endpoint, keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -213,7 +213,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, fernetKeyManager.Status.SecretName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, fernetKeyManager.Status.SecretName, psql.Status.Endpoint)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -253,11 +253,11 @@ func (r *ReconcileKeystone) getFernetKeyManager(name, namespace string) (*contra
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kciName, keysSecretName string,
+	kcName, kciName, keysSecretName, psqlEndpoint string,
 ) (*apps.StatefulSet, error) {
-	sts := newKeystoneSTS(keystone)
+	sts := newKeystoneSTS(keystone, psqlEndpoint)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
-		updateKeystoneSTS(keystone, sts, kcName, kciName, keysSecretName)
+		updateKeystoneSTS(keystone, sts, kcName, kciName, keysSecretName, psqlEndpoint)
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
@@ -302,7 +302,7 @@ func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memca
 }
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
-func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
+func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSet {
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -332,12 +332,8 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Args:            []string{"-c", initDBScript},
 							Env: []core.EnvVar{
 								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
+									Name:  "MY_DB_IP",
+									Value: psqlEndpoint,
 								},
 							},
 						},
@@ -437,10 +433,10 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
+psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
+psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
@@ -486,9 +482,9 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	}
 }
 
-func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, kciName, keysSecretName string) {
+func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, kciName, keysSecretName, psqlEndpoint string) {
 	var labelsMountPermission int32 = 0644
-	newSTS := newKeystoneSTS(keystone)
+	newSTS := newKeystoneSTS(keystone, psqlEndpoint)
 	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
 	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
 	sts.Spec.Template.Spec.Volumes = []core.Volume{

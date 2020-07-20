@@ -90,7 +90,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when cluster is scaled from 1 to 3", func(t *testing.T) {
-			t.Skip()
 			var replicas int32 = 3
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
@@ -113,12 +112,12 @@ func TestHAOpenStackServices(t *testing.T) {
 				assertOpenStackPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
-			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
-				//Change the replica back to 3 once keystone scaling is working
-				assertOpenStackReplicasReady(t, w, 1)
+			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
+				assertOpenStackReplicasReady(t, w, 3)
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
+				t.Skip()
 				keystoneProxy := proxy.NewSecureClient("contrail", "keystone-keystone-statefulset-0", 5555)
 				keystoneClient := keystone.NewClient(keystoneProxy)
 				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
@@ -128,7 +127,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: "node-role.kubernetes.io/master=",
 			})
@@ -155,7 +153,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
-			t.Skip()
 			err := untaintNodes(f.KubeClient, "e2e.test/failure")
 			assert.NoError(t, err)
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
@@ -196,6 +193,7 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", r))
 	})
 	t.Run(fmt.Sprintf("then a Keystone StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Skip()
 		t.Parallel()
 		assert.NoError(t, w.ForReadyStatefulSet("keystone-keystone-statefulset", r))
 	})
@@ -228,6 +226,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 	})
 
 	t.Run("then keystone has updated image", func(t *testing.T) {
+		t.Skip()
 		t.Parallel()
 		keystoneContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train"
 		err := wait.Contrail{
@@ -236,7 +235,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "Keystone="+manager.Spec.Services.Keystone.Name, keystoneContainerImage, "keystone")
+		}.ForPodImageChange(f.KubeClient, "keystone="+manager.Spec.Services.Keystone.Name, keystoneContainerImage, "keystone")
 		assert.NoError(t, err)
 	})
 }
@@ -276,7 +275,6 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			},
 		},
 	}
-
 	keystone := &contrail.Keystone{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone",
@@ -292,7 +290,12 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 				MemcachedInstance: "memcached",
 				ListenPort:        5555,
 				PostgresInstance:  "postgres",
-				Containers:        nil,
+				Containers: []*contrail.Container{
+					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},
+					{Name: "keystoneInit", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
+					{Name: "keystone", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
+				},
 			},
 		},
 	}

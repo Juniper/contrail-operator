@@ -1382,7 +1382,7 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        node:
+                        endpoint:
                           type: string
                       type: object
                   type: object
