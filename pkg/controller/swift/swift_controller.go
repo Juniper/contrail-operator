@@ -7,7 +7,6 @@ import (
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,7 +24,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/job"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/swift/ring"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swift")
@@ -38,15 +36,14 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()))
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme())
 }
 
 // NewReconciler is used to create a new ReconcileSwiftProxy
-func NewReconciler(client client.Client, scheme *runtime.Scheme, claims volumeclaims.PersistentVolumeClaims) *ReconcileSwift {
+func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcileSwift {
 	return &ReconcileSwift{
 		client:     client,
 		scheme:     scheme,
-		claims:     claims,
 		kubernetes: k8s.New(client, scheme),
 	}
 }
@@ -104,7 +101,6 @@ type ReconcileSwift struct {
 	// that reads objects from the cache and writes to the apiserver
 	client     client.Client
 	scheme     *runtime.Scheme
-	claims     volumeclaims.PersistentVolumeClaims
 	kubernetes *k8s.Kubernetes
 }
 
@@ -130,27 +126,13 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, nil
 	}
 
-	ringsClaimName := types.NamespacedName{
-		Namespace: swift.Namespace,
-		Name:      swift.Name + "-rings",
-	}
-	ringsClaim := r.claims.New(ringsClaimName, swift)
-	if swift.Spec.ServiceConfiguration.RingsStorage.Size != "" {
-		var size resource.Quantity
-		size, err = swift.Spec.ServiceConfiguration.RingsStorage.SizeAsQuantity()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		ringsClaim.SetStorageSize(size)
-	}
-	ringsClaim.SetStoragePath(swift.Spec.ServiceConfiguration.RingsStorage.Path)
-	ringsClaim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err = ringsClaim.EnsureExists(); err != nil {
+	swiftConfSecretName := "swift-conf"
+	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	swiftConfSecretName := "swift-conf"
-	if err = r.ensureSwiftConfSecretExists(swift, swiftConfSecretName); err != nil {
+	ringConfigMapName := swift.Name + "-ring"
+	if err = r.ensureRingConfigMapsExist(swift, ringConfigMapName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -165,16 +147,16 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	swift.Status.CredentialsSecretName = credentialsSecretName
 
-	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringsClaimName.Name); err != nil {
+	if err = r.ensureSwiftStorageExists(swift, swiftConfSecretName, ringConfigMapName); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, credentialsSecretName, ringsClaimName.Name); err != nil {
+	if err = r.ensureSwiftProxyExists(swift, swiftConfSecretName, credentialsSecretName, ringConfigMapName); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	var result reconcile.Result
-	if result, err = r.reconcileRings(swift, ringsClaimName.Name); err != nil || result.Requeue {
+	if result, err = r.reconcileRings(swift, ringConfigMapName); err != nil || result.Requeue {
 		return result, err
 	}
 
@@ -229,7 +211,7 @@ func (r *ReconcileSwift) ensureSwiftConfSecretExists(swift *contrail.Swift, swif
 	return nil
 }
 
-func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName, ringsClaim string) error {
+func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftConfSecretName, ringConfigMapName string) error {
 	swiftStorage := &contrail.SwiftStorage{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      swift.Name + "-storage",
@@ -238,15 +220,15 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
-		swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
+		swiftStorage.Spec.ServiceConfiguration.RingConfigMapName = ringConfigMapName
 		return controllerutil.SetControllerReference(swift, swiftStorage, r.scheme)
 	})
 	return err
 }
 
 func (r *ReconcileSwift) ensureSwiftProxyExists(
-	swift *contrail.Swift, swiftConfSecretName, credentialsSecretName, ringsClaim string,
+	swift *contrail.Swift, swiftConfSecretName, credentialsSecretName, ringConfigMapName string,
 ) error {
 	swiftProxy := &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
@@ -256,15 +238,19 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
-		swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim = ringsClaim
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
+		swiftProxy.Spec.ServiceConfiguration.RingConfigMapName = ringConfigMapName
 		swiftProxy.Spec.ServiceConfiguration.CredentialsSecretName = credentialsSecretName
 		return controllerutil.SetControllerReference(swift, swiftProxy, r.scheme)
 	})
 	return err
 }
 
-func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string) (reconcile.Result, error) {
+func (r *ReconcileSwift) ensureRingConfigMapsExist(swift *contrail.Swift, ringConfigMapName string) error {
+	return r.kubernetes.ConfigMap(ringConfigMapName, "Swift", swift).EnsureExists(&empty{})
+}
+
+func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringConfigMapName string) (reconcile.Result, error) {
 	swiftStorage := &contrail.SwiftStorage{}
 	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-storage", Namespace: swift.Namespace}, swiftStorage); err != nil {
 		return reconcile.Result{}, err
@@ -281,15 +267,15 @@ func (r *ReconcileSwift) reconcileRings(swift *contrail.Swift, ringsClaim string
 		return result, err
 	}
 	accountPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.AccountBindPort
-	if err := r.startRingReconcilingJob("account", accountPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob(ringConfigMapName, "account", accountPort, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	objectPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ObjectBindPort
-	if err := r.startRingReconcilingJob("object", objectPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob(ringConfigMapName, "object", objectPort, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	containerPort := swift.Spec.ServiceConfiguration.SwiftStorageConfiguration.ContainerBindPort
-	if err := r.startRingReconcilingJob("container", containerPort, ringsClaim, ips, swift); err != nil {
+	if err := r.startRingReconcilingJob(ringConfigMapName, "container", containerPort, ips, swift); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
@@ -330,13 +316,17 @@ func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedNam
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileSwift) startRingReconcilingJob(ringType string, port int, ringsClaimName string, ips []string, swift *contrail.Swift) error {
+func (r *ReconcileSwift) startRingReconcilingJob(ringConfigMapName, ringType string, port int, ips []string, swift *contrail.Swift) error {
+
 	jobName := types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      swift.Name + "-ring-" + ringType + "-job",
 	}
 
-	theRing, err := ring.New(ringsClaimName, "/etc/rings", ringType)
+	theRing, err := ring.New(types.NamespacedName{
+		Namespace: swift.Namespace,
+		Name:      ringConfigMapName,
+	}, ringType)
 	if err != nil {
 		return err
 	}

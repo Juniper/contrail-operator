@@ -17,9 +17,9 @@ spec:
       serviceAccountName: contrail-operator
       hostNetwork: true
       tolerations:
-      - key: node.kubernetes.io/not-ready
-        operator: "Exists"
-        effect: "NoSchedule"
+        - key: node.kubernetes.io/not-ready
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: contrail-operator
           # Replace this with the built image name
@@ -36,4 +36,3 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "contrail-operator"
-

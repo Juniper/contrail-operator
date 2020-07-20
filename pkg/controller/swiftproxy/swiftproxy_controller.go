@@ -200,7 +200,6 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
-		ringsClaimName := swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
 		swiftCertificatesSecretName := request.Name + "-secret-certificates"
 		csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
@@ -210,8 +209,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 			swiftInitConfigName,
 			swiftConfSecretName,
 			swiftCertificatesSecretName,
+			swiftProxy.Spec.ServiceConfiguration.RingConfigMapName,
 			swiftProxy.Spec.ServiceConfiguration.Containers,
-			ringsClaimName,
 			listenPort,
 			csrSignerCaVolumeName,
 		)
@@ -288,8 +287,8 @@ func updatePodTemplate(
 	swiftInitConfigName string,
 	swiftConfSecretName string,
 	swiftCertificatesSecretName string,
+	ringConfigMapName string,
 	containers []*contrail.Container,
-	ringsClaimName string,
 	port int,
 	csrSignerCaVolumeName string,
 ) {
@@ -420,9 +419,10 @@ func updatePodTemplate(
 		{
 			Name: "rings",
 			VolumeSource: core.VolumeSource{
-				PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-					ClaimName: ringsClaimName,
-					ReadOnly:  true,
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: ringConfigMapName,
+					},
 				},
 			},
 		},

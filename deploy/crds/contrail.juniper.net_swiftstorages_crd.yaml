@@ -59,7 +59,7 @@ spec:
                   type: string
                 objectBindPort:
                   type: integer
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 storage:
                   properties:

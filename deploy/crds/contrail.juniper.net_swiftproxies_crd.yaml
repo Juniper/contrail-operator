@@ -60,7 +60,7 @@ spec:
                   type: integer
                 memcachedInstance:
                   type: string
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 swiftConfSecretName:
                   type: string

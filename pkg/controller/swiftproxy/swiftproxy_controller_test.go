@@ -218,14 +218,14 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 		},
 		Spec: contrail.SwiftProxySpec{
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
-				ListenPort:                5070,
-				KeystoneInstance:          "keystone",
-				MemcachedInstance:         "memcached-instance",
-				CredentialsSecretName:     "swift-secret",
-				SwiftConfSecretName:       "test-secret",
-				RingPersistentVolumeClaim: "test-rings-claim",
-				KeystoneSecretName:        "keystone-adminpass-secret",
-				Endpoint:                  "10.255.254.4",
+				ListenPort:            5070,
+				KeystoneInstance:      "keystone",
+				MemcachedInstance:     "memcached-instance",
+				CredentialsSecretName: "swift-secret",
+				SwiftConfSecretName:   "test-secret",
+				KeystoneSecretName:    "keystone-adminpass-secret",
+				RingConfigMapName:     "test-ring",
+				Endpoint:              "10.255.254.4",
 			},
 		},
 		Status: status,
@@ -376,9 +376,10 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 						{
 							Name: "rings",
 							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: "test-rings-claim",
-									ReadOnly:  true,
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "test-ring",
+									},
 								},
 							},
 						},
