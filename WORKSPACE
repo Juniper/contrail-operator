@@ -63,16 +63,6 @@ load(
 
 pip_repositories()
 
-pip3_import(
-    name = "ringcontroller",
-    extra_pip_args = ["--no-deps",],
-    requirements = "//ringcontroller:requirements.txt",
-)
-
-load("@ringcontroller//:requirements.bzl", ringbuilder_pip_install = "pip_install")
-
-ringbuilder_pip_install()
-
 http_archive(
     name = "io_bazel_rules_docker",
     sha256 = "4521794f0fba2e20f3bf15846ab5e01d5332e587e9ce81629c7f96c793bb7036",
