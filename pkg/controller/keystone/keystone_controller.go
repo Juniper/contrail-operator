@@ -3,8 +3,6 @@ package keystone
 import (
 	"context"
 	"fmt"
-	"github.com/Juniper/contrail-operator/pkg/job"
-
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
@@ -201,8 +199,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
+	kcbName := keystone.Name + "-keystone-bootstrap"
+	if err = r.configMap(kcbName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -223,7 +221,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	if err = r.reconcileBootstrapJob(keystone, kciName, fernetKeysSecretName, credentialKeysSecretName); err != nil {
+	if err = r.reconcileBootstrapJob(keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psql.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -315,7 +313,6 @@ func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memca
 	return memcached, err
 }
 
-// newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
 func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSet {
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -380,23 +377,24 @@ func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSe
 }
 
 func newKollaEnvs(kollaService string) []core.EnvVar {
-	return []core.EnvVar{{
-		Name:  "KOLLA_SERVICE_NAME",
-		Value: kollaService,
-	}, {
-		Name:  "KOLLA_CONFIG_STRATEGY",
-		Value: "COPY_ALWAYS",
-	}, {
-		Name: "MY_POD_IP",
-		ValueFrom: &core.EnvVarSource{
-			FieldRef: &core.ObjectFieldSelector{
-				FieldPath: "status.podIP",
+	return []core.EnvVar{
+		{
+			Name:  "KOLLA_SERVICE_NAME",
+			Value: kollaService,
+		}, {
+			Name:  "KOLLA_CONFIG_STRATEGY",
+			Value: "COPY_ALWAYS",
+		}, {
+			Name: "MY_POD_IP",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
 			},
+		}, {
+			Name:  "KOLLA_CONFIG_FILE",
+			Value: "/var/lib/kolla/config_files/config$(MY_POD_IP).json",
 		},
-	}, {
-		Name:  "KOLLA_CONFIG_FILE",
-		Value: "/var/lib/kolla/config_files/config$(MY_POD_IP).json",
-	},
 	}
 }
 
@@ -483,7 +481,7 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	}
 }
 
-func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kciName, fernetKeysSecretName, credentialKeysSecretName string) *batch.Job {
+func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName string, psqlIP string) *batch.Job {
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,
@@ -496,11 +494,11 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kciName, 
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
 						{
-							Name: "keystone-init-config-volume",
+							Name: "keystone-bootstrap-config-volume",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: kciName,
+										Name: kcbName,
 									},
 								},
 							},
@@ -531,22 +529,18 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kciName, 
 							Args:            []string{"-c", initDBScript},
 							Env: []core.EnvVar{
 								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
+									Name:  "PSQL_ENDPOINT",
+									Value: psqlIP,
 								},
 							},
 						},
 					},
 					Containers: []core.Container{
 						{
-							Name:            "keystone-init",
+							Name:            "keystone-bootstrap",
 							Image:           getImage(cr, "keystoneInit"),
 							ImagePullPolicy: core.PullAlways,
-							Env:             []core.EnvVar{{
+							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
 								Value: "keystone",
 							}, {
@@ -561,9 +555,9 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kciName, 
 								},
 							},
 							},
-							Command:         getCommand(cr, "keystoneInit"),
+							Command: getCommand(cr, "keystoneInit"),
 							VolumeMounts: []core.VolumeMount{
-								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-bootstrap-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
 								{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
 							},
@@ -580,16 +574,16 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kciName, 
 	}
 }
 
-func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, kciName, fernetKeysSecretName, credentialKeysSecretName string)  error {
+func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string) error {
 	bootstrapJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: keystone.Namespace, Name: keystone.Name + "-bootstrap-job"}
 	err := r.client.Get(context.Background(), jobName, bootstrapJob)
-	existingJob := err == nil
-	if existingJob && job.Status(bootstrapJob.Status).Pending() {
+	alreadyExists := err == nil
+	if alreadyExists {
 		return nil
 	}
 
-	bootstrapJob = newBootStrapJob(keystone, jobName, kciName, fernetKeysSecretName, credentialKeysSecretName)
+	bootstrapJob = newBootStrapJob(keystone, jobName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP)
 	if err = controllerutil.SetControllerReference(keystone, bootstrapJob, r.scheme); err != nil {
 		return err
 	}

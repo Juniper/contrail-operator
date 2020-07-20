@@ -33,7 +33,7 @@ func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, po
 }
 
 func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, podIP string) error {
-	cc := &keystoneInitConf{
+	cc := &keystoneBootstrapConf{
 		ListenAddress:    podIP,
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
