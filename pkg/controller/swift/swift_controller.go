@@ -218,6 +218,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 			Namespace: swift.Namespace,
 		},
 	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName

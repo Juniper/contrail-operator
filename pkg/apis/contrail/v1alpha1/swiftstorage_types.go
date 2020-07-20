@@ -58,6 +58,9 @@ type SwiftStorageList struct {
 	Items           []SwiftStorage `json:"items"`
 }
 
+// SwiftStorageInstanceType is type unique name used for labels
+const SwiftStorageInstanceType = "SwiftStorage"
+
 func init() {
 	SchemeBuilder.Register(&SwiftStorage{}, &SwiftStorageList{})
 }

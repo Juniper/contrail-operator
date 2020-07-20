@@ -214,7 +214,7 @@ func TestSwiftStorageController(t *testing.T) {
 
 				t.Run("should add volume to StatefulSet", func(t *testing.T) {
 					expectedVolume := core.Volume{
-						Name: "devices-mount-point-volume",
+						Name: "devices-mount-point",
 						VolumeSource: core.VolumeSource{
 							PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 								ClaimName: name.Name + "-pv-claim",
@@ -277,7 +277,7 @@ func TestSwiftStorageController(t *testing.T) {
 		assert.NoError(t, err)
 
 		expectedMountPoint := core.VolumeMount{
-			Name:      "devices-mount-point-volume",
+			Name:      "devices-mount-point",
 			MountPath: "/srv/node/dev",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
