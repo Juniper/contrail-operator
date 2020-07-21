@@ -12,14 +12,20 @@ py_layer(
 
 py_test(
     name = "test_ring_controller",
-    srcs = ["test_ring_controller.py", "ring_controller.py"],
+    srcs = [
+        "test_ring_controller.py",
+        "ring_controller.py",
+    ],
     python_version = "PY3",
     deps = all_requirements,
 )
 
 py3_image(
     name = "ringcontroller",
-    srcs = ["main.py", "ring_controller.py"],
+    srcs = [
+        "main.py",
+        "ring_controller.py",
+    ],
     layers = [
         ":external_deps",
     ],

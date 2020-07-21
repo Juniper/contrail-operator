@@ -26,7 +26,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"github.com/Juniper/contrail-operator/pkg/localvolume"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_swiftstorage")
@@ -86,7 +85,6 @@ type ReconcileSwiftStorage struct {
 	client       client.Client
 	scheme       *runtime.Scheme
 	kubernetes   *k8s.Kubernetes
-	claims       volumeclaims.PersistentVolumeClaims
 	localVolumes localvolume.LocalVolumes
 }
 
