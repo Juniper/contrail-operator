@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/apis/core"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
@@ -178,6 +179,10 @@ func ManagerCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	pv := core.PersistentVolume{}
+	err = f.Client.Delete(context.TODO(), &pv, &client.DeleteOptions{
+		PropagationPolicy: &pp,
+	})
 	err = contrailwait.Contrail{
 		Namespace:     namespace,
 		Timeout:       5 * time.Minute,
