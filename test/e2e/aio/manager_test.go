@@ -183,7 +183,7 @@ func ManagerCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	err = f.Client.DeleteAllOf(context.TODO(), &corev1.PersistentVolume{})
 	if err != nil {
 		t.Fatal(err)
 	}
