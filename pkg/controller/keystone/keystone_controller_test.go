@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -28,6 +29,7 @@ func TestKeystone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 	tests := []struct {
 		name             string
 		initObjs         []runtime.Object
@@ -36,6 +38,7 @@ func TestKeystone(t *testing.T) {
 		expectedConfigs  []*core.ConfigMap
 		expectedPostgres *contrail.Postgres
 		expectedSecrets  []*core.Secret
+		expectedBootstrapJob *batch.Job
 	}{
 		{
 			name: "create a new statefulset",
@@ -99,6 +102,49 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
+		},
+		{
+			name: "should fill keystone configmap if pod list is not empty",
+			initObjs: []runtime.Object{
+				&core.Pod{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-keystone-statefulset-0", Labels: map[string]string{
+						"contrail_manager": "keystone",
+						"keystone": "keystone",
+					}},
+					Status: core.PodStatus{
+						PodIP: "1.1.1.1",
+					},
+				},
+				newKeystone(),
+				&contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
+					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				},
+				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
+				newMemcached(),
+				newCertSecret(),
+				newAdminSecret(),
+				newKeystoneService(),
+				newFernetSecret(),
+			},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
+			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
+			expectedConfigs: []*core.ConfigMap{
+				newExpectedFilledKeystoneConfigMap(),
+				newExpectedKeystoneInitConfigMap(),
+			},
+			expectedPostgres: &contrail.Postgres{
+				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
+					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
+				},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+			},
+			expectedBootstrapJob: newExpectedBootstrapJob(),
 		},
 		{
 			name: "reconciliation should be idempotent",
@@ -249,6 +295,17 @@ func TestKeystone(t *testing.T) {
 				assert.Equal(t, expSecret.ObjectMeta, secret.ObjectMeta)
 			}
 
+			if tt.expectedBootstrapJob != nil {
+				bJob := &batch.Job{}
+				err = cl.Get(context.Background(), types.NamespacedName{
+					Name:      tt.expectedBootstrapJob.Name,
+					Namespace: tt.expectedBootstrapJob.Namespace,
+				}, bJob)
+				assert.NoError(t, err)
+				bJob.SetResourceVersion("")
+				assert.Equal(t, tt.expectedBootstrapJob, bJob)
+			}
+
 			psql := &contrail.Postgres{}
 			err = cl.Get(context.Background(), types.NamespacedName{
 				Name:      tt.expectedPostgres.GetName(),
@@ -358,51 +415,35 @@ func newExpectedSTS() *apps.StatefulSet {
 								MountPath: "/tmp/podinfo",
 							}},
 						},
-						{
-							Name:            "keystone-db-init",
-							Image:           "localhost:5000/postgresql-client",
-							ImagePullPolicy: core.PullAlways,
-							Command:         []string{"/bin/sh"},
-							Args:            []string{"-c", expectedCommandImage},
-							Env: []core.EnvVar{
-								{
-									Name:  "PSQL_ENDPOINT",
-									Value: "10.10.10.20:5432",
-								},
-							},
-						},
-						{
-							Name:            "keystone-init",
-							Image:           "localhost:5000/centos-binary-keystone:train",
-							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
-							VolumeMounts: []core.VolumeMount{
-								{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
-							},
-						},
 					},
 					Containers: []core.Container{
 						{
 							Image:           "localhost:5000/centos-binary-keystone:train",
 							Name:            "keystone",
 							ImagePullPolicy: core.PullAlways,
-							Env: []core.EnvVar{{
-								Name:  "KOLLA_SERVICE_NAME",
-								Value: "keystone",
-							}, {
-								Name:  "KOLLA_CONFIG_STRATEGY",
-								Value: "COPY_ALWAYS",
-							}},
+							Env: []core.EnvVar{
+								{
+									Name:  "KOLLA_SERVICE_NAME",
+									Value: "keystone",
+								}, {
+									Name:  "KOLLA_CONFIG_STRATEGY",
+									Value: "COPY_ALWAYS",
+								}, {
+									Name: "MY_POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								}, {
+									Name:  "KOLLA_CONFIG_FILE",
+									Value: "/var/lib/kolla/config_files/config$(MY_POD_IP).json",
+								},
+							},
 							VolumeMounts: []core.VolumeMount{
 								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
 								{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
@@ -436,21 +477,19 @@ func newExpectedSTS() *apps.StatefulSet {
 							},
 						},
 						{
+							Name: "keystone-credential-keys",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-credential-keys-repository",
+								},
+							},
+						},
+						{
 							Name: "keystone-config-volume",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "keystone-keystone",
-									},
-								},
-							},
-						},
-						{
-							Name: "keystone-init-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "keystone-keystone-init",
 									},
 								},
 							},
@@ -487,16 +526,15 @@ func newExpectedSTS() *apps.StatefulSet {
 	}
 }
 
-func newExpectedSecret() *core.Secret {
-	trueVal := true
+func newCertSecret() *core.Secret {
 	return &core.Secret{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-keys",
+			Name:      "keystone-secret-certificates",
 			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
-			},
+		},
+		Data: map[string][]byte{
+			"server-key-1.1.1.1.pem": []byte("key"),
+			"server-1.1.1.1.crt": []byte("cert"),
 		},
 	}
 }
@@ -555,58 +593,28 @@ func newKeystoneService() *core.Service {
 	}
 }
 
-func newExpectedSecretWithKeys() *core.Secret {
+func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	trueVal := true
-	return &core.Secret{
+	return &core.ConfigMap{
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-keys",
+			Name:      "keystone-keystone",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
 			},
 		},
-		StringData: map[string]string{
-			"id_rsa": `
-			-----BEGIN RSA PRIVATE KEY-----
-			MIIEogIBAAKCAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzI
-			w+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoP
-			kcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2
-			hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NO
-			Td0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcW
-			yLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQIBIwKCAQEA4iqWPJXtzZA68mKd
-			ELs4jJsdyky+ewdZeNds5tjcnHU5zUYE25K+ffJED9qUWICcLZDc81TGWjHyAqD1
-			Bw7XpgUwFgeUJwUlzQurAv+/ySnxiwuaGJfhFM1CaQHzfXphgVml+fZUvnJUTvzf
-			TK2Lg6EdbUE9TarUlBf/xPfuEhMSlIE5keb/Zz3/LUlRg8yDqz5w+QWVJ4utnKnK
-			iqwZN0mwpwU7YSyJhlT4YV1F3n4YjLswM5wJs2oqm0jssQu/BT0tyEXNDYBLEF4A
-			sClaWuSJ2kjq7KhrrYXzagqhnSei9ODYFShJu8UWVec3Ihb5ZXlzO6vdNQ1J9Xsf
-			4m+2ywKBgQD6qFxx/Rv9CNN96l/4rb14HKirC2o/orApiHmHDsURs5rUKDx0f9iP
-			cXN7S1uePXuJRK/5hsubaOCx3Owd2u9gD6Oq0CsMkE4CUSiJcYrMANtx54cGH7Rk
-			EjFZxK8xAv1ldELEyxrFqkbE4BKd8QOt414qjvTGyAK+OLD3M2QdCQKBgQDtx8pN
-			CAxR7yhHbIWT1AH66+XWN8bXq7l3RO/ukeaci98JfkbkxURZhtxV/HHuvUhnPLdX
-			3TwygPBYZFNo4pzVEhzWoTtnEtrFueKxyc3+LjZpuo+mBlQ6ORtfgkr9gBVphXZG
-			YEzkCD3lVdl8L4cw9BVpKrJCs1c5taGjDgdInQKBgHm/fVvv96bJxc9x1tffXAcj
-			3OVdUN0UgXNCSaf/3A/phbeBQe9xS+3mpc4r6qvx+iy69mNBeNZ0xOitIjpjBo2+
-			dBEjSBwLk5q5tJqHmy/jKMJL4n9ROlx93XS+njxgibTvU6Fp9w+NOFD/HvxB3Tcz
-			6+jJF85D5BNAG3DBMKBjAoGBAOAxZvgsKN+JuENXsST7F89Tck2iTcQIT8g5rwWC
-			P9Vt74yboe2kDT531w8+egz7nAmRBKNM751U/95P9t88EDacDI/Z2OwnuFQHCPDF
-			llYOUI+SpLJ6/vURRbHSnnn8a/XG+nzedGH5JGqEJNQsz+xT2axM0/W/CRknmGaJ
-			kda/AoGANWrLCz708y7VYgAtW2Uf1DPOIYMdvo6fxIB5i9ZfISgcJ/bbCUkFrhoH
-			+vq/5CIWxCPp0f85R4qxxQ5ihxJ0YDQT9Jpx4TMss4PSavPaBH3RXow5Ohe+bYoQ
-			NE5OgEXk2wVfZczCZpigBKbKZHNYcelXtTt/nP3rsCuGcM4h53s=
-			-----END RSA PRIVATE KEY-----`,
-			"id_rsa.pub": "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key",
-		},
 	}
 }
 
-func newExpectedKeystoneConfigMap() *core.ConfigMap {
+func newExpectedFilledKeystoneConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
 		Data: map[string]string{
-			"config.json":        expectedKeystoneKollaServiceConfig,
-			"keystone.conf":      expectedKeystoneConfig,
-			"wsgi-keystone.conf": expectedWSGIKeystoneConfig,
+			"config1.1.1.1.json":        expectedKeystoneKollaServiceConfig,
+			"keystone1.1.1.1.conf":      expectedKeystoneConfig,
+			"wsgi-keystone1.1.1.1.conf": expectedWSGIKeystoneConfig,
 		},
 		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 		ObjectMeta: meta.ObjectMeta{
@@ -620,6 +628,7 @@ func newExpectedKeystoneConfigMap() *core.ConfigMap {
 	}
 }
 
+
 func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 	trueVal := true
 	return &core.ConfigMap{
@@ -629,7 +638,7 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-keystone-init",
+			Name:      "keystone-keystone-bootstrap",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 			OwnerReferences: []meta.OwnerReference{
@@ -643,14 +652,6 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 func newKeystoneWithCustomImages() *contrail.Keystone {
 	keystone := newKeystone()
 	keystone.Spec.ServiceConfiguration.Containers = []*contrail.Container{
-		{
-			Name:  "keystoneDbInit",
-			Image: "image1",
-		},
-		{
-			Name:  "keystoneInit",
-			Image: "image2",
-		},
 		{
 			Name:  "keystone",
 			Image: "image3",
@@ -673,35 +674,6 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 				MountPath: "/tmp/podinfo",
 			}},
 		},
-		{
-			Name:            "keystone-db-init",
-			Image:           "image1",
-			ImagePullPolicy: core.PullAlways,
-			Command:         []string{"/bin/sh"},
-			Args:            []string{"-c", expectedCommandImage},
-			Env: []core.EnvVar{
-				{
-					Name:  "PSQL_ENDPOINT",
-					Value: "10.10.10.20:5432",
-				},
-			},
-		},
-		{
-			Name:            "keystone-init",
-			Image:           "image2",
-			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
-			},
-		},
 	}
 
 	sts.Spec.Template.Spec.Containers = []core.Container{
@@ -709,16 +681,29 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			Image:           "image3",
 			Name:            "keystone",
 			ImagePullPolicy: core.PullAlways,
-			Env: []core.EnvVar{{
-				Name:  "KOLLA_SERVICE_NAME",
-				Value: "keystone",
-			}, {
-				Name:  "KOLLA_CONFIG_STRATEGY",
-				Value: "COPY_ALWAYS",
-			}},
+			Env: []core.EnvVar{
+				{
+					Name:  "KOLLA_SERVICE_NAME",
+					Value: "keystone",
+				}, {
+					Name:  "KOLLA_CONFIG_STRATEGY",
+					Value: "COPY_ALWAYS",
+				}, {
+					Name: "MY_POD_IP",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							FieldPath: "status.podIP",
+						},
+					},
+				}, {
+					Name:  "KOLLA_CONFIG_FILE",
+					Value: "/var/lib/kolla/config_files/config$(MY_POD_IP).json",
+				},
+			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
 				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+				core.VolumeMount{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
 				core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 			},
 			ReadinessProbe: &core.Probe{
@@ -739,6 +724,106 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 		},
 	}
 	return sts
+}
+
+func newExpectedBootstrapJob() *batch.Job {
+	trueVal := true
+	return &batch.Job{
+		TypeMeta: meta.TypeMeta{
+			Kind:"Job",
+			APIVersion:"batch/v1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-bootstrap-job",
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: batch.JobSpec{
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					HostNetwork:   true,
+					RestartPolicy: core.RestartPolicyNever,
+					Volumes: []core.Volume{
+						{
+							Name: "keystone-bootstrap-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "keystone-keystone-bootstrap",
+									},
+								},
+							},
+						},
+						{
+							Name: "keystone-fernet-keys",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "fernet-keys-repository",
+								},
+							},
+						},
+						{
+							Name: "keystone-credential-keys",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-credential-keys-repository",
+								},
+							},
+						},
+					},
+					InitContainers: []core.Container{
+						{
+							Name:            "keystone-db-init",
+							Image:           "localhost:5000/postgresql-client",
+							ImagePullPolicy: core.PullAlways,
+							Command:         []string{"/bin/sh"},
+							Args:            []string{"-c", expectedCommandImage},
+							Env: []core.EnvVar{
+								{
+									Name:  "PSQL_ENDPOINT",
+									Value: "10.10.10.20:5432",
+								},
+							},
+						},
+					},
+					Containers: []core.Container{
+						{
+							Name:            "keystone-bootstrap",
+							Image:           "localhost:5000/centos-binary-keystone:train",
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{{
+								Name:  "KOLLA_SERVICE_NAME",
+								Value: "keystone",
+							}, {
+								Name:  "KOLLA_CONFIG_STRATEGY",
+								Value: "COPY_ALWAYS",
+							}, {
+								Name: "MY_POD_IP",
+								ValueFrom: &core.EnvVarSource{
+									FieldRef: &core.ObjectFieldSelector{
+										FieldPath: "status.podIP",
+									},
+								},
+							},
+							},
+							VolumeMounts: []core.VolumeMount{
+								{Name: "keystone-bootstrap-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
+							},
+						},
+					},
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
+				},
+			},
+			TTLSecondsAfterFinished: nil,
+		},
+	}
 }
 
 const expectedCommandImage = `DB_USER=${DB_USER:-root}

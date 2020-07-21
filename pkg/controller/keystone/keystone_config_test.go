@@ -4,7 +4,7 @@ const expectedKeystoneKollaServiceConfig = `{
     "command": "/usr/sbin/httpd",
     "config_files": [
         {
-            "source": "/var/lib/kolla/config_files/keystone.conf",
+            "source": "/var/lib/kolla/config_files/keystone1.1.1.1.conf",
             "dest": "/etc/keystone/keystone.conf",
             "owner": "keystone",
             "perm": "0600"
@@ -24,7 +24,7 @@ const expectedKeystoneKollaServiceConfig = `{
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/wsgi-keystone.conf",
+            "source": "/var/lib/kolla/config_files/wsgi-keystone1.1.1.1.conf",
             "dest": "/etc/httpd/conf.d/wsgi-keystone.conf",
             "owner": "keystone",
             "perm": "0600"
@@ -73,9 +73,9 @@ memcache_servers = localhost:11211
 `
 
 const expectedWSGIKeystoneConfig = `
-Listen 0.0.0.0:5555
+Listen 1.1.1.1:5555
 
-ServerName 0.0.0.0
+ServerName 1.1.1.1
 ServerSignature Off
 ServerTokens Prod
 TraceEnable off
@@ -91,8 +91,8 @@ TraceEnable off
 
 <VirtualHost *:5555>
     SSLEngine on
-    SSLCertificateFile "/etc/certificates/server-0.0.0.0.crt"
-    SSLCertificateKeyFile "/etc/certificates/server-key-0.0.0.0.pem"
+    SSLCertificateFile "/etc/certificates/server-1.1.1.1.crt"
+    SSLCertificateKeyFile "/etc/certificates/server-key-1.1.1.1.pem"
     WSGIDaemonProcess keystone-public processes=8 threads=1 user=keystone group=keystone display-name=%{GROUP} python-path=/usr/lib/python2.7/site-packages
     WSGIProcessGroup keystone-public
     WSGIScriptAlias / /usr/bin/keystone-wsgi-public
@@ -140,7 +140,6 @@ const expectedkeystoneInitBootstrapScript = `
 #!/bin/bash
 
 keystone-manage db_sync
-keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
   --bootstrap-admin-url https://10.10.10.10:5555/v3/ \
