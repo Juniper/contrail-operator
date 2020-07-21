@@ -35,6 +35,10 @@ func TestCluster(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
+	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &core.PersistentVolume{}); err != nil {
+		t.Fatalf("Failed to add PV framework scheme: %v", err)
+	}
+
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
