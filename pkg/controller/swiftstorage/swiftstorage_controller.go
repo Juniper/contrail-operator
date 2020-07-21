@@ -23,8 +23,6 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"github.com/Juniper/contrail-operator/pkg/finalize"
-	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/localvolume"
@@ -34,7 +32,6 @@ import (
 var log = logf.Log.WithName("controller_swiftstorage")
 
 const defaultSwiftStoragePath = "/mnt/swiftstorage"
-const swiftIDDeleteFinalizer = "swift-storage.finalizers.juniper.com"
 
 // Add creates a new SwiftStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -43,18 +40,17 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(
-		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(),
-			mgr.GetScheme()), localvolume.New(mgr.GetClient()), finalize.New(mgr.GetClient(), swiftIDDeleteFinalizer),
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(),
+		mgr.GetScheme()), localvolume.New(mgr.GetClient()),
 	)
 }
 
 func NewReconciler(
 	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes,
-	localVolumes localvolume.LocalVolumes, finalize *finalize.Finalize,
+	localVolumes localvolume.LocalVolumes,
 ) *ReconcileSwiftStorage {
 	return &ReconcileSwiftStorage{
-		client: client, scheme: scheme, kubernetes: kubernetes, localVolumes: localVolumes, finalize: finalize,
+		client: client, scheme: scheme, kubernetes: kubernetes, localVolumes: localVolumes,
 	}
 }
 
@@ -92,7 +88,6 @@ type ReconcileSwiftStorage struct {
 	kubernetes   *k8s.Kubernetes
 	claims       volumeclaims.PersistentVolumeClaims
 	localVolumes localvolume.LocalVolumes
-	finalize     *finalize.Finalize
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -109,24 +104,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
-	}
-
-	if err := r.ensureLabel(swiftStorage); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	finalized, err := r.finalize.Handle(swiftStorage, func() error {
-		pv := core.PersistentVolume{}
-		return r.client.DeleteAllOf(context.Background(), &pv, &client.DeleteAllOfOptions{
-			ListOptions: client.ListOptions{LabelSelector: labels.SelectorFromSet(swiftStorage.Labels)},
-		})
-	})
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if finalized {
-		return reconcile.Result{}, nil
 	}
 
 	for i := 0; i < 2; i++ {
@@ -187,15 +164,6 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
-}
-
-func (r *ReconcileSwiftStorage) ensureLabel(ss *contrail.SwiftStorage) error {
-	if len(ss.GetLabels()) != 0 {
-		return nil
-	}
-
-	ss.SetLabels(contraillabel.New(contrail.SwiftStorageInstanceType, ss.GetName()))
-	return r.client.Update(context.Background(), ss)
 }
 
 func (r *ReconcileSwiftStorage) ensurePVCOwnership(ss *contrail.SwiftStorage) error {
