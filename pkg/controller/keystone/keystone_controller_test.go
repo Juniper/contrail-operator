@@ -366,7 +366,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							Args:            []string{"-c", expectedCommandImage},
 							Env: []core.EnvVar{
 								{
-									Name:  "MY_DB_IP",
+									Name:  "PSQL_ENDPOINT",
 									Value: "10.10.10.20:5432",
 								},
 							},
@@ -681,7 +681,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			Args:            []string{"-c", expectedCommandImage},
 			Env: []core.EnvVar{
 				{
-					Name:  "MY_DB_IP",
+					Name:  "PSQL_ENDPOINT",
 					Value: "10.10.10.20:5432",
 				},
 			},
@@ -747,9 +747,9 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"

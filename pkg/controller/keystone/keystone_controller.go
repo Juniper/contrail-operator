@@ -332,7 +332,7 @@ func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSe
 							Args:            []string{"-c", initDBScript},
 							Env: []core.EnvVar{
 								{
-									Name:  "MY_DB_IP",
+									Name:  "PSQL_ENDPOINT",
 									Value: psqlEndpoint,
 								},
 							},
@@ -433,10 +433,10 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_DB_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_DB_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true

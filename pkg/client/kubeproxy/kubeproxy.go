@@ -54,6 +54,14 @@ func (p *HTTPProxy) NewSecureClientWithPath(namespace string, pod string, port i
 	}
 }
 
+func (p *HTTPProxy) NewSecureClientForService(namespace string, serviceName string, port int) *Client {
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/services/https:%s:%d/proxy", p.serverURL, namespace, serviceName, port)
+	return &Client{
+		url:    url,
+		client: p.client,
+	}
+}
+
 // Client is an HTTP client using Kubernetes API server as a proxy. With this client you can execute HTTP methods
 // on any k8s pod from outside the cluster. No need to manually execute `kubectl port-forward`, `kubectl proxy`
 // or something similar.

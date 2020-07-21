@@ -110,17 +110,20 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-
 	if !instance.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
 
-	postgresClusterIP := "0.0.0.0"
+	if len(instance.Labels) == 0 {
+		instance.Labels = map[string]string{
+			"app": instance.Name,
+		}
+	}
 	postgresService, err := r.ensureServiceExists(instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	postgresClusterIP = postgresService.Spec.ClusterIP
+	postgresClusterIP := postgresService.Spec.ClusterIP
 	postgresPods, err := r.listPostgresPods(instance.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list postgres pods: %v", err)
@@ -200,10 +203,6 @@ func (r *ReconcilePostgres) updateStatus(
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
 func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName string) *core.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-
 	db := "contrail_test"
 	var labelsMountPermission int32 = 0644
 	var secretMountPermission int32 = 0640
@@ -212,7 +211,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
 			Namespace: cr.Namespace,
-			Labels:    labels,
+			Labels:    cr.Labels,
 		},
 		Spec: core.PodSpec{
 			HostNetwork:  true,
@@ -385,7 +384,7 @@ func (r *ReconcilePostgres) ensureServiceExists(postgres *contrail.Postgres) (*c
 		postgresService.Spec.Ports = []core.ServicePort{
 			{Port: 5432, Protocol: "TCP"},
 		}
-		postgresService.Spec.Selector = map[string]string{"app": postgres.Name}
+		postgresService.Spec.Selector = postgres.Labels
 		return nil
 	})
 	if err != nil {
