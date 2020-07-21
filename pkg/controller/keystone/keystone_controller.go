@@ -323,6 +323,20 @@ func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSe
 			Selector: &meta.LabelSelector{},
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "Keystone",
+										Operator: "In",
+										Values:   []string{cr.Name},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					DNSPolicy: core.DNSClusterFirst,
 					InitContainers: []core.Container{
 						{

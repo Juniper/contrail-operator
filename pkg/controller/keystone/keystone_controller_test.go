@@ -401,6 +401,20 @@ func newExpectedSTS() *apps.StatefulSet {
 					Labels: map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "Keystone",
+										Operator: "In",
+										Values:   []string{"keystone"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					DNSPolicy:    core.DNSClusterFirst,
