@@ -179,10 +179,10 @@ func ManagerCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pv := core.PersistentVolume{}
-	err = f.Client.Delete(context.TODO(), &pv, &client.DeleteOptions{
-		PropagationPolicy: &pp,
-	})
+	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = contrailwait.Contrail{
 		Namespace:     namespace,
 		Timeout:       5 * time.Minute,
