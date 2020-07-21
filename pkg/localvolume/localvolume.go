@@ -95,8 +95,7 @@ func (v *localVolume) EnsureExist() error {
 			AccessModes: []core.PersistentVolumeAccessMode{
 				"ReadWriteOnce",
 			},
-			PersistentVolumeReclaimPolicy: core.PersistentVolumeReclaimPolicy("Delete"),
-			StorageClassName:              "local-storage",
+			StorageClassName: "local-storage",
 			NodeAffinity: &core.VolumeNodeAffinity{
 				Required: &core.NodeSelector{
 					NodeSelectorTerms: []core.NodeSelectorTerm{{

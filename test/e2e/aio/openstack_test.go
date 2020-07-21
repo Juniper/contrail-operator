@@ -33,6 +33,10 @@ func TestOpenstackServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
+	if err := test.AddToFrameworkScheme(core.AddToScheme, &core.PersistentVolumeList{}); err != nil {
+		t.Fatalf("Failed to add core framework scheme: %v", err)
+	}
+
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
@@ -195,6 +199,7 @@ func TestOpenstackServices(t *testing.T) {
 							ObjectBindPort:    6000,
 							Device:            "d1",
 							Containers: []*contrail.Container{
+								{Name: "swiftStorageInit", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 								{Name: "swiftObjectExpirer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005"},
 								{Name: "swiftObjectUpdater", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
 								{Name: "swiftObjectReplicator", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
@@ -293,4 +298,9 @@ func TestOpenstackServices(t *testing.T) {
 			})
 		})
 	})
+
+	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

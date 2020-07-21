@@ -16,6 +16,7 @@ for i in $(ls crds/*_crd.yaml); do
   cat $i >> 1-create-operator.yaml
   echo "---" >> 1-create-operator.yaml
 done
+cat operator.yaml >> 1-create-operator.yaml
 
 cat crds/contrail_v1alpha1_manager_cr.yaml > 2-start-operator-1node.yaml
 echo "---" > 2-start-operator-3node.yaml

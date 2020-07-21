@@ -23,8 +23,8 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"github.com/Juniper/contrail-operator/pkg/localvolume"
 	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
@@ -106,19 +106,12 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	for i := 0; i < 2; i++ {
-		lv, err := r.localVolumes.New(
-			fmt.Sprintf("%s-swift-data-%d", swiftStorage.Name, i),
-			swiftStorage.Labels,
-			map[string]string{"node-role.kubernetes.io/master": ""},
-			defaultSwiftStoragePath,
-		)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		if err := lv.EnsureExist(); err != nil {
-			return reconcile.Result{}, err
-		}
+	if err := r.ensureLabel(swiftStorage); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.ensureLocalPVs(swiftStorage); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
@@ -166,6 +159,32 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
+func (r *ReconcileSwiftStorage) ensureLocalPVs(ss *contrail.SwiftStorage) error {
+	path := ss.Spec.ServiceConfiguration.Storage.Path
+	if path == "" {
+		path = defaultSwiftStoragePath
+	}
+	lv, err := r.localVolumes.New(
+		fmt.Sprintf("%s-swift-data", ss.Name),
+		ss.Labels,
+		map[string]string{"node-role.kubernetes.io/master": ""},
+		path,
+	)
+	if err != nil {
+		return err
+	}
+	return lv.EnsureExist()
+}
+
+func (r *ReconcileSwiftStorage) ensureLabel(ss *contrail.SwiftStorage) error {
+	if len(ss.Labels) != 0 {
+		return nil
+	}
+
+	ss.Labels = contraillabel.New(contrail.SwiftStorageInstanceType, ss.Name)
+	return r.client.Update(context.Background(), ss)
+}
+
 func (r *ReconcileSwiftStorage) ensurePVCOwnership(ss *contrail.SwiftStorage) error {
 	listOps := &client.ListOptions{Namespace: ss.Namespace, LabelSelector: labels.SelectorFromSet(ss.Labels)}
 	pvcList := &core.PersistentVolumeClaimList{}
@@ -191,13 +210,15 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
 
+	cg := containerGenerator{
+		containersSpec: swiftStorage.Spec.ServiceConfiguration.Containers,
+	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
-		labels := map[string]string{"app": request.Name}
-		statefulSet.Spec.Template.ObjectMeta.Labels = labels
+		statefulSet.Spec.Template.ObjectMeta.Labels = swiftStorage.Labels
 		statefulSet.Spec.Template.Spec.InitContainers = []core.Container{{
-			Name: "init",
-			Image: utils.GetContainerFromList(
-				"swiftStorageInit", swiftStorage.Spec.ServiceConfiguration.Containers).Image,
+			Name:  "init",
+			Image: cg.getImage("swift-storage-init"),
 			VolumeMounts: []core.VolumeMount{
 				{
 					Name:      "swift-storage-init",
@@ -205,7 +226,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 				},
 			},
 		}}
-		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Storage.Path)
+		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Device)
 		statefulSet.Spec.Template.Spec.HostNetwork = true
 		var swiftGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
@@ -294,8 +315,8 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 				}},
 			},
 		}
-		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		replicas := int32(2)
+		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: swiftStorage.Labels}
+		replicas := int32(1)
 		statefulSet.Spec.Replicas = &replicas
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
@@ -381,6 +402,7 @@ func (cg *containerGenerator) getImage(name string) string {
 		"swift-object-replicator":    "localhost:5000/centos-binary-swift-object:train",
 		"swift-object-updater":       "localhost:5000/centos-binary-swift-object:train",
 		"swift-object-expirer":       "localhost:5000/centos-binary-swift-object-expirer:train",
+		"swift-storage-init":         "localhost:5000/busybox:1.31",
 	}
 
 	if cg.containersSpec == nil {

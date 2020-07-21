@@ -282,6 +282,8 @@ spec:
             objectBindPort: 6000
             device: d1
             containers:
+              - name: swiftStorageInit
+                image: registry:5000/common-docker-third-party/contrail/busybox:1.31
               - name: swiftObjectExpirer
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
               - name: swiftObjectUpdater
