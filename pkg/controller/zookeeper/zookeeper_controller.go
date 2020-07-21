@@ -2,10 +2,11 @@ package zookeeper
 
 import (
 	"context"
+	"strconv"
+
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
@@ -315,17 +316,13 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	volumeBindingMode := storagev1.VolumeBindingMode("WaitForFirstConsumer")
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "local-storage",
-			Namespace: instance.Namespace,
+			Name: "local-storage",
 		},
 		Provisioner:       "kubernetes.io/no-provisioner",
 		VolumeBindingMode: &volumeBindingMode,
 	}
 	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: storageClass.Name}, storageClass)
 	if err != nil && errors.IsNotFound(err) {
-		if err = controllerutil.SetControllerReference(instance, storageClass, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
 		err = r.Client.Create(context.TODO(), storageClass)
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
@@ -364,8 +361,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	for i := 0; i < replicasInt; i++ {
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
-				Namespace: instance.Namespace,
+				Name: instance.Name + "-pv-" + strconv.Itoa(i),
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
@@ -383,9 +379,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pv.Name, Namespace: request.Namespace}, pv)
 		if err != nil && errors.IsNotFound(err) {
-			if err = controllerutil.SetControllerReference(instance, pv, r.Scheme); err != nil {
-				return reconcile.Result{}, err
-			}
 			if err = r.Client.Create(context.TODO(), pv); err != nil && !errors.IsAlreadyExists(err) {
 				return reconcile.Result{}, err
 			}

@@ -108,6 +108,10 @@ func ManagerCluster(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
+	if err := test.AddToFrameworkScheme(corev1.AddToScheme, &corev1.PersistentVolumeList{}); err != nil {
+		t.Fatalf("Failed to add core framework scheme: %v", err)
+	}
+
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
@@ -175,6 +179,10 @@ func ManagerCluster(t *testing.T) {
 	err = f.Client.Delete(context.TODO(), &manager, &client.DeleteOptions{
 		PropagationPolicy: &pp,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.Client.DeleteAllOf(context.TODO(), &corev1.PersistentVolume{})
 	if err != nil {
 		t.Fatal(err)
 	}
