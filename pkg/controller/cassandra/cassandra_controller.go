@@ -435,16 +435,12 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "local-storage",
-			Namespace: instance.Namespace,
 		},
 		Provisioner:       "kubernetes.io/no-provisioner",
 		VolumeBindingMode: &volumeBindingMode,
 	}
 	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: storageClass.Name}, storageClass)
 	if err != nil && errors.IsNotFound(err) {
-		if err = controllerutil.SetControllerReference(instance, storageClass, r.Scheme); err != nil {
-			return reconcile.Result{}, err
-		}
 		err = r.Client.Create(context.TODO(), storageClass)
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
@@ -484,7 +480,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
-				Namespace: instance.Namespace,
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
@@ -502,9 +497,6 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pv.Name, Namespace: request.Namespace}, pv)
 		if err != nil && errors.IsNotFound(err) {
-			if err = controllerutil.SetControllerReference(instance, pv, r.Scheme); err != nil {
-				return reconcile.Result{}, err
-			}
 			if err = r.Client.Create(context.TODO(), pv); err != nil && !errors.IsAlreadyExists(err) {
 				return reconcile.Result{}, err
 			}
