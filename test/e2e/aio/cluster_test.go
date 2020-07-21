@@ -35,7 +35,7 @@ func TestCluster(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := test.AddToFrameworkScheme(core.AddToScheme, &core.PersistentVolume{}); err != nil {
+	if err := test.AddToFrameworkScheme(core.AddToScheme, &core.PersistentVolumeList{}); err != nil {
 		t.Fatalf("Failed to add core framework scheme: %v", err)
 	}
 

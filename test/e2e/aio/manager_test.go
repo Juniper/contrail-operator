@@ -108,7 +108,7 @@ func ManagerCluster(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
-	if err := test.AddToFrameworkScheme(corev1.AddToScheme, &corev1.PersistentVolume{}); err != nil {
+	if err := test.AddToFrameworkScheme(corev1.AddToScheme, &corev1.PersistentVolumeList{}); err != nil {
 		t.Fatalf("Failed to add core framework scheme: %v", err)
 	}
 
