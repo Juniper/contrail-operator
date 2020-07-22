@@ -118,7 +118,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				&contrail.FernetKeyManager{
@@ -142,7 +142,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedBootstrapJob: newExpectedBootstrapJob(),
 		},

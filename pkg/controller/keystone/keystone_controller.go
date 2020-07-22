@@ -225,7 +225,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, fernetKeysSecretName, credentialKeysSecretName, psql.Status.Endpoint)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, fernetKeysSecretName, credentialKeysSecretName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -265,11 +265,11 @@ func (r *ReconcileKeystone) getFernetKeyManager(name, namespace string) (*contra
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, fernetKeysSecretName, credentialKeysSecretName, psqlEndpoint string,
+	kcName, fernetKeysSecretName, credentialKeysSecretName string,
 ) (*apps.StatefulSet, error) {
-	sts := newKeystoneSTS(keystone, psqlEndpoint)
+	sts := newKeystoneSTS(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
-		updateKeystoneSTS(keystone, sts, kcName, fernetKeysSecretName, credentialKeysSecretName, psqlEndpoint)
+		updateKeystoneSTS(keystone, sts, kcName, fernetKeysSecretName, credentialKeysSecretName)
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
@@ -313,7 +313,7 @@ func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memca
 	return memcached, err
 }
 
-func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSet {
+func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -604,9 +604,10 @@ func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, k
 	return r.client.Create(context.Background(), bootstrapJob)
 }
 
-func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, fernetKeysSecretName, credentialKeysSecretName, psqlEndpoint string) {
+func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, fernetKeysSecretName, credentialKeysSecretName string) {
 	var labelsMountPermission int32 = 0644
-	newSTS := newKeystoneSTS(keystone, psqlEndpoint)
+	newSTS := newKeystoneSTS(keystone)
+	sts.Spec.Template.Spec.Affinity = newSTS.Spec.Template.Spec.Affinity
 	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
 	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
 	sts.Spec.Template.Spec.Volumes = []core.Volume{
@@ -662,5 +663,4 @@ func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcNam
 			},
 		},
 	}
-
 }
