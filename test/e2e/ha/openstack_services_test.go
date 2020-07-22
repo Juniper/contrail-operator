@@ -74,6 +74,9 @@ func TestHAOpenStackServices(t *testing.T) {
 			},
 		}
 
+		keystoneProxy := proxy.NewSecureClientForService("contrail", "keystone-service", 5555)
+		keystoneClient := keystone.NewClient(keystoneProxy)
+
 		t.Run("when cluster with OpenStack services and dependencies is created", func(t *testing.T) {
 			var replicas int32 = 1
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -96,8 +99,14 @@ func TestHAOpenStackServices(t *testing.T) {
 				return nil
 			})
 			require.NoError(t, err)
+
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
 				assertOpenStackReplicasReady(t, w, 3)
+			})
+
+			t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
+				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+				assert.NoError(t, err)
 			})
 		})
 
@@ -116,9 +125,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				assertOpenStackReplicasReady(t, w, 3)
 			})
 
-			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				keystoneProxy := proxy.NewSecureClientForService("contrail", "keystone-service", 5555)
-				keystoneClient := keystone.NewClient(keystoneProxy)
+			t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
 				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
 				assert.NoError(t, err)
 			})
@@ -163,6 +170,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					Logger:        log,
 				}
 				assertOpenStackReplicasReady(t, w, 3)
+			})
+
+			t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
+				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+				assert.NoError(t, err)
 			})
 		})
 
