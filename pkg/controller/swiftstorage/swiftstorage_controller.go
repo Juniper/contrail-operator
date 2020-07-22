@@ -159,6 +159,18 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 
 func (r *ReconcileSwiftStorage) ensureLocalPVs(ss *contrail.SwiftStorage) error {
 	path := ss.Spec.ServiceConfiguration.Storage.Path
+	size := ss.Spec.ServiceConfiguration.Storage.Size
+	var storage resource.Quantity
+	var err error
+	if size == "" {
+		storage = resource.MustParse("5Gi")
+	} else {
+		storage, err = resource.ParseQuantity(size)
+		if err != nil {
+			return err
+		}
+	}
+
 	if path == "" {
 		path = defaultSwiftStoragePath
 	}
@@ -167,6 +179,7 @@ func (r *ReconcileSwiftStorage) ensureLocalPVs(ss *contrail.SwiftStorage) error 
 		ss.Labels,
 		map[string]string{"node-role.kubernetes.io/master": ""},
 		path,
+		storage,
 	)
 	if err != nil {
 		return err

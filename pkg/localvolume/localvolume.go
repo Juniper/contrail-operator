@@ -15,7 +15,7 @@ import (
 )
 
 type LocalVolumes interface {
-	New(name string, labels map[string]string, nodeSelectors map[string]string, path string) (LocalVolume, error)
+	New(name string, labels map[string]string, nodeSelectors map[string]string, path string, storage resource.Quantity) (LocalVolume, error)
 }
 
 type LocalVolume interface {
@@ -31,7 +31,11 @@ type localVolumes struct {
 }
 
 func (l *localVolumes) New(
-	name string, labels map[string]string, nodeSelectors map[string]string, path string,
+	name string,
+	labels map[string]string,
+	nodeSelectors map[string]string,
+	path string,
+	storage resource.Quantity,
 ) (LocalVolume, error) {
 
 	if name == "" {
@@ -46,6 +50,10 @@ func (l *localVolumes) New(
 		return nil, errors.New("node selectors are required")
 	}
 
+	if storage.IsZero() {
+		return nil, errors.New("storage cannot be zero")
+	}
+
 	if path == "" {
 		return nil, errors.New("storage path on the host is required")
 	}
@@ -56,6 +64,7 @@ func (l *localVolumes) New(
 		labels:        labels,
 		nodeSelectors: nodeSelectors,
 		path:          path,
+		storage:       storage,
 	}, nil
 }
 
@@ -66,6 +75,7 @@ type localVolume struct {
 	labels        map[string]string
 	nodeSelectors map[string]string
 	path          string
+	storage       resource.Quantity
 }
 
 func (v *localVolume) EnsureExist() error {
@@ -75,11 +85,10 @@ func (v *localVolume) EnsureExist() error {
 
 	nodeSelectorMatchExpressions := []core.NodeSelectorRequirement{}
 	for k, v := range v.nodeSelectors {
-		valueList := []string{v}
 		expression := core.NodeSelectorRequirement{
 			Key:      k,
 			Operator: core.NodeSelectorOperator("In"),
-			Values:   valueList,
+			Values:   []string{v},
 		}
 		nodeSelectorMatchExpressions = append(nodeSelectorMatchExpressions, expression)
 	}
@@ -90,7 +99,7 @@ func (v *localVolume) EnsureExist() error {
 			Labels: v.labels,
 		},
 		Spec: core.PersistentVolumeSpec{
-			Capacity:   core.ResourceList{storageResource: resource.MustParse("5Gi")},
+			Capacity:   core.ResourceList{storageResource: v.storage},
 			VolumeMode: &volumeMode,
 			AccessModes: []core.PersistentVolumeAccessMode{
 				"ReadWriteOnce",

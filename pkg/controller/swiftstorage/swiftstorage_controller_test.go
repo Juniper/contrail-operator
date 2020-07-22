@@ -95,7 +95,6 @@ func TestSwiftStorageController(t *testing.T) {
 				assert.NotEmpty(t, configMap)
 			}
 		})
-
 	})
 
 	t.Run("reconciliation should be idempotent", func(t *testing.T) {
@@ -116,6 +115,28 @@ func TestSwiftStorageController(t *testing.T) {
 		expConfig := newExpectedAccountAuditorConfigMap()
 		assert.NoError(t, err)
 		assert.Equal(t, expConfig, configMap)
+	})
+
+	t.Run("should update owners of related persistent volume claims", func(t *testing.T) {
+		// given
+		trueVal := true
+		pvc := newRelatedPeristentVolumeClaim(label.New(contrail.SwiftStorageInstanceType, swiftStorageCR.Name))
+		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, pvc)
+		localVolumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
+		// then
+		assert.NoError(t, err)
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      pvc.Name,
+			Namespace: pvc.Namespace,
+		}, pvc)
+		assert.NoError(t, err)
+		expOwnerReferences := []meta.OwnerReference{
+			{"contrail.juniper.net/v1alpha1", "SwiftStorage", "test", "", &trueVal, &trueVal},
+		}
+		assert.Equal(t, expOwnerReferences, pvc.ObjectMeta.OwnerReferences)
 	})
 
 	t.Run("should update SwiftStorage StatefulSet when SwiftStorage CR is reconciled and stateful set already exists", func(t *testing.T) {
@@ -153,8 +174,9 @@ func TestSwiftStorageController(t *testing.T) {
 		assert.True(t, actualSwiftStorage.Status.Active)
 	})
 
-	t.Run("persistent volume claims", func(t *testing.T) {
+	t.Run("should create persistent volume for storage", func(t *testing.T) {
 		quantity5Gi := resource.MustParse("5Gi")
+		quantity1Gi := resource.MustParse("1Gi")
 		tests := map[string]struct {
 			size         string
 			path         string
@@ -167,7 +189,7 @@ func TestSwiftStorageController(t *testing.T) {
 			},
 			"only size given": {
 				size:         "1Gi",
-				expectedSize: quantity5Gi,
+				expectedSize: quantity1Gi,
 				expectedPath: "/mnt/swiftstorage",
 			},
 			"size and path given": {
@@ -179,7 +201,7 @@ func TestSwiftStorageController(t *testing.T) {
 			"size and path given 2": {
 				size:         "1Gi",
 				path:         "/other",
-				expectedSize: quantity5Gi,
+				expectedSize: quantity1Gi,
 				expectedPath: "/other",
 			},
 		}
@@ -413,6 +435,16 @@ func assertValidStatefulSetExists(t *testing.T, c client.Client, name types.Name
 	require.NotNil(t, spec.Selector.MatchLabels)
 	require.NotNil(t, spec.Template.ObjectMeta.Labels)
 	assert.Equal(t, spec.Selector.MatchLabels, spec.Template.ObjectMeta.Labels)
+}
+
+func newRelatedPeristentVolumeClaim(label map[string]string) *core.PersistentVolumeClaim {
+	return &core.PersistentVolumeClaim{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+			Labels:    label,
+		},
+	}
 }
 
 func newExpectedAccountAuditorConfigMap() *core.ConfigMap {
