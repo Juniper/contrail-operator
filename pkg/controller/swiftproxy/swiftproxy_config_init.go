@@ -11,7 +11,8 @@ type swiftProxyInitConfig struct {
 	KeystoneIP            string
 	KeystonePort          int
 	KeystoneAdminPassword string
-	SwiftEndpoint         string
+	SwiftInternalEndpoint string
+	SwiftPublicEndpoint   string
 	SwiftPassword         string
 	SwiftUser             string
 	CAFilePath            string
@@ -52,9 +53,9 @@ const registerPlaybook = `
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "https://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "https://{{ swift_internal_endpoint }}/v1", interface: "admin" }
+        - { url: "https://{{ swift_internal_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
+        - { url: "https://{{ swift_public_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
     - name: create service project
       os_project:
         name: "service"
@@ -100,7 +101,8 @@ openstack_auth:
   domain_id: "default"
   user_domain_id: "default"
 
-swift_endpoint: "{{ .SwiftEndpoint }}"
+swift_internal_endpoint: "{{ .SwiftInternalEndpoint }}"
+swift_public_endpoint: "{{ .SwiftPublicEndpoint }}"
 swift_password: "{{ .SwiftPassword }}"
 swift_user: "{{ .SwiftUser }}"
 

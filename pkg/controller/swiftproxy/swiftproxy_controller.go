@@ -24,6 +24,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/label"
 
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
@@ -76,6 +77,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.SwiftProxy{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.SwiftProxy{},
 	})
@@ -113,6 +122,20 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	if !swiftProxy.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
+	if err := r.ensureLabel(swiftProxy); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	svc, err := r.ensureServiceExists(swiftProxy)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if svc.Spec.ClusterIP == "" {
+		log.Info(fmt.Sprintf("swift proxy service is not ready, clusterIP is empty"))
 		return reconcile.Result{}, nil
 	}
 
@@ -170,14 +193,14 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	endpoint, err := r.getEndpoint(swiftProxy, swiftProxyPods)
+	publicIP, err := r.getEndpoint(swiftProxy, swiftProxyPods)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
 	cm = r.configMap(swiftInitConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureInitExists(endpoint); err != nil {
+	if err = cm.ensureInitExists(svc.Spec.ClusterIP, publicIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -194,7 +217,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		labels := map[string]string{"SwiftProxy": request.Name}
+		labels := swiftProxy.Labels
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
@@ -221,7 +244,41 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment)
+	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment, svc)
+}
+
+func (r *ReconcileSwiftProxy) ensureLabel(sp *contrail.SwiftProxy) error {
+	if len(sp.Labels) != 0 {
+		return nil
+	}
+
+	sp.Labels = label.New(contrail.SwiftProxyInstanceType, sp.Name)
+	return r.client.Update(context.Background(), sp)
+}
+
+func (r *ReconcileSwiftProxy) ensureServiceExists(swiftProxy *contrail.SwiftProxy) (*core.Service, error) {
+	svc := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      swiftProxy.Name + "-swift-proxy",
+			Namespace: swiftProxy.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, svc, func() error {
+		listenPort := int32(swiftProxy.Spec.ServiceConfiguration.ListenPort)
+		nodePort := int32(0)
+		for i, p := range svc.Spec.Ports {
+			if p.Port == listenPort {
+				nodePort = svc.Spec.Ports[i].NodePort
+			}
+		}
+		svc.Spec.Ports = []core.ServicePort{
+			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
+		}
+		svc.Spec.Selector = swiftProxy.Labels
+		svc.Spec.Type = core.ServiceTypeLoadBalancer
+		return controllerutil.SetControllerReference(swiftProxy, svc, r.scheme)
+	})
+	return svc, err
 }
 
 func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.PodList, error) {
@@ -235,7 +292,8 @@ func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.P
 }
 
 func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList) error {
-	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
+	clusterIP := swiftProxy.Status.ClusterIP
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, swiftProxy, pods, clusterIP, "swiftproxy", true).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Keystone, error) {
@@ -267,7 +325,9 @@ func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy, pods *core.Po
 func (r *ReconcileSwiftProxy) updateStatus(
 	sp *contrail.SwiftProxy,
 	deployment *apps.Deployment,
+	svc *core.Service,
 ) error {
+	sp.Status.ClusterIP = svc.Spec.ClusterIP
 	sp.Status.Active = false
 	intendentReplicas := int32(1)
 	if deployment.Spec.Replicas != nil {
