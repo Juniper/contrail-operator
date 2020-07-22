@@ -328,7 +328,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
 								LabelSelector: &meta.LabelSelector{
 									MatchExpressions: []meta.LabelSelectorRequirement{{
-										Key:      "Keystone",
+										Key:      "keystone",
 										Operator: "In",
 										Values:   []string{cr.Name},
 									}},

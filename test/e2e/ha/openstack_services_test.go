@@ -90,7 +90,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when cluster is scaled from 1 to 3", func(t *testing.T) {
-			t.Skip()
 			var replicas int32 = 3
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
@@ -113,9 +112,8 @@ func TestHAOpenStackServices(t *testing.T) {
 				assertOpenStackPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
-			//TODO Change the number of replicas to 3 when keystone can be scaled
 			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
-				assertOpenStackReplicasReady(t, w, 1)
+				assertOpenStackReplicasReady(t, w, 3)
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
@@ -128,8 +126,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			//TODO Include this test when Keystone can handle node failure
-			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: "node-role.kubernetes.io/master=",
 			})
@@ -156,8 +152,6 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
-			//TODO Include this test when Keystone can handle node failure
-			t.Skip()
 			err := untaintNodes(f.KubeClient, "e2e.test/failure")
 			assert.NoError(t, err)
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
