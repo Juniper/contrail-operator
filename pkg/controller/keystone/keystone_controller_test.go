@@ -813,13 +813,6 @@ func newExpectedBootstrapJob() *batch.Job {
 							}, {
 								Name:  "KOLLA_CONFIG_STRATEGY",
 								Value: "COPY_ALWAYS",
-							}, {
-								Name: "MY_POD_IP",
-								ValueFrom: &core.EnvVarSource{
-									FieldRef: &core.ObjectFieldSelector{
-										FieldPath: "status.podIP",
-									},
-								},
 							},
 							},
 							VolumeMounts: []core.VolumeMount{

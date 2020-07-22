@@ -560,13 +560,6 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 							}, {
 								Name:  "KOLLA_CONFIG_STRATEGY",
 								Value: "COPY_ALWAYS",
-							}, {
-								Name: "MY_POD_IP",
-								ValueFrom: &core.EnvVarSource{
-									FieldRef: &core.ObjectFieldSelector{
-										FieldPath: "status.podIP",
-									},
-								},
 							},
 							},
 							Command: getCommand(cr, "keystoneInit"),
