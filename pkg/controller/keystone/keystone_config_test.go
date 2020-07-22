@@ -43,7 +43,6 @@ const expectedKeystoneKollaServiceConfig = `{
     ]
 }`
 
-
 const expectedKeystoneConfig = `
 [DEFAULT]
 debug = False
@@ -54,7 +53,7 @@ use_stderr = True
 enable_proxy_headers_parsing = True
 
 [database]
-connection = postgresql://keystone:contrail123@10.0.2.15:5432/keystone
+connection = postgresql://keystone:contrail123@10.10.10.20:5432/keystone
 max_retries = -1
 
 [token]

@@ -1668,7 +1668,7 @@ func newManager() *contrail.Manager {
 			Services: contrail.Services{
 				Postgres: &contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.15:5432"},
 				},
 				Keystone: newKeystone(),
 			},

@@ -43,7 +43,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -64,7 +64,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
@@ -74,7 +74,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				&contrail.FernetKeyManager{
@@ -97,7 +97,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 					},
-					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status: contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -132,7 +132,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
@@ -169,7 +169,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 					},
-					Status: contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status: contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -187,7 +187,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
 		},
@@ -269,6 +269,7 @@ func TestKeystone(t *testing.T) {
 
 func newKeystone() *contrail.Keystone {
 	trueVal := true
+	oneVal := int32(1)
 	return &contrail.Keystone{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone",
@@ -276,6 +277,7 @@ func newKeystone() *contrail.Keystone {
 		},
 		Spec: contrail.KeystoneSpec{
 			CommonConfiguration: contrail.CommonConfiguration{
+				Replicas:    &oneVal,
 				Activate:    &trueVal,
 				Create:      &trueVal,
 				HostNetwork: &trueVal,
@@ -319,6 +321,7 @@ func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
 
 func newExpectedSTS() *apps.StatefulSet {
 	trueVal := true
+	oneVal := int32(1)
 	var labelsMountPermission int32 = 0644
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -331,6 +334,7 @@ func newExpectedSTS() *apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
+			Replicas: &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
 			},
@@ -362,12 +366,8 @@ func newExpectedSTS() *apps.StatefulSet {
 							Args:            []string{"-c", expectedCommandImage},
 							Env: []core.EnvVar{
 								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
+									Name:  "PSQL_ENDPOINT",
+									Value: "10.10.10.20:5432",
 								},
 							},
 						},
@@ -681,12 +681,8 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 			Args:            []string{"-c", expectedCommandImage},
 			Env: []core.EnvVar{
 				{
-					Name: "MY_POD_IP",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							FieldPath: "status.podIP",
-						},
-					},
+					Name:  "PSQL_ENDPOINT",
+					Value: "10.10.10.20:5432",
 				},
 			},
 		},
@@ -751,9 +747,9 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"

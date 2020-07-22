@@ -67,7 +67,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	return nil
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.Postgres{},
+	})
+
+	return err
 }
 
 // blank assignment to verify that ReconcilePostgres implements reconcile.Reconciler
@@ -105,17 +110,26 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-
 	if !instance.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
 
+	if len(instance.Labels) == 0 {
+		instance.Labels = map[string]string{
+			"app": instance.Name,
+		}
+	}
+	postgresService, err := r.ensureServiceExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	postgresClusterIP := postgresService.Spec.ClusterIP
 	postgresPods, err := r.listPostgresPods(instance.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list postgres pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(instance, postgresPods); err != nil {
+	if err := r.ensureCertificatesExist(instance, postgresPods, postgresClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -167,11 +181,11 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(instance, pod)
+	return reconcile.Result{}, r.updateStatus(instance, pod, postgresClusterIP)
 }
 
 func (r *ReconcilePostgres) updateStatus(
-	postgres *contrail.Postgres, pod *core.Pod,
+	postgres *contrail.Postgres, pod *core.Pod, cip string,
 ) error {
 	err := r.client.Get(context.Background(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, pod)
 	if err != nil {
@@ -180,7 +194,7 @@ func (r *ReconcilePostgres) updateStatus(
 
 	if len(pod.Status.ContainerStatuses) != 0 {
 		postgres.Status.Active = pod.Status.ContainerStatuses[0].Ready
-		postgres.Status.Node = pod.Status.PodIP + ":5432"
+		postgres.Status.Endpoint = cip
 	} else {
 		postgres.Status.Active = false
 	}
@@ -189,10 +203,6 @@ func (r *ReconcilePostgres) updateStatus(
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
 func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName string) *core.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-
 	db := "contrail_test"
 	var labelsMountPermission int32 = 0644
 	var secretMountPermission int32 = 0640
@@ -201,7 +211,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-pod",
 			Namespace: cr.Namespace,
-			Labels:    labels,
+			Labels:    cr.Labels,
 		},
 		Spec: core.PodSpec{
 			HostNetwork:  true,
@@ -323,12 +333,12 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 
 }
 
-func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres, pods *core.PodList) error {
+func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
 	if postgres.Spec.HostNetwork != nil {
 		hostNetwork = *postgres.Spec.HostNetwork
 	}
-	return certificates.NewCertificate(r.client, r.scheme, postgres, pods, "postgres", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, postgres, pods, serviceIP, "postgres", hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcilePostgres) listPostgresPods(app string) (*core.PodList, error) {
@@ -366,4 +376,30 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 	}
 
 	return c.Command
+}
+
+func (r *ReconcilePostgres) ensureServiceExists(postgres *contrail.Postgres) (*core.Service, error) {
+	postgresService := newPostgresService(postgres)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, postgresService, func() error {
+		postgresService.Spec.Ports = []core.ServicePort{
+			{Port: 5432, Protocol: "TCP"},
+		}
+		postgresService.Spec.Selector = postgres.Labels
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = controllerutil.SetControllerReference(postgres, postgresService, r.scheme)
+	return postgresService, err
+}
+
+func newPostgresService(cr *contrail.Postgres) *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      cr.Name + "-service",
+			Namespace: cr.Namespace,
+			Labels:    map[string]string{"service": cr.Name},
+		},
+	}
 }

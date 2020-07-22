@@ -1560,6 +1560,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
+		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

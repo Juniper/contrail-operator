@@ -112,7 +112,7 @@ type ReconcileKeystone struct {
 func NewReconciler(
 	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, restConfig *rest.Config,
 ) *ReconcileKeystone {
-	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes,restConfig: restConfig}
+	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, restConfig: restConfig}
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -192,12 +192,12 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Endpoint, keystonePodIP); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Endpoint, memcached.Status.Endpoint, keystonePodIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
+	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -213,8 +213,13 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, fernetKeyManager.Status.SecretName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, kciName, fernetKeyManager.Status.SecretName, psql.Status.Endpoint)
 	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	strategy := "deleteFirst"
+	if err = contrail.UpdateSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", request, r.scheme, r.client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -224,7 +229,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
 	keyManager := &contrail.FernetKeyManager{
 		ObjectMeta: meta.ObjectMeta{
-			Name: name,
+			Name:      name,
 			Namespace: namespace,
 		},
 	}
@@ -240,7 +245,7 @@ func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string)
 	return err
 }
 
-func (r *ReconcileKeystone) getFernetKeyManager (name, namespace string) (*contrail.FernetKeyManager, error) {
+func (r *ReconcileKeystone) getFernetKeyManager(name, namespace string) (*contrail.FernetKeyManager, error) {
 	keyManager := &contrail.FernetKeyManager{}
 	namespacedName := types.NamespacedName{Name: name, Namespace: namespace}
 	err := r.client.Get(context.Background(), namespacedName, keyManager)
@@ -248,67 +253,11 @@ func (r *ReconcileKeystone) getFernetKeyManager (name, namespace string) (*contr
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kciName, keysSecretName string,
+	kcName, kciName, keysSecretName, psqlEndpoint string,
 ) (*apps.StatefulSet, error) {
-	sts := newKeystoneSTS(keystone)
-	var labelsMountPermission int32 = 0644
+	sts := newKeystoneSTS(keystone, psqlEndpoint)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
-		sts.Spec.Template.Spec.Volumes = []core.Volume{
-			{
-				Name: "keystone-fernet-keys",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: keysSecretName,
-					},
-				},
-			},
-			{
-				Name: "keystone-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-init-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kciName,
-						},
-					},
-				},
-			},
-			{
-				Name: keystone.Name + "-secret-certificates",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: keystone.Name + "-secret-certificates",
-					},
-				},
-			},
-			{
-				Name: "status",
-				VolumeSource: core.VolumeSource{
-					DownwardAPI: &core.DownwardAPIVolumeSource{
-						Items: []core.DownwardAPIVolumeFile{
-							{
-								FieldRef: &core.ObjectFieldSelector{
-									APIVersion: "v1",
-									FieldPath:  "metadata.labels",
-								},
-								Path: "pod_labels",
-							},
-						},
-						DefaultMode: &labelsMountPermission,
-					},
-				},
-			},
-		}
-
+		updateKeystoneSTS(keystone, sts, kcName, kciName, keysSecretName, psqlEndpoint)
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
@@ -353,7 +302,7 @@ func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memca
 }
 
 // newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
-func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
+func newKeystoneSTS(cr *contrail.Keystone, psqlEndpoint string) *apps.StatefulSet {
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -383,12 +332,8 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Args:            []string{"-c", initDBScript},
 							Env: []core.EnvVar{
 								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
+									Name:  "PSQL_ENDPOINT",
+									Value: psqlEndpoint,
 								},
 							},
 						},
@@ -488,10 +433,10 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
@@ -535,4 +480,67 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 			Labels:    map[string]string{"service": cr.Name},
 		},
 	}
+}
+
+func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, kciName, keysSecretName, psqlEndpoint string) {
+	var labelsMountPermission int32 = 0644
+	newSTS := newKeystoneSTS(keystone, psqlEndpoint)
+	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
+	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
+	sts.Spec.Template.Spec.Volumes = []core.Volume{
+		{
+			Name: "keystone-fernet-keys",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: keysSecretName,
+				},
+			},
+		},
+		{
+			Name: "keystone-config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: kcName,
+					},
+				},
+			},
+		},
+		{
+			Name: "keystone-init-config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: kciName,
+					},
+				},
+			},
+		},
+		{
+			Name: keystone.Name + "-secret-certificates",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: keystone.Name + "-secret-certificates",
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						{
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+							Path: "pod_labels",
+						},
+					},
+					DefaultMode: &labelsMountPermission,
+				},
+			},
+		},
+	}
+
 }

@@ -2715,7 +2715,7 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        node:
+                        endpoint:
                           type: string
                       type: object
                   type: object
@@ -3334,6 +3334,8 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              contrailStatusImage:
+                                type: string
                               controlInstance:
                                 type: string
                               distribution:
@@ -4148,7 +4150,7 @@ spec:
           properties:
             active:
               type: boolean
-            node:
+            endpoint:
               type: string
           type: object
       type: object
@@ -4981,6 +4983,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                contrailStatusImage:
+                  type: string
                 controlInstance:
                   type: string
                 distribution:
