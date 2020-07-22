@@ -59,8 +59,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("when SwiftStorage CR is reconciled", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -100,8 +100,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("reconciliation should be idempotent", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, newExpectedAccountAuditorConfigMap())
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -122,8 +122,8 @@ func TestSwiftStorageController(t *testing.T) {
 		trueVal := true
 		pvc := newRelatedPeristentVolumeClaim(label.New(contrail.SwiftStorageInstanceType, swiftStorageCR.Name))
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, pvc)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -145,8 +145,8 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Name = statefulSetName.Name
 		existingStatefulSet.Namespace = statefulSetName.Namespace
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -164,8 +164,8 @@ func TestSwiftStorageController(t *testing.T) {
 		existingStatefulSet.Status.ReadyReplicas = 1
 		existingStatefulSet.Status.Replicas = 1
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR, existingStatefulSet)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -223,8 +223,8 @@ func TestSwiftStorageController(t *testing.T) {
 					},
 				}
 				fakeClient := fake.NewFakeClientWithScheme(scheme, testSwiftStorageCR)
-				localVolumes := localvolume.New(fakeClient)
-				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+				volumes := localvolume.New(fakeClient)
+				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 				// when
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 				// then
@@ -268,8 +268,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should create all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -281,8 +281,8 @@ func TestSwiftStorageController(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, setCustomImages(*swiftStorageCR))
 
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -293,15 +293,15 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount device mount point to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
 		assert.NoError(t, err)
 
 		expectedMountPoint := core.VolumeMount{
-			Name:      "devices-mount-point",
+			Name:      "storage-device",
 			MountPath: "/srv/node/dev",
 		}
 		assertVolumeMountMounted(t, fakeClient, statefulSetName, &expectedMountPoint)
@@ -310,8 +310,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount swift conf volume mount to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -328,8 +328,8 @@ func TestSwiftStorageController(t *testing.T) {
 	t.Run("should mount rings volume mount to all Swift's containers", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-		localVolumes := localvolume.New(fakeClient)
-		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+		volumes := localvolume.New(fakeClient)
+		reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 		// when
 		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 		// then
@@ -365,8 +365,8 @@ func TestSwiftStorageController(t *testing.T) {
 			t.Run(testName, func(t *testing.T) {
 				// given
 				fakeClient := fake.NewFakeClientWithScheme(scheme, swiftStorageCR)
-				localVolumes := localvolume.New(fakeClient)
-				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), localVolumes)
+				volumes := localvolume.New(fakeClient)
+				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 				// when
 				for _, ip := range test.podIPs {

@@ -5,38 +5,32 @@ import (
 	"errors"
 
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	core "k8s.io/api/core/v1"
-	//storagev1 "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type LocalVolumes interface {
-	New(name string, labels map[string]string, nodeSelectors map[string]string, path string, storage resource.Quantity) (LocalVolume, error)
+type Volumes interface {
+	New(name, path string, storage resource.Quantity, labels, nodeSelectors map[string]string) (Volume, error)
 }
 
-type LocalVolume interface {
-	EnsureExist() error
+type Volume interface {
+	EnsureExists() error
 }
 
-func New(client client.Client) LocalVolumes {
-	return &localVolumes{client: client}
+func New(client client.Client) Volumes {
+	return &volumes{client: client}
 }
 
-type localVolumes struct {
+type volumes struct {
 	client client.Client
 }
 
-func (l *localVolumes) New(
-	name string,
-	labels map[string]string,
-	nodeSelectors map[string]string,
-	path string,
-	storage resource.Quantity,
-) (LocalVolume, error) {
+func (l *volumes) New(
+	name, path string, storage resource.Quantity, labels, nodeSelectors map[string]string,
+) (Volume, error) {
 
 	if name == "" {
 		return nil, errors.New("local volume name cannot be empty")
@@ -58,7 +52,7 @@ func (l *localVolumes) New(
 		return nil, errors.New("storage path on the host is required")
 	}
 
-	return &localVolume{
+	return &volume{
 		client:        l.client,
 		name:          name,
 		labels:        labels,
@@ -68,9 +62,8 @@ func (l *localVolumes) New(
 	}, nil
 }
 
-type localVolume struct {
+type volume struct {
 	client        client.Client
-	scheme        *runtime.Scheme
 	name          string
 	labels        map[string]string
 	nodeSelectors map[string]string
@@ -78,7 +71,7 @@ type localVolume struct {
 	storage       resource.Quantity
 }
 
-func (v *localVolume) EnsureExist() error {
+func (v *volume) EnsureExists() error {
 
 	storageResource := core.ResourceStorage
 	volumeMode := core.PersistentVolumeMode("Filesystem")
@@ -121,6 +114,7 @@ func (v *localVolume) EnsureExist() error {
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), v.client, pv, func() error {
+		// Don't change anything on update
 		return nil
 	})
 

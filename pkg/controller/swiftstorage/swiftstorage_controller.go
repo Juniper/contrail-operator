@@ -46,10 +46,10 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 func NewReconciler(
 	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes,
-	localVolumes localvolume.LocalVolumes,
+	volumes localvolume.Volumes,
 ) *ReconcileSwiftStorage {
 	return &ReconcileSwiftStorage{
-		client: client, scheme: scheme, kubernetes: kubernetes, localVolumes: localVolumes,
+		client: client, scheme: scheme, kubernetes: kubernetes, volumes: volumes,
 	}
 }
 
@@ -82,10 +82,10 @@ var _ reconcile.Reconciler = &ReconcileSwiftStorage{}
 type ReconcileSwiftStorage struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client       client.Client
-	scheme       *runtime.Scheme
-	kubernetes   *k8s.Kubernetes
-	localVolumes localvolume.LocalVolumes
+	client     client.Client
+	scheme     *runtime.Scheme
+	kubernetes *k8s.Kubernetes
+	volumes    localvolume.Volumes
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -104,23 +104,27 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureLabel(swiftStorage); err != nil {
+	if !swiftStorage.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
+	if err := r.ensureLabelExists(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureLocalPVs(swiftStorage); err != nil {
+	if err := r.ensureLocalPVsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureSwiftAccountServicesConfigMapsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftContainerServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureSwiftContainerServicesConfigMapsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftObjectServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureSwiftObjectServicesConfigMapsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -129,7 +133,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensurePVCOwnership(swiftStorage); err != nil {
+	if err = r.ensurePVCOwnershipExists(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -157,7 +161,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) ensureLocalPVs(ss *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureLocalPVsExist(ss *contrail.SwiftStorage) error {
 	path := ss.Spec.ServiceConfiguration.Storage.Path
 	size := ss.Spec.ServiceConfiguration.Storage.Size
 	var storage resource.Quantity
@@ -174,20 +178,17 @@ func (r *ReconcileSwiftStorage) ensureLocalPVs(ss *contrail.SwiftStorage) error 
 	if path == "" {
 		path = defaultSwiftStoragePath
 	}
-	lv, err := r.localVolumes.New(
-		fmt.Sprintf("%s-swift-data", ss.Name),
-		ss.Labels,
-		map[string]string{"node-role.kubernetes.io/master": ""},
-		path,
-		storage,
-	)
+	name := fmt.Sprintf("%s-swift-data", ss.Name)
+	// TODO node selector should be taken from service common configuration
+	nodeSelectors := map[string]string{"node-role.kubernetes.io/master": ""}
+	lv, err := r.volumes.New(name, path, storage, ss.Labels, nodeSelectors)
 	if err != nil {
 		return err
 	}
-	return lv.EnsureExist()
+	return lv.EnsureExists()
 }
 
-func (r *ReconcileSwiftStorage) ensureLabel(ss *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureLabelExists(ss *contrail.SwiftStorage) error {
 	if len(ss.Labels) != 0 {
 		return nil
 	}
@@ -196,7 +197,7 @@ func (r *ReconcileSwiftStorage) ensureLabel(ss *contrail.SwiftStorage) error {
 	return r.client.Update(context.Background(), ss)
 }
 
-func (r *ReconcileSwiftStorage) ensurePVCOwnership(ss *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensurePVCOwnershipExists(ss *contrail.SwiftStorage) error {
 	listOps := &client.ListOptions{Namespace: ss.Namespace, LabelSelector: labels.SelectorFromSet(ss.Labels)}
 	pvcList := &core.PersistentVolumeClaimList{}
 	if err := r.client.List(context.TODO(), pvcList, listOps); err != nil {
@@ -249,7 +250,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
 			{
 				ObjectMeta: meta.ObjectMeta{
-					Name:      "devices-mount-point",
+					Name:      "storage-device",
 					Namespace: request.Namespace,
 					Labels:    swiftStorage.Labels,
 				},
@@ -317,7 +318,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
 					LabelSelector: &meta.LabelSelector{
 						MatchExpressions: []meta.LabelSelectorRequirement{{
-							Key:      "app",
+							Key:      contrail.SwiftStorageInstanceType,
 							Operator: "In",
 							Values:   []string{request.Name},
 						}},
@@ -363,7 +364,7 @@ type containerGenerator struct {
 
 func (cg *containerGenerator) swiftContainer(name string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
-		Name:      "devices-mount-point",
+		Name:      "storage-device",
 		MountPath: "/srv/node/" + cg.device,
 	}
 	serviceVolumeMount := core.VolumeMount{
@@ -447,7 +448,7 @@ func (cg *containerGenerator) getCommand(name string) []string {
 	return defaultCommands[name]
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-account-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftAccountAuditor(); err != nil {
 		return err
@@ -472,7 +473,7 @@ func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorag
 	return r.configMap(serverConfigName, "swift-storage", swiftStorage).ensureSwiftAccountServer()
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-container-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftContainerAuditor(); err != nil {
 		return err
@@ -497,7 +498,7 @@ func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMaps(swiftStor
 	return r.configMap(updaterConfigName, "swift-storage", swiftStorage).ensureSwiftContainerUpdater()
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-object-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftObjectAuditor(); err != nil {
 		return err

@@ -29,27 +29,27 @@ func TestLocalVolumesNew(t *testing.T) {
 	path := "/mnt/storage"
 
 	t.Run("should return error when empty path is provided", func(t *testing.T) {
-		_, err := lvs.New("volume", label, nodeSelector, "", quantity5Gi)
+		_, err := lvs.New("volume", "", quantity5Gi, label, nodeSelector)
 		assert.Error(t, err)
 	})
 
 	t.Run("should return error when empty nodeSelector is provided", func(t *testing.T) {
-		_, err := lvs.New("volume", label, nil, path, quantity5Gi)
+		_, err := lvs.New("volume", path, quantity5Gi, label, nil)
 		assert.Error(t, err)
 	})
 
 	t.Run("should return error when empty label is provided", func(t *testing.T) {
-		_, err := lvs.New("volume", nil, nodeSelector, path, quantity5Gi)
+		_, err := lvs.New("volume", path, quantity5Gi, nil, nodeSelector)
 		assert.Error(t, err)
 	})
 
 	t.Run("should return error when empty quantity is provided", func(t *testing.T) {
-		_, err := lvs.New("volume", nil, nodeSelector, path, resource.Quantity{})
+		_, err := lvs.New("volume", path, resource.Quantity{}, label, nodeSelector)
 		assert.Error(t, err)
 	})
 
 	t.Run("should create valid correct logical volumes", func(t *testing.T) {
-		lvs, err := lvs.New("volume", label, nodeSelector, path, quantity5Gi)
+		lvs, err := lvs.New("volume", path, quantity5Gi, label, nodeSelector)
 		assert.NoError(t, err)
 		assert.NotNil(t, lvs)
 	})
@@ -89,9 +89,9 @@ func TestLocalVolumeEnsureExists(t *testing.T) {
 				},
 			},
 		}
-		lv, err := lvs.New(name, label, nodeSelector, path, quantity5Gi)
+		lv, err := lvs.New(name, path, quantity5Gi, label, nodeSelector)
 		assert.NoError(t, err)
-		err = lv.EnsureExist()
+		err = lv.EnsureExists()
 		assert.NoError(t, err)
 		pv := &core.PersistentVolume{}
 		cl.Get(context.Background(), types.NamespacedName{Name: name}, pv)
