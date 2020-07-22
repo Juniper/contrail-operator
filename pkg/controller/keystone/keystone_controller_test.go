@@ -377,9 +377,12 @@ func newExpectedSTSWithStatus(status apps.StatefulSetStatus) *apps.StatefulSet {
 }
 
 func newExpectedSTS() *apps.StatefulSet {
+	var keystoneUID int64 = 42425
 	trueVal := true
 	oneVal := int32(1)
 	var labelsMountPermission int32 = 0644
+	var keysSecretMountPermission int32 = 0400
+	var configMountPermission int32 = 0777
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone-statefulset",
@@ -414,6 +417,12 @@ func newExpectedSTS() *apps.StatefulSet {
 								TopologyKey: "kubernetes.io/hostname",
 							}},
 						},
+					},
+					SecurityContext: &core.PodSecurityContext{
+						RunAsUser:          &keystoneUID,
+						RunAsGroup:         &keystoneUID,
+						FSGroup:            &keystoneUID,
+						SupplementalGroups: []int64{keystoneUID, 0},
 					},
 					HostNetwork:  true,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -487,6 +496,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "fernet-keys-repository",
+									DefaultMode: &keysSecretMountPermission,
 								},
 							},
 						},
@@ -495,6 +505,7 @@ func newExpectedSTS() *apps.StatefulSet {
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
 									SecretName: "keystone-credential-keys-repository",
+									DefaultMode: &keysSecretMountPermission,
 								},
 							},
 						},
@@ -505,6 +516,7 @@ func newExpectedSTS() *apps.StatefulSet {
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "keystone-keystone",
 									},
+									DefaultMode: &configMountPermission,
 								},
 							},
 						},

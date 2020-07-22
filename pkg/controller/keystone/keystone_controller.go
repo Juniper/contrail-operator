@@ -314,6 +314,7 @@ func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memca
 }
 
 func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
+	var keystoneUID int64 = 42425
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      cr.Name + "-keystone-statefulset",
@@ -336,6 +337,12 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 								TopologyKey: "kubernetes.io/hostname",
 							}},
 						},
+					},
+					SecurityContext: &core.PodSecurityContext{
+						RunAsUser:          &keystoneUID,
+						RunAsGroup:         &keystoneUID,
+						FSGroup:            &keystoneUID,
+						SupplementalGroups: []int64{keystoneUID, 0},
 					},
 					DNSPolicy: core.DNSClusterFirst,
 					InitContainers: []core.Container{
@@ -599,8 +606,9 @@ func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, k
 
 func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, fernetKeysSecretName, credentialKeysSecretName string) {
 	var labelsMountPermission int32 = 0644
+	var configMountPermission int32 = 0777
+	var keysSecretMountPermission int32 = 0400
 	newSTS := newKeystoneSTS(keystone)
-	sts.Spec.Template.Spec.Affinity = newSTS.Spec.Template.Spec.Affinity
 	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
 	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
 	sts.Spec.Template.Spec.Volumes = []core.Volume{
@@ -608,7 +616,8 @@ func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcNam
 			Name: "keystone-fernet-keys",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName: fernetKeysSecretName,
+					SecretName:  fernetKeysSecretName,
+					DefaultMode: &keysSecretMountPermission,
 				},
 			},
 		},
@@ -616,7 +625,8 @@ func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcNam
 			Name: "keystone-credential-keys",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName: credentialKeysSecretName,
+					SecretName:  credentialKeysSecretName,
+					DefaultMode: &keysSecretMountPermission,
 				},
 			},
 		},
@@ -627,6 +637,7 @@ func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcNam
 					LocalObjectReference: core.LocalObjectReference{
 						Name: kcName,
 					},
+					DefaultMode: &configMountPermission,
 				},
 			},
 		},
