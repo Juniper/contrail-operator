@@ -282,7 +282,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
-	maxUnavailable := intstr.FromInt(1)
+	maxUnavailable := intstr.FromInt(2)
 	maxSurge := intstr.FromInt(0)
 	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{

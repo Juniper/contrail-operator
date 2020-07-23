@@ -186,6 +186,9 @@ func TestOpenstackServices(t *testing.T) {
 					Name:      "openstacktest-swift",
 				},
 				Spec: contrail.SwiftSpec{
+					CommonConfiguration: contrail.CommonConfiguration{
+						NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+					},
 					ServiceConfiguration: contrail.SwiftConfiguration{
 						Containers: []*contrail.Container{
 							{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag},

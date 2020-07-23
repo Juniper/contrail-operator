@@ -177,8 +177,9 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:    &oneVal,
-					HostNetwork: &trueVal,
+					Replicas:     &oneVal,
+					HostNetwork:  &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
