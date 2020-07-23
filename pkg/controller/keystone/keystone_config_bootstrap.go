@@ -7,7 +7,7 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-type keystoneInitConf struct {
+type keystoneBootstrapConf struct {
 	ListenAddress    string
 	ListenPort       int
 	RabbitMQServer   string
@@ -16,13 +16,13 @@ type keystoneInitConf struct {
 	AdminPassword    string
 }
 
-func (c *keystoneInitConf) FillConfigMap(cm *core.ConfigMap) {
+func (c *keystoneBootstrapConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["config.json"] = keystoneInitKollaServiceConfig
 	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConf)
 	cm.Data["bootstrap.sh"] = c.executeTemplate(keystoneInitBootstrapScript)
 }
 
-func (c *keystoneInitConf) executeTemplate(t *template.Template) string {
+func (c *keystoneBootstrapConf) executeTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
@@ -63,7 +63,6 @@ var keystoneInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
 
 keystone-manage db_sync
-keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
   --bootstrap-region-id RegionOne \
   --bootstrap-admin-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \

@@ -8,6 +8,14 @@ import (
 )
 
 type keystoneConfig struct {
+	PodIPs    []string
+	ListenPort       int
+	RabbitMQServer   string
+	PostgreSQLServer string
+	MemcacheServer   string
+}
+
+type keystonePodConfig struct {
 	ListenAddress    string
 	ListenPort       int
 	RabbitMQServer   string
@@ -16,12 +24,25 @@ type keystoneConfig struct {
 }
 
 func (c *keystoneConfig) FillConfigMap(cm *core.ConfigMap) {
-	cm.Data["config.json"] = keystoneKollaServiceConfig
-	cm.Data["keystone.conf"] = c.executeTemplate(keystoneConf)
-	cm.Data["wsgi-keystone.conf"] = c.executeTemplate(wsgiKeystoneConf)
+	for _, pod := range c.PodIPs {
+		conf := keystonePodConfig{
+			ListenAddress:    pod,
+			ListenPort:       c.ListenPort,
+			RabbitMQServer:   c.RabbitMQServer,
+			PostgreSQLServer: c.PostgreSQLServer,
+			MemcacheServer:   c.MemcacheServer,
+		}
+		conf.fillConfigMapForPod(cm)
+	}
 }
 
-func (c *keystoneConfig) executeTemplate(t *template.Template) string {
+func (c *keystonePodConfig) fillConfigMapForPod(cm *core.ConfigMap) {
+	cm.Data["config" + c.ListenAddress + ".json"] = c.executeTemplate(keystoneKollaServiceConfig)
+	cm.Data["keystone" + c.ListenAddress + ".conf"] = c.executeTemplate(keystoneConf)
+	cm.Data["wsgi-keystone" + c.ListenAddress + ".conf"] = c.executeTemplate(wsgiKeystoneConf)
+}
+
+func (c *keystonePodConfig) executeTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
@@ -29,11 +50,11 @@ func (c *keystoneConfig) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-const keystoneKollaServiceConfig = `{
+var keystoneKollaServiceConfig = template.Must(template.New("").Parse(`{
     "command": "/usr/sbin/httpd",
     "config_files": [
         {
-            "source": "/var/lib/kolla/config_files/keystone.conf",
+            "source": "/var/lib/kolla/config_files/keystone{{ .ListenAddress }}.conf",
             "dest": "/etc/keystone/keystone.conf",
             "owner": "keystone",
             "perm": "0600"
@@ -53,7 +74,7 @@ const keystoneKollaServiceConfig = `{
             "optional": true
         },
         {
-            "source": "/var/lib/kolla/config_files/wsgi-keystone.conf",
+            "source": "/var/lib/kolla/config_files/wsgi-keystone{{ .ListenAddress }}.conf",
             "dest": "/etc/httpd/conf.d/wsgi-keystone.conf",
             "owner": "keystone",
             "perm": "0600"
@@ -70,7 +91,7 @@ const keystoneKollaServiceConfig = `{
             "perm": "0700"
         }
     ]
-}`
+}`))
 
 var keystoneConf = template.Must(template.New("").Parse(`
 [DEFAULT]
