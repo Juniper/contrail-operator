@@ -221,6 +221,16 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
+
+		maxUnavailable := intstr.FromInt(1)
+		maxSurge := intstr.FromInt(0)
+		deployment.Spec.Strategy = apps.DeploymentStrategy{
+			RollingUpdate: &apps.RollingUpdateDeployment{
+				MaxUnavailable: &maxUnavailable,
+				MaxSurge:       &maxSurge,
+			},
+		}
+
 		contrail.SetDeploymentCommonConfiguration(deployment, &swiftProxy.Spec.CommonConfiguration)
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
@@ -229,6 +239,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
+			deployment.Spec.Selector,
 			swiftConfigName,
 			swiftInitConfigName,
 			swiftConfSecretName,
@@ -329,21 +340,14 @@ func (r *ReconcileSwiftProxy) updateStatus(
 	svc *core.Service,
 ) error {
 	sp.Status.ClusterIP = svc.Spec.ClusterIP
-	sp.Status.Active = false
-	intendentReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		intendentReplicas = *deployment.Spec.Replicas
-	}
-
-	if deployment.Status.ReadyReplicas == intendentReplicas {
-		sp.Status.Active = true
-	}
+	sp.Status.FromDeployment(deployment)
 
 	return r.client.Status().Update(context.Background(), sp)
 }
 
 func updatePodTemplate(
 	pod *core.PodSpec,
+	labelSelector *meta.LabelSelector,
 	swiftConfigName string,
 	swiftInitConfigName string,
 	swiftConfSecretName string,
@@ -411,17 +415,6 @@ func updatePodTemplate(
 			},
 		}},
 	}}
-	pod.HostNetwork = true
-	pod.Tolerations = []core.Toleration{
-		{
-			Operator: core.TolerationOpExists,
-			Effect:   core.TaintEffectNoSchedule,
-		},
-		{
-			Operator: core.TolerationOpExists,
-			Effect:   core.TaintEffectNoExecute,
-		},
-	}
 	var labelsMountPermission int32 = 0644
 	pod.Volumes = []core.Volume{
 		{
@@ -496,6 +489,15 @@ func updatePodTemplate(
 					},
 				},
 			},
+		},
+	}
+
+	pod.Affinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+				LabelSelector: labelSelector,
+				TopologyKey:   "kubernetes.io/hostname",
+			}},
 		},
 	}
 }

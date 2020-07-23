@@ -59,7 +59,11 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
 			},
-			expectedStatus: contrail.SwiftProxyStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 		{
 			name: "is idempotent",
@@ -89,7 +93,11 @@ func TestSwiftProxyController(t *testing.T) {
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
 			},
-			expectedStatus: contrail.SwiftProxyStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 		{
 			name: "updates status to active",
@@ -114,7 +122,9 @@ func TestSwiftProxyController(t *testing.T) {
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
 				Status: contrail.Status{
-					Active: true,
+					Active:        true,
+					ReadyReplicas: int32(1),
+					Replicas:      int32(1),
 				},
 				ClusterIP: "10.10.10.10",
 			},
@@ -142,7 +152,11 @@ func TestSwiftProxyController(t *testing.T) {
 				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
-			expectedStatus: contrail.SwiftProxyStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 		{
 			name: "containers' images are set according to resource spec",
@@ -162,7 +176,11 @@ func TestSwiftProxyController(t *testing.T) {
 				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
-			expectedStatus: contrail.SwiftProxyStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 	}
 
@@ -227,12 +245,26 @@ func TestSwiftProxyController(t *testing.T) {
 }
 
 func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
+	trueVal := true
 	return &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy",
 			Namespace: "default",
 		},
 		Spec: contrail.SwiftProxySpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				HostNetwork: &trueVal,
+				Tolerations: []core.Toleration{
+					{
+						Operator: core.TolerationOpExists,
+						Effect:   core.TaintEffectNoSchedule,
+					},
+					{
+						Operator: core.TolerationOpExists,
+						Effect:   core.TaintEffectNoExecute,
+					},
+				},
+			},
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
 				ListenPort:            5070,
 				KeystoneInstance:      "keystone",
@@ -250,6 +282,8 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	maxUnavailable := intstr.FromInt(1)
+	maxSurge := intstr.FromInt(0)
 	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
@@ -267,6 +301,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					Labels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{MatchLabels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"}},
+								TopologyKey:   "kubernetes.io/hostname",
+							}},
+						},
+					},
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
@@ -412,7 +454,12 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					},
 				},
 			},
-
+			Strategy: apps.DeploymentStrategy{
+				RollingUpdate: &apps.RollingUpdateDeployment{
+					MaxUnavailable: &maxUnavailable,
+					MaxSurge:       &maxSurge,
+				},
+			},
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"},
 			},

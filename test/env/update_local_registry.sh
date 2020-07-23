@@ -14,6 +14,7 @@ pull_image()
 while read line; do
 	pull_image svl-artifactory.juniper.net "${line}"
 done <<EOF
+contrail-operator/engprod-269421/ringcontroller:master.latest
 contrail-operator/engprod-269421/contrail-operator:master.latest
 contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
 contrail-operator/engprod-269421/contrail-operator-provisioner:master.latest
@@ -68,8 +69,8 @@ common-docker-third-party/contrail/python:3.8.2-alpine
 common-docker-third-party/contrail/redis:4.0.2
 common-docker-third-party/contrail/rabbitmq:3.7
 common-docker-third-party/contrail/rabbitmq:3.7.16
+common-docker-third-party/contrail/centos-binary-memcached:train-2005
 common-docker-third-party/contrail/centos-binary-keystone:train-2005
-common-docker-third-party/contrail/centos-binary-keystone:train
 common-docker-third-party/contrail/centos-binary-swift-account:train-2005
 common-docker-third-party/contrail/centos-binary-swift-container:train-2005
 common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
@@ -77,7 +78,13 @@ common-docker-third-party/contrail/centos-binary-swift-object:train-2005
 common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005
 common-docker-third-party/contrail/centos-binary-swift-rsyncd:train-2005
 common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
-common-docker-third-party/contrail/centos-source-swift-base:train-2005
-common-docker-third-party/contrail/centos-binary-memcached:train-2005
+common-docker-third-party/contrail/centos-binary-swift-account:train
+common-docker-third-party/contrail/centos-binary-swift-container:train
+common-docker-third-party/contrail/centos-binary-swift-object-expirer:train
+common-docker-third-party/contrail/centos-binary-swift-object:train
+common-docker-third-party/contrail/centos-binary-swift-proxy-server:train
+common-docker-third-party/contrail/centos-binary-swift-rsyncd:train
+common-docker-third-party/contrail/centos-binary-kolla-toolbox:train
 common-docker-third-party/contrail/centos-binary-memcached:train
+common-docker-third-party/contrail/centos-binary-keystone:train
 EOF

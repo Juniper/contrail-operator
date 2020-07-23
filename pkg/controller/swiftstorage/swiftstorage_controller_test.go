@@ -46,6 +46,9 @@ func TestSwiftStorageController(t *testing.T) {
 			Name:      name.Name,
 		},
 		Spec: contrail.SwiftStorageSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
 			ServiceConfiguration: contrail.SwiftStorageConfiguration{
 				AccountBindPort:   6001,
 				ContainerBindPort: 6002,
@@ -213,6 +216,9 @@ func TestSwiftStorageController(t *testing.T) {
 						Name:      name.Name,
 					},
 					Spec: contrail.SwiftStorageSpec{
+						CommonConfiguration: contrail.CommonConfiguration{
+							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+						},
 						ServiceConfiguration: contrail.SwiftStorageConfiguration{
 							Storage: contrail.Storage{
 								Size: test.size,
@@ -231,7 +237,7 @@ func TestSwiftStorageController(t *testing.T) {
 				assert.NoError(t, err)
 				t.Run("should create persistent volume", func(t *testing.T) {
 					volumeName := types.NamespacedName{
-						Name: name.Name + "-swift-data",
+						Name: name.Name + "-swift-data-0",
 					}
 					pv := &core.PersistentVolume{}
 					err := fakeClient.Get(context.Background(), volumeName, pv)

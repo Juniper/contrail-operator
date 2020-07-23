@@ -3,6 +3,22 @@ kind: CustomResourceDefinition
 metadata:
   name: swiftproxies.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .status.clusterIP
+    name: ClusterIP
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: SwiftProxy

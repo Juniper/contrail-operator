@@ -312,14 +312,8 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{
 			PodAntiAffinity: &core.PodAntiAffinity{
 				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-					LabelSelector: &meta.LabelSelector{
-						MatchExpressions: []meta.LabelSelectorRequirement{{
-							Key:      contrail.SwiftStorageInstanceType,
-							Operator: "In",
-							Values:   []string{request.Name},
-						}},
-					},
-					TopologyKey: "kubernetes.io/hostname",
+					LabelSelector: &meta.LabelSelector{MatchLabels: swiftStorage.Labels},
+					TopologyKey:   "kubernetes.io/hostname",
 				}},
 			},
 		}
