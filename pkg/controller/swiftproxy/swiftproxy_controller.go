@@ -125,7 +125,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.ensureLabel(swiftProxy); err != nil {
+	if err := r.ensureLabelExists(swiftProxy); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -224,7 +224,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 
-		maxUnavailable := intstr.FromInt(1)
+		maxUnavailable := intstr.FromInt(2)
 		maxSurge := intstr.FromInt(0)
 		deployment.Spec.Strategy = apps.DeploymentStrategy{
 			RollingUpdate: &apps.RollingUpdateDeployment{
@@ -261,7 +261,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment, svc)
 }
 
-func (r *ReconcileSwiftProxy) ensureLabel(sp *contrail.SwiftProxy) error {
+func (r *ReconcileSwiftProxy) ensureLabelExists(sp *contrail.SwiftProxy) error {
 	if len(sp.Labels) != 0 {
 		return nil
 	}

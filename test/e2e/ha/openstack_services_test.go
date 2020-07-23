@@ -345,7 +345,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, contrail.SwiftProxyInstanceType+"="+"-proxy", swiftProxyContainerImage, "api")
+		}.ForPodImageChange(f.KubeClient, contrail.SwiftProxyInstanceType+"="+manager.Spec.Services.Swift.Name+"-proxy", swiftProxyContainerImage, "api")
 		assert.NoError(t, err)
 	})
 
