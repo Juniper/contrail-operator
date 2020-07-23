@@ -190,11 +190,6 @@ func TestSwiftController(t *testing.T) {
 			},
 		}
 
-		expectedSecrets := []core.Secret{
-			confSecret,
-			credentialsSecret,
-		}
-
 		reconciledSwift := newReconciledSwift()
 		swiftProxy := contrail.SwiftProxy{
 			ObjectMeta: v1.ObjectMeta{
@@ -240,8 +235,9 @@ func TestSwiftController(t *testing.T) {
 			err = fakeClient.List(context.Background(), secrets)
 
 			assert.NoError(t, err)
-			require.Len(t, secrets.Items, 2)
-			assert.ElementsMatch(t, expectedSecrets, secrets.Items)
+			require.Len(t, secrets.Items, 3)
+			assert.Contains(t, secrets.Items, confSecret)
+			assert.Contains(t, secrets.Items, credentialsSecret)
 		})
 
 		t.Run("should not create nor update SwiftStorage CR", func(t *testing.T) {

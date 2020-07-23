@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func New(configMap types.NamespacedName, ringType string) (*Ring, error) {
+func New(configMap types.NamespacedName, ringType, serviceAccountName string) (*Ring, error) {
 	if configMap.Name == "" {
 		return nil, errors.New("empty config map name type")
 	}
@@ -19,20 +19,26 @@ func New(configMap types.NamespacedName, ringType string) (*Ring, error) {
 		return nil, errors.New("empty ring type")
 	}
 
+	if serviceAccountName == "" {
+		return nil, errors.New("service account name was not provided")
+	}
+
 	if configMap.Namespace == "" {
 		configMap.Namespace = "default"
 	}
 
 	return &Ring{
-		configMap: configMap,
-		ringType:  ringType,
+		configMap:          configMap,
+		ringType:           ringType,
+		serviceAccountName: serviceAccountName,
 	}, nil
 }
 
 type Ring struct {
-	configMap types.NamespacedName
-	devices   []Device
-	ringType  string
+	configMap          types.NamespacedName
+	devices            []Device
+	ringType           string
+	serviceAccountName string
 }
 
 type Device struct {
@@ -91,7 +97,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 				Spec: core.PodSpec{
 					HostNetwork:        true,
 					RestartPolicy:      core.RestartPolicyNever,
-					ServiceAccountName: "contrail-operator",
+					ServiceAccountName: r.serviceAccountName,
 					Containers: []core.Container{
 						{
 							Name:            "ringcontroller",

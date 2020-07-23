@@ -155,6 +155,10 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
+	if err = contrail.CreateAccount("swift", request.Namespace, r.client, r.scheme, swift); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	var result reconcile.Result
 	if result, err = r.reconcileRings(swift, ringConfigMapName); err != nil || result.Requeue {
 		return result, err
@@ -218,6 +222,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 			Namespace: swift.Namespace,
 		},
 	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
@@ -326,7 +331,7 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringConfigMapName, ringType str
 	theRing, err := ring.New(types.NamespacedName{
 		Namespace: swift.Namespace,
 		Name:      ringConfigMapName,
-	}, ringType)
+	}, ringType, "serviceaccount-swift")
 	if err != nil {
 		return err
 	}

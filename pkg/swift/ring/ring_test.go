@@ -15,11 +15,15 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("should return error when ring type is empty", func(t *testing.T) {
-		_, err := ring.New(types.NamespacedName{Name: "rings"}, "")
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "", "service-account")
+		assert.Error(t, err)
+	})
+	t.Run("should return error when service account name is empty", func(t *testing.T) {
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "account", "")
 		assert.Error(t, err)
 	})
 	t.Run("should create a ring", func(t *testing.T) {
-		accountRing, err := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		accountRing, err := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		require.NoError(t, err)
 		assert.NotNil(t, accountRing)
 	})
@@ -38,12 +42,12 @@ func TestRing_BuildJob(t *testing.T) {
 		Device: "d1",
 	}
 	t.Run("should return error when no devices have been added", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_, err := account.BuildJob(jobName)
 		assert.Error(t, err)
 	})
 	t.Run("should create a job with given name", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(jobName)
@@ -52,7 +56,7 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, jobName.Namespace, job.Namespace)
 	})
 	t.Run("should use default namespace when job namespace not given", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(types.NamespacedName{
@@ -63,7 +67,7 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, "default", job.Namespace)
 	})
 	t.Run("should return error when job name not given", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		_, err := account.BuildJob(types.NamespacedName{
@@ -73,7 +77,7 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("should return error when config map name not given", func(t *testing.T) {
-		_, err := ring.New(types.NamespacedName{Name: ""}, "account")
+		_, err := ring.New(types.NamespacedName{Name: ""}, "account", "service-account")
 		assert.Error(t, err)
 	})
 	t.Run("should pass namespace name of config map", func(t *testing.T) {
@@ -96,7 +100,7 @@ func TestRing_BuildJob(t *testing.T) {
 		}
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New(test.configMap, "account")
+				account, _ := ring.New(test.configMap, "account", "service-account")
 				_ = account.AddDevice(device)
 				// when
 				job, _ := account.BuildJob(jobName)
@@ -110,11 +114,11 @@ func TestRing_BuildJob(t *testing.T) {
 		}
 	})
 	t.Run("should return error when ringType not given", func(t *testing.T) {
-		_, err := ring.New(types.NamespacedName{Name: "rings"}, "")
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "", "service-account")
 		assert.Error(t, err)
 	})
 	t.Run("should pass ringType", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -183,7 +187,7 @@ func TestRing_BuildJob(t *testing.T) {
 		}
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+				account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 				for _, device := range test.devices {
 					_ = account.AddDevice(device)
 				}
@@ -199,7 +203,7 @@ func TestRing_BuildJob(t *testing.T) {
 		}
 	})
 	t.Run("should specify container's required properties", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -217,7 +221,7 @@ func TestRing_BuildJob(t *testing.T) {
 		})
 	})
 	t.Run("should specify container's image from local registry", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -229,7 +233,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 
 	t.Run("should specify restartPolicy (default Always is not supported in jobs)", func(t *testing.T) {
-		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -237,6 +241,14 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, core.RestartPolicyNever, job.Spec.Template.Spec.RestartPolicy)
 	})
 
+	t.Run("should pass service account name", func(t *testing.T) {
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
+		_ = account.AddDevice(device)
+		// when
+		job, _ := account.BuildJob(jobName)
+		// then
+		assert.Equal(t, "service-account", job.Spec.Template.Spec.ServiceAccountName)
+	})
 }
 
 func TestRing_AddDevice(t *testing.T) {
@@ -273,7 +285,7 @@ func TestRing_AddDevice(t *testing.T) {
 		}
 		for name, device := range tests {
 			t.Run(name, func(t *testing.T) {
-				theRing, _ := ring.New(types.NamespacedName{Name: "rings"}, "account")
+				theRing, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 				// when
 				err := theRing.AddDevice(device)
 				// then
