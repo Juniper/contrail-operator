@@ -224,6 +224,7 @@ func (r *ReconcileSwift) ensureSwiftStorageExists(swift *contrail.Swift, swiftCo
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftStorage, func() error {
+		swiftStorage.Spec.CommonConfiguration = swift.Spec.CommonConfiguration
 		swiftStorage.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftStorageConfiguration
 		swiftStorage.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		swiftStorage.Spec.ServiceConfiguration.RingConfigMapName = ringConfigMapName
@@ -242,6 +243,7 @@ func (r *ReconcileSwift) ensureSwiftProxyExists(
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swiftProxy, func() error {
+		swiftProxy.Spec.CommonConfiguration = swift.Spec.CommonConfiguration
 		swiftProxy.Spec.ServiceConfiguration = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration
 		swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName = swiftConfSecretName
 		swiftProxy.Spec.ServiceConfiguration.RingConfigMapName = ringConfigMapName

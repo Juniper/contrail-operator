@@ -221,6 +221,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
+		contrail.SetDeploymentCommonConfiguration(deployment, &swiftProxy.Spec.CommonConfiguration)
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort

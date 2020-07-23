@@ -7,7 +7,12 @@ metadata:
 spec:
   commonConfiguration:
     hostNetwork: true
-    replicas: 1
+    replicas: 2
+    tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
   keystoneSecretInstance: cluster1-admin-password
   services:
     keystone:
@@ -15,14 +20,7 @@ spec:
         name: keystone
       spec:
         commonConfiguration:
-          activate: true
-          create: true
-          hostNetwork: true
-          tolerations:
-            - effect: NoSchedule
-              operator: Exists
-            - effect: NoExecute
-              operator: Exists
+          replicas: 1
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -63,6 +61,9 @@ spec:
       metadata:
         name: swift
       spec:
+        commonConfiguration:
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:

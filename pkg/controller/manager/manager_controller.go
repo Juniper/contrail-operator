@@ -1596,6 +1596,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec
+		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, swift, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

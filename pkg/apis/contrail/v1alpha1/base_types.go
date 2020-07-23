@@ -115,6 +115,14 @@ type CommonConfiguration struct {
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 }
 
+//GetReplicas is used to get number of desired pods.
+func (cc *CommonConfiguration) GetReplicas() int32 {
+	if cc.Replicas != nil {
+		return *cc.Replicas
+	}
+	return int32(1)
+}
+
 func (ss *ServiceStatus) ready() bool {
 	if ss == nil {
 		return false
