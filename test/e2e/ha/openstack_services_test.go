@@ -172,6 +172,10 @@ func TestHAOpenStackServices(t *testing.T) {
 				}
 				assertOpenStackReplicasReady(t, w, 2)
 			})
+
+			t.Run("then openstack services are correctly responding", func(t *testing.T) {
+				assertOpenStackServicesAreResponding(t, proxy)
+			})
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
@@ -337,7 +341,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 		swiftProxyContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       10 * time.Minute,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,

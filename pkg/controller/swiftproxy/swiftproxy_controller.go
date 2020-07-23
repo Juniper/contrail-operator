@@ -193,6 +193,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	// TODO Use public IP provided by LoadBalancer service
+	// External IP might be provisioned later, so it has to be handled asynchronously
 	publicIP, err := r.getEndpoint(swiftProxy, swiftProxyPods)
 	if err != nil {
 		return reconcile.Result{}, err
