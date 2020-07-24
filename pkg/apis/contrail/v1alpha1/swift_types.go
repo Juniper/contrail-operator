@@ -11,7 +11,7 @@ type SwiftSpec struct {
 	ServiceConfiguration SwiftConfiguration  `json:"serviceConfiguration"`
 }
 
-// SwiftConfiguration is the Spec for the keystone API.
+// SwiftConfiguration is the Spec for the Swift service.
 // +k8s:openapi-gen=true
 type SwiftConfiguration struct {
 	Containers                []*Container              `json:"containers,omitempty"`

@@ -1830,8 +1830,8 @@ spec:
                               type: array
                           type: object
                         serviceConfiguration:
-                          description: SwiftConfiguration is the Spec for the keystone
-                            API.
+                          description: SwiftConfiguration is the Spec for the Swift
+                            service.
                           properties:
                             containers:
                               items:
