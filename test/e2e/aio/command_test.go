@@ -280,7 +280,7 @@ func TestCommandServices(t *testing.T) {
 			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			require.NoError(t, err)
 			swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
-			swiftURL := tokens.EndpointURL("swift", "public")
+			swiftURL := tokens.EndpointURL("swift", "internal")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)
 

@@ -22,14 +22,14 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName   string       `json:"swiftConfSecretName,omitempty"`
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
-	Endpoint              string       `json:"endpoint,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy
 // +k8s:openapi-gen=true
 type SwiftProxyStatus struct {
-	Status    `json:",inline"`
-	ClusterIP string `json:"clusterIP,omitempty"`
+	Status         `json:",inline"`
+	ClusterIP      string `json:"clusterIP,omitempty"`
+	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

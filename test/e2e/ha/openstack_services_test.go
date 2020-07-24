@@ -236,7 +236,7 @@ func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPPro
 		require.NoError(t, err)
 
 		swiftProxy := proxy.NewSecureClientForService("contrail", "swift-proxy-swift-proxy", 5070)
-		swiftURL := tokens.EndpointURL("swift", "public")
+		swiftURL := tokens.EndpointURL("swift", "internal")
 		swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 
 		require.NoError(t, err)

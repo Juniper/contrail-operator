@@ -2,11 +2,15 @@ package swiftproxy_test
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,6 +31,7 @@ func TestSwiftProxyController(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
 	falseVal := false
 	tests := []struct {
@@ -62,7 +67,9 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedStatus: contrail.SwiftProxyStatus{
 				Status: contrail.Status{
 					Replicas: int32(1),
-				}, ClusterIP: "10.10.10.10",
+				},
+				ClusterIP:      "10.10.10.10",
+				LoadBalancerIP: "10.255.254.4",
 			},
 		},
 		{
@@ -96,7 +103,9 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedStatus: contrail.SwiftProxyStatus{
 				Status: contrail.Status{
 					Replicas: int32(1),
-				}, ClusterIP: "10.10.10.10",
+				},
+				ClusterIP:      "10.10.10.10",
+				LoadBalancerIP: "10.255.254.4",
 			},
 		},
 		{
@@ -126,7 +135,8 @@ func TestSwiftProxyController(t *testing.T) {
 					ReadyReplicas: int32(1),
 					Replicas:      int32(1),
 				},
-				ClusterIP: "10.10.10.10",
+				ClusterIP:      "10.10.10.10",
+				LoadBalancerIP: "10.255.254.4",
 			},
 		},
 		{
@@ -155,7 +165,9 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedStatus: contrail.SwiftProxyStatus{
 				Status: contrail.Status{
 					Replicas: int32(1),
-				}, ClusterIP: "10.10.10.10",
+				},
+				ClusterIP:      "10.10.10.10",
+				LoadBalancerIP: "10.255.254.4",
 			},
 		},
 		{
@@ -179,7 +191,9 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedStatus: contrail.SwiftProxyStatus{
 				Status: contrail.Status{
 					Replicas: int32(1),
-				}, ClusterIP: "10.10.10.10",
+				},
+				ClusterIP:      "10.10.10.10",
+				LoadBalancerIP: "10.255.254.4",
 			},
 		},
 	}
@@ -189,7 +203,8 @@ func TestSwiftProxyController(t *testing.T) {
 			// given state
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 			kubernetes := k8s.New(cl, scheme)
-			r := swiftproxy.NewReconciler(cl, scheme, kubernetes, &rest.Config{})
+			conf := newFakeRestConfg()
+			r := swiftproxy.NewReconciler(cl, scheme, kubernetes, conf)
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "swiftproxy",
@@ -244,6 +259,26 @@ func TestSwiftProxyController(t *testing.T) {
 	}
 }
 
+type mockRoundTripFunc func(r *http.Request) (*http.Response, error)
+
+func (m mockRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return m(r)
+}
+
+func newFakeRestConfg() *rest.Config {
+	return &rest.Config{
+		Host:    "localhost",
+		APIPath: "/",
+		Transport: mockRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			requestBody := ioutil.NopCloser(strings.NewReader("everything fine"))
+			return &http.Response{
+				StatusCode: http.StatusUnauthorized,
+				Body:       requestBody,
+			}, nil
+		}),
+	}
+}
+
 func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 	trueVal := true
 	return &contrail.SwiftProxy{
@@ -273,7 +308,6 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftConfSecretName:   "test-secret",
 				KeystoneSecretName:    "keystone-adminpass-secret",
 				RingConfigMapName:     "test-ring",
-				Endpoint:              "10.255.254.4",
 			},
 		},
 		Status: status,
@@ -320,17 +354,6 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 								MountPath: "/tmp/podinfo",
 							}},
 						},
-						{
-							Name:            "init",
-							Image:           "localhost:5000/centos-binary-kolla-toolbox:train",
-							ImagePullPolicy: core.PullAlways,
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-								core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-							},
-							Command: []string{"ansible-playbook"},
-							Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
-						},
 					},
 					Containers: []core.Container{{
 						Name:  "api",
@@ -339,7 +362,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 							{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 							{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-							{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+							{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 							{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 						},
 						Env: []core.EnvVar{{
@@ -389,16 +412,6 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
-							Name: "init-config-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "swiftproxy-swiftproxy-init-config",
-									},
-								},
-							},
-						},
-						{
 							Name: "swift-conf-volume",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
@@ -442,7 +455,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 							},
 						},
 						{
-							Name: "swiftproxy-csr-signer-ca",
+							Name: "csr-signer-ca",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -494,17 +507,6 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 				MountPath: "/tmp/podinfo",
 			}},
 		},
-		{
-			Name:            "init",
-			Image:           "image1",
-			ImagePullPolicy: core.PullAlways,
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-			},
-			Command: []string{"ansible-playbook"},
-			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
-		},
 	}
 
 	deployment.Spec.Template.Spec.Containers = []core.Container{{
@@ -514,7 +516,7 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			core.VolumeMount{Name: "swiftproxy-csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+			core.VolumeMount{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
@@ -580,7 +582,8 @@ func newSwiftProxyService() *core.Service {
 			Namespace: "default",
 		},
 		Spec: core.ServiceSpec{
-			ClusterIP: "10.10.10.10",
+			ClusterIP:      "10.10.10.10",
+			LoadBalancerIP: "10.255.254.4",
 		},
 	}
 }
@@ -613,7 +616,7 @@ func newExpectedSwiftProxyInitConfigMap() *core.ConfigMap {
 			"config.yaml":   registerConfig,
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "swiftproxy-swiftproxy-init-config",
+			Name:      "swiftproxy-swiftproxy-register-job",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_manager": "SwiftProxy", "SwiftProxy": "swiftproxy"},
 			OwnerReferences: []meta.OwnerReference{
