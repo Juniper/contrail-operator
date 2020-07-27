@@ -57,7 +57,7 @@ func TestCluster(t *testing.T) {
 		assert.NoError(t, err)
 
 		manager := &contrail.Manager{}
-		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
+		yamlFile, err := ioutil.ReadFile("deploy/kind/cluster.yaml")
 		require.NoError(t, err)
 
 		adminPassWordSecret := &core.Secret{
