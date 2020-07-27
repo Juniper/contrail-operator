@@ -3211,8 +3211,6 @@ spec:
                                   type: array
                                 credentialsSecretName:
                                   type: string
-                                endpoint:
-                                  type: string
                                 keystoneInstance:
                                   type: string
                                 keystoneSecretName:
@@ -4743,8 +4741,6 @@ spec:
                   type: array
                 credentialsSecretName:
                   type: string
-                endpoint:
-                  type: string
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -4768,6 +4764,8 @@ spec:
             active:
               type: boolean
             clusterIP:
+              type: string
+            loadBalancerIP:
               type: string
             readyReplicas:
               format: int32
@@ -4937,8 +4935,6 @@ spec:
                         type: object
                       type: array
                     credentialsSecretName:
-                      type: string
-                    endpoint:
                       type: string
                     keystoneInstance:
                       type: string

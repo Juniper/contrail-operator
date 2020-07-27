@@ -51,8 +51,8 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 	return c.cm.EnsureExists(spc)
 }
 
-func (c *configMaps) ensureInitExists(internalIP string, publicIP string) error {
-	spc := &swiftProxyInitConfig{
+func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) error {
+	spc := &registerServiceConfig{
 		KeystoneIP:            c.keystone.keystoneIP,
 		KeystonePort:          c.keystone.keystonePort,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),

@@ -264,7 +264,7 @@ func TestOpenstackServices(t *testing.T) {
 				keystoneClient   = keystone.NewClient(keystoneProxy)
 				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxy       = proxy.NewSecureClientForService("contrail", "openstacktest-swift-proxy-swift-proxy", 5070)
-				swiftURL         = tokens.EndpointURL("swift", "public")
+				swiftURL         = tokens.EndpointURL("swift", "internal")
 				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
 			require.NoError(t, err)

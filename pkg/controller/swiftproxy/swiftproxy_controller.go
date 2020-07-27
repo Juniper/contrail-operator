@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,6 +89,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		OwnerType: &contrail.SwiftProxy{},
 	})
 
+	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftProxy{},
+	})
+
 	return err
 }
 
@@ -137,6 +142,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		log.Info(fmt.Sprintf("swift proxy service is not ready, clusterIP is empty"))
 		return reconcile.Result{}, nil
 	}
+	swiftProxy.Status.ClusterIP = svc.Spec.ClusterIP
+	swiftProxy.Status.LoadBalancerIP = svc.Spec.LoadBalancerIP
 
 	swiftProxyPods, err := r.listSwiftProxyPods(swiftProxy.Name)
 	if err != nil {
@@ -161,7 +168,6 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 
 	memcached, err := r.getMemcached(swiftProxy)
 	if err != nil {
@@ -186,26 +192,28 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
 	if err = cm.ensureExists(memcached.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// TODO Use public IP provided by LoadBalancer service
-	// External IP might be provisioned later, so it has to be handled asynchronously
-	publicIP, err := r.getEndpoint(swiftProxy, swiftProxyPods)
+	registered, err := r.isSwiftRegistered(swiftProxy, keystone, passwordSecret)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	cm = r.configMap(swiftInitConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureInitExists(svc.Spec.ClusterIP, publicIP); err != nil {
-		return reconcile.Result{}, err
+	if !registered {
+		var res reconcile.Result
+		if res, err = r.ensureSwiftRegistered(swiftProxy, adminPasswordSecret, passwordSecret, keystone); err != nil {
+			return reconcile.Result{}, err
+		}
+		if res.Requeue {
+			return res, err
+		}
 	}
 
-	if len(swiftProxyPods.Items) > 0 {
+	if len(swiftProxyPods.Items) > 0 && registered {
 		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -237,18 +245,15 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
 		swiftCertificatesSecretName := request.Name + "-secret-certificates"
-		csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
 			deployment.Spec.Selector,
 			swiftConfigName,
-			swiftInitConfigName,
 			swiftConfSecretName,
 			swiftCertificatesSecretName,
 			swiftProxy.Spec.ServiceConfiguration.RingConfigMapName,
 			swiftProxy.Spec.ServiceConfiguration.Containers,
 			listenPort,
-			csrSignerCaVolumeName,
 		)
 
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
@@ -327,22 +332,12 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 	return key, err
 }
 
-func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy, pods *core.PodList) (string, error) {
-	endpoint := cr.Spec.ServiceConfiguration.Endpoint
-	if endpoint == "" && len(pods.Items) != 0 {
-		return pods.Items[0].Status.PodIP, nil
-	}
-	return endpoint, nil
-}
-
 func (r *ReconcileSwiftProxy) updateStatus(
 	sp *contrail.SwiftProxy,
 	deployment *apps.Deployment,
 	svc *core.Service,
 ) error {
-	sp.Status.ClusterIP = svc.Spec.ClusterIP
 	sp.Status.FromDeployment(deployment)
-
 	return r.client.Status().Update(context.Background(), sp)
 }
 
@@ -350,13 +345,11 @@ func updatePodTemplate(
 	pod *core.PodSpec,
 	labelSelector *meta.LabelSelector,
 	swiftConfigName string,
-	swiftInitConfigName string,
 	swiftConfSecretName string,
 	swiftCertificatesSecretName string,
 	ringConfigMapName string,
 	containers []*contrail.Container,
 	port int,
-	csrSignerCaVolumeName string,
 ) {
 	pod.InitContainers = []core.Container{
 		{
@@ -369,17 +362,6 @@ func updatePodTemplate(
 				MountPath: "/tmp/podinfo",
 			}},
 		},
-		{
-			Name:            "init",
-			Image:           getImage(containers, "init"),
-			ImagePullPolicy: core.PullAlways,
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-			},
-			Command: getCommand(containers, "init"),
-			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
-		},
 	}
 	pod.Containers = []core.Container{{
 		Name:    "api",
@@ -389,7 +371,7 @@ func updatePodTemplate(
 			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+			{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
@@ -424,16 +406,6 @@ func updatePodTemplate(
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
 						Name: swiftConfigName,
-					},
-				},
-			},
-		},
-		{
-			Name: "init-config-volume",
-			VolumeSource: core.VolumeSource{
-				ConfigMap: &core.ConfigMapVolumeSource{
-					LocalObjectReference: core.LocalObjectReference{
-						Name: swiftInitConfigName,
 					},
 				},
 			},
@@ -482,7 +454,7 @@ func updatePodTemplate(
 			},
 		},
 		{
-			Name: csrSignerCaVolumeName,
+			Name: "csr-signer-ca",
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{

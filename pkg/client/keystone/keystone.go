@@ -48,9 +48,15 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 	if err != nil {
 		return AuthTokens{}, err
 	}
+
+	if response.StatusCode == http.StatusUnauthorized {
+		return AuthTokens{}, newUnauthorized()
+	}
+
 	if response.StatusCode != 201 && response.StatusCode != 200 {
 		return AuthTokens{}, fmt.Errorf("invalid status code returned: %d", response.StatusCode)
 	}
+
 	authTokens := AuthTokens{}
 	bytesRead, err := ioutil.ReadAll(response.Body)
 	if err != nil {

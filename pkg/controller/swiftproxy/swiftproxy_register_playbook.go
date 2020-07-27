@@ -7,7 +7,7 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-type swiftProxyInitConfig struct {
+type registerServiceConfig struct {
 	KeystoneIP            string
 	KeystonePort          int
 	KeystoneAdminPassword string
@@ -18,12 +18,12 @@ type swiftProxyInitConfig struct {
 	CAFilePath            string
 }
 
-func (s *swiftProxyInitConfig) FillConfigMap(cm *core.ConfigMap) {
+func (s *registerServiceConfig) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["register.yaml"] = registerPlaybook
 	cm.Data["config.yaml"] = s.executeTemplate(registerConfig)
 }
 
-func (s *swiftProxyInitConfig) executeTemplate(t *template.Template) string {
+func (s *registerServiceConfig) executeTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, s); err != nil {
 		panic(err)
