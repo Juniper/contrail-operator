@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -111,6 +112,10 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 
 	rabbitmqConfigInterface := c.ConfigurationParameters()
 	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
+	var rabbitmqNodes string
+	for _, pod := range podList.Items {
+		rabbitmqNodes = rabbitmqNodes + fmt.Sprintf("%s\n", pod.Status.PodIP)
+	}
 	var data = make(map[string]string)
 	for _, pod := range podList.Items {
 		rabbitmqConfigString := fmt.Sprintf("listeners.tcp.default = %d\n", *rabbitmqConfig.Port)
@@ -125,6 +130,10 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.fail_if_no_peer_cert = true\n")
 		//rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.versions.1 = tlsv1.2\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.peer_discovery_backend = classic_config\n")
+		for nodeNumber, nodeIP := range strings.Fields(rabbitmqNodes) {
+			rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.classic_config.nodes." + strconv.Itoa(nodeNumber+1) + " = rabbit@" + nodeIP + "\n")
+		}
 		data["rabbitmq-"+pod.Status.PodIP+".conf"] = rabbitmqConfigString
 	}
 
@@ -137,14 +146,12 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 
 	configMapInstanceDynamicConfig.Data = data
 
-	var rabbitmqNodes string
+	configMapInstanceDynamicConfig.Data["rabbitmq.nodes"] = rabbitmqNodes
+	configMapInstanceDynamicConfig.Data["plugins.conf"] = "[rabbitmq_management,rabbitmq_management_agent,rabbitmq_peer_discovery_k8s]."
 	for _, pod := range podList.Items {
 		myidString := pod.Name[len(pod.Name)-1:]
 		configMapInstanceDynamicConfig.Data[myidString] = pod.Status.PodIP
-		rabbitmqNodes = rabbitmqNodes + fmt.Sprintf("%s\n", pod.Status.PodIP)
 	}
-	configMapInstanceDynamicConfig.Data["rabbitmq.nodes"] = rabbitmqNodes
-	configMapInstanceDynamicConfig.Data["plugins.conf"] = "[rabbitmq_management,rabbitmq_management_agent]."
 
 	var secretName string
 	secret := &corev1.Secret{}
