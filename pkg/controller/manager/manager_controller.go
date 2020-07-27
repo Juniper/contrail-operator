@@ -34,6 +34,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.ProvisionManager{},
 	&v1alpha1.Config{},
 	&v1alpha1.Control{},
+	&v1alpha1.ContrailMonitorStatus{},
 	&v1alpha1.Rabbitmq{},
 	&v1alpha1.Postgres{},
 	&v1alpha1.Command{},
@@ -1485,19 +1486,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processCommand(instance); err != nil {
-		return reconcile.Result{}, err
-	}
+	// if err = r.processCommand(instance); err != nil {
+	// 	return reconcile.Result{}, err
+	// }
 
-	if err = r.processKeystone(instance); err != nil {
-		return reconcile.Result{}, err
-	}
+	// if err = r.processKeystone(instance); err != nil {
+	// 	return reconcile.Result{}, err
+	// }
 
-	if err = r.processSwift(instance); err != nil {
-		return reconcile.Result{}, err
-	}
+	// if err = r.processSwift(instance); err != nil {
+	// 	return reconcile.Result{}, err
+	// }
 
 	if err = r.processMemcached(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processContrailMonitorStatus(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -1634,4 +1639,21 @@ func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager
 	})
 
 	return err
+}
+
+func (r *ReconcileManager) processContrailMonitorStatus(manager *v1alpha1.Manager) error {
+        if manager.Spec.Services.ContrailMonitorStatus == nil {
+                return nil
+        }
+        cmtatus := &v1alpha1.ContrailMonitorStatus{}
+        cmtatus.ObjectMeta = manager.Spec.Services.ContrailMonitorStatus.ObjectMeta
+        cmtatus.ObjectMeta.Namespace = manager.Namespace
+        _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, cmtatus, func() error {
+                cmtatus.Spec = manager.Spec.Services.ContrailMonitorStatus.Spec
+                return controllerutil.SetControllerReference(manager, cmtatus, r.scheme)
+        })
+        status := &v1alpha1.ServiceStatus{}
+        status.Active = &cmtatus.Status.Active
+        manager.Status.ContrailMonitorStatus = status
+        return err
 }

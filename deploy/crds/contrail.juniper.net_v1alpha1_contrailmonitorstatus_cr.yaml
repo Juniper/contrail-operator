@@ -1,0 +1,7 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: ContrailMonitorStatus
+metadata:
+  name: example-contrailmonitorstatus
+spec:
+  # Add fields here
+  size: 3

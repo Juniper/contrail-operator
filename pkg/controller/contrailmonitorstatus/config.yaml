@@ -1,0 +1,19 @@
+apiServerList:
+  - localhost:8096::contrail-device-manager
+  - localhost:8088::contrail-svc-monitor
+  - localhost:8090::contrail-analytics-api
+  - localhost:8089::contrail-collector
+  - localhost:8084::contrail-api
+  - localhost:8087::contrail-schema
+encryption:
+  ca: /Users/vraparla/go-workspace/src/projects/contrail-operator-dev-certs/ca-bundle.crt
+  cert: /Users/vraparla/go-workspace/src/projects/contrail-operator-dev-certs/server-172.17.0.3.crt
+  key: /Users/vraparla/go-workspace/src/projects/contrail-operator-dev-certs/server-key-172.17.0.3.pem
+  insecure: true
+nodeType: config
+interval: 5
+hostname: kind-control-plane
+inCluster: false
+nodeName: config1
+namespace: contrail
+podName: config1-config-statefulset-0
