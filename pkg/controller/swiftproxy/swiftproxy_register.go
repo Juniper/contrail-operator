@@ -6,10 +6,6 @@ import (
 	"strings"
 	"time"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-	"github.com/Juniper/contrail-operator/pkg/client/keystone"
-	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -18,6 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
 func (r *ReconcileSwiftProxy) ensureSwiftRegistered(sp *contrail.SwiftProxy, adminSecret, swiftSecret *core.Secret, k *contrail.Keystone) (reconcile.Result, error) {
