@@ -7,6 +7,7 @@ import (
 // SwiftProxySpec defines the desired state of SwiftProxy
 // +k8s:openapi-gen=true
 type SwiftProxySpec struct {
+	CommonConfiguration  CommonConfiguration     `json:"commonConfiguration"`
 	ServiceConfiguration SwiftProxyConfiguration `json:"serviceConfiguration"`
 }
 
@@ -27,7 +28,8 @@ type SwiftProxyConfiguration struct {
 // SwiftProxyStatus defines the observed state of SwiftProxy
 // +k8s:openapi-gen=true
 type SwiftProxyStatus struct {
-	Active bool `json:"active"`
+	Status    `json:",inline"`
+	ClusterIP string `json:"clusterIP,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -35,6 +37,11 @@ type SwiftProxyStatus struct {
 // SwiftProxy is the Schema for the swiftproxies API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready_Replicas",type=integer,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="ClusterIP",type=string,JSONPath=`.status.clusterIP`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type SwiftProxy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -51,6 +58,9 @@ type SwiftProxyList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []SwiftProxy `json:"items"`
 }
+
+// SwiftProxyInstanceType is type unique name used for labels
+const SwiftProxyInstanceType = "SwiftProxy"
 
 func init() {
 	SchemeBuilder.Register(&SwiftProxy{}, &SwiftProxyList{})

@@ -177,8 +177,9 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:    &oneVal,
-					HostNetwork: &trueVal,
+					Replicas:     &oneVal,
+					HostNetwork:  &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
@@ -274,19 +275,11 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, err)
 			})
 
-			var swiftProxyPods *core.PodList
-			swiftProxyLabel := "SwiftProxy=" + command.Spec.ServiceConfiguration.SwiftInstance + "-proxy"
-			swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-				LabelSelector: swiftProxyLabel,
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, swiftProxyPods.Items)
-			keystoneProxy := proxy.NewSecureClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+			keystoneProxy := proxy.NewSecureClientForService("contrail", "commandtest-keystone-service", 5555)
 			keystoneClient = keystone.NewClient(keystoneProxy)
 			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			require.NoError(t, err)
-			swiftProxyPod := swiftProxyPods.Items[0].Name
-			swiftProxy := proxy.NewSecureClient("contrail", swiftProxyPod, 5080)
+			swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
 			swiftURL := tokens.EndpointURL("swift", "public")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)

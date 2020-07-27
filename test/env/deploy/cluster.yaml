@@ -212,14 +212,6 @@ spec:
         name: keystone
       spec:
         commonConfiguration:
-          activate: true
-          create: true
-          hostNetwork: true
-          tolerations:
-            - effect: NoSchedule
-              operator: Exists
-            - effect: NoExecute
-              operator: Exists
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -260,6 +252,9 @@ spec:
       metadata:
         name: swift
       spec:
+        commonConfiguration:
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:

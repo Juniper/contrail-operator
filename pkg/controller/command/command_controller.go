@@ -494,25 +494,14 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystoneProxy := proxy.NewSecureClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
+	keystoneProxy := proxy.NewSecureClientForService(command.Namespace, keystoneName+"-service", kPort)
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
 		return fmt.Errorf("failed to get keystone token: %v", err)
 	}
-	swiftProxyPods := &core.PodList{}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
-	labelSelector := labels.SelectorFromSet(map[string]string{"SwiftProxy": swiftName + "-proxy"})
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	err = r.client.List(context.TODO(), swiftProxyPods, &listOpts)
-	if err != nil {
-		return fmt.Errorf("failed to list swift proxy pods: %v", err)
-	}
-	if swiftProxyPods == nil || len(swiftProxyPods.Items) == 0 {
-		return fmt.Errorf("no swift proxy pod found")
-	}
-	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxy := proxy.NewSecureClient(command.Namespace, swiftProxyPod, sPort)
+	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

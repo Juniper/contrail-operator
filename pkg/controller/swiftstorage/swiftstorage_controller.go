@@ -178,14 +178,20 @@ func (r *ReconcileSwiftStorage) ensureLocalPVsExist(ss *contrail.SwiftStorage) e
 	if path == "" {
 		path = defaultSwiftStoragePath
 	}
-	name := fmt.Sprintf("%s-swift-data", ss.Name)
-	// TODO node selector should be taken from service common configuration
-	nodeSelectors := map[string]string{"node-role.kubernetes.io/master": ""}
-	lv, err := r.volumes.New(name, path, storage, ss.Labels, nodeSelectors)
-	if err != nil {
-		return err
+
+	for i := int32(0); i < ss.Spec.CommonConfiguration.GetReplicas(); i++ {
+		name := fmt.Sprintf("%v-swift-data-%v", ss.Name, i)
+		nodeSelectors := ss.Spec.CommonConfiguration.NodeSelector
+		lv, err := r.volumes.New(name, path, storage, ss.Labels, nodeSelectors)
+		if err != nil {
+			return err
+		}
+		if err := lv.EnsureExists(); err != nil {
+			return err
+		}
 	}
-	return lv.EnsureExists()
+
+	return nil
 }
 
 func (r *ReconcileSwiftStorage) ensureLabelExists(ss *contrail.SwiftStorage) error {
@@ -228,6 +234,7 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		statefulSet.Spec.Template.ObjectMeta.Labels = swiftStorage.Labels
+		contrail.SetSTSCommonConfiguration(statefulSet, &swiftStorage.Spec.CommonConfiguration)
 		statefulSet.Spec.Template.Spec.InitContainers = []core.Container{{
 			Name:  "init",
 			Image: cg.getImage("swift-storage-init"),
@@ -239,7 +246,6 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 			},
 		}}
 		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Device)
-		statefulSet.Spec.Template.Spec.HostNetwork = true
 		var swiftGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
 		statefulSet.Spec.Template.Spec.SecurityContext.FSGroup = &swiftGroupId
@@ -303,33 +309,15 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 				},
 			},
 		}, volumes...)
-		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
-			{
-				Operator: core.TolerationOpExists,
-				Effect:   core.TaintEffectNoSchedule,
-			},
-			{
-				Operator: core.TolerationOpExists,
-				Effect:   core.TaintEffectNoExecute,
-			},
-		}
 		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{
 			PodAntiAffinity: &core.PodAntiAffinity{
 				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-					LabelSelector: &meta.LabelSelector{
-						MatchExpressions: []meta.LabelSelectorRequirement{{
-							Key:      contrail.SwiftStorageInstanceType,
-							Operator: "In",
-							Values:   []string{request.Name},
-						}},
-					},
-					TopologyKey: "kubernetes.io/hostname",
+					LabelSelector: &meta.LabelSelector{MatchLabels: swiftStorage.Labels},
+					TopologyKey:   "kubernetes.io/hostname",
 				}},
 			},
 		}
 		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: swiftStorage.Labels}
-		replicas := int32(1)
-		statefulSet.Spec.Replicas = &replicas
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
 	return statefulSet, err

@@ -15,6 +15,7 @@ go_library(
         "//pkg/certificates:go_default_library",
         "//pkg/controller/utils:go_default_library",
         "//pkg/k8s:go_default_library",
+        "//pkg/label:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",

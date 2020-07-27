@@ -46,6 +46,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
+				newSwiftProxyService(),
 			},
 
 			// then
@@ -57,6 +58,11 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
+			},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
 			},
 		},
 		{
@@ -74,6 +80,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
+				newSwiftProxyService(),
 			},
 
 			// then
@@ -85,6 +92,11 @@ func TestSwiftProxyController(t *testing.T) {
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedSwiftProxyConfigMap(),
 				newExpectedSwiftProxyInitConfigMap(),
+			},
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
 			},
 		},
 		{
@@ -99,6 +111,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
+				newSwiftProxyService(),
 			},
 
 			// then
@@ -108,19 +121,29 @@ func TestSwiftProxyController(t *testing.T) {
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
-				Active: true,
+				Status: contrail.Status{
+					Active:        true,
+					ReadyReplicas: int32(1),
+					Replicas:      int32(1),
+				},
+				ClusterIP: "10.10.10.10",
 			},
 		},
 		{
 			name: "updates status to not active",
 			// given
 			initObjs: []runtime.Object{
-				newSwiftProxy(contrail.SwiftProxyStatus{Active: true}),
+				newSwiftProxy(contrail.SwiftProxyStatus{
+					Status: contrail.Status{
+						Active: true,
+					},
+				}),
 				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
+				newSwiftProxyService(),
 			},
 
 			// then
@@ -129,6 +152,11 @@ func TestSwiftProxyController(t *testing.T) {
 				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 		{
 			name: "containers' images are set according to resource spec",
@@ -139,6 +167,7 @@ func TestSwiftProxyController(t *testing.T) {
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
+				newSwiftProxyService(),
 			},
 
 			// then
@@ -147,6 +176,11 @@ func TestSwiftProxyController(t *testing.T) {
 				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
+			expectedStatus: contrail.SwiftProxyStatus{
+				Status: contrail.Status{
+					Replicas: int32(1),
+				}, ClusterIP: "10.10.10.10",
+			},
 		},
 	}
 
@@ -211,12 +245,26 @@ func TestSwiftProxyController(t *testing.T) {
 }
 
 func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
+	trueVal := true
 	return &contrail.SwiftProxy{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "swiftproxy",
 			Namespace: "default",
 		},
 		Spec: contrail.SwiftProxySpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				HostNetwork: &trueVal,
+				Tolerations: []core.Toleration{
+					{
+						Operator: core.TolerationOpExists,
+						Effect:   core.TaintEffectNoSchedule,
+					},
+					{
+						Operator: core.TolerationOpExists,
+						Effect:   core.TaintEffectNoExecute,
+					},
+				},
+			},
 			ServiceConfiguration: contrail.SwiftProxyConfiguration{
 				ListenPort:            5070,
 				KeystoneInstance:      "keystone",
@@ -234,6 +282,8 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 
 func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 	trueVal := true
+	maxUnavailable := intstr.FromInt(2)
+	maxSurge := intstr.FromInt(0)
 	var labelsMountPermission int32 = 0644
 	d := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
@@ -242,15 +292,23 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 			OwnerReferences: []meta.OwnerReference{
 				{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &trueVal, &trueVal},
 			},
-			Labels: map[string]string{"SwiftProxy": "swiftproxy"},
+			Labels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"},
 		},
 		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
 		Spec: apps.DeploymentSpec{
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
-					Labels: map[string]string{"SwiftProxy": "swiftproxy"},
+					Labels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"},
 				},
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{MatchLabels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"}},
+								TopologyKey:   "kubernetes.io/hostname",
+							}},
+						},
+					},
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
@@ -396,9 +454,14 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					},
 				},
 			},
-
+			Strategy: apps.DeploymentStrategy{
+				RollingUpdate: &apps.RollingUpdateDeployment{
+					MaxUnavailable: &maxUnavailable,
+					MaxSurge:       &maxSurge,
+				},
+			},
 			Selector: &meta.LabelSelector{
-				MatchLabels: map[string]string{"SwiftProxy": "swiftproxy"},
+				MatchLabels: map[string]string{"SwiftProxy": "swiftproxy", "contrail_manager": "SwiftProxy"},
 			},
 		},
 		Status: status,
@@ -507,6 +570,18 @@ func newMemcached() *contrail.Memcached {
 			Namespace: "default",
 		},
 		Status: contrail.MemcachedStatus{Status: contrail.Status{Active: true}, Endpoint: "localhost:11211"},
+	}
+}
+
+func newSwiftProxyService() *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swiftproxy-swift-proxy",
+			Namespace: "default",
+		},
+		Spec: core.ServiceSpec{
+			ClusterIP: "10.10.10.10",
+		},
 	}
 }
 
@@ -722,9 +797,9 @@ const registerPlaybook = `
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
       with_items:
-        - { url: "https://{{ swift_endpoint }}/v1", interface: "admin" }
-        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
-        - { url: "https://{{ swift_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
+        - { url: "https://{{ swift_internal_endpoint }}/v1", interface: "admin" }
+        - { url: "https://{{ swift_internal_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "internal" }
+        - { url: "https://{{ swift_public_endpoint }}/v1/AUTH_%(tenant_id)s", interface: "public" }
     - name: create service project
       os_project:
         name: "service"
@@ -770,7 +845,8 @@ openstack_auth:
   domain_id: "default"
   user_domain_id: "default"
 
-swift_endpoint: "10.255.254.4:5070"
+swift_internal_endpoint: "10.10.10.10:5070"
+swift_public_endpoint: "10.255.254.4:5070"
 swift_password: "password2"
 swift_user: "otherUser"
 
