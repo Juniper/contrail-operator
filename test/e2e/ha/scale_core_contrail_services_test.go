@@ -229,7 +229,6 @@ func TestHACoreContrailServices(t *testing.T) {
 		}
 
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
-			t.Skip()
 			var replicas int32 = 1
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				cluster.Spec.CommonConfiguration.Replicas = &replicas
