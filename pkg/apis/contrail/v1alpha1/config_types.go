@@ -270,17 +270,23 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var vncApiConfigBuffer bytes.Buffer
 		configtemplates.ConfigAPIVNC.Execute(&vncApiConfigBuffer, struct {
-			HostIP     string
-			ListenPort string
-			AuthMode   AuthenticationMode
-			CAFilePath string
-			KeystoneIP string
+			HostIP               string
+			ListenPort           string
+			AuthMode             AuthenticationMode
+			CAFilePath           string
+			KeystoneIP           string
+			KeystonePort         int
+			KeystoneUserDomain   string
+			KeystoneAuthProtocol string
 		}{
-			HostIP:     podList.Items[idx].Status.PodIP,
-			ListenPort: strconv.Itoa(*configConfig.APIPort),
-			AuthMode:   configConfig.AuthMode,
-			CAFilePath: certificates.SignerCAFilepath,
-			KeystoneIP: configAuth.KeystoneIP,
+			HostIP:               podList.Items[idx].Status.PodIP,
+			ListenPort:           strconv.Itoa(*configConfig.APIPort),
+			AuthMode:             configConfig.AuthMode,
+			CAFilePath:           certificates.SignerCAFilepath,
+			KeystoneIP:           configAuth.KeystoneIP,
+			KeystonePort:         configAuth.KeystonePort,
+			KeystoneUserDomain:   configAuth.UserDomain,
+			KeystoneAuthProtocol: configAuth.AuthProtocol,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
@@ -340,17 +346,25 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 
 		var configKeystoneAuthConfBuffer bytes.Buffer
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
-			AdminUsername string
-			AdminPassword string
-			KeystoneIP    string
-			KeystonePort  int
-			CAFilePath    string
+			AdminUsername         string
+			AdminPassword         string
+			KeystoneIP            string
+			KeystonePort          int
+			KeystoneAuthProtocol  string
+			KeystoneUserDomain    string
+			KeystoneProjectDomain string
+			KeystoneRegion        string
+			CAFilePath            string
 		}{
-			AdminUsername: configAuth.AdminUsername,
-			AdminPassword: configAuth.AdminPassword,
-			KeystoneIP:    configAuth.KeystoneIP,
-			KeystonePort:  configAuth.KeystonePort,
-			CAFilePath:    certificates.SignerCAFilepath,
+			AdminUsername:         configAuth.AdminUsername,
+			AdminPassword:         configAuth.AdminPassword,
+			KeystoneIP:            configAuth.KeystoneIP,
+			KeystonePort:          configAuth.KeystonePort,
+			KeystoneAuthProtocol:  configAuth.AuthProtocol,
+			KeystoneUserDomain:    configAuth.UserDomain,
+			KeystoneProjectDomain: configAuth.UserDomain,
+			KeystoneRegion:        configAuth.Region,
+			CAFilePath:            certificates.SignerCAFilepath,
 		})
 		data["contrail-keystone-auth.conf"] = configKeystoneAuthConfBuffer.String()
 
@@ -557,6 +571,10 @@ type ConfigAuthParameters struct {
 	AdminPassword string
 	KeystoneIP    string
 	KeystonePort  int
+	Region        string
+	AuthProtocol  string
+	UserDomain    string
+	ProjectDomain string
 }
 
 func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, error) {
@@ -580,6 +598,10 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 			return nil, fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
 		}
 		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
+		w.Region = keystone.Spec.ServiceConfiguration.Region
+		w.AuthProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
+		w.UserDomain = keystone.Spec.ServiceConfiguration.UserDomain
+		w.ProjectDomain = keystone.Spec.ServiceConfiguration.ProjectDomain
 		w.KeystoneIP = keystone.Status.ClusterIP
 	}
 

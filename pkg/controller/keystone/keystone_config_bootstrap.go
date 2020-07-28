@@ -14,6 +14,7 @@ type keystoneBootstrapConf struct {
 	PostgreSQLServer string
 	MemcacheServer   string
 	AdminPassword    string
+	Region           string
 }
 
 func (c *keystoneBootstrapConf) FillConfigMap(cm *core.ConfigMap) {
@@ -64,7 +65,7 @@ var keystoneInitBootstrapScript = template.Must(template.New("").Parse(`
 
 keystone-manage db_sync
 keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
-  --bootstrap-region-id RegionOne \
+  --bootstrap-region-id {{ .Region }} \
   --bootstrap-admin-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-internal-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-public-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/

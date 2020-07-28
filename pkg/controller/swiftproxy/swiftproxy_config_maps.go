@@ -19,8 +19,12 @@ type configMaps struct {
 }
 
 type keystoneEndpoint struct {
-	keystoneIP   string
-	keystonePort int
+	keystoneIP    string
+	keystonePort  int
+	authProtocol  string
+	projectDomain string
+	userDomain    string
+	region        string
 }
 
 func (r *ReconcileSwiftProxy) configMap(
@@ -43,6 +47,10 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 		ListenPort:            c.swiftProxySpec.ServiceConfiguration.ListenPort,
 		KeystoneIP:            c.keystone.keystoneIP,
 		KeystonePort:          c.keystone.keystonePort,
+		KeystoneAuthProtocol:  c.keystone.authProtocol,
+		KeystoneUserDomain:    c.keystone.userDomain,
+		KeystoneProjectDomain: c.keystone.projectDomain,
+		KeystoneRegion:        c.keystone.region,
 		MemcachedServer:       memcachedNode,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
@@ -56,6 +64,10 @@ func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) err
 		KeystoneIP:            c.keystone.keystoneIP,
 		KeystonePort:          c.keystone.keystonePort,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
+		KeystoneAuthProtocol:  c.keystone.authProtocol,
+		KeystoneUserDomain:    c.keystone.userDomain,
+		KeystoneProjectDomain: c.keystone.projectDomain,
+		KeystoneRegion:        c.keystone.region,
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
 		SwiftPublicEndpoint:   fmt.Sprintf("%v:%v", publicIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),

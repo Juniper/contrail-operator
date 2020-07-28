@@ -192,7 +192,14 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
+	keystoneData := &keystoneEndpoint{
+		keystoneIP:    keystone.Status.ClusterIP,
+		keystonePort:  keystone.Spec.ServiceConfiguration.ListenPort,
+		authProtocol:  keystone.Spec.ServiceConfiguration.AuthProtocol,
+		projectDomain: keystone.Spec.ServiceConfiguration.ProjectDomain,
+		userDomain:    keystone.Spec.ServiceConfiguration.UserDomain,
+		region:        keystone.Spec.ServiceConfiguration.Region,
+	}
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
 	if err = cm.ensureExists(memcached.Status.Endpoint); err != nil {

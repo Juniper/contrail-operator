@@ -1092,6 +1092,8 @@ spec:
             serviceConfiguration:
               description: KeystoneConfiguration is the Spec for the keystone API.
               properties:
+                authProtocol:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -1113,6 +1115,12 @@ spec:
                 memcachedInstance:
                   type: string
                 postgresInstance:
+                  type: string
+                projectDomain:
+                  type: string
+                region:
+                  type: string
+                userDomain:
                   type: string
               type: object
           required:

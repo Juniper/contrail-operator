@@ -19,6 +19,10 @@ type KeystoneConfiguration struct {
 	PostgresInstance   string       `json:"postgresInstance,omitempty"`
 	Containers         []*Container `json:"containers,omitempty"`
 	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
+	Region             string       `json:"region,omitempty"`
+	AuthProtocol       string       `json:"authProtocol,omitempty"`
+	UserDomain         string       `json:"userDomain,omitempty"`
+	ProjectDomain      string       `json:"projectDomain,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone

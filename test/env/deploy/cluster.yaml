@@ -218,6 +218,10 @@ spec:
           memcachedInstance: "memcached"
           postgresInstance: postgres
           listenPort: 5555
+          authProtocol: https
+          region: RegionOne
+          userDomain: Default
+          projectDomain: Default
           containers:
             - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31

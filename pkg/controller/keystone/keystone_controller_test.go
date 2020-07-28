@@ -31,13 +31,13 @@ func TestKeystone(t *testing.T) {
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 	tests := []struct {
-		name             string
-		initObjs         []runtime.Object
-		expectedStatus   contrail.KeystoneStatus
-		expectedSTS      *apps.StatefulSet
-		expectedConfigs  []*core.ConfigMap
-		expectedPostgres *contrail.Postgres
-		expectedSecrets  []*core.Secret
+		name                 string
+		initObjs             []runtime.Object
+		expectedStatus       contrail.KeystoneStatus
+		expectedSTS          *apps.StatefulSet
+		expectedConfigs      []*core.ConfigMap
+		expectedPostgres     *contrail.Postgres
+		expectedSecrets      []*core.Secret
 		expectedBootstrapJob *batch.Job
 	}{
 		{
@@ -109,7 +109,7 @@ func TestKeystone(t *testing.T) {
 				&core.Pod{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-keystone-statefulset-0", Labels: map[string]string{
 						"contrail_manager": "keystone",
-						"keystone": "keystone",
+						"keystone":         "keystone",
 					}},
 					Status: core.PodStatus{
 						PodIP: "1.1.1.1",
@@ -355,6 +355,10 @@ func newKeystone() *contrail.Keystone {
 				PostgresInstance:   "psql",
 				ListenPort:         5555,
 				KeystoneSecretName: "keystone-adminpass-secret",
+				AuthProtocol:       "https",
+				Region:             "RegionOne",
+				UserDomain:         "Default",
+				ProjectDomain:      "Default",
 			},
 		},
 	}
@@ -548,7 +552,7 @@ func newCertSecret() *core.Secret {
 		},
 		Data: map[string][]byte{
 			"server-key-1.1.1.1.pem": []byte("key"),
-			"server-1.1.1.1.crt": []byte("cert"),
+			"server-1.1.1.1.crt":     []byte("cert"),
 		},
 	}
 }
@@ -641,7 +645,6 @@ func newExpectedFilledKeystoneConfigMap() *core.ConfigMap {
 		},
 	}
 }
-
 
 func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 	trueVal := true
@@ -744,8 +747,8 @@ func newExpectedBootstrapJob() *batch.Job {
 	trueVal := true
 	return &batch.Job{
 		TypeMeta: meta.TypeMeta{
-			Kind:"Job",
-			APIVersion:"batch/v1",
+			Kind:       "Job",
+			APIVersion: "batch/v1",
 		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-bootstrap-job",

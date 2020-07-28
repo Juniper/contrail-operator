@@ -28,11 +28,11 @@ cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
 AUTHN_TYPE = {{ .AuthMode }}
-AUTHN_PROTOCOL = https
+AUTHN_PROTOCOL = {{ .KeystoneAuthProtocol }}
 AUTHN_SERVER = {{ .KeystoneIP }}
-AUTHN_PORT = 5555
+AUTHN_PORT = {{ .KeystonePort }}
 AUTHN_URL = /v3/auth/tokens
-AUTHN_DOMAIN = Default
+AUTHN_DOMAIN = {{ .KeystoneUserDomain }}
 cafile = {{ .CAFilePath }}
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
@@ -129,14 +129,14 @@ admin_password = {{ .AdminPassword }}
 admin_tenant_name = {{ .AdminUsername }}
 admin_user = {{ .AdminUsername }}
 auth_host = {{ .KeystoneIP }}
-auth_port = 5555
-auth_protocol = https
-auth_url = https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3
+auth_port = {{ .KeystonePort }}
+auth_protocol = {{ .KeystoneAuthProtocol }}
+auth_url = {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3
 auth_type = password
 cafile = {{ .CAFilePath }}
-user_domain_name = Default
-project_domain_name = Default
-region_name = RegionOne`))
+user_domain_name = {{ .KeystoneUserDomain }}
+project_domain_name = {{ .KeystoneProjectDomain }}
+region_name = {{ .KeystoneRegion }}`))
 
 // FabricAnsibleConf is the template of the DeviceManager configuration for fabric management.
 var FabricAnsibleConf = template.Must(template.New("").Parse(`[DEFAULTS]

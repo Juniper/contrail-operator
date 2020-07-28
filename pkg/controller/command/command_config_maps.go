@@ -26,23 +26,24 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneIP string, keystonePort int) error {
+func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneIP string, keystonePort int, keystoneAuthProtocol string) error {
 	cc := &commandConf{
-		ClusterName:     "default",
-		AdminUsername:   "admin",
-		AdminPassword:   string(c.keystoneAdminPassSecret.Data["password"]),
-		SwiftUsername:   string(c.swiftCredentialsSecret.Data["user"]),
-		SwiftPassword:   string(c.swiftCredentialsSecret.Data["password"]),
-		ConfigAPIURL:    "https://" + hostIP + ":8082",
-		TelemetryURL:    "http://" + hostIP + ":8081",
-		PostgresUser:    "root",
-		PostgresDBName:  "contrail_test",
-		HostIP:          hostIP,
-		CAFilePath:      certificates.SignerCAFilepath,
-		PGPassword:      "contrail123",
-		KeystoneIP:      keystoneIP,
-		KeystonePort:    keystonePort,
-		ContrailVersion: c.ccSpec.ServiceConfiguration.ContrailVersion,
+		ClusterName:          "default",
+		AdminUsername:        "admin",
+		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
+		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
+		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
+		ConfigAPIURL:         "https://" + hostIP + ":8082",
+		TelemetryURL:         "http://" + hostIP + ":8081",
+		PostgresUser:         "root",
+		PostgresDBName:       "contrail_test",
+		HostIP:               hostIP,
+		CAFilePath:           certificates.SignerCAFilepath,
+		PGPassword:           "contrail123",
+		KeystoneIP:           keystoneIP,
+		KeystonePort:         keystonePort,
+		KeystoneAuthProtocol: keystoneAuthProtocol,
+		ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

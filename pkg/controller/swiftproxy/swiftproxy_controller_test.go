@@ -559,6 +559,10 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
 				ListenPort:         5555,
+				Region:             "RegionOne",
+				AuthProtocol:       "https",
+				UserDomain:         "default",
+				ProjectDomain:      "default",
 			},
 		},
 		Status: status,
@@ -794,7 +798,7 @@ const registerPlaybook = `
       os_keystone_endpoint:
         service: "swift"
         url: "{{ item.url }}"
-        region: "RegionOne"
+        region: "{{ region_name }}"
         endpoint_interface: "{{ item.interface }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
@@ -806,7 +810,7 @@ const registerPlaybook = `
     - name: create service project
       os_project:
         name: "service"
-        domain: "default"
+        domain: "{{ openstack_auth['domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -815,7 +819,7 @@ const registerPlaybook = `
         default_project: "service"
         name: "{{ swift_user }}"
         password: "{{ swift_password }}"
-        domain: "default"
+        domain: "{{ openstack_auth['user_domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -833,7 +837,7 @@ const registerPlaybook = `
         user: "swift"
         role: "admin"
         project: "service"
-        domain: "default"
+        domain: "{{ openstack_auth['user_domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -848,6 +852,7 @@ openstack_auth:
   domain_id: "default"
   user_domain_id: "default"
 
+region_name: "RegionOne"
 swift_internal_endpoint: "10.10.10.10:5070"
 swift_public_endpoint: "10.255.254.4:5070"
 swift_password: "password2"
