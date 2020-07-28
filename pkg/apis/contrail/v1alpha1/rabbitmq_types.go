@@ -126,9 +126,11 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.fail_if_no_peer_cert = true\n")
 		//rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.versions.1 = tlsv1.2\n")
-		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.peer_discovery_backend = classic_config\n")
-		for podIndex, pod := range podList.Items {
-			rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.classic_config.nodes."+strconv.Itoa(podIndex+1)+" = rabbit@"+pod.Status.PodIP+"\n")
+		if len(podList.Items) > 1 {
+			rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.peer_discovery_backend = classic_config\n")
+			for podIndex, pod := range podList.Items {
+				rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.classic_config.nodes."+strconv.Itoa(podIndex+1)+" = rabbit@"+pod.Status.PodIP+"\n")
+			}
 		}
 		data["rabbitmq-"+pod.Status.PodIP+".conf"] = rabbitmqConfigString
 	}
