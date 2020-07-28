@@ -434,7 +434,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	volumeBindingMode := storagev1.VolumeBindingMode("WaitForFirstConsumer")
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "local-storage",
+			Name: "local-storage",
 		},
 		Provisioner:       "kubernetes.io/no-provisioner",
 		VolumeBindingMode: &volumeBindingMode,
@@ -479,7 +479,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	for i := 0; i < replicasInt; i++ {
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      instance.Name + "-pv-" + strconv.Itoa(i),
+				Name: instance.Name + "-pv-" + strconv.Itoa(i),
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
