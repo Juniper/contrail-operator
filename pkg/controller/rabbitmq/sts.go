@@ -65,6 +65,13 @@ spec:
           name: rabbitmq-data
         - mountPath: /var/log/rabbitmq
           name: rabbitmq-logs
+        lifecycle:
+        preStop:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "export RABBITMQ_NODENAME=rabbit@${POD_IP}; rabbitmqctl stop_app; rabbitmqctl reset"
         readinessProbe:
           exec:
             command:
