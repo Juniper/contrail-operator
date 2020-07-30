@@ -829,8 +829,15 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 }
 
 func setupAuthKeystone(client *contrail.Client, keystoneAuthParameters *KeystoneAuthParameters) {
+	// CEM-17791 - AddEncryption expects http url
+	var authUrl string
+	if strings.HasPrefix(keystoneAuthParameters.AuthUrl, "https") {
+		authUrl = strings.Replace(keystoneAuthParameters.AuthUrl, "https", "http", 1)
+	} else {
+		authUrl = keystoneAuthParameters.AuthUrl
+	}
 	keystone := contrail.NewKeepaliveKeystoneClient(
-		keystoneAuthParameters.AuthUrl,
+		authUrl,
 		keystoneAuthParameters.TenantName,
 		keystoneAuthParameters.AdminUsername,
 		keystoneAuthParameters.AdminPassword,
