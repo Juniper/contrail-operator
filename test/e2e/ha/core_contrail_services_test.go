@@ -40,7 +40,7 @@ var versionMap = map[string]string{
 var targetVersionMap = map[string]string{
 	"cassandra":                     "3.11.4",
 	"zookeeper":                     "3.5.5",
-	"cemVersion":                    "master-latest",
+	"cemVersion":                    cemRelease,
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",

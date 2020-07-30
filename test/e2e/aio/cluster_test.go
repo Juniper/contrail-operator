@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io/ioutil"
@@ -59,6 +60,7 @@ func TestCluster(t *testing.T) {
 		manager := &contrail.Manager{}
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
 		require.NoError(t, err)
+		yamlFile = bytes.ReplaceAll(yamlFile, []byte(":master-latest"), []byte(":"+cemRelease))
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{

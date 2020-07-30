@@ -22,12 +22,14 @@ import (
 )
 
 var buildTag string
+var cemRelease string
 
 func TestMain(m *testing.M) {
 	os.Setenv("TEST_NAMESPACE", "contrail")
 	scmRevision := getEnv("BUILD_SCM_REVISION", "latest")
 	scmBranch := getEnv("BUILD_SCM_BRANCH", "master")
 	buildTag = scmBranch + "." + scmRevision
+	cemRelease = getEnv("CEM_RELEASE", "master-latest")
 	f.MainEntry(m)
 }
 

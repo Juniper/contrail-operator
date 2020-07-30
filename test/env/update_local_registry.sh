@@ -18,7 +18,7 @@ contrail-operator/engprod-269421/ringcontroller:e2e-against-master.latest
 contrail-operator/engprod-269421/contrail-operator:e2e-against-master.latest
 contrail-operator/engprod-269421/contrail-statusmonitor:e2e-against-master.latest
 contrail-operator/engprod-269421/contrail-operator-provisioner:e2e-against-master.latest
-contrail-nightly/contrail-command:master.1302
+contrail-nightly/contrail-command:master-latest
 contrail-nightly/contrail-controller-config-api:master-latest
 contrail-nightly/contrail-controller-config-devicemgr:master-latest
 contrail-nightly/contrail-controller-config-schema:master-latest

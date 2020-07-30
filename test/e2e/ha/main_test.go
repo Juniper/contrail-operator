@@ -23,6 +23,7 @@ import (
 
 var scmRevision = getEnv("BUILD_SCM_REVISION", "latest")
 var scmBranch = getEnv("BUILD_SCM_BRANCH", "master")
+var cemRelease = getEnv("CEM_RELEASE", "master-latest")
 
 func TestMain(m *testing.M) {
 	os.Setenv("TEST_NAMESPACE", "contrail")
