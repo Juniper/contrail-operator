@@ -137,13 +137,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.VrouterGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcConfig := &source.Kind{Type: &v1alpha1.Config{}}
 	configHandler := resourceHandler(mgr.GetClient())
 	predConfigSizeChange := utils.ConfigActiveChange()

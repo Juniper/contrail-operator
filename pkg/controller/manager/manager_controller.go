@@ -227,6 +227,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	*/
 	// Create CRs
+
+	//TODO set replicas to number of nodes
+	//TODO print replicas in kubectl get manager
+	replicaNumber := instance.Spec.CommonConfiguration.Replicas
+
 	for _, cassandraService := range instance.Spec.Services.Cassandras {
 		create := *cassandraService.Spec.CommonConfiguration.Create
 		delete := false
@@ -1487,23 +1492,23 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if err = r.processPostgres(instance); err != nil {
+	if err = r.processPostgres(instance, replicaNumber); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processCommand(instance); err != nil {
+	if err = r.processCommand(instance, replicaNumber); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processKeystone(instance); err != nil {
+	if err = r.processKeystone(instance, replicaNumber); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processSwift(instance); err != nil {
+	if err = r.processSwift(instance, replicaNumber); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processMemcached(instance); err != nil {
+	if err = r.processMemcached(instance, replicaNumber); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -1532,7 +1537,7 @@ func (r *ReconcileManager) getNodes(manager *v1alpha1.Manager) error {
 	return nil
 }
 
-func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
+func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Command == nil {
 		return nil
 	}
@@ -1545,6 +1550,9 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 		if command.Spec.ServiceConfiguration.ClusterName == "" {
 			command.Spec.ServiceConfiguration.ClusterName = manager.GetName()
 		}
+		if command.Spec.CommonConfiguration.Replicas == nil {
+			command.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1553,7 +1561,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	return err
 }
 
-func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
+func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Keystone == nil {
 		return nil
 	}
@@ -1588,6 +1596,9 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 			keystone.Spec.ServiceConfiguration.ProjectDomainID = "default"
 		}
 		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
+		if keystone.Spec.CommonConfiguration.Replicas == nil {
+			keystone.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1596,7 +1607,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 	return err
 }
 
-func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
+func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Postgres == nil {
 		return nil
 	}
@@ -1605,6 +1616,10 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
 	psql.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
 		psql.Spec = manager.Spec.Services.Postgres.Spec
+		//TODO introduce Common Configuration in PSQL
+		//if psql.Spec.CommonConfiguration.Replicas == nil {
+		//	psql.Spec.CommonConfiguration.Replicas = replicas
+		//}
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1613,7 +1628,7 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager) error {
 	return err
 }
 
-func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
+func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Swift == nil {
 		return nil
 	}
@@ -1624,6 +1639,9 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec
 		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
+		if swift.Spec.CommonConfiguration.Replicas == nil {
+			swift.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, swift, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1632,7 +1650,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	return err
 }
 
-func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
+func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Memcached == nil {
 		return nil
 	}
@@ -1642,6 +1660,9 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
 		memcached.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, memcached.Spec.CommonConfiguration)
+		if memcached.Spec.CommonConfiguration.Replicas == nil {
+			memcached.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

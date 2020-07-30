@@ -128,13 +128,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.ControlGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcCassandra := &source.Kind{Type: &v1alpha1.Cassandra{}}
 	cassandraHandler := resourceHandler(mgr.GetClient())
 	predCassandraSizeChange := utils.CassandraActiveChange()
