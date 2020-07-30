@@ -486,25 +486,6 @@ func SetSTSCommonConfiguration(sts *appsv1.StatefulSet,
 	}
 }
 
-// AddVolumesToIntendedDeployments adds volumes to a deployment.
-func AddVolumesToIntendedDeployments(intendedDeployment *appsv1.Deployment, volumeConfigMapMap map[string]string) {
-	volumeList := intendedDeployment.Spec.Template.Spec.Volumes
-	for configMapName, volumeName := range volumeConfigMapMap {
-		volume := corev1.Volume{
-			Name: volumeName,
-			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: configMapName,
-					},
-				},
-			},
-		}
-		volumeList = append(volumeList, volume)
-	}
-	intendedDeployment.Spec.Template.Spec.Volumes = volumeList
-}
-
 // AddVolumesToIntendedSTS adds volumes to a deployment.
 func AddVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeConfigMapMap map[string]string) {
 	volumeList := sts.Spec.Template.Spec.Volumes
@@ -558,69 +539,8 @@ func AddSecretVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeSecretMap map[stri
 	ds.Spec.Template.Spec.Volumes = volumeList
 }
 
-// CompareIntendedWithCurrentDeployment compares the running deployment with the deployment.
-func CompareIntendedWithCurrentDeployment(intendedDeployment *appsv1.Deployment,
-	commonConfiguration *CommonConfiguration,
-	instanceType string,
-	request reconcile.Request,
-	scheme *runtime.Scheme,
-	client client.Client,
-	object v1.Object,
-	increaseVersion bool) error {
-	currentDeployment := &appsv1.Deployment{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: intendedDeployment.Name, Namespace: request.Namespace},
-		currentDeployment)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			intendedDeployment.Spec.Template.ObjectMeta.Labels["version"] = "1"
-			if err = client.Create(context.TODO(), intendedDeployment); err != nil {
-				return err
-			}
-		}
-	} else {
-		update := false
-		if *intendedDeployment.Spec.Replicas != *currentDeployment.Spec.Replicas {
-			update = true
-		}
-		if increaseVersion {
-			intendedDeployment.Spec.Strategy = appsv1.DeploymentStrategy{
-				Type: "Recreate",
-			}
-			versionInt, _ := strconv.Atoi(currentDeployment.Spec.Template.ObjectMeta.Labels["version"])
-			newVersion := versionInt + 1
-			intendedDeployment.Spec.Template.ObjectMeta.Labels["version"] = strconv.Itoa(newVersion)
-			update = true
-		} else {
-			intendedDeployment.Spec.Template.ObjectMeta.Labels["version"] = currentDeployment.Spec.Template.ObjectMeta.Labels["version"]
-		}
-
-		for _, intendedContainer := range intendedDeployment.Spec.Template.Spec.Containers {
-			for _, currentContainer := range currentDeployment.Spec.Template.Spec.Containers {
-				if intendedContainer.Name == currentContainer.Name {
-					if intendedContainer.Image != currentContainer.Image {
-						update = true
-					}
-				}
-			}
-		}
-
-		if update {
-			if err = client.Update(context.TODO(), intendedDeployment); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // CreateSTS creates the STS.
-func CreateSTS(sts *appsv1.StatefulSet,
-	commonConfiguration *CommonConfiguration,
-	instanceType string,
-	request reconcile.Request,
-	scheme *runtime.Scheme,
-	reconcileClient client.Client) error {
+func CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	foundSTS := &appsv1.StatefulSet{}
 	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-statefulset", Namespace: request.Namespace}, foundSTS)
 	if err != nil {
@@ -635,13 +555,7 @@ func CreateSTS(sts *appsv1.StatefulSet,
 }
 
 // UpdateSTS updates the STS.
-func UpdateSTS(sts *appsv1.StatefulSet,
-	commonConfiguration *CommonConfiguration,
-	instanceType string,
-	request reconcile.Request,
-	scheme *runtime.Scheme,
-	reconcileClient client.Client,
-	strategy string) error {
+func UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	currentSTS := &appsv1.StatefulSet{}
 	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-statefulset", Namespace: request.Namespace}, currentSTS)
 	if err != nil {
@@ -894,32 +808,6 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 		ServerListCommanSeparatedQuoted: serverListCommanSeparatedQuoted,
 	}
 	return &cassandraCluster, nil
-}
-
-// NewVrouterConfiguration gets a struct containing various representations of Control nodes string.
-func NewVrouterConfiguration(name string, namespace string, myclient client.Client) (*VrouterClusterConfiguration, error) {
-	var vrouterCluster VrouterClusterConfiguration
-	var physicalInterface string
-	var gateway string
-	var metaDataSecret string
-	var vrouterConfigInterface interface{}
-	vrouterInstance := &Vrouter{}
-	err := myclient.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, vrouterInstance)
-	if err != nil {
-		return &vrouterCluster, err
-	}
-	vrouterConfigInterface = vrouterInstance.ConfigurationParameters()
-	vrouterConfig := vrouterConfigInterface.(VrouterConfiguration)
-	physicalInterface = vrouterConfig.PhysicalInterface
-	metaDataSecret = vrouterConfig.MetaDataSecret
-	gateway = vrouterConfig.Gateway
-	vrouterCluster = VrouterClusterConfiguration{
-		PhysicalInterface: physicalInterface,
-		Gateway:           gateway,
-		MetaDataSecret:    metaDataSecret,
-	}
-	return &vrouterCluster, nil
-
 }
 
 // NewControlClusterConfiguration gets a struct containing various representations of Control nodes string.

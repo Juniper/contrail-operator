@@ -681,12 +681,12 @@ func (c *Config) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeCo
 
 //CreateSTS creates the STS
 func (c *Config) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 //UpdateSTS updates the STS
 func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // SetInstanceActive sets the Cassandra instance to active

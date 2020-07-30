@@ -1528,6 +1528,10 @@ func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
 	}}
 }
 
+func (r *ReconcileManager) getNodes(manager *v1alpha1.Manager) error {
+	return nil
+}
+
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager) error {
 	if manager.Spec.Services.Command == nil {
 		return nil
