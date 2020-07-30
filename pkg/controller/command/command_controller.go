@@ -361,6 +361,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "api"),
 						Command:         getCommand(containers, "api"),
+						WorkingDir:      "/home/contrail/",
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{

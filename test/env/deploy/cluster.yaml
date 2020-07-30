@@ -43,25 +43,25 @@ spec:
           keystoneInstance: keystone
           containers:
             - name: analyticsapi
-              image: registry:5000/contrail-nightly/contrail-analytics-api:2005.42
+              image: registry:5000/contrail-nightly/contrail-analytics-api:master-latest
             - name: api
-              image: registry:5000/contrail-nightly/contrail-controller-config-api:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-config-api:master-latest
             - name: collector
-              image: registry:5000/contrail-nightly/contrail-analytics-collector:2005.42
+              image: registry:5000/contrail-nightly/contrail-analytics-collector:master-latest
             - name: devicemanager
-              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master-latest
             - name: dnsmasq
-              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master-latest
             - name: init
               image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: schematransformer
-              image: registry:5000/contrail-nightly/contrail-controller-config-schema:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-config-schema:master-latest
             - name: servicemonitor
-              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master-latest
             - name: queryengine
-              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:2005.42
+              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master-latest
             - name: redis
               image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
             - name: statusmonitor
@@ -84,13 +84,13 @@ spec:
             cassandraInstance: cassandra1
             containers:
               - name: control
-                image: registry:5000/contrail-nightly/contrail-controller-control-control:2005.42
+                image: registry:5000/contrail-nightly/contrail-controller-control-control:master-latest
               - name: dns
-                image: registry:5000/contrail-nightly/contrail-controller-control-dns:2005.42
+                image: registry:5000/contrail-nightly/contrail-controller-control-dns:master-latest
               - name: init
                 image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
               - name: named
-                image: registry:5000/contrail-nightly/contrail-controller-control-named:2005.42
+                image: registry:5000/contrail-nightly/contrail-controller-control-named:master-latest
               - name: statusmonitor
                 image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
             zookeeperInstance: zookeeper1
@@ -157,9 +157,9 @@ spec:
             - name: redis
               image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
             - name: webuijob
-              image: registry:5000/contrail-nightly/contrail-controller-webui-job:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-webui-job:master-latest
             - name: webuiweb
-              image: registry:5000/contrail-nightly/contrail-controller-webui-web:2005.42
+              image: registry:5000/contrail-nightly/contrail-controller-webui-web:master-latest
     zookeepers:
       - metadata:
           labels:
@@ -199,12 +199,12 @@ spec:
           swiftProxyPort: 5080
           keystonePort: 5555
           keystoneInstance: keystone
-          contrailVersion: "2005.42"
+          contrailVersion: "master-latest"
           containers:
             - name: api
-              image: registry:5000/contrail-nightly/contrail-command:2005.42
+              image: registry:5000/contrail-nightly/contrail-command:master-latest
             - name: init
-              image: registry:5000/contrail-nightly/contrail-command:2005.42
+              image: registry:5000/contrail-nightly/contrail-command:master-latest
             - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
     keystone:

@@ -92,9 +92,9 @@ func ManagerCluster(t *testing.T) {
 		"rabbitmq":                      "3.7.16",
 		"cassandra":                     "3.11.3",
 		"zookeeper":                     "3.5.4-beta",
-		"config":                        "2005.42",
-		"control":                       "2005.42",
-		"kubemanager":                   "2005.42",
+		"config":                        "master-latest",
+		"control":                       "master-latest",
+		"kubemanager":                   "master-latest",
 		"contrail-operator-provisioner": buildTag,
 		"contrail-statusmonitor":        buildTag,
 	}
