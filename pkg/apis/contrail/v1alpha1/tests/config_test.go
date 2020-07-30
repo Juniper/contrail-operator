@@ -1113,6 +1113,7 @@ export RABBITMQ_NODENAME=rabbit@${POD_IP}
 if [[ $(grep $POD_IP /etc/rabbitmq/0) ]] ; then
   rabbitmq-server
 else
+  rabbitmqctl --node rabbit@${POD_IP} forget_cluster_node rabbit@${POD_IP}
   rabbitmqctl --node rabbit@$(cat /etc/rabbitmq/0) ping
   while [[ $? -ne 0 ]]; do
 	rabbitmqctl --node rabbit@$(cat /etc/rabbitmq/0) ping
@@ -1141,6 +1142,10 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.1.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.1.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_formation.peer_discovery_backend = classic_config
+cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
+cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
+cluster_formation.classic_config.nodes.3 = rabbit@1.1.4.3
 `,
 	"rabbitmq-1.1.4.2.conf": `listeners.tcp.default = 5673
 listeners.ssl.default = 15673
@@ -1152,6 +1157,10 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.2.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.2.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_formation.peer_discovery_backend = classic_config
+cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
+cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
+cluster_formation.classic_config.nodes.3 = rabbit@1.1.4.3
 `,
 	"rabbitmq-1.1.4.3.conf": `listeners.tcp.default = 5673
 listeners.ssl.default = 15673
@@ -1163,6 +1172,10 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.3.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.3.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_formation.peer_discovery_backend = classic_config
+cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
+cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
+cluster_formation.classic_config.nodes.3 = rabbit@1.1.4.3
 `,
 	"rabbitmq.nodes":         fmt.Sprintf("1.1.4.1\n1.1.4.2\n1.1.4.3\n"),
 	"0":                      "1.1.4.1",
@@ -1174,7 +1187,7 @@ ssl_options.fail_if_no_peer_cert = true
 	"RABBITMQ_PID_FILE":      "/var/run/rabbitmq.pid",
 	"RABBITMQ_CONF_ENV_FILE": "/var/lib/rabbitmq/rabbitmq.env",
 	"definitions.json":       rabbitmqDefinition,
-	"plugins.conf":           "[rabbitmq_management,rabbitmq_management_agent].",
+	"plugins.conf":           "[rabbitmq_management,rabbitmq_management_agent,rabbitmq_peer_discovery_k8s].",
 }
 
 var rabbitmqDefinition = `{

@@ -10,6 +10,7 @@ export RABBITMQ_NODENAME=rabbit@${POD_IP}
 if [[ $(grep $POD_IP /etc/rabbitmq/0) ]] ; then
   rabbitmq-server
 else
+  rabbitmqctl --node rabbit@${POD_IP} forget_cluster_node rabbit@${POD_IP}
   rabbitmqctl --node rabbit@$(cat /etc/rabbitmq/0) ping
   while [[ $? -ne 0 ]]; do
 	rabbitmqctl --node rabbit@$(cat /etc/rabbitmq/0) ping
