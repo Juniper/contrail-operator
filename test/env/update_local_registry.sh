@@ -14,10 +14,11 @@ pull_image()
 while read line; do
 	pull_image svl-artifactory.juniper.net "${line}"
 done <<EOF
-contrail-operator/engprod-269421/ringcontroller:master.latest
-contrail-operator/engprod-269421/contrail-operator:master.latest
-contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
-contrail-operator/engprod-269421/contrail-operator-provisioner:master.latest
+contrail-operator/engprod-269421/ringcontroller:e2e-against-master.latest
+contrail-operator/engprod-269421/contrail-operator:e2e-against-master.latest
+contrail-operator/engprod-269421/contrail-statusmonitor:e2e-against-master.latest
+contrail-operator/engprod-269421/contrail-operator-provisioner:e2e-against-master.latest
+contrail-nightly/contrail-command:master.1302
 contrail-nightly/contrail-controller-config-api:master-latest
 contrail-nightly/contrail-controller-config-devicemgr:master-latest
 contrail-nightly/contrail-controller-config-schema:master-latest
@@ -36,7 +37,6 @@ contrail-nightly/contrail-analytics-api:master-latest
 contrail-nightly/contrail-analytics-collector:master-latest
 contrail-nightly/contrail-analytics-query-engine:master-latest
 contrail-nightly/contrail-controller-config-devicemgr:master-latest
-contrail-nightly/contrail-command:master-latest
 contrail-nightly/contrail-controller-config-api:2008.10
 contrail-nightly/contrail-controller-config-devicemgr:2008.10
 contrail-nightly/contrail-controller-config-schema:2008.10

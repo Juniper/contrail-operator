@@ -202,9 +202,9 @@ spec:
           contrailVersion: "master-latest"
           containers:
             - name: api
-              image: registry:5000/contrail-nightly/contrail-command:master-latest
+              image: registry:5000/contrail-nightly/contrail-command:master.1302
             - name: init
-              image: registry:5000/contrail-nightly/contrail-command:master-latest
+              image: registry:5000/contrail-nightly/contrail-command:master.1302
             - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
     keystone:
