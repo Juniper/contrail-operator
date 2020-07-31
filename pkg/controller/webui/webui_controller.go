@@ -3,12 +3,11 @@ package webui
 import (
 	"context"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -17,15 +16,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 var log = logf.Log.WithName("controller_webui")
@@ -489,13 +487,25 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 	}
 
-	if instance.Status.Active == nil {
-		active := false
-		instance.Status.Active = &active
-	}
-	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
+	if err = r.updateStatus(instance, statefulSet); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSet) error {
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: sts.Namespace},
+		sts); err != nil {
+		return err
+	}
+	cr.Status.FromStatefulSet(sts)
+	r.updatePorts(cr)
+	return r.Client.Status().Update(context.Background(), cr)
+}
+
+func (r *ReconcileWebui) updatePorts(cr *v1alpha1.Webui){
+	cr.Status.Ports.RedisPort = v1alpha1.RedisServerPortWebui
+	cr.Status.Ports.WebUIHttpPort = v1alpha1.WebuiHttpListenPort
+	cr.Status.Ports.WebUIHttpsPort = v1alpha1.WebuiHttpsListenPort
 }
