@@ -2,10 +2,15 @@
 
 set -o errexit
 
-BUILD_SCM_BRANCH=${BUILD_SCM_BRANCH:-"master"}
-BUILD_SCM_REVISION=${BUILD_SCM_REVISION:-"latest"}
-CEM_RELEASE=${CEM_RELEASE:-"master.1320"}
-SKIP_TEST=${SKIP_TEST:-no}
+export BUILD_SCM_BRANCH=${BUILD_SCM_BRANCH:-"master"}
+export BUILD_SCM_REVISION=${BUILD_SCM_REVISION:-"latest"}
+
+## Uncomment this to test the code with latest CEM release
+# export CEM_RELEASE=${CEM_RELEASE:-"${BUILD_SCM_BRANCH//R}.latest"}
+
+# Most recent working version
+export CEM_RELEASE="master.1302"
+
 E2E_TEST_SUITE=${E2E_TEST_SUITE:-aio}
 
 DIR="$(cd "$(dirname "$0")" && pwd)/../../"
