@@ -156,30 +156,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			},
 		}
 
-		webui := &contrail.Webui{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "hatest-webui",
-				Namespace: namespace,
-				Labels:    map[string]string{"contrail_cluster": "cluster1"},
-			},
-			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
-					Create:       &trueVal,
-					HostNetwork:  &trueVal,
-					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				},
-				ServiceConfiguration: contrail.WebuiConfiguration{
-					CassandraInstance: "hatest-cassandra",
-					Containers: []*contrail.Container{
-						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
-						{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:" + versionMap["redis"]},
-						{Name: "webuijob", Image: "registry:5000/contrail-nightly/contrail-controller-webui-job:" + versionMap["cemVersion"]},
-						{Name: "webuiweb", Image: "registry:5000/contrail-nightly/contrail-controller-webui-web:" + versionMap["cemVersion"]},
-					},
-				},
-			},
-		}
-
 		provisionManager := &contrail.ProvisionManager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "hatest-provmanager",
@@ -213,7 +189,6 @@ func TestHACoreContrailServices(t *testing.T) {
 					Cassandras:       cassandras,
 					Zookeepers:       zookeepers,
 					Config:           config,
-					Webui:            webui,
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionManager,
 				},
@@ -255,6 +230,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then a ready WebUI StatefulSet should be created", func(t *testing.T) {
+				t.Skip("Unskip when WebUI will support environment without Keystone")
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 			})
 
@@ -290,6 +266,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				})
 
 				t.Run("then WebUI StatefulSet should be scaled and ready", func(t *testing.T) {
+					t.Skip("Unskip when WebUI will support environment without Keystone")
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 				})
 
