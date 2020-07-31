@@ -244,17 +244,13 @@ func (c *Cassandra) SetInstanceActive(client client.Client, activeStatus *bool, 
 		sts); err != nil {
 		return err
 	}
-	active := false
+	*activeStatus = false
 	var acceptableReadyReplicaCnt = *sts.Spec.Replicas/2 + 1
 	if sts.Status.ReadyReplicas >= acceptableReadyReplicaCnt {
-		active = true
+		*activeStatus = true
 	}
 
-	*activeStatus = active
-	if err := client.Status().Update(context.TODO(), c); err != nil {
-		return err
-	}
-	return nil
+	return client.Status().Update(context.TODO(), c)
 }
 
 // ManageNodeStatus manages the status of the Cassandra nodes.
