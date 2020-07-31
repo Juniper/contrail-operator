@@ -28,7 +28,7 @@ import (
 var versionMap = map[string]string{
 	"cassandra":                     "3.11.3",
 	"zookeeper":                     "3.5.4-beta",
-	"cemVersion":                    "2005.11",
+	"cemVersion":                    "2008.10",
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",
@@ -40,13 +40,13 @@ var versionMap = map[string]string{
 var targetVersionMap = map[string]string{
 	"cassandra":                     "3.11.4",
 	"zookeeper":                     "3.5.5",
-	"cemVersion":                    "2005.42",
+	"cemVersion":                    cemRelease,
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",
 	"rabbitmq":                      "3.7.16",
-	"contrail-statusmonitor":        "R2005.latest",
-	"contrail-operator-provisioner": "R2005.latest",
+	"contrail-statusmonitor":        "R2008.latest",
+	"contrail-operator-provisioner": "R2008.latest",
 }
 
 func TestHACoreContrailServices(t *testing.T) {
