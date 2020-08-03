@@ -2094,8 +2094,6 @@ spec:
                                 type: string
                               xmppPort:
                                 type: integer
-                              zookeeperInstance:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration
@@ -3189,6 +3187,8 @@ spec:
                                 type: string
                               clusterRoleBinding:
                                 type: string
+                              cniMetaPlugin:
+                                type: string
                               containers:
                                 items:
                                   description: Container defines name, image and command.
@@ -3203,6 +3203,8 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              contrailStatusImage:
+                                type: string
                               controlInstance:
                                 type: string
                               distribution:
@@ -3217,6 +3219,8 @@ spec:
                                 type: string
                               serviceAccount:
                                 type: string
+                              vrouterEncryption:
+                                type: boolean
                             type: object
                         required:
                         - commonConfiguration
@@ -3390,15 +3394,27 @@ spec:
                     status:
                       properties:
                         active:
-                          description: 'INSERT ADDITIONAL STATUS FIELD - define observed
-                            state of cluster Important: Run "operator-sdk generate
-                            k8s" to regenerate code after modifying this file Add
-                            custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
                           type: boolean
                         nodes:
                           additionalProperties:
                             type: string
                           type: object
+                        ports:
+                          properties:
+                            redisPort:
+                              type: integer
+                            webUIHttpPort:
+                              type: integer
+                            webUIHttpsPort:
+                              type: integer
+                          type: object
+                        readyReplicas:
+                          format: int32
+                          type: integer
+                        replicas:
+                          format: int32
+                          type: integer
+                        serviceStatus: {}
                       type: object
                   type: object
                 zookeepers:
@@ -3534,6 +3550,14 @@ spec:
                                 type: integer
                               serverPort:
                                 type: integer
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                             type: object
                         required:
                         - commonConfiguration
@@ -4726,6 +4750,8 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
+                cniMetaPlugin:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -4740,6 +4766,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                contrailStatusImage:
+                  type: string
                 controlInstance:
                   type: string
                 distribution:
@@ -4754,6 +4782,8 @@ spec:
                   type: string
                 serviceAccount:
                   type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - commonConfiguration
@@ -4795,6 +4825,19 @@ kind: CustomResourceDefinition
 metadata:
   name: webuis.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: Webui
@@ -4935,15 +4978,27 @@ spec:
         status:
           properties:
             active:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: boolean
             nodes:
               additionalProperties:
                 type: string
               type: object
+            ports:
+              properties:
+                redisPort:
+                  type: integer
+                webUIHttpPort:
+                  type: integer
+                webUIHttpsPort:
+                  type: integer
+              type: object
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
+            serviceStatus: {}
           type: object
       type: object
   version: v1alpha1
@@ -5083,6 +5138,14 @@ spec:
                   type: integer
                 serverPort:
                   type: integer
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
               type: object
           required:
           - commonConfiguration
@@ -5140,7 +5203,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: svl-artifactory.juniper.net/contrail-operator/engprod-269421/contrail-operator:master.latest
+          image: registry:5000/contrail-operator:latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

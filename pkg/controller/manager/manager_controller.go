@@ -569,11 +569,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Webui != nil {
 				status = instance.Status.Webui
 				status.Created = &create
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 				instance.Status.Webui = status
 			}
 		}
@@ -620,11 +620,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			status := &v1alpha1.ServiceStatus{}
 			if instance.Status.Webui != nil {
 				status = instance.Status.Webui
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 				instance.Status.Webui = status
 			}
 
@@ -642,11 +642,11 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			if instance.Status.Webui != nil {
 				status = instance.Status.Webui
 				status.Created = &create
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 			} else {
 				status.Name = &cr.Name
 				status.Created = &create
-				status.Active = cr.Status.Active
+				status.Active = &cr.Status.Active
 				instance.Status.Webui = status
 			}
 		}

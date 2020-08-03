@@ -28,6 +28,10 @@ import (
 // Webui is the Schema for the webuis API.
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready_Replicas",type=integer,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type Webui struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -55,13 +59,23 @@ type WebuiConfiguration struct {
 	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
 }
 
+type WebUIStatusPorts struct {
+	WebUIHttpPort  int `json:"webUIHttpPort,omitempty"`
+	WebUIHttpsPort int `json:"webUIHttpsPort,omitempty"`
+	RedisPort      int `json:"redisPort,omitempty"`
+}
+
+type WebUIServiceStatus struct {
+	ModuleName  string `json:"moduleName,omitempty"`
+	ModuleState string `json:"state"`
+}
+
 // +k8s:openapi-gen=true
 type WebuiStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active *bool             `json:"active,omitempty"`
+	Status `json:",inline"`
 	Nodes  map[string]string `json:"nodes,omitempty"`
+	Ports  WebUIStatusPorts  `json:"ports,omitempty"`
+	ServiceStatus map[string]map[string]WebUIServiceStatus `json:"serviceStatus,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -248,20 +262,6 @@ func (c *Webui) OwnedByManager(client client.Client, request reconcile.Request) 
 		}
 	}
 	return nil, nil
-}
-
-// IsActive returns true if instance is active.
-func (c *Webui) IsActive(name string, namespace string, client client.Client) bool {
-	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, c)
-	if err != nil {
-		return false
-	}
-	if c.Status.Active != nil {
-		if *c.Status.Active {
-			return true
-		}
-	}
-	return false
 }
 
 // PrepareSTS prepares the intended deployment for the Webui object.
