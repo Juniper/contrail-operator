@@ -251,3 +251,9 @@ System tests can be run using operator-sdk tool
     operator-sdk test local ./test/e2e/aio/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
     # To run ha e2e test
     operator-sdk test local ./test/e2e/ha/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
+
+## Notes
+
+* Contrail Operator creates Persistent Volumes that are used by some of the deployed pods. After deletion of Contrail resources (e.g. after deleting the Manager Custom Resource), those Persistent Volumes will not be deleted. Administrator has to delete them manually and make sure that directories created by these volumes on cluster nodes are in the expected state. Example Persistent Volumes deletion command:
+```
+kubectl delete pv $(kubectl get pv -o=jsonpath='{.items[?(@.spec.storageClassName=="local-storage")].metadata.name}')

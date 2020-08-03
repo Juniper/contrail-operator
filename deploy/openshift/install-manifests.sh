@@ -2,10 +2,19 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+usage ()
+{
+    echo "usage: $0 [--dir <output-dir>][--config <config file>][--operator-dir <contrail-operator project directory>]"
+}
+
 get_parameters() {
 	while [ ! $# -eq 0 ]
 	do
 		case "$1" in
+            --help)
+                usage
+                exit 0
+                ;;
 			--dir)
 				DIRECTORY=$2
 				;;
@@ -28,11 +37,6 @@ get_parameters() {
     then
        CONFIG="${SCRIPT_DIR}/config"
     fi
-}
-
-usage ()
-{
-    echo "usage: $0 [--dir <output-dir>][--config <config file>][--operator-dir <contrail-operator project directory>]"
 }
 
 copy_manifests() {
