@@ -5,11 +5,15 @@ set -o errexit
 export BUILD_SCM_BRANCH=${BUILD_SCM_BRANCH:-"master"}
 export BUILD_SCM_REVISION=${BUILD_SCM_REVISION:-"latest"}
 
-## Uncomment this to test the code with latest CEM release
-# export CEM_RELEASE=${CEM_RELEASE:-"${BUILD_SCM_BRANCH//R}.latest"}
-
-# Most recent working version
-export CEM_RELEASE="master.1302"
+if [[ -z "$CEM_RELEASE" ]]; then
+    ## If build branch match release branch patern then use it
+    if [[ "$BUILD_SCM_BRANCH" =~ ^R2[0-9]{3}$ ]]; then
+        export CEM_RELEASE="${BUILD_SCM_BRANCH//R}-latest"
+    else
+        export CEM_RELEASE="master-latest"
+    fi
+fi
+    
 
 E2E_TEST_SUITE=${E2E_TEST_SUITE:-aio}
 
