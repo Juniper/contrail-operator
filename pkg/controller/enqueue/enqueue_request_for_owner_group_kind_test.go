@@ -1,6 +1,8 @@
 package enqueue
 
 import (
+	"testing"
+
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"testing"
 )
 
 type restScope struct {
@@ -36,7 +37,7 @@ func TestOwnerGroupKind(t *testing.T) {
 	}
 	ors := []meta.OwnerReference{or}
 	metaobj.SetOwnerReferences(ors)
-	pod := &corev1.Pod{
+	pod := &core.Pod{
 		ObjectMeta: metaobj,
 	}
 	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -143,7 +144,7 @@ func TestOwnerGroupKindFailure(t *testing.T) {
 	}
 	ors := []meta.OwnerReference{or}
 	metaobj.SetOwnerReferences(ors)
-	pod := &corev1.Pod{
+	pod := &core.Pod{
 		ObjectMeta: metaobj,
 	}
 	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())

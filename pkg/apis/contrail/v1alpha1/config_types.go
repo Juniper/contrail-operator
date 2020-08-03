@@ -95,17 +95,19 @@ type ConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active        *bool                                     `json:"active,omitempty"`
-	Nodes         map[string]string                         `json:"nodes,omitempty"`
-	Ports         ConfigStatusPorts                         `json:"ports,omitempty"`
-	ConfigChanged *bool                                     `json:"configChanged,omitempty"`
-	ServiceStatus map[string]map[string]ConfigServiceStatus `json:"serviceStatus,omitempty"`
+	Active        *bool                             `json:"active,omitempty"`
+	Nodes         map[string]string                 `json:"nodes,omitempty"`
+	Ports         ConfigStatusPorts                 `json:"ports,omitempty"`
+	ConfigChanged *bool                             `json:"configChanged,omitempty"`
+	ServiceStatus map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
 }
 
+type ConfigServiceStatusMap map[string]ConfigServiceStatus
+
 type ConfigConnectionInfo struct {
-	Name          string
-	Status        string
-	ServerAddress []string
+	Name          string   `json:"name,omitempty"`
+	Status        string   `json:"status,omitempty"`
+	ServerAddress []string `json:"serverAddress,omitempty"`
 }
 
 type ConfigServiceStatus struct {

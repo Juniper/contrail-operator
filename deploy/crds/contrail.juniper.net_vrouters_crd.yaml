@@ -9,7 +9,7 @@ spec:
     listKind: VrouterList
     plural: vrouters
     singular: vrouter
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

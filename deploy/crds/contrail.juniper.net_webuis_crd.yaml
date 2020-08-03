@@ -22,7 +22,7 @@ spec:
     listKind: WebuiList
     plural: webuis
     singular: webui
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

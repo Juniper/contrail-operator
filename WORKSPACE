@@ -48,9 +48,10 @@ rules_proto_toolchains()
 http_archive(
     name = "rules_python",
     url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
-    strip_prefix = "rules_python-0.0.2", 
+    strip_prefix = "rules_python-0.0.2",
     sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
 )
+
 load("@rules_python//python:repositories.bzl", "py_repositories")
 
 py_repositories()
@@ -65,7 +66,7 @@ pip_repositories()
 
 pip3_import(
     name = "ringcontroller",
-    extra_pip_args = ["--no-deps",],
+    extra_pip_args = ["--no-deps"],
     requirements = "//ringcontroller:requirements.txt",
 )
 
@@ -103,27 +104,32 @@ load(
 container_repositories()
 
 load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
+
 pip_deps()
 
 load("@io_bazel_rules_docker//repositories:py_repositories.bzl", "py_deps")
+
 py_deps()
 
 load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
 )
+
 _go_image_repos()
 
 load(
     "@io_bazel_rules_docker//python:image.bzl",
     _py_image_repos = "repositories",
 )
+
 _py_image_repos()
 
 load(
     "@io_bazel_rules_docker//python3:image.bzl",
     _py3_image_repos = "repositories",
 )
+
 _py3_image_repos()
 
 http_archive(
@@ -2050,15 +2056,15 @@ go_repository(
 go_repository(
     name = "com_github_masterminds_semver_v3",
     importpath = "github.com/Masterminds/semver/v3",
-    sum = "h1:2kKm5lb7dKVrt5TYUiAavE6oFc1cFT0057UVGT+JqLk=",
-    version = "v3.0.1",
+    sum = "h1:znjIyLfpXEDQjOIEWh+ehwpTU14UzUPub3c3sm36u14=",
+    version = "v3.0.3",
 )
 
 go_repository(
     name = "com_github_masterminds_sprig_v3",
     importpath = "github.com/Masterminds/sprig/v3",
-    sum = "h1:KSQz7Nb08/3VU9E4ns29dDxcczhOD1q7O1UfM4G3t3g=",
-    version = "v3.0.0",
+    sum = "h1:wz22D0CiSctrliXiI9ZO3HoNApweeRGftyDN+BQa3B8=",
+    version = "v3.0.2",
 )
 
 go_repository(
@@ -2120,8 +2126,8 @@ go_repository(
 go_repository(
     name = "com_github_maxbrunsfeld_counterfeiter_v6",
     importpath = "github.com/maxbrunsfeld/counterfeiter/v6",
-    sum = "h1:s0HwWQiNYF+YpoOncE8OxHVYG3YShNiRG8iuPDiSDWM=",
-    version = "v6.2.1",
+    sum = "h1:g+4J5sZg6osfvEfkRZxJ1em0VT95/UOZgi/l7zi1/oE=",
+    version = "v6.2.2",
 )
 
 go_repository(
@@ -2428,8 +2434,8 @@ go_repository(
 go_repository(
     name = "com_github_operator_framework_api",
     importpath = "github.com/operator-framework/api",
-    sum = "h1:bMO43IWWPM3HCGIiuM/GyXjtSJWsrhOlzUpZMesVUw0=",
-    version = "v0.0.0-20191127212340-9066a6e95573",
+    sum = "h1:HfxMEPJ0djo/RNfrmli3kI2oKS6IeuIZWu1Q5Rewt/o=",
+    version = "v0.0.0-20200120235816-80fd2f1a09c9",
 )
 
 go_repository(
@@ -2442,15 +2448,15 @@ go_repository(
 go_repository(
     name = "com_github_operator_framework_operator_registry",
     importpath = "github.com/operator-framework/operator-registry",
-    sum = "h1:az83WDwgB+tHsmVn+tFq72yQBbaUAye8e4+KkDQmzLs=",
-    version = "v1.5.3",
+    sum = "h1:+Kxyr2Vp1PaPAF2yzrxLu0NcxbX9O5W+mHP6w+wQ5w8=",
+    version = "v1.5.7-0.20200121213444-d8e2ec52c19a",
 )
 
 go_repository(
     name = "com_github_operator_framework_operator_sdk",
     importpath = "github.com/operator-framework/operator-sdk",
-    sum = "h1:8Aj97ZQ7mPehFR/8zselZQ1s8WSdKR4rWHhqacdVehQ=",
-    version = "v0.14.1",
+    sum = "h1:+D61x7FjcITLzjVakzfzz5hqkkMDR+uEDMzXfyVZOw8=",
+    version = "v0.16.0",
 )
 
 go_repository(
@@ -3663,8 +3669,8 @@ go_repository(
 go_repository(
     name = "sh_helm_helm_v3",
     importpath = "helm.sh/helm/v3",
-    sum = "h1:gEs30kweCOnLFK9Diq2S8b+VHmWQ2oi465GhqTc3ZxI=",
-    version = "v3.0.1",
+    sum = "h1:BggvLisIMrAc+Is5oAHVrlVxgwOOrMN8nddfQbm5gKo=",
+    version = "v3.0.2",
 )
 
 go_repository(

@@ -9,7 +9,7 @@ spec:
     listKind: SwiftList
     plural: swifts
     singular: swift
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
