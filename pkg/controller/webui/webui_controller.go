@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
@@ -539,15 +540,15 @@ func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
 	if err != nil {
 		return err
 	}
-	serviceStatuses := map[string][]v1alpha1.WebUIServiceStatus{}
+	serviceStatuses := map[string]map[string]v1alpha1.WebUIServiceStatus{}
 	for _, pod := range pods.Items {
-		var podStatus []v1alpha1.WebUIServiceStatus
+		podStatus := map[string]v1alpha1.WebUIServiceStatus{}
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			status := "Non-Functional"
 			if containerStatus.Ready {
 				status = "Functional"
 			}
-			podStatus = append(podStatus, v1alpha1.WebUIServiceStatus{ModuleName: containerStatus.Name, ModuleState: status})
+			podStatus[strings.Title(containerStatus.Name)] = v1alpha1.WebUIServiceStatus{ModuleName: containerStatus.Name, ModuleState: status}
 		}
 		serviceStatuses[pod.Spec.NodeName] = podStatus
 	}
