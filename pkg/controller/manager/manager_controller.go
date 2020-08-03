@@ -22,6 +22,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
@@ -1559,6 +1560,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager) error {
 	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
+		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1594,6 +1596,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager) error {
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec
+		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, swift, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
@@ -1611,6 +1614,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager) error {
 	memcached.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
+		memcached.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, memcached.Spec.CommonConfiguration)
 		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

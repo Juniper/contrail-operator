@@ -14,20 +14,16 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	t.Run("should return error when claim name is empty", func(t *testing.T) {
-		_, err := ring.New("", "/etc/swift", "account")
-		assert.Error(t, err)
-	})
-	t.Run("should return error when path is empty", func(t *testing.T) {
-		_, err := ring.New("rings", "", "account")
-		assert.Error(t, err)
-	})
 	t.Run("should return error when ring type is empty", func(t *testing.T) {
-		_, err := ring.New("rings", "/etc/swift", "")
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "", "service-account")
+		assert.Error(t, err)
+	})
+	t.Run("should return error when service account name is empty", func(t *testing.T) {
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "account", "")
 		assert.Error(t, err)
 	})
 	t.Run("should create a ring", func(t *testing.T) {
-		accountRing, err := ring.New("rings", "/etc/swift", "account")
+		accountRing, err := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		require.NoError(t, err)
 		assert.NotNil(t, accountRing)
 	})
@@ -46,12 +42,12 @@ func TestRing_BuildJob(t *testing.T) {
 		Device: "d1",
 	}
 	t.Run("should return error when no devices have been added", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_, err := account.BuildJob(jobName)
 		assert.Error(t, err)
 	})
 	t.Run("should create a job with given name", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(jobName)
@@ -60,7 +56,7 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, jobName.Namespace, job.Namespace)
 	})
 	t.Run("should use default namespace when job namespace not given", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, err := account.BuildJob(types.NamespacedName{
@@ -71,7 +67,7 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, "default", job.Namespace)
 	})
 	t.Run("should return error when job name not given", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		_, err := account.BuildJob(types.NamespacedName{
@@ -80,87 +76,31 @@ func TestRing_BuildJob(t *testing.T) {
 		})
 		assert.Error(t, err)
 	})
-	t.Run("should add volume with given claimName to pod template spec", func(t *testing.T) {
-		tests := map[string]string{
-			"claimName=rings":   "rings",
-			"claimName=another": "another",
-		}
-		for name, claimName := range tests {
-			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New(claimName, "/etc/swift", "account")
-				_ = account.AddDevice(device)
-				// when
-				job, _ := account.BuildJob(jobName)
-				// then
-				volumes := job.Spec.Template.Spec.Volumes
-				require.Len(t, volumes, 1)
-				expectedVolume := core.Volume{
-					Name: "rings",
-					VolumeSource: core.VolumeSource{
-						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-							ClaimName: claimName,
-							ReadOnly:  false,
-						},
-					},
-				}
-				assert.Equal(t, expectedVolume, volumes[0])
-			})
-		}
+	t.Run("should return error when config map name not given", func(t *testing.T) {
+		_, err := ring.New(types.NamespacedName{Name: ""}, "account", "service-account")
+		assert.Error(t, err)
 	})
-	t.Run("should mount volume to container with specified path", func(t *testing.T) {
-		tests := map[string]string{
-			"path=/etc/swift": "/etc/swift",
-			"path=/etc/other": "/etc/other",
-		}
-		for name, path := range tests {
-			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New("rings", path, "account")
-				_ = account.AddDevice(device)
-				// when
-				job, _ := account.BuildJob(jobName)
-				// then
-				containers := job.Spec.Template.Spec.Containers
-				require.Len(t, containers, 1)
-				volumeMounts := containers[0].VolumeMounts
-				require.Len(t, volumeMounts, 1)
-				expectedVolumeMount := core.VolumeMount{
-					Name:      "rings",
-					MountPath: path,
-				}
-				assert.Equal(t, expectedVolumeMount, volumeMounts[0])
-			})
-		}
-	})
-	t.Run("should pass a ring file name as first argument", func(t *testing.T) {
+	t.Run("should pass namespace name of config map", func(t *testing.T) {
 		tests := map[string]struct {
-			path                 string
-			ringType             string
+			configMap            types.NamespacedName
 			expectedRingFileName string
 		}{
 			"1": {
-				path:                 "/etc/swift",
-				ringType:             "account",
-				expectedRingFileName: "/etc/swift/account",
+				configMap:            types.NamespacedName{Namespace: "contrail", Name: "swift"},
+				expectedRingFileName: "contrail/swift",
 			},
 			"2": {
-				path:                 "/etc/other",
-				ringType:             "another",
-				expectedRingFileName: "/etc/other/another",
+				configMap:            types.NamespacedName{Namespace: "", Name: "swift"},
+				expectedRingFileName: "default/swift",
 			},
-			"path /": {
-				path:                 "/",
-				ringType:             "account",
-				expectedRingFileName: "/account",
-			},
-			"path ends with /": {
-				path:                 "/etc/swift/",
-				ringType:             "account",
-				expectedRingFileName: "/etc/swift/account",
+			"3": {
+				configMap:            types.NamespacedName{Namespace: "contrail", Name: "contrail"},
+				expectedRingFileName: "contrail/contrail",
 			},
 		}
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New("rings", test.path, test.ringType)
+				account, _ := ring.New(test.configMap, "account", "service-account")
 				_ = account.AddDevice(device)
 				// when
 				job, _ := account.BuildJob(jobName)
@@ -172,6 +112,22 @@ func TestRing_BuildJob(t *testing.T) {
 				assert.Equal(t, test.expectedRingFileName, args[0])
 			})
 		}
+	})
+	t.Run("should return error when ringType not given", func(t *testing.T) {
+		_, err := ring.New(types.NamespacedName{Name: "rings"}, "", "service-account")
+		assert.Error(t, err)
+	})
+	t.Run("should pass ringType", func(t *testing.T) {
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
+		_ = account.AddDevice(device)
+		// when
+		job, _ := account.BuildJob(jobName)
+		// then
+		containers := job.Spec.Template.Spec.Containers
+		require.Len(t, containers, 1)
+		args := containers[0].Args
+		require.NotEmpty(t, args)
+		assert.Equal(t, "account", args[1])
 	})
 	t.Run("should pass formatted devices arguments", func(t *testing.T) {
 		tests := map[string]struct {
@@ -231,7 +187,7 @@ func TestRing_BuildJob(t *testing.T) {
 		}
 		for name, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				account, _ := ring.New("rings", "/etc/swift", "account")
+				account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 				for _, device := range test.devices {
 					_ = account.AddDevice(device)
 				}
@@ -242,12 +198,12 @@ func TestRing_BuildJob(t *testing.T) {
 				containers := job.Spec.Template.Spec.Containers
 				require.Len(t, containers, 1)
 				args := containers[0].Args
-				assert.Equal(t, test.expectedDevices, args[1:])
+				assert.Equal(t, test.expectedDevices, args[2:])
 			})
 		}
 	})
 	t.Run("should specify container's required properties", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -257,7 +213,7 @@ func TestRing_BuildJob(t *testing.T) {
 		container := containers[0]
 
 		t.Run("command", func(t *testing.T) {
-			assert.NotEmpty(t, container.Command)
+			assert.Empty(t, container.Command)
 		})
 
 		t.Run("name", func(t *testing.T) {
@@ -265,7 +221,7 @@ func TestRing_BuildJob(t *testing.T) {
 		})
 	})
 	t.Run("should specify container's image from local registry", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -277,7 +233,7 @@ func TestRing_BuildJob(t *testing.T) {
 	})
 
 	t.Run("should specify restartPolicy (default Always is not supported in jobs)", func(t *testing.T) {
-		account, _ := ring.New("rings", "/etc/swift", "account")
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
 		job, _ := account.BuildJob(jobName)
@@ -285,6 +241,14 @@ func TestRing_BuildJob(t *testing.T) {
 		assert.Equal(t, core.RestartPolicyNever, job.Spec.Template.Spec.RestartPolicy)
 	})
 
+	t.Run("should pass service account name", func(t *testing.T) {
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
+		_ = account.AddDevice(device)
+		// when
+		job, _ := account.BuildJob(jobName)
+		// then
+		assert.Equal(t, "service-account", job.Spec.Template.Spec.ServiceAccountName)
+	})
 }
 
 func TestRing_AddDevice(t *testing.T) {
@@ -321,7 +285,7 @@ func TestRing_AddDevice(t *testing.T) {
 		}
 		for name, device := range tests {
 			t.Run(name, func(t *testing.T) {
-				theRing, _ := ring.New("a", "/etc/swift", "account")
+				theRing, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 				// when
 				err := theRing.AddDevice(device)
 				// then

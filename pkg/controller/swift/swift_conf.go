@@ -80,3 +80,7 @@ func randomHex(n int) (string, error) {
 	}
 	return hex.EncodeToString(randBytes), nil
 }
+
+type empty struct{}
+
+func (e *empty) FillConfigMap(cm *core.ConfigMap) {}

@@ -157,7 +157,8 @@ func TestPostgresController(t *testing.T) {
 
 	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
 		// given
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		postgresService := newPostgreService()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, postgresService)
 		reconcilePostgres := &ReconcilePostgres{
 			client: fakeClient,
 			scheme: scheme,
@@ -177,7 +178,7 @@ func TestPostgresController(t *testing.T) {
 		// then
 		assertPostgresStatusActive(t, fakeClient, name, true)
 		// and
-		assertPostgresStatusNode(t, fakeClient, name, "1.1.1.1:5432")
+		assertPostgresStatusNode(t, fakeClient, name, "10.10.10.20")
 	})
 
 	t.Run("postgres persistent volume claim", func(t *testing.T) {
@@ -398,11 +399,11 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	assert.Equal(t, active, postgres.Status.Active)
 }
 
-func assertPostgresStatusNode(t *testing.T, c client.Client, name types.NamespacedName, node string) {
+func assertPostgresStatusNode(t *testing.T, c client.Client, name types.NamespacedName, endpoint string) {
 	postgres := contrail.Postgres{}
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
-	assert.Equal(t, node, postgres.Status.Node)
+	assert.Equal(t, endpoint, postgres.Status.Endpoint)
 }
 
 func assertVolumeMountedToPod(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
@@ -455,4 +456,24 @@ func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.Na
 
 	assert.NoError(t, err)
 	assert.True(t, mounted)
+}
+
+func newPostgreService() *core.Service {
+	trueVal := true
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "testDB-service",
+			Namespace: "default",
+			Labels:    map[string]string{"app": "postgres"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Postgres", "testDB", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 5432, Protocol: "TCP"},
+			},
+			ClusterIP: "10.10.10.20",
+		},
+	}
 }

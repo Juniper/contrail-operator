@@ -10,6 +10,7 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -99,9 +100,48 @@ func TestMemcachedController(t *testing.T) {
 		})
 	})
 
+	t.Run("when Memcached CR is scaled and Memcached Deployment already exists", func(t *testing.T) {
+		// given
+		replicas := int32(3)
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
+		memcachedCR.Spec.CommonConfiguration.Replicas = &replicas
+
+		memcachedDeployment := newExpectedDeployment()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, memcachedDeployment)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should scale Memcached Deployment", func(t *testing.T) {
+			assertValidScaledMemcachedDeploymentExists(t, fakeClient)
+		})
+	})
+
+	t.Run("when Memcached CR image is updated and Memcached Deployment already exists", func(t *testing.T) {
+		// given
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
+		memcachedCR.Spec.ServiceConfiguration.Containers = []*contrail.Container{
+			{
+				Name:  "memcached",
+				Image: "localhost:5000/centos-binary-memcached:ussuri",
+			},
+		}
+		memcachedDeployment := newExpectedDeployment()
+		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, memcachedDeployment)
+		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
+		// when
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "test-memcached"}})
+		// then
+		assert.NoError(t, err)
+		t.Run("should update image in Memcached Deployment", func(t *testing.T) {
+			assertValidUpgradedMemcachedDeploymentExists(t, fakeClient)
+		})
+	})
+
 	t.Run("when Memcached Deployment ReadyReplicas count is equal expected Replicas count", func(t *testing.T) {
 		// given
-		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: false})
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{})
 		existingMemcachedDeployment := newExpectedDeployment()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
@@ -118,7 +158,7 @@ func TestMemcachedController(t *testing.T) {
 
 	t.Run("when Memcached Deployment ReadyReplicas count is not equal expected Replicas count", func(t *testing.T) {
 		// given
-		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Active: true})
+		memcachedCR := newMemcachedCR(contrail.MemcachedStatus{Status: contrail.Status{Active: true}, Endpoint: ""})
 		existingMemcachedDeployment := newExpectedDeployment()
 		fakeClient := fake.NewFakeClientWithScheme(scheme, memcachedCR, existingMemcachedDeployment)
 		reconciler := memcached.NewReconcileMemcached(fakeClient, scheme, k8s.New(fakeClient, scheme))
@@ -164,6 +204,29 @@ func assertValidMemcachedDeploymentExists(t *testing.T, c client.Client) {
 	assert.Equal(t, expectedDeployment, deployment)
 }
 
+func assertValidScaledMemcachedDeploymentExists(t *testing.T, c client.Client) {
+	replicas := int32(3)
+	memcachedDeploymentName := types.NamespacedName{Namespace: "default", Name: "test-memcached-deployment"}
+	deployment := &apps.Deployment{}
+	err := c.Get(context.TODO(), memcachedDeploymentName, deployment)
+	assert.NoError(t, err)
+	expectedDeployment := newExpectedDeployment()
+	expectedDeployment.Spec.Replicas = &replicas
+	deployment.SetResourceVersion("")
+	assert.Equal(t, expectedDeployment, deployment)
+}
+
+func assertValidUpgradedMemcachedDeploymentExists(t *testing.T, c client.Client) {
+	memcachedDeploymentName := types.NamespacedName{Namespace: "default", Name: "test-memcached-deployment"}
+	deployment := &apps.Deployment{}
+	err := c.Get(context.TODO(), memcachedDeploymentName, deployment)
+	assert.NoError(t, err)
+	expectedDeployment := newExpectedDeployment()
+	expectedDeployment.Spec.Template.Spec.Containers[0].Image = "localhost:5000/centos-binary-memcached:ussuri"
+	deployment.SetResourceVersion("")
+	assert.Equal(t, expectedDeployment, deployment)
+}
+
 func assertValidMemcachedConfigMapExists(t *testing.T, c client.Client) {
 	configMap := &core.ConfigMap{}
 	err := c.Get(context.Background(), types.NamespacedName{
@@ -180,7 +243,9 @@ func assertMemcachedIsActiveAndNodeStatusIsSet(t *testing.T, c client.Client) {
 	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
 	assert.NoError(t, err)
 	assert.True(t, memcachedCR.Status.Active)
-	assert.Equal(t, "127.0.0.1:11211", memcachedCR.Status.Node)
+	assert.Equal(t, "127.0.0.1:11211", memcachedCR.Status.Endpoint)
+	assert.Equal(t, 1, int(memcachedCR.Status.Replicas))
+	assert.Equal(t, 1, int(memcachedCR.Status.ReadyReplicas))
 }
 
 func assertMemcachedIsInactive(t *testing.T, c client.Client) {
@@ -188,10 +253,14 @@ func assertMemcachedIsInactive(t *testing.T, c client.Client) {
 	err := c.Get(context.TODO(), types.NamespacedName{Namespace: "default", Name: "test-memcached"}, &memcachedCR)
 	assert.NoError(t, err)
 	assert.False(t, memcachedCR.Status.Active)
+	assert.Equal(t, 1, int(memcachedCR.Status.Replicas))
+	assert.Equal(t, 0, int(memcachedCR.Status.ReadyReplicas))
 }
 
 func newExpectedDeployment() *apps.Deployment {
 	trueVal := true
+	maxUnavailable := intstr.FromInt(1)
+	maxSurge := intstr.FromInt(0)
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "test-memcached-deployment",
@@ -203,6 +272,12 @@ func newExpectedDeployment() *apps.Deployment {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
 		Spec: apps.DeploymentSpec{
+			Strategy: apps.DeploymentStrategy{
+				RollingUpdate: &apps.RollingUpdateDeployment{
+					MaxUnavailable: &maxUnavailable,
+					MaxSurge:       &maxSurge,
+				},
+			},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Labels: map[string]string{"Memcached": "test-memcached"},
@@ -212,6 +287,26 @@ func newExpectedDeployment() *apps.Deployment {
 						Name:            "memcached",
 						Image:           "localhost:5000/centos-binary-memcached:train",
 						ImagePullPolicy: core.PullAlways,
+						ReadinessProbe: &core.Probe{
+							InitialDelaySeconds: 5,
+							TimeoutSeconds:      1,
+							Handler: core.Handler{
+								TCPSocket: &core.TCPSocketAction{
+									Port: intstr.FromInt(11211),
+									Host: "127.0.0.1",
+								},
+							},
+						},
+						LivenessProbe: &core.Probe{
+							InitialDelaySeconds: 30,
+							TimeoutSeconds:      5,
+							Handler: core.Handler{
+								TCPSocket: &core.TCPSocketAction{
+									Port: intstr.FromInt(11211),
+									Host: "127.0.0.1",
+								},
+							},
+						},
 						Env: []core.EnvVar{{
 							Name:  "KOLLA_SERVICE_NAME",
 							Value: "memcached",
@@ -254,6 +349,20 @@ func newExpectedDeployment() *apps.Deployment {
 							},
 						},
 					},
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "Memcached",
+										Operator: "In",
+										Values:   []string{"test-memcached"},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 				},
 			},
 			Selector: &meta.LabelSelector{
@@ -286,9 +395,13 @@ func newExpectedMemcachedConfigMap() *core.ConfigMap {
 }
 
 func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
+	trueVal := true
 	return &contrail.Memcached{
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				HostNetwork: &trueVal,
+			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers:      []*contrail.Container{{Name: "memcached", Image: "localhost:5000/centos-binary-memcached:train"}},
 				ListenPort:      11211,
@@ -301,9 +414,13 @@ func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
 }
 
 func newMemcachedCRWithDefaultValues() *contrail.Memcached {
+	trueVal := true
 	return &contrail.Memcached{
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				HostNetwork: &trueVal,
+			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{{Name: "memcached", Image: "localhost:5000/centos-binary-memcached:train"}},
 			},

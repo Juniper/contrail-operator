@@ -2,11 +2,8 @@ package keystone
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
+	"encoding/base64"
 
-	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -17,27 +14,26 @@ type secret struct {
 	sc *k8s.Secret
 }
 
+// Fill secret sets up credential keys repository
 func (s *secret) FillSecret(sc *core.Secret) error {
 	if sc.Data != nil {
 		return nil
 	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	var stagedKey, primaryKey []byte
+	var err error
+	stagedKey, err = generateKey()
 	if err != nil {
 		return err
 	}
 
-	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
-	privEncoded := pem.EncodeToMemory(privateKeyPEM)
-
-	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	primaryKey, err = generateKey()
 	if err != nil {
 		return err
 	}
 
-	publicEncoded := ssh.MarshalAuthorizedKey(pub)
-	sc.StringData = map[string]string{
-		"id_rsa":     string(privEncoded),
-		"id_rsa.pub": string(publicEncoded),
+	sc.Data = map[string][]byte{
+		"0": stagedKey,
+		"1": primaryKey,
 	}
 	return nil
 }
@@ -48,6 +44,18 @@ func (r *ReconcileKeystone) secret(secretName, ownerType string, keystone *contr
 	}
 }
 
-func (s *secret) ensureSecretKeyExist() error {
+func generateKey() ([]byte, error) {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	encodedKey := make([]byte, base64.StdEncoding.EncodedLen(len(key)))
+	base64.StdEncoding.Encode(encodedKey, key)
+	return encodedKey, nil
+}
+
+func (s *secret) ensureCredentialKeysSecretExists() error {
 	return s.sc.EnsureExists(s)
 }

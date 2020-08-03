@@ -3,8 +3,8 @@ package keystone
 import (
 	"context"
 	"fmt"
-
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,7 +27,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 )
 
 var log = logf.Log.WithName("controller_keystone")
@@ -41,7 +40,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return NewReconciler(
-		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()), mgr.GetConfig(),
+		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), mgr.GetConfig(),
 	)
 }
 
@@ -76,10 +75,25 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to secondary resource FernetKeyManager and requeue the owner Keystone
+	err = c.Watch(&source.Kind{Type: &contrail.FernetKeyManager{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Keystone{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
+	if err != nil {
+		return err
+	}
 
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.Keystone{},
+	})
 	return err
 }
 
@@ -91,15 +105,14 @@ type ReconcileKeystone struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     volumeclaims.PersistentVolumeClaims
 	restConfig *rest.Config
 }
 
 // NewReconciler is used to create a new ReconcileKeystone
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims, restConfig *rest.Config,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, restConfig *rest.Config,
 ) *ReconcileKeystone {
-	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims, restConfig: restConfig}
+	return &ReconcileKeystone{client: client, scheme: scheme, kubernetes: kubernetes, restConfig: restConfig}
 }
 
 // Reconcile reads that state of the cluster for a Keystone object and makes changes based on the state read
@@ -120,12 +133,25 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
+	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"
+
+	if err := r.ensureFernetKeyManagerExists(fernetKeyManagerName, keystone.Namespace); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	keystoneClusterIP := "0.0.0.0"
+	keystoneService, err := r.ensureServiceExists(keystone)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(keystone, keystonePods); err != nil {
+	keystoneClusterIP = keystoneService.Spec.ClusterIP
+
+	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -135,7 +161,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 			return reconcile.Result{}, err
 		}
 	}
-
 	psql, err := r.getPostgres(keystone)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -158,158 +183,93 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	claimName := types.NamespacedName{
-		Namespace: keystone.Namespace,
-		Name:      keystone.Name + "-pv-claim",
-	}
-	claim := r.claims.New(claimName, keystone)
-	if keystone.Spec.ServiceConfiguration.Storage.Size != "" {
-		var size resource.Quantity
-		size, err = keystone.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		claim.SetStorageSize(size)
-	}
-	claim.SetStoragePath(keystone.Spec.ServiceConfiguration.Storage.Path)
-	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err = claim.EnsureExists(); err != nil {
-		return reconcile.Result{}, err
-	}
 	adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &core.Secret{}
 	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	ips := keystone.Status.IPs
-	if len(ips) == 0 {
-		ips = []string{"0.0.0.0"}
+	var podIPs []string
+	for _, pod := range keystonePods.Items {
+		podIPs = append(podIPs, pod.Status.PodIP)
 	}
+
 	kcName := keystone.Name + "-keystone"
-	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Node, memcached.Status.Node, ips[0]); err != nil {
+	if err = r.configMap(kcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneExists(psql.Status.Endpoint, memcached.Status.Endpoint, podIPs); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kfcName := keystone.Name + "-keystone-fernet"
-	if err = r.configMap(kfcName, "keystone", keystone, adminPasswordSecret).ensureKeystoneFernetConfigMap(psql.Status.Node, memcached.Status.Node); err != nil {
+	kcbName := keystone.Name + "-keystone-bootstrap"
+	if err = r.configMap(kcbName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kscName := keystone.Name + "-keystone-ssh"
-	if err = r.configMap(kscName, "keystone", keystone, adminPasswordSecret).ensureKeystoneSSHConfigMap(ips[0]); err != nil {
+	credentialKeysSecretName := keystone.Name + "-credential-keys-repository"
+	if err = r.secret(credentialKeysSecretName, "keystone", keystone).ensureCredentialKeysSecretExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+	fernetKeyManager, err := r.getFernetKeyManager(fernetKeyManagerName, keystone.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(keystone).EnsureOwns(fernetKeyManager); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	kciName := keystone.Name + "-keystone-init"
-	if err = r.configMap(kciName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Node, memcached.Status.Node, ips[0]); err != nil {
+	fernetKeysSecretName := fernetKeyManager.Status.SecretName
+	if fernetKeysSecretName == "" {
+		return reconcile.Result{}, nil
+	}
+
+	if err = r.reconcileBootstrapJob(keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psql.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	keySecretName := keystone.Name + "-keystone-keys"
-	if err = r.secret(keySecretName, "keystone", keystone).ensureSecretKeyExist(); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	sts, err := r.ensureStatefulSetExists(keystone, kcName, kfcName, kscName, kciName, keySecretName, claimName)
+	sts, err := r.ensureStatefulSetExists(keystone, kcName, fernetKeysSecretName, credentialKeysSecretName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(keystone, sts)
+	strategy := "deleteFirst"
+	if err = contrail.UpdateSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", request, r.scheme, r.client, strategy); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
+}
+
+func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
+	keyManager := &contrail.FernetKeyManager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keyManager, func() error {
+		// One day
+		keyManager.Spec.TokenExpiration = 86400
+		// Two days
+		keyManager.Spec.TokenAllowExpiredWindow = 172800
+		// Three days
+		keyManager.Spec.RotationInterval = 259200
+		return nil
+	})
+	return err
+}
+
+func (r *ReconcileKeystone) getFernetKeyManager(name, namespace string) (*contrail.FernetKeyManager, error) {
+	keyManager := &contrail.FernetKeyManager{}
+	namespacedName := types.NamespacedName{Name: name, Namespace: namespace}
+	err := r.client.Get(context.Background(), namespacedName, keyManager)
+	return keyManager, err
 }
 
 func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
-	kcName, kfcName, kscName, kciName, secretName string,
-	claimName types.NamespacedName,
+	kcName, fernetKeysSecretName, credentialKeysSecretName string,
 ) (*apps.StatefulSet, error) {
 	sts := newKeystoneSTS(keystone)
-	var labelsMountPermission int32 = 0644
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, sts, func() error {
-		sts.Spec.Template.Spec.Volumes = []core.Volume{
-			{
-				Name: "keystone-fernet-tokens-volume",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName.Name,
-					},
-				},
-			},
-			{
-				Name: "keystone-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-fernet-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kfcName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-ssh-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kscName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-init-config-volume",
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: kciName,
-						},
-					},
-				},
-			},
-			{
-				Name: "keystone-keys-volume",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: secretName,
-					},
-				},
-			},
-			{
-				Name: keystone.Name + "-secret-certificates",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: keystone.Name + "-secret-certificates",
-					},
-				},
-			},
-			{
-				Name: "status",
-				VolumeSource: core.VolumeSource{
-					DownwardAPI: &core.DownwardAPIVolumeSource{
-						Items: []core.DownwardAPIVolumeFile{
-							{
-								FieldRef: &core.ObjectFieldSelector{
-									APIVersion: "v1",
-									FieldPath:  "metadata.labels",
-								},
-								Path: "pod_labels",
-							},
-						},
-						DefaultMode: &labelsMountPermission,
-					},
-				},
-			},
-		}
-
+		updateKeystoneSTS(keystone, sts, kcName, fernetKeysSecretName, credentialKeysSecretName)
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: keystone.Name, Namespace: keystone.Namespace},
 		}
@@ -320,30 +280,18 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 
 func (r *ReconcileKeystone) updateStatus(
 	k *contrail.Keystone,
-	sts *apps.StatefulSet,
+	sts *apps.StatefulSet, cip string,
 ) error {
 	k.Status = contrail.KeystoneStatus{}
 	intendentReplicas := int32(1)
 	if sts.Spec.Replicas != nil {
 		intendentReplicas = *sts.Spec.Replicas
 	}
-
-	pods := core.PodList{}
-	var labels client.MatchingLabels = sts.Spec.Selector.MatchLabels
-	if err := r.client.List(context.Background(), &pods, labels); err != nil {
-		return err
-	}
 	if sts.Status.ReadyReplicas == intendentReplicas {
 		k.Status.Active = true
 		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
-	k.Status.IPs = []string{}
-	for _, pod := range pods.Items {
-		if pod.Status.PodIP != "" {
-			k.Status.IPs = append(k.Status.IPs, pod.Status.PodIP)
-		}
-	}
-
+	k.Status.ClusterIP = cip
 	return r.client.Status().Update(context.Background(), k)
 }
 
@@ -359,13 +307,12 @@ func (r *ReconcileKeystone) getPostgres(cr *contrail.Keystone) (*contrail.Postgr
 }
 
 func (r *ReconcileKeystone) getMemcached(cr *contrail.Keystone) (*contrail.Memcached, error) {
-	key := &contrail.Memcached{}
+	memcached := &contrail.Memcached{}
 	name := types.NamespacedName{Namespace: cr.Namespace, Name: cr.Spec.ServiceConfiguration.MemcachedInstance}
-	err := r.client.Get(context.Background(), name, key)
-	return key, err
+	err := r.client.Get(context.Background(), name, memcached)
+	return memcached, err
 }
 
-// newKeystoneSTS returns a busybox pod with the same name/namespace as the cr
 func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -376,6 +323,20 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 			Selector: &meta.LabelSelector{},
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchExpressions: []meta.LabelSelectorRequirement{{
+										Key:      "keystone",
+										Operator: "In",
+										Values:   []string{cr.Name},
+									}},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
 					DNSPolicy: core.DNSClusterFirst,
 					InitContainers: []core.Container{
 						{
@@ -388,34 +349,6 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 								MountPath: "/tmp/podinfo",
 							}},
 						},
-						{
-							Name:            "keystone-db-init",
-							Image:           getImage(cr, "keystoneDbInit"),
-							ImagePullPolicy: core.PullAlways,
-							Command:         getCommand(cr, "keystoneDbInit"),
-							Args:            []string{"-c", initDBScript},
-							Env: []core.EnvVar{
-								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-							},
-						},
-						{
-							Name:            "keystone-init",
-							Image:           getImage(cr, "keystoneInit"),
-							ImagePullPolicy: core.PullAlways,
-							Env:             newKollaEnvs("keystone"),
-							Command:         getCommand(cr, "keystoneInit"),
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-							},
-						},
 					},
 					Containers: []core.Container{
 						{
@@ -425,9 +358,10 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 							Env:             newKollaEnvs("keystone"),
 							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: cr.Name + "-secret-certificates", MountPath: "/etc/certificates"},
+								{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
+								{Name: cr.Name + "-secret-certificates", MountPath: "/etc/certificates"},
 							},
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
@@ -445,30 +379,6 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 								},
 							},
 						},
-						{
-							Name:            "keystone-ssh",
-							Image:           getImage(cr, "keystoneSsh"),
-							Command:         getCommand(cr, "keystoneSsh"),
-							ImagePullPolicy: core.PullAlways,
-							Env:             newKollaEnvs("keystone-ssh"),
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-ssh-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
-						{
-							Name:            "keystone-fernet",
-							Image:           getImage(cr, "keystoneFernet"),
-							Command:         getCommand(cr, "keystoneFernet"),
-							ImagePullPolicy: core.PullAlways,
-							Env:             newKollaEnvs("keystone-fernet"),
-							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "keystone-fernet-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-								core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
-								core.VolumeMount{Name: "keystone-keys-volume", MountPath: "/var/lib/kolla/ssh_files", ReadOnly: true},
-							},
-						},
 					},
 					Tolerations: []core.Toleration{
 						{Operator: "Exists", Effect: "NoSchedule"},
@@ -481,13 +391,25 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 }
 
 func newKollaEnvs(kollaService string) []core.EnvVar {
-	return []core.EnvVar{{
-		Name:  "KOLLA_SERVICE_NAME",
-		Value: kollaService,
-	}, {
-		Name:  "KOLLA_CONFIG_STRATEGY",
-		Value: "COPY_ALWAYS",
-	}}
+	return []core.EnvVar{
+		{
+			Name:  "KOLLA_SERVICE_NAME",
+			Value: kollaService,
+		}, {
+			Name:  "KOLLA_CONFIG_STRATEGY",
+			Value: "COPY_ALWAYS",
+		}, {
+			Name: "MY_POD_IP",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		}, {
+			Name:  "KOLLA_CONFIG_FILE",
+			Value: "/var/lib/kolla/config_files/config$(MY_POD_IP).json",
+		},
+	}
 }
 
 func getImage(cr *contrail.Keystone, containerName string) string {
@@ -495,8 +417,6 @@ func getImage(cr *contrail.Keystone, containerName string) string {
 		"keystoneDbInit":      "localhost:5000/postgresql-client",
 		"keystoneInit":        "localhost:5000/centos-binary-keystone:train",
 		"keystone":            "localhost:5000/centos-binary-keystone:train",
-		"keystoneSsh":         "localhost:5000/centos-binary-keystone-ssh:train",
-		"keystoneFernet":      "localhost:5000/centos-binary-keystone-fernet:train",
 		"wait-for-ready-conf": "localhost:5000/busybox",
 	}
 	c := utils.GetContainerFromList(containerName, cr.Spec.ServiceConfiguration.Containers)
@@ -527,17 +447,17 @@ KEYSTONE_USER_PASS=${KEYSTONE_USER_PASS:-contrail123}
 KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
-createuser -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
-createdb -h ${MY_POD_IP} -U $DB_USER $KEYSTONE
-psql -h ${MY_POD_IP} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
-func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList) error {
+func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
 	if keystone.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *keystone.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.NewCertificate(r.client, r.scheme, keystone, r.restConfig, pods, "keystone", hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, serviceIP, "keystone", hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList, error) {
@@ -548,4 +468,192 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone) (*core.Service, error) {
+	keystoneService := newKeystoneService(keystone)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
+		keystoneService.Spec.Ports = []core.ServicePort{
+			{Port: 5555, Protocol: "TCP"},
+		}
+		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
+		return controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keystoneService, nil
+}
+
+func newKeystoneService(cr *contrail.Keystone) *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      cr.Name + "-service",
+			Namespace: cr.Namespace,
+			Labels:    map[string]string{"service": cr.Name},
+		},
+	}
+}
+
+func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName string, psqlIP string) *batch.Job {
+	return &batch.Job{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+		},
+		Spec: batch.JobSpec{
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					HostNetwork:   true,
+					RestartPolicy: core.RestartPolicyNever,
+					Volumes: []core.Volume{
+						{
+							Name: "keystone-bootstrap-config-volume",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: kcbName,
+									},
+								},
+							},
+						},
+						{
+							Name: "keystone-fernet-keys",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: fernetKeysSecretName,
+								},
+							},
+						},
+						{
+							Name: "keystone-credential-keys",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: credentialKeysSecretName,
+								},
+							},
+						},
+					},
+					InitContainers: []core.Container{
+						{
+							Name:            "keystone-db-init",
+							Image:           getImage(cr, "keystoneDbInit"),
+							ImagePullPolicy: core.PullAlways,
+							Command:         getCommand(cr, "keystoneDbInit"),
+							Args:            []string{"-c", initDBScript},
+							Env: []core.EnvVar{
+								{
+									Name:  "PSQL_ENDPOINT",
+									Value: psqlIP,
+								},
+							},
+						},
+					},
+					Containers: []core.Container{
+						{
+							Name:            "keystone-bootstrap",
+							Image:           getImage(cr, "keystoneInit"),
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{{
+								Name:  "KOLLA_SERVICE_NAME",
+								Value: "keystone",
+							}, {
+								Name:  "KOLLA_CONFIG_STRATEGY",
+								Value: "COPY_ALWAYS",
+							},
+							},
+							Command: getCommand(cr, "keystoneInit"),
+							VolumeMounts: []core.VolumeMount{
+								{Name: "keystone-bootstrap-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+								{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+								{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
+							},
+						},
+					},
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
+				},
+			},
+			TTLSecondsAfterFinished: nil,
+		},
+	}
+}
+
+func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string) error {
+	bootstrapJob := &batch.Job{}
+	jobName := types.NamespacedName{Namespace: keystone.Namespace, Name: keystone.Name + "-bootstrap-job"}
+	err := r.client.Get(context.Background(), jobName, bootstrapJob)
+	alreadyExists := err == nil
+	if alreadyExists {
+		return nil
+	}
+
+	bootstrapJob = newBootStrapJob(keystone, jobName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP)
+	if err = controllerutil.SetControllerReference(keystone, bootstrapJob, r.scheme); err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), bootstrapJob)
+}
+
+func updateKeystoneSTS(keystone *contrail.Keystone, sts *apps.StatefulSet, kcName, fernetKeysSecretName, credentialKeysSecretName string) {
+	var labelsMountPermission int32 = 0644
+	newSTS := newKeystoneSTS(keystone)
+	sts.Spec.Template.Spec.Affinity = newSTS.Spec.Template.Spec.Affinity
+	sts.Spec.Template.Spec.Containers = newSTS.Spec.Template.Spec.Containers
+	sts.Spec.Template.Spec.InitContainers = newSTS.Spec.Template.Spec.InitContainers
+	sts.Spec.Template.Spec.Volumes = []core.Volume{
+		{
+			Name: "keystone-fernet-keys",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: fernetKeysSecretName,
+				},
+			},
+		},
+		{
+			Name: "keystone-credential-keys",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: credentialKeysSecretName,
+				},
+			},
+		},
+		{
+			Name: "keystone-config-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: kcName,
+					},
+				},
+			},
+		},
+		{
+			Name: keystone.Name + "-secret-certificates",
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: keystone.Name + "-secret-certificates",
+				},
+			},
+		},
+		{
+			Name: "status",
+			VolumeSource: core.VolumeSource{
+				DownwardAPI: &core.DownwardAPIVolumeSource{
+					Items: []core.DownwardAPIVolumeFile{
+						{
+							FieldRef: &core.ObjectFieldSelector{
+								APIVersion: "v1",
+								FieldPath:  "metadata.labels",
+							},
+							Path: "pod_labels",
+						},
+					},
+					DefaultMode: &labelsMountPermission,
+				},
+			},
+		},
+	}
 }

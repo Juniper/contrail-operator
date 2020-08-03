@@ -131,14 +131,6 @@ spec:
                   type: string
                 postgresInstance:
                   type: string
-                storage:
-                  properties:
-                    path:
-                      type: string
-                    size:
-                      pattern: ^([0-9]+)([KMGTPE]i)?$
-                      type: string
-                  type: object
               type: object
           required:
           - commonConfiguration
@@ -149,10 +141,8 @@ spec:
           properties:
             active:
               type: boolean
-            ips:
-              items:
-                type: string
-              type: array
+            clusterIP:
+              type: string
             port:
               type: integer
           type: object

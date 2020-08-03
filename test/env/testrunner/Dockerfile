@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM golang:1.14
 
 RUN apt update && apt install -y docker.io && apt install -y jq
 

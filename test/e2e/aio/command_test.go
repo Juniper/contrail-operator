@@ -32,6 +32,10 @@ func TestCommandServices(t *testing.T) {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
 
+	if err := test.AddToFrameworkScheme(core.AddToScheme, &core.PersistentVolumeList{}); err != nil {
+		t.Fatalf("Failed to add core framework scheme: %v", err)
+	}
+
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
@@ -87,8 +91,6 @@ func TestCommandServices(t *testing.T) {
 						{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},
 						{Name: "keystoneInit", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
 						{Name: "keystone", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train-2005"},
-						{Name: "keystoneSsh", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone-ssh:train-2005"},
-						{Name: "keystoneFernet", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-keystone-fernet:train-2005"},
 					},
 				},
 			},
@@ -102,7 +104,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.SwiftSpec{
 				ServiceConfiguration: contrail.SwiftConfiguration{
 					Containers: []*contrail.Container{
-						{Name: "ring-reconciler", Image: "registry:5000/common-docker-third-party/contrail/centos-source-swift-base:train-2005"},
+						{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag},
 					},
 					CredentialsSecretName: "commandtest-swift-credentials-secret",
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
@@ -111,6 +113,7 @@ func TestCommandServices(t *testing.T) {
 						ObjectBindPort:    6000,
 						Device:            "d1",
 						Containers: []*contrail.Container{
+							{Name: "swiftStorageInit", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							{Name: "swiftObjectExpirer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005"},
 							{Name: "swiftObjectUpdater", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
 							{Name: "swiftObjectReplicator", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005"},
@@ -159,8 +162,8 @@ func TestCommandServices(t *testing.T) {
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: []*contrail.Container{
-						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:2005.42"},
-						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:2005.42"},
+						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
+						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},
 				},
@@ -174,8 +177,9 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:    &oneVal,
-					HostNetwork: &trueVal,
+					Replicas:     &oneVal,
+					HostNetwork:  &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
@@ -237,12 +241,13 @@ func TestCommandServices(t *testing.T) {
 					Timeout:       5 * time.Minute,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
+					Logger:        log,
 				}.ForSwiftActive(command.Spec.ServiceConfiguration.SwiftInstance)
 				require.NoError(t, err)
 			})
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment"))
+				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment", 1))
 			})
 
 			var commandPods *core.PodList
@@ -270,19 +275,12 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, err)
 			})
 
-			var swiftProxyPods *core.PodList
-			swiftProxyLabel := "SwiftProxy=" + command.Spec.ServiceConfiguration.SwiftInstance + "-proxy"
-			swiftProxyPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-				LabelSelector: swiftProxyLabel,
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, swiftProxyPods.Items)
-			keystoneProxy := proxy.NewSecureClient("contrail", command.Spec.ServiceConfiguration.KeystoneInstance+"-keystone-statefulset-0", 5555)
+			keystoneProxy := proxy.NewSecureClientForService("contrail", "commandtest-keystone-service", 5555)
 			keystoneClient = keystone.NewClient(keystoneProxy)
-			tokens, _ := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-			swiftProxyPod := swiftProxyPods.Items[0].Name
-			swiftProxy := proxy.NewSecureClient("contrail", swiftProxyPod, 5080)
-			swiftURL := tokens.EndpointURL("swift", "public")
+			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+			require.NoError(t, err)
+			swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
+			swiftURL := tokens.EndpointURL("swift", "internal")
 			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			require.NoError(t, err)
 
@@ -331,4 +329,9 @@ func TestCommandServices(t *testing.T) {
 			})
 		})
 	})
+
+	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

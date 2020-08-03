@@ -73,17 +73,6 @@ type ServiceStatus struct {
 	Created *bool   `json:"created,omitempty"`
 }
 
-// Status is the status of the service.
-// +k8s:openapi-gen=true
-type Status struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster.
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file.
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html.
-	Active *bool             `json:"active,omitempty"`
-	Nodes  map[string]string `json:"nodes,omitempty"`
-	Ports  map[string]string `json:"ports,omitempty"`
-}
-
 // ActiveStatus signals the current status
 type ActiveStatus struct {
 	Active *bool `json:"active,omitempty"`
@@ -124,6 +113,14 @@ type CommonConfiguration struct {
 	// zero and not specified. Defaults to 1.
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
+}
+
+//GetReplicas is used to get number of desired pods.
+func (cc *CommonConfiguration) GetReplicas() int32 {
+	if cc.Replicas != nil {
+		return *cc.Replicas
+	}
+	return int32(1)
 }
 
 func (ss *ServiceStatus) ready() bool {

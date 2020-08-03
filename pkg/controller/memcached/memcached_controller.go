@@ -10,6 +10,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -97,10 +98,20 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 	if err = r.configMap(memcachedConfigMapName, memcachedCR).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+	maxUnavailable := intstr.FromInt(1)
+	maxSurge := intstr.FromInt(0)
 	deployment := &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Namespace: request.Namespace,
 			Name:      request.Name + "-deployment",
+		},
+		Spec: apps.DeploymentSpec{
+			Strategy: apps.DeploymentStrategy{
+				RollingUpdate: &apps.RollingUpdateDeployment{
+					MaxUnavailable: &maxUnavailable,
+					MaxSurge:       &maxSurge,
+				},
+			},
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
@@ -109,6 +120,8 @@ func (r *ReconcileMemcached) Reconcile(request reconcile.Request) (reconcile.Res
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
 		updateMemcachedPodSpec(&deployment.Spec.Template.Spec, memcachedCR, memcachedConfigMapName)
+		contrail.SetDeploymentCommonConfiguration(deployment, &memcachedCR.Spec.CommonConfiguration)
+
 		return controllerutil.SetControllerReference(memcachedCR, deployment, r.scheme)
 	})
 	if err != nil {
@@ -122,31 +135,14 @@ func (r *ReconcileMemcached) updateStatus(memcachedCR *contrail.Memcached, deplo
 	if err != nil {
 		return err
 	}
-	expectedReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		expectedReplicas = *deployment.Spec.Replicas
-	}
-	if deployment.Status.ReadyReplicas == expectedReplicas {
-		pods := core.PodList{}
-		var labels client.MatchingLabels = deployment.Spec.Selector.MatchLabels
-		if err = r.client.List(context.Background(), &pods, labels); err != nil {
-			return err
-		}
-		if len(pods.Items) != 1 {
-			return fmt.Errorf("ReconcileMemchached.updateStatus: expected 1 pod with labels %v, got %d", labels, len(pods.Items))
-		}
-		ip := "127.0.0.1" // memcached is available only on localhost for security reasons, after configuring SSL this should be changed to pods.Items[0].Status.PodIP
-		port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
-		memcachedCR.Status.Node = fmt.Sprintf("%s:%d", ip, port)
-		memcachedCR.Status.Active = true
-	} else {
-		memcachedCR.Status.Active = false
-	}
+	ip := "127.0.0.1" // memcached is available only on localhost for security reasons, after configuring SSL this should be changed to pods.Items[0].Status.PodIP
+	port := memcachedCR.Spec.ServiceConfiguration.GetListenPort()
+	memcachedCR.Status.Endpoint = fmt.Sprintf("%s:%d", ip, port)
+	memcachedCR.Status.Status.FromDeployment(deployment)
 	return r.client.Status().Update(context.Background(), memcachedCR)
 }
 
 func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcached, configMapName string) {
-	podSpec.HostNetwork = true
 	podSpec.Tolerations = []core.Toleration{
 		{
 			Operator: core.TolerationOpExists,
@@ -170,15 +166,49 @@ func updateMemcachedPodSpec(podSpec *core.PodSpec, memcachedCR *contrail.Memcach
 		},
 	}
 	podSpec.Containers = []core.Container{memcachedContainer(memcachedCR)}
+	podSpec.Affinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+				LabelSelector: &meta.LabelSelector{
+					MatchExpressions: []meta.LabelSelectorRequirement{{
+						Key:      "Memcached",
+						Operator: "In",
+						Values:   []string{memcachedCR.Name},
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 }
 
 func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 	instanceContainer := utils.GetContainerFromList("memcached", memcachedCR.Spec.ServiceConfiguration.Containers)
-
+	port := int(memcachedCR.Spec.ServiceConfiguration.GetListenPort())
 	return core.Container{
 		Name:            "memcached",
 		Image:           instanceContainer.Image,
 		ImagePullPolicy: core.PullAlways,
+		ReadinessProbe: &core.Probe{
+			InitialDelaySeconds: 5,
+			TimeoutSeconds:      1,
+			Handler: core.Handler{
+				TCPSocket: &core.TCPSocketAction{
+					Port: intstr.FromInt(port),
+					Host: "127.0.0.1",
+				},
+			},
+		},
+		LivenessProbe: &core.Probe{
+			InitialDelaySeconds: 30,
+			TimeoutSeconds:      5,
+			Handler: core.Handler{
+				TCPSocket: &core.TCPSocketAction{
+					Port: intstr.FromInt(port),
+					Host: "127.0.0.1",
+				},
+			},
+		},
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
 			Value: "memcached",

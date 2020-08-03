@@ -51,14 +51,15 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 	return c.cm.EnsureExists(spc)
 }
 
-func (c *configMaps) ensureInitExists(endpoint string) error {
-	spc := &swiftProxyInitConfig{
+func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) error {
+	spc := &registerServiceConfig{
 		KeystoneIP:            c.keystone.keystoneIP,
 		KeystonePort:          c.keystone.keystonePort,
 		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
 		SwiftUser:             string(c.credentialsSecret.Data["user"]),
-		SwiftEndpoint:         fmt.Sprintf("%v:%v", endpoint, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftPublicEndpoint:   fmt.Sprintf("%v:%v", publicIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftInternalEndpoint: fmt.Sprintf("%v:%v", internalIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 		CAFilePath:            certificates.SignerCAFilepath,
 	}
 	return c.cm.EnsureExists(spc)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,9 +25,9 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/label"
 )
 
 var log = logf.Log.WithName("controller_swiftproxy")
@@ -76,7 +77,19 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.SwiftProxy{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftProxy{},
+	})
+
+	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.SwiftProxy{},
 	})
 
@@ -116,6 +129,22 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, nil
 	}
 
+	if err := r.ensureLabelExists(swiftProxy); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	svc, err := r.ensureServiceExists(swiftProxy)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if svc.Spec.ClusterIP == "" {
+		log.Info(fmt.Sprintf("swift proxy service is not ready, clusterIP is empty"))
+		return reconcile.Result{}, nil
+	}
+	swiftProxy.Status.ClusterIP = svc.Spec.ClusterIP
+	swiftProxy.Status.LoadBalancerIP = svc.Spec.LoadBalancerIP
+
 	swiftProxyPods, err := r.listSwiftProxyPods(swiftProxy.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list swift proxy pods: %v", err)
@@ -135,11 +164,10 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.IPs[0], keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 
 	memcached, err := r.getMemcached(swiftProxy)
 	if err != nil {
@@ -164,24 +192,28 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	keystoneData := &keystoneEndpoint{keystoneIP: keystone.Status.ClusterIP, keystonePort: keystone.Spec.ServiceConfiguration.ListenPort}
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureExists(memcached.Status.Node); err != nil {
+	if err = cm.ensureExists(memcached.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	endpoint, err := r.getEndpoint(swiftProxy, swiftProxyPods)
+	registered, err := r.isSwiftRegistered(swiftProxy, keystone, passwordSecret)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	swiftInitConfigName := swiftProxy.Name + "-swiftproxy-init-config"
-	cm = r.configMap(swiftInitConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)
-	if err = cm.ensureInitExists(endpoint); err != nil {
-		return reconcile.Result{}, err
+	if !registered {
+		var res reconcile.Result
+		if res, err = r.ensureSwiftRegistered(swiftProxy, adminPasswordSecret, passwordSecret, keystone); err != nil {
+			return reconcile.Result{}, err
+		}
+		if res.Requeue {
+			return res, err
+		}
 	}
 
-	if len(swiftProxyPods.Items) > 0 {
+	if len(swiftProxyPods.Items) > 0 && registered {
 		if err = contrail.SetPodsToReady(swiftProxyPods, r.client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -194,26 +226,34 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		labels := map[string]string{"SwiftProxy": request.Name}
+		labels := swiftProxy.Labels
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.ObjectMeta.Labels = labels
 		deployment.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
+
+		maxUnavailable := intstr.FromInt(2)
+		maxSurge := intstr.FromInt(0)
+		deployment.Spec.Strategy = apps.DeploymentStrategy{
+			RollingUpdate: &apps.RollingUpdateDeployment{
+				MaxUnavailable: &maxUnavailable,
+				MaxSurge:       &maxSurge,
+			},
+		}
+
+		contrail.SetDeploymentCommonConfiguration(deployment, &swiftProxy.Spec.CommonConfiguration)
 		swiftConfSecretName := swiftProxy.Spec.ServiceConfiguration.SwiftConfSecretName
 
-		ringsClaimName := swiftProxy.Spec.ServiceConfiguration.RingPersistentVolumeClaim
 		listenPort := swiftProxy.Spec.ServiceConfiguration.ListenPort
 		swiftCertificatesSecretName := request.Name + "-secret-certificates"
-		csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 		updatePodTemplate(
 			&deployment.Spec.Template.Spec,
+			deployment.Spec.Selector,
 			swiftConfigName,
-			swiftInitConfigName,
 			swiftConfSecretName,
 			swiftCertificatesSecretName,
+			swiftProxy.Spec.ServiceConfiguration.RingConfigMapName,
 			swiftProxy.Spec.ServiceConfiguration.Containers,
-			ringsClaimName,
 			listenPort,
-			csrSignerCaVolumeName,
 		)
 
 		return controllerutil.SetControllerReference(swiftProxy, deployment, r.scheme)
@@ -222,7 +262,41 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment)
+	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment, svc)
+}
+
+func (r *ReconcileSwiftProxy) ensureLabelExists(sp *contrail.SwiftProxy) error {
+	if len(sp.Labels) != 0 {
+		return nil
+	}
+
+	sp.Labels = label.New(contrail.SwiftProxyInstanceType, sp.Name)
+	return r.client.Update(context.Background(), sp)
+}
+
+func (r *ReconcileSwiftProxy) ensureServiceExists(swiftProxy *contrail.SwiftProxy) (*core.Service, error) {
+	svc := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      swiftProxy.Name + "-swift-proxy",
+			Namespace: swiftProxy.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, svc, func() error {
+		listenPort := int32(swiftProxy.Spec.ServiceConfiguration.ListenPort)
+		nodePort := int32(0)
+		for i, p := range svc.Spec.Ports {
+			if p.Port == listenPort {
+				nodePort = svc.Spec.Ports[i].NodePort
+			}
+		}
+		svc.Spec.Ports = []core.ServicePort{
+			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
+		}
+		svc.Spec.Selector = swiftProxy.Labels
+		svc.Spec.Type = core.ServiceTypeLoadBalancer
+		return controllerutil.SetControllerReference(swiftProxy, svc, r.scheme)
+	})
+	return svc, err
 }
 
 func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.PodList, error) {
@@ -236,7 +310,8 @@ func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.P
 }
 
 func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList) error {
-	return certificates.NewCertificate(r.client, r.scheme, swiftProxy, r.mgrConfig, pods, "swiftproxy", true).EnsureExistsAndIsSigned()
+	clusterIP := swiftProxy.Status.ClusterIP
+	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, swiftProxy, pods, clusterIP, "swiftproxy", true).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Keystone, error) {
@@ -257,41 +332,24 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 	return key, err
 }
 
-func (r *ReconcileSwiftProxy) getEndpoint(cr *contrail.SwiftProxy, pods *core.PodList) (string, error) {
-	endpoint := cr.Spec.ServiceConfiguration.Endpoint
-	if endpoint == "" && len(pods.Items) != 0 {
-		return pods.Items[0].Status.PodIP, nil
-	}
-	return endpoint, nil
-}
-
 func (r *ReconcileSwiftProxy) updateStatus(
 	sp *contrail.SwiftProxy,
 	deployment *apps.Deployment,
+	svc *core.Service,
 ) error {
-	sp.Status.Active = false
-	intendentReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		intendentReplicas = *deployment.Spec.Replicas
-	}
-
-	if deployment.Status.ReadyReplicas == intendentReplicas {
-		sp.Status.Active = true
-	}
-
+	sp.Status.FromDeployment(deployment)
 	return r.client.Status().Update(context.Background(), sp)
 }
 
 func updatePodTemplate(
 	pod *core.PodSpec,
+	labelSelector *meta.LabelSelector,
 	swiftConfigName string,
-	swiftInitConfigName string,
 	swiftConfSecretName string,
 	swiftCertificatesSecretName string,
+	ringConfigMapName string,
 	containers []*contrail.Container,
-	ringsClaimName string,
 	port int,
-	csrSignerCaVolumeName string,
 ) {
 	pod.InitContainers = []core.Container{
 		{
@@ -304,17 +362,6 @@ func updatePodTemplate(
 				MountPath: "/tmp/podinfo",
 			}},
 		},
-		{
-			Name:            "init",
-			Image:           getImage(containers, "init"),
-			ImagePullPolicy: core.PullAlways,
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "init-config-volume", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-				core.VolumeMount{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-			},
-			Command: getCommand(containers, "init"),
-			Args:    []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
-		},
 	}
 	pod.Containers = []core.Container{{
 		Name:    "api",
@@ -324,7 +371,7 @@ func updatePodTemplate(
 			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			{Name: csrSignerCaVolumeName, MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+			{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
@@ -351,17 +398,6 @@ func updatePodTemplate(
 			},
 		}},
 	}}
-	pod.HostNetwork = true
-	pod.Tolerations = []core.Toleration{
-		{
-			Operator: core.TolerationOpExists,
-			Effect:   core.TaintEffectNoSchedule,
-		},
-		{
-			Operator: core.TolerationOpExists,
-			Effect:   core.TaintEffectNoExecute,
-		},
-	}
 	var labelsMountPermission int32 = 0644
 	pod.Volumes = []core.Volume{
 		{
@@ -370,16 +406,6 @@ func updatePodTemplate(
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
 						Name: swiftConfigName,
-					},
-				},
-			},
-		},
-		{
-			Name: "init-config-volume",
-			VolumeSource: core.VolumeSource{
-				ConfigMap: &core.ConfigMapVolumeSource{
-					LocalObjectReference: core.LocalObjectReference{
-						Name: swiftInitConfigName,
 					},
 				},
 			},
@@ -420,14 +446,15 @@ func updatePodTemplate(
 		{
 			Name: "rings",
 			VolumeSource: core.VolumeSource{
-				PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-					ClaimName: ringsClaimName,
-					ReadOnly:  true,
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: ringConfigMapName,
+					},
 				},
 			},
 		},
 		{
-			Name: csrSignerCaVolumeName,
+			Name: "csr-signer-ca",
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
@@ -435,6 +462,15 @@ func updatePodTemplate(
 					},
 				},
 			},
+		},
+	}
+
+	pod.Affinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+				LabelSelector: labelSelector,
+				TopologyKey:   "kubernetes.io/hostname",
+			}},
 		},
 	}
 }

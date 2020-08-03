@@ -2,19 +2,16 @@ package swiftstorage
 
 import (
 	"context"
+	"fmt"
 	"strings"
-
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -23,9 +20,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
+	"github.com/Juniper/contrail-operator/pkg/localvolume"
 )
 
 var log = logf.Log.WithName("controller_swiftstorage")
+
+const defaultSwiftStoragePath = "/mnt/swiftstorage"
 
 // Add creates a new SwiftStorage Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -34,15 +39,18 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return NewReconciler(
-		mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(), mgr.GetScheme()), volumeclaims.New(mgr.GetClient(), mgr.GetScheme()),
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), k8s.New(mgr.GetClient(),
+		mgr.GetScheme()), localvolume.New(mgr.GetClient()),
 	)
 }
 
 func NewReconciler(
-	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, claims volumeclaims.PersistentVolumeClaims,
+	client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes,
+	volumes localvolume.Volumes,
 ) *ReconcileSwiftStorage {
-	return &ReconcileSwiftStorage{client: client, scheme: scheme, kubernetes: kubernetes, claims: claims}
+	return &ReconcileSwiftStorage{
+		client: client, scheme: scheme, kubernetes: kubernetes, volumes: volumes,
+	}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -77,7 +85,7 @@ type ReconcileSwiftStorage struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
-	claims     volumeclaims.PersistentVolumeClaims
+	volumes    localvolume.Volumes
 }
 
 // Reconcile reads that state of the cluster for a SwiftStorage object and makes changes based on the state read
@@ -89,7 +97,7 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	// Fetch the SwiftStorage
 	swiftStorage := &contrail.SwiftStorage{}
 	if err := r.client.Get(context.Background(), request.NamespacedName, swiftStorage); err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -100,39 +108,32 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, nil
 	}
 
-	claimNamespacedName := types.NamespacedName{
-		Namespace: swiftStorage.Namespace,
-		Name:      swiftStorage.Name + "-pv-claim",
-	}
-	claim := r.claims.New(claimNamespacedName, swiftStorage)
-	if swiftStorage.Spec.ServiceConfiguration.Storage.Size != "" {
-		size, err := swiftStorage.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		claim.SetStorageSize(size)
-	}
-	claim.SetStoragePath(swiftStorage.Spec.ServiceConfiguration.Storage.Path)
-	claim.SetNodeSelector(map[string]string{"node-role.kubernetes.io/master": ""})
-	if err := claim.EnsureExists(); err != nil {
+	if err := r.ensureLabelExists(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftAccountServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureLocalPVsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftContainerServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureSwiftAccountServicesConfigMapsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureSwiftObjectServicesConfigMaps(swiftStorage); err != nil {
+	if err := r.ensureSwiftContainerServicesConfigMapsExist(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	ringsClaim := swiftStorage.Spec.ServiceConfiguration.RingPersistentVolumeClaim
-	statefulSet, err := r.createOrUpdateSts(request, swiftStorage, claimNamespacedName.Name, ringsClaim)
+	if err := r.ensureSwiftObjectServicesConfigMapsExist(swiftStorage); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	statefulSet, err := r.createOrUpdateSts(request, swiftStorage)
 	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensurePVCOwnershipExists(swiftStorage); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -160,28 +161,132 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swiftStorage)
 }
 
-func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swiftStorage *contrail.SwiftStorage, claimName string, ringsClaimName string) (*apps.StatefulSet, error) {
+func (r *ReconcileSwiftStorage) ensureLocalPVsExist(ss *contrail.SwiftStorage) error {
+	path := ss.Spec.ServiceConfiguration.Storage.Path
+	size := ss.Spec.ServiceConfiguration.Storage.Size
+	var storage resource.Quantity
+	var err error
+	if size == "" {
+		storage = resource.MustParse("5Gi")
+	} else {
+		storage, err = resource.ParseQuantity(size)
+		if err != nil {
+			return err
+		}
+	}
+
+	if path == "" {
+		path = defaultSwiftStoragePath
+	}
+
+	for i := int32(0); i < ss.Spec.CommonConfiguration.GetReplicas(); i++ {
+		name := fmt.Sprintf("%v-swift-data-%v", ss.Name, i)
+		nodeSelectors := ss.Spec.CommonConfiguration.NodeSelector
+		lv, err := r.volumes.New(name, path, storage, ss.Labels, nodeSelectors)
+		if err != nil {
+			return err
+		}
+		if err := lv.EnsureExists(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *ReconcileSwiftStorage) ensureLabelExists(ss *contrail.SwiftStorage) error {
+	if len(ss.Labels) != 0 {
+		return nil
+	}
+
+	ss.Labels = contraillabel.New(contrail.SwiftStorageInstanceType, ss.Name)
+	return r.client.Update(context.Background(), ss)
+}
+
+func (r *ReconcileSwiftStorage) ensurePVCOwnershipExists(ss *contrail.SwiftStorage) error {
+	listOps := &client.ListOptions{Namespace: ss.Namespace, LabelSelector: labels.SelectorFromSet(ss.Labels)}
+	pvcList := &core.PersistentVolumeClaimList{}
+	if err := r.client.List(context.TODO(), pvcList, listOps); err != nil {
+		return err
+	}
+	for _, pvc := range pvcList.Items {
+		if err := controllerutil.SetControllerReference(ss, &pvc, r.scheme); err != nil {
+			return err
+		}
+		if err := r.client.Update(context.TODO(), &pvc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReconcileSwiftStorage) createOrUpdateSts(
+	request reconcile.Request,
+	swiftStorage *contrail.SwiftStorage,
+) (*apps.StatefulSet, error) {
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
 
+	cg := containerGenerator{
+		containersSpec: swiftStorage.Spec.ServiceConfiguration.Containers,
+	}
+
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
-		labels := map[string]string{"app": request.Name}
-		statefulSet.Spec.Template.ObjectMeta.Labels = labels
+		statefulSet.Spec.Template.ObjectMeta.Labels = swiftStorage.Labels
+		contrail.SetSTSCommonConfiguration(statefulSet, &swiftStorage.Spec.CommonConfiguration)
+		statefulSet.Spec.Template.Spec.InitContainers = []core.Container{{
+			Name:  "init",
+			Image: cg.getImage("swift-storage-init"),
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "swift-storage-init",
+					MountPath: "/mnt/",
+				},
+			},
+		}}
 		statefulSet.Spec.Template.Spec.Containers = r.swiftContainers(swiftStorage.Spec.ServiceConfiguration.Containers, swiftStorage.Spec.ServiceConfiguration.Device)
-		statefulSet.Spec.Template.Spec.HostNetwork = true
 		var swiftGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
 		statefulSet.Spec.Template.Spec.SecurityContext.FSGroup = &swiftGroupId
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &swiftGroupId
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &swiftGroupId
 		volumes := r.swiftServicesVolumes(swiftStorage.Name)
+		storageClassName := "local-storage"
+		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Name:      "storage-device",
+					Namespace: request.Namespace,
+					Labels:    swiftStorage.Labels,
+				},
+				Spec: core.PersistentVolumeClaimSpec{
+
+					AccessModes: []core.PersistentVolumeAccessMode{
+						core.ReadWriteOnce,
+					},
+					StorageClassName: &storageClassName,
+					Resources: core.ResourceRequirements{
+						Requests: map[core.ResourceName]resource.Quantity{
+							core.ResourceStorage: resource.MustParse("5Gi"),
+						},
+					},
+				},
+			},
+		}
+
+		storagePath := swiftStorage.Spec.ServiceConfiguration.Storage.Path
+		if storagePath == "" {
+			storagePath = defaultSwiftStoragePath
+		}
+		initHostPathType := core.HostPathType(core.HostPathDirectoryOrCreate)
 		statefulSet.Spec.Template.Spec.Volumes = append([]core.Volume{
 			{
-				Name: "devices-mount-point-volume",
+				Name: "swift-storage-init",
 				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: claimName,
+					HostPath: &core.HostPathVolumeSource{
+						Path: storagePath,
+						Type: &initHostPathType,
 					},
 				},
 			},
@@ -196,26 +301,23 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(request reconcile.Request, swi
 			{
 				Name: "rings",
 				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: ringsClaimName,
-						ReadOnly:  true,
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: swiftStorage.Spec.ServiceConfiguration.RingConfigMapName,
+						},
 					},
 				},
 			},
 		}, volumes...)
-		statefulSet.Spec.Template.Spec.Tolerations = []core.Toleration{
-			{
-				Operator: core.TolerationOpExists,
-				Effect:   core.TaintEffectNoSchedule,
-			},
-			{
-				Operator: core.TolerationOpExists,
-				Effect:   core.TaintEffectNoExecute,
+		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{
+			PodAntiAffinity: &core.PodAntiAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+					LabelSelector: &meta.LabelSelector{MatchLabels: swiftStorage.Labels},
+					TopologyKey:   "kubernetes.io/hostname",
+				}},
 			},
 		}
-		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: labels}
-		replicas := int32(1)
-		statefulSet.Spec.Replicas = &replicas
+		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: swiftStorage.Labels}
 		return controllerutil.SetControllerReference(swiftStorage, statefulSet, r.scheme)
 	})
 	return statefulSet, err
@@ -250,7 +352,7 @@ type containerGenerator struct {
 
 func (cg *containerGenerator) swiftContainer(name string) core.Container {
 	deviceMountPointVolumeMount := core.VolumeMount{
-		Name:      "devices-mount-point-volume",
+		Name:      "storage-device",
 		MountPath: "/srv/node/" + cg.device,
 	}
 	serviceVolumeMount := core.VolumeMount{
@@ -300,6 +402,7 @@ func (cg *containerGenerator) getImage(name string) string {
 		"swift-object-replicator":    "localhost:5000/centos-binary-swift-object:train",
 		"swift-object-updater":       "localhost:5000/centos-binary-swift-object:train",
 		"swift-object-expirer":       "localhost:5000/centos-binary-swift-object-expirer:train",
+		"swift-storage-init":         "localhost:5000/busybox:1.31",
 	}
 
 	if cg.containersSpec == nil {
@@ -333,7 +436,7 @@ func (cg *containerGenerator) getCommand(name string) []string {
 	return defaultCommands[name]
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-account-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftAccountAuditor(); err != nil {
 		return err
@@ -358,7 +461,7 @@ func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMaps(swiftStorag
 	return r.configMap(serverConfigName, "swift-storage", swiftStorage).ensureSwiftAccountServer()
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-container-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftContainerAuditor(); err != nil {
 		return err
@@ -383,7 +486,7 @@ func (r *ReconcileSwiftStorage) ensureSwiftContainerServicesConfigMaps(swiftStor
 	return r.configMap(updaterConfigName, "swift-storage", swiftStorage).ensureSwiftContainerUpdater()
 }
 
-func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMaps(swiftStorage *contrail.SwiftStorage) error {
+func (r *ReconcileSwiftStorage) ensureSwiftObjectServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {
 	auditorConfigName := swiftStorage.Name + "-swift-object-auditor"
 	if err := r.configMap(auditorConfigName, "swift-storage", swiftStorage).ensureSwiftObjectAuditor(); err != nil {
 		return err

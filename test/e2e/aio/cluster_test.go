@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io/ioutil"
@@ -59,6 +60,7 @@ func TestCluster(t *testing.T) {
 		manager := &contrail.Manager{}
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
 		require.NoError(t, err)
+		yamlFile = bytes.ReplaceAll(yamlFile, []byte(":master-latest"), []byte(":"+cemRelease))
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
@@ -76,15 +78,19 @@ func TestCluster(t *testing.T) {
 			require.NoError(t, err)
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Config.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag
 
 			utils.GetContainerFromList("statusmonitor",
 				manager.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag
 
 			utils.GetContainerFromList("provisioner",
 				manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers).Image =
-				"registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + scmBranch + "." + scmRevision
+				"registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + buildTag
+
+			utils.GetContainerFromList("ringcontroller",
+				manager.Spec.Services.Swift.Spec.ServiceConfiguration.Containers).Image =
+				"registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag
 
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)

@@ -64,6 +64,7 @@ rules:
   - keystones
   - swifts
   - memcacheds
+  - fernetkeymanagers
   verbs:
   - '*'
 - apiGroups:
@@ -924,6 +925,65 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: fernetkeymanagers.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: FernetKeyManager
+    listKind: FernetKeyManagerList
+    plural: fernetkeymanagers
+    singular: fernetkeymanager
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: FernetKeyManager is the Schema for the fernetkeymanagers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: FernetKeyManagerSpec defines the desired state of FernetKeyManager
+          properties:
+            rotationFrequency:
+              type: integer
+            tokenAllowExpiredWindow:
+              type: integer
+            tokenExpiration:
+              type: integer
+          required:
+          - rotationFrequency
+          - tokenAllowExpiredWindow
+          - tokenExpiration
+          type: object
+        status:
+          description: FernetKeyManagerStatus defines the observed state of FernetKeyManager
+          properties:
+            secretName:
+              type: string
+          required:
+          - secretName
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: keystones.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -1054,14 +1114,6 @@ spec:
                   type: string
                 postgresInstance:
                   type: string
-                storage:
-                  properties:
-                    path:
-                      type: string
-                    size:
-                      pattern: ^([0-9]+)([KMGTPE]i)?$
-                      type: string
-                  type: object
               type: object
           required:
           - commonConfiguration
@@ -1072,10 +1124,8 @@ spec:
           properties:
             active:
               type: boolean
-            ips:
-              items:
-                type: string
-              type: array
+            clusterIP:
+              type: string
             port:
               type: integer
           type: object
@@ -2094,8 +2144,6 @@ spec:
                                 type: string
                               xmppPort:
                                 type: integer
-                              zookeeperInstance:
-                                type: string
                             type: object
                         required:
                         - commonConfiguration
@@ -2259,14 +2307,6 @@ spec:
                               type: string
                             postgresInstance:
                               type: string
-                            storage:
-                              properties:
-                                path:
-                                  type: string
-                                size:
-                                  pattern: ^([0-9]+)([KMGTPE]i)?$
-                                  type: string
-                              type: object
                           type: object
                       required:
                       - commonConfiguration
@@ -2277,10 +2317,8 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        ips:
-                          items:
-                            type: string
-                          type: array
+                        clusterIP:
+                          type: string
                         port:
                           type: integer
                       type: object
@@ -2496,6 +2534,90 @@ spec:
                     spec:
                       description: MemcachedSpec defines the desired state of Memcached
                       properties:
+                        commonConfiguration:
+                          description: CommonConfiguration is the common services
+                            struct.
+                          properties:
+                            activate:
+                              description: Activate defines if the service will be
+                                activated by Manager.
+                              type: boolean
+                            create:
+                              description: Create defines if the service will be created
+                                by Manager.
+                              type: boolean
+                            hostNetwork:
+                              description: Host networking requested for this pod.
+                                Use the host's network namespace. If this option is
+                                set, the ports that will be used must be specified.
+                                Default to false.
+                              type: boolean
+                            imagePullSecrets:
+                              description: ImagePullSecrets is an optional list of
+                                references to secrets in the same namespace to use
+                                for pulling any of the images used by this PodSpec.
+                              items:
+                                type: string
+                              type: array
+                            nodeSelector:
+                              additionalProperties:
+                                type: string
+                              description: 'NodeSelector is a selector which must
+                                be true for the pod to fit on a node. Selector which
+                                must match a node''s labels for the pod to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                              type: object
+                            replicas:
+                              description: Number of desired pods. This is a pointer
+                                to distinguish between explicit zero and not specified.
+                                Defaults to 1.
+                              format: int32
+                              type: integer
+                            tolerations:
+                              description: If specified, the pod's tolerations.
+                              items:
+                                description: The pod this Toleration is attached to
+                                  tolerates any taint that matches the triple <key,value,effect>
+                                  using the matching operator <operator>.
+                                properties:
+                                  effect:
+                                    description: Effect indicates the taint effect
+                                      to match. Empty means match all taint effects.
+                                      When specified, allowed values are NoSchedule,
+                                      PreferNoSchedule and NoExecute.
+                                    type: string
+                                  key:
+                                    description: Key is the taint key that the toleration
+                                      applies to. Empty means match all taint keys.
+                                      If the key is empty, operator must be Exists;
+                                      this combination means to match all values and
+                                      all keys.
+                                    type: string
+                                  operator:
+                                    description: Operator represents a key's relationship
+                                      to the value. Valid operators are Exists and
+                                      Equal. Defaults to Equal. Exists is equivalent
+                                      to wildcard for value, so that a pod can tolerate
+                                      all taints of a particular category.
+                                    type: string
+                                  tolerationSeconds:
+                                    description: TolerationSeconds represents the
+                                      period of time the toleration (which must be
+                                      of effect NoExecute, otherwise this field is
+                                      ignored) tolerates the taint. By default, it
+                                      is not set, which means tolerate the taint forever
+                                      (do not evict). Zero and negative values will
+                                      be treated as 0 (evict immediately) by the system.
+                                    format: int64
+                                    type: integer
+                                  value:
+                                    description: Value is the taint value the toleration
+                                      matches to. If the operator is Exists, the value
+                                      should be empty, otherwise just a regular string.
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
                         serviceConfiguration:
                           properties:
                             connectionLimit:
@@ -2525,6 +2647,7 @@ spec:
                           - containers
                           type: object
                       required:
+                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -2532,8 +2655,14 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        node:
+                        endpoint:
                           type: string
+                        readyReplicas:
+                          format: int32
+                          type: integer
+                        replicas:
+                          format: int32
+                          type: integer
                       type: object
                   type: object
                 postgres:
@@ -2586,7 +2715,7 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        node:
+                        endpoint:
                           type: string
                       type: object
                   type: object
@@ -2949,9 +3078,93 @@ spec:
                     spec:
                       description: SwiftSpec defines the desired state of Swift
                       properties:
+                        commonConfiguration:
+                          description: CommonConfiguration is the common services
+                            struct.
+                          properties:
+                            activate:
+                              description: Activate defines if the service will be
+                                activated by Manager.
+                              type: boolean
+                            create:
+                              description: Create defines if the service will be created
+                                by Manager.
+                              type: boolean
+                            hostNetwork:
+                              description: Host networking requested for this pod.
+                                Use the host's network namespace. If this option is
+                                set, the ports that will be used must be specified.
+                                Default to false.
+                              type: boolean
+                            imagePullSecrets:
+                              description: ImagePullSecrets is an optional list of
+                                references to secrets in the same namespace to use
+                                for pulling any of the images used by this PodSpec.
+                              items:
+                                type: string
+                              type: array
+                            nodeSelector:
+                              additionalProperties:
+                                type: string
+                              description: 'NodeSelector is a selector which must
+                                be true for the pod to fit on a node. Selector which
+                                must match a node''s labels for the pod to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                              type: object
+                            replicas:
+                              description: Number of desired pods. This is a pointer
+                                to distinguish between explicit zero and not specified.
+                                Defaults to 1.
+                              format: int32
+                              type: integer
+                            tolerations:
+                              description: If specified, the pod's tolerations.
+                              items:
+                                description: The pod this Toleration is attached to
+                                  tolerates any taint that matches the triple <key,value,effect>
+                                  using the matching operator <operator>.
+                                properties:
+                                  effect:
+                                    description: Effect indicates the taint effect
+                                      to match. Empty means match all taint effects.
+                                      When specified, allowed values are NoSchedule,
+                                      PreferNoSchedule and NoExecute.
+                                    type: string
+                                  key:
+                                    description: Key is the taint key that the toleration
+                                      applies to. Empty means match all taint keys.
+                                      If the key is empty, operator must be Exists;
+                                      this combination means to match all values and
+                                      all keys.
+                                    type: string
+                                  operator:
+                                    description: Operator represents a key's relationship
+                                      to the value. Valid operators are Exists and
+                                      Equal. Defaults to Equal. Exists is equivalent
+                                      to wildcard for value, so that a pod can tolerate
+                                      all taints of a particular category.
+                                    type: string
+                                  tolerationSeconds:
+                                    description: TolerationSeconds represents the
+                                      period of time the toleration (which must be
+                                      of effect NoExecute, otherwise this field is
+                                      ignored) tolerates the taint. By default, it
+                                      is not set, which means tolerate the taint forever
+                                      (do not evict). Zero and negative values will
+                                      be treated as 0 (evict immediately) by the system.
+                                    format: int64
+                                    type: integer
+                                  value:
+                                    description: Value is the taint value the toleration
+                                      matches to. If the operator is Exists, the value
+                                      should be empty, otherwise just a regular string.
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
                         serviceConfiguration:
-                          description: SwiftConfiguration is the Spec for the keystone
-                            API.
+                          description: SwiftConfiguration is the Spec for the Swift
+                            service.
                           properties:
                             containers:
                               items:
@@ -2998,8 +3211,6 @@ spec:
                                   type: array
                                 credentialsSecretName:
                                   type: string
-                                endpoint:
-                                  type: string
                                 keystoneInstance:
                                   type: string
                                 keystoneSecretName:
@@ -3008,7 +3219,7 @@ spec:
                                   type: integer
                                 memcachedInstance:
                                   type: string
-                                ringPersistentVolumeClaim:
+                                ringConfigMapName:
                                   type: string
                                 swiftConfSecretName:
                                   type: string
@@ -3040,7 +3251,7 @@ spec:
                                   type: string
                                 objectBindPort:
                                   type: integer
-                                ringPersistentVolumeClaim:
+                                ringConfigMapName:
                                   type: string
                                 storage:
                                   properties:
@@ -3058,6 +3269,7 @@ spec:
                           - swiftStorageConfiguration
                           type: object
                       required:
+                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -3189,6 +3401,8 @@ spec:
                                 type: string
                               clusterRoleBinding:
                                 type: string
+                              cniMetaPlugin:
+                                type: string
                               containers:
                                 items:
                                   description: Container defines name, image and command.
@@ -3203,6 +3417,8 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              contrailStatusImage:
+                                type: string
                               controlInstance:
                                 type: string
                               distribution:
@@ -3217,6 +3433,8 @@ spec:
                                 type: string
                               serviceAccount:
                                 type: string
+                              vrouterEncryption:
+                                type: boolean
                             type: object
                         required:
                         - commonConfiguration
@@ -3534,6 +3752,14 @@ spec:
                                 type: integer
                               serverPort:
                                 type: integer
+                              storage:
+                                properties:
+                                  path:
+                                    type: string
+                                  size:
+                                    pattern: ^([0-9]+)([KMGTPE]i)?$
+                                    type: string
+                                type: object
                             type: object
                         required:
                         - commonConfiguration
@@ -3772,6 +3998,22 @@ kind: CustomResourceDefinition
 metadata:
   name: memcacheds.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .status.endpoint
+    name: Endpoint
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: Memcached
@@ -3800,6 +4042,81 @@ spec:
         spec:
           description: MemcachedSpec defines the desired state of Memcached
           properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
             serviceConfiguration:
               properties:
                 connectionLimit:
@@ -3829,6 +4146,7 @@ spec:
               - containers
               type: object
           required:
+          - commonConfiguration
           - serviceConfiguration
           type: object
         status:
@@ -3836,8 +4154,14 @@ spec:
           properties:
             active:
               type: boolean
-            node:
+            endpoint:
               type: string
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
           type: object
       type: object
   version: v1alpha1
@@ -3909,7 +4233,7 @@ spec:
           properties:
             active:
               type: boolean
-            node:
+            endpoint:
               type: string
           type: object
       type: object
@@ -4279,6 +4603,22 @@ kind: CustomResourceDefinition
 metadata:
   name: swiftproxies.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .status.clusterIP
+    name: ClusterIP
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: SwiftProxy
@@ -4307,6 +4647,81 @@ spec:
         spec:
           description: SwiftProxySpec defines the desired state of SwiftProxy
           properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
             serviceConfiguration:
               description: SwiftProxyConfiguration is the Spec for the keystone API.
               properties:
@@ -4326,8 +4741,6 @@ spec:
                   type: array
                 credentialsSecretName:
                   type: string
-                endpoint:
-                  type: string
                 keystoneInstance:
                   type: string
                 keystoneSecretName:
@@ -4336,12 +4749,13 @@ spec:
                   type: integer
                 memcachedInstance:
                   type: string
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 swiftConfSecretName:
                   type: string
               type: object
           required:
+          - commonConfiguration
           - serviceConfiguration
           type: object
         status:
@@ -4349,8 +4763,16 @@ spec:
           properties:
             active:
               type: boolean
-          required:
-          - active
+            clusterIP:
+              type: string
+            loadBalancerIP:
+              type: string
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
           type: object
       type: object
   version: v1alpha1
@@ -4392,8 +4814,83 @@ spec:
         spec:
           description: SwiftSpec defines the desired state of Swift
           properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
             serviceConfiguration:
-              description: SwiftConfiguration is the Spec for the keystone API.
+              description: SwiftConfiguration is the Spec for the Swift service.
               properties:
                 containers:
                   items:
@@ -4439,8 +4936,6 @@ spec:
                       type: array
                     credentialsSecretName:
                       type: string
-                    endpoint:
-                      type: string
                     keystoneInstance:
                       type: string
                     keystoneSecretName:
@@ -4449,7 +4944,7 @@ spec:
                       type: integer
                     memcachedInstance:
                       type: string
-                    ringPersistentVolumeClaim:
+                    ringConfigMapName:
                       type: string
                     swiftConfSecretName:
                       type: string
@@ -4480,7 +4975,7 @@ spec:
                       type: string
                     objectBindPort:
                       type: integer
-                    ringPersistentVolumeClaim:
+                    ringConfigMapName:
                       type: string
                     storage:
                       properties:
@@ -4498,6 +4993,7 @@ spec:
               - swiftStorageConfiguration
               type: object
           required:
+          - commonConfiguration
           - serviceConfiguration
           type: object
         status:
@@ -4550,11 +5046,84 @@ spec:
         spec:
           description: SwiftStorageSpec defines the desired state of SwiftStorage
           properties:
+            commonConfiguration:
+              description: CommonConfiguration is the common services struct.
+              properties:
+                activate:
+                  description: Activate defines if the service will be activated by
+                    Manager.
+                  type: boolean
+                create:
+                  description: Create defines if the service will be created by Manager.
+                  type: boolean
+                hostNetwork:
+                  description: Host networking requested for this pod. Use the host's
+                    network namespace. If this option is set, the ports that will
+                    be used must be specified. Default to false.
+                  type: boolean
+                imagePullSecrets:
+                  description: ImagePullSecrets is an optional list of references
+                    to secrets in the same namespace to use for pulling any of the
+                    images used by this PodSpec.
+                  items:
+                    type: string
+                  type: array
+                nodeSelector:
+                  additionalProperties:
+                    type: string
+                  description: 'NodeSelector is a selector which must be true for
+                    the pod to fit on a node. Selector which must match a node''s
+                    labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
+                  type: object
+                replicas:
+                  description: Number of desired pods. This is a pointer to distinguish
+                    between explicit zero and not specified. Defaults to 1.
+                  format: int32
+                  type: integer
+                tolerations:
+                  description: If specified, the pod's tolerations.
+                  items:
+                    description: The pod this Toleration is attached to tolerates
+                      any taint that matches the triple <key,value,effect> using the
+                      matching operator <operator>.
+                    properties:
+                      effect:
+                        description: Effect indicates the taint effect to match. Empty
+                          means match all taint effects. When specified, allowed values
+                          are NoSchedule, PreferNoSchedule and NoExecute.
+                        type: string
+                      key:
+                        description: Key is the taint key that the toleration applies
+                          to. Empty means match all taint keys. If the key is empty,
+                          operator must be Exists; this combination means to match
+                          all values and all keys.
+                        type: string
+                      operator:
+                        description: Operator represents a key's relationship to the
+                          value. Valid operators are Exists and Equal. Defaults to
+                          Equal. Exists is equivalent to wildcard for value, so that
+                          a pod can tolerate all taints of a particular category.
+                        type: string
+                      tolerationSeconds:
+                        description: TolerationSeconds represents the period of time
+                          the toleration (which must be of effect NoExecute, otherwise
+                          this field is ignored) tolerates the taint. By default,
+                          it is not set, which means tolerate the taint forever (do
+                          not evict). Zero and negative values will be treated as
+                          0 (evict immediately) by the system.
+                        format: int64
+                        type: integer
+                      value:
+                        description: Value is the taint value the toleration matches
+                          to. If the operator is Exists, the value should be empty,
+                          otherwise just a regular string.
+                        type: string
+                    type: object
+                  type: array
+              type: object
             serviceConfiguration:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "operator-sdk generate k8s" to regenerate code after
-                modifying this file Add custom validation using kubebuilder tags:
-                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              description: SwiftStorageConfiguration is the Spec for the keystone
+                API.
               properties:
                 accountBindPort:
                   type: integer
@@ -4578,7 +5147,7 @@ spec:
                   type: string
                 objectBindPort:
                   type: integer
-                ringPersistentVolumeClaim:
+                ringConfigMapName:
                   type: string
                 storage:
                   properties:
@@ -4592,6 +5161,7 @@ spec:
                   type: string
               type: object
           required:
+          - commonConfiguration
           - serviceConfiguration
           type: object
         status:
@@ -4726,6 +5296,8 @@ spec:
                   type: string
                 clusterRoleBinding:
                   type: string
+                cniMetaPlugin:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -4740,6 +5312,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                contrailStatusImage:
+                  type: string
                 controlInstance:
                   type: string
                 distribution:
@@ -4754,6 +5328,8 @@ spec:
                   type: string
                 serviceAccount:
                   type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - commonConfiguration
@@ -5083,6 +5659,14 @@ spec:
                   type: integer
                 serverPort:
                   type: integer
+                storage:
+                  properties:
+                    path:
+                      type: string
+                    size:
+                      pattern: ^([0-9]+)([KMGTPE]i)?$
+                      type: string
+                  type: object
               type: object
           required:
           - commonConfiguration
@@ -5140,7 +5724,7 @@ spec:
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: svl-artifactory.juniper.net/contrail-operator/engprod-269421/contrail-operator:master.latest
+          image: registry:5000/contrail-operator:latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

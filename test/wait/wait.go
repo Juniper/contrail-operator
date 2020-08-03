@@ -40,7 +40,7 @@ func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 }
 
 // ForReadyDeployment is used to wait until Deployment is ready
-func (w Wait) ForReadyDeployment(name string) error {
+func (w Wait) ForReadyDeployment(name string, expectedReplicas int32) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
 		deployment, err := w.KubeClient.AppsV1().Deployments(w.Namespace).Get(name, meta.GetOptions{})
 		if err != nil {
@@ -49,12 +49,8 @@ func (w Wait) ForReadyDeployment(name string) error {
 			}
 			return false, err
 		}
-		replicas := int32(1)
-		if deployment.Spec.Replicas != nil {
-			replicas = *deployment.Spec.Replicas
-		}
 
-		if deployment.Status.ReadyReplicas == replicas {
+		if deployment.Status.ReadyReplicas == expectedReplicas {
 			return true, nil
 		}
 		return false, nil

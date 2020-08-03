@@ -1668,7 +1668,7 @@ func newManager() *contrail.Manager {
 			Services: contrail.Services{
 				Postgres: &contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Node: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.15:5432"},
 				},
 				Keystone: newKeystone(),
 			},
@@ -1689,7 +1689,6 @@ var memcached = &contrail.Memcached{
 			MaxMemory:       256,
 		},
 	},
-	Status: contrail.MemcachedStatus{Active: falseVal},
 }
 
 const credentialsSecretName = "credentials-secret"
@@ -1702,7 +1701,7 @@ var swift = &contrail.Swift{
 	Spec: contrail.SwiftSpec{
 		ServiceConfiguration: contrail.SwiftConfiguration{
 			Containers: []*contrail.Container{
-				{Name: "ring-reconciler", Image: "ring-reconciler"},
+				{Name: "ringcontroller", Image: "ringcontroller"},
 			},
 			SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 				AccountBindPort:   6001,

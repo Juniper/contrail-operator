@@ -25,7 +25,7 @@ type configMapFiller interface {
 	FillConfigMap(cm *core.ConfigMap)
 }
 
-// EnsureExist is used to ensure that specific config map exists and is filled properly
+// EnsureExists is used to ensure that specific config map exists and is filled properly
 func (c *ConfigMap) EnsureExists(dataSetter configMapFiller) error {
 	cm, err := c.createNewOrGetExistingConfigMap()
 	if err != nil {

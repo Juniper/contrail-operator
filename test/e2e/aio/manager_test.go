@@ -77,17 +77,6 @@ func TestManager(t *testing.T) {
 	})
 }
 
-var initialVersionMap = map[string]string{
-	"rabbitmq":                      "3.7.16",
-	"cassandra":                     "3.11.3",
-	"zookeeper":                     "3.5.4-beta",
-	"config":                        "2005.42",
-	"control":                       "2005.42",
-	"kubemanager":                   "2005.42",
-	"contrail-operator-provisioner": scmBranch + "." + scmRevision,
-	"contrail-statusmonitor":        scmBranch + "." + scmRevision,
-}
-
 var targetVersionMap = map[string]string{
 	"rabbitmq":    "3.7.17",
 	"cassandra":   "3.11.4",
@@ -98,7 +87,18 @@ var targetVersionMap = map[string]string{
 }
 
 func ManagerCluster(t *testing.T) {
-	t.Parallel()
+
+	initialVersionMap := map[string]string{
+		"rabbitmq":                      "3.7.16",
+		"cassandra":                     "3.11.3",
+		"zookeeper":                     "3.5.4-beta",
+		"config":                        cemRelease,
+		"control":                       cemRelease,
+		"kubemanager":                   cemRelease,
+		"contrail-operator-provisioner": buildTag,
+		"contrail-statusmonitor":        buildTag,
+	}
+
 	f := test.Global
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
@@ -381,7 +381,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 }
 
 func RabbitmqCluster(t *testing.T) {
-	t.Parallel()
 	f := test.Global
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()

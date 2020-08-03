@@ -19,15 +19,14 @@ type KeystoneConfiguration struct {
 	PostgresInstance   string       `json:"postgresInstance,omitempty"`
 	Containers         []*Container `json:"containers,omitempty"`
 	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
-	Storage            Storage      `json:"storage,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone
 // +k8s:openapi-gen=true
 type KeystoneStatus struct {
-	Active bool     `json:"active,omitempty"`
-	Port   int      `json:"port,omitempty"`
-	IPs    []string `json:"ips,omitempty"`
+	Active    bool   `json:"active,omitempty"`
+	Port      int    `json:"port,omitempty"`
+	ClusterIP string `json:"clusterIP,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

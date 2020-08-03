@@ -171,11 +171,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if len(keystone.Status.IPs) == 0 {
-		log.Info(fmt.Sprintf("%q Status.IPs empty", keystone.Name))
+	if keystone.Status.ClusterIP == "" {
+		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneIP := keystone.Status.IPs[0]
+	keystoneIP := keystone.Status.ClusterIP
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 
 	commandConfigName := command.Name + "-command-configmap"
@@ -361,6 +361,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "api"),
 						Command:         getCommand(containers, "api"),
+						WorkingDir:      "/home/contrail/",
 						ReadinessProbe: &core.Probe{
 							Handler: core.Handler{
 								HTTPGet: &core.HTTPGetAction{
@@ -494,25 +495,14 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystoneProxy := proxy.NewSecureClient(command.Namespace, keystoneName+"-keystone-statefulset-0", kPort)
+	keystoneProxy := proxy.NewSecureClientForService(command.Namespace, keystoneName+"-service", kPort)
 	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
 		return fmt.Errorf("failed to get keystone token: %v", err)
 	}
-	swiftProxyPods := &core.PodList{}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
-	labelSelector := labels.SelectorFromSet(map[string]string{"SwiftProxy": swiftName + "-proxy"})
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	err = r.client.List(context.TODO(), swiftProxyPods, &listOpts)
-	if err != nil {
-		return fmt.Errorf("failed to list swift proxy pods: %v", err)
-	}
-	if swiftProxyPods == nil || len(swiftProxyPods.Items) == 0 {
-		return fmt.Errorf("no swift proxy pod found")
-	}
-	swiftProxyPod := swiftProxyPods.Items[0].Name
-	swiftProxy := proxy.NewSecureClient(command.Namespace, swiftProxyPod, sPort)
+	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)
 	swiftURL := token.EndpointURL("swift", "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {
@@ -530,7 +520,7 @@ func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, po
 	if command.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
 	}
-	return certificates.NewCertificate(r.client, r.scheme, command, r.config, pods, instanceType, hostNetwork).EnsureExistsAndIsSigned()
+	return certificates.NewCertificate(r.client, r.scheme, command, pods, instanceType, hostNetwork).EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {
