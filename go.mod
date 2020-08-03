@@ -22,10 +22,8 @@ require (
 	github.com/spf13/cobra v0.0.6 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.5.1
-	go.etcd.io/etcd v3.3.22+incompatible
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f
+	golang.org/x/tools v0.0.0-20200309202150-20ab64c0d93f // indirect
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4
@@ -33,7 +31,6 @@ require (
 	k8s.io/apimachinery v0.17.4
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c
-	k8s.io/kubernetes v1.16.2
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab // indirect
 	sigs.k8s.io/controller-runtime v0.5.2
 	sigs.k8s.io/kind v0.7.1-0.20200303021537-981bd80d3802
