@@ -439,6 +439,15 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
+			probe := corev1.Probe{
+				Handler: corev1.Handler{
+					Exec: &corev1.ExecAction{
+						Command: []string{"sh", "-c", "redis-cli -h ${POD_IP} -p 6380 ping"},
+					},
+				},
+			}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &probe
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).LivenessProbe = &probe
 		}
 	}
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
