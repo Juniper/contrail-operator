@@ -3317,9 +3317,17 @@ func (in *WebuiStatus) DeepCopyInto(out *WebuiStatus) {
 	out.Ports = in.Ports
 	if in.ServiceStatus != nil {
 		in, out := &in.ServiceStatus, &out.ServiceStatus
-		*out = make(map[string]WebUIServiceStatus, len(*in))
+		*out = make(map[string][]WebUIServiceStatus, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal []WebUIServiceStatus
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = make([]WebUIServiceStatus, len(*in))
+				copy(*out, *in)
+			}
+			(*out)[key] = outVal
 		}
 	}
 	return

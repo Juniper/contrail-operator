@@ -75,7 +75,7 @@ type WebuiStatus struct {
 	Status `json:",inline"`
 	Nodes  map[string]string `json:"nodes,omitempty"`
 	Ports  WebUIStatusPorts  `json:"ports,omitempty"`
-	ServiceStatus map[string]WebUIServiceStatus `json:"serviceStatus,omitempty"`
+	ServiceStatus map[string][]WebUIServiceStatus `json:"serviceStatus,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

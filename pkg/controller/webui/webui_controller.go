@@ -7,6 +7,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -521,11 +522,45 @@ func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSe
 	}
 	cr.Status.FromStatefulSet(sts)
 	r.updatePorts(cr)
+	if err := r.updateServiceStatus(cr); err != nil {
+		return err
+	}
 	return r.Client.Status().Update(context.Background(), cr)
 }
 
-func (r *ReconcileWebui) updatePorts(cr *v1alpha1.Webui){
+func (r *ReconcileWebui) updatePorts(cr *v1alpha1.Webui) {
 	cr.Status.Ports.RedisPort = v1alpha1.RedisServerPortWebui
 	cr.Status.Ports.WebUIHttpPort = v1alpha1.WebuiHttpListenPort
 	cr.Status.Ports.WebUIHttpsPort = v1alpha1.WebuiHttpsListenPort
+}
+
+func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
+	pods, err := r.listWebUIPods(cr.Name)
+	if err != nil {
+		return err
+	}
+	serviceStatuses := map[string][]v1alpha1.WebUIServiceStatus{}
+	var podStatus []v1alpha1.WebUIServiceStatus
+	for _, pod := range pods.Items {
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			status := "Non-Functional"
+			if containerStatus.Ready {
+				status = "Functional"
+			}
+			podStatus = append(podStatus, v1alpha1.WebUIServiceStatus{ModuleName: containerStatus.Name, ModuleState: status})
+		}
+		serviceStatuses[pod.Spec.NodeName] = podStatus
+	}
+	cr.Status.ServiceStatus = serviceStatuses
+	return nil
+}
+
+func (r *ReconcileWebui) listWebUIPods(webUIName string) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": "webui", "webui": webUIName})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.Client.List(context.TODO(), pods, &listOpts); err != nil {
+		return &corev1.PodList{}, err
+	}
+	return pods, nil
 }

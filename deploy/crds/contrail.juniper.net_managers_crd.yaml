@@ -2295,17 +2295,7 @@ spec:
                         replicas:
                           format: int32
                           type: integer
-                        serviceStatus:
-                          additionalProperties:
-                            properties:
-                              moduleName:
-                                type: string
-                              state:
-                                type: string
-                            required:
-                            - state
-                            type: object
-                          type: object
+                        serviceStatus: {}
                       type: object
                   type: object
                 zookeepers:
