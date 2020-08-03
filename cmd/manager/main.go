@@ -11,7 +11,6 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	_ "github.com/operator-framework/operator-sdk/pkg/metrics"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -90,7 +89,6 @@ func main() {
 	// Create a new Cmd to provide shared dependencies and start components.
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
-		MapperProvider:     restmapper.NewDynamicRESTMapper,
 		MetricsBindAddress: "0",
 	})
 	if err != nil {
