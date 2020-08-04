@@ -193,12 +193,12 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	keystoneData := &keystoneEndpoint{
-		keystoneIP:    keystone.Status.ClusterIP,
-		keystonePort:  keystone.Spec.ServiceConfiguration.ListenPort,
-		authProtocol:  keystone.Spec.ServiceConfiguration.AuthProtocol,
-		projectDomain: keystone.Spec.ServiceConfiguration.ProjectDomain,
-		userDomain:    keystone.Spec.ServiceConfiguration.UserDomain,
-		region:        keystone.Spec.ServiceConfiguration.Region,
+		keystoneIP:      keystone.Status.ClusterIP,
+		keystonePort:    keystone.Spec.ServiceConfiguration.ListenPort,
+		authProtocol:    keystone.Spec.ServiceConfiguration.AuthProtocol,
+		projectDomainID: keystone.Spec.ServiceConfiguration.ProjectDomainID,
+		userDomainID:    keystone.Spec.ServiceConfiguration.UserDomainID,
+		region:          keystone.Spec.ServiceConfiguration.Region,
 	}
 	swiftConfigName := swiftProxy.Name + "-swiftproxy-config"
 	cm := r.configMap(swiftConfigName, swiftProxy, keystoneData, adminPasswordSecret, passwordSecret)

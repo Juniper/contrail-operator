@@ -8,7 +8,7 @@ import (
 )
 
 type keystoneConfig struct {
-	PodIPs    []string
+	PodIPs           []string
 	ListenPort       int
 	RabbitMQServer   string
 	PostgreSQLServer string
@@ -37,9 +37,9 @@ func (c *keystoneConfig) FillConfigMap(cm *core.ConfigMap) {
 }
 
 func (c *keystonePodConfig) fillConfigMapForPod(cm *core.ConfigMap) {
-	cm.Data["config" + c.ListenAddress + ".json"] = c.executeTemplate(keystoneKollaServiceConfig)
-	cm.Data["keystone" + c.ListenAddress + ".conf"] = c.executeTemplate(keystoneConf)
-	cm.Data["wsgi-keystone" + c.ListenAddress + ".conf"] = c.executeTemplate(wsgiKeystoneConf)
+	cm.Data["config"+c.ListenAddress+".json"] = c.executeTemplate(keystoneKollaServiceConfig)
+	cm.Data["keystone"+c.ListenAddress+".conf"] = c.executeTemplate(keystoneConf)
+	cm.Data["wsgi-keystone"+c.ListenAddress+".conf"] = c.executeTemplate(wsgiKeystoneConf)
 }
 
 func (c *keystonePodConfig) executeTemplate(t *template.Template) string {

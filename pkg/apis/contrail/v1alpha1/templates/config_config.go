@@ -32,7 +32,7 @@ AUTHN_PROTOCOL = {{ .KeystoneAuthProtocol }}
 AUTHN_SERVER = {{ .KeystoneIP }}
 AUTHN_PORT = {{ .KeystonePort }}
 AUTHN_URL = /v3/auth/tokens
-AUTHN_DOMAIN = {{ .KeystoneUserDomain }}
+AUTHN_DOMAIN = {{ .KeystoneUserDomainName }}
 cafile = {{ .CAFilePath }}
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))
@@ -134,8 +134,8 @@ auth_protocol = {{ .KeystoneAuthProtocol }}
 auth_url = {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3
 auth_type = password
 cafile = {{ .CAFilePath }}
-user_domain_name = {{ .KeystoneUserDomain }}
-project_domain_name = {{ .KeystoneProjectDomain }}
+user_domain_name = {{ .KeystoneUserDomainName }}
+project_domain_name = {{ .KeystoneProjectDomainName }}
 region_name = {{ .KeystoneRegion }}`))
 
 // FabricAnsibleConf is the template of the DeviceManager configuration for fabric management.

@@ -19,12 +19,12 @@ type configMaps struct {
 }
 
 type keystoneEndpoint struct {
-	keystoneIP    string
-	keystonePort  int
-	authProtocol  string
-	projectDomain string
-	userDomain    string
-	region        string
+	keystoneIP      string
+	keystonePort    int
+	authProtocol    string
+	projectDomainID string
+	userDomainID    string
+	region          string
 }
 
 func (r *ReconcileSwiftProxy) configMap(
@@ -44,35 +44,35 @@ func (r *ReconcileSwiftProxy) configMap(
 
 func (c *configMaps) ensureExists(memcachedNode string) error {
 	spc := &swiftProxyConfig{
-		ListenPort:            c.swiftProxySpec.ServiceConfiguration.ListenPort,
-		KeystoneIP:            c.keystone.keystoneIP,
-		KeystonePort:          c.keystone.keystonePort,
-		KeystoneAuthProtocol:  c.keystone.authProtocol,
-		KeystoneUserDomain:    c.keystone.userDomain,
-		KeystoneProjectDomain: c.keystone.projectDomain,
-		KeystoneRegion:        c.keystone.region,
-		MemcachedServer:       memcachedNode,
-		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
-		SwiftUser:             string(c.credentialsSecret.Data["user"]),
-		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
+		ListenPort:              c.swiftProxySpec.ServiceConfiguration.ListenPort,
+		KeystoneIP:              c.keystone.keystoneIP,
+		KeystonePort:            c.keystone.keystonePort,
+		KeystoneAuthProtocol:    c.keystone.authProtocol,
+		KeystoneUserDomainID:    c.keystone.userDomainID,
+		KeystoneProjectDomainID: c.keystone.projectDomainID,
+		KeystoneRegion:          c.keystone.region,
+		MemcachedServer:         memcachedNode,
+		KeystoneAdminPassword:   string(c.keystoneAdminPassSecret.Data["password"]),
+		SwiftUser:               string(c.credentialsSecret.Data["user"]),
+		SwiftPassword:           string(c.credentialsSecret.Data["password"]),
 	}
 	return c.cm.EnsureExists(spc)
 }
 
 func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) error {
 	spc := &registerServiceConfig{
-		KeystoneIP:            c.keystone.keystoneIP,
-		KeystonePort:          c.keystone.keystonePort,
-		KeystoneAdminPassword: string(c.keystoneAdminPassSecret.Data["password"]),
-		KeystoneAuthProtocol:  c.keystone.authProtocol,
-		KeystoneUserDomain:    c.keystone.userDomain,
-		KeystoneProjectDomain: c.keystone.projectDomain,
-		KeystoneRegion:        c.keystone.region,
-		SwiftPassword:         string(c.credentialsSecret.Data["password"]),
-		SwiftUser:             string(c.credentialsSecret.Data["user"]),
-		SwiftPublicEndpoint:   fmt.Sprintf("%v:%v", publicIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
-		SwiftInternalEndpoint: fmt.Sprintf("%v:%v", internalIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
-		CAFilePath:            certificates.SignerCAFilepath,
+		KeystoneIP:              c.keystone.keystoneIP,
+		KeystonePort:            c.keystone.keystonePort,
+		KeystoneAdminPassword:   string(c.keystoneAdminPassSecret.Data["password"]),
+		KeystoneAuthProtocol:    c.keystone.authProtocol,
+		KeystoneUserDomainID:    c.keystone.userDomainID,
+		KeystoneProjectDomainID: c.keystone.projectDomainID,
+		KeystoneRegion:          c.keystone.region,
+		SwiftPassword:           string(c.credentialsSecret.Data["password"]),
+		SwiftUser:               string(c.credentialsSecret.Data["user"]),
+		SwiftPublicEndpoint:     fmt.Sprintf("%v:%v", publicIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		SwiftInternalEndpoint:   fmt.Sprintf("%v:%v", internalIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
+		CAFilePath:              certificates.SignerCAFilepath,
 	}
 	return c.cm.EnsureExists(spc)
 }

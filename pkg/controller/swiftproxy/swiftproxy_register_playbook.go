@@ -8,18 +8,18 @@ import (
 )
 
 type registerServiceConfig struct {
-	KeystoneIP            string
-	KeystonePort          int
-	KeystoneAuthProtocol  string
-	KeystoneUserDomain    string
-	KeystoneProjectDomain string
-	KeystoneRegion        string
-	KeystoneAdminPassword string
-	SwiftInternalEndpoint string
-	SwiftPublicEndpoint   string
-	SwiftPassword         string
-	SwiftUser             string
-	CAFilePath            string
+	KeystoneIP              string
+	KeystonePort            int
+	KeystoneAuthProtocol    string
+	KeystoneUserDomainID    string
+	KeystoneProjectDomainID string
+	KeystoneRegion          string
+	KeystoneAdminPassword   string
+	SwiftInternalEndpoint   string
+	SwiftPublicEndpoint     string
+	SwiftPassword           string
+	SwiftUser               string
+	CAFilePath              string
 }
 
 func (s *registerServiceConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -102,8 +102,8 @@ openstack_auth:
   username: "admin"
   password: "{{ .KeystoneAdminPassword }}"
   project_name: "admin"
-  domain_id: "{{ .KeystoneProjectDomain }}"
-  user_domain_id: "{{ .KeystoneUserDomain }}"
+  domain_id: "{{ .KeystoneProjectDomainID }}"
+  user_domain_id: "{{ .KeystoneUserDomainID }}"
 
 region_name: "{{ .KeystoneRegion }}"
 swift_internal_endpoint: "{{ .SwiftInternalEndpoint }}"

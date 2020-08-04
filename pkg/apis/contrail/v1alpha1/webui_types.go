@@ -88,12 +88,12 @@ type WebuiList struct {
 }
 
 type keystoneEndpoint struct {
-	keystoneIP    string
-	keystonePort  int
-	authProtocol  string
-	region        string
-	userDomain    string
-	projectDomain string
+	keystoneIP        string
+	keystonePort      int
+	authProtocol      string
+	region            string
+	userDomainName    string
+	projectDomainName string
 }
 
 func init() {
@@ -154,63 +154,63 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		var webuiWebConfigBuffer bytes.Buffer
 		configtemplates.WebuiWebConfig.Execute(&webuiWebConfigBuffer, struct {
-			HostIP               string
-			Hostname             string
-			APIServerList        string
-			APIServerPort        string
-			AnalyticsServerList  string
-			AnalyticsServerPort  string
-			ControlNodeList      string
-			DnsNodePort          string
-			CassandraServerList  string
-			CassandraPort        string
-			RedisServerList      string
-			RedisServerPort      string
-			AdminUsername        string
-			AdminPassword        string
-			Manager              string
-			CAFilePath           string
-			KeystoneIP           string
-			KeystonePort         string
-			KeystoneRegion       string
-			KeystoneAuthProtocol string
-			KeystoneUserDomain   string
+			HostIP                 string
+			Hostname               string
+			APIServerList          string
+			APIServerPort          string
+			AnalyticsServerList    string
+			AnalyticsServerPort    string
+			ControlNodeList        string
+			DnsNodePort            string
+			CassandraServerList    string
+			CassandraPort          string
+			RedisServerList        string
+			RedisServerPort        string
+			AdminUsername          string
+			AdminPassword          string
+			Manager                string
+			CAFilePath             string
+			KeystoneIP             string
+			KeystonePort           string
+			KeystoneRegion         string
+			KeystoneAuthProtocol   string
+			KeystoneUserDomainName string
 		}{
-			HostIP:               podList.Items[idx].Status.PodIP,
-			Hostname:             podList.Items[idx].Name,
-			APIServerList:        configNodesInformation.APIServerListQuotedCommaSeparated,
-			APIServerPort:        configNodesInformation.APIServerPort,
-			AnalyticsServerList:  configNodesInformation.AnalyticsServerListQuotedCommaSeparated,
-			AnalyticsServerPort:  configNodesInformation.AnalyticsServerPort,
-			ControlNodeList:      controlNodesInformation.ServerListCommanSeparatedQuoted,
-			DnsNodePort:          controlNodesInformation.DNSIntrospectPort,
-			CassandraServerList:  cassandraNodesInformation.ServerListCommanSeparatedQuoted,
-			CassandraPort:        cassandraNodesInformation.CQLPort,
-			RedisServerList:      "127.0.0.1",
-			RedisServerPort:      "6380",
-			AdminUsername:        webUIConfig.AdminUsername,
-			AdminPassword:        webUIConfig.AdminPassword,
-			Manager:              manager,
-			CAFilePath:           certificates.SignerCAFilepath,
-			KeystoneIP:           keystoneData.keystoneIP,
-			KeystonePort:         strconv.Itoa(keystoneData.keystonePort),
-			KeystoneRegion:       keystoneData.region,
-			KeystoneAuthProtocol: keystoneData.authProtocol,
-			KeystoneUserDomain:   keystoneData.userDomain,
+			HostIP:                 podList.Items[idx].Status.PodIP,
+			Hostname:               podList.Items[idx].Name,
+			APIServerList:          configNodesInformation.APIServerListQuotedCommaSeparated,
+			APIServerPort:          configNodesInformation.APIServerPort,
+			AnalyticsServerList:    configNodesInformation.AnalyticsServerListQuotedCommaSeparated,
+			AnalyticsServerPort:    configNodesInformation.AnalyticsServerPort,
+			ControlNodeList:        controlNodesInformation.ServerListCommanSeparatedQuoted,
+			DnsNodePort:            controlNodesInformation.DNSIntrospectPort,
+			CassandraServerList:    cassandraNodesInformation.ServerListCommanSeparatedQuoted,
+			CassandraPort:          cassandraNodesInformation.CQLPort,
+			RedisServerList:        "127.0.0.1",
+			RedisServerPort:        "6380",
+			AdminUsername:          webUIConfig.AdminUsername,
+			AdminPassword:          webUIConfig.AdminPassword,
+			Manager:                manager,
+			CAFilePath:             certificates.SignerCAFilepath,
+			KeystoneIP:             keystoneData.keystoneIP,
+			KeystonePort:           strconv.Itoa(keystoneData.keystonePort),
+			KeystoneRegion:         keystoneData.region,
+			KeystoneAuthProtocol:   keystoneData.authProtocol,
+			KeystoneUserDomainName: keystoneData.userDomainName,
 		})
 		data["config.global.js."+podList.Items[idx].Status.PodIP] = webuiWebConfigBuffer.String()
 		//fmt.Println("DATA ", data)
 		var webuiAuthConfigBuffer bytes.Buffer
 		configtemplates.WebuiAuthConfig.Execute(&webuiAuthConfigBuffer, struct {
-			AdminUsername         string
-			AdminPassword         string
-			KeystoneProjectDomain string
-			KeystoneUserDomain    string
+			AdminUsername             string
+			AdminPassword             string
+			KeystoneProjectDomainName string
+			KeystoneUserDomainName    string
 		}{
-			AdminUsername:         webUIConfig.AdminUsername,
-			AdminPassword:         webUIConfig.AdminPassword,
-			KeystoneUserDomain:    keystoneData.userDomain,
-			KeystoneProjectDomain: keystoneData.projectDomain,
+			AdminUsername:             webUIConfig.AdminUsername,
+			AdminPassword:             webUIConfig.AdminPassword,
+			KeystoneUserDomainName:    keystoneData.userDomainName,
+			KeystoneProjectDomainName: keystoneData.projectDomainName,
 		})
 		data["contrail-webui-userauth.js"] = webuiAuthConfigBuffer.String()
 	}
@@ -341,7 +341,7 @@ func (c *Webui) getKeystoneEndpoint(k *keystoneEndpoint, client client.Client) e
 	k.keystonePort = keystone.Spec.ServiceConfiguration.ListenPort
 	k.region = keystone.Spec.ServiceConfiguration.Region
 	k.authProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
-	k.userDomain = keystone.Spec.ServiceConfiguration.UserDomain
-	k.projectDomain = keystone.Spec.ServiceConfiguration.ProjectDomain
+	k.userDomainName = keystone.Spec.ServiceConfiguration.UserDomainName
+	k.projectDomainName = keystone.Spec.ServiceConfiguration.ProjectDomainName
 	return nil
 }

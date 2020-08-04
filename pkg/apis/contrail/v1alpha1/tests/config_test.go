@@ -131,11 +131,11 @@ var keystone = &v1alpha1.Keystone{
 	},
 	Spec: v1alpha1.KeystoneSpec{
 		ServiceConfiguration: v1alpha1.KeystoneConfiguration{
-			ListenPort:    5555,
-			AuthProtocol:  "https",
-			UserDomain:    "Default",
-			ProjectDomain: "Default",
-			Region:        "RegionOne",
+			ListenPort:        5555,
+			AuthProtocol:      "https",
+			UserDomainName:    "Default",
+			ProjectDomainName: "Default",
+			Region:            "RegionOne",
 		},
 	},
 	Status: v1alpha1.KeystoneStatus{

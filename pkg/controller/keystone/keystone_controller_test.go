@@ -357,8 +357,8 @@ func newKeystone() *contrail.Keystone {
 				KeystoneSecretName: "keystone-adminpass-secret",
 				AuthProtocol:       "https",
 				Region:             "RegionOne",
-				UserDomain:         "Default",
-				ProjectDomain:      "Default",
+				UserDomainName:     "Default",
+				ProjectDomainName:  "Default",
 			},
 		},
 	}

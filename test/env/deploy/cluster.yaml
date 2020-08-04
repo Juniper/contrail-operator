@@ -220,8 +220,10 @@ spec:
           listenPort: 5555
           authProtocol: https
           region: RegionOne
-          userDomain: Default
-          projectDomain: Default
+          userDomainName: Default
+          projectDomainName: Default
+          userDomainID: default
+          projectDomainID: default
           containers:
             - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31

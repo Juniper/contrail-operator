@@ -8,17 +8,17 @@ import (
 )
 
 type swiftProxyConfig struct {
-	ListenPort            int
-	KeystoneIP            string
-	KeystonePort          int
-	KeystoneAuthProtocol  string
-	KeystoneProjectDomain string
-	KeystoneUserDomain    string
-	KeystoneRegion        string
-	MemcachedServer       string
-	KeystoneAdminPassword string
-	SwiftUser             string
-	SwiftPassword         string
+	ListenPort              int
+	KeystoneIP              string
+	KeystonePort            int
+	KeystoneAuthProtocol    string
+	KeystoneProjectDomainID string
+	KeystoneUserDomainID    string
+	KeystoneRegion          string
+	MemcachedServer         string
+	KeystoneAdminPassword   string
+	SwiftUser               string
+	SwiftPassword           string
 }
 
 func (s *swiftProxyConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -102,8 +102,8 @@ auth_url = {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}
 auth_type = password
 auth_protocol = {{ .KeystoneAuthProtocol }}
 insecure = true
-project_domain_id = {{ .KeystoneProjectDomain }}
-user_domain_id = {{ .KeystoneUserDomain }}
+project_domain_id = {{ .KeystoneProjectDomainID }}
+user_domain_id = {{ .KeystoneUserDomainID }}
 project_name = service
 username = {{ .SwiftUser }}
 password = {{ .SwiftPassword }}
