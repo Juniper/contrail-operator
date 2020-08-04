@@ -2,30 +2,31 @@ package webui
 
 import (
 	"context"
+	"strings"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 var log = logf.Log.WithName("controller_webui")
@@ -375,6 +376,16 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
+			probe := corev1.Probe{
+				Handler: corev1.Handler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Scheme: corev1.URISchemeHTTPS,
+						Path:   "/",
+						Port:   intstr.IntOrString{IntVal: 8143},
+					},
+				},
+			}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &probe
 		}
 		if container.Name == "webuijob" {
 			command := []string{"bash", "-c",
@@ -430,6 +441,14 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
+			probe := corev1.Probe{
+				Handler: corev1.Handler{
+					Exec: &corev1.ExecAction{
+						Command: []string{"sh", "-c", "redis-cli -h ${POD_IP} -p 6380 ping"},
+					},
+				},
+			}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &probe
 		}
 	}
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
@@ -489,13 +508,59 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 	}
 
-	if instance.Status.Active == nil {
-		active := false
-		instance.Status.Active = &active
-	}
-	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, statefulSet, request); err != nil {
+	if err = r.updateStatus(instance, statefulSet); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSet) error {
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: sts.Namespace},
+		sts); err != nil {
+		return err
+	}
+	cr.Status.FromStatefulSet(sts)
+	r.updatePorts(cr)
+	if err := r.updateServiceStatus(cr); err != nil {
+		return err
+	}
+	return r.Client.Status().Update(context.Background(), cr)
+}
+
+func (r *ReconcileWebui) updatePorts(cr *v1alpha1.Webui) {
+	cr.Status.Ports.RedisPort = v1alpha1.RedisServerPortWebui
+	cr.Status.Ports.WebUIHttpPort = v1alpha1.WebuiHttpListenPort
+	cr.Status.Ports.WebUIHttpsPort = v1alpha1.WebuiHttpsListenPort
+}
+
+func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
+	pods, err := r.listWebUIPods(cr.Name)
+	if err != nil {
+		return err
+	}
+	serviceStatuses := map[string]map[string]v1alpha1.WebUIServiceStatus{}
+	for _, pod := range pods.Items {
+		podStatus := map[string]v1alpha1.WebUIServiceStatus{}
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			status := "Non-Functional"
+			if containerStatus.Ready {
+				status = "Functional"
+			}
+			podStatus[strings.Title(containerStatus.Name)] = v1alpha1.WebUIServiceStatus{ModuleName: containerStatus.Name, ModuleState: status}
+		}
+		serviceStatuses[pod.Spec.NodeName] = podStatus
+	}
+	cr.Status.ServiceStatus = serviceStatuses
+	return nil
+}
+
+func (r *ReconcileWebui) listWebUIPods(webUIName string) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": "webui", "webui": webUIName})
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.Client.List(context.TODO(), pods, &listOpts); err != nil {
+		return &corev1.PodList{}, err
+	}
+	return pods, nil
 }
