@@ -26,7 +26,8 @@ var scmBranch = getEnv("BUILD_SCM_BRANCH", "master")
 var cemRelease = getEnv("CEM_RELEASE", "master-latest")
 
 func TestMain(m *testing.M) {
-	os.Setenv("TEST_NAMESPACE", "contrail")
+	os.Setenv("TEST_OPERATOR_NAMESPACE", "contrail")
+	os.Setenv("TEST_WATCH_NAMESPACE", "contrail")
 	f.MainEntry(m)
 }
 

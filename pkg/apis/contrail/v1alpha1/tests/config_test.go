@@ -35,6 +35,9 @@ var config = &v1alpha1.Config{
 		ServiceConfiguration: v1alpha1.ConfigConfiguration{
 			KeystoneSecretName: "keystone-adminpass-secret",
 			AuthMode:           v1alpha1.AuthenticationModeKeystone,
+			CassandraInstance:  "cassandra1",
+			ZookeeperInstance:  "zookeeper1",
+			KeystoneInstance:   "keystone",
 		},
 	},
 }
@@ -48,6 +51,11 @@ var control = &v1alpha1.Control{
 			"control_role":     "master",
 		},
 	},
+	Spec: v1alpha1.ControlSpec{
+		ServiceConfiguration: v1alpha1.ControlConfiguration{
+			CassandraInstance: "cassandra1",
+		},
+	},
 }
 
 var kubemanager = &v1alpha1.Kubemanager{
@@ -56,6 +64,12 @@ var kubemanager = &v1alpha1.Kubemanager{
 		Namespace: "default",
 		Labels: map[string]string{
 			"contrail_cluster": "cluster1",
+		},
+	},
+	Spec: v1alpha1.KubemanagerSpec{
+		ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
+			CassandraInstance: "cassandra1",
+			ZookeeperInstance: "zookeeper1",
 		},
 	},
 }
@@ -71,6 +85,8 @@ var webui = &v1alpha1.Webui{
 	Spec: v1alpha1.WebuiSpec{
 		ServiceConfiguration: v1alpha1.WebuiConfiguration{
 			KeystoneSecretName: "keystone-adminpass-secret",
+			CassandraInstance:  "cassandra1",
+			KeystoneInstance:   "keystone",
 		},
 	},
 }
@@ -115,8 +131,9 @@ var vrouter = &v1alpha1.Vrouter{
 	},
 	Spec: v1alpha1.VrouterSpec{
 		ServiceConfiguration: v1alpha1.VrouterConfiguration{
-			ControlInstance: "control1",
-			Gateway:         "1.1.8.254",
+			ControlInstance:   "control1",
+			Gateway:           "1.1.8.254",
+			CassandraInstance: "cassandra1",
 		},
 	},
 }
