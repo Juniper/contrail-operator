@@ -86,6 +86,12 @@ func TestCommandServices(t *testing.T) {
 					PostgresInstance:   "commandtest-psql",
 					ListenPort:         5555,
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
+					AuthProtocol:       "https",
+					UserDomainName:     "Default",
+					ProjectDomainName:  "Default",
+					UserDomainID:       "default",
+					ProjectDomainID:    "default",
+					Region:             "RegionOne",
 					Containers: []*contrail.Container{
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 						{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},
