@@ -156,6 +156,55 @@ func TestHACoreContrailServices(t *testing.T) {
 			},
 		}
 
+		controls := []*contrail.Control{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "hatest-control",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
+			},
+			Spec: contrail.ControlSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:       &trueVal,
+					HostNetwork:  &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+				ServiceConfiguration: contrail.ControlConfiguration{
+					CassandraInstance: "hatest-cassandra",
+					Containers: []*contrail.Container{
+						{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + versionMap["cemVersion"]},
+						{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["cemVersion"]},
+						{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + versionMap["cemVersion"]},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+						{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+					},
+				},
+			},
+		}}
+
+		webui := &contrail.Webui{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "hatest-webui",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.WebuiSpec{
+				CommonConfiguration: contrail.CommonConfiguration{
+					Create:       &trueVal,
+					HostNetwork:  &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+				ServiceConfiguration: contrail.WebuiConfiguration{
+					CassandraInstance: "hatest-cassandra",
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+						{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:" + versionMap["redis"]},
+						{Name: "webuijob", Image: "registry:5000/contrail-nightly/contrail-controller-webui-job:" + versionMap["cemVersion"]},
+						{Name: "webuiweb", Image: "registry:5000/contrail-nightly/contrail-controller-webui-web:" + versionMap["cemVersion"]},
+					},
+				},
+			},
+		}
+
 		provisionManager := &contrail.ProvisionManager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "hatest-provmanager",
@@ -188,7 +237,9 @@ func TestHACoreContrailServices(t *testing.T) {
 				Services: contrail.Services{
 					Cassandras:       cassandras,
 					Zookeepers:       zookeepers,
+					Controls:         controls,
 					Config:           config,
+					Webui:            webui,
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionManager,
 				},
@@ -225,12 +276,15 @@ func TestHACoreContrailServices(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbitmq-rabbitmq-statefulset", replicas))
 			})
 
+			t.Run("then a ready Control StatefulSet should be created", func(t *testing.T) {
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-control-control-statefulset", replicas))
+			})
+
 			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 			})
 
 			t.Run("then a ready WebUI StatefulSet should be created", func(t *testing.T) {
-				t.Skip("Unskip when WebUI will support environment without Keystone")
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 			})
 
@@ -261,12 +315,15 @@ func TestHACoreContrailServices(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbitmq-rabbitmq-statefulset", replicas))
 				})
 
+				t.Run("then a ready Control StatefulSet should be created", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyStatefulSet("hatest-control-control-statefulset", replicas))
+				})
+
 				t.Run("then Config StatefulSet should be scaled and ready", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", replicas))
 				})
 
 				t.Run("then WebUI StatefulSet should be scaled and ready", func(t *testing.T) {
-					t.Skip("Unskip when WebUI will support environment without Keystone")
 					assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", replicas))
 				})
 
