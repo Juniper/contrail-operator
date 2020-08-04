@@ -566,6 +566,19 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 		require.NoError(t, err)
 	})
 
+	t.Run("then Control has updated image", func(t *testing.T) {
+		t.Parallel()
+		controlContainerImage := "registry:5000/contrail-nightly/contrail-controller-control-control:" + targetVersionMap["cemVersion"]
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, "contrail_manager=control", controlContainerImage, "control")
+		require.NoError(t, err)
+	})
+
 	t.Run("then Config has updated image", func(t *testing.T) {
 		t.Parallel()
 		apiContainerImage := "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
@@ -641,6 +654,13 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	webuiwebContainer := utils.GetContainerFromList("webuiweb", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
 	webuijobContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
 	webuiwebContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-web:" + targetVersionMap["cemVersion"]
+
+	controlNodeContainer := utils.GetContainerFromList("control", instance.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers)
+	controlDNSContainer := utils.GetContainerFromList("dns", instance.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers)
+	controlNamedContainer := utils.GetContainerFromList("named", instance.Spec.Services.Controls[0].Spec.ServiceConfiguration.Containers)
+	controlNodeContainer.Image = "registry:5000/contrail-nightly/contrail-controller-control-control:" + targetVersionMap["cemVersion"]
+	controlDNSContainer.Image = "registry:5000/contrail-nightly/contrail-controller-control-dns:" + targetVersionMap["cemVersion"]
+	controlNamedContainer.Image = "registry:5000/contrail-nightly/contrail-controller-control-named:" + targetVersionMap["cemVersion"]
 
 	pmContainer := utils.GetContainerFromList("provisioner", instance.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers)
 	pmContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
