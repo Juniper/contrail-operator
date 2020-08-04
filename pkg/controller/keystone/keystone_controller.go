@@ -133,7 +133,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if !keystone.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
+	// After migration to CRD apiextensions.k8s.io/v1 replace this function
+	// with +kubebuilder:default markers on keystone struct fileds
 	if err := r.setDefaultValues(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
