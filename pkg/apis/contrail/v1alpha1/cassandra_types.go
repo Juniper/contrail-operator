@@ -240,7 +240,17 @@ func (c *Cassandra) PodIPListAndIPMapFromInstance(instanceType string, request r
 
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Cassandra) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
-	return SetInstanceActive(client, activeStatus, sts, request, c)
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: request.Namespace},
+		sts); err != nil {
+		return err
+	}
+	*activeStatus = false
+	var acceptableReadyReplicaCnt = *sts.Spec.Replicas/2 + 1
+	if sts.Status.ReadyReplicas >= acceptableReadyReplicaCnt {
+		*activeStatus = true
+	}
+
+	return client.Status().Update(context.TODO(), c)
 }
 
 // ManageNodeStatus manages the status of the Cassandra nodes.

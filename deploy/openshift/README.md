@@ -43,7 +43,7 @@ Choose source registry for container images with *CONTRAIL_REGISTRY* field.
 *DOCKER_CONFIG* is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required)
 Set *DOCKER_CONFIG* to registry secret with proper data in base64.
 
-**NOTE:** You may create base64 encoded value for config with script provided in *deploy/openshift/tools/docker-config-generate* directory.
+**NOTE:** You may create base64 encoded value for config with script provided in [deploy/openshift/tools/docker-config-generate](tools/docker-config-generate) directory.
 Copy output of the script and paste into config used to install-manifests script.
 
 4. Modify manifests if neccessary:
@@ -69,7 +69,7 @@ Run this command to start Openshift install:
 
 7. Open security groups:
 
-Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. **Do the same for the security group attached to worker nodes, after they are created.**
+Login to AWS Console and find *master* instance created by the *openshift-installer*. Select Security Group attached to it and edit it's inbound rules to accept all traffic. **Do the same for the security group attached to worker nodes, after they are created.** To automatically open port required by Contrail, you can use the [contrail-sc-open](tools/contrail-sc-open/) tool. 
 
 
 8. Patch the externalTrafficPolicy
@@ -106,3 +106,9 @@ oc login -u kubeadmin -p <cluster password>
 Last method to access Openshift cluster is web console.
 URL to web console will be displayed by **openshift-install** binary at the end of deployment.
 Login into console with the same credentials as for `oc`.
+
+## Notes
+
+* Contrail Operator creates Persistent Volumes that are used by some of the deployed pods. After deletion of Contrail resources (e.g. after deleting the Manager Custom Resource), those Persistent Volumes will not be deleted. Administrator has to delete them manually and make sure that directories created by these volumes on cluster nodes are in the expected state. Example Persistent Volumes deletion command:
+```
+kubectl delete pv $(kubectl get pv -o=jsonpath='{.items[?(@.spec.storageClassName=="local-storage")].metadata.name}')
