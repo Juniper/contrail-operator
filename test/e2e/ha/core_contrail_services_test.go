@@ -299,13 +299,17 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-rabbitmq-rabbitmq-statefulset", r))
 	})
 
+	t.Run(fmt.Sprintf("then a Control StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-control-control-statefulset", r))
+	})
+
 	t.Run(fmt.Sprintf("then a Config StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-config-config-statefulset", r))
 	})
 
 	t.Run(fmt.Sprintf("then a WebUI StatefulSet has %d ready replicas", r), func(t *testing.T) {
-		t.Skip("Unskip after adding Control node to tests")
 		t.Parallel()
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", r))
 	})
@@ -425,6 +429,55 @@ func getHACluster(namespace string) *contrail.Manager {
 		},
 	}
 
+	controls := []*contrail.Control{{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "hatest-control",
+			Namespace: namespace,
+			Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
+		},
+		Spec: contrail.ControlSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Create:       &trueVal,
+				HostNetwork:  &trueVal,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.ControlConfiguration{
+				CassandraInstance: "hatest-cassandra",
+				Containers: []*contrail.Container{
+					{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + versionMap["cemVersion"]},
+					{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + versionMap["cemVersion"]},
+					{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + versionMap["cemVersion"]},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+					{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+				},
+			},
+		},
+	}}
+
+	webui := &contrail.Webui{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "hatest-webui",
+			Namespace: namespace,
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+		},
+		Spec: contrail.WebuiSpec{
+			CommonConfiguration: contrail.CommonConfiguration{
+				Create:       &trueVal,
+				HostNetwork:  &trueVal,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.WebuiConfiguration{
+				CassandraInstance: "hatest-cassandra",
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+					{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:" + versionMap["redis"]},
+					{Name: "webuijob", Image: "registry:5000/contrail-nightly/contrail-controller-webui-job:" + versionMap["cemVersion"]},
+					{Name: "webuiweb", Image: "registry:5000/contrail-nightly/contrail-controller-webui-web:" + versionMap["cemVersion"]},
+				},
+			},
+		},
+	}
+
 	provisionManager := &contrail.ProvisionManager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "hatest-provmanager",
@@ -463,7 +516,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Services: contrail.Services{
 				Cassandras:       cassandras,
 				Zookeepers:       zookeepers,
+				Controls:         controls,
 				Config:           config,
+				Webui:            webui,
 				Rabbitmq:         rabbitmq,
 				ProvisionManager: provisionManager,
 			},
@@ -525,7 +580,6 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 	})
 
 	t.Run("then Webui has updated image", func(t *testing.T) {
-		t.Skip("Unskip after adding Control node to tests")
 		t.Parallel()
 		webuijobContainerImage := "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
 		err := wait.Contrail{
@@ -582,6 +636,11 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	collectorContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-collector:" + targetVersionMap["cemVersion"]
 	queryengineContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + targetVersionMap["cemVersion"]
 	//statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + intendedVersionMap["contrail-statusmonitor"]
+
+	webuijobContainer := utils.GetContainerFromList("webuijob", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
+	webuiwebContainer := utils.GetContainerFromList("webuiweb", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
+	webuijobContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
+	webuiwebContainer.Image = "registry:5000/contrail-nightly/contrail-controller-webui-web:" + targetVersionMap["cemVersion"]
 
 	pmContainer := utils.GetContainerFromList("provisioner", instance.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.Containers)
 	pmContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
