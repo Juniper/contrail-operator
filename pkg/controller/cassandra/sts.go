@@ -47,7 +47,7 @@ spec:
             - -c
             - "if [[ $(nodetool status | grep ${POD_IP} |awk '{print $1}') != 'UN' ]]; then exit -1; fi;"
           initialDelaySeconds: 15
-          timeoutSeconds: 5
+          timeoutSeconds: 15
         name: cassandra
         securityContext:
           capabilities:
