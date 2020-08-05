@@ -3,7 +3,6 @@ package enqueue
 import (
 	"testing"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -13,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type restScope struct {
