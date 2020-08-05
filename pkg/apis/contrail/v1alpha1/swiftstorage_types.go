@@ -27,8 +27,8 @@ type SwiftStorageConfiguration struct {
 // SwiftStorageStatus defines the observed state of SwiftStorage
 // +k8s:openapi-gen=true
 type SwiftStorageStatus struct {
-	Active bool `json:"active"`
-	IPs    []string
+	Active bool     `json:"active"`
+	IPs    []string `json:"ip,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

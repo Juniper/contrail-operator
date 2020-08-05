@@ -356,11 +356,11 @@ func TestSwiftStorageController(t *testing.T) {
 		}{
 			"no pods": {
 				podIPs:            []string{},
-				expectedStatusIPs: []string{},
+				expectedStatusIPs: []string(nil),
 			},
 			"single pod without IP": {
 				podIPs:            []string{""},
-				expectedStatusIPs: []string{},
+				expectedStatusIPs: []string(nil),
 			},
 			"single pod with IP": {
 				podIPs:            []string{"192.168.0.1"},

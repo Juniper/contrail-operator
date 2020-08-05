@@ -9,7 +9,7 @@ spec:
     listKind: CommandList
     plural: commands
     singular: command
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

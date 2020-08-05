@@ -249,8 +249,8 @@ func TestSwiftProxyController(t *testing.T) {
 			// then expected Keystone is updated
 			k := &contrail.Keystone{}
 			err = cl.Get(context.Background(), types.NamespacedName{
-				Name:      k.Name,
-				Namespace: k.Namespace,
+				Name:      tt.expectedKeystone.Name,
+				Namespace: tt.expectedKeystone.Namespace,
 			}, k)
 			assert.NoError(t, err)
 			k.SetResourceVersion("")

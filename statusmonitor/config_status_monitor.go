@@ -198,7 +198,7 @@ func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTyp
 		check(err)
 		update := false
 		if configObject.Status.ServiceStatus == nil {
-			configObject.Status.ServiceStatus = map[string]map[string]contrailOperatorTypes.ConfigServiceStatus{}
+			configObject.Status.ServiceStatus = map[string]contrailOperatorTypes.ConfigServiceStatusMap{}
 			configObject.Status.ServiceStatus[config.Hostname] = StatusMap
 			update = true
 		}

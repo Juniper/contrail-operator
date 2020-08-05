@@ -9,7 +9,7 @@ spec:
     listKind: ConfigList
     plural: configs
     singular: config
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -211,7 +211,23 @@ spec:
                 redisPort:
                   type: string
               type: object
-            serviceStatus: {}
+            serviceStatus:
+              additionalProperties:
+                additionalProperties:
+                  properties:
+                    description:
+                      type: string
+                    moduleName:
+                      type: string
+                    nodeName:
+                      type: string
+                    state:
+                      type: string
+                  required:
+                  - state
+                  type: object
+                type: object
+              type: object
           type: object
       type: object
   version: v1alpha1

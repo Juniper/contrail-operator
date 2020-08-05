@@ -179,7 +179,7 @@ spec:
     listKind: CassandraList
     plural: cassandras
     singular: cassandra
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -365,7 +365,7 @@ spec:
     listKind: CommandList
     plural: commands
     singular: command
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -528,7 +528,7 @@ spec:
     listKind: ConfigList
     plural: configs
     singular: config
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -730,7 +730,23 @@ spec:
                 redisPort:
                   type: string
               type: object
-            serviceStatus: {}
+            serviceStatus:
+              additionalProperties:
+                additionalProperties:
+                  properties:
+                    description:
+                      type: string
+                    moduleName:
+                      type: string
+                    nodeName:
+                      type: string
+                    state:
+                      type: string
+                  required:
+                  - state
+                  type: object
+                type: object
+              type: object
           type: object
       type: object
   version: v1alpha1
@@ -750,7 +766,7 @@ spec:
     listKind: ControlList
     plural: controls
     singular: control
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -912,6 +928,42 @@ spec:
               type: object
             serviceStatus:
               additionalProperties:
+                properties:
+                  bgpPeer:
+                    properties:
+                      number:
+                        type: string
+                      up:
+                        type: string
+                    type: object
+                  connections:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        nodes:
+                          items:
+                            type: string
+                          type: array
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      type: object
+                    type: array
+                  numberOfRoutingInstances:
+                    type: string
+                  numberOfXMPPPeers:
+                    type: string
+                  state:
+                    type: string
+                  staticRoutes:
+                    properties:
+                      down:
+                        type: string
+                      number:
+                        type: string
+                    type: object
                 type: object
               type: object
           type: object
@@ -992,7 +1044,7 @@ spec:
     listKind: KeystoneList
     plural: keystones
     singular: keystone
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -1147,7 +1199,7 @@ spec:
     listKind: KubemanagerList
     plural: kubemanagers
     singular: kubemanager
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -1342,7 +1394,7 @@ spec:
     listKind: ManagerList
     plural: managers
     singular: manager
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -1995,7 +2047,23 @@ spec:
                             redisPort:
                               type: string
                           type: object
-                        serviceStatus: {}
+                        serviceStatus:
+                          additionalProperties:
+                            additionalProperties:
+                              properties:
+                                description:
+                                  type: string
+                                moduleName:
+                                  type: string
+                                nodeName:
+                                  type: string
+                                state:
+                                  type: string
+                              required:
+                              - state
+                              type: object
+                            type: object
+                          type: object
                       type: object
                   type: object
                 controls:
@@ -2172,6 +2240,42 @@ spec:
                             type: object
                           serviceStatus:
                             additionalProperties:
+                              properties:
+                                bgpPeer:
+                                  properties:
+                                    number:
+                                      type: string
+                                    up:
+                                      type: string
+                                  type: object
+                                connections:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      nodes:
+                                        items:
+                                          type: string
+                                        type: array
+                                      status:
+                                        type: string
+                                      type:
+                                        type: string
+                                    type: object
+                                  type: array
+                                numberOfRoutingInstances:
+                                  type: string
+                                numberOfXMPPPeers:
+                                  type: string
+                                state:
+                                  type: string
+                                staticRoutes:
+                                  properties:
+                                    down:
+                                      type: string
+                                    number:
+                                      type: string
+                                  type: object
                               type: object
                             type: object
                         type: object
@@ -4193,7 +4297,7 @@ spec:
     listKind: PostgresList
     plural: postgres
     singular: postgres
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -4448,7 +4552,7 @@ spec:
     listKind: RabbitmqList
     plural: rabbitmqs
     singular: rabbitmq
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -4637,7 +4741,7 @@ spec:
     listKind: SwiftProxyList
     plural: swiftproxies
     singular: swiftproxy
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -4804,7 +4908,7 @@ spec:
     listKind: SwiftList
     plural: swifts
     singular: swift
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -5036,7 +5140,7 @@ spec:
     listKind: SwiftStorageList
     plural: swiftstorages
     singular: swiftstorage
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -5181,6 +5285,10 @@ spec:
           properties:
             active:
               type: boolean
+            ip:
+              items:
+                type: string
+              type: array
           required:
           - active
           type: object
@@ -5202,7 +5310,7 @@ spec:
     listKind: VrouterList
     plural: vrouters
     singular: vrouter
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -5402,7 +5510,7 @@ spec:
     listKind: WebuiList
     plural: webuis
     singular: webui
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -5576,7 +5684,7 @@ spec:
     listKind: ZookeeperList
     plural: zookeepers
     singular: zookeeper
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

@@ -25,7 +25,7 @@ spec:
     listKind: SwiftProxyList
     plural: swiftproxies
     singular: swiftproxy
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

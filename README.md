@@ -105,26 +105,26 @@ Operator-SDK is a set of tools for developing Kubernates Operators. It is needed
 
 ### Operator-sdk installation on Mac OS
 
-    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-apple-darwin
-    $ chmod u+x ./operator-sdk-v0.13.0-x86_64-apple-darwin
-    $ sudo mv ./operator-sdk-v0.13.0-x86_64-apple-darwin /usr/local/bin/operator-sdk
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.1/operator-sdk-v0.17.1-x86_64-apple-darwin
+    $ chmod u+x ./operator-sdk-v0.17.1-x86_64-apple-darwin
+    $ sudo mv ./operator-sdk-v0.17.1-x86_64-apple-darwin /usr/local/bin/operator-sdk
 
 Verify if it works:
 
     $ operator-sdk version
-    operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 darwin/amd64"
+    operator-sdk version: "v0.17.1", (...)
 
 ### Operator-sdk installation on Linux
 
-    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.13.0/operator-sdk-v0.13.0-x86_64-linux-gnu
-    $ chmod u+x ./operator-sdk-v0.13.0-x86_64-linux-gnu  
-    $ sudo mv ./operator-sdk-v0.13.0-x86_64-linux-gnu /usr/local/bin/operator-sdk
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.1/operator-sdk-v0.17.1-x86_64-linux-gnu
+    $ chmod u+x ./operator-sdk-v0.17.1-x86_64-linux-gnu  
+    $ sudo mv ./operator-sdk-v0.17.1-x86_64-linux-gnu /usr/local/bin/operator-sdk
 
 
 Verify if it works:
 
     $ operator-sdk version
-    operator-sdk version: "v0.13.0", commit: "1af9c95bb51420c55a7f7f2b7fabebda24451276", go version: "go1.13.3 linux/amd64"
+    operator-sdk version: "v0.17.1", (...)
 
 
 ## Build Contrail-Operator

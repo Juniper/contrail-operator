@@ -9,7 +9,7 @@ spec:
     listKind: ZookeeperList
     plural: zookeepers
     singular: zookeeper
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:

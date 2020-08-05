@@ -1,18 +1,19 @@
 package enqueue
 
 import (
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	meta2 "k8s.io/apimachinery/pkg/api/meta"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/kubernetes/pkg/apis/core"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"testing"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type restScope struct {
@@ -37,7 +38,7 @@ func TestOwnerGroupKind(t *testing.T) {
 	}
 	ors := []meta.OwnerReference{or}
 	metaobj.SetOwnerReferences(ors)
-	pod := &corev1.Pod{
+	pod := &core.Pod{
 		ObjectMeta: metaobj,
 	}
 	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -144,7 +145,7 @@ func TestOwnerGroupKindFailure(t *testing.T) {
 	}
 	ors := []meta.OwnerReference{or}
 	metaobj.SetOwnerReferences(ors)
-	pod := &corev1.Pod{
+	pod := &core.Pod{
 		ObjectMeta: metaobj,
 	}
 	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())

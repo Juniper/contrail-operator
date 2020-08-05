@@ -9,7 +9,7 @@ spec:
     listKind: SwiftStorageList
     plural: swiftstorages
     singular: swiftstorage
-  scope: ""
+  scope: Namespaced
   subresources:
     status: {}
   validation:
@@ -154,6 +154,10 @@ spec:
           properties:
             active:
               type: boolean
+            ip:
+              items:
+                type: string
+              type: array
           required:
           - active
           type: object
