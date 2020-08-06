@@ -24,8 +24,6 @@ containerdConfigPatches:
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:5000"]
     endpoint = ["http://registry:5000"]
 networking:
-  apiServerAddress: 10.84.25.202
-  apiServerPort: 6443
   disableDefaultCNI: false
 nodes:
 EOF

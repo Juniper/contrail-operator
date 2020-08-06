@@ -9,6 +9,7 @@ This is first check-in to R2005
 ## Requirements
   * Go 1.13
   * Docker
+  * Bazel
   * Kubernetes client
   * operator-sdk (https://github.com/operator-framework/operator-sdk/)
   * Kubernetes cluster (only one node is supported right now)
@@ -126,6 +127,15 @@ Verify if it works:
     $ operator-sdk version
     operator-sdk version: "v0.17.1", (...)
 
+## Install bazel
+
+### Bazel on linux
+
+    https://docs.bazel.build/versions/3.4.0/install-ubuntu.html
+
+### Bazel on Mac
+
+    https://docs.bazel.build/versions/3.4.0/install-os-x.html#install-on-mac-os-x-homebrew
 
 ## Build Contrail-Operator
 
@@ -133,7 +143,11 @@ In order to run Contrail-Operator in the Kubernetes cluster we have to build Doc
 
     # local registry address
     export LOCAL_REGISTRY=localhost:5000
+
+    # it builds and pushes image: {LOCAL_REGISTRY}/contrail-operator/engprod-269421/crdsloader:master.latest
     bazel run //cmd/crdsloader:crdsloader-push-local
+
+    # it builds and pushes image: {LOCAL_REGISTRY}/contrail-operator/engprod-269421/contrail-operator:master.latest
     bazel run //cmd/manager:contrail-operator-push-local-debug
 
 
