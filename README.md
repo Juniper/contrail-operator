@@ -131,7 +131,11 @@ Verify if it works:
 
 In order to run Contrail-Operator in the Kubernetes cluster we have to build Docker Image.
 
-    operator-sdk build localhost:5000/contrail-operator:latest
+    # local registry address
+    export LOCAL_REGISTRY=localhost:5000
+    bazel run //cmd/crdsloader:crdsloader-push-local
+    bazel run //cmd/manager:contrail-operator-push-local-debug
+
 
 Verify:
 

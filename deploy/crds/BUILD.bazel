@@ -1,0 +1,7 @@
+filegroup(
+    name = "crds",
+    srcs = glob([
+        "*_crd.yaml",
+    ]),
+    visibility = ["//visibility:public"],
+)

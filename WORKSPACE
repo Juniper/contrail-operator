@@ -1,25 +1,33 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 http_archive(
     name = "io_bazel_rules_go",
+    sha256 = "142dd33e38b563605f0d20e89d9ef9eda0fc3cb539a14be1bdb1350de2eda659",
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.22.2/rules_go-v0.22.2.tar.gz",
         "https://github.com/bazelbuild/rules_go/releases/download/v0.22.2/rules_go-v0.22.2.tar.gz",
     ],
-    sha256 = "142dd33e38b563605f0d20e89d9ef9eda0fc3cb539a14be1bdb1350de2eda659",
 )
 
 http_archive(
     name = "bazel_gazelle",
+    sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
     urls = [
         "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
         "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
     ],
-    sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
 )
 
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+http_file(
+    name = "kubectl",
+    downloaded_file_path = "kubectl",
+    executable = True,
+    sha256 = "bb16739fcad964c197752200ff89d89aad7b118cb1de5725dc53fe924c40e3f7",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
+)
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
@@ -47,9 +55,9 @@ rules_proto_toolchains()
 
 http_archive(
     name = "rules_python",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
-    strip_prefix = "rules_python-0.0.2",
     sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
+    strip_prefix = "rules_python-0.0.2",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
 )
 
 load("@rules_python//python:repositories.bzl", "py_repositories")
@@ -206,9 +214,9 @@ py_proto_library(
 
 new_git_repository(
     name = "com_github_gogo_protobuf_repo",
-    remote = "https://github.com/gogo/protobuf.git",
     branch = "master",
     build_file_content = GOGOBUILD,
+    remote = "https://github.com/gogo/protobuf.git",
 )
 
 CONTRAIL_BUILD = """
@@ -221,9 +229,9 @@ filegroup(
 
 new_git_repository(
     name = "contrail_repository",
-    remote = "https://github.com/Juniper/contrail.git",
     branch = "master",
     build_file_content = CONTRAIL_BUILD,
+    remote = "https://github.com/Juniper/contrail.git",
 )
 
 ASF_BUILD = """
@@ -241,10 +249,10 @@ filegroup(
 
 new_git_repository(
     name = "asf_repository",
-    remote = "https://github.com/Juniper/asf.git",
     #commit = "ac2649e96024ebed11853a01c83ffd7fc6548919",
     branch = "master",
     build_file_content = ASF_BUILD,
+    remote = "https://github.com/Juniper/asf.git",
 )
 
 go_repository(
@@ -3686,8 +3694,8 @@ go_repository(
 
 go_repository(
     name = "com_github_juniper_asf",
-    importpath = "github.com/Juniper/asf",
     commit = "ac2649e96024ebed11853a01c83ffd7fc6548919",
+    importpath = "github.com/Juniper/asf",
 )
 
 go_repository(

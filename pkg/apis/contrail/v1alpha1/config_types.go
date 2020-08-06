@@ -45,6 +45,8 @@ const (
 
 // Config is the Schema for the configs API.
 // +k8s:openapi-gen=true
+// +k8s:defaulter-gen=true
+// +k8s:register-gen=true
 // +kubebuilder:subresource:status
 type Config struct {
 	metav1.TypeMeta   `json:",inline"`
