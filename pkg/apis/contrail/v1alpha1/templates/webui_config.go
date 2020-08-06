@@ -16,7 +16,12 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
+{{- /* HA core contrail tests are run without keystone, which causes invalid config generation. */}}
+{{- if .KeystoneRegion }}
 config.regions.{{ .KeystoneRegion }} = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+{{- else }}
+config.regions.RegionOne = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+{{- end }}
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
