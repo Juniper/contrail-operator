@@ -21,5 +21,6 @@ go_library(
         "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/reconcile:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/source:go_default_library",
+        "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
     ],
 )
