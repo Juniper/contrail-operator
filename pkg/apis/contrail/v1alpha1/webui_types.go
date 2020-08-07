@@ -72,11 +72,13 @@ type WebUIServiceStatus struct {
 
 // +k8s:openapi-gen=true
 type WebuiStatus struct {
-	Status `json:",inline"`
-	Nodes  map[string]string `json:"nodes,omitempty"`
-	Ports  WebUIStatusPorts  `json:"ports,omitempty"`
-	ServiceStatus map[string]map[string]WebUIServiceStatus `json:"serviceStatus,omitempty"`
+	Status        `json:",inline"`
+	Nodes         map[string]string                `json:"nodes,omitempty"`
+	Ports         WebUIStatusPorts                 `json:"ports,omitempty"`
+	ServiceStatus map[string]WebUIServiceStatusMap `json:"serviceStatus,omitempty"`
 }
+
+type WebUIServiceStatusMap map[string]WebUIServiceStatus
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

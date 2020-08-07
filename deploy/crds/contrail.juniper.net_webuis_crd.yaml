@@ -176,7 +176,19 @@ spec:
             replicas:
               format: int32
               type: integer
-            serviceStatus: {}
+            serviceStatus:
+              additionalProperties:
+                additionalProperties:
+                  properties:
+                    moduleName:
+                      type: string
+                    state:
+                      type: string
+                  required:
+                  - state
+                  type: object
+                type: object
+              type: object
           type: object
       type: object
   version: v1alpha1
