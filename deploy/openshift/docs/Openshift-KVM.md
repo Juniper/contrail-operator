@@ -1,6 +1,6 @@
 ## Contrail with OpenShift 4.x installation on VMs running on KVM
 
-The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](https://github.com/ovaleanujnpr/openshift4.x/tree/master/bare-metal#bare-metal-prerequisites) and jump to [Create Ignition Configs](https://github.com/ovaleanujnpr/openshift4.x/blob/master/docs/ocp4-contrail-vm-bms.md#create-ignition-configs).
+The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](bare-metal-prerequisites.md) and jump to [Create Ignition Configs](Openshift-KVM.md#create-ignition-configs).
 
 The procedure follows [helper node installation guide line](https://github.com/RedHatOfficial/ocp4-helpernode/blob/master/docs/quickstart.md). Some modifications occurs when applying Contrail manifests
 
@@ -377,4 +377,4 @@ INFO Access the OpenShift web-console here: https://console-openshift-console.ap
 INFO Login to the console with user: kubeadmin, password: XXX-XXXX-XXXX-XXXX
 ```
 
-### Credits: [Ovidiu Valeanu](https://github.com/ovaleanujnpr/openshift4.x/blob/master/docs/ocp4-contrail-vm-bms.md)
+### Credits: [Ovidiu Valeanu](https://github.com/ovaleanujnpr)
