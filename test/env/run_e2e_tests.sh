@@ -13,7 +13,9 @@ if [[ -z "$CEM_RELEASE" ]]; then
         export CEM_RELEASE="master-latest"
     fi
 fi
-    
+
+## Use fixed working version of CEM
+export CEM_RELEASE="master-1312"
 
 E2E_TEST_SUITE=${E2E_TEST_SUITE:-aio}
 
