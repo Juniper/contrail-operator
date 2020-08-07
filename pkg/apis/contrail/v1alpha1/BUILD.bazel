@@ -9,7 +9,7 @@ go_library(
         "config_types.go",
         "control_types.go",
         "contrailmonitor_types.go",
-        "contrailstatusmonitor_types.go"
+        "contrailstatusmonitor_types.go",
         "defaults.go",
         "doc.go",
         "exec_to_pod.go",
