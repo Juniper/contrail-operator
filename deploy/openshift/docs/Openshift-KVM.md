@@ -17,7 +17,7 @@ Download the virtual network configuration file, virt-net.xml
 ```
 # wget https://raw.githubusercontent.com/RedHatOfficial/ocp4-helpernode/master/docs/examples/virt-net.xml
 ```
-Create a virtual network using this file file provided in this repo (modify if you need to).
+Create a virtual network using this file provided in this repo (modify if you need to).
 
 ```
 # virsh net-define --file virt-net.xml
@@ -33,7 +33,7 @@ Set it to autostart on boot
 
 Download the Kickstart file for either EL 7 or EL 8 for the helper node.
 
-**EL7**
+**EL 7**
 ```
 # wget https://raw.githubusercontent.com/RedHatOfficial/ocp4-helpernode/master/docs/examples/helper-ks.cfg -O helper-ks.cfg
 ```
@@ -44,7 +44,7 @@ Download the Kickstart file for either EL 7 or EL 8 for the helper node.
 ```
 Edit `helper-ks.cfg` for your environment and use it to install the helper. The following command installs it "unattended".
 
-**EL7**
+**EL 7**
 ```
 # virt-install --name="ocp4-aHelper" --vcpus=2 --ram=4096 \
 --disk path=/var/lib/libvirt/images/ocp4-aHelper.qcow2,bus=virtio,size=30 \
@@ -64,7 +64,7 @@ Edit `helper-ks.cfg` for your environment and use it to install the helper. The 
 
 The provided Kickstart file installs the helper with the following settings (which is based on the virt-net.xml file that was used before).
 
-- IP - 192.168.7.77
+- HELPER_IP - 192.168.7.77
 - NetMask - 255.255.255.0
 - Default Gateway - 192.168.7.1
 - DNS Server - 8.8.8.8
@@ -83,7 +83,7 @@ Once it's done, it'll shut off...turn it on with the following command
 
 After the helper node is installed; login to it
 ```
-# ssh -l root 192.168.7.77
+# ssh -l root <HELPER_IP>
 ```
 
 Install EPEL and update. If kernel is updated, reboot.
@@ -112,7 +112,7 @@ Run the playbook to setup your helper node
 # ansible-playbook -e @vars.yaml tasks/main.yml
 ```
 
-After it is done run the following to get info about your environment and some install help
+After it is done run the following command to get info about your environment and some install help
 ```
 # /usr/local/bin/helpernodecheck services
 ```
