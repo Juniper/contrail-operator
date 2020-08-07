@@ -1492,17 +1492,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	// if err = r.processCommand(instance); err != nil {
-	// 	return reconcile.Result{}, err
-	// }
+	if err = r.processCommand(instance); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	if err = r.processKeystone(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// if err = r.processSwift(instance); err != nil {
-	// 	return reconcile.Result{}, err
-	// }
+	if err = r.processSwift(instance); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	if err = r.processMemcached(instance); err != nil {
 		return reconcile.Result{}, err
