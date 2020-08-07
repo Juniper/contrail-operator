@@ -4,7 +4,8 @@ This is first check-in to R2005
 ## References
 [E2E test guide](test/env/README.md)  
 [Detailed development guide](DEVELOPMENT.md)  
-[Deployment on Openshift 4](deploy/openshift/README.md)
+[Deployment on Openshift 4 and AWS](deploy/openshift/README.md)  
+[Deployment on Openshift 4 and KVM](deploy/openshift/docs/Openshift-KVM.md)
 
 ## Requirements
   * Go 1.13
