@@ -1217,7 +1217,7 @@ func TestManagerController(t *testing.T) {
 		assertCommandDeployed(t, expectedCommand, fakeClient)
 	})
 
-	t.Run("should create postgres and keystone CR when manager is reconciled and postgres and keystone CR do not exist", func(t *testing.T) {
+	t.Run("should create postgres and keystone CR with default configuration when manager is reconciled and postgres and keystone CR do not exist", func(t *testing.T) {
 		// given
 		psql := contrail.Postgres{
 			TypeMeta: meta.TypeMeta{},
@@ -1227,7 +1227,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		// given
-		keystone := contrail.Keystone{
+		keystoneDefaults := contrail.Keystone{
 			TypeMeta: meta.TypeMeta{},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "keystone",
@@ -1239,6 +1239,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1248,7 +1249,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
 					Postgres: &psql,
-					Keystone: &keystone,
+					Keystone: &keystoneDefaults,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1257,7 +1258,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
-			&keystone,
+			&keystoneDefaults,
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1314,6 +1315,103 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.KeystoneSpec{
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					PostgresInstance:   "psql",
+					ListenPort:         5555,
+					AuthProtocol:       "https",
+					Region:             "RegionOne",
+					UserDomainName:     "Default",
+					ProjectDomainName:  "Default",
+					UserDomainID:       "default",
+					ProjectDomainID:    "default",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
+		}
+		assertKeystone(t, expectedKeystone, fakeClient)
+	})
+
+	t.Run("should create keystone CR and keeps custom configuration when manager is reconciled and keystone CR do not exists", func(t *testing.T) {
+		// given
+		keystoneCustom := contrail.Keystone{
+			TypeMeta: meta.TypeMeta{},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "keystone",
+				Namespace: "other",
+			},
+			Spec: contrail.KeystoneSpec{
+				ServiceConfiguration: contrail.KeystoneConfiguration{
+					PostgresInstance:  "psql",
+					ListenPort:        9999,
+					AuthProtocol:      "http",
+					UserDomainName:    "Custom",
+					UserDomainID:      "custom",
+					ProjectDomainName: "Project",
+					ProjectDomainID:   "project",
+					Region:            "regionTwo",
+				},
+			},
+		}
+		managerCR := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+				UID:       "manager-uid-1",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Keystone: &keystoneCustom,
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+		}
+
+		initObjs := []runtime.Object{
+			managerCR,
+			newAdminSecret(),
+			&keystoneCustom,
+		}
+
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		// when
+		result, err := reconciler.Reconcile(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+		})
+		// then
+		assert.NoError(t, err)
+		assert.False(t, result.Requeue)
+		expectedKeystone := contrail.Keystone{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "keystone",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Keystone", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.KeystoneSpec{
+				ServiceConfiguration: contrail.KeystoneConfiguration{
+					PostgresInstance:   "psql",
+					ListenPort:         9999,
+					AuthProtocol:       "http",
+					Region:             "regionTwo",
+					UserDomainName:     "Custom",
+					ProjectDomainName:  "Project",
+					UserDomainID:       "custom",
+					ProjectDomainID:    "project",
 					KeystoneSecretName: "keystone-adminpass-secret",
 				},
 			},

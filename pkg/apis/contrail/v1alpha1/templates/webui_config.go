@@ -16,7 +16,7 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-{{- /* HA core contrail tests are run without keystone, which causes invalid config generation. */}}
+{{- /* Create syntactically correct config when keystone not used. */}}
 {{- if .KeystoneRegion }}
 config.regions.{{ .KeystoneRegion }} = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
 {{- else }}

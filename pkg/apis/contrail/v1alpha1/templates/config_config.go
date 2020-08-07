@@ -124,7 +124,6 @@ sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigKeystoneAuthConf is the template of the DeviceManager keystone auth configuration.
 var ConfigKeystoneAuthConf = template.Must(template.New("").Parse(`[KEYSTONE]
-#memcache_servers=localhost:11211
 admin_password = {{ .AdminPassword }}
 admin_tenant_name = {{ .AdminUsername }}
 admin_user = {{ .AdminUsername }}

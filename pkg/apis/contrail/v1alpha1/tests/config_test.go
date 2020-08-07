@@ -1793,7 +1793,6 @@ cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `
 var configKeystoneAuthConf = `[KEYSTONE]
-#memcache_servers=localhost:11211
 admin_password = test123
 admin_tenant_name = admin
 admin_user = admin

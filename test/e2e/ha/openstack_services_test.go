@@ -411,13 +411,6 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
-				ListenPort:        5555,
-				AuthProtocol:      "https",
-				UserDomainID:      "default",
-				ProjectDomainID:   "default",
-				UserDomainName:    "Default",
-				ProjectDomainName: "Default",
-				Region:            "RegionOne",
 				PostgresInstance:  "postgres",
 				Containers: []*contrail.Container{
 					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},

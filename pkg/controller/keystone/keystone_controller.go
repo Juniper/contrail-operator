@@ -133,11 +133,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	if !keystone.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-	// After migration to CRD apiextensions.k8s.io/v1 replace this function
-	// with +kubebuilder:default markers on keystone struct fileds
-	if err := r.setDefaultValues(keystone); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"
 
@@ -244,43 +239,6 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
 }
 
-func (r *ReconcileKeystone) setDefaultValues(k *contrail.Keystone) error {
-	patch := client.MergeFrom(k.DeepCopy())
-	var updates []string
-	if k.Spec.ServiceConfiguration.ListenPort == 0 {
-		k.Spec.ServiceConfiguration.ListenPort = 5555
-		updates = append(updates, "ListenPort")
-	}
-	if k.Spec.ServiceConfiguration.Region == "" {
-		k.Spec.ServiceConfiguration.Region = "RegionOne"
-		updates = append(updates, "Region")
-	}
-	if k.Spec.ServiceConfiguration.AuthProtocol == "" {
-		k.Spec.ServiceConfiguration.AuthProtocol = "https"
-		updates = append(updates, "AuthProtocol")
-	}
-	if k.Spec.ServiceConfiguration.UserDomainName == "" {
-		k.Spec.ServiceConfiguration.UserDomainName = "Default"
-		updates = append(updates, "UserDomainName")
-	}
-	if k.Spec.ServiceConfiguration.UserDomainID == "" {
-		k.Spec.ServiceConfiguration.UserDomainID = "default"
-		updates = append(updates, "UserDomainID")
-	}
-	if k.Spec.ServiceConfiguration.ProjectDomainName == "" {
-		k.Spec.ServiceConfiguration.ProjectDomainName = "Default"
-		updates = append(updates, "ProjectDomainName")
-	}
-	if k.Spec.ServiceConfiguration.ProjectDomainID == "" {
-		k.Spec.ServiceConfiguration.ProjectDomainID = "default"
-		updates = append(updates, "ProjectDomainName")
-	}
-	if updates != nil {
-		log.Info(fmt.Sprintf("Default values were set for %v", updates))
-		return r.client.Patch(context.TODO(), k, patch)
-	}
-	return nil
-}
 func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
 	keyManager := &contrail.FernetKeyManager{
 		ObjectMeta: meta.ObjectMeta{
