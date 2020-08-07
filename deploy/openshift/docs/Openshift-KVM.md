@@ -119,7 +119,7 @@ After it is done run the following to get info about your environment and some i
 
 ### Create Ignition Configs
 
-_Note: make sure NTP server is configured on Hypervisor and Helper node, otherwise installation will fail with error `X509: certificate has expired or is not yet valid`_
+**Note**: make sure NTP server is configured on Hypervisor and Helper node, otherwise installation will fail with error `X509: certificate has expired or is not yet valid`_
 
 Create a place to store your pull-secret
 ```
@@ -220,7 +220,7 @@ EOF
 ```
 `DOCKER_CONFIG` is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required) Set `DOCKER_CONFIG` to registry secret with proper data in base64.
 
-_NOTE: You may create base64 encoded value for config with script provided [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate). Copy output of the script and paste into config used to install-manifests script._
+**NOTE**: You may create base64 encoded value for config with script provided [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate). Copy output of the script and paste into config used to install-manifests script._
 
 Install Contrail manifests
 
@@ -228,7 +228,7 @@ Install Contrail manifests
 # ./contrail-operator/deploy/openshift/install-manifests.sh --dir ./ --config ./config_contrail_operator.yaml
 ```
 
-_NOTE: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
+**NOTE**: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
 
 Generate the ignition configs
 

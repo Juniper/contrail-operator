@@ -22,7 +22,7 @@
 
 6. Configure Web (HTTP)
 
-  [Example Web configuration](httpd-config-example)
+  [Example Web configuration](httpd-config-example.md)
 
 
 ##  [Contrail & OpenShift 4.x installation procedure](Openshift-KVM.md)
