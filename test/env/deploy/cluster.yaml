@@ -35,7 +35,7 @@ spec:
         name: config1
       spec:
         commonConfiguration:
-          create: true
+          create: false
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -77,7 +77,7 @@ spec:
           name: control1
         spec:
           commonConfiguration:
-            create: true
+            create: false
             nodeSelector:
               node-role.kubernetes.io/master: ""
           serviceConfiguration:
@@ -181,9 +181,9 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          activate: true
-          create: true
-          hostNetwork: true
+          activate: false
+          create: false
+          hostNetwork: false
           tolerations:
             - effect: NoSchedule
               operator: Exists
@@ -248,60 +248,80 @@ spec:
           containers:
             - name: memcached
               image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"
-    swift:
+    # swift:
+    #   metadata:
+    #     name: swift
+    #   spec:
+    #     commonConfiguration:
+    #       nodeSelector:
+    #         node-role.kubernetes.io/master: ""
+    #     serviceConfiguration:
+    #       credentialsSecretName: "swift-credentials-secret"
+    #       containers:
+    #         - name: ringcontroller
+    #           image: registry:5000/contrail-operator/engprod-269421/ringcontroller:master.latest
+    #       swiftProxyConfiguration:
+    #         memcachedInstance: "memcached"
+    #         keystoneInstance: "keystone"
+    #         listenPort: 5080
+    #         containers:
+    #           - name: init
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
+    #           - name: wait-for-ready-conf
+    #             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+    #           - name: api
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005
+    #       swiftStorageConfiguration:
+    #         accountBindPort: 6001
+    #         containerBindPort: 6002
+    #         objectBindPort: 6000
+    #         device: d1
+    #         containers:
+    #           - name: swiftStorageInit
+    #             image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+    #           - name: swiftObjectExpirer
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
+    #           - name: swiftObjectUpdater
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
+    #           - name: swiftObjectReplicator
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
+    #           - name: swiftObjectAuditor
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
+    #           - name: swiftObjectServer
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
+    #           - name: swiftContainerUpdater
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
+    #           - name: swiftContainerReplicator
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
+    #           - name: swiftContainerAuditor
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
+    #           - name: swiftContainerServer
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
+    #           - name: swiftAccountReaper
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+    #           - name: swiftAccountReplicator
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+    #           - name: swiftAccountAuditor
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+    #           - name: swiftAccountServer
+    #             image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+    contrailmonitor:
       metadata:
-        name: swift
+        labels:
+          contrail_cluster: cluster1
+        name: contrailmonitor
       spec:
-        commonConfiguration:
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
-          credentialsSecretName: "swift-credentials-secret"
-          containers:
-            - name: ringcontroller
-              image: registry:5000/contrail-operator/engprod-269421/ringcontroller:master.latest
-          swiftProxyConfiguration:
-            memcachedInstance: "memcached"
-            keystoneInstance: "keystone"
-            listenPort: 5080
-            containers:
-              - name: init
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005
-              - name: wait-for-ready-conf
-                image: registry:5000/common-docker-third-party/contrail/busybox:1.31
-              - name: api
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005
-          swiftStorageConfiguration:
-            accountBindPort: 6001
-            containerBindPort: 6002
-            objectBindPort: 6000
-            device: d1
-            containers:
-              - name: swiftStorageInit
-                image: registry:5000/common-docker-third-party/contrail/busybox:1.31
-              - name: swiftObjectExpirer
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object-expirer:train-2005
-              - name: swiftObjectUpdater
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
-              - name: swiftObjectReplicator
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
-              - name: swiftObjectAuditor
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
-              - name: swiftObjectServer
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train-2005
-              - name: swiftContainerUpdater
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
-              - name: swiftContainerReplicator
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
-              - name: swiftContainerAuditor
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
-              - name: swiftContainerServer
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-container:train-2005
-              - name: swiftAccountReaper
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
-              - name: swiftAccountReplicator
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
-              - name: swiftAccountAuditor
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
-              - name: swiftAccountServer
-                image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+          memcachedInstance: "memcached"
+          postgresInstance: "postgres"
+          cassandraInstance: "cassandra1"
+          keystoneInstance: "keystone"
+          configInstance: "config1"
+          rabbitmqInstance: "rabbitmq1"
+          zookeeperInstance: "zookeeper1"
+          provisionmanagerInstance: "provmanager1"
+          commandInstance: "command"
+          controlInstance: "control1"
+                
+                
+  
