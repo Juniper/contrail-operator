@@ -152,6 +152,13 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+ 	err = r.client.Update(context.TODO(), instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
 
 	if err = r.getPostgres(instance); err != nil {
 		return reconcile.Result{}, err
@@ -257,11 +264,11 @@ func (r *ReconcileContrailmonitor) getZookeeper(cr *contrailv1alpha1.Contrailmon
 		return err
 	}
 
-	// if zookeeper.Status.Active == nil{
-	if *zookeeper.Status.Active{
-		serIns.Status = "Active"
-	} else {
+	if zookeeper.Status.Active == nil{
+	// if *zookeeper.Status.Active{
 		serIns.Status = "NotActive"
+	} else {
+		serIns.Status = "Active"
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns, func() error {
 		return controllerutil.SetControllerReference(cr, serIns, r.scheme)
@@ -285,11 +292,11 @@ func (r *ReconcileContrailmonitor) getRabbitmq(cr *contrailv1alpha1.Contrailmoni
 	if err := controllerutil.SetControllerReference(cr, serIns, r.scheme); err != nil {
 		return err
 	}
-	// if rabbitmq.Status.Active == nil {
-	if *rabbitmq.Status.Active{
-		serIns.Status = "Active"
-	} else {
+	if rabbitmq.Status.Active == nil {
+	// if *rabbitmq.Status.Active{
 		serIns.Status = "NotActive"
+	} else {
+		serIns.Status = "Active"
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns, func() error {
 		return controllerutil.SetControllerReference(cr, serIns, r.scheme)
@@ -313,9 +320,9 @@ func (r *ReconcileContrailmonitor) getCassandra(cr *contrailv1alpha1.Contrailmon
 	if err := controllerutil.SetControllerReference(cr, serIns, r.scheme); err != nil {
 		return err
 	}
-	// if cassandra.Status.Active == nil{
-	if *cassandra.Status.Active{
-		serIns.Status = "tActive"
+	if cassandra.Status.Active == nil{
+	// if *cassandra.Status.Active{
+		serIns.Status = "Active"
 	} else {
 		serIns.Status = "NotActive"
 	}
@@ -341,11 +348,11 @@ func (r *ReconcileContrailmonitor) getProvisionmanager(cr *contrailv1alpha1.Cont
 	if err := controllerutil.SetControllerReference(cr, serIns, r.scheme); err != nil {
 		return err
 	}
-	// if provisionmanager.Status.Active == nil{
-    if *provisionmanager.Status.Active{
-		serIns.Status = "Active"
-	} else {
+	if provisionmanager.Status.Active == nil{
+    // if *provisionmanager.Status.Active{
 		serIns.Status = "NotActive"
+	} else {
+		serIns.Status = "Active"
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns, func() error {
 		return controllerutil.SetControllerReference(cr, serIns, r.scheme)
