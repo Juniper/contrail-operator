@@ -267,6 +267,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					if err = controllerutil.SetControllerReference(instance, cr, r.scheme); err != nil {
@@ -303,6 +305,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if cassandraService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = cassandraService.Spec.CommonConfiguration.Replicas
 			}
@@ -411,6 +414,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -558,6 +563,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -695,6 +702,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -834,6 +842,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -967,6 +977,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -1113,6 +1124,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -1259,6 +1272,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
@@ -1291,6 +1306,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if rabbitmqService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = rabbitmqService.Spec.CommonConfiguration.Replicas
 			}
@@ -1387,6 +1404,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
 					err = controllerutil.SetControllerReference(instance, cr, r.scheme)

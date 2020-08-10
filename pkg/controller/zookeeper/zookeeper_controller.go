@@ -167,24 +167,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	currentZookeeperInstance := *instance
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Zookeepers != nil {
-			for _, zookeeperManagerInstance := range managerInstance.Spec.Services.Zookeepers {
-				if zookeeperManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						zookeeperManagerInstance.Spec.CommonConfiguration)
-					if err = r.Client.Update(context.TODO(), instance); err != nil {
-						return reconcile.Result{}, nil
-					}
-				}
-			}
-		}
-	}
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {

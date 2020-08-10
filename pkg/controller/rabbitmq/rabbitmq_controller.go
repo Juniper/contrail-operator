@@ -166,22 +166,6 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Rabbitmq != nil {
-			rabbitmqManagerInstance := managerInstance.Spec.Services.Rabbitmq
-			instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-				managerInstance.Spec.CommonConfiguration,
-				rabbitmqManagerInstance.Spec.CommonConfiguration)
-			if err = r.Client.Update(context.TODO(), instance); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
-	}
-
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
