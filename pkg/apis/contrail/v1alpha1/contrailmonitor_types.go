@@ -12,24 +12,23 @@ type ContrailmonitorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	ServiceConfiguration  ContrailmonitorConfiguration  `json:"serviceConfiguration"`
+	ServiceConfiguration ContrailmonitorConfiguration `json:"serviceConfiguration"`
 }
-
 
 // ContrailmonitorConfiguration is the Spec for the Contrailmonitor API.
 // +k8s:openapi-gen=true
 type ContrailmonitorConfiguration struct {
-	MemcachedInstance string `json:"memcachedInstance,omitempty"`
-	PostgresInstance  string `json:"postgresInstance,omitempty"`
-	CassandraInstance string `json:"cassandraInstance,omitempty"`
-	KeystoneInstance  string `json:"keystoneInstance,omitempty"`
-	ConfigInstance    string `json:"configInstance,omitempty"`
-	ZookeeperInstance string `json:"zookeeperInstance,omitempty"`
-	RabbitmqInstance string `json:"rabbitmqInstance,omitempty"`
+	MemcachedInstance        string `json:"memcachedInstance,omitempty"`
+	PostgresInstance         string `json:"postgresInstance,omitempty"`
+	CassandraInstance        string `json:"cassandraInstance,omitempty"`
+	KeystoneInstance         string `json:"keystoneInstance,omitempty"`
+	ConfigInstance           string `json:"configInstance,omitempty"`
+	ZookeeperInstance        string `json:"zookeeperInstance,omitempty"`
+	RabbitmqInstance         string `json:"rabbitmqInstance,omitempty"`
 	ProvisionmanagerInstance string `json:"provisionmanagerInstance,omitempty"`
-	CommandInstance string `json:"commandInstance,omitempty"`
-	ControlInstance string `json:"controlInstance,omitempty"`
-	WebuiInstance string `json:"webuiInstance,omitempty"`
+	CommandInstance          string `json:"commandInstance,omitempty"`
+	ControlInstance          string `json:"controlInstance,omitempty"`
+	WebuiInstance            string `json:"webuiInstance,omitempty"`
 }
 
 // ContrailmonitorStatus defines the observed state of Contrailmonitor
@@ -37,8 +36,8 @@ type ContrailmonitorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active bool `json:"active,omitempty"`
-	Name string `json:"name"`
+	Active bool   `json:"active,omitempty"`
+	Name   string `json:"name"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

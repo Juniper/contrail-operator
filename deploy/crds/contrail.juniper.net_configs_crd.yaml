@@ -9,7 +9,7 @@ spec:
     listKind: ConfigList
     plural: configs
     singular: config
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:

@@ -180,7 +180,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	}
 	serIns := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: psql.Name, Namespace: "contrail"}}
 	if err := controllerutil.SetControllerReference(instance, serIns, r.scheme); err != nil {
-			return reconcile.Result{}, err
+		return reconcile.Result{}, err
 	}
 	if psql.Status.Active {
 		serIns.Status = "Active"
@@ -190,7 +190,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns, func() error {
 		return controllerutil.SetControllerReference(instance, serIns, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
 
@@ -217,7 +217,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns1, func() error {
 		return controllerutil.SetControllerReference(instance, serIns1, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
 
@@ -244,7 +244,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns2, func() error {
 		return controllerutil.SetControllerReference(instance, serIns2, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
 
@@ -267,7 +267,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns3, func() error {
 		return controllerutil.SetControllerReference(instance, serIns3, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
 
@@ -278,12 +278,12 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(cassandra); err != nil {
 		return reconcile.Result{}, err
 	}
-	cassandraActive := cassandra.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,request.Namespace, r.client)
+	cassandraActive := cassandra.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance, request.Namespace, r.client)
 	serIns4 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: cassandra.Name, Namespace: "contrail"}}
 	// if err := controllerutil.SetControllerReference(instance, serIns4, r.scheme); err != nil {
 	// 		return reconcile.Result{}, err
 	// }
-	if cassandra.Status.Active == nil || !cassandraActive{
+	if cassandra.Status.Active == nil || !cassandraActive {
 		serIns4.Status = "NotActive"
 	} else {
 		serIns4.Status = "Active"
@@ -291,7 +291,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns4, func() error {
 		return controllerutil.SetControllerReference(instance, serIns4, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
 
@@ -302,12 +302,12 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(zookeeper); err != nil {
 		return reconcile.Result{}, err
 	}
-	zookeeperActive := zookeeper.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,request.Namespace, r.client)
+	zookeeperActive := zookeeper.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance, request.Namespace, r.client)
 	serIns5 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: zookeeper.Name, Namespace: "contrail"}}
 	// if err := controllerutil.SetControllerReference(instance, serIns5, r.scheme); err != nil {
 	// 		return reconcile.Result{}, err
 	// }
-	if zookeeper.Status.Active == nil || !zookeeperActive{
+	if zookeeper.Status.Active == nil || !zookeeperActive {
 		serIns5.Status = "NotActive"
 	} else {
 		serIns5.Status = "Active"
@@ -315,10 +315,9 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns5, func() error {
 		return controllerutil.SetControllerReference(instance, serIns5, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
-
 
 	rabbitmq, err := r.getRabbitmq(instance)
 	if err != nil {
@@ -327,12 +326,12 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(rabbitmq); err != nil {
 		return reconcile.Result{}, err
 	}
-	rabbitmqActive := zookeeper.IsActive(instance.Spec.ServiceConfiguration.RabbitmqInstance,request.Namespace, r.client)
+	rabbitmqActive := zookeeper.IsActive(instance.Spec.ServiceConfiguration.RabbitmqInstance, request.Namespace, r.client)
 	serIns6 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: rabbitmq.Name, Namespace: "contrail"}}
 	// if err := controllerutil.SetControllerReference(instance, serIns6, r.scheme); err != nil {
 	// 		return reconcile.Result{}, err
 	// }
-	if rabbitmq.Status.Active == nil || !rabbitmqActive{
+	if rabbitmq.Status.Active == nil || !rabbitmqActive {
 		serIns6.Status = "NotActive"
 	} else {
 		serIns6.Status = "Active"
@@ -340,10 +339,9 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns6, func() error {
 		return controllerutil.SetControllerReference(instance, serIns6, r.scheme)
 	})
-	if err != nil{
+	if err != nil {
 		return reconcile.Result{}, nil
 	}
-
 
 	config, err := r.getConfig(instance)
 	if err != nil {
@@ -352,8 +350,8 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(config); err != nil {
 		return reconcile.Result{}, err
 	}
-	configActive := config.IsActive(instance.Spec.ServiceConfiguration.ConfigInstance,request.Namespace, r.client)
-	if !configActive || config.Status.Active == nil{
+	configActive := config.IsActive(instance.Spec.ServiceConfiguration.ConfigInstance, request.Namespace, r.client)
+	if !configActive || config.Status.Active == nil {
 		serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: config.Name, Namespace: "contrail"}}
 		// if err := controllerutil.SetControllerReference(instance, serIns7, r.scheme); err != nil {
 		// 		return reconcile.Result{}, err
@@ -362,15 +360,15 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
 			return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
 		})
-		if err != nil{
+		if err != nil {
 			return reconcile.Result{}, nil
 		}
-	}else{
+	} else {
 		clist, err := r.getConfiglist()
-		if err != nil{
+		if err != nil {
 			return reconcile.Result{}, err
 		}
-		for i := 0; i < len(clist.Items); i++{
+		for i := 0; i < len(clist.Items); i++ {
 			for _, value := range clist.Items[i].Status.ServiceStatus {
 				for _, n := range value {
 					serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: n.ModuleName, Namespace: "contrail"}}
@@ -379,9 +377,9 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 					// }
 					serIns7.Status = n.ModuleState
 					_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
-							return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
+						return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
 					})
-					if err != nil{
+					if err != nil {
 						return reconcile.Result{}, err
 					}
 				}
@@ -405,15 +403,15 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns8, func() error {
 			return controllerutil.SetControllerReference(instance, serIns8, r.scheme)
 		})
-		if err != nil{
+		if err != nil {
 			return reconcile.Result{}, nil
 		}
-	}else{
+	} else {
 		wlist, err := r.getWebuilist()
-		if err != nil{
+		if err != nil {
 			return reconcile.Result{}, err
 		}
-		for i := 0; i < len(wlist.Items); i++{
+		for i := 0; i < len(wlist.Items); i++ {
 			for _, value := range wlist.Items[i].Status.ServiceStatus {
 				for _, n := range value {
 					serIns8 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: n.ModuleName, Namespace: "contrail"}}
@@ -422,9 +420,9 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 					// }
 					serIns8.Status = n.ModuleState
 					_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns8, func() error {
-							return controllerutil.SetControllerReference(instance, serIns8, r.scheme)
+						return controllerutil.SetControllerReference(instance, serIns8, r.scheme)
 					})
-					if err != nil{
+					if err != nil {
 						return reconcile.Result{}, err
 					}
 				}
@@ -432,18 +430,16 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		}
 	}
 
-
 	// Check if this Pod already exists
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
-			return reconcile.Result{}, err
+		return reconcile.Result{}, err
 	}
 
 	// Pod already exists - don't requeue
 	// reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
 }
-
 
 func (r *ReconcileContrailmonitor) getPostgres(cr *contrailv1alpha1.Contrailmonitor) (*contrailv1alpha1.Postgres, error) {
 	psql := &contrailv1alpha1.Postgres{}
@@ -526,6 +522,3 @@ func (r *ReconcileContrailmonitor) getWebuilist() (*contrailv1alpha1.WebuiList, 
 	return wlist, err
 
 }
-
-
-

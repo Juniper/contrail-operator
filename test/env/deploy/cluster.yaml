@@ -305,3 +305,20 @@ spec:
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
               - name: swiftAccountServer
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+
+    contrailmonitor:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: contrailmonitor
+      spec:
+        serviceConfiguration:
+          memcachedInstance: "memcached"
+          postgresInstance: "postgres"
+          cassandraInstance: "cassandra1"
+          keystoneInstance: "keystone"
+          rabbitmqInstance: "rabbitmq1"
+          zookeeperInstance: "zookeeper1"
+          configInstance: "config1"
+          provisionmanagerInstance: "provmanager1"
+          webuiInstance: "webui1"
