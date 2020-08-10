@@ -18,7 +18,7 @@ container_image(
     entrypoint = [
         "sh",
         "-c",
-        "/app/kubectl apply -f /crds",
+        "/app/kubectl apply -f /crds && /app/kubectl wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net",
     ],
     files = [
         "//deploy/crds",
