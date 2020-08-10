@@ -539,7 +539,7 @@ func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
 	if err != nil {
 		return err
 	}
-	serviceStatuses := map[string]map[string]v1alpha1.WebUIServiceStatus{}
+	serviceStatuses := map[string]v1alpha1.WebUIServiceStatusMap{}
 	for _, pod := range pods.Items {
 		podStatus := map[string]v1alpha1.WebUIServiceStatus{}
 		for _, containerStatus := range pod.Status.ContainerStatuses {
