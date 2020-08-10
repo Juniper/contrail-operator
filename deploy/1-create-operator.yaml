@@ -65,6 +65,8 @@ rules:
   - swifts
   - memcacheds
   - fernetkeymanagers
+  - contrailmonitors
+  - contrailstatusmonitors
   verbs:
   - '*'
 - apiGroups:
@@ -179,7 +181,7 @@ spec:
     listKind: CassandraList
     plural: cassandras
     singular: cassandra
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -365,7 +367,7 @@ spec:
     listKind: CommandList
     plural: commands
     singular: command
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -528,7 +530,7 @@ spec:
     listKind: ConfigList
     plural: configs
     singular: config
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -758,6 +760,228 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: contrailmonitors.contrail.juniper.net
+spec:
+  group: contrail.juniper.net
+  names:
+    kind: Contrailmonitor
+    listKind: ContrailmonitorList
+    plural: contrailmonitors
+    singular: contrailmonitor
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Contrailmonitor is the Schema for the contrailmonitors API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ContrailmonitorSpec defines the desired state of Contrailmonitor
+          properties:
+            serviceConfiguration:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              properties:
+                cassandraInstance:
+                  type: string
+                commandInstance:
+                  type: string
+                configInstance:
+                  type: string
+                controlInstance:
+                  type: string
+                keystoneInstance:
+                  type: string
+                memcachedInstance:
+                  type: string
+                postgresInstance:
+                  type: string
+                provisionmanagerInstance:
+                  type: string
+                rabbitmqInstance:
+                  type: string
+                webuiInstance:
+                  type: string
+                zookeeperInstance:
+                  type: string
+              type: object
+          required:
+          - serviceConfiguration
+          type: object
+        status:
+          description: ContrailmonitorStatus defines the observed state of Contrailmonitor
+          properties:
+            active:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              type: boolean
+            cassandras:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            config:
+              items:
+                description: ModuleStatus defines the observed state of ConfigStatus
+                properties:
+                  moduleName:
+                    type: string
+                  state:
+                    type: string
+                required:
+                - state
+                type: object
+              type: array
+            keystone:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            memcached:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            postgres:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            provisionManager:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            rabbitmq:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+            statusname:
+              type: string
+            webui:
+              items:
+                description: ModuleStatus defines the observed state of ConfigStatus
+                properties:
+                  moduleName:
+                    type: string
+                  state:
+                    type: string
+                required:
+                - state
+                type: object
+              type: array
+            zookeepers:
+              description: ModuleStatus defines the observed state of ConfigStatus
+              properties:
+                moduleName:
+                  type: string
+                state:
+                  type: string
+              required:
+              - state
+              type: object
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: contrailstatusmonitors.contrail.juniper.net
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status
+    description: Number of instances in group
+    name: Status
+    type: string
+  group: contrail.juniper.net
+  names:
+    kind: Contrailstatusmonitor
+    listKind: ContrailstatusmonitorList
+    plural: contrailstatusmonitors
+    singular: contrailstatusmonitor
+  scope: Namespaced
+  subresources: {}
+  validation:
+    openAPIV3Schema:
+      description: Contrailstatusmonitor is the Schema for the contrailstatusmonitors
+        API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        status:
+          type: string
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: controls.contrail.juniper.net
 spec:
   group: contrail.juniper.net
@@ -766,7 +990,7 @@ spec:
     listKind: ControlList
     plural: controls
     singular: control
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -1044,7 +1268,7 @@ spec:
     listKind: KeystoneList
     plural: keystones
     singular: keystone
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -1214,7 +1438,7 @@ spec:
     listKind: KubemanagerList
     plural: kubemanagers
     singular: kubemanager
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -1409,7 +1633,7 @@ spec:
     listKind: ManagerList
     plural: managers
     singular: manager
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -2078,6 +2302,177 @@ spec:
                               - state
                               type: object
                             type: object
+                          type: object
+                      type: object
+                  type: object
+                contrailmonitor:
+                  description: Contrailmonitor is the Schema for the contrailmonitors
+                    API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: ContrailmonitorSpec defines the desired state of
+                        Contrailmonitor
+                      properties:
+                        serviceConfiguration:
+                          description: 'INSERT ADDITIONAL SPEC FIELDS - desired state
+                            of cluster Important: Run "operator-sdk generate k8s"
+                            to regenerate code after modifying this file Add custom
+                            validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                          properties:
+                            cassandraInstance:
+                              type: string
+                            commandInstance:
+                              type: string
+                            configInstance:
+                              type: string
+                            controlInstance:
+                              type: string
+                            keystoneInstance:
+                              type: string
+                            memcachedInstance:
+                              type: string
+                            postgresInstance:
+                              type: string
+                            provisionmanagerInstance:
+                              type: string
+                            rabbitmqInstance:
+                              type: string
+                            webuiInstance:
+                              type: string
+                            zookeeperInstance:
+                              type: string
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: ContrailmonitorStatus defines the observed state
+                        of Contrailmonitor
+                      properties:
+                        active:
+                          description: 'INSERT ADDITIONAL STATUS FIELD - define observed
+                            state of cluster Important: Run "operator-sdk generate
+                            k8s" to regenerate code after modifying this file Add
+                            custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                          type: boolean
+                        cassandras:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        config:
+                          items:
+                            description: ModuleStatus defines the observed state of
+                              ConfigStatus
+                            properties:
+                              moduleName:
+                                type: string
+                              state:
+                                type: string
+                            required:
+                            - state
+                            type: object
+                          type: array
+                        keystone:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        memcached:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        postgres:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        provisionManager:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        rabbitmq:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
+                          type: object
+                        statusname:
+                          type: string
+                        webui:
+                          items:
+                            description: ModuleStatus defines the observed state of
+                              ConfigStatus
+                            properties:
+                              moduleName:
+                                type: string
+                              state:
+                                type: string
+                            required:
+                            - state
+                            type: object
+                          type: array
+                        zookeepers:
+                          description: ModuleStatus defines the observed state of
+                            ConfigStatus
+                          properties:
+                            moduleName:
+                              type: string
+                            state:
+                              type: string
+                          required:
+                          - state
                           type: object
                       type: object
                   type: object
@@ -3992,6 +4387,17 @@ spec:
                 name:
                   type: string
               type: object
+            contrailmonitor:
+              description: ServiceStatus provides information on the current status
+                of the service.
+              properties:
+                active:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
             controls:
               items:
                 description: ServiceStatus provides information on the current status
@@ -4327,7 +4733,7 @@ spec:
     listKind: PostgresList
     plural: postgres
     singular: postgres
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -4582,7 +4988,7 @@ spec:
     listKind: RabbitmqList
     plural: rabbitmqs
     singular: rabbitmq
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -4771,7 +5177,7 @@ spec:
     listKind: SwiftProxyList
     plural: swiftproxies
     singular: swiftproxy
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -4938,7 +5344,7 @@ spec:
     listKind: SwiftList
     plural: swifts
     singular: swift
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -5170,7 +5576,7 @@ spec:
     listKind: SwiftStorageList
     plural: swiftstorages
     singular: swiftstorage
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -5340,7 +5746,7 @@ spec:
     listKind: VrouterList
     plural: vrouters
     singular: vrouter
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -5540,7 +5946,7 @@ spec:
     listKind: WebuiList
     plural: webuis
     singular: webui
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
@@ -5714,7 +6120,7 @@ spec:
     listKind: ZookeeperList
     plural: zookeepers
     singular: zookeeper
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:
