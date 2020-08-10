@@ -23,7 +23,7 @@ func (r *ReconcileKeystone) configMap(configMapName, ownerType string, keystone 
 
 func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, podIPs []string) error {
 	cc := &keystoneConfig{
-		PodIPs:    podIPs,
+		PodIPs:           podIPs,
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: postgresNode,
@@ -40,6 +40,7 @@ func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string,
 		PostgreSQLServer: postgresNode,
 		MemcacheServer:   memcachedNode,
 		AdminPassword:    string(c.secret.Data["password"]),
+		Region:           c.keystoneSpec.ServiceConfiguration.Region,
 	}
 
 	return c.cm.EnsureExists(cc)

@@ -3,6 +3,7 @@ package keystone
 import (
 	"context"
 	"fmt"
+
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
@@ -474,7 +475,7 @@ func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone) (*c
 	keystoneService := newKeystoneService(keystone)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
 		keystoneService.Spec.Ports = []core.ServicePort{
-			{Port: 5555, Protocol: "TCP"},
+			{Port: int32(keystone.Spec.ServiceConfiguration.ListenPort), Protocol: "TCP"},
 		}
 		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
 		return controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)

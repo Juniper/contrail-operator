@@ -84,7 +84,6 @@ func TestCommandServices(t *testing.T) {
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					MemcachedInstance:  "commandtest-memcached",
 					PostgresInstance:   "commandtest-psql",
-					ListenPort:         5555,
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 					Containers: []*contrail.Container{
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},

@@ -8,14 +8,18 @@ import (
 )
 
 type registerServiceConfig struct {
-	KeystoneIP            string
-	KeystonePort          int
-	KeystoneAdminPassword string
-	SwiftInternalEndpoint string
-	SwiftPublicEndpoint   string
-	SwiftPassword         string
-	SwiftUser             string
-	CAFilePath            string
+	KeystoneIP              string
+	KeystonePort            int
+	KeystoneAuthProtocol    string
+	KeystoneUserDomainID    string
+	KeystoneProjectDomainID string
+	KeystoneRegion          string
+	KeystoneAdminPassword   string
+	SwiftInternalEndpoint   string
+	SwiftPublicEndpoint     string
+	SwiftPassword           string
+	SwiftUser               string
+	CAFilePath              string
 }
 
 func (s *registerServiceConfig) FillConfigMap(cm *core.ConfigMap) {
@@ -47,7 +51,7 @@ const registerPlaybook = `
       os_keystone_endpoint:
         service: "swift"
         url: "{{ item.url }}"
-        region: "RegionOne"
+        region: "{{ region_name }}"
         endpoint_interface: "{{ item.interface }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
@@ -59,7 +63,7 @@ const registerPlaybook = `
     - name: create service project
       os_project:
         name: "service"
-        domain: "default"
+        domain: "{{ openstack_auth['domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -68,7 +72,7 @@ const registerPlaybook = `
         default_project: "service"
         name: "{{ swift_user }}"
         password: "{{ swift_password }}"
-        domain: "default"
+        domain: "{{ openstack_auth['user_domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -86,7 +90,7 @@ const registerPlaybook = `
         user: "swift"
         role: "admin"
         project: "service"
-        domain: "default"
+        domain: "{{ openstack_auth['user_domain_id'] }}"
         interface: "admin"
         auth: "{{ openstack_auth }}"
         ca_cert: "{{ ca_cert_filepath }}"
@@ -94,13 +98,14 @@ const registerPlaybook = `
 
 var registerConfig = template.Must(template.New("").Parse(`
 openstack_auth:
-  auth_url: "https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3"
+  auth_url: "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3"
   username: "admin"
   password: "{{ .KeystoneAdminPassword }}"
   project_name: "admin"
-  domain_id: "default"
-  user_domain_id: "default"
+  domain_id: "{{ .KeystoneProjectDomainID }}"
+  user_domain_id: "{{ .KeystoneUserDomainID }}"
 
+region_name: "{{ .KeystoneRegion }}"
 swift_internal_endpoint: "{{ .SwiftInternalEndpoint }}"
 swift_public_endpoint: "{{ .SwiftPublicEndpoint }}"
 swift_password: "{{ .SwiftPassword }}"

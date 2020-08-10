@@ -829,8 +829,16 @@ func databaseNodes(contrailClient *contrail.Client, nodeList []*types.DatabaseNo
 }
 
 func setupAuthKeystone(client *contrail.Client, keystoneAuthParameters *KeystoneAuthParameters) {
+	// AddEncryption expected http url in older versions of contrail-go-api
+	// https://github.com/Juniper/contrail-go-api/commit/4c876ba038a8ecec211376133375d467b6098202
+	var authUrl string
+	if strings.HasPrefix(keystoneAuthParameters.AuthUrl, "https") {
+		authUrl = strings.Replace(keystoneAuthParameters.AuthUrl, "https", "http", 1)
+	} else {
+		authUrl = keystoneAuthParameters.AuthUrl
+	}
 	keystone := contrail.NewKeepaliveKeystoneClient(
-		keystoneAuthParameters.AuthUrl,
+		authUrl,
 		keystoneAuthParameters.TenantName,
 		keystoneAuthParameters.AdminUsername,
 		keystoneAuthParameters.AdminPassword,

@@ -84,7 +84,7 @@ func TestOpenstackServices(t *testing.T) {
 					MemcachedInstance:  "openstacktest-memcached",
 					PostgresInstance:   "openstacktest-psql",
 					KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
-					ListenPort:         5555,
+					Region:             "RegionTwo",
 					Containers: []*contrail.Container{
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 						{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},

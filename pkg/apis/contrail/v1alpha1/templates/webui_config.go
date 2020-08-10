@@ -16,7 +16,12 @@ config.endpoints = {};
 config.endpoints.apiServiceType = "ApiServer";
 config.endpoints.opServiceType = "OpServer";
 config.regions = {};
-config.regions.RegionOne = "https://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+{{- /* Create syntactically correct config when keystone not used. */}}
+{{- if .KeystoneRegion }}
+config.regions.{{ .KeystoneRegion }} = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+{{- else }}
+config.regions.RegionOne = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+{{- end }}
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
 config.networkManager.ip = "127.0.0.1";
@@ -42,10 +47,10 @@ config.computeManager.ca = "";
 config.identityManager = {};
 config.identityManager.ip = "{{ .KeystoneIP }}";
 config.identityManager.port = "{{ .KeystonePort }}";
-config.identityManager.authProtocol = "https";
+config.identityManager.authProtocol = "{{ .KeystoneAuthProtocol }}";
 config.identityManager.apiVersion = ['v3'];
 config.identityManager.strictSSL = false;
-config.identityManager.defaultDomain = "Default";
+config.identityManager.defaultDomain = "{{ .KeystoneUserDomainName }}";
 config.identityManager.ca = "{{ .CAFilePath }}";
 config.storageManager = {};
 config.storageManager.ip = "127.0.0.1";
@@ -150,7 +155,7 @@ auth.admin_user = '{{ .AdminUsername }}';
 auth.admin_password = '{{ .AdminPassword }}';
 auth.admin_token = '';
 auth.admin_tenant_name = '{{ .AdminUsername }}';
-auth.project_domain_name = 'Default';
-auth.user_domain_name = 'Default';
+auth.project_domain_name = '{{ .KeystoneProjectDomainName }}';
+auth.user_domain_name = '{{ .KeystoneUserDomainName }}';
 module.exports = auth;
 `))

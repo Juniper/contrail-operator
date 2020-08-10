@@ -19,6 +19,13 @@ type KeystoneConfiguration struct {
 	PostgresInstance   string       `json:"postgresInstance,omitempty"`
 	Containers         []*Container `json:"containers,omitempty"`
 	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
+	Region             string       `json:"region,omitempty"`
+	// +kubebuilder:validation:Enum=http;https
+	AuthProtocol      string `json:"authProtocol,omitempty"`
+	UserDomainID      string `json:"userDomainID,omitempty"`
+	ProjectDomainID   string `json:"projectDomainID,omitempty"`
+	UserDomainName    string `json:"userDomainName,omitempty"`
+	ProjectDomainName string `json:"projectDomainName,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone

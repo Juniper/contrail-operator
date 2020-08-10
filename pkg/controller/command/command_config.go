@@ -9,21 +9,22 @@ import (
 )
 
 type commandConf struct {
-	ClusterName     string
-	ConfigAPIURL    string
-	TelemetryURL    string
-	AdminUsername   string
-	AdminPassword   string
-	SwiftUsername   string
-	SwiftPassword   string
-	PostgresUser    string
-	PostgresDBName  string
-	HostIP          string
-	CAFilePath      string
-	PGPassword      string
-	KeystoneIP      string
-	KeystonePort    int
-	ContrailVersion string
+	ClusterName          string
+	ConfigAPIURL         string
+	TelemetryURL         string
+	AdminUsername        string
+	AdminPassword        string
+	SwiftUsername        string
+	SwiftPassword        string
+	PostgresUser         string
+	PostgresDBName       string
+	HostIP               string
+	CAFilePath           string
+	PGPassword           string
+	KeystoneIP           string
+	KeystonePort         int
+	KeystoneAuthProtocol string
+	ContrailVersion      string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -246,8 +247,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
-      public_url: https://{{ .KeystoneIP }}:{{ .KeystonePort }}
+      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}
+      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291

@@ -197,7 +197,6 @@ spec:
           postgresInstance: postgres
           swiftInstance: swift
           swiftProxyPort: 5080
-          keystonePort: 5555
           keystoneInstance: keystone
           contrailVersion: "master-latest"
           containers:
@@ -217,7 +216,6 @@ spec:
         serviceConfiguration:
           memcachedInstance: "memcached"
           postgresInstance: postgres
-          listenPort: 5555
           containers:
             - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31

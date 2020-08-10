@@ -177,13 +177,14 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 	keystoneIP := keystone.Status.ClusterIP
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
+	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort, keystoneAuthProtocol); err != nil {
 		return reconcile.Result{}, err
 	}
 

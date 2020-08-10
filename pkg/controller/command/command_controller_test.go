@@ -697,6 +697,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				KeystoneSecretName: "keystone-adminpass-secret",
 				ListenPort:         5555,
+				AuthProtocol:       "https",
 			},
 		},
 		Status: status,

@@ -69,7 +69,14 @@ func (r *ReconcileSwiftProxy) ensureRegisterJobConfig(
 	swiftSecret *core.Secret,
 	k *contrail.Keystone,
 ) error {
-	keystoneData := &keystoneEndpoint{keystoneIP: k.Status.ClusterIP, keystonePort: k.Spec.ServiceConfiguration.ListenPort}
+	keystoneData := &keystoneEndpoint{
+		keystoneIP:      k.Status.ClusterIP,
+		keystonePort:    k.Spec.ServiceConfiguration.ListenPort,
+		region:          k.Spec.ServiceConfiguration.Region,
+		authProtocol:    k.Spec.ServiceConfiguration.AuthProtocol,
+		userDomainID:    k.Spec.ServiceConfiguration.UserDomainID,
+		projectDomainID: k.Spec.ServiceConfiguration.ProjectDomainID,
+	}
 
 	cm := r.configMap(jobConfigName, sp, keystoneData, adminSecret, swiftSecret)
 	publicIP := "0.0.0.0"

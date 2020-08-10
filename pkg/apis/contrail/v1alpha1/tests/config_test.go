@@ -148,7 +148,11 @@ var keystone = &v1alpha1.Keystone{
 	},
 	Spec: v1alpha1.KeystoneSpec{
 		ServiceConfiguration: v1alpha1.KeystoneConfiguration{
-			ListenPort: 5555,
+			ListenPort:        5555,
+			AuthProtocol:      "https",
+			UserDomainName:    "Default",
+			ProjectDomainName: "Default",
+			Region:            "RegionOne",
 		},
 	},
 	Status: v1alpha1.KeystoneStatus{
@@ -536,6 +540,11 @@ func TestConfigConfig(t *testing.T) {
 		if environment.configConfigMap.Data["vnc.1.1.1.1"] != vncApiConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["vnc.1.1.1.1"], vncApiConfig)
 			t.Fatalf("get vncapi config: \n%v\n", diff)
+		}
+
+		if environment.configConfigMap.Data["contrail-keystone-auth.conf"] != configKeystoneAuthConf {
+			diff := diff.Diff(environment.configConfigMap.Data["contrail-keystone-auth.conf"], configKeystoneAuthConf)
+			t.Fatalf("get contrail-keystone-auth config: \n%v\n", diff)
 		}
 
 		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfig {
@@ -1800,3 +1809,16 @@ AUTHN_DOMAIN = Default
 cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `
+var configKeystoneAuthConf = `[KEYSTONE]
+admin_password = test123
+admin_tenant_name = admin
+admin_user = admin
+auth_host = 10.11.12.14
+auth_port = 5555
+auth_protocol = https
+auth_url = https://10.11.12.14:5555/v3
+auth_type = password
+cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
+user_domain_name = Default
+project_domain_name = Default
+region_name = RegionOne`
