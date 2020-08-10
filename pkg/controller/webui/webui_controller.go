@@ -196,22 +196,6 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Webui != nil {
-			webuiManagerInstance := managerInstance.Spec.Services.Webui
-			instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-				managerInstance.Spec.CommonConfiguration,
-				webuiManagerInstance.Spec.CommonConfiguration)
-			err = r.Client.Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-		}
-	}
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err

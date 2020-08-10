@@ -191,23 +191,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Config != nil {
-			provisionManagerInstance := managerInstance.Spec.Services.ProvisionManager
-			if provisionManagerInstance.Name == request.Name {
-				instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(managerInstance.Spec.CommonConfiguration, provisionManagerInstance.Spec.CommonConfiguration)
-				err = r.Client.Update(context.TODO(), instance)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-		}
-	}
-
 	configMapConfigNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-confignodes", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err

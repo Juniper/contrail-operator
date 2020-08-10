@@ -235,26 +235,6 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Kubemanagers != nil {
-			for _, kubemanagerManagerInstance := range managerInstance.Spec.Services.Kubemanagers {
-				if kubemanagerManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						kubemanagerManagerInstance.Spec.CommonConfiguration)
-					err = r.Client.Update(context.TODO(), instance)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
-	}
-
 	currentConfigMap, currentConfigExists := instance.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)

@@ -207,25 +207,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := config.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Config != nil {
-			configManagerInstance := managerInstance.Spec.Services.Config
-			if configManagerInstance.Name == request.Name {
-				config.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-					managerInstance.Spec.CommonConfiguration,
-					configManagerInstance.Spec.CommonConfiguration)
-				err = r.Client.Update(context.TODO(), config)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-		}
-	}
-
 	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
 	configMap, err := config.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -571,7 +552,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
-		case "nodemanagerconfig":
+		case "nodmanagerconfig":
 			if configNodeMgr {
 				instanceContainer := utils.GetContainerFromList(container.Name, config.Spec.ServiceConfiguration.Containers)
 				command := []string{"bash", "-c",

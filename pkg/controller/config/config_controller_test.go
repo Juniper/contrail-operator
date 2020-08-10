@@ -124,7 +124,6 @@ func TestConfig(t *testing.T) {
 		testcase7(),
 		testcase8(),
 		testcase9(),
-		testcase10(),
 	}
 
 	for _, tt := range tests {
@@ -430,26 +429,8 @@ func testcase5() *TestCase {
 	return tc
 }
 
+
 func testcase6() *TestCase {
-	falseVal := false
-	cfg := newConfigInst()
-
-	tc := &TestCase{
-		name: "No Manager Instance Found",
-		initObjs: []runtime.Object{
-			// newManager(cfg),
-			newZookeeper(),
-			newCassandra(),
-			newRabbitmq(),
-			cfg,
-		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
-		fails:          true,
-	}
-	return tc
-}
-
-func testcase7() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
@@ -469,7 +450,7 @@ func testcase7() *TestCase {
 	return tc
 }
 
-func testcase8() *TestCase {
+func testcase7() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
@@ -513,7 +494,7 @@ func testcase8() *TestCase {
 	return tc
 }
 
-func testcase9() *TestCase {
+func testcase8() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()
 
@@ -534,7 +515,7 @@ func testcase9() *TestCase {
 	return tc
 }
 
-func testcase10() *TestCase {
+func testcase9() *TestCase {
 	trueVal := true
 	falseVal := false
 	cfg := newConfigInst()

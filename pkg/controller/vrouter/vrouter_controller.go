@@ -205,26 +205,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Vrouters != nil {
-			for _, vrouterManagerInstance := range managerInstance.Spec.Services.Vrouters {
-				if vrouterManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						vrouterManagerInstance.Spec.CommonConfiguration)
-					err = r.Client.Update(context.TODO(), instance)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
-	}
-
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err

@@ -202,25 +202,6 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Controls != nil {
-			for _, controlManagerInstance := range managerInstance.Spec.Services.Controls {
-				if controlManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						controlManagerInstance.Spec.CommonConfiguration)
-					err = r.Client.Update(context.TODO(), instance)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
-	}
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err

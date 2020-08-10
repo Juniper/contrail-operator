@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/labels"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -267,6 +268,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = cassandraService.Spec
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
@@ -305,6 +307,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if cassandraService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = cassandraService.Spec.CommonConfiguration.Replicas
@@ -414,6 +417,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = zookeeperService.Spec
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
@@ -454,6 +458,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if zookeeperService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = zookeeperService.Spec.CommonConfiguration.Replicas
 			}
@@ -563,6 +569,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = instance.Spec.Services.Webui.Spec
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
@@ -597,6 +604,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if webuiService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = webuiService.Spec.CommonConfiguration.Replicas
 			}
@@ -701,6 +710,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = instance.Spec.Services.ProvisionManager.Spec
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
@@ -735,6 +746,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			replicas := instance.Spec.CommonConfiguration.Replicas
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if provisionManagerService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = provisionManagerService.Spec.CommonConfiguration.Replicas
 			}
@@ -841,6 +854,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = instance.Spec.Services.Config.Spec
 			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
@@ -874,6 +888,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			replicas := instance.Spec.CommonConfiguration.Replicas
 			if configService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = configService.Spec.CommonConfiguration.Replicas
@@ -977,6 +993,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = kubemanagerService.Spec
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -1015,6 +1033,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			replicas := instance.Spec.CommonConfiguration.Replicas
 			if kubemanagerService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = kubemanagerService.Spec.CommonConfiguration.Replicas
@@ -1124,6 +1144,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = controlService.Spec
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
@@ -1163,6 +1184,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			replicas := instance.Spec.CommonConfiguration.Replicas
 			if controlService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = controlService.Spec.CommonConfiguration.Replicas
@@ -1272,6 +1295,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = instance.Spec.Services.Rabbitmq.Spec
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
@@ -1305,6 +1329,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			replicas := instance.Spec.CommonConfiguration.Replicas
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
@@ -1404,6 +1430,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
+			cr.Spec = vrouterService.Spec
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if err != nil {
 				if errors.IsNotFound(err) {
@@ -1452,6 +1480,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
+			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
+			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			replicas := instance.Spec.CommonConfiguration.Replicas
 			if vrouterService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = vrouterService.Spec.CommonConfiguration.Replicas
@@ -1551,8 +1581,18 @@ func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
 	}}
 }
 
-func (r *ReconcileManager) getNodes(manager *v1alpha1.Manager) error {
-	return nil
+func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int, error) {
+	nodes := &corev1.NodeList{}
+	labelSelector := labels.SelectorFromSet(manager.Spec.CommonConfiguration.NodeSelector)
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), nodes, &listOpts); err != nil {
+		return 0, err
+	}
+	nodesNumber := len(nodes.Items)
+	if nodesNumber % 2 == 0 && nodesNumber != 0 {
+		return nodesNumber - 1, nil
+	}
+	return nodesNumber, nil
 }
 
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {
