@@ -166,7 +166,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if !instance.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-	instance.Status.Name = "hello"
+	instance.Status.Name = "contrail-monitor"
 	instance.Status.Active = true
 	psql, err := r.getPostgres(instance)
 	if err != nil {
@@ -206,9 +206,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	}
 
 	serIns1 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: memcached.Name, Namespace: "contrail"}}
-	// if err := controllerutil.SetControllerReference(instance, serIns1, r.scheme); err != nil {
-	// 		return reconcile.Result{}, err
-	// }
 	if memcached.Status.Active {
 		serIns1.Status = "Active"
 	} else {
@@ -233,9 +230,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	}
 
 	serIns2 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: keystone.Name, Namespace: "contrail"}}
-	// if err := controllerutil.SetControllerReference(instance, serIns2, r.scheme); err != nil {
-	// 		return reconcile.Result{}, err
-	// }
 	if keystone.Status.Active {
 		serIns2.Status = "Active"
 	} else {
@@ -252,18 +246,16 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	// if err = r.kubernetes.Owner(instance).EnsureOwns(provisionmanager); err != nil {
-	// 	return reconcile.Result{}, err
-	// }
 	serIns3 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: provisionmanager.Name, Namespace: "contrail"}}
-	// if err := controllerutil.SetControllerReference(instance, serIns3, r.scheme); err != nil {
-	// 		return reconcile.Result{}, err
-	// }
+	if err := controllerutil.SetControllerReference(instance, serIns3, r.scheme); err != nil {
+			return reconcile.Result{}, err
+	}
 	if provisionmanager.Status.Active == nil {
 		serIns3.Status = "NotActive"
 	} else {
 		serIns3.Status = "Active"
 	}
+	
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serIns3, func() error {
 		return controllerutil.SetControllerReference(instance, serIns3, r.scheme)
 	})
@@ -280,9 +272,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	}
 	cassandraActive := cassandra.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance, request.Namespace, r.client)
 	serIns4 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: cassandra.Name, Namespace: "contrail"}}
-	// if err := controllerutil.SetControllerReference(instance, serIns4, r.scheme); err != nil {
-	// 		return reconcile.Result{}, err
-	// }
 	if cassandra.Status.Active == nil || !cassandraActive {
 		serIns4.Status = "NotActive"
 	} else {
@@ -326,11 +315,8 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(rabbitmq); err != nil {
 		return reconcile.Result{}, err
 	}
-	rabbitmqActive := zookeeper.IsActive(instance.Spec.ServiceConfiguration.RabbitmqInstance, request.Namespace, r.client)
+	rabbitmqActive := rabbitmq.IsActive(instance.Spec.ServiceConfiguration.RabbitmqInstance, request.Namespace, r.client)
 	serIns6 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: rabbitmq.Name, Namespace: "contrail"}}
-	// if err := controllerutil.SetControllerReference(instance, serIns6, r.scheme); err != nil {
-	// 		return reconcile.Result{}, err
-	// }
 	if rabbitmq.Status.Active == nil || !rabbitmqActive {
 		serIns6.Status = "NotActive"
 	} else {
@@ -430,14 +416,11 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		}
 	}
 
-	// Check if this Pod already exists
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	// reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
 }
 
