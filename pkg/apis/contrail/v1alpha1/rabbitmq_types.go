@@ -43,7 +43,7 @@ type Rabbitmq struct {
 // RabbitmqSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type RabbitmqSpec struct {
-	CommonConfiguration  CommonConfiguration   `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration"`
 	ServiceConfiguration RabbitmqConfiguration `json:"serviceConfiguration"`
 }
 
@@ -280,7 +280,7 @@ func (c *Rabbitmq) IsUpgrading(name string, namespace string, client client.Clie
 }
 
 // PrepareSTS prepares the intended deployment for the Rabbitmq object.
-func (c *Rabbitmq) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Rabbitmq) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "rabbitmq", request, scheme, c, client, true)
 }
 
@@ -300,12 +300,12 @@ func (c *Rabbitmq) SetPodsToReady(podIPList *corev1.PodList, client client.Clien
 }
 
 // CreateSTS creates the STS.
-func (c *Rabbitmq) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *Rabbitmq) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Rabbitmq) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *Rabbitmq) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 

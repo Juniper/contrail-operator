@@ -61,7 +61,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 				Namespace: namespace,
 			},
 			Spec: contrail.ManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.ManagerConfiguration{
 					Replicas:    &oneVal,
 					HostNetwork: &trueVal,
 				},

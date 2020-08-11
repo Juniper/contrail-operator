@@ -49,7 +49,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -69,7 +69,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -89,7 +89,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -102,7 +102,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -122,7 +122,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -144,7 +144,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -161,7 +161,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -181,7 +181,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
 					Replicas: &replicas,
 				},
@@ -211,7 +211,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &createNew,
 					HostNetwork:  &trueVal1,
@@ -328,7 +328,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -348,7 +348,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -368,7 +368,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -388,7 +388,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -408,7 +408,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -430,7 +430,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -452,7 +452,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -472,7 +472,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
 					Replicas: &replicas,
 				},
@@ -502,7 +502,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &createVal,
 					HostNetwork:  &trueVal1,
@@ -630,7 +630,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
@@ -649,7 +649,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
@@ -668,7 +668,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 			},
@@ -680,7 +680,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
@@ -699,7 +699,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
@@ -720,7 +720,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
@@ -736,7 +736,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
@@ -755,7 +755,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
@@ -784,7 +784,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &setBool,
 					HostNetwork:  &trueVal1,
@@ -983,7 +983,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: contrail.CommandSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate: &trueVar,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
@@ -1611,7 +1611,7 @@ func newKeystone() *contrail.Keystone {
 			Namespace: "default",
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:    &trueVal,
 				Create:      &trueVal,
 				HostNetwork: &trueVal,

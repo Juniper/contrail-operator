@@ -503,12 +503,12 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		configChanged = *instance.Status.ConfigChanged
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	strategy := "rolling"
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 

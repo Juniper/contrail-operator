@@ -20,7 +20,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandConfiguration":          schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandSpec":                   schema_pkg_apis_contrail_v1alpha1_CommandSpec(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandStatus":                 schema_pkg_apis_contrail_v1alpha1_CommandStatus(ref),
-		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration":           schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration":           schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Config":                        schema_pkg_apis_contrail_v1alpha1_Config(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigConfiguration":           schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigSpec":                    schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref),
@@ -256,7 +256,7 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -269,7 +269,7 @@ func schema_pkg_apis_contrail_v1alpha1_CassandraSpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CassandraConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CassandraConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"},
 	}
 }
 
@@ -441,7 +441,7 @@ func schema_pkg_apis_contrail_v1alpha1_CommandSpec(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -454,7 +454,7 @@ func schema_pkg_apis_contrail_v1alpha1_CommandSpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"},
 	}
 }
 
@@ -494,7 +494,7 @@ func schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "CommonConfiguration is the common services struct.",
+				Description: "PodConfiguration is the common services struct.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"activate": {
@@ -792,7 +792,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -805,7 +805,7 @@ func schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigConfiguration"},
 	}
 }
 
@@ -1153,7 +1153,7 @@ func schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -1166,7 +1166,7 @@ func schema_pkg_apis_contrail_v1alpha1_ControlSpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ControlConfiguration"},
 	}
 }
 
@@ -1356,7 +1356,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneSpec(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -1369,7 +1369,7 @@ func schema_pkg_apis_contrail_v1alpha1_KeystoneSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.KeystoneConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.KeystoneConfiguration"},
 	}
 }
 
@@ -1617,7 +1617,7 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerSpec(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -1630,7 +1630,7 @@ func schema_pkg_apis_contrail_v1alpha1_KubemanagerSpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.KubemanagerConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.KubemanagerConfiguration"},
 	}
 }
 
@@ -1727,7 +1727,7 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref common.ReferenceCallback)
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Ref:         ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref:         ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"services": {
@@ -1745,7 +1745,7 @@ func schema_pkg_apis_contrail_v1alpha1_ManagerSpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Services"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Services"},
 	}
 }
 
@@ -2104,7 +2104,7 @@ func schema_pkg_apis_contrail_v1alpha1_ProvisionManagerSpec(ref common.Reference
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -2117,7 +2117,7 @@ func schema_pkg_apis_contrail_v1alpha1_ProvisionManagerSpec(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ProvisionManagerConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ProvisionManagerConfiguration"},
 	}
 }
 
@@ -2291,7 +2291,7 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqSpec(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -2304,7 +2304,7 @@ func schema_pkg_apis_contrail_v1alpha1_RabbitmqSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.RabbitmqConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.RabbitmqConfiguration"},
 	}
 }
 
@@ -3190,7 +3190,7 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterSpec(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -3203,7 +3203,7 @@ func schema_pkg_apis_contrail_v1alpha1_VrouterSpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.VrouterConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.VrouterConfiguration"},
 	}
 }
 
@@ -3363,7 +3363,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiSpec(ref common.ReferenceCallback) c
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -3376,7 +3376,7 @@ func schema_pkg_apis_contrail_v1alpha1_WebuiSpec(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.WebuiConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.WebuiConfiguration"},
 	}
 }
 
@@ -3516,7 +3516,7 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"commonConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration"),
+							Ref: ref("github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration"),
 						},
 					},
 					"serviceConfiguration": {
@@ -3529,7 +3529,7 @@ func schema_pkg_apis_contrail_v1alpha1_ZookeeperSpec(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommonConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ZookeeperConfiguration"},
+			"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration", "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ZookeeperConfiguration"},
 	}
 }
 

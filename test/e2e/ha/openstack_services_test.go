@@ -373,7 +373,7 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
@@ -405,7 +405,7 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
@@ -428,7 +428,7 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Name:      "swift",
 		},
 		Spec: contrail.SwiftSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.SwiftConfiguration{
@@ -479,7 +479,7 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

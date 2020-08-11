@@ -80,7 +80,7 @@ func TestCommandServices(t *testing.T) {
 		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-keystone"},
 			Spec: contrail.KeystoneSpec{
-				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
+				CommonConfiguration: contrail.PodConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					MemcachedInstance:  "commandtest-memcached",
 					PostgresInstance:   "commandtest-psql",
@@ -148,7 +148,7 @@ func TestCommandServices(t *testing.T) {
 				Name: "commandtest",
 			},
 			Spec: contrail.CommandSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:    &trueVal,
 					Create:      &trueVal,
 					HostNetwork: &trueVal,
@@ -175,7 +175,7 @@ func TestCommandServices(t *testing.T) {
 				Namespace: namespace,
 			},
 			Spec: contrail.ManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.ManagerConfiguration{
 					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

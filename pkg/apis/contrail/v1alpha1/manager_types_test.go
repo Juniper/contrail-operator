@@ -150,7 +150,7 @@ var zookeeper = &contrail.Zookeeper{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.ZookeeperSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -164,7 +164,7 @@ var cassandra = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -178,7 +178,7 @@ var control = &contrail.Control{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.ControlSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -192,7 +192,7 @@ var kubemanager = &contrail.Kubemanager{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.KubemanagerSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -206,7 +206,7 @@ var webui = &contrail.Webui{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.WebuiSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -222,7 +222,7 @@ var config = &contrail.Config{
 		},
 	},
 	Spec: contrail.ConfigSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -239,7 +239,7 @@ var rabbitmq = &contrail.Rabbitmq{
 		Namespace: "default",
 	},
 	Spec: contrail.RabbitmqSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate: &trueVal,
 			Create:   &createNew,
 			Replicas: &replicas,
@@ -255,7 +255,7 @@ var provisionmanager = &contrail.ProvisionManager{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.ProvisionManagerSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &createNew,
 			Replicas: &replicas,
 		},
@@ -268,7 +268,7 @@ var command = &contrail.Command{
 		Namespace: "default",
 	},
 	Spec: contrail.CommandSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate: &trueVal,
 		},
 		ServiceConfiguration: contrail.CommandConfiguration{

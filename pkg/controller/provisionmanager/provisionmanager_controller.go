@@ -357,12 +357,12 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		}
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	strategy := "deleteFirst"
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 

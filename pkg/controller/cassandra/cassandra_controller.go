@@ -477,11 +477,11 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, "rolling"); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, "rolling"); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -210,7 +210,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 			Namespace: namespace,
 		},
 		Spec: v1alpha1.ManagerSpec{
-			CommonConfiguration: v1alpha1.CommonConfiguration{
+			CommonConfiguration: v1alpha1.ManagerConfiguration{
 				Replicas:         &replicas,
 				HostNetwork:      &hostNetwork,
 				ImagePullSecrets: []string{"contrail-nightly"},
@@ -223,7 +223,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.RabbitmqSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -242,7 +242,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.ZookeeperSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -261,7 +261,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.CassandraSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -281,7 +281,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.ConfigSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -316,7 +316,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 					Spec: v1alpha1.ControlSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -339,7 +339,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.ProvisionManagerSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 							Replicas:     &replicas,
@@ -359,7 +359,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.KubemanagerSpec{
-						CommonConfiguration: v1alpha1.CommonConfiguration{
+						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
@@ -404,7 +404,7 @@ func RabbitmqCluster(t *testing.T) {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: v1alpha1.RabbitmqSpec{
-			CommonConfiguration: v1alpha1.CommonConfiguration{
+			CommonConfiguration: v1alpha1.PodConfiguration{
 				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},

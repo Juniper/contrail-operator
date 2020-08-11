@@ -659,12 +659,12 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		configChanged = *config.Status.ConfigChanged
 	}
 
-	if err = config.CreateSTS(statefulSet, &config.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = config.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	strategy := "deleteFirst"
-	if err = config.UpdateSTS(statefulSet, &config.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if err = config.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 

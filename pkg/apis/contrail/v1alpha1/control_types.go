@@ -38,7 +38,7 @@ type Control struct {
 // ControlSpec is the Spec for the controls API.
 // +k8s:openapi-gen=true
 type ControlSpec struct {
-	CommonConfiguration  CommonConfiguration  `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
 	ServiceConfiguration ControlConfiguration `json:"serviceConfiguration"`
 }
 
@@ -367,7 +367,7 @@ func (c *Control) CreateSecret(secretName string,
 }
 
 // PrepareSTS prepares the intended deployment for the Control object.
-func (c *Control) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Control) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "control", request, scheme, c, client, true)
 }
 
@@ -387,12 +387,12 @@ func (c *Control) SetPodsToReady(podIPList *corev1.PodList, client client.Client
 }
 
 // CreateSTS creates the STS.
-func (c *Control) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *Control) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Control) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *Control) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 

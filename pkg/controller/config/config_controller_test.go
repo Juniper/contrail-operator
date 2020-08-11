@@ -173,7 +173,7 @@ func newConfigInst() *contrail.Config {
 			},
 		},
 		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -268,7 +268,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,

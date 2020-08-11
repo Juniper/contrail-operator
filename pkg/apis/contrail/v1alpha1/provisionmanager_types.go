@@ -27,7 +27,7 @@ import (
 // ProvisionManagerSpec defines the desired state of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerSpec struct {
-	CommonConfiguration  CommonConfiguration           `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration              `json:"commonConfiguration"`
 	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
 }
 
@@ -165,7 +165,7 @@ func (c *ProvisionManager) CreateSecret(secretName string,
 }
 
 // PrepareSTS prepares the intented statefulset for the config object
-func (c *ProvisionManager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *ProvisionManager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "provisionmanager", request, scheme, c, client, true)
 }
 
@@ -180,12 +180,12 @@ func (c *ProvisionManager) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet
 }
 
 //CreateSTS creates the STS
-func (c *ProvisionManager) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *ProvisionManager) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient runtimeClient.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 //UpdateSTS updates the STS
-func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient runtimeClient.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 

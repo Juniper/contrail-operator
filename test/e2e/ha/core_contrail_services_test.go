@@ -339,7 +339,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.CassandraSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -361,7 +361,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -382,7 +382,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
@@ -402,7 +402,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -436,7 +436,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
 		},
 		Spec: contrail.ControlSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -461,7 +461,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.WebuiSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -485,7 +485,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ProvisionManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
@@ -504,7 +504,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

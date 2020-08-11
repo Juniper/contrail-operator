@@ -7,8 +7,8 @@ import (
 // SwiftSpec defines the desired state of Swift
 // +k8s:openapi-gen=true
 type SwiftSpec struct {
-	CommonConfiguration  CommonConfiguration `json:"commonConfiguration"`
-	ServiceConfiguration SwiftConfiguration  `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration   `json:"commonConfiguration"`
+	ServiceConfiguration SwiftConfiguration `json:"serviceConfiguration"`
 }
 
 // SwiftConfiguration is the Spec for the Swift service.

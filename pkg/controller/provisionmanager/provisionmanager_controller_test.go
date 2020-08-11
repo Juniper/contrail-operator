@@ -210,7 +210,7 @@ func newProvisionManager() *contrail.ProvisionManager {
 			},
 		},
 		Spec: contrail.ProvisionManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,

@@ -79,7 +79,7 @@ func TestOpenstackServices(t *testing.T) {
 		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
 			Spec: contrail.KeystoneSpec{
-				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
+				CommonConfiguration: contrail.PodConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					MemcachedInstance:  "openstacktest-memcached",
 					PostgresInstance:   "openstacktest-psql",
@@ -101,7 +101,7 @@ func TestOpenstackServices(t *testing.T) {
 				Namespace: namespace,
 			},
 			Spec: contrail.ManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.ManagerConfiguration{
 					Replicas:    &oneVal,
 					HostNetwork: &trueVal,
 				},
@@ -186,7 +186,7 @@ func TestOpenstackServices(t *testing.T) {
 					Name:      "openstacktest-swift",
 				},
 				Spec: contrail.SwiftSpec{
-					CommonConfiguration: contrail.CommonConfiguration{
+					CommonConfiguration: contrail.PodConfiguration{
 						NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					},
 					ServiceConfiguration: contrail.SwiftConfiguration{

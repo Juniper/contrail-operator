@@ -25,7 +25,7 @@ import (
 // ZookeeperSpec is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperSpec struct {
-	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration       `json:"commonConfiguration"`
 	ServiceConfiguration ZookeeperConfiguration `json:"serviceConfiguration"`
 }
 
@@ -212,7 +212,7 @@ func (c *Zookeeper) IsUpgrading(name string, namespace string, client client.Cli
 }
 
 // PrepareSTS prepares the intended deployment for the Zookeeper object.
-func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "zookeeper", request, scheme, c, client, true)
 }
 
@@ -232,12 +232,12 @@ func (c *Zookeeper) SetPodsToReady(podIPList *corev1.PodList, client client.Clie
 }
 
 // CreateSTS creates the STS.
-func (c *Zookeeper) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *Zookeeper) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 

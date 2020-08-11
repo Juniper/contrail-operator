@@ -422,7 +422,7 @@ var cassandra = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &create,
 			Replicas: &replicas,
 		},
@@ -455,7 +455,7 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -491,7 +491,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -542,7 +542,7 @@ var control = &contrail.Control{
 		Labels:    map[string]string{"contrail_cluster": "config1"},
 	},
 	Spec: contrail.ControlSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate:     &trueVal,
 			Create:       &trueVal,
 			HostNetwork:  &trueVal,
@@ -661,7 +661,7 @@ var managerCommonConfiguration = contrail.ManagerConfiguration{
 	},
 }
 
-var secondCommonConfiguration = contrail.CommonConfiguration{
+var secondCommonConfiguration = contrail.PodConfiguration{
 	Activate: &trueVal,
 	Create:   &trueVal,
 }
@@ -722,7 +722,7 @@ var cassandraTwo = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate: &trueVal,
 		},
 	},
@@ -737,7 +737,7 @@ func newZookeeperTwo() *contrail.Zookeeper {
 			Namespace: "default",
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate: &trueVal,
 			},
 		},
@@ -752,7 +752,7 @@ func newRabbitmqTwo() *contrail.Rabbitmq {
 			Namespace: "default",
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate: &trueVal,
 			},
 		},

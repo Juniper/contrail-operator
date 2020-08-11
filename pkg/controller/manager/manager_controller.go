@@ -1609,8 +1609,8 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
 		psql.Spec = manager.Spec.Services.Postgres.Spec
 		//TODO introduce Common Configuration in PSQL
-		//if psql.Spec.CommonConfiguration.Replicas == nil {
-		//	psql.Spec.CommonConfiguration.Replicas = replicas
+		//if psql.Spec.PodConfiguration.Replicas == nil {
+		//	psql.Spec.PodConfiguration.Replicas = replicas
 		//}
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})

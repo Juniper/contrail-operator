@@ -86,9 +86,9 @@ type ServiceInstance interface {
 	Delete(client.Client) error
 }
 
-// CommonConfiguration is the common services struct.
+// PodConfiguration is the common services struct.
 // +k8s:openapi-gen=true
-type CommonConfiguration struct {
+type PodConfiguration struct {
 	// Activate defines if the service will be activated by Manager.
 	Activate *bool `json:"activate,omitempty"`
 	// Create defines if the service will be created by Manager.
@@ -116,7 +116,7 @@ type CommonConfiguration struct {
 }
 
 //GetReplicas is used to get number of desired pods.
-func (cc *CommonConfiguration) GetReplicas() int32 {
+func (cc *PodConfiguration) GetReplicas() int32 {
 	if cc.Replicas != nil {
 		return *cc.Replicas
 	}
@@ -378,7 +378,7 @@ func CurrentConfigMapExists(configMapName string,
 
 // PrepareIntendedDeployment prepares the intended deployment.
 func PrepareIntendedDeployment(instanceDeployment *appsv1.Deployment,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	instanceType string,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
@@ -402,7 +402,7 @@ func PrepareIntendedDeployment(instanceDeployment *appsv1.Deployment,
 
 // PrepareSTS prepares the intended podList.
 func PrepareSTS(sts *appsv1.StatefulSet,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	instanceType string,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
@@ -432,7 +432,7 @@ func PrepareSTS(sts *appsv1.StatefulSet,
 // SetDeploymentCommonConfiguration takes common configuration parameters
 // and applies it to the deployment.
 func SetDeploymentCommonConfiguration(deployment *appsv1.Deployment,
-	commonConfiguration *CommonConfiguration) *appsv1.Deployment {
+	commonConfiguration *PodConfiguration) *appsv1.Deployment {
 	deployment.Spec.Replicas = commonConfiguration.Replicas
 	if len(commonConfiguration.Tolerations) > 0 {
 		deployment.Spec.Template.Spec.Tolerations = commonConfiguration.Tolerations
@@ -461,7 +461,7 @@ func SetDeploymentCommonConfiguration(deployment *appsv1.Deployment,
 // SetSTSCommonConfiguration takes common configuration parameters
 // and applies it to the pod.
 func SetSTSCommonConfiguration(sts *appsv1.StatefulSet,
-	commonConfiguration *CommonConfiguration) {
+	commonConfiguration *PodConfiguration) {
 	sts.Spec.Replicas = commonConfiguration.Replicas
 	if len(commonConfiguration.Tolerations) > 0 {
 		sts.Spec.Template.Spec.Tolerations = commonConfiguration.Tolerations
@@ -720,7 +720,7 @@ func getPodInitStatus(reconcileClient client.Client,
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
 func PodIPListAndIPMapFromInstance(instanceType string,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	request reconcile.Request,
 	reconcileClient client.Client,
 	waitForInit bool,

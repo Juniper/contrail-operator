@@ -387,7 +387,7 @@ func newCommand() *contrail.Command {
 			Namespace: "default",
 		},
 		Spec: contrail.CommandSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,

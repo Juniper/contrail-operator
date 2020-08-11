@@ -23,7 +23,7 @@ type Command struct {
 // CommandSpec defines the desired state of Command
 // +k8s:openapi-gen=true
 type CommandSpec struct {
-	CommonConfiguration  CommonConfiguration  `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
 	ServiceConfiguration CommandConfiguration `json:"serviceConfiguration"`
 }
 
@@ -62,7 +62,7 @@ func init() {
 }
 
 func (c *Command) PrepareIntendedDeployment(
-	instanceDeployment *appsv1.Deployment, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme,
+	instanceDeployment *appsv1.Deployment, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme,
 ) (*appsv1.Deployment, error) {
 	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "command", request, scheme, c)
 }

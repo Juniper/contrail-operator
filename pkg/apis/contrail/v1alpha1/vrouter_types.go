@@ -49,7 +49,7 @@ type VrouterStatus struct {
 // VrouterSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration  CommonConfiguration  `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
 	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
 }
 
@@ -122,7 +122,7 @@ func (c *Vrouter) CreateSecret(secretName string,
 
 // PrepareDaemonSet prepares the intended podList.
 func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
 	client client.Client) error {
@@ -151,7 +151,7 @@ func (c *Vrouter) AddSecretVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeConfi
 // SetDSCommonConfiguration takes common configuration parameters
 // and applies it to the pod.
 func SetDSCommonConfiguration(ds *appsv1.DaemonSet,
-	commonConfiguration *CommonConfiguration) {
+	commonConfiguration *PodConfiguration) {
 	if len(commonConfiguration.Tolerations) > 0 {
 		ds.Spec.Template.Spec.Tolerations = commonConfiguration.Tolerations
 	}
@@ -196,7 +196,7 @@ func (c *Vrouter) AddVolumesToIntendedDS(ds *appsv1.DaemonSet, volumeConfigMapMa
 
 // CreateDS creates the STS.
 func (c *Vrouter) CreateDS(ds *appsv1.DaemonSet,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	instanceType string,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
@@ -217,7 +217,7 @@ func (c *Vrouter) CreateDS(ds *appsv1.DaemonSet,
 
 // UpdateDS updates the STS.
 func (c *Vrouter) UpdateDS(ds *appsv1.DaemonSet,
-	commonConfiguration *CommonConfiguration,
+	commonConfiguration *PodConfiguration,
 	instanceType string,
 	request reconcile.Request,
 	scheme *runtime.Scheme,

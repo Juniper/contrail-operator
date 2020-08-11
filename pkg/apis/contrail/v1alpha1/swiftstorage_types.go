@@ -7,7 +7,7 @@ import (
 // SwiftStorageSpec defines the desired state of SwiftStorage
 // +k8s:openapi-gen=true
 type SwiftStorageSpec struct {
-	CommonConfiguration  CommonConfiguration       `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration          `json:"commonConfiguration"`
 	ServiceConfiguration SwiftStorageConfiguration `json:"serviceConfiguration"`
 }
 

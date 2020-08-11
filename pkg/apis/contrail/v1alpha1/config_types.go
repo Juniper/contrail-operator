@@ -57,7 +57,7 @@ type Config struct {
 // ConfigSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigSpec struct {
-	CommonConfiguration  CommonConfiguration `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration    `json:"commonConfiguration"`
 	ServiceConfiguration ConfigConfiguration `json:"serviceConfiguration"`
 }
 
@@ -647,7 +647,7 @@ func (c *Config) CreateSecret(secretName string,
 }
 
 // PrepareSTS prepares the intented statefulset for the config object
-func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "config", request, scheme, c, client, true)
 }
 
@@ -662,12 +662,12 @@ func (c *Config) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeCo
 }
 
 //CreateSTS creates the STS
-func (c *Config) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *Config) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 //UpdateSTS updates the STS
-func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 

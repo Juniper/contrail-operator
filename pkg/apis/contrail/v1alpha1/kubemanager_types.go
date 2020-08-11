@@ -41,7 +41,7 @@ type Kubemanager struct {
 // KubemanagerSpec is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerSpec struct {
-	CommonConfiguration  CommonConfiguration      `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration         `json:"commonConfiguration"`
 	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
 }
 
@@ -309,7 +309,7 @@ func (c *Kubemanager) CreateSecret(secretName string,
 }
 
 // PrepareSTS prepares the intended deployment for the Kubemanager object.
-func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "kubemanager", request, scheme, c, client, true)
 }
 
@@ -329,12 +329,12 @@ func (c *Kubemanager) SetPodsToReady(podIPList *corev1.PodList, client client.Cl
 }
 
 // CreateSTS creates the STS.
-func (c *Kubemanager) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
+func (c *Kubemanager) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
 	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Kubemanager) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
+func (c *Kubemanager) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
