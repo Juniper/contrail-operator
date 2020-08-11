@@ -22,7 +22,6 @@ import (
 
 	goctx "context"
 
-	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -211,9 +210,9 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 		},
 		Spec: v1alpha1.ManagerSpec{
 			CommonConfiguration: v1alpha1.ManagerConfiguration{
-				Replicas:         &replicas,
 				HostNetwork:      &hostNetwork,
 				ImagePullSecrets: []string{"contrail-nightly"},
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: v1alpha1.Services{
 				Rabbitmq: &v1alpha1.Rabbitmq{
@@ -225,7 +224,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.RabbitmqSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 							Containers: []*v1alpha1.Container{
@@ -244,7 +242,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.ZookeeperSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ZookeeperConfiguration{
 							Containers: []*v1alpha1.Container{
@@ -263,7 +260,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.CassandraSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.CassandraConfiguration{
 							Containers: []*v1alpha1.Container{
@@ -283,7 +279,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.ConfigSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ConfigConfiguration{
 							CassandraInstance: "cassandra1",
@@ -318,7 +313,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.ControlSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.ControlConfiguration{
 							CassandraInstance: "cassandra1",
@@ -341,7 +335,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.ProvisionManagerSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 							Replicas:     &replicas,
 						},
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
@@ -361,7 +354,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					Spec: v1alpha1.KubemanagerSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Create:       &create,
-							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
 							CassandraInstance: "cassandra1",
@@ -377,53 +369,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 				}},
 			},
 		},
-	}
-}
-
-func RabbitmqCluster(t *testing.T) {
-	f := test.Global
-	ctx := test.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
-		t.Fatalf("failed to initialize cluster resources: %v", err)
-	}
-	t.Log("Initialized cluster resources")
-
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var replicas int32 = 1
-	rabbitmq := &v1alpha1.Rabbitmq{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rabbitmq1",
-			Namespace: namespace,
-			Labels:    map[string]string{"contrail_cluster": "cluster1"},
-		},
-		Spec: v1alpha1.RabbitmqSpec{
-			CommonConfiguration: v1alpha1.PodConfiguration{
-				Replicas:     &replicas,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
-				Containers: []*v1alpha1.Container{
-					{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7"},
-					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
-				},
-			},
-		},
-	}
-
-	err = f.Client.Create(goctx.TODO(), rabbitmq, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -493,95 +438,6 @@ func zookeeperVersion(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 				return err
 			}
 		}
-	}
-	return nil
-}
-
-func upgradeCassandra(t *testing.T, f *test.Framework, ctx *test.TestCtx, namespace, name string) error {
-	instance := &v1alpha1.Manager{}
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, instance)
-	if err != nil {
-		return err
-	}
-	cassandraContainer := utils.GetContainerFromList("cassandra", instance.Spec.Services.Cassandras[0].Spec.ServiceConfiguration.Containers)
-	cassandraContainer.Image = "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
-	err = f.Client.Update(goctx.TODO(), instance)
-	if err != nil {
-		return err
-	}
-	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return nil
-}
-
-func imageUpgradeTest(t *testing.T, f *test.Framework, ctx *test.TestCtx) error {
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		return fmt.Errorf("could not get namespace: %v", err)
-	}
-	manager := v1alpha1.Manager{}
-	f.Client.Get(goctx.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, &manager)
-	if err != nil {
-		return fmt.Errorf("could not get manager: %v", err)
-	}
-	manager = getManager(namespace, 1, false, targetVersionMap)
-	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = waitForZookeeper(t, f, ctx, namespace, "zookeeper1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForCassandra(t, f, ctx, namespace, "cassandra1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForRabbitmq(t, f, ctx, namespace, "rabbitmq1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = waitForConfig(t, f, ctx, namespace, "config1", 1, retryInterval, waitTimeout)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return nil
-}
-
-func managerScaleTest(t *testing.T, f *test.Framework, ctx *test.TestCtx) error {
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		return fmt.Errorf("could not get namespace: %v", err)
-	}
-	manager := &v1alpha1.Manager{}
-	f.Client.Get(goctx.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, manager)
-	if err != nil {
-		return fmt.Errorf("could not get manager: %v", err)
-	}
-	var replicas int32 = 3
-	manager.Spec.CommonConfiguration.Replicas = &replicas
-	err = f.Client.Update(goctx.TODO(), manager)
-	if err != nil {
-		return fmt.Errorf("could not update manager: %v", err)
-	}
-	waitTimeout = time.Second * 120
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "rabbitmq1-rabbitmq-deployment", 3, retryInterval, waitTimeout)
-	if err != nil {
-		return fmt.Errorf("rabbitmq deployment is wrong: %v", err)
-	}
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "zookeeper1-zookeeper-deployment", 3, retryInterval, waitTimeout)
-	if err != nil {
-		return fmt.Errorf("zookeeper deployment is wrong: %v", err)
 	}
 	return nil
 }

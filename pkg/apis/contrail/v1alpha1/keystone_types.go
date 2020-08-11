@@ -7,7 +7,7 @@ import (
 // KeystoneSpec defines the desired state of Keystone
 // +k8s:openapi-gen=true
 type KeystoneSpec struct {
-	CommonConfiguration  PodConfiguration      `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration KeystoneConfiguration `json:"serviceConfiguration"`
 }
 

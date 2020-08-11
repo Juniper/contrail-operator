@@ -1606,11 +1606,6 @@ func (in *ManagerConfiguration) DeepCopyInto(out *ManagerConfiguration) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.Replicas != nil {
-		in, out := &in.Replicas, &out.Replicas
-		*out = new(int32)
-		**out = **in
-	}
 	return
 }
 

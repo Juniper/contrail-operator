@@ -151,7 +151,6 @@ spec:
               - containers
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

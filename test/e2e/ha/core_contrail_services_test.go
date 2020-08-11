@@ -342,7 +342,6 @@ func getHACluster(namespace string) *contrail.Manager {
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
 				Containers: []*contrail.Container{
@@ -364,7 +363,6 @@ func getHACluster(namespace string) *contrail.Manager {
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: []*contrail.Container{
@@ -384,7 +382,6 @@ func getHACluster(namespace string) *contrail.Manager {
 		Spec: contrail.RabbitmqSpec{
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: []*contrail.Container{
@@ -405,7 +402,6 @@ func getHACluster(namespace string) *contrail.Manager {
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ConfigConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -439,7 +435,6 @@ func getHACluster(namespace string) *contrail.Manager {
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ControlConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -464,7 +459,6 @@ func getHACluster(namespace string) *contrail.Manager {
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.WebuiConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -487,7 +481,6 @@ func getHACluster(namespace string) *contrail.Manager {
 		Spec: contrail.ProvisionManagerSpec{
 			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 				Containers: []*contrail.Container{

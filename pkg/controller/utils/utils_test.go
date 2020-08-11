@@ -187,91 +187,6 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, status, expectedStatus)
 	})
 
-	//TODO test replicas change in a different way
-	//t.Run("Update Event in ManagerSizeChange/CassandraGroupKind verification", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManager(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManager(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.CassandraGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-	//
-	//t.Run("Update Event in ManagerSizeChange/CassandraGroupKind2 verification2", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManagerTwo(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManagerTwo(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.CassandraGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-	//
-	//t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManager(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManager(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.ZookeeperGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-	//
-	//t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification2", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManagerTwo(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManagerTwo(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.ZookeeperGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-	//
-	//t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManager(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManager(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-	//
-	//t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification2", func(t *testing.T) {
-	//	expectedStatus := false
-	//	status := true
-	//	evu := event.UpdateEvent{
-	//		MetaOld:   pod,
-	//		ObjectOld: newManagerTwo(),
-	//		MetaNew:   pod,
-	//		ObjectNew: newManagerTwo(),
-	//	}
-	//	hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
-	//	status = hf.UpdateFunc(evu)
-	//	assert.Equal(t, status, expectedStatus)
-	//})
-
 	t.Run("Update Event in DSStatusChange/VrouterGroupKind verification", func(t *testing.T) {
 		expectedStatus := false
 		status := true
@@ -522,7 +437,6 @@ func newManager() *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
-				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: contrail.Services{
@@ -646,7 +560,6 @@ var falseVal = false
 
 var managerCommonConfiguration = contrail.ManagerConfiguration{
 	HostNetwork:      &trueVal,
-	Replicas:         &replica,
 	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
 	ImagePullSecrets: []string{"contrail-nightly"},
 	Tolerations: []core.Toleration{
@@ -769,7 +682,6 @@ func newManagerTwo() *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
-				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: contrail.Services{

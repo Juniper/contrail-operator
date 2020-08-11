@@ -72,7 +72,7 @@ func Add(mgr manager.Manager) error {
 		return err
 	}
 	reconcileManager.controller = c
-	return addManagerWatch(c)
+	return addManagerWatch(c, mgr)
 }
 
 func createController(mgr manager.Manager, r reconcile.Reconciler) (controller.Controller, error) {
@@ -90,7 +90,7 @@ func addResourcesToWatch(c controller.Controller, obj runtime.Object) error {
 	})
 }
 
-func addManagerWatch(c controller.Controller) error {
+func addManagerWatch(c controller.Controller, mgr manager.Manager) error {
 	err := c.Watch(&source.Kind{Type: &v1alpha1.Manager{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func addManagerWatch(c controller.Controller) error {
 			return err
 		}
 	}
-	return nil
+	return c.Watch(&source.Kind{Type: &corev1.Node{}}, nodeChangeHandler(mgr.GetClient()))
 }
 
 // blank assignment to verify that ReconcileManager implements reconcile.Reconciler.
@@ -165,7 +165,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	//TODO set replicas to number of nodes
 	//TODO print replicas in kubectl get manager
-	replicaNumber := instance.Spec.CommonConfiguration.Replicas
+	nodeNumber, err := r.getNodesNumber(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if nodeNumber == 0 {
+		return reconcile.Result{}, nil
+	}
+	replicaNumber := &nodeNumber
 
 	for _, cassandraService := range instance.Spec.Services.Cassandras {
 		create := *cassandraService.Spec.CommonConfiguration.Create
@@ -240,9 +248,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if cassandraService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = cassandraService.Spec.CommonConfiguration.Replicas
 			}
@@ -391,9 +398,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if zookeeperService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = zookeeperService.Spec.CommonConfiguration.Replicas
 			}
@@ -537,9 +543,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if webuiService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = webuiService.Spec.CommonConfiguration.Replicas
 			}
@@ -679,9 +684,8 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 				return reconcile.Result{}, err
 			}
 			replicasChanged := false
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if provisionManagerService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = provisionManagerService.Spec.CommonConfiguration.Replicas
 			}
@@ -823,8 +827,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			if configService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = configService.Spec.CommonConfiguration.Replicas
 			}
@@ -968,8 +971,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			if kubemanagerService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = kubemanagerService.Spec.CommonConfiguration.Replicas
 			}
@@ -1119,8 +1121,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			if controlService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = controlService.Spec.CommonConfiguration.Replicas
 			}
@@ -1264,8 +1265,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
 			cr.Spec.CommonConfiguration.Replicas = replicaNumber
 			if rabbitmqService.Spec.CommonConfiguration.Replicas != nil {
@@ -1415,8 +1415,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 			}
 			replicasChanged := false
 			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			replicas := instance.Spec.CommonConfiguration.Replicas
+			replicas := replicaNumber
 			if vrouterService.Spec.CommonConfiguration.Replicas != nil {
 				replicas = vrouterService.Spec.CommonConfiguration.Replicas
 			}
@@ -1515,7 +1514,7 @@ func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
 	}}
 }
 
-func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int, error) {
+func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int32, error) {
 	nodes := &corev1.NodeList{}
 	labelSelector := labels.SelectorFromSet(manager.Spec.CommonConfiguration.NodeSelector)
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
@@ -1524,9 +1523,9 @@ func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int, error
 	}
 	nodesNumber := len(nodes.Items)
 	if nodesNumber % 2 == 0 && nodesNumber != 0 {
-		return nodesNumber - 1, nil
+		return int32(nodesNumber - 1), nil
 	}
-	return nodesNumber, nil
+	return int32(nodesNumber), nil
 }
 
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {

@@ -53,7 +53,6 @@ func TestCommandServices(t *testing.T) {
 		assert.NoError(t, err)
 
 		trueVal := true
-		oneVal := int32(1)
 
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
@@ -176,7 +175,6 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.ManagerConfiguration{
-					Replicas:     &oneVal,
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},

@@ -210,7 +210,6 @@ spec:
               - swiftStorageConfiguration
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

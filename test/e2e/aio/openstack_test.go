@@ -52,7 +52,6 @@ func TestOpenstackServices(t *testing.T) {
 		}
 		assert.NoError(t, err)
 		trueVal := true
-		oneVal := int32(1)
 
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
@@ -102,8 +101,8 @@ func TestOpenstackServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.ManagerConfiguration{
-					Replicas:    &oneVal,
 					HostNetwork: &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
@@ -186,9 +185,6 @@ func TestOpenstackServices(t *testing.T) {
 					Name:      "openstacktest-swift",
 				},
 				Spec: contrail.SwiftSpec{
-					CommonConfiguration: contrail.PodConfiguration{
-						NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-					},
 					ServiceConfiguration: contrail.SwiftConfiguration{
 						Containers: []*contrail.Container{
 							{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag},
