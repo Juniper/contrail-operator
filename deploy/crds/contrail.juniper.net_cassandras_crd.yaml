@@ -9,7 +9,7 @@ spec:
     listKind: CassandraList
     plural: cassandras
     singular: cassandra
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:

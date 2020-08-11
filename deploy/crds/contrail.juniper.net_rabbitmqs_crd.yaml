@@ -9,7 +9,7 @@ spec:
     listKind: RabbitmqList
     plural: rabbitmqs
     singular: rabbitmq
-  scope: Namespaced
+  scope: ""
   subresources:
     status: {}
   validation:

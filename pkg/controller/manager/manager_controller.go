@@ -43,6 +43,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Memcached{},
 	&v1alpha1.Vrouter{},
 	&v1alpha1.Kubemanager{},
+	&v1alpha1.Contrailmonitor{},
 	&corev1.ConfigMap{},
 }
 
@@ -1507,6 +1508,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if err = r.processContrailmonitor(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	r.setConditions(instance)
 
 	err = r.client.Status().Update(context.TODO(), instance)
@@ -1665,5 +1670,22 @@ func (r *ReconcileManager) processCSRSignerCaConfigMap(manager *v1alpha1.Manager
 		return controllerutil.SetControllerReference(manager, csrSignerCaConfigMap, r.scheme)
 	})
 
+	return err
+}
+
+func (r *ReconcileManager) processContrailmonitor(manager *v1alpha1.Manager) error {
+	if manager.Spec.Services.Contrailmonitor == nil {
+		return nil
+	}
+	contrailmonitor := &v1alpha1.Contrailmonitor{}
+	contrailmonitor.ObjectMeta = manager.Spec.Services.Contrailmonitor.ObjectMeta
+	contrailmonitor.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, contrailmonitor, func() error {
+		contrailmonitor.Spec = manager.Spec.Services.Contrailmonitor.Spec
+		return controllerutil.SetControllerReference(manager, contrailmonitor, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &contrailmonitor.Status.Active
+	manager.Status.Postgres = status
 	return err
 }
