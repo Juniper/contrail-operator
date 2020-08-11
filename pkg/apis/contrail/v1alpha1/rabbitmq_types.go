@@ -242,24 +242,6 @@ func (c *Rabbitmq) CreateSecret(secretName string,
 		c)
 }
 
-func (c *Rabbitmq) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // IsActive returns true if instance is active.
 func (c *Rabbitmq) IsActive(name string, namespace string, myclient client.Client) bool {
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})

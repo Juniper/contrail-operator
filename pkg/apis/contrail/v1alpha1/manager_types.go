@@ -16,7 +16,7 @@ type ManagerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	CommonConfiguration CommonConfiguration `json:"commonConfiguration,omitempty"`
+	CommonConfiguration ManagerConfiguration `json:"commonConfiguration,omitempty"`
 	Services            Services            `json:"services,omitempty"`
 	KeystoneSecretName  string              `json:"keystoneSecretName,omitempty"`
 }
@@ -59,6 +59,8 @@ type ManagerConfiguration struct {
 	// If specified, the pod's tolerations.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
+	//TODO remove after implementation of getting node number
+	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 }
 
 // ManagerStatus defines the observed state of Manager.

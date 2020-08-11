@@ -161,7 +161,7 @@ func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
 			Services: contrail.Services{
 				Zookeepers: []*contrail.Zookeeper{zoo},
 			},
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.ManagerConfiguration{
 				Replicas: &replicas,
 			},
 		},

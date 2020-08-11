@@ -520,9 +520,7 @@ func newManager() *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -646,9 +644,7 @@ var replica = int32(1)
 var trueVal = true
 var falseVal = false
 
-var managerCommonConfiguration = contrail.CommonConfiguration{
-	Activate:         &trueVal,
-	Create:           &trueVal,
+var managerCommonConfiguration = contrail.ManagerConfiguration{
 	HostNetwork:      &trueVal,
 	Replicas:         &replica,
 	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
@@ -771,9 +767,7 @@ func newManagerTwo() *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

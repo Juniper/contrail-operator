@@ -284,25 +284,6 @@ func (c *Kubemanager) CurrentConfigMapExists(configMapName string, client client
 	return CurrentConfigMapExists(configMapName, client, scheme, request)
 }
 
-func (c *Kubemanager) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if !*ownerRef.Controller {
-			continue
-		}
-		if ownerRef.Kind != "Manager" {
-			continue
-		}
-		m := &Manager{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, m); err != nil {
-			return nil, err
-		}
-		return m, nil
-	}
-	return nil, nil
-}
-
 // IsActive returns true if instance is active.
 func (c *Kubemanager) IsActive(name string, namespace string, client client.Client) bool {
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, c); err != nil {

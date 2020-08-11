@@ -525,7 +525,7 @@ func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
 	}
 	serviceStatuses := map[string]v1alpha1.WebUIServiceStatusMap{}
 	for _, pod := range pods.Items {
-		podStatus := map[string]v1alpha1.WebUIServiceStatus{}
+		podStatus := v1alpha1.WebUIServiceStatusMap{}
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			status := "Non-Functional"
 			if containerStatus.Ready {

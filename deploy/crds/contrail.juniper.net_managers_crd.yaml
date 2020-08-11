@@ -37,13 +37,6 @@ spec:
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
-                activate:
-                  description: Activate defines if the service will be activated by
-                    Manager.
-                  type: boolean
-                create:
-                  description: Create defines if the service will be created by Manager.
-                  type: boolean
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's
                     network namespace. If this option is set, the ports that will
@@ -64,8 +57,7 @@ spec:
                     labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
                   type: object
                 replicas:
-                  description: Number of desired pods. This is a pointer to distinguish
-                    between explicit zero and not specified. Defaults to 1.
+                  description: TODO remove after implementation of getting node number
                   format: int32
                   type: integer
                 tolerations:

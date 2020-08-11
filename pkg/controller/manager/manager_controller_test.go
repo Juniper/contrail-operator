@@ -1747,9 +1747,7 @@ func newManager() *contrail.Manager {
 			Namespace: "default",
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:    &trueVal,
-				Create:      &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

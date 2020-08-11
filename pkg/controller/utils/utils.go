@@ -504,7 +504,7 @@ func ZookeeperActiveChange() predicate.Funcs {
 }
 
 // MergeCommonConfiguration combines common configuration of manager and service.
-func MergeCommonConfiguration(manager v1alpha1.CommonConfiguration,
+func MergeCommonConfiguration(manager v1alpha1.ManagerConfiguration,
 	instance v1alpha1.CommonConfiguration) v1alpha1.CommonConfiguration {
 	if len(instance.NodeSelector) == 0 && len(manager.NodeSelector) > 0 {
 		instance.NodeSelector = manager.NodeSelector
