@@ -16,13 +16,18 @@ spec:
       serviceAccountName: contrail-operator
       hostNetwork: true
       tolerations:
-      - key: node.kubernetes.io/not-ready
-        operator: "Exists"
-        effect: "NoSchedule"
+        - key: node.kubernetes.io/not-ready
+          operator: "Exists"
+          effect: "NoSchedule"
+      initContainers:
+        - name: init
+          # Replace this with the built image name
+          image: registry:5000/contrail-operator/engprod-269421/crdsloader:master.latest
+          imagePullPolicy: Always
       containers:
         - name: contrail-operator
           # Replace this with the built image name
-          image: registry:5000/contrail-operator:latest
+          image: registry:5000/contrail-operator/engprod-269421/contrail-operator:master.latest
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

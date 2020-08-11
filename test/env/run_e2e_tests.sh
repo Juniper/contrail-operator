@@ -22,14 +22,14 @@ E2E_TEST_SUITE=${E2E_TEST_SUITE:-aio}
 DIR="$(cd "$(dirname "$0")" && pwd)/../../"
 pushd $DIR
 
-operator_image="registry:5000/contrail-operator/engprod-269421/contrail-operator:${BUILD_SCM_BRANCH}.${BUILD_SCM_REVISION}"
+cat deploy/1-create-operator.yaml | \
+    sed "s/:master.latest/:${BUILD_SCM_BRANCH}.${BUILD_SCM_REVISION}/g" | \
+    kubectl apply -f -
 
-kubectl apply -f deploy/cluster_role.yaml
-kubectl apply -f deploy/cluster_role_binding.yaml
+## Operator-sdk e2e test framework requires namespacedMan and globalMan to be defined, however in our case
+## all resources and crds are registered before and automatically. That is way empty.yaml files are provided here
+## This is equivalent to "operator-sdk test local --no-setup"
+go test -v ./test/e2e/$E2E_TEST_SUITE/... -namespacedMan test/env/deploy/empty.yaml -globalMan test/env/deploy/empty.yaml -root $DIR -timeout=30m -parallel=8 -skipCleanupOnError=false
 
-operator-sdk test local --verbose ./test/e2e/$E2E_TEST_SUITE --image "$operator_image" --go-test-flags "-timeout=30m -parallel=8"
-
-kubectl delete -f deploy/cluster_role.yaml
-kubectl delete -f deploy/cluster_role_binding.yaml
-
+kubectl delete -f deploy/1-create-operator.yaml
 popd

@@ -29,7 +29,7 @@ node('contrail-operator-node') {
                 sh "kubectl create namespace contrail"
                 sh 'BUILD_SCM_REVISION=`echo "${ghprbActualCommit}" | head -c 7` BUILD_SCM_BRANCH=${GIT_BRANCH} E2E_TEST_SUITE=${e2eTestSuite} ./test/env/run_e2e_tests.sh'
             } finally {
-                sh "kubectl delete namespace contrail"
+                sh "kubectl delete --ignore-not-found namespace contrail"
                 sh "kind delete cluster --name=${testEnvPrefix}${ghprbPullId}"
             }
         }
