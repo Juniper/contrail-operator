@@ -26,6 +26,9 @@ cat deploy/1-create-operator.yaml | \
     sed "s/:master.latest/:${BUILD_SCM_BRANCH}.${BUILD_SCM_REVISION}/g" | \
     kubectl apply -f -
 
+## Operator-sdk e2e test framework requires namespacedMan and globalMan to be defined, however in our case
+## all resources and crds are registered before and automatically. That is way empty.yaml files are provided here
+## This is equivalent to "operator-sdk test local --no-setup"
 go test -v ./test/e2e/$E2E_TEST_SUITE/... -namespacedMan test/env/deploy/empty.yaml -globalMan test/env/deploy/empty.yaml -root $DIR -timeout=30m -parallel=8 -skipCleanupOnError=false
 
 kubectl delete -f deploy/1-create-operator.yaml
