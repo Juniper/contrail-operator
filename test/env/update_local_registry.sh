@@ -18,6 +18,7 @@ contrail-operator/engprod-269421/ringcontroller:master.latest
 contrail-operator/engprod-269421/contrail-operator:master.latest
 contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
 contrail-operator/engprod-269421/contrail-operator-provisioner:master.latest
+contrail-operator/engprod-269421/crdsloader:master.latest
 contrail-nightly/contrail-command:master-latest
 contrail-nightly/contrail-controller-config-api:master-latest
 contrail-nightly/contrail-controller-config-devicemgr:master-latest
