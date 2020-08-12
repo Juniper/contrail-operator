@@ -59,6 +59,8 @@ rules:
   - keystones
   - swifts
   - memcacheds
+  - contrailmonitors
+  - contrailstatusmonitors
   verbs:
   - '*'
 - apiGroups:
