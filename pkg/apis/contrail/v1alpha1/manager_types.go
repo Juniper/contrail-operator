@@ -82,6 +82,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge

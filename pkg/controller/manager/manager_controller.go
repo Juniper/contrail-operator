@@ -163,8 +163,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	//TODO set replicas to number of nodes
-	//TODO print replicas in kubectl get manager
 	nodeNumber, err := r.getNodesNumber(instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -174,7 +172,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 	replicaNumber := &nodeNumber
-
+	instance.Status.Replicas = nodeNumber
 	for _, cassandraService := range instance.Spec.Services.Cassandras {
 		create := *cassandraService.Spec.CommonConfiguration.Create
 		delete := false

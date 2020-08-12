@@ -2667,6 +2667,9 @@ spec:
                 name:
                   type: string
               type: object
+            replicas:
+              format: int32
+              type: integer
             swift:
               description: ServiceStatus provides information on the current status
                 of the service.
