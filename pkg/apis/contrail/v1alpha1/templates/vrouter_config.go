@@ -22,7 +22,7 @@ physical_interface_mac = {{ .PhysicalInterfaceMac }}
 tsn_servers = []
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
@@ -81,7 +81,7 @@ db_use_ssl=False
 server_list={{ .CollectorServerList }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt

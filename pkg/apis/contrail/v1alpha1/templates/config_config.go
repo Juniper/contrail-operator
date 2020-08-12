@@ -72,7 +72,7 @@ rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -116,7 +116,7 @@ collectors={{ .CollectorServerList }}
 dm_run_mode={{ .DMRunMode }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -146,7 +146,7 @@ collectors={{ .CollectorServerList }}
 
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -191,7 +191,7 @@ rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -244,7 +244,7 @@ analytics_server_list={{ .AnalyticsServerList }}
 aaa_mode={{ .AAAMode }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -278,7 +278,7 @@ redis_uve_list={{ .RedisServerList }}
 redis_password=
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -342,7 +342,7 @@ rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -375,6 +375,7 @@ password=
 redis_ssl_enable=False
 [SANDESH]
 introspect_ssl_enable=True
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -394,7 +395,7 @@ db_use_ssl=true
 server_list={{ .CollectorServerList }}
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt
@@ -414,6 +415,7 @@ db_use_ssl=true
 server_list={{ .CollectorServerList }}
 [SANDESH]
 introspect_ssl_enable=True
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-{{ .HostIP }}.pem
 sandesh_certfile=/etc/certificates/server-{{ .HostIP }}.crt

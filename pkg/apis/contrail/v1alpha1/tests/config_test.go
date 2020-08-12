@@ -988,7 +988,7 @@ rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1278,7 +1278,7 @@ collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 dm_run_mode=Full
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1320,7 +1320,7 @@ rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1372,7 +1372,7 @@ analytics_server_list=1.1.1.1:8081 1.1.1.2:8081 1.1.1.3:8081
 aaa_mode=rbac
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1404,6 +1404,7 @@ password=
 redis_ssl_enable=False
 [SANDESH]
 introspect_ssl_enable=True
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1436,7 +1437,7 @@ redis_uve_list=1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379
 redis_password=
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1499,7 +1500,7 @@ rabbitmq_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
@@ -1558,6 +1559,7 @@ rabbitmq_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
@@ -1608,6 +1610,7 @@ rabbitmq_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
@@ -1626,7 +1629,7 @@ db_use_ssl=True
 server_list=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
@@ -1743,7 +1746,7 @@ collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.6.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.6.1.crt
@@ -1786,7 +1789,7 @@ collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 dm_run_mode=Full
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
