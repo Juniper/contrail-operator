@@ -68,32 +68,32 @@ type ControlStatus struct {
 
 // +k8s:openapi-gen=true
 type ControlServiceStatus struct {
-	Connections              []Connection `json:"connections,omitempty"`
-	NumberOfXMPPPeers        string       `json:"numberOfXMPPPeers,omitempty"`
-	NumberOfRoutingInstances string       `json:"numberOfRoutingInstances,omitempty"`
-	StaticRoutes             StaticRoutes `json:"staticRoutes,omitempty"`
-	BGPPeer                  BGPPeer      `json:"bgpPeer,omitempty"`
-	State                    string       `json:"state,omitempty"`
+	Connections              []Connection
+	NumberOfXMPPPeers        string
+	NumberOfRoutingInstances string
+	StaticRoutes             StaticRoutes
+	BGPPeer                  BGPPeer
+	State                    string
 }
 
 // +k8s:openapi-gen=true
 type StaticRoutes struct {
-	Down   string `json:"down,omitempty"`
-	Number string `json:"number,omitempty"`
+	Down   string
+	Number string
 }
 
 // +k8s:openapi-gen=true
 type BGPPeer struct {
-	Up     string `json:"up,omitempty"`
-	Number string `json:"number,omitempty"`
+	Up     string
+	Number string
 }
 
 // +k8s:openapi-gen=true
 type Connection struct {
-	Type   string   `json:"type,omitempty"`
-	Name   string   `json:"name,omitempty"`
-	Status string   `json:"status,omitempty"`
-	Nodes  []string `json:"nodes,omitempty"`
+	Type   string
+	Name   string
+	Status string
+	Nodes  []string
 }
 
 type ControlStatusPorts struct {
