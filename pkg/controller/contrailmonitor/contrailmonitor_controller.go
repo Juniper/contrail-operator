@@ -317,7 +317,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	fmt.Println(clist.Items[0].Status.ServiceStatus)
 	ccount := len(clist.Items)
 	if ccount > 0 {
 		for j := 0; j < ccount; j++ {
