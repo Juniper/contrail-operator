@@ -2,7 +2,6 @@ package contrailmonitor
 
 import (
 	"context"
-	"fmt"
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -280,7 +279,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	}
 
 	wklist, err := r.getWebuilist()
-	fmt.Println(wklist.Items[0].Status.ServiceStatus)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

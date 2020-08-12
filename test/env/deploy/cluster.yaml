@@ -43,25 +43,25 @@ spec:
           keystoneInstance: keystone
           containers:
             - name: analyticsapi
-              image: registry:5000/contrail-nightly/contrail-analytics-api:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-api:2005.42
             - name: api
-              image: registry:5000/contrail-nightly/contrail-controller-config-api:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-api:2005.42
             - name: collector
-              image: registry:5000/contrail-nightly/contrail-analytics-collector:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-collector:2005.42
             - name: devicemanager
-              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:2005.42
             - name: dnsmasq
-              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:2005.42
             - name: init
               image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: schematransformer
-              image: registry:5000/contrail-nightly/contrail-controller-config-schema:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-schema:2005.42
             - name: servicemonitor
-              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:2005.42
             - name: queryengine
-              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:2005.42
             - name: redis
               image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
             - name: statusmonitor
@@ -181,8 +181,8 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          activate: false
-          create: false
+          activate: true
+          create: true
           hostNetwork: true
           tolerations:
             - effect: NoSchedule
