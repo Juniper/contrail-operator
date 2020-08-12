@@ -23,7 +23,7 @@ import (
 var versionMap = map[string]string{
 	"cassandra":                     "3.11.4",
 	"zookeeper":                     "3.5.5",
-	"cemVersion":                    "2005.42",
+	"cemVersion":                    "2008.latest",
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",
