@@ -194,7 +194,7 @@ physical_interface_mac = de:ad:be:ef:ba:be
 tsn_servers = []
 [SANDESH]
 introspect_ssl_enable=True
-introspect_ssl_insecure=False
+introspect_ssl_insecure=True
 sandesh_ssl_enable=True
 sandesh_keyfile=/etc/certificates/server-key-1.1.8.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.8.1.crt
