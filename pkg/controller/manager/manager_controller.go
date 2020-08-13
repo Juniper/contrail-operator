@@ -22,7 +22,6 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-	cr "github.com/Juniper/contrail-operator/pkg/controller/manager/crs"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -171,1323 +170,63 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	if nodeNumber == 0 {
 		return reconcile.Result{}, nil
 	}
-	replicaNumber := &nodeNumber
+	replicas := &nodeNumber
 	instance.Status.Replicas = nodeNumber
-	for _, cassandraService := range instance.Spec.Services.Cassandras {
-		create := *cassandraService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
 
-		cr := cr.GetCassandraCr()
-		cr.ObjectMeta = cassandraService.ObjectMeta
-		cr.Labels = cassandraService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = cassandraService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Cassandra"
-		for _, cassandraStatus := range instance.Status.Cassandras {
-			if cassandraService.Name == *cassandraStatus.Name {
-				if *cassandraService.Spec.CommonConfiguration.Create && *cassandraStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*cassandraService.Spec.CommonConfiguration.Create && *cassandraStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = cassandraService.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					if err = controllerutil.SetControllerReference(instance, cr, r.scheme); err != nil {
-						return reconcile.Result{}, err
-					}
-					if err = r.client.Create(context.TODO(), cr); err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			cassandraStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Cassandras != nil {
-				for _, cassandraStatus := range instance.Status.Cassandras {
-					if cassandraService.Name == *cassandraStatus.Name {
-						status = cassandraStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				cassandraStatusList = append(cassandraStatusList, status)
-				instance.Status.Cassandras = cassandraStatusList
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			replicas := replicaNumber
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			if cassandraService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = cassandraService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range cassandraService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			cassandraStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Cassandras != nil {
-				for _, cassandraStatus := range instance.Status.Cassandras {
-					if cassandraService.Name == *cassandraStatus.Name {
-						status = cassandraStatus
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				cassandraStatusList = append(cassandraStatusList, status)
-				instance.Status.Cassandras = cassandraStatusList
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			cassandraStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Cassandras != nil {
-				for _, cassandraStatus := range instance.Status.Cassandras {
-					if cassandraService.Name == *cassandraStatus.Name {
-						status = cassandraStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				cassandraStatusList = append(cassandraStatusList, status)
-				instance.Status.Cassandras = cassandraStatusList
-			}
-		}
-	}
-
-	for _, zookeeperService := range instance.Spec.Services.Zookeepers {
-		create := *zookeeperService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetZookeeperCr()
-		cr.ObjectMeta = zookeeperService.ObjectMeta
-		cr.Labels = zookeeperService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = zookeeperService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Zookeeper"
-		for _, zookeeperStatus := range instance.Status.Zookeepers {
-			if zookeeperService.Name == *zookeeperStatus.Name {
-				if *zookeeperService.Spec.CommonConfiguration.Create && *zookeeperStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*zookeeperService.Spec.CommonConfiguration.Create && *zookeeperStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = zookeeperService.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			zookeeperStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Zookeepers != nil {
-				for _, zookeeperStatus := range instance.Status.Zookeepers {
-					if zookeeperService.Name == *zookeeperStatus.Name {
-						status = zookeeperStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				zookeeperStatusList = append(zookeeperStatusList, status)
-				instance.Status.Zookeepers = zookeeperStatusList
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			replicas := replicaNumber
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			if zookeeperService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = zookeeperService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range zookeeperService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			zookeeperStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Zookeepers != nil {
-				for _, zookeeperStatus := range instance.Status.Zookeepers {
-					if zookeeperService.Name == *zookeeperStatus.Name {
-						status = zookeeperStatus
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				zookeeperStatusList = append(zookeeperStatusList, status)
-				instance.Status.Zookeepers = zookeeperStatusList
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			zookeeperStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Zookeepers != nil {
-				for _, zookeeperStatus := range instance.Status.Zookeepers {
-					if zookeeperService.Name == *zookeeperStatus.Name {
-						status = zookeeperStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				zookeeperStatusList = append(zookeeperStatusList, status)
-				instance.Status.Zookeepers = zookeeperStatusList
-			}
-		}
-	}
-
-	if instance.Spec.Services.Webui != nil {
-		webuiService := instance.Spec.Services.Webui
-		create := *webuiService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		webuiService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-
-		cr := cr.GetWebuiCr()
-		cr.ObjectMeta = webuiService.ObjectMeta
-		cr.Labels = webuiService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = webuiService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Webui"
-		if instance.Status.Webui != nil {
-			if *webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
-				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-				if err == nil {
-					create = false
-					delete = false
-					update = true
-				}
-			}
-			if !*webuiService.Spec.CommonConfiguration.Create && *instance.Status.Webui.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = instance.Spec.Services.Webui.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Webui != nil {
-				status = instance.Status.Webui
-				status.Created = &create
-				status.Active = &cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = &cr.Status.Active
-				instance.Status.Webui = status
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			replicas := replicaNumber
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			if webuiService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = webuiService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range webuiService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			secretParamChanged := false
-			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
-				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-				secretParamChanged = true
-			}
-
-			if imageChanged || replicasChanged || secretParamChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Webui != nil {
-				status = instance.Status.Webui
-				status.Active = &cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = &cr.Status.Active
-				instance.Status.Webui = status
-			}
-
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Webui != nil {
-				status = instance.Status.Webui
-				status.Created = &create
-				status.Active = &cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = &cr.Status.Active
-				instance.Status.Webui = status
-			}
-		}
-	}
-
-	if instance.Spec.Services.ProvisionManager != nil {
-		provisionManagerService := instance.Spec.Services.ProvisionManager
-		create := *provisionManagerService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		provisionManagerService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-
-		cr := cr.GetProvisionManagerCr()
-		cr.ObjectMeta = provisionManagerService.ObjectMeta
-		cr.Labels = provisionManagerService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = provisionManagerService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "ProvisionManager"
-		if instance.Status.ProvisionManager != nil {
-			if *provisionManagerService.Spec.CommonConfiguration.Create && *instance.Status.ProvisionManager.Created {
-				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-				if err == nil {
-					create = false
-					delete = false
-					update = true
-				}
-			}
-			if !*provisionManagerService.Spec.CommonConfiguration.Create && *instance.Status.ProvisionManager.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = instance.Spec.Services.ProvisionManager.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.ProvisionManager != nil {
-				status = instance.Status.ProvisionManager
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.ProvisionManager = status
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			replicas := replicaNumber
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			if provisionManagerService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = provisionManagerService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-
-			imageChanged := false
-			for _, container := range provisionManagerService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			secretParamChanged := false
-			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
-				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-				secretParamChanged = true
-
-			}
-			if imageChanged || replicasChanged || secretParamChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.ProvisionManager != nil {
-				status = instance.Status.ProvisionManager
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.ProvisionManager = status
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.ProvisionManager != nil {
-				status = instance.Status.ProvisionManager
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.ProvisionManager = status
-			}
-		}
-	}
-
-	if instance.Spec.Services.Config != nil {
-		configService := instance.Spec.Services.Config
-		create := *configService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		configService.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-
-		cr := cr.GetConfigCr()
-		cr.ObjectMeta = configService.ObjectMeta
-		cr.Labels = configService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = configService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Config"
-
-		if instance.Status.Config != nil {
-			if *configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
-				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-				if err == nil {
-					create = false
-					delete = false
-					update = true
-				}
-			}
-			if !*configService.Spec.CommonConfiguration.Create && *instance.Status.Config.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
-
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = instance.Spec.Services.Config.Spec
-			cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Config != nil {
-				status = instance.Status.Config
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Config = status
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			replicas := replicaNumber
-			if configService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = configService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range configService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			secretParamChanged := false
-			if cr.Spec.ServiceConfiguration.KeystoneSecretName == "" {
-				cr.Spec.ServiceConfiguration.KeystoneSecretName = instance.Spec.KeystoneSecretName
-				secretParamChanged = true
-			}
-
-			if imageChanged || replicasChanged || secretParamChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Config != nil {
-				status = instance.Status.Config
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Config = status
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Config != nil {
-				status = instance.Status.Config
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Config = status
-			}
-		}
-	}
-
-	for _, kubemanagerService := range instance.Spec.Services.Kubemanagers {
-		create := *kubemanagerService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetKubemanagerCr()
-		cr.ObjectMeta = kubemanagerService.ObjectMeta
-		cr.Labels = kubemanagerService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Kubemanager"
-		for _, kubemanagerStatus := range instance.Status.Kubemanagers {
-			if kubemanagerService.Name == *kubemanagerStatus.Name {
-				if *kubemanagerService.Spec.CommonConfiguration.Create && *kubemanagerStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*kubemanagerService.Spec.CommonConfiguration.Create && *kubemanagerStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = kubemanagerService.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			kubemanagerStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Kubemanagers != nil {
-				for _, kubemanagerStatus := range instance.Status.Kubemanagers {
-					if kubemanagerService.Name == *kubemanagerStatus.Name {
-						status = kubemanagerStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				kubemanagerStatusList = append(kubemanagerStatusList, status)
-				instance.Status.Kubemanagers = kubemanagerStatusList
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			replicas := replicaNumber
-			if kubemanagerService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = kubemanagerService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range kubemanagerService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			kubemanagerStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Kubemanagers != nil {
-				for _, kubemanagerStatus := range instance.Status.Kubemanagers {
-					if kubemanagerService.Name == *kubemanagerStatus.Name {
-						status = kubemanagerStatus
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				kubemanagerStatusList = append(kubemanagerStatusList, status)
-				instance.Status.Kubemanagers = kubemanagerStatusList
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			kubemanagerStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Kubemanagers != nil {
-				for _, kubemanagerStatus := range instance.Status.Kubemanagers {
-					if kubemanagerService.Name == *kubemanagerStatus.Name {
-						status = kubemanagerStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				kubemanagerStatusList = append(kubemanagerStatusList, status)
-				instance.Status.Kubemanagers = kubemanagerStatusList
-			}
-		}
-	}
-
-	for _, controlService := range instance.Spec.Services.Controls {
-		create := *controlService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetControlCr()
-		cr.ObjectMeta = controlService.ObjectMeta
-		cr.Labels = controlService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = controlService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Control"
-		for _, controlStatus := range instance.Status.Controls {
-			if controlService.Name == *controlStatus.Name {
-				if *controlService.Spec.CommonConfiguration.Create && *controlStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*controlService.Spec.CommonConfiguration.Create && *controlStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = controlService.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			controlStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Controls != nil {
-				for _, controlStatus := range instance.Status.Controls {
-					if controlService.Name == *controlStatus.Name {
-						status = controlStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				controlStatusList = append(controlStatusList, status)
-				instance.Status.Controls = controlStatusList
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			replicas := replicaNumber
-			if controlService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = controlService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range controlService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			controlStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Controls != nil {
-				for _, controlStatus := range instance.Status.Controls {
-					if controlService.Name == *controlStatus.Name {
-						status = controlStatus
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				controlStatusList = append(controlStatusList, status)
-				instance.Status.Controls = controlStatusList
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			controlStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Controls != nil {
-				for _, controlStatus := range instance.Status.Controls {
-					if controlService.Name == *controlStatus.Name {
-						status = controlStatus
-						status.Created = &create
-						status.Active = cr.Status.Active
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				controlStatusList = append(controlStatusList, status)
-				instance.Status.Controls = controlStatusList
-			}
-
-		}
-	}
-
-	if instance.Spec.Services.Rabbitmq != nil {
-		rabbitmqService := instance.Spec.Services.Rabbitmq
-		create := *rabbitmqService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetRabbitmqCr()
-		cr.ObjectMeta = rabbitmqService.ObjectMeta
-		cr.Labels = rabbitmqService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = rabbitmqService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Rabbitmq"
-		if instance.Status.Rabbitmq != nil {
-			if *rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
-				err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-				if err == nil {
-					create = false
-					delete = false
-					update = true
-				}
-			}
-			if !*rabbitmqService.Spec.CommonConfiguration.Create && *instance.Status.Rabbitmq.Created {
-				create = false
-				delete = true
-				update = false
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = instance.Spec.Services.Rabbitmq.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Rabbitmq != nil {
-				status = instance.Status.Rabbitmq
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Rabbitmq = status
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			replicas := replicaNumber
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if rabbitmqService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = rabbitmqService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range rabbitmqService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Rabbitmq != nil {
-				status = instance.Status.Rabbitmq
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Rabbitmq = status
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Delete(context.TODO(), cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			status := &v1alpha1.ServiceStatus{}
-			if instance.Status.Rabbitmq != nil {
-				status = instance.Status.Rabbitmq
-				status.Created = &create
-				status.Active = cr.Status.Active
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				status.Active = cr.Status.Active
-				instance.Status.Rabbitmq = status
-			}
-		}
-	}
-
-	for _, vrouterService := range instance.Spec.Services.Vrouters {
-		create := *vrouterService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetVrouterCr()
-		cr.ObjectMeta = vrouterService.ObjectMeta
-		cr.Labels = vrouterService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = vrouterService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "Vrouter"
-		for _, vrouterStatus := range instance.Status.Vrouters {
-			if vrouterService.Name == *vrouterStatus.Name {
-				if *vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*vrouterService.Spec.CommonConfiguration.Create && *vrouterStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
-			}
-		}
-		if create {
-			err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			cr.Spec = vrouterService.Spec
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			cr.Spec.CommonConfiguration.Replicas = replicaNumber
-			if err != nil {
-				if errors.IsNotFound(err) {
-					err = controllerutil.SetControllerReference(instance, cr, r.scheme)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-					err = r.client.Create(context.TODO(), cr)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-
-			status := &v1alpha1.ServiceStatus{}
-
-			vrouterStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Vrouters != nil {
-				vrouterStatusList = instance.Status.Vrouters
-			}
-			if instance.Status.Vrouters != nil {
-				vrouterFound := false
-				for _, vrouterStatus := range instance.Status.Vrouters {
-					if vrouterService.Name == *vrouterStatus.Name {
-						vrouterFound = true
-						status = vrouterStatus
-						status.Created = &create
-					}
-				}
-				if !vrouterFound {
-					status.Name = &cr.Name
-					status.Created = &create
-					vrouterStatusList = append(vrouterStatusList, status)
-					instance.Status.Vrouters = vrouterStatusList
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				vrouterStatusList = append(vrouterStatusList, status)
-				instance.Status.Vrouters = vrouterStatusList
-			}
-		}
-		if update {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			replicasChanged := false
-			cr.Spec.CommonConfiguration = utils.MergeCommonConfiguration(instance.Spec.CommonConfiguration, cr.Spec.CommonConfiguration)
-			replicas := replicaNumber
-			if vrouterService.Spec.CommonConfiguration.Replicas != nil {
-				replicas = vrouterService.Spec.CommonConfiguration.Replicas
-			}
-			if cr.Spec.CommonConfiguration.Replicas != nil {
-				if *replicas != *cr.Spec.CommonConfiguration.Replicas {
-					cr.Spec.CommonConfiguration.Replicas = replicas
-					replicasChanged = true
-				}
-			}
-			imageChanged := false
-			for _, container := range vrouterService.Spec.ServiceConfiguration.Containers {
-				for idx, crContainer := range cr.Spec.ServiceConfiguration.Containers {
-					if crContainer.Name == container.Name {
-						if crContainer.Image != container.Image {
-							cr.Spec.ServiceConfiguration.Containers[idx].Image = container.Image
-							imageChanged = true
-							break
-						}
-					}
-				}
-			}
-			if imageChanged || replicasChanged {
-				err = r.client.Update(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-		}
-		if delete {
-			err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-			if err == nil {
-				err = r.client.Delete(context.TODO(), cr)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-			}
-			status := &v1alpha1.ServiceStatus{}
-			vrouterStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.Vrouters != nil {
-				vrouterStatusList = instance.Status.Vrouters
-			}
-			if instance.Status.Vrouters != nil {
-				for _, vrouterStatus := range instance.Status.Vrouters {
-					if vrouterService.Name == *vrouterStatus.Name {
-						status = vrouterStatus
-						status.Created = &create
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				vrouterStatusList = append(vrouterStatusList, status)
-				instance.Status.Vrouters = vrouterStatusList
-			}
-		}
-	}
-
-	if err = r.processPostgres(instance, replicaNumber); err != nil {
+	//TODO handle removal of keys in services, then the Service status not contain info about deleted service
+	if err := r.processCassandras(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processCommand(instance, replicaNumber); err != nil {
+	if err := r.processZookeepers(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processKeystone(instance, replicaNumber); err != nil {
+	if err := r.processWebui(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processSwift(instance, replicaNumber); err != nil {
+	if err := r.processProvisionManager(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.processMemcached(instance, replicaNumber); err != nil {
+	if err := r.processConfig(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processKubemanagers(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processControls(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processRabbitMQ(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.processVRouters(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processPostgres(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processCommand(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processKeystone(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processSwift(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.processMemcached(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -1524,6 +263,231 @@ func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int32, err
 		return int32(nodesNumber - 1), nil
 	}
 	return int32(nodesNumber), nil
+}
+
+func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas *int32) error {
+	var zookeeperServiceStatus []*v1alpha1.ServiceStatus
+	for _, zookeeperService := range manager.Spec.Services.Zookeepers {
+		zookeeper := &v1alpha1.Zookeeper{}
+		zookeeper.ObjectMeta = zookeeperService.ObjectMeta
+		zookeeper.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, zookeeper, func() error {
+			zookeeper.Spec = zookeeperService.Spec
+			zookeeper.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, zookeeper.Spec.CommonConfiguration)
+			if zookeeper.Spec.CommonConfiguration.Replicas == nil {
+				zookeeper.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, zookeeper, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &zookeeper.Name
+		status.Active = zookeeper.Status.Active
+		zookeeperServiceStatus = append(zookeeperServiceStatus, status)
+	}
+
+	manager.Status.Zookeepers = zookeeperServiceStatus
+	return nil
+}
+
+func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas *int32) error {
+	var cassandraStatusList []*v1alpha1.ServiceStatus
+	for _, cassandraService := range manager.Spec.Services.Cassandras {
+		cassandra := &v1alpha1.Cassandra{}
+		cassandra.ObjectMeta = cassandraService.ObjectMeta
+		cassandra.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, cassandra, func() error {
+			cassandra.Spec = cassandraService.Spec
+			if cassandra.Spec.ServiceConfiguration.ClusterName == "" {
+				cassandra.Spec.ServiceConfiguration.ClusterName = manager.GetName()
+			}
+			cassandra.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, cassandra.Spec.CommonConfiguration)
+			if cassandra.Spec.CommonConfiguration.Replicas == nil {
+				cassandra.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, cassandra, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &cassandra.Name
+		status.Active = cassandra.Status.Active
+		cassandraStatusList = append(cassandraStatusList, status)
+	}
+
+	manager.Status.Cassandras = cassandraStatusList
+	return nil
+}
+
+func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int32) error {
+	if manager.Spec.Services.Webui == nil {
+		return nil
+	}
+	webui := &v1alpha1.Webui{}
+	webui.ObjectMeta = manager.Spec.Services.Webui.ObjectMeta
+	webui.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Webui.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, webui, func() error {
+		webui.Spec = manager.Spec.Services.Webui.Spec
+		webui.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, webui.Spec.CommonConfiguration)
+		if webui.Spec.CommonConfiguration.Replicas == nil {
+			webui.Spec.CommonConfiguration.Replicas = replicas
+		}
+		return controllerutil.SetControllerReference(manager, webui, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = &webui.Status.Active
+	manager.Status.Webui = status
+	return err
+}
+
+func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, replicas *int32) error {
+	if manager.Spec.Services.ProvisionManager == nil {
+		return nil
+	}
+	pm := &v1alpha1.ProvisionManager{}
+	pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
+	pm.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
+		pm.Spec = manager.Spec.Services.ProvisionManager.Spec
+		pm.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, pm.Spec.CommonConfiguration)
+		if pm.Spec.CommonConfiguration.Replicas == nil {
+			pm.Spec.CommonConfiguration.Replicas = replicas
+		}
+		return controllerutil.SetControllerReference(manager, pm, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = pm.Status.Active
+	manager.Status.ProvisionManager = status
+	return err
+}
+
+func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *int32) error {
+	if manager.Spec.Services.Config == nil {
+		return nil
+	}
+	config := &v1alpha1.Config{}
+	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta
+	config.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Config.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, config, func() error {
+		config.Spec = manager.Spec.Services.Config.Spec
+		config.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, config.Spec.CommonConfiguration)
+		if config.Spec.CommonConfiguration.Replicas == nil {
+			config.Spec.CommonConfiguration.Replicas = replicas
+		}
+		return controllerutil.SetControllerReference(manager, config, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = config.Status.Active
+	manager.Status.Config = status
+	return err
+}
+
+func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replicas *int32) error {
+	var kubemanagerServiceStatus []*v1alpha1.ServiceStatus
+	for _, kubemanagerService := range manager.Spec.Services.Kubemanagers {
+		kubemanager := &v1alpha1.Kubemanager{}
+		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
+		kubemanager.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
+			kubemanager.Spec = kubemanagerService.Spec
+			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanager.Spec.CommonConfiguration)
+			if kubemanager.Spec.CommonConfiguration.Replicas == nil {
+				kubemanager.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, kubemanager, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &kubemanager.Name
+		status.Active = kubemanager.Status.Active
+		kubemanagerServiceStatus = append(kubemanagerServiceStatus, status)
+	}
+
+	manager.Status.Kubemanagers = kubemanagerServiceStatus
+	return nil
+}
+
+func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *int32) error {
+	var controlServiceStatus []*v1alpha1.ServiceStatus
+	for _, controlService := range manager.Spec.Services.Controls {
+		control := &v1alpha1.Control{}
+		control.ObjectMeta = controlService.ObjectMeta
+		control.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, control, func() error {
+			control.Spec = controlService.Spec
+			control.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, control.Spec.CommonConfiguration)
+			if control.Spec.CommonConfiguration.Replicas == nil {
+				control.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, control, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &control.Name
+		status.Active = control.Status.Active
+		controlServiceStatus = append(controlServiceStatus, status)
+	}
+
+	manager.Status.Controls = controlServiceStatus
+	return nil
+}
+
+func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *int32) error {
+	if manager.Spec.Services.Rabbitmq == nil {
+		return nil
+	}
+	rabbitMQ := &v1alpha1.Rabbitmq{}
+	rabbitMQ.ObjectMeta = manager.Spec.Services.Rabbitmq.ObjectMeta
+	rabbitMQ.ObjectMeta.Namespace = manager.Namespace
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, rabbitMQ, func() error {
+		rabbitMQ.Spec = manager.Spec.Services.Rabbitmq.Spec
+		rabbitMQ.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, rabbitMQ.Spec.CommonConfiguration)
+		if rabbitMQ.Spec.CommonConfiguration.Replicas == nil {
+			rabbitMQ.Spec.CommonConfiguration.Replicas = replicas
+		}
+		return controllerutil.SetControllerReference(manager, rabbitMQ, r.scheme)
+	})
+	status := &v1alpha1.ServiceStatus{}
+	status.Active = rabbitMQ.Status.Active
+	manager.Status.Rabbitmq = status
+	return err
+}
+
+func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *int32) error {
+	var vRouterServiceStatus []*v1alpha1.ServiceStatus
+	for _, vRouterService := range manager.Spec.Services.Vrouters {
+		vRouter := &v1alpha1.Vrouter{}
+		vRouter.ObjectMeta = vRouterService.ObjectMeta
+		vRouter.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
+			vRouter.Spec = vRouterService.Spec
+			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouter.Spec.CommonConfiguration)
+			if vRouter.Spec.CommonConfiguration.Replicas == nil {
+				vRouter.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, vRouter, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &vRouter.Name
+		status.Active = vRouter.Status.Active
+		vRouterServiceStatus = append(vRouterServiceStatus, status)
+	}
+
+	manager.Status.Vrouters = vRouterServiceStatus
+	return nil
 }
 
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {
