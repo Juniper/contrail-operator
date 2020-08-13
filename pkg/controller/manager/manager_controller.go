@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -173,7 +174,6 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	replicas := &nodeNumber
 	instance.Status.Replicas = nodeNumber
 
-	//TODO handle removal of keys in services, then the Service status not contain info about deleted service
 	if err := r.processCassandras(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -259,13 +259,34 @@ func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int32, err
 		return 0, err
 	}
 	nodesNumber := len(nodes.Items)
-	if nodesNumber % 2 == 0 && nodesNumber != 0 {
+	if nodesNumber%2 == 0 && nodesNumber != 0 {
 		return int32(nodesNumber - 1), nil
 	}
 	return int32(nodesNumber), nil
 }
 
 func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingZookeeper := range manager.Status.Zookeepers {
+		found := false
+		for _, intendedZookeeper := range manager.Spec.Services.Zookeepers {
+			if *existingZookeeper.Name == intendedZookeeper.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldZookeeper := &v1alpha1.Zookeeper{}
+			oldZookeeper.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingZookeeper.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldZookeeper)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
 	var zookeeperServiceStatus []*v1alpha1.ServiceStatus
 	for _, zookeeperService := range manager.Spec.Services.Zookeepers {
 		zookeeper := &v1alpha1.Zookeeper{}
@@ -293,6 +314,27 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 }
 
 func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingCassandra := range manager.Status.Cassandras {
+		found := false
+		for _, intendedCassandra := range manager.Spec.Services.Cassandras {
+			if *existingCassandra.Name == intendedCassandra.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldCassandra := &v1alpha1.Cassandra{}
+			oldCassandra.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingCassandra.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldCassandra)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
 	var cassandraStatusList []*v1alpha1.ServiceStatus
 	for _, cassandraService := range manager.Spec.Services.Cassandras {
 		cassandra := &v1alpha1.Cassandra{}
@@ -324,8 +366,21 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 
 func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Webui == nil {
+		if manager.Status.Webui != nil {
+			oldWebUI := &v1alpha1.Webui{}
+			oldWebUI.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Webui.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldWebUI)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Webui = nil
+		}
 		return nil
 	}
+
 	webui := &v1alpha1.Webui{}
 	webui.ObjectMeta = manager.Spec.Services.Webui.ObjectMeta
 	webui.ObjectMeta.Namespace = manager.Namespace
@@ -346,8 +401,21 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int
 
 func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.ProvisionManager == nil {
+		if manager.Status.ProvisionManager != nil {
+			oldPM := &v1alpha1.ProvisionManager{}
+			oldPM.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.ProvisionManager.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldPM)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.ProvisionManager = nil
+		}
 		return nil
 	}
+
 	pm := &v1alpha1.ProvisionManager{}
 	pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
 	pm.ObjectMeta.Namespace = manager.Namespace
@@ -368,8 +436,21 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 
 func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Config == nil {
+		if manager.Status.Config != nil {
+			oldConfig := &v1alpha1.Config{}
+			oldConfig.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Config.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldConfig)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Config = nil
+		}
 		return nil
 	}
+
 	config := &v1alpha1.Config{}
 	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta
 	config.ObjectMeta.Namespace = manager.Namespace
@@ -389,6 +470,27 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 }
 
 func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingKubemanager := range manager.Status.Kubemanagers {
+		found := false
+		for _, intendedKubemanager := range manager.Spec.Services.Kubemanagers {
+			if *existingKubemanager.Name == intendedKubemanager.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldKubemanager := &v1alpha1.Kubemanager{}
+			oldKubemanager.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingKubemanager.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldKubemanager)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
 	var kubemanagerServiceStatus []*v1alpha1.ServiceStatus
 	for _, kubemanagerService := range manager.Spec.Services.Kubemanagers {
 		kubemanager := &v1alpha1.Kubemanager{}
@@ -416,6 +518,27 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 }
 
 func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingControl := range manager.Status.Controls {
+		found := false
+		for _, intendedControl := range manager.Spec.Services.Controls {
+			if *existingControl.Name == intendedControl.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldControl := &v1alpha1.Control{}
+			oldControl.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingControl.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldControl)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
 	var controlServiceStatus []*v1alpha1.ServiceStatus
 	for _, controlService := range manager.Spec.Services.Controls {
 		control := &v1alpha1.Control{}
@@ -444,6 +567,18 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 
 func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Rabbitmq == nil {
+		if manager.Status.Rabbitmq != nil {
+			oldRabbitMQ := &v1alpha1.Rabbitmq{}
+			oldRabbitMQ.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Rabbitmq.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldRabbitMQ)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Rabbitmq = nil
+		}
 		return nil
 	}
 	rabbitMQ := &v1alpha1.Rabbitmq{}
@@ -464,6 +599,27 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 }
 
 func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingVRouter := range manager.Status.Vrouters {
+		found := false
+		for _, intendedVRouter := range manager.Spec.Services.Vrouters {
+			if *existingVRouter.Name == intendedVRouter.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldVRouter := &v1alpha1.Vrouter{}
+			oldVRouter.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingVRouter.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldVRouter)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
 	var vRouterServiceStatus []*v1alpha1.ServiceStatus
 	for _, vRouterService := range manager.Spec.Services.Vrouters {
 		vRouter := &v1alpha1.Vrouter{}
@@ -492,8 +648,21 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 
 func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Command == nil {
+		if manager.Status.Command != nil {
+			oldCommand := &v1alpha1.Command{}
+			oldCommand.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Command.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldCommand)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Command = nil
+		}
 		return nil
 	}
+
 	command := &v1alpha1.Command{}
 	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
 	command.ObjectMeta.Namespace = manager.Namespace
@@ -516,6 +685,18 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 
 func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Keystone == nil {
+		if manager.Status.Keystone != nil {
+			oldKeystone := &v1alpha1.Keystone{}
+			oldKeystone.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Keystone.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldKeystone)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Keystone = nil
+		}
 		return nil
 	}
 
@@ -562,8 +743,21 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 
 func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Postgres == nil {
+		if manager.Status.Postgres != nil {
+			oldPostgres := &v1alpha1.Postgres{}
+			oldPostgres.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Postgres.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldPostgres)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Postgres = nil
+		}
 		return nil
 	}
+
 	psql := &v1alpha1.Postgres{}
 	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta
 	psql.ObjectMeta.Namespace = manager.Namespace
@@ -580,8 +774,21 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 
 func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Swift == nil {
+		if manager.Status.Swift != nil {
+			oldSwift := &v1alpha1.Swift{}
+			oldSwift.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Swift.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldSwift)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Swift = nil
+		}
 		return nil
 	}
+
 	swift := &v1alpha1.Swift{}
 	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
 	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
@@ -602,8 +809,21 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 
 func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas *int32) error {
 	if manager.Spec.Services.Memcached == nil {
+		if manager.Status.Memcached != nil {
+			oldMemcached := &v1alpha1.Memcached{}
+			oldMemcached.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *manager.Status.Memcached.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldMemcached)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+			manager.Status.Memcached = nil
+		}
 		return nil
 	}
+
 	memcached := &v1alpha1.Memcached{}
 	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta
 	memcached.ObjectMeta.Namespace = manager.Namespace
