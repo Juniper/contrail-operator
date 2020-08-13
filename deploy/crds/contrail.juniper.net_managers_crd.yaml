@@ -258,7 +258,6 @@ spec:
                                 type: integer
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -424,7 +423,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -619,7 +617,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -813,7 +810,6 @@ spec:
                                 type: integer
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -1209,7 +1205,6 @@ spec:
                                 type: string
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -1583,7 +1578,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -1743,7 +1737,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -2145,7 +2138,6 @@ spec:
                                 type: boolean
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -2309,7 +2301,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -2492,7 +2483,6 @@ spec:
                                 type: object
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:

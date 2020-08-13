@@ -57,7 +57,7 @@ type Config struct {
 // ConfigSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigSpec struct {
-	CommonConfiguration  PodConfiguration    `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration    `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ConfigConfiguration `json:"serviceConfiguration"`
 }
 

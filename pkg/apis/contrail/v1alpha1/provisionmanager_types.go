@@ -27,7 +27,7 @@ import (
 // ProvisionManagerSpec defines the desired state of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerSpec struct {
-	CommonConfiguration  PodConfiguration              `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration              `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
 }
 

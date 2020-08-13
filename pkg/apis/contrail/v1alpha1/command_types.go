@@ -23,7 +23,7 @@ type Command struct {
 // CommandSpec defines the desired state of Command
 // +k8s:openapi-gen=true
 type CommandSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration CommandConfiguration `json:"serviceConfiguration"`
 }
 

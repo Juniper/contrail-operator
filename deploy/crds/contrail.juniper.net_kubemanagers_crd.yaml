@@ -168,7 +168,6 @@ spec:
                   type: string
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

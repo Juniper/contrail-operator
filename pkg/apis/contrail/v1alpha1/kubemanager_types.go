@@ -41,7 +41,7 @@ type Kubemanager struct {
 // KubemanagerSpec is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerSpec struct {
-	CommonConfiguration  PodConfiguration         `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
 }
 

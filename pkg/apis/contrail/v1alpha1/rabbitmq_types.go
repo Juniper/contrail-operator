@@ -43,7 +43,7 @@ type Rabbitmq struct {
 // RabbitmqSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type RabbitmqSpec struct {
-	CommonConfiguration  PodConfiguration      `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration RabbitmqConfiguration `json:"serviceConfiguration"`
 }
 

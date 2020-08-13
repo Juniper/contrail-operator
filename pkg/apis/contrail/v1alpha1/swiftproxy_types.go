@@ -7,7 +7,7 @@ import (
 // SwiftProxySpec defines the desired state of SwiftProxy
 // +k8s:openapi-gen=true
 type SwiftProxySpec struct {
-	CommonConfiguration  PodConfiguration        `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration        `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration SwiftProxyConfiguration `json:"serviceConfiguration"`
 }
 

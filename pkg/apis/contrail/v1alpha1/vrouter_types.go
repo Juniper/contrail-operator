@@ -49,7 +49,7 @@ type VrouterStatus struct {
 // VrouterSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
 }
 

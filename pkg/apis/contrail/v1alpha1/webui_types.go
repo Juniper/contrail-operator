@@ -43,7 +43,7 @@ type Webui struct {
 // WebuiSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiSpec struct {
-	CommonConfiguration  PodConfiguration   `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration   `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration WebuiConfiguration `json:"serviceConfiguration"`
 }
 

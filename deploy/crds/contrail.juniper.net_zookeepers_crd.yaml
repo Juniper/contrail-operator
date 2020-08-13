@@ -139,7 +139,6 @@ spec:
                   type: object
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

@@ -25,7 +25,7 @@ import (
 // ZookeeperSpec is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperSpec struct {
-	CommonConfiguration  PodConfiguration       `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration       `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ZookeeperConfiguration `json:"serviceConfiguration"`
 }
 

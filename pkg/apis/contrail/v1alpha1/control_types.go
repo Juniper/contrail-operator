@@ -38,7 +38,7 @@ type Control struct {
 // ControlSpec is the Spec for the controls API.
 // +k8s:openapi-gen=true
 type ControlSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ControlConfiguration `json:"serviceConfiguration"`
 }
 
