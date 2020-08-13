@@ -190,8 +190,6 @@ func newConfigInst() *contrail.Config {
 		},
 		Spec: contrail.ConfigSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -253,8 +251,6 @@ func newRabbitmq() *contrail.Rabbitmq {
 		},
 		Spec: contrail.RabbitmqSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

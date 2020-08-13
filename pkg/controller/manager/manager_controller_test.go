@@ -40,7 +40,6 @@ func TestManagerController(t *testing.T) {
 		}
 		falseVal1 := false
 		trueVal1 := true
-		createNew := true
 		cassandra := &contrail.Cassandra{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "cassandra",
@@ -48,9 +47,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "cassandra", Image: "cassandra:3.5"},
@@ -67,9 +63,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
+
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "zookeeper", Image: "zookeeper:3.5"},
@@ -85,11 +79,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
-			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
-			},
+			Spec: contrail.ProvisionManagerSpec{},
 		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
@@ -98,9 +88,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "kubemanager", Image: "kubemanager"},
@@ -117,9 +104,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "webui", Image: "webui:3.5"},
@@ -138,9 +122,6 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
 					KeystoneSecretName: "keystone-adminpass-secret",
 					AuthMode:           contrail.AuthenticationModeKeystone,
@@ -154,9 +135,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "control", Image: "control"},
@@ -173,9 +151,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createNew,
-				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
@@ -203,8 +178,6 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.RabbitmqSpec{
 				CommonConfiguration: contrail.PodConfiguration{
-					Activate:     &trueVal1,
-					Create:       &createNew,
 					HostNetwork:  &trueVal1,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -313,7 +286,6 @@ func TestManagerController(t *testing.T) {
 				Namespace: "other",
 			},
 		}
-		createVal := true
 		trueVal1 := true
 		falseVal1 := false
 		cassandra := &contrail.Cassandra{
@@ -323,9 +295,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "cassandra", Image: "cassandra"},
@@ -342,9 +311,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "zookeeper", Image: "zookeeper:3.5"},
@@ -361,9 +327,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
@@ -380,9 +343,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "kubemanager", Image: "kubemanager"},
@@ -399,9 +359,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "webui", Image: "webui:3.5"},
@@ -420,9 +377,6 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "config", Image: "config"},
@@ -441,9 +395,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "control", Image: "control"},
@@ -460,9 +411,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create:   &createVal,
-				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
@@ -490,8 +438,6 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.RabbitmqSpec{
 				CommonConfiguration: contrail.PodConfiguration{
-					Activate:     &trueVal1,
-					Create:       &createVal,
 					HostNetwork:  &trueVal1,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -611,7 +557,6 @@ func TestManagerController(t *testing.T) {
 				Namespace: "other",
 			},
 		}
-		setBool := false
 		trueVal1 := true
 		falseVal1 := false
 		cassandra := &contrail.Cassandra{
@@ -621,9 +566,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "cassandra", Image: "cassandra"},
@@ -640,9 +582,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "zookeeper", Image: "zookeeper:3.5"},
@@ -658,11 +597,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
-			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
-			},
+			Spec: contrail.ProvisionManagerSpec{},
 		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
@@ -671,9 +606,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "kubemanager", Image: "kubemanager"},
@@ -690,9 +622,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "webui", Image: "webui:3.5"},
@@ -711,9 +640,6 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
 					KeystoneSecretName: "keystone-adminpass-secret",
 					AuthMode:           contrail.AuthenticationModeKeystone,
@@ -727,9 +653,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "control", Image: "control"},
@@ -746,9 +669,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
@@ -776,8 +696,6 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.RabbitmqSpec{
 				CommonConfiguration: contrail.PodConfiguration{
-					Activate:     &trueVal1,
-					Create:       &setBool,
 					HostNetwork:  &trueVal1,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
@@ -986,9 +904,6 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: contrail.CommandSpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Activate: &trueVar,
-				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -1051,7 +966,6 @@ func TestManagerController(t *testing.T) {
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec:     contrail.CommandSpec{
 				CommonConfiguration: contrail.PodConfiguration{
-					Activate: &trueVar,
 					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
@@ -1652,8 +1566,6 @@ func newKeystone() *contrail.Keystone {
 		},
 		Spec: contrail.KeystoneSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:    &trueVal,
-				Create:      &trueVal,
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

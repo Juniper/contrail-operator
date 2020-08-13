@@ -300,8 +300,6 @@ func TestUtilsSecond(t *testing.T) {
 
 	t.Run("Update Event in MergeCommonConfiguration verification", func(t *testing.T) {
 		mergedConfiguration := tm.MergeCommonConfiguration(managerCommonConfiguration, secondCommonConfiguration)
-		assert.Equal(t, &trueVal, mergedConfiguration.Activate)
-		assert.Equal(t, &trueVal, mergedConfiguration.Create)
 		assert.Equal(t, &trueVal, mergedConfiguration.HostNetwork)
 		assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mergedConfiguration.NodeSelector)
 		assert.Equal(t, []string{"contrail-nightly"}, mergedConfiguration.ImagePullSecrets)
@@ -338,7 +336,6 @@ var cassandra = &contrail.Cassandra{
 	},
 	Spec: contrail.CassandraSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &create,
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.CassandraConfiguration{
@@ -371,8 +368,6 @@ func newRabbitmq() *contrail.Rabbitmq {
 		},
 		Spec: contrail.RabbitmqSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -407,8 +402,6 @@ func newZookeeper() *contrail.Zookeeper {
 		},
 		Spec: contrail.ZookeeperSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -457,8 +450,6 @@ var control = &contrail.Control{
 	},
 	Spec: contrail.ControlSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Activate:     &trueVal,
-			Create:       &trueVal,
 			HostNetwork:  &trueVal,
 			Replicas:     &replica,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
@@ -574,10 +565,7 @@ var managerCommonConfiguration = contrail.ManagerConfiguration{
 	},
 }
 
-var secondCommonConfiguration = contrail.PodConfiguration{
-	Activate: &trueVal,
-	Create:   &trueVal,
-}
+var secondCommonConfiguration = contrail.PodConfiguration{}
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
 const expectedCommandImage = `DB_USER=${DB_USER:-root}`
@@ -636,13 +624,12 @@ var cassandraTwo = &contrail.Cassandra{
 	},
 	Spec: contrail.CassandraSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Activate: &trueVal,
+
 		},
 	},
 }
 
 func newZookeeperTwo() *contrail.Zookeeper {
-	trueVal := true
 	// falseVal := false
 	return &contrail.Zookeeper{
 		ObjectMeta: meta.ObjectMeta{
@@ -651,14 +638,13 @@ func newZookeeperTwo() *contrail.Zookeeper {
 		},
 		Spec: contrail.ZookeeperSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate: &trueVal,
+
 			},
 		},
 	}
 }
 
 func newRabbitmqTwo() *contrail.Rabbitmq {
-	trueVal := true
 	return &contrail.Rabbitmq{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "rabbitmq-instance",
@@ -666,7 +652,7 @@ func newRabbitmqTwo() *contrail.Rabbitmq {
 		},
 		Spec: contrail.RabbitmqSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate: &trueVal,
+
 			},
 		},
 	}

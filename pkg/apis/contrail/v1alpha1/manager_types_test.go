@@ -151,7 +151,6 @@ var zookeeper = &contrail.Zookeeper{
 	},
 	Spec: contrail.ZookeeperSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -165,7 +164,6 @@ var cassandra = &contrail.Cassandra{
 	},
 	Spec: contrail.CassandraSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -179,7 +177,6 @@ var control = &contrail.Control{
 	},
 	Spec: contrail.ControlSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -193,7 +190,6 @@ var kubemanager = &contrail.Kubemanager{
 	},
 	Spec: contrail.KubemanagerSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -207,7 +203,6 @@ var webui = &contrail.Webui{
 	},
 	Spec: contrail.WebuiSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -223,7 +218,6 @@ var config = &contrail.Config{
 	},
 	Spec: contrail.ConfigSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 		ServiceConfiguration: contrail.ConfigConfiguration{
@@ -240,8 +234,6 @@ var rabbitmq = &contrail.Rabbitmq{
 	},
 	Spec: contrail.RabbitmqSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Activate: &trueVal,
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -256,7 +248,6 @@ var provisionmanager = &contrail.ProvisionManager{
 	},
 	Spec: contrail.ProvisionManagerSpec{
 		CommonConfiguration: contrail.PodConfiguration{
-			Create:   &createNew,
 			Replicas: &replicas,
 		},
 	},
@@ -268,9 +259,6 @@ var command = &contrail.Command{
 		Namespace: "default",
 	},
 	Spec: contrail.CommandSpec{
-		CommonConfiguration: contrail.PodConfiguration{
-			Activate: &trueVal,
-		},
 		ServiceConfiguration: contrail.CommandConfiguration{
 			ClusterName:        "test-manager",
 			KeystoneSecretName: "keystone-adminpass-secret",

@@ -84,7 +84,6 @@ For example for contrail-operator-provisioner - find `provisionManager` section 
         name: provmanager1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
           replicas: 1

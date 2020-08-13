@@ -17,7 +17,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -31,7 +30,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -45,7 +43,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -59,7 +56,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -83,7 +79,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -113,7 +108,6 @@ spec:
           control_role: master
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -131,7 +125,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -147,7 +140,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
@@ -166,7 +158,6 @@ spec:
           contrail_cluster: cluster1
       spec:
         commonConfiguration:
-          create: true
           nodeSelector:
             node-role.opencontrail.org: "vrouter"
         serviceConfiguration:

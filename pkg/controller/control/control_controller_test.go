@@ -54,7 +54,6 @@ func TestControlController(t *testing.T) {
 				CassandraInstance: "cassandra1",
 			},
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "control"},
 				Replicas:     &replicas,
 			},

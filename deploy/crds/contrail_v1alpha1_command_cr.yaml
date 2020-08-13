@@ -4,8 +4,6 @@ metadata:
   name: command
 spec:
   commonConfiguration:
-    activate: true
-    create: true
     hostNetwork: true
     tolerations:
       - effect: NoSchedule

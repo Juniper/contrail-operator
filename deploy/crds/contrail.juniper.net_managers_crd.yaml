@@ -127,14 +127,6 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
-                              activate:
-                                description: Activate defines if the service will
-                                  be activated by Manager.
-                                type: boolean
-                              create:
-                                description: Create defines if the service will be
-                                  created by Manager.
-                                type: boolean
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -307,14 +299,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -459,14 +443,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -687,14 +663,6 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
-                              activate:
-                                description: Activate defines if the service will
-                                  be activated by Manager.
-                                type: boolean
-                              create:
-                                description: Create defines if the service will be
-                                  created by Manager.
-                                type: boolean
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -899,14 +867,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1060,14 +1020,6 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
-                              activate:
-                                description: Activate defines if the service will
-                                  be activated by Manager.
-                                type: boolean
-                              create:
-                                description: Create defines if the service will be
-                                  created by Manager.
-                                type: boolean
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -1247,14 +1199,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1452,14 +1396,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1623,14 +1559,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1785,14 +1713,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2009,14 +1929,6 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
-                              activate:
-                                description: Activate defines if the service will
-                                  be activated by Manager.
-                                type: boolean
-                              create:
-                                description: Create defines if the service will be
-                                  created by Manager.
-                                type: boolean
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -2189,14 +2101,6 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
-                            activate:
-                              description: Activate defines if the service will be
-                                activated by Manager.
-                              type: boolean
-                            create:
-                              description: Create defines if the service will be created
-                                by Manager.
-                              type: boolean
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2366,14 +2270,6 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
-                              activate:
-                                description: Activate defines if the service will
-                                  be activated by Manager.
-                                type: boolean
-                              create:
-                                description: Create defines if the service will be
-                                  created by Manager.
-                                type: boolean
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
