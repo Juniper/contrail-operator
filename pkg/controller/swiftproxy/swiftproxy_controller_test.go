@@ -287,7 +287,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 			Namespace: "default",
 		},
 		Spec: contrail.SwiftProxySpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

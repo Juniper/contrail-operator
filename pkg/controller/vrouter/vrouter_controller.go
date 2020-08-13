@@ -137,13 +137,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.VrouterGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcConfig := &source.Kind{Type: &v1alpha1.Config{}}
 	configHandler := resourceHandler(mgr.GetClient())
 	predConfigSizeChange := utils.ConfigActiveChange()
@@ -210,26 +203,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if !configActive || !controlActive {
 		return reconcile.Result{}, nil
-	}
-
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Vrouters != nil {
-			for _, vrouterManagerInstance := range managerInstance.Spec.Services.Vrouters {
-				if vrouterManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						vrouterManagerInstance.Spec.CommonConfiguration)
-					err = r.Client.Update(context.TODO(), instance)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
 	}
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)

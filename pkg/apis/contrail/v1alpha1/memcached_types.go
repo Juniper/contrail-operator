@@ -6,7 +6,7 @@ import (
 
 // MemcachedSpec defines the desired state of Memcached
 type MemcachedSpec struct {
-	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration       `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration MemcachedConfiguration `json:"serviceConfiguration"`
 }
 

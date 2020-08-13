@@ -43,7 +43,7 @@ type Rabbitmq struct {
 // RabbitmqSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type RabbitmqSpec struct {
-	CommonConfiguration  CommonConfiguration   `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration RabbitmqConfiguration `json:"serviceConfiguration"`
 }
 
@@ -242,24 +242,6 @@ func (c *Rabbitmq) CreateSecret(secretName string,
 		c)
 }
 
-func (c *Rabbitmq) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // IsActive returns true if instance is active.
 func (c *Rabbitmq) IsActive(name string, namespace string, myclient client.Client) bool {
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
@@ -298,7 +280,7 @@ func (c *Rabbitmq) IsUpgrading(name string, namespace string, client client.Clie
 }
 
 // PrepareSTS prepares the intended deployment for the Rabbitmq object.
-func (c *Rabbitmq) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Rabbitmq) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "rabbitmq", request, scheme, c, client, true)
 }
 
@@ -318,13 +300,13 @@ func (c *Rabbitmq) SetPodsToReady(podIPList *corev1.PodList, client client.Clien
 }
 
 // CreateSTS creates the STS.
-func (c *Rabbitmq) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Rabbitmq) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Rabbitmq) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Rabbitmq) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

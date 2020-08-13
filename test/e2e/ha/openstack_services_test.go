@@ -66,7 +66,8 @@ func TestHAOpenStackServices(t *testing.T) {
 			Logger:        log,
 		}
 
-		cluster := getHAOpenStackCluster(namespace)
+		nodeLabelKey := "test-openstack-ha"
+		cluster := getHAOpenStackCluster(namespace, nodeLabelKey)
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
@@ -91,14 +92,14 @@ func TestHAOpenStackServices(t *testing.T) {
 		}
 
 		t.Run("when cluster with OpenStack services and dependencies is created", func(t *testing.T) {
-			var replicas int32 = 1
+			err = labelOneNode(f.KubeClient, nodeLabelKey)
+			require.NoError(t, err)
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
 				return nil
 			})
 			require.NoError(t, err)
@@ -112,11 +113,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when cluster is scaled from 1 to 3", func(t *testing.T) {
-			var replicas int32 = 3
-			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
-				return nil
-			})
+			err = labelAllNodes(f.KubeClient, nodeLabelKey)
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
@@ -150,7 +147,7 @@ func TestHAOpenStackServices(t *testing.T) {
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
-				LabelSelector: "node-role.kubernetes.io/master=",
+				LabelSelector: nodeLabelKey,
 			})
 			assert.NoError(t, err)
 			require.NotEmpty(t, nodes.Items)
@@ -179,7 +176,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
-			err := untaintNodes(f.KubeClient, "e2e.test/failure")
+			err := untaintNodes(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
@@ -211,6 +208,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
+				require.NoError(t, err)
+			})
+
+			t.Run("then test label is removed from nodes", func(t *testing.T) {
+				err := removeLabel(f.KubeClient, nodeLabelKey)
 				require.NoError(t, err)
 			})
 		})
@@ -363,7 +365,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 	})
 }
 
-func getHAOpenStackCluster(namespace string) *contrail.Manager {
+func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 	trueVal := true
 
 	memcached := &contrail.Memcached{
@@ -373,9 +375,8 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{
@@ -405,9 +406,8 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
@@ -428,9 +428,6 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Name:      "swift",
 		},
 		Spec: contrail.SwiftSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + scmBranch + "." + scmRevision},
@@ -479,7 +476,8 @@ func getHAOpenStackCluster(namespace string) *contrail.Manager {
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.ManagerConfiguration{
+				NodeSelector: map[string]string{nodeLabel: ""},
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

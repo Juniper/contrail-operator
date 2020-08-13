@@ -57,7 +57,7 @@ type Config struct {
 // ConfigSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type ConfigSpec struct {
-	CommonConfiguration  CommonConfiguration `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration    `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ConfigConfiguration `json:"serviceConfiguration"`
 }
 
@@ -646,26 +646,8 @@ func (c *Config) CreateSecret(secretName string,
 		c)
 }
 
-func (c *Config) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // PrepareSTS prepares the intented statefulset for the config object
-func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Config) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "config", request, scheme, c, client, true)
 }
 
@@ -680,13 +662,13 @@ func (c *Config) AddSecretVolumesToIntendedSTS(sts *appsv1.StatefulSet, volumeCo
 }
 
 //CreateSTS creates the STS
-func (c *Config) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Config) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 //UpdateSTS updates the STS
-func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // SetInstanceActive sets the Cassandra instance to active

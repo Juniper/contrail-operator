@@ -189,7 +189,7 @@ func newConfigInst() *contrail.Config {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -252,7 +252,7 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,

@@ -43,8 +43,8 @@ type Webui struct {
 // WebuiSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type WebuiSpec struct {
-	CommonConfiguration  CommonConfiguration `json:"commonConfiguration"`
-	ServiceConfiguration WebuiConfiguration  `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration   `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration WebuiConfiguration `json:"serviceConfiguration"`
 }
 
 // WebuiConfiguration is the Spec for the cassandras API.
@@ -262,26 +262,8 @@ func (c *Webui) CreateConfigMap(configMapName string,
 		c)
 }
 
-func (c *Webui) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // PrepareSTS prepares the intended deployment for the Webui object.
-func (c *Webui) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Webui) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "webui", request, scheme, c, client, true)
 }
 
@@ -301,13 +283,13 @@ func (c *Webui) SetPodsToReady(podIPList *corev1.PodList, client client.Client) 
 }
 
 // CreateSTS creates the STS.
-func (c *Webui) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Webui) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Webui) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Webui) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

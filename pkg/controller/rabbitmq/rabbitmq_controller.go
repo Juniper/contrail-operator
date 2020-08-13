@@ -127,13 +127,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.RabbitmqGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcSTS := &source.Kind{Type: &appsv1.StatefulSet{}}
 	stsHandler := &handler.EnqueueRequestForOwner{
 		IsController: true,
@@ -171,22 +164,6 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	if !instance.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
-	}
-
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Rabbitmq != nil {
-			rabbitmqManagerInstance := managerInstance.Spec.Services.Rabbitmq
-			instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-				managerInstance.Spec.CommonConfiguration,
-				rabbitmqManagerInstance.Spec.CommonConfiguration)
-			if err = r.Client.Update(context.TODO(), instance); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
 	}
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -335,11 +312,11 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, "rolling"); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, "rolling"); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -46,7 +46,7 @@ func TestSwiftStorageController(t *testing.T) {
 			Name:      name.Name,
 		},
 		Spec: contrail.SwiftStorageSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.SwiftStorageConfiguration{
@@ -216,7 +216,7 @@ func TestSwiftStorageController(t *testing.T) {
 						Name:      name.Name,
 					},
 					Spec: contrail.SwiftStorageSpec{
-						CommonConfiguration: contrail.CommonConfiguration{
+						CommonConfiguration: contrail.PodConfiguration{
 							NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 						},
 						ServiceConfiguration: contrail.SwiftStorageConfiguration{

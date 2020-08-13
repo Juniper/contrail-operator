@@ -53,7 +53,6 @@ func TestCommandServices(t *testing.T) {
 		assert.NoError(t, err)
 
 		trueVal := true
-		oneVal := int32(1)
 
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
@@ -80,7 +79,7 @@ func TestCommandServices(t *testing.T) {
 		keystoneResource := &contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-keystone"},
 			Spec: contrail.KeystoneSpec{
-				CommonConfiguration: contrail.CommonConfiguration{HostNetwork: &trueVal},
+				CommonConfiguration: contrail.PodConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					MemcachedInstance:  "commandtest-memcached",
 					PostgresInstance:   "commandtest-psql",
@@ -148,7 +147,7 @@ func TestCommandServices(t *testing.T) {
 				Name: "commandtest",
 			},
 			Spec: contrail.CommandSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:    &trueVal,
 					Create:      &trueVal,
 					HostNetwork: &trueVal,
@@ -175,8 +174,7 @@ func TestCommandServices(t *testing.T) {
 				Namespace: namespace,
 			},
 			Spec: contrail.ManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:     &oneVal,
+				CommonConfiguration: contrail.ManagerConfiguration{
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},

@@ -32,7 +32,7 @@ spec:
           description: CommandSpec defines the desired state of Command
           properties:
             commonConfiguration:
-              description: CommonConfiguration is the common services struct.
+              description: PodConfiguration is the common services struct.
               properties:
                 activate:
                   description: Activate defines if the service will be activated by
@@ -141,7 +141,6 @@ spec:
                   type: string
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

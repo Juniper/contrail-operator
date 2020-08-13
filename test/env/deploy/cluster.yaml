@@ -7,7 +7,8 @@ metadata:
 spec:
   commonConfiguration:
     hostNetwork: true
-    replicas: 1
+    nodeSelector:
+      node-role.kubernetes.io/master: ""
   keystoneSecretInstance: cluster1-admin-password
   services:
     cassandras:
@@ -18,8 +19,6 @@ spec:
         spec:
           commonConfiguration:
             create: true
-            nodeSelector:
-              node-role.kubernetes.io/master: ""
           serviceConfiguration:
             containers:
               - name: cassandra
@@ -36,8 +35,6 @@ spec:
       spec:
         commonConfiguration:
           create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           keystoneInstance: keystone
@@ -78,8 +75,6 @@ spec:
         spec:
           commonConfiguration:
             create: true
-            nodeSelector:
-              node-role.kubernetes.io/master: ""
           serviceConfiguration:
             cassandraInstance: cassandra1
             containers:
@@ -102,8 +97,6 @@ spec:
       spec:
         commonConfiguration:
           create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
           replicas: 1
         serviceConfiguration:
           keystoneInstance: keystone
@@ -130,8 +123,6 @@ spec:
       spec:
         commonConfiguration:
           create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: init
@@ -146,8 +137,6 @@ spec:
       spec:
         commonConfiguration:
           create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           keystoneInstance: keystone
@@ -168,8 +157,6 @@ spec:
         spec:
           commonConfiguration:
             create: true
-            nodeSelector:
-              node-role.kubernetes.io/master: ""
           serviceConfiguration:
             containers:
               - name: init
@@ -189,8 +176,6 @@ spec:
               operator: Exists
             - effect: NoExecute
               operator: Exists
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           configAPIURL: https://kind-control-plane:8082
           telemetryURL: https://kind-control-plane:8081
@@ -210,9 +195,6 @@ spec:
       metadata:
         name: keystone
       spec:
-        commonConfiguration:
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           memcachedInstance: "memcached"
           postgresInstance: postgres
@@ -239,9 +221,6 @@ spec:
         name: memcached
         namespace: contrail
       spec:
-        commonConfiguration:
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: memcached
@@ -250,9 +229,6 @@ spec:
       metadata:
         name: swift
       spec:
-        commonConfiguration:
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:

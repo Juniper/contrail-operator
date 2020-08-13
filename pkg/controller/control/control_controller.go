@@ -128,13 +128,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.ControlGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcCassandra := &source.Kind{Type: &v1alpha1.Cassandra{}}
 	cassandraHandler := resourceHandler(mgr.GetClient())
 	predCassandraSizeChange := utils.CassandraActiveChange()
@@ -209,25 +202,6 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Controls != nil {
-			for _, controlManagerInstance := range managerInstance.Spec.Services.Controls {
-				if controlManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						controlManagerInstance.Spec.CommonConfiguration)
-					err = r.Client.Update(context.TODO(), instance)
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
-	}
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -459,11 +433,11 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, "rolling"); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, "rolling"); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -1,22 +1,14 @@
 package utils
 
 import (
-	"context"
-	"strings"
-
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 var log = logf.Log.WithName("utils")
@@ -39,13 +31,6 @@ const (
 
 func RemoveIndex(s []corev1.Container, index int) []corev1.Container {
 	return append(s[:index], s[index+1:]...)
-}
-
-// GetGroupKindFromObject return GK.
-func GetGroupKindFromObject(object runtime.Object) schema.GroupKind {
-	objectKind := object.GetObjectKind()
-	objectGroupVersionKind := objectKind.GroupVersionKind()
-	return objectGroupVersionKind.GroupKind()
 }
 
 // WebuiGroupKind returns group kind.
@@ -101,81 +86,6 @@ func ManagerGroupKind() schema.GroupKind {
 // DeploymentGroupKind returns group kind.
 func DeploymentGroupKind() schema.GroupKind {
 	return schema.ParseGroupKind(DEPLOYMENT)
-}
-
-// ManagerSizeChange monitors per application size change.
-func ManagerSizeChange(appGroupKind schema.GroupKind) predicate.Funcs {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-
-			oldManager, ok := e.ObjectOld.(*v1alpha1.Manager)
-			if !ok {
-				reqLogger.Info("type conversion mismatch")
-			}
-			newManager, ok := e.ObjectNew.(*v1alpha1.Manager)
-			if !ok {
-				reqLogger.Info("type conversion mismatch")
-			}
-			var oldSize, newSize int32
-			switch appGroupKind {
-			case CassandraGroupKind():
-				for _, oldInstance := range oldManager.Spec.Services.Cassandras {
-					if oldInstance.Spec.CommonConfiguration.Replicas != nil {
-						oldSize = *oldInstance.Spec.CommonConfiguration.Replicas
-					} else {
-						oldSize = *oldManager.Spec.CommonConfiguration.Replicas
-					}
-					for _, newInstance := range newManager.Spec.Services.Cassandras {
-						if oldInstance.Name == newInstance.Name {
-							if newInstance.Spec.CommonConfiguration.Replicas != nil {
-								newSize = *newInstance.Spec.CommonConfiguration.Replicas
-							} else {
-								newSize = *newManager.Spec.CommonConfiguration.Replicas
-							}
-						}
-					}
-				}
-			case ZookeeperGroupKind():
-				for _, oldInstance := range oldManager.Spec.Services.Zookeepers {
-					if oldInstance.Spec.CommonConfiguration.Replicas != nil {
-						oldSize = *oldInstance.Spec.CommonConfiguration.Replicas
-					} else {
-						oldSize = *oldManager.Spec.CommonConfiguration.Replicas
-					}
-					for _, newInstance := range newManager.Spec.Services.Zookeepers {
-						if oldInstance.Name == newInstance.Name {
-							if newInstance.Spec.CommonConfiguration.Replicas != nil {
-								newSize = *newInstance.Spec.CommonConfiguration.Replicas
-							} else {
-								newSize = *newManager.Spec.CommonConfiguration.Replicas
-							}
-						}
-					}
-				}
-
-			case RabbitmqGroupKind():
-				oldInstance := oldManager.Spec.Services.Rabbitmq
-				if oldInstance == nil {
-					break
-				}
-				if oldInstance.Spec.CommonConfiguration.Replicas != nil {
-					oldSize = *oldInstance.Spec.CommonConfiguration.Replicas
-				} else {
-					oldSize = *oldManager.Spec.CommonConfiguration.Replicas
-				}
-				newInstance := newManager.Spec.Services.Rabbitmq
-				if oldInstance.Name == newInstance.Name {
-					if newInstance.Spec.CommonConfiguration.Replicas != nil {
-						newSize = *newInstance.Spec.CommonConfiguration.Replicas
-					} else {
-						newSize = *newManager.Spec.CommonConfiguration.Replicas
-					}
-				}
-
-			}
-			return oldSize != newSize
-		},
-	}
 }
 
 // DeploymentStatusChange monitors per application size change.
@@ -593,42 +503,12 @@ func ZookeeperActiveChange() predicate.Funcs {
 	}
 }
 
-//GetObjectAndGroupKindFromRequest returns Object and Kind.
-func GetObjectAndGroupKindFromRequest(request *reconcile.Request, client client.Client) (runtime.Object, *schema.GroupKind, error) {
-	appGroupKind := schema.ParseGroupKind(strings.Split(request.Name, "/")[0])
-	appName := strings.Split(request.Name, "/")[1]
-	var instance runtime.Object
-	switch appGroupKind {
-	case CassandraGroupKind():
-		instance = &v1alpha1.Cassandra{}
-	case ZookeeperGroupKind():
-		instance = &v1alpha1.Zookeeper{}
-	case ManagerGroupKind():
-		instance = &v1alpha1.Manager{}
-	case ReplicaSetGroupKind():
-		instance = &appsv1.ReplicaSet{}
-	case DeploymentGroupKind():
-		instance = &appsv1.Deployment{}
-	}
-	request.Name = appName
-	err := client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil, nil, err
-		}
-		return nil, nil, err
-	}
-	return instance, &appGroupKind, nil
-}
-
 // MergeCommonConfiguration combines common configuration of manager and service.
-func MergeCommonConfiguration(manager v1alpha1.CommonConfiguration,
-	instance v1alpha1.CommonConfiguration) v1alpha1.CommonConfiguration {
+func MergeCommonConfiguration(manager v1alpha1.ManagerConfiguration,
+	instance v1alpha1.PodConfiguration) v1alpha1.PodConfiguration {
 	if len(instance.NodeSelector) == 0 && len(manager.NodeSelector) > 0 {
 		instance.NodeSelector = manager.NodeSelector
 	}
-	//hostNetworkDefault := true
-	//instance.HostNetwork = &hostNetworkDefault
 	if instance.HostNetwork == nil && manager.HostNetwork != nil {
 		instance.HostNetwork = manager.HostNetwork
 	}
@@ -637,11 +517,6 @@ func MergeCommonConfiguration(manager v1alpha1.CommonConfiguration,
 	}
 	if len(instance.Tolerations) == 0 && len(manager.Tolerations) > 0 {
 		instance.Tolerations = manager.Tolerations
-	}
-	//var defaultReplicas int32 = 1
-	//instance.Replicas = &defaultReplicas
-	if instance.Replicas == nil && manager.Replicas != nil {
-		instance.Replicas = manager.Replicas
 	}
 	return instance
 }

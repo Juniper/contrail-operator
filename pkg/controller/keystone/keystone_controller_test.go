@@ -333,7 +333,7 @@ func newKeystone() *contrail.Keystone {
 			Namespace: "default",
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Replicas:    &oneVal,
 				Activate:    &trueVal,
 				Create:      &trueVal,

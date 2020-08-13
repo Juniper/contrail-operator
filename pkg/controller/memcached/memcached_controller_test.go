@@ -399,7 +399,7 @@ func newMemcachedCR(status contrail.MemcachedStatus) *contrail.Memcached {
 	return &contrail.Memcached{
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				HostNetwork: &trueVal,
 			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
@@ -418,7 +418,7 @@ func newMemcachedCRWithDefaultValues() *contrail.Memcached {
 	return &contrail.Memcached{
 		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "test-memcached"},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				HostNetwork: &trueVal,
 			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{

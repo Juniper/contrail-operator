@@ -150,7 +150,6 @@ func TestZookeeper(t *testing.T) {
 }
 
 func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
-	replicas := int32(1)
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -160,9 +159,6 @@ func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
 				Zookeepers: []*contrail.Zookeeper{zoo},
-			},
-			CommonConfiguration: contrail.CommonConfiguration{
-				Replicas: &replicas,
 			},
 		},
 		Status: contrail.ManagerStatus{},
@@ -187,7 +183,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,

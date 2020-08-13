@@ -35,7 +35,7 @@ type Cassandra struct {
 // CassandraSpec is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type CassandraSpec struct {
-	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration       `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration CassandraConfiguration `json:"serviceConfiguration"`
 }
 
@@ -184,27 +184,8 @@ func (c *Cassandra) CreateSecret(secretName string,
 		c)
 }
 
-// OwnedByManager checks of the cassandra object is owned by the Manager.
-func (c *Cassandra) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // PrepareSTS prepares the intended deployment for the Cassandra object.
-func (c *Cassandra) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Cassandra) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "cassandra", request, scheme, c, client, true)
 }
 
@@ -224,13 +205,13 @@ func (c *Cassandra) SetPodsToReady(podIPList *corev1.PodList, client client.Clie
 }
 
 // CreateSTS creates the STS.
-func (c *Cassandra) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Cassandra) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Cassandra) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Cassandra) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

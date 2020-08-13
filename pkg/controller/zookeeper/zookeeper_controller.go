@@ -128,13 +128,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	srcManager := &source.Kind{Type: &v1alpha1.Manager{}}
-	managerHandler := resourceHandler(mgr.GetClient())
-	predManagerSizeChange := utils.ManagerSizeChange(utils.ZookeeperGroupKind())
-	if err = c.Watch(srcManager, managerHandler, predManagerSizeChange); err != nil {
-		return err
-	}
-
 	srcSTS := &source.Kind{Type: &appsv1.StatefulSet{}}
 	stsHandler := &handler.EnqueueRequestForOwner{
 		IsController: true,
@@ -174,24 +167,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	currentZookeeperInstance := *instance
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Zookeepers != nil {
-			for _, zookeeperManagerInstance := range managerInstance.Spec.Services.Zookeepers {
-				if zookeeperManagerInstance.Name == request.Name {
-					instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-						managerInstance.Spec.CommonConfiguration,
-						zookeeperManagerInstance.Spec.CommonConfiguration)
-					if err = r.Client.Update(context.TODO(), instance); err != nil {
-						return reconcile.Result{}, nil
-					}
-				}
-			}
-		}
-	}
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
@@ -385,7 +360,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 	strategy := "rolling"
@@ -394,7 +369,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			strategy = "deleteFirst"
 		}
 	}
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request, r.Scheme, r.Client, strategy); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(instanceType, request, r.Client)

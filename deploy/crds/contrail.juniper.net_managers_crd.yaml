@@ -37,13 +37,6 @@ spec:
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
-                activate:
-                  description: Activate defines if the service will be activated by
-                    Manager.
-                  type: boolean
-                create:
-                  description: Create defines if the service will be created by Manager.
-                  type: boolean
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's
                     network namespace. If this option is set, the ports that will
@@ -63,11 +56,6 @@ spec:
                     the pod to fit on a node. Selector which must match a node''s
                     labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
                   type: object
-                replicas:
-                  description: Number of desired pods. This is a pointer to distinguish
-                    between explicit zero and not specified. Defaults to 1.
-                  format: int32
-                  type: integer
                 tolerations:
                   description: If specified, the pod's tolerations.
                   items:
@@ -137,8 +125,7 @@ spec:
                           API.
                         properties:
                           commonConfiguration:
-                            description: CommonConfiguration is the common services
-                              struct.
+                            description: PodConfiguration is the common services struct.
                             properties:
                               activate:
                                 description: Activate defines if the service will
@@ -271,7 +258,6 @@ spec:
                                 type: integer
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -319,8 +305,7 @@ spec:
                       description: CommandSpec defines the desired state of Command
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -438,7 +423,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -473,8 +457,7 @@ spec:
                       description: ConfigSpec is the Spec for the cassandras API.
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -634,7 +617,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -703,8 +685,7 @@ spec:
                         description: ControlSpec is the Spec for the controls API.
                         properties:
                           commonConfiguration:
-                            description: CommonConfiguration is the common services
-                              struct.
+                            description: PodConfiguration is the common services struct.
                             properties:
                               activate:
                                 description: Activate defines if the service will
@@ -829,7 +810,6 @@ spec:
                                 type: integer
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -917,8 +897,7 @@ spec:
                       description: KeystoneSpec defines the desired state of Keystone
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -1043,7 +1022,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -1080,8 +1058,7 @@ spec:
                           API.
                         properties:
                           commonConfiguration:
-                            description: CommonConfiguration is the common services
-                              struct.
+                            description: PodConfiguration is the common services struct.
                             properties:
                               activate:
                                 description: Activate defines if the service will
@@ -1228,7 +1205,6 @@ spec:
                                 type: string
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -1269,8 +1245,7 @@ spec:
                       description: MemcachedSpec defines the desired state of Memcached
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -1381,7 +1356,6 @@ spec:
                           - containers
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -1476,8 +1450,7 @@ spec:
                         of ProvisionManager
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -1605,7 +1578,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -1649,8 +1621,7 @@ spec:
                       description: RabbitmqSpec is the Spec for the cassandras API.
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -1766,7 +1737,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -1813,8 +1783,7 @@ spec:
                       description: SwiftSpec defines the desired state of Swift
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -2003,7 +1972,6 @@ spec:
                           - swiftStorageConfiguration
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -2039,8 +2007,7 @@ spec:
                         description: VrouterSpec is the Spec for the cassandras API.
                         properties:
                           commonConfiguration:
-                            description: CommonConfiguration is the common services
-                              struct.
+                            description: PodConfiguration is the common services struct.
                             properties:
                               activate:
                                 description: Activate defines if the service will
@@ -2171,7 +2138,6 @@ spec:
                                 type: boolean
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -2221,8 +2187,7 @@ spec:
                       description: WebuiSpec is the Spec for the cassandras API.
                       properties:
                         commonConfiguration:
-                          description: CommonConfiguration is the common services
-                            struct.
+                          description: PodConfiguration is the common services struct.
                           properties:
                             activate:
                               description: Activate defines if the service will be
@@ -2336,7 +2301,6 @@ spec:
                               type: string
                           type: object
                       required:
-                      - commonConfiguration
                       - serviceConfiguration
                       type: object
                     status:
@@ -2400,8 +2364,7 @@ spec:
                           API.
                         properties:
                           commonConfiguration:
-                            description: CommonConfiguration is the common services
-                              struct.
+                            description: PodConfiguration is the common services struct.
                             properties:
                               activate:
                                 description: Activate defines if the service will
@@ -2520,7 +2483,6 @@ spec:
                                 type: object
                             type: object
                         required:
-                        - commonConfiguration
                         - serviceConfiguration
                         type: object
                       status:
@@ -2695,6 +2657,9 @@ spec:
                 name:
                   type: string
               type: object
+            replicas:
+              format: int32
+              type: integer
             swift:
               description: ServiceStatus provides information on the current status
                 of the service.

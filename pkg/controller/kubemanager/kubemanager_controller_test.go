@@ -55,7 +55,7 @@ var kubemanagerCR = &contrail.Kubemanager{
 			ZookeeperInstance:   "zookeeper1",
 			CassandraInstance:   "cassandra1",
 		},
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:       &trueVal,
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			Replicas:     &replicas,

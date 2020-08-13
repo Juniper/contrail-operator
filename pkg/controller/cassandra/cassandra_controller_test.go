@@ -148,7 +148,7 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.CassandraSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &create,
 				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

@@ -196,22 +196,6 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, nil
 	}
 
-	managerInstance, err := instance.OwnedByManager(r.Client, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if managerInstance != nil {
-		if managerInstance.Spec.Services.Webui != nil {
-			webuiManagerInstance := managerInstance.Spec.Services.Webui
-			instance.Spec.CommonConfiguration = utils.MergeCommonConfiguration(
-				managerInstance.Spec.CommonConfiguration,
-				webuiManagerInstance.Spec.CommonConfiguration)
-			err = r.Client.Update(context.TODO(), instance)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-		}
-	}
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -473,13 +457,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 	}
 
-	if err = instance.CreateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType, request,
-		r.Scheme, r.Client); err != nil {
+	if err = instance.CreateSTS(statefulSet, instanceType, request, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.UpdateSTS(statefulSet, &instance.Spec.CommonConfiguration, instanceType,
-		request, r.Scheme, r.Client, "rolling"); err != nil {
+	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, "rolling"); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -541,7 +523,7 @@ func (r *ReconcileWebui) updateServiceStatus(cr *v1alpha1.Webui) error {
 	}
 	serviceStatuses := map[string]v1alpha1.WebUIServiceStatusMap{}
 	for _, pod := range pods.Items {
-		podStatus := map[string]v1alpha1.WebUIServiceStatus{}
+		podStatus := v1alpha1.WebUIServiceStatusMap{}
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			status := "Non-Functional"
 			if containerStatus.Ready {

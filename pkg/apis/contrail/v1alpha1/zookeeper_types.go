@@ -25,7 +25,7 @@ import (
 // ZookeeperSpec is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperSpec struct {
-	CommonConfiguration  CommonConfiguration    `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration       `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ZookeeperConfiguration `json:"serviceConfiguration"`
 }
 
@@ -179,25 +179,6 @@ func (c *Zookeeper) CreateConfigMap(configMapName string,
 		c)
 }
 
-// OwnedByManager checks of the zookeeper object is owned by the Manager.
-func (c *Zookeeper) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if *ownerRef.Controller {
-			if ownerRef.Kind == "Manager" {
-				managerInstance := &Manager{}
-				err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, managerInstance)
-				if err != nil {
-					return nil, err
-				}
-				return managerInstance, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
 // IsActive returns true if instance is active.
 func (c *Zookeeper) IsActive(name string, namespace string, client client.Client) bool {
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, c)
@@ -231,7 +212,7 @@ func (c *Zookeeper) IsUpgrading(name string, namespace string, client client.Cli
 }
 
 // PrepareSTS prepares the intended deployment for the Zookeeper object.
-func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "zookeeper", request, scheme, c, client, true)
 }
 
@@ -251,13 +232,13 @@ func (c *Zookeeper) SetPodsToReady(podIPList *corev1.PodList, client client.Clie
 }
 
 // CreateSTS creates the STS.
-func (c *Zookeeper) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Zookeeper) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

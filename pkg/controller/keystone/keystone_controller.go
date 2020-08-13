@@ -232,7 +232,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	strategy := "deleteFirst"
-	if err = contrail.UpdateSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", request, r.scheme, r.client, strategy); err != nil {
+	if err = contrail.UpdateSTS(sts, "keystone", request, r.client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -86,14 +86,15 @@ func TestHACoreContrailServices(t *testing.T) {
 			Logger:        log,
 		}
 
-		cluster := getHACluster(namespace)
+		nodeLabelKey := "test-ha"
+		cluster := getHACluster(namespace, nodeLabelKey)
 
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
 			//TODO fix 1->3 node scale scenario
 			t.Skip()
-			var replicas int32 = 1
-			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
+			err := labelOneNode(f.KubeClient, nodeLabelKey)
+			require.NoError(t, err)
+			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				return nil
 			})
 
@@ -101,10 +102,11 @@ func TestHACoreContrailServices(t *testing.T) {
 			assertReplicasReady(t, w, 1)
 		})
 
-		t.Run("when replicas is set to 3 in manager", func(t *testing.T) {
-			var replicas int32 = 3
-			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
+		t.Run("when nodes are replicated to 3", func(t *testing.T) {
+			err := labelAllNodes(f.KubeClient, nodeLabelKey)
+			require.NoError(t, err)
+			//TODO remove CreateOrUpdate manager when first test case will be unskipped
+			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				return nil
 			})
 
@@ -166,7 +168,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			//TODO fix failover scenario
 			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
-				LabelSelector: "node-role.kubernetes.io/master=",
+				LabelSelector: labelKeyToSelector(nodeLabelKey),
 			})
 			assert.NoError(t, err)
 			require.NotEmpty(t, nodes.Items)
@@ -210,7 +212,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
-			err := untaintNodes(f.KubeClient, "e2e.test/failure")
+			err := untaintNodes(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
@@ -252,13 +254,71 @@ func TestHACoreContrailServices(t *testing.T) {
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})
+			t.Run("then test label is removed from nodes", func(t *testing.T) {
+				err := removeLabel(f.KubeClient, nodeLabelKey)
+				require.NoError(t, err)
+			})
 		})
 	})
 }
 
-func untaintNodes(k kubernetes.Interface, taintKey string) error {
+func labelOneNode(k kubernetes.Interface, labelKey string) error {
 	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
 		LabelSelector: "node-role.kubernetes.io/master=",
+	})
+	if err != nil {
+		return err
+	}
+	if len(nodes.Items) == 0 {
+		return fmt.Errorf("no master nodes found")
+	}
+	node := nodes.Items[0]
+	node.Labels[labelKey] = ""
+	_, err = k.CoreV1().Nodes().Update(&node)
+
+	return err
+}
+
+func labelAllNodes(k kubernetes.Interface, labelKey string) error {
+	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+		LabelSelector: "node-role.kubernetes.io/master=",
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range nodes.Items {
+		n.Labels[labelKey] = ""
+		_, err = k.CoreV1().Nodes().Update(&n)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func removeLabel(k kubernetes.Interface, labelKey string) error {
+	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+		LabelSelector: labelKeyToSelector(labelKey),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, n := range nodes.Items {
+		delete(n.Labels, labelKey)
+		_, err = k.CoreV1().Nodes().Update(&n)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
+	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+		LabelSelector: nodeLabelSelector,
 	})
 
 	if err != nil {
@@ -329,7 +389,7 @@ func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod
 	assert.Equal(t, 200, res.StatusCode)
 }
 
-func getHACluster(namespace string) *contrail.Manager {
+func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 	trueVal := true
 
 	cassandras := []*contrail.Cassandra{{
@@ -339,10 +399,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.CassandraSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
 				Containers: []*contrail.Container{
@@ -361,10 +420,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: []*contrail.Container{
@@ -382,9 +440,8 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: []*contrail.Container{
@@ -402,10 +459,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ConfigConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -436,10 +492,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
 		},
 		Spec: contrail.ControlSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ControlConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -461,10 +516,9 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.WebuiSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.WebuiConfiguration{
 				CassandraInstance: "hatest-cassandra",
@@ -485,9 +539,8 @@ func getHACluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ProvisionManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 				Containers: []*contrail.Container{
@@ -504,7 +557,7 @@ func getHACluster(namespace string) *contrail.Manager {
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{
@@ -512,6 +565,7 @@ func getHACluster(namespace string) *contrail.Manager {
 						Operator: core.TolerationOpExists,
 					},
 				},
+				NodeSelector: map[string]string{nodeLabel: ""},
 			},
 			Services: contrail.Services{
 				Cassandras:       cassandras,
@@ -524,6 +578,10 @@ func getHACluster(namespace string) *contrail.Manager {
 			},
 		},
 	}
+}
+
+func labelKeyToSelector(key string) string {
+	return key+"="
 }
 
 func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace string, log logger.Logger) {

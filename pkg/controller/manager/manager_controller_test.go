@@ -41,7 +41,6 @@ func TestManagerController(t *testing.T) {
 		falseVal1 := false
 		trueVal1 := true
 		createNew := true
-		var replicas int32 = 3
 		cassandra := &contrail.Cassandra{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "cassandra",
@@ -49,9 +48,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
@@ -69,9 +67,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
@@ -89,9 +86,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 			},
 		}
@@ -102,9 +98,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
@@ -122,9 +117,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
@@ -144,9 +138,8 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -161,9 +154,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
@@ -181,9 +173,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createNew,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
@@ -211,11 +202,10 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &createNew,
 					HostNetwork:  &trueVal1,
-					Replicas:     &replicas,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
@@ -263,6 +253,7 @@ func TestManagerController(t *testing.T) {
 			control,
 			vrouter,
 			config,
+			newNode(),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -280,6 +271,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -297,6 +290,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -320,7 +316,6 @@ func TestManagerController(t *testing.T) {
 		createVal := true
 		trueVal1 := true
 		falseVal1 := false
-		var replicas int32 = 3
 		cassandra := &contrail.Cassandra{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "cassandra",
@@ -328,9 +323,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
 					Containers: []*contrail.Container{
@@ -348,9 +342,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
 					Containers: []*contrail.Container{
@@ -368,9 +361,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 					Containers: []*contrail.Container{
@@ -388,9 +380,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
@@ -408,9 +399,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
 					Containers: []*contrail.Container{
@@ -430,9 +420,8 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
 					Containers: []*contrail.Container{
@@ -452,9 +441,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
 					Containers: []*contrail.Container{
@@ -472,9 +460,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create:   &createVal,
-					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
 					Containers: []*contrail.Container{
@@ -502,11 +489,10 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &createVal,
 					HostNetwork:  &trueVal1,
-					Replicas:     &replicas,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				ServiceConfiguration: contrail.RabbitmqConfiguration{
@@ -550,10 +536,10 @@ func TestManagerController(t *testing.T) {
 				Webui:            mgrstatusWebui,
 				ProvisionManager: mgrstatusProvisionmanager,
 				Kubemanagers:     mgrstatusKubemanager,
-				// Keystone:         mgrstatusKeystone,
 			},
 		}
 		initObjs := []runtime.Object{
+			newNode(),
 			managerCR,
 			newAdminSecret(),
 			cassandra,
@@ -583,6 +569,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -600,6 +588,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -630,7 +621,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.CassandraSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.CassandraConfiguration{
@@ -649,7 +640,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ZookeeperSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ZookeeperConfiguration{
@@ -668,7 +659,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 			},
@@ -680,7 +671,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.KubemanagerConfiguration{
@@ -699,7 +690,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.WebuiSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.WebuiConfiguration{
@@ -720,7 +711,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.ConfigSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
@@ -736,7 +727,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ControlSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.ControlConfiguration{
@@ -755,7 +746,7 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Create: &setBool,
 				},
 				ServiceConfiguration: contrail.VrouterConfiguration{
@@ -784,7 +775,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			Spec: contrail.RabbitmqSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate:     &trueVal1,
 					Create:       &setBool,
 					HostNetwork:  &trueVal1,
@@ -834,6 +825,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		initObjs := []runtime.Object{
+			newNode(),
 			managerCR,
 			newAdminSecret(),
 			cassandra,
@@ -862,6 +854,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -879,6 +873,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -915,6 +912,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
+			newNode(),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -932,6 +930,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -949,6 +949,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -983,7 +986,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: contrail.CommandSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
+				CommonConfiguration: contrail.PodConfiguration{
 					Activate: &trueVar,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{
@@ -1010,6 +1013,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&command,
+			newNode(),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1027,6 +1031,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -1043,7 +1049,16 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
-			Spec:     commandUpdate.Spec,
+			Spec:     contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Activate: &trueVar,
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.CommandConfiguration{
+					ClusterName:        "test-manager",
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+			},
 		}
 		assertCommandDeployed(t, expectedCommand, fakeClient)
 	})
@@ -1074,6 +1089,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
+			newNode(),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1153,6 +1169,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
+			newNode(),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1190,6 +1207,8 @@ func TestManagerController(t *testing.T) {
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -1207,6 +1226,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					PostgresInstance:   "psql",
@@ -1259,6 +1281,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&keystoneDefaults,
+			newNode(),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1296,6 +1319,8 @@ func TestManagerController(t *testing.T) {
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
+		var replicas int32
+		replicas = 1
 		expectedKeystone := contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "keystone",
@@ -1313,6 +1338,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Keystone", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.KeystoneSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					PostgresInstance:   "psql",
 					ListenPort:         5555,
@@ -1368,6 +1396,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&keystoneCustom,
+			newNode(),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1386,6 +1415,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedKeystone := contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "keystone",
@@ -1403,6 +1434,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Keystone", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.KeystoneSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					PostgresInstance:   "psql",
 					ListenPort:         9999,
@@ -1523,6 +1557,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			swift,
 			memcached,
+			newNode(),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1540,6 +1575,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -1557,6 +1594,9 @@ func TestManagerController(t *testing.T) {
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Command", APIVersion: "contrail.juniper.net/v1alpha1"},
 			Spec: contrail.CommandSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
 				ServiceConfiguration: contrail.CommandConfiguration{
 					ClusterName:        "test-manager",
 					KeystoneSecretName: "keystone-adminpass-secret",
@@ -1611,7 +1651,7 @@ func newKeystone() *contrail.Keystone {
 			Namespace: "default",
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:    &trueVal,
 				Create:      &trueVal,
 				HostNetwork: &trueVal,
@@ -1650,6 +1690,13 @@ func newAdminSecret() *core.Secret {
 			"password": "test123",
 		},
 	}
+}
+
+func newNode() *core.Node {
+	return &core.Node{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "node1",
+	}}
 }
 
 var (
@@ -1747,9 +1794,7 @@ func newManager() *contrail.Manager {
 			Namespace: "default",
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:    &trueVal,
-				Create:      &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

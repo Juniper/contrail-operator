@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ManagerSpec defines the desired state of Manager.
@@ -15,7 +15,7 @@ type ManagerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	CommonConfiguration CommonConfiguration `json:"commonConfiguration,omitempty"`
+	CommonConfiguration ManagerConfiguration `json:"commonConfiguration,omitempty"`
 	Services            Services            `json:"services,omitempty"`
 	KeystoneSecretName  string              `json:"keystoneSecretName,omitempty"`
 }
@@ -39,6 +39,27 @@ type Services struct {
 	Memcached        *Memcached        `json:"memcached,omitempty"`
 }
 
+// ManagerConfiguration is the common services struct.
+// +k8s:openapi-gen=true
+type ManagerConfiguration struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,7,rep,name=nodeSelector"`
+	// Host networking requested for this pod. Use the host's network namespace.
+	// If this option is set, the ports that will be used must be specified.
+	// Default to false.
+	// +k8s:conversion-gen=false
+	// +optional
+	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
+	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec.
+	ImagePullSecrets []string `json:"imagePullSecrets,omitempty"`
+	// If specified, the pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
+}
+
 // ManagerStatus defines the observed state of Manager.
 // +k8s:openapi-gen=true
 type ManagerStatus struct {
@@ -60,6 +81,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge

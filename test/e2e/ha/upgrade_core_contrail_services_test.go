@@ -59,12 +59,14 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			Logger:        log,
 		}
 
-		cluster := getHACluster(namespace)
+		nodeLabelKey := "test-ha"
+		cluster := getHACluster(namespace, nodeLabelKey)
 		var replicas int32 = 3
 
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
-			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
+			err := labelAllNodes(f.KubeClient, nodeLabelKey)
+			require.NoError(t, err)
+			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				return nil
 			})
 
@@ -259,6 +261,10 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
+				require.NoError(t, err)
+			})
+			t.Run("then test label is removed from nodes", func(t *testing.T) {
+				err := removeLabel(f.KubeClient, nodeLabelKey)
 				require.NoError(t, err)
 			})
 		})

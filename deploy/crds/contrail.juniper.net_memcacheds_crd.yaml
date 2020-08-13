@@ -48,7 +48,7 @@ spec:
           description: MemcachedSpec defines the desired state of Memcached
           properties:
             commonConfiguration:
-              description: CommonConfiguration is the common services struct.
+              description: PodConfiguration is the common services struct.
               properties:
                 activate:
                   description: Activate defines if the service will be activated by
@@ -151,7 +151,6 @@ spec:
               - containers
               type: object
           required:
-          - commonConfiguration
           - serviceConfiguration
           type: object
         status:

@@ -187,90 +187,6 @@ func TestUtilsSecond(t *testing.T) {
 		assert.Equal(t, status, expectedStatus)
 	})
 
-	t.Run("Update Event in ManagerSizeChange/CassandraGroupKind verification", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManager(),
-			MetaNew:   pod,
-			ObjectNew: newManager(),
-		}
-		hf := tm.ManagerSizeChange(tm.CassandraGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
-	t.Run("Update Event in ManagerSizeChange/CassandraGroupKind2 verification2", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManagerTwo(),
-			MetaNew:   pod,
-			ObjectNew: newManagerTwo(),
-		}
-		hf := tm.ManagerSizeChange(tm.CassandraGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
-	t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManager(),
-			MetaNew:   pod,
-			ObjectNew: newManager(),
-		}
-		hf := tm.ManagerSizeChange(tm.ZookeeperGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
-	t.Run("Update Event in ManagerSizeChange/ZookeeperGroupKind verification2", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManagerTwo(),
-			MetaNew:   pod,
-			ObjectNew: newManagerTwo(),
-		}
-		hf := tm.ManagerSizeChange(tm.ZookeeperGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
-	t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManager(),
-			MetaNew:   pod,
-			ObjectNew: newManager(),
-		}
-		hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
-	t.Run("Update Event in ManagerSizeChange/RabbitmqGroupKind verification2", func(t *testing.T) {
-		expectedStatus := false
-		status := true
-		evu := event.UpdateEvent{
-			MetaOld:   pod,
-			ObjectOld: newManagerTwo(),
-			MetaNew:   pod,
-			ObjectNew: newManagerTwo(),
-		}
-		hf := tm.ManagerSizeChange(tm.RabbitmqGroupKind())
-		status = hf.UpdateFunc(evu)
-		assert.Equal(t, status, expectedStatus)
-	})
-
 	t.Run("Update Event in DSStatusChange/VrouterGroupKind verification", func(t *testing.T) {
 		expectedStatus := false
 		status := true
@@ -421,7 +337,7 @@ var cassandra = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Create:   &create,
 			Replicas: &replicas,
 		},
@@ -454,7 +370,7 @@ func newRabbitmq() *contrail.Rabbitmq {
 			},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -490,7 +406,7 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate:     &trueVal,
 				Create:       &trueVal,
 				HostNetwork:  &trueVal,
@@ -519,11 +435,8 @@ func newManager() *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
-				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: contrail.Services{
@@ -543,7 +456,7 @@ var control = &contrail.Control{
 		Labels:    map[string]string{"contrail_cluster": "config1"},
 	},
 	Spec: contrail.ControlSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate:     &trueVal,
 			Create:       &trueVal,
 			HostNetwork:  &trueVal,
@@ -645,11 +558,8 @@ var replica = int32(1)
 var trueVal = true
 var falseVal = false
 
-var managerCommonConfiguration = contrail.CommonConfiguration{
-	Activate:         &trueVal,
-	Create:           &trueVal,
+var managerCommonConfiguration = contrail.ManagerConfiguration{
 	HostNetwork:      &trueVal,
-	Replicas:         &replica,
 	NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
 	ImagePullSecrets: []string{"contrail-nightly"},
 	Tolerations: []core.Toleration{
@@ -664,7 +574,7 @@ var managerCommonConfiguration = contrail.CommonConfiguration{
 	},
 }
 
-var secondCommonConfiguration = contrail.CommonConfiguration{
+var secondCommonConfiguration = contrail.PodConfiguration{
 	Activate: &trueVal,
 	Create:   &trueVal,
 }
@@ -725,7 +635,7 @@ var cassandraTwo = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.CommonConfiguration{
+		CommonConfiguration: contrail.PodConfiguration{
 			Activate: &trueVal,
 		},
 	},
@@ -740,7 +650,7 @@ func newZookeeperTwo() *contrail.Zookeeper {
 			Namespace: "default",
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate: &trueVal,
 			},
 		},
@@ -755,7 +665,7 @@ func newRabbitmqTwo() *contrail.Rabbitmq {
 			Namespace: "default",
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
+			CommonConfiguration: contrail.PodConfiguration{
 				Activate: &trueVal,
 			},
 		},
@@ -770,11 +680,8 @@ func newManagerTwo() *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
 				HostNetwork:  &trueVal,
-				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: contrail.Services{

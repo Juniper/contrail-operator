@@ -41,7 +41,7 @@ type Kubemanager struct {
 // KubemanagerSpec is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerSpec struct {
-	CommonConfiguration  CommonConfiguration      `json:"commonConfiguration"`
+	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
 }
 
@@ -284,25 +284,6 @@ func (c *Kubemanager) CurrentConfigMapExists(configMapName string, client client
 	return CurrentConfigMapExists(configMapName, client, scheme, request)
 }
 
-func (c *Kubemanager) OwnedByManager(client client.Client, request reconcile.Request) (*Manager, error) {
-	managerName := c.Labels["contrail_cluster"]
-	ownerRefList := c.GetOwnerReferences()
-	for _, ownerRef := range ownerRefList {
-		if !*ownerRef.Controller {
-			continue
-		}
-		if ownerRef.Kind != "Manager" {
-			continue
-		}
-		m := &Manager{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: managerName, Namespace: request.Namespace}, m); err != nil {
-			return nil, err
-		}
-		return m, nil
-	}
-	return nil, nil
-}
-
 // IsActive returns true if instance is active.
 func (c *Kubemanager) IsActive(name string, namespace string, client client.Client) bool {
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, c); err != nil {
@@ -328,7 +309,7 @@ func (c *Kubemanager) CreateSecret(secretName string,
 }
 
 // PrepareSTS prepares the intended deployment for the Kubemanager object.
-func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
+func (c *Kubemanager) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
 	return PrepareSTS(sts, commonConfiguration, "kubemanager", request, scheme, c, client, true)
 }
 
@@ -348,13 +329,13 @@ func (c *Kubemanager) SetPodsToReady(podIPList *corev1.PodList, client client.Cl
 }
 
 // CreateSTS creates the STS.
-func (c *Kubemanager) CreateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client) error {
-	return CreateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient)
+func (c *Kubemanager) CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client) error {
+	return CreateSTS(sts, instanceType, request, reconcileClient)
 }
 
 // UpdateSTS updates the STS.
-func (c *Kubemanager) UpdateSTS(sts *appsv1.StatefulSet, commonConfiguration *CommonConfiguration, instanceType string, request reconcile.Request, scheme *runtime.Scheme, reconcileClient client.Client, strategy string) error {
-	return UpdateSTS(sts, commonConfiguration, instanceType, request, scheme, reconcileClient, strategy)
+func (c *Kubemanager) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.Request, reconcileClient client.Client, strategy string) error {
+	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

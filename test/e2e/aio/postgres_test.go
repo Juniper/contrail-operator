@@ -43,7 +43,6 @@ func TestPostgresDataPersistence(t *testing.T) {
 		assert.NoError(t, err)
 
 		trueVal := true
-		oneVal := int32(1)
 
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "postgrestest-psql"},
@@ -61,9 +60,9 @@ func TestPostgresDataPersistence(t *testing.T) {
 				Namespace: namespace,
 			},
 			Spec: contrail.ManagerSpec{
-				CommonConfiguration: contrail.CommonConfiguration{
-					Replicas:    &oneVal,
+				CommonConfiguration: contrail.ManagerConfiguration{
 					HostNetwork: &trueVal,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
 					Postgres: psql,
