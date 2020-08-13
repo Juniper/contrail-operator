@@ -18,7 +18,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
-	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
 func (r *ReconcileSwiftProxy) ensureSwiftRegistered(sp *contrail.SwiftProxy, adminSecret, swiftSecret *core.Secret, k *contrail.Keystone) (reconcile.Result, error) {
@@ -94,12 +93,10 @@ func (r *ReconcileSwiftProxy) ensureRegisterJobConfig(
 }
 
 func (r *ReconcileSwiftProxy) isSwiftRegistered(sp *contrail.SwiftProxy, k *contrail.Keystone, swiftSecret *core.Secret) (bool, error) {
-	proxy, err := kubeproxy.New(r.mgrConfig)
+	keystoneClient, err := keystone.NewClient(r.mgrConfig, k)
 	if err != nil {
-		return false, fmt.Errorf("failed to create kubeproxy: %v", err)
+		return false, err
 	}
-	keystoneProxy := proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port)
-	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens(string(swiftSecret.Data["user"]), string(swiftSecret.Data["password"]), "service")
 	if keystone.IsUnauthorized(err) {
 		return false, nil

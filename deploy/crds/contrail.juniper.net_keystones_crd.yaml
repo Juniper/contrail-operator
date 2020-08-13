@@ -121,6 +121,8 @@ spec:
                         type: string
                     type: object
                   type: array
+                externalAddress:
+                  type: string
                 keystoneSecretName:
                   type: string
                 listenPort:
@@ -150,6 +152,8 @@ spec:
               type: boolean
             clusterIP:
               type: string
+            external:
+              type: boolean
             port:
               type: integer
           type: object

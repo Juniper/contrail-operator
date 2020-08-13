@@ -294,9 +294,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	kPort := keystone.Status.Port
 	sPort := swiftService.Status.SwiftProxyPort
-	if err := r.ensureContrailSwiftContainerExists(command, kPort, sPort, adminPasswordSecret); err != nil {
+	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -490,17 +489,18 @@ func (r *ReconcileCommand) updateStatus(
 	return r.client.Status().Update(context.Background(), command)
 }
 
-func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, kPort, sPort int, adminPass *core.Secret) error {
-	proxy, err := kubeproxy.New(r.config)
+func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, k *contrail.Keystone, sPort int, adminPass *core.Secret) error {
+	keystoneClient, err := keystone.NewClient(r.config, k)
 	if err != nil {
-		return fmt.Errorf("failed to create kubeproxy: %v", err)
+		return err
 	}
-	keystoneName := command.Spec.ServiceConfiguration.KeystoneInstance
-	keystoneProxy := proxy.NewSecureClientForService(command.Namespace, keystoneName+"-service", kPort)
-	keystoneClient := keystone.NewClient(keystoneProxy)
 	token, err := keystoneClient.PostAuthTokens("admin", string(adminPass.Data["password"]), "admin")
 	if err != nil {
 		return fmt.Errorf("failed to get keystone token: %v", err)
+	}
+	proxy, err := kubeproxy.New(r.config)
+	if err != nil {
+		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
 	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)

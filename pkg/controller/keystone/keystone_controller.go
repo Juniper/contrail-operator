@@ -134,6 +134,10 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
+	if keystone.Spec.ServiceConfiguration.ExternalAddress != "" {
+		return reconcile.Result{}, r.updateStatusWithExternalKeystone(keystone)
+	}
+
 	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"
 
 	if err := r.ensureFernetKeyManagerExists(fernetKeyManagerName, keystone.Namespace); err != nil {
@@ -293,6 +297,17 @@ func (r *ReconcileKeystone) updateStatus(
 		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
 	k.Status.ClusterIP = cip
+	return r.client.Status().Update(context.Background(), k)
+}
+
+func (r *ReconcileKeystone) updateStatusWithExternalKeystone(
+	k *contrail.Keystone,
+) error {
+	k.Status = contrail.KeystoneStatus{}
+	k.Status.Active = true
+	k.Status.External = true
+	k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
+	k.Status.ClusterIP = k.Spec.ServiceConfiguration.ExternalAddress
 	return r.client.Status().Update(context.Background(), k)
 }
 

@@ -26,6 +26,7 @@ type KeystoneConfiguration struct {
 	ProjectDomainID   string `json:"projectDomainID,omitempty"`
 	UserDomainName    string `json:"userDomainName,omitempty"`
 	ProjectDomainName string `json:"projectDomainName,omitempty"`
+	ExternalAddress   string `json:"externalAddress,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone
@@ -34,6 +35,7 @@ type KeystoneStatus struct {
 	Active    bool   `json:"active,omitempty"`
 	Port      int    `json:"port,omitempty"`
 	ClusterIP string `json:"clusterIP,omitempty"`
+	External  bool   `json:"external,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

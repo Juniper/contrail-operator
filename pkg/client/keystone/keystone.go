@@ -2,20 +2,64 @@ package keystone
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"k8s.io/client-go/rest"
 )
 
-func NewClient(client *kubeproxy.Client) *Client {
-	return &Client{client: client}
+func NewClient(config *rest.Config, k *contrail.Keystone) (*Client, error) {
+	if k.Status.External {
+		return &Client{client: NewDirectClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort)}, nil
+	}
+	proxy, err := kubeproxy.New(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kubeproxy: %v", err)
+	}
+	if k.Spec.ServiceConfiguration.AuthProtocol == "https" {
+		return &Client{client: proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port)}, nil
+	}
+	return &Client{client: proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port)}, nil
+}
+
+type KeystoneClient interface {
+	NewRequest(method, path string, body io.Reader) (*http.Request, error)
+	Do(req *http.Request) (*http.Response, error)
 }
 
 type Client struct {
-	client *kubeproxy.Client
+	client KeystoneClient
+}
+
+type DirectClient struct {
+	url    string
+	client http.Client
+}
+
+func NewDirectClient(protocol string, address string, port int) *DirectClient {
+	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
+	// Temporary don't validate certificate
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	return &DirectClient{
+		url:    url,
+		client: http.Client{Transport: tr},
+	}
+}
+
+func (c *DirectClient) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
+	return http.NewRequest(method, c.url+path, body)
+}
+
+func (c *DirectClient) Do(req *http.Request) (*http.Response, error) {
+	return c.client.Do(req)
 }
 
 func (c *Client) PostAuthTokens(username, password, project string) (AuthTokens, error) {
