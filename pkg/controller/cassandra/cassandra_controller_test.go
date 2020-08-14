@@ -6,10 +6,12 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -44,6 +46,7 @@ func TestCassandraResourceHandler(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 	t.Run("Create Event", func(t *testing.T) {
 		evc := event.CreateEvent{
 			Meta:   pod,
@@ -99,12 +102,42 @@ func TestCassandraResourceHandler(t *testing.T) {
 	})
 }
 
+func newCassandraService() *core.Service {
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cassandra-cassandra",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster"},
+		},
+		Spec: core.ServiceSpec{
+			ClusterIP: "10.0.0.1",
+		},
+	}
+}
+
 func newCassandra() *contrail.Cassandra {
 	trueVal := true
+	replicas := int32(3)
 	return &contrail.Cassandra{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "cassandra-instance",
+			Name:      "cassandra",
 			Namespace: "default",
+		},
+		Spec: contrail.CassandraSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				Create:       &trueVal,
+				Replicas:     &replicas,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.CassandraConfiguration{
+				Containers: []*contrail.Container{
+					{Name: "cassandra", Image: "cassandra:3.5"},
+					{Name: "init", Image: "busybox"},
+					{Name: "init2", Image: "cassandra:3.5"},
+				},
+				MinHeapSize: "100M",
+				MaxHeapSize: "1G",
+			},
 		},
 		Status: contrail.CassandraStatus{Active: &trueVal},
 	}
@@ -115,36 +148,41 @@ func TestCassandra(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
+	require.NoError(t, storage.SchemeBuilder.AddToScheme(scheme), "Failed storage.SchemeBuilder.AddToScheme()")
 	cas := newCassandra()
+	svc := newCassandraService()
 
-	dt := meta.Now()
-	cas.ObjectMeta.DeletionTimestamp = &dt
-
-	cl := fake.NewFakeClientWithScheme(scheme, cas)
-	r := &ReconcileCassandra{Client: cl, Scheme: scheme}
+	cl := fake.NewFakeClientWithScheme(scheme, cas, svc)
+	k8s := k8s.New(cl, scheme)
+	r := &ReconcileCassandra{Client: cl, Kubernetes: k8s, Scheme: scheme}
 	// Mock request to simulate Reconcile() being called on an event for a
 	// watched resource .
 	req := reconcile.Request{
 		NamespacedName: types.NamespacedName{
-			Name:      "cassandra-instance",
+			Name:      "cassandra",
 			Namespace: "default",
 		},
 	}
 	_, err = r.Reconcile(req)
+	require.NoError(t, err)
+	res := contrail.Cassandra{}
+	err = r.Client.Get(context.TODO(), req.NamespacedName, &res)
+	require.NoError(t, err)
+	assert.Equal(t, "10.0.0.1", res.Status.ClusterIP)
 }
 
 func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	var (
-		name            = "cassandra1"
+		name            = "cassandra"
 		namespace       = "default"
 		replicas  int32 = 3
 	)
-	// A Memcached object with metadata and spec.
+	// A Cassandra object with metadata and spec.
 	var cassandra = &contrail.Cassandra{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "cassandra1",
+			Name:      "cassandra",
 			Namespace: namespace,
-			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			Labels:    map[string]string{"contrail_cluster": "cluster"},
 		},
 		Spec: contrail.CassandraSpec{
 			CommonConfiguration: contrail.PodConfiguration{
@@ -163,8 +201,11 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 		},
 	}
 
+	// Create related service
+	service := newCassandraService()
+
 	// Objects to track in the fake client.
-	objs := []runtime.Object{cassandra}
+	objs := []runtime.Object{cassandra, service}
 
 	// Register operator types with the runtime scheme.
 	s := schemepkg.Scheme
@@ -173,8 +214,11 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	// Create a fake client to mock API calls.
 	cl := fake.NewFakeClient(objs...)
 
+	// Create k8s utility
+	k8s := k8s.New(cl, s)
+
 	// Create a ReconcileMemcached object with the scheme and fake client.
-	r := &ReconcileCassandra{Client: cl, Scheme: s}
+	r := &ReconcileCassandra{Client: cl, Kubernetes: k8s, Scheme: s}
 
 	// Mock request to simulate Reconcile() being called on an event for a
 	// watched resource .

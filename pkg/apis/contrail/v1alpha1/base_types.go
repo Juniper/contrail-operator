@@ -779,10 +779,7 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
 	serverListCommaSeparated := strings.Join(cassandraNodes, ":"+port+",")
 	serverListCommaSeparated = serverListCommaSeparated + ":" + port
-	serverListSpaceSeparated := strings.Join(cassandraNodes, ":"+port+" ")
-	serverListSpaceSeparated = serverListSpaceSeparated + ":" + port
-	serverListCQLCommaSeparated := strings.Join(cassandraNodes, ":"+cqlPort+",")
-	serverListCQLCommaSeparated = serverListCQLCommaSeparated + ":" + cqlPort
+	endpoint := cassandraInstance.Status.ClusterIP + ":" + port
 	serverListCQLSpaceSeparated := strings.Join(cassandraNodes, ":"+cqlPort+" ")
 	serverListCQLSpaceSeparated = serverListCQLSpaceSeparated + ":" + cqlPort
 	serverListJMXCommaSeparated := strings.Join(cassandraNodes, ":"+jmxPort+",")
@@ -795,9 +792,7 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 		Port:                            port,
 		CQLPort:                         cqlPort,
 		JMXPort:                         jmxPort,
-		ServerListCommaSeparated:        serverListCommaSeparated,
-		ServerListSpaceSeparated:        serverListSpaceSeparated,
-		ServerListCQLCommaSeparated:     serverListCQLCommaSeparated,
+		Endpoint:                        endpoint,
 		ServerListCQLSpaceSeparated:     serverListCQLSpaceSeparated,
 		ServerListJMXCommaSeparated:     serverListJMXCommaSeparated,
 		ServerListJMXSpaceSeparated:     serverListJMXSpaceSeparated,
@@ -1079,9 +1074,7 @@ type CassandraClusterConfiguration struct {
 	Port                            string
 	CQLPort                         string
 	JMXPort                         string
-	ServerListCommaSeparated        string
-	ServerListSpaceSeparated        string
-	ServerListCQLCommaSeparated     string
+	Endpoint                        string
 	ServerListCQLSpaceSeparated     string
 	ServerListJMXCommaSeparated     string
 	ServerListJMXSpaceSeparated     string

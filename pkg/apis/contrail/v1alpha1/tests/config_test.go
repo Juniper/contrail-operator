@@ -99,6 +99,7 @@ var cassandra = &v1alpha1.Cassandra{
 			"contrail_cluster": "cluster1",
 		},
 	},
+	Status: v1alpha1.CassandraStatus{ClusterIP: "10.0.0.1"},
 }
 
 var zookeeper = &v1alpha1.Zookeeper{
@@ -971,7 +972,7 @@ config_api_ssl_enable=True
 config_api_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
 config_api_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
 config_api_ssl_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=true
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
@@ -1254,7 +1255,7 @@ push_mode=1
 log_file=/var/log/contrail/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=true
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
@@ -1303,7 +1304,7 @@ api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-schema.log
 log_level=SYS_NOTICE
 log_local=1
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=true
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
@@ -1341,7 +1342,7 @@ api_server_use_ssl=True
 log_file=/var/log/contrail/contrail-svc-monitor.log
 log_level=SYS_NOTICE
 log_local=1
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=true
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
@@ -1739,7 +1740,7 @@ kombu_ssl_certfile=/etc/certificates/server-1.1.6.1.crt
 kombu_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=True
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
@@ -1765,7 +1766,7 @@ push_mode=1
 log_file=/var/log/contrail/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
+cassandra_server_list=10.0.0.1:9160
 cassandra_use_ssl=true
 cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181

@@ -3341,13 +3341,6 @@ go_repository(
 )
 
 go_repository(
-    name = "io_k8s_kubernetes",
-    importpath = "k8s.io/kubernetes",
-    sum = "h1:qTfB+u5M92k2fCCCVP2iuhgwwSOv1EkAkvQY1tQODD8=",
-    version = "v1.13.0",
-)
-
-go_repository(
     name = "io_k8s_legacy_cloud_providers",
     importpath = "k8s.io/legacy-cloud-providers",
     replace = "k8s.io/legacy-cloud-providers",
