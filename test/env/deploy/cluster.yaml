@@ -8,8 +8,7 @@ spec:
   commonConfiguration:
     hostNetwork: true
     nodeSelector:
-      node-role.kubernetes.io/master: ""
-  keystoneSecretInstance: cluster1-admin-password
+      node-role.kubernetes.io/contrail: ""
   services:
     cassandras:
       - metadata:
@@ -33,35 +32,33 @@ spec:
       spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
-          keystoneInstance: keystone
           containers:
             - name: analyticsapi
-              image: registry:5000/contrail-nightly/contrail-analytics-api:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-api:master.1312
             - name: api
-              image: registry:5000/contrail-nightly/contrail-controller-config-api:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-api:master.1312
             - name: collector
-              image: registry:5000/contrail-nightly/contrail-analytics-collector:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-collector:master.1312
             - name: devicemanager
-              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master.1312
             - name: dnsmasq
-              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master.1312
             - name: init
               image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: schematransformer
-              image: registry:5000/contrail-nightly/contrail-controller-config-schema:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-schema:master.1312
             - name: servicemonitor
-              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:master.1312
             - name: queryengine
-              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master-latest
+              image: registry:5000/contrail-nightly/contrail-analytics-query-engine:master.1312
             - name: redis
               image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
             - name: statusmonitor
               image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
-          authMode: keystone
     controls:
       - metadata:
           labels:
@@ -73,13 +70,13 @@ spec:
             cassandraInstance: cassandra1
             containers:
               - name: control
-                image: registry:5000/contrail-nightly/contrail-controller-control-control:master-latest
+                image: registry:5000/contrail-nightly/contrail-controller-control-control:master.1312
               - name: dns
-                image: registry:5000/contrail-nightly/contrail-controller-control-dns:master-latest
+                image: registry:5000/contrail-nightly/contrail-controller-control-dns:master.1312
               - name: init
                 image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
               - name: named
-                image: registry:5000/contrail-nightly/contrail-controller-control-named:master-latest
+                image: registry:5000/contrail-nightly/contrail-controller-control-named:master.1312
               - name: statusmonitor
                 image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
             zookeeperInstance: zookeeper1
@@ -92,7 +89,6 @@ spec:
         commonConfiguration:
           replicas: 1
         serviceConfiguration:
-          keystoneInstance: keystone
           globalVrouterConfiguration:
             ecmpHashingIncludeFields:
               destinationIp: true
@@ -128,16 +124,15 @@ spec:
       spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
-          keystoneInstance: keystone
           containers:
             - name: init
               image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: redis
               image: registry:5000/common-docker-third-party/contrail/redis:4.0.2
             - name: webuijob
-              image: registry:5000/contrail-nightly/contrail-controller-webui-job:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-webui-job:master.1312
             - name: webuiweb
-              image: registry:5000/contrail-nightly/contrail-controller-webui-web:master-latest
+              image: registry:5000/contrail-nightly/contrail-controller-webui-web:master.1312
     zookeepers:
       - metadata:
           labels:

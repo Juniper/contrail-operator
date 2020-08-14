@@ -3,11 +3,13 @@ package cassandra
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"text/template"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
@@ -99,7 +101,8 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCassandra{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
+	return &ReconcileCassandra{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr, Kubernetes: kubernetes}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -154,9 +157,10 @@ var _ reconcile.Reconciler = &ReconcileCassandra{}
 type ReconcileCassandra struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Manager    manager.Manager
+	Kubernetes *k8s.Kubernetes
 }
 
 var cassandraInit2CommandTemplate = template.Must(template.New("").Parse(
@@ -197,6 +201,21 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	cci := instance.ConfigurationParameters()
+	cc := cci.(v1alpha1.CassandraConfiguration)
+	svc := r.Kubernetes.Service(request.Name, corev1.ServiceTypeClusterIP, int32(*cc.Port), instanceType, instance)
+
+	if err := svc.EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	clusterIP := svc.ClusterIP()
+	if clusterIP == "" {
+		log.Info(fmt.Sprintf("cassandra service is not ready, clusterIP is empty"))
+		return reconcile.Result{}, nil
+	}
+	instance.Status.ClusterIP = clusterIP
 
 	statefulSet := GetSTS()
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
@@ -499,7 +518,8 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		if instance.Spec.CommonConfiguration.HostNetwork != nil {
 			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
 		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		crt := certificates.NewCertificateWithServiceIP(r.Client, r.Scheme, instance, podIPList, clusterIP, instanceType, hostNetwork)
+		if err = crt.EnsureExistsAndIsSigned(); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
