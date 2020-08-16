@@ -45,6 +45,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress str
 		KeystonePort:         keystonePort,
 		KeystoneAuthProtocol: keystoneAuthProtocol,
 		ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
+		PostgresIP:           postgresAddress,
 	}
 
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {

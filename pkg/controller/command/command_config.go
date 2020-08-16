@@ -26,6 +26,7 @@ type commandConf struct {
 	KeystonePort         int
 	KeystoneAuthProtocol string
 	ContrailVersion      string
+	PostgresIP           string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {

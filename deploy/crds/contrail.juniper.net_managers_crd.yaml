@@ -420,6 +420,10 @@ spec:
                           items:
                             type: string
                           type: array
+                        upgradeState:
+                          type: string
+                      required:
+                      - upgradeState
                       type: object
                   type: object
                 config:

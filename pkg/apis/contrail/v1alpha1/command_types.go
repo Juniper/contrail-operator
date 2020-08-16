@@ -44,9 +44,16 @@ type CommandConfiguration struct {
 // CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
 type CommandStatus struct {
-	Active bool     `json:"active,omitempty"`
-	IPs    []string `json:"ips,omitempty"`
+	Active       bool     `json:"active,omitempty"`
+	IPs          []string `json:"ips,omitempty"`
+	UpgradeState string   `json:"upgradeState"`
 }
+
+const (
+	CommandNotUpgrading               = "not upgrading"
+	CommandShuttingDownBeforeUpgrade  = "shutting down before upgrade"
+	CommandStartingUpgradedDeployment = "starting upgraded deployment"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

@@ -187,7 +187,7 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -203,7 +203,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 			},
-			expectedStatus:     contrail.CommandStatus{},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(true),
@@ -219,7 +219,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 			},
-			expectedStatus:     contrail.CommandStatus{},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -237,7 +237,7 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -255,7 +255,7 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -274,7 +274,8 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active: true,
+				Active:       true,
+				UpgradeState: contrail.CommandNotUpgrading,
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedPostgres:   newPostgresWithOwner(true),
@@ -472,7 +473,7 @@ func newPodList() *core.PodList {
 
 func newPostgresWithOwner(active bool) *contrail.Postgres {
 	falseVal := false
-	psql := newPostgres(active)
+	psql := newPostgres(true)
 	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
 		{
 			APIVersion:         "contrail.juniper.net/v1alpha1",
@@ -606,16 +607,6 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							Image:           "registry:5000/contrail-command",
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-							Env: []core.EnvVar{
-								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-							},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "command-command-volume",
 								MountPath: "/etc/contrail",
