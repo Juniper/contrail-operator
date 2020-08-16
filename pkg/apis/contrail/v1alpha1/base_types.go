@@ -389,7 +389,7 @@ func PrepareIntendedDeployment(instanceDeployment *appsv1.Deployment,
 		instanceType: request.Name}
 	intendedDeployment.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
-	intendedDeployment.Spec.Strategy = appsv1.DeploymentStrategy{}
+	intendedDeployment.Spec.Strategy = instanceDeployment.Spec.Strategy
 	if err := controllerutil.SetControllerReference(object, intendedDeployment, scheme); err != nil {
 		return nil, err
 	}
