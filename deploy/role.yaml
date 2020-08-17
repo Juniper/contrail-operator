@@ -72,5 +72,6 @@ rules:
   - contrail
   resources:
   - '*'
+  - contrailcnis
   verbs:
   - '*'
