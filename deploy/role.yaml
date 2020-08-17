@@ -60,6 +60,7 @@ rules:
   - swifts
   - memcacheds
   - fernetkeymanagers
+  - patronis
   verbs:
   - '*'
 - apiGroups:
