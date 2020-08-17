@@ -2,11 +2,13 @@ package patroni
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -15,6 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_patroni")
@@ -46,7 +51,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Patroni
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrailv1alpha1.Patroni{},
 	})
@@ -73,8 +78,8 @@ func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcilePatro
 type ReconcilePatroni struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client     client.Client
+	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
 }
 
@@ -101,6 +106,26 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	err = r.ensureServiceExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	err = r.ensureServiceAccountExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	err = r.ensureRoleExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	err = r.ensureRoleBindingExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// TODO - create Services, service account, role and role binding
 	// TODO - create STS
 	// TODO - create PVs and PVCs
@@ -113,4 +138,134 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - master exposed as ClusterIP service
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcilePatroni) ensureServiceExists(instance *contrailv1alpha1.Patroni) error {
+	service := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-service",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
+		service.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		service.Spec = core.ServiceSpec{
+			Type: core.ServiceTypeClusterIP,
+			Ports: []core.ServicePort{{
+				Port: 5432,
+				TargetPort: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: 5432,
+				},
+			}},
+		}
+		return controllerutil.SetControllerReference(instance, service, r.scheme)
+	})
+
+	return err
+}
+
+func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrailv1alpha1.Patroni) error {
+	serviceAccount := &core.ServiceAccount{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-service-account",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serviceAccount, func() error {
+		serviceAccount.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		return controllerutil.SetControllerReference(instance, serviceAccount, r.scheme)
+	})
+
+	return err
+}
+
+func (r *ReconcilePatroni) ensureRoleExists(instance *contrailv1alpha1.Patroni) error {
+	role := &rbac.Role{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-role",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, role, func() error {
+		role.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		role.Rules = []rbac.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Verbs: []string{
+					"create",
+					"get",
+					"list",
+					"patch",
+					"update",
+					"watch",
+					"delete",
+					"deletecollection",
+				},
+				Resources: []string{"configmaps"},
+			},
+			{
+				APIGroups: []string{""},
+				Verbs: []string{
+					"get",
+					"patch",
+					"update",
+					"create",
+					"list",
+					"watch",
+					"delete",
+					"deletecollection",
+				},
+				Resources: []string{"endpoints"},
+			},
+			{
+				APIGroups: []string{""},
+				Verbs: []string{
+					"get",
+					"list",
+					"patch",
+					"update",
+					"watch",
+				},
+				Resources: []string{"pods"},
+			},
+			{
+				APIGroups: []string{""},
+				Verbs: []string{
+					"create",
+				},
+				Resources: []string{"services"},
+			},
+		}
+		return controllerutil.SetControllerReference(instance, role, r.scheme)
+	})
+
+	return err
+}
+func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Patroni) error {
+	rb := &rbac.RoleBinding{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-role-binding",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, rb, func() error {
+		rb.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		rb.Subjects = []rbac.Subject{{
+			Kind:      "ServiceAccount",
+			Name:      instance.Name + "-patroni-service-account",
+		}}
+		rb.RoleRef = rbac.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     instance.Name + "-patroni-role",
+		}
+		return controllerutil.SetControllerReference(instance, rb, r.scheme)
+	})
+
+	return err
 }
