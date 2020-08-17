@@ -1,0 +1,7 @@
+apiVersion: contrail/v1alpha1
+kind: ContrailCNI
+metadata:
+  name: example-contrailcni
+spec:
+  # Add fields here
+  size: 3
