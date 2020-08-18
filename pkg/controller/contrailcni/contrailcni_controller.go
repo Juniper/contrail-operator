@@ -6,35 +6,38 @@ import (
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
 
 var log = logf.Log.WithName("controller_contrailcni")
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
 // Add creates a new ContrailCNI Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) error {
+	return add(mgr, newReconciler(mgr, clusterInfo))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileContrailCNI{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+func newReconciler(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), clusterInfo)
+}
+
+// NewReconciler returns a new reconcile.Reconciler
+func NewReconciler(client client.Client, scheme *runtime.Scheme, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
+	return &ReconcileContrailCNI{Client: client, Scheme: scheme, ClusterInfo: clusterInfo}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -61,6 +64,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	srcDS := &source.Kind{Type: &appsv1.DaemonSet{}}
+	dsHandler := &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.ContrailCNI{},
+	}
+	dsPred := utils.DSStatusChange(utils.ContrailCNIGroupKind())
+	if err = c.Watch(srcDS, dsHandler, dsPred); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -71,83 +84,66 @@ var _ reconcile.Reconciler = &ReconcileContrailCNI{}
 type ReconcileContrailCNI struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	Client client.Client
+	Scheme *runtime.Scheme
+	ClusterInfo v1alpha1.VrouterClusterInfo
 }
 
 // Reconcile reads that state of the cluster for a ContrailCNI object and makes changes based on the state read
 // and what is in the ContrailCNI.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ContrailCNI")
+	instanceType := "contrailcni"
+	instance := &v1alpha1.ContrailCNI{}
+	ctx := context.TODO()
 
-	// Fetch the ContrailCNI instance
-	instance := &contrailv1alpha1.ContrailCNI{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
-	}
-
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
-	// Set ContrailCNI instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Pod created successfully - don't requeue
+	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
-	} else if err != nil {
+	}
+
+	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
+	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
-	return reconcile.Result{}, nil
-}
+	cniDirs := CniDirs{
+		BinariesDirectory: r.ClusterInfo.CNIBinariesDirectory(),
+		DeploymentType:    r.ClusterInfo.DeploymentType(),
+	}
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *contrailv1alpha1.ContrailCNI) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
+	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType, configMap.Name)
+	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+		return reconcile.Result{}, err
 	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
+
+	for idx, container := range daemonSet.Spec.Template.Spec.InitContainers {
+		if container.Name == "vroutercni" {
+			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+			if instanceContainer != nil {
+				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
+			}
+		}
 	}
+
+	_, err = ctrl.CreateOrUpdate(ctx, r.Client, daemonSet, func() error {
+		return controllerutil.SetControllerReference(instance, daemonSet, r.Scheme)
+	})
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if instance.Status.Active == nil {
+		active := false
+		instance.Status.Active = &active
+	}
+	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, daemonSet, request, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, nil
 }

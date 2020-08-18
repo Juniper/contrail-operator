@@ -22,6 +22,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
+	"github.com/Juniper/contrail-operator/pkg/controller/contrailcni"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
@@ -128,6 +129,11 @@ func main() {
 	}
 
 	if err := vrouter.Add(mgr, vrouterClusterInfo); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := contrailcni.Add(mgr, vrouterClusterInfo); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
