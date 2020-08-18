@@ -6,7 +6,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GetSTS(serviceAccount string) *appsv1.StatefulSet {
+func GetSTS(resource meta.ObjectMeta, serviceAccount string) *appsv1.StatefulSet {
 	var replicas = int32(1)
 
 	var podIPEnv = core.EnvVar{
@@ -51,8 +51,8 @@ func GetSTS(serviceAccount string) *appsv1.StatefulSet {
 
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "patroni",
-			Namespace: "default",
+			Name:      "patroni-" resource.Name,
+			Namespace: resource.Namespace,
 		},
 		Spec: apps.StatefulSetSpec{
 			Selector:    &stsSelector,
