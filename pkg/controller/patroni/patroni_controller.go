@@ -106,7 +106,7 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	err = r.ensureServiceExists(instance)
+	err = r.ensureServicesExist(instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -126,8 +126,8 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	// TODO - create Services, service account, role and role binding
-	// TODO - create STS
+	// TODO - create Service, service account, role and role binding
+	// TODO - create STS -
 	// TODO - create PVs and PVCs
 	// TODO - create secret with passwords
 	// TODO - create certs, mount them to sts and point their location in patroni container
@@ -136,11 +136,12 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// REQUIREMENTS:
 	// - host networking
 	// - master exposed as ClusterIP service
+	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcilePatroni) ensureServiceExists(instance *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patroni) error {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-service",
@@ -149,7 +150,7 @@ func (r *ReconcilePatroni) ensureServiceExists(instance *contrailv1alpha1.Patron
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		service.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
 		service.Spec = core.ServiceSpec{
 			Type: core.ServiceTypeClusterIP,
 			Ports: []core.ServicePort{{
@@ -161,6 +162,54 @@ func (r *ReconcilePatroni) ensureServiceExists(instance *contrailv1alpha1.Patron
 			}},
 		}
 		return controllerutil.SetControllerReference(instance, service, r.scheme)
+	})
+
+	if err != nil {
+		return err
+	}
+
+	endpoints := &core.Endpoints{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-service",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, endpoints, func() error {
+		endpoints.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		return controllerutil.SetControllerReference(instance, service, r.scheme)
+	})
+
+	if err != nil {
+		return err
+	}
+
+	serviceRepl := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      instance.Name + "-patroni-service-replica",
+			Namespace: instance.Namespace,
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
+		serviceRepl.ObjectMeta.Labels = map[string]string{"app": "patroni", "role": "replica", "cluster-manager": "patroni", "patroni": instance.Name}
+		serviceRepl.Spec = core.ServiceSpec{
+			Selector: map[string]string{
+				"app": "patroni",
+				"contrail_manager": "patroni",
+				"patroni": instance.Name,
+				"role": "replica",
+			},
+			Type: core.ServiceTypeClusterIP,
+			Ports: []core.ServicePort{{
+				Port: 5432,
+				TargetPort: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: 5432,
+				},
+			}},
+		}
+		return controllerutil.SetControllerReference(instance, serviceRepl, r.scheme)
 	})
 
 	return err
@@ -175,7 +224,7 @@ func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrailv1alpha1
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serviceAccount, func() error {
-		serviceAccount.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		serviceAccount.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
 		return controllerutil.SetControllerReference(instance, serviceAccount, r.scheme)
 	})
 
@@ -191,7 +240,7 @@ func (r *ReconcilePatroni) ensureRoleExists(instance *contrailv1alpha1.Patroni) 
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, role, func() error {
-		role.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		role.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
 		role.Rules = []rbac.PolicyRule{
 			{
 				APIGroups: []string{""},
@@ -254,7 +303,7 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Pa
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, rb, func() error {
-		rb.ObjectMeta.Labels = map[string]string{"app": "patroni"}
+		rb.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
 		rb.Subjects = []rbac.Subject{{
 			Kind:      "ServiceAccount",
 			Name:      instance.Name + "-patroni-service-account",

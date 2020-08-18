@@ -43,14 +43,27 @@ func TestReconcilePatroni_Reconcile(t *testing.T) {
 		_, err := r.Reconcile(req)
 		assert.NoError(t, err)
 
-		t.Run("service should be created", func(t *testing.T) {
+		t.Run("services and endpoint should be created", func(t *testing.T) {
 			name := types.NamespacedName{
 				Name:      namespacedName.Name + "-patroni-service",
 				Namespace: namespacedName.Namespace,
 			}
 
+			nameRepl := types.NamespacedName{
+				Name:      namespacedName.Name + "-patroni-service-replica",
+				Namespace: namespacedName.Namespace,
+			}
+
 			service := core.Service{}
 			err = cl.Get(context.Background(), name, &service)
+			assert.NoError(t, err)
+
+			serviceRepl := core.Service{}
+			err = cl.Get(context.Background(), nameRepl, &serviceRepl)
+			assert.NoError(t, err)
+
+			endpoint := core.Endpoints{}
+			err = cl.Get(context.Background(), name, &endpoint)
 			assert.NoError(t, err)
 		})
 
