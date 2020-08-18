@@ -93,11 +93,13 @@ func main() {
 				}
 				client, err := CreateRestClient(config)
 				if err != nil {
-					log.Fatalf("rest client creation failed: %v", err)
+					log.Printf("rest client creation failed: %v", err)
+                                        continue
 				}
 				clientset, restClient, err := kubeClient(config)
 				if err != nil {
-					log.Fatalf("kubernates client creation failed: %v", err)
+					log.Printf("kubernates client creation failed: %v", err)
+                                        continue
 				}
 				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
 				switch config.NodeType {
