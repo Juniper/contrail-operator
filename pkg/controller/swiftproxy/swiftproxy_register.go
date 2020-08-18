@@ -93,7 +93,7 @@ func (r *ReconcileSwiftProxy) ensureRegisterJobConfig(
 }
 
 func (r *ReconcileSwiftProxy) isSwiftRegistered(sp *contrail.SwiftProxy, k *contrail.Keystone, swiftSecret *core.Secret) (bool, error) {
-	keystoneClient, err := keystone.NewClient(r.mgrConfig, k)
+	keystoneClient, err := keystone.NewClient(r.client, r.scheme, r.mgrConfig, k)
 	if err != nil {
 		return false, err
 	}

@@ -3,6 +3,7 @@ package keystone
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,22 +11,36 @@ import (
 	"net/http"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewClient(config *rest.Config, k *contrail.Keystone) (*Client, error) {
+func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Config, k *contrail.Keystone) (*Client, error) {
 	if k.Status.External {
-		return &Client{client: NewDirectClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort)}, nil
+		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, "keystone")
+		caBundle, _ := caCertificate.GetCaCert()
+		return &Client{
+			client:       NewExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
+			keystoneConf: &k.Spec.ServiceConfiguration,
+		}, nil
 	}
 	proxy, err := kubeproxy.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	if k.Spec.ServiceConfiguration.AuthProtocol == "https" {
-		return &Client{client: proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port)}, nil
+		return &Client{
+			client:       proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
+			keystoneConf: &k.Spec.ServiceConfiguration,
+		}, nil
 	}
-	return &Client{client: proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port)}, nil
+	return &Client{
+		client:       proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
+		keystoneConf: &k.Spec.ServiceConfiguration,
+	}, nil
 }
 
 type KeystoneClient interface {
@@ -34,31 +49,45 @@ type KeystoneClient interface {
 }
 
 type Client struct {
-	client KeystoneClient
+	client       KeystoneClient
+	keystoneConf *contrail.KeystoneConfiguration
 }
 
-type DirectClient struct {
+type ExtKeystoneClient struct {
 	url    string
 	client http.Client
 }
 
-func NewDirectClient(protocol string, address string, port int) *DirectClient {
-	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
-	// Temporary don't validate certificate
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func NewExtKeystoneClient(protocol string, address string, port int, ca []byte) *ExtKeystoneClient {
+	var httpClient http.Client
+
+	if protocol == "https" && ca != nil {
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+		rootCAs.AppendCertsFromPEM(ca)
+		config := &tls.Config{
+			RootCAs: rootCAs,
+		}
+		tr := &http.Transport{TLSClientConfig: config}
+		httpClient = http.Client{Transport: tr}
+	} else {
+		httpClient = http.Client{}
 	}
-	return &DirectClient{
+
+	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
+	return &ExtKeystoneClient{
 		url:    url,
-		client: http.Client{Transport: tr},
+		client: httpClient,
 	}
 }
 
-func (c *DirectClient) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
+func (c *ExtKeystoneClient) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
 	return http.NewRequest(method, c.url+path, body)
 }
 
-func (c *DirectClient) Do(req *http.Request) (*http.Response, error) {
+func (c *ExtKeystoneClient) Do(req *http.Request) (*http.Response, error) {
 	return c.client.Do(req)
 }
 
@@ -70,9 +99,9 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username
-	kar.Auth.Identity.Password.User.Domain.ID = "default"
+	kar.Auth.Identity.Password.User.Domain.ID = c.keystoneConf.UserDomainID
 	kar.Auth.Identity.Password.User.Password = password
-	kar.Auth.Scope.Project.Domain.ID = "default"
+	kar.Auth.Scope.Project.Domain.ID = c.keystoneConf.ProjectDomainID
 	kar.Auth.Scope.Project.Name = project
 	karBody, err := json.Marshal(kar)
 	if err != nil {

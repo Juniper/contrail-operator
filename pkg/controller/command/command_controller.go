@@ -490,7 +490,7 @@ func (r *ReconcileCommand) updateStatus(
 }
 
 func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, k *contrail.Keystone, sPort int, adminPass *core.Secret) error {
-	keystoneClient, err := keystone.NewClient(r.config, k)
+	keystoneClient, err := keystone.NewClient(r.client, r.scheme, r.config, k)
 	if err != nil {
 		return err
 	}
