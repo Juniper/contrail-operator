@@ -1,7 +1,16 @@
 package v1alpha1
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -9,16 +18,19 @@ import (
 
 // ContrailCNISpec defines the desired state of ContrailCNI
 type ContrailCNISpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration ContrailCNIConfiguration `json:"serviceConfiguration"`
+}
+
+//ContrailCNIConfiguration is the Service Configuration for ContrailCNI
+// +k8s:openapi-gen=true
+type ContrailCNIConfiguration struct {
+	Containers          []*Container  `json:"containers,omitempty"`
 }
 
 // ContrailCNIStatus defines the observed state of ContrailCNI
 type ContrailCNIStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	Active *bool             `json:"active,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -45,4 +57,57 @@ type ContrailCNIList struct {
 
 func init() {
 	SchemeBuilder.Register(&ContrailCNI{}, &ContrailCNIList{})
+}
+
+func (c *ContrailCNI) CreateConfigMap(configMapName string,
+	client client.Client,
+	scheme *runtime.Scheme,
+	request reconcile.Request) (*corev1.ConfigMap, error) {
+	return CreateConfigMap(configMapName,
+		client,
+		scheme,
+		request,
+		"contrailcni",
+		c)
+}
+
+// PrepareDaemonSet prepares the intended podList.
+func (c *ContrailCNI) PrepareDaemonSet(ds *appsv1.DaemonSet,
+	commonConfiguration *PodConfiguration,
+	request reconcile.Request,
+	scheme *runtime.Scheme,
+	client client.Client) error {
+	instanceType := "contrailcni"
+	SetDSCommonConfiguration(ds, commonConfiguration)
+	ds.SetName(request.Name + "-" + instanceType + "-daemonset")
+	ds.SetNamespace(request.Namespace)
+	ds.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	ds.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name}
+	ds.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	err := controllerutil.SetControllerReference(c, ds, scheme)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetInstanceActive sets the instance to active.
+func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus *bool, ds *appsv1.DaemonSet, request reconcile.Request, object runtime.Object) error {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: ds.Name, Namespace: request.Namespace},
+		ds); err != nil {
+		return err
+	}
+	active := false
+	if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+		active = true
+	}
+
+	*activeStatus = active
+	if err := client.Status().Update(context.TODO(), object); err != nil {
+		return err
+	}
+	return nil
 }

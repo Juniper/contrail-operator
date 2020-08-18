@@ -25,6 +25,7 @@ const (
 	VROUTER     = "Vrouter.contrail.juniper.net"
 	KUBEMANAGER = "Kubemanager.contrail.juniper.net"
 	MANAGER     = "Manager.contrail.juniper.net"
+	CONTRAILCNI = "ContrailCNI.contrail.juniper.net"
 	REPLICASET  = "ReplicaSet.apps"
 	DEPLOYMENT  = "Deployment.apps"
 )
@@ -86,6 +87,11 @@ func ManagerGroupKind() schema.GroupKind {
 // DeploymentGroupKind returns group kind.
 func DeploymentGroupKind() schema.GroupKind {
 	return schema.ParseGroupKind(DEPLOYMENT)
+}
+
+// ContrailCNIGroupKind returns group kind.
+func ContrailCNIGroupKind() schema.GroupKind {
+	return schema.ParseGroupKind(CONTRAILCNI)
 }
 
 // DeploymentStatusChange monitors per application size change.

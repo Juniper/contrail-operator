@@ -12,7 +12,7 @@ type CniDirs struct {
 }
 
 //GetDaemonset returns DaemonSet object for vRouter CNI
-func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
+func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName string) *apps.DaemonSet {
 	var trueVal = true
 
 	var podIPEnv = core.EnvVar{
@@ -23,6 +23,14 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			},
 		},
 	}
+
+	var envFromConfigMap = []core.EnvFromSource{{
+		ConfigMapRef: &core.ConfigMapEnvSource{
+			LocalObjectReference: core.LocalObjectReference{
+				Name: requestName + "-" + instanceType + "-configmap-1",
+			},
+		},
+	}}
 
 	var podInitContainers = []core.Container{
 		{
@@ -38,6 +46,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			Env: []core.EnvVar{
 				podIPEnv,
 			},
+			EnvFrom: envFromConfigMap,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
 					Name:      "var-lib-contrail",
@@ -59,6 +68,10 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 					Name:      "vrouter-logs",
 					MountPath: "/var/log/contrail",
 				},
+				core.VolumeMount{
+					Name:      requestName + "-" + instanceType + "-volume",
+					MountPath: "/etc/contrailconfigmaps",
+				},
 			},
 			ImagePullPolicy: "Always",
 			SecurityContext: &core.SecurityContext{
@@ -71,7 +84,7 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 		{
 			Name: "contrail-cni-dummy-container",
 			Image: "busybox",
-			Command: "tail -f /dev/null",
+			Command: []string{"tail", "-f", "/dev/null"},
 		},
 	}
 
@@ -113,6 +126,16 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: cniDir.BinariesDirectory,
+				},
+			},
+		},
+		core.Volume{
+			Name: requestName + "-" + instanceType + "-volume",
+			VolumeSource: core.VolumeSource{
+				ConfigMap: &core.ConfigMapVolumeSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: configMapName,
+					},
 				},
 			},
 		},
