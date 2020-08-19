@@ -264,3 +264,12 @@ spec:
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
               - name: swiftAccountServer
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
+        commonConfiguration:
+          activate: true
+          create: true
+          hostNetwork: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
