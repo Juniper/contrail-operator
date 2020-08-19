@@ -18,12 +18,38 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 		},
 	}
 
+	var namespaceEnv = core.EnvVar{
+		Name: "patroni-namespace",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.namespace",
+			},
+		},
+	}
+
+	var labelsEnv = core.EnvVar{
+		Name: "patroni-labels",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.labels",
+			},
+		},
+	}
+
+	var endpointsEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_USE_ENDPOINTS",
+		Value: "true",
+	}
+
 	var podContainers = []core.Container{
 		{
 			Name:  "patroni",
 			Image: "svl-artifactory.juniper.net/common-docker-third-party/contrail/patroni:1.6.5",
 			Env: []core.EnvVar{
 				podIPEnv,
+				namespaceEnv,
+				labelsEnv,
+				endpointsEnv,
 			},
 			ImagePullPolicy: "Always",
 		},
@@ -31,6 +57,7 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 
 	var podSpec = core.PodSpec{
 		Containers:         podContainers,
+		HostNetwork:        true,
 		NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
 		ServiceAccountName: serviceAccount,
 	}
@@ -51,7 +78,7 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "patroni-" + resource.Name,
+			Name:      resource.Name + "-patroni-service",
 			Namespace: resource.Namespace,
 		},
 		Spec: apps.StatefulSetSpec{

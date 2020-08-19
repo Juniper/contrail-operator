@@ -2,6 +2,7 @@ package patroni
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -20,6 +21,7 @@ import (
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 )
 
 var log = logf.Log.WithName("controller_patroni")
@@ -106,6 +108,10 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if err := r.ensureLabelExists(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	err = r.ensureServicesExist(instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -138,7 +144,21 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - master exposed as ClusterIP service
 	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
+	statefulSet := GetSTS(instance.ObjectMeta, "patroni-service-account")
+	if err := contrailv1alpha1.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, "patroni", request, r.scheme, instance, r.client, true); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcilePatroni) ensureLabelExists(p *contrailv1alpha1.Patroni) error {
+	if len(p.Labels) != 0 {
+		return nil
+	}
+
+	p.Labels = contraillabel.New(contrailv1alpha1.PatroniInstanceType, p.Name)
+	return r.client.Update(context.Background(), p)
 }
 
 func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patroni) error {
@@ -195,10 +215,10 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 		serviceRepl.ObjectMeta.Labels = map[string]string{"app": "patroni", "role": "replica", "cluster-manager": "patroni", "patroni": instance.Name}
 		serviceRepl.Spec = core.ServiceSpec{
 			Selector: map[string]string{
-				"app": "patroni",
+				"app":              "patroni",
 				"contrail_manager": "patroni",
-				"patroni": instance.Name,
-				"role": "replica",
+				"patroni":          instance.Name,
+				"role":             "replica",
 			},
 			Type: core.ServiceTypeClusterIP,
 			Ports: []core.ServicePort{{
@@ -305,8 +325,8 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Pa
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, rb, func() error {
 		rb.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
 		rb.Subjects = []rbac.Subject{{
-			Kind:      "ServiceAccount",
-			Name:      instance.Name + "-patroni-service-account",
+			Kind: "ServiceAccount",
+			Name: instance.Name + "-patroni-service-account",
 		}}
 		rb.RoleRef = rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",

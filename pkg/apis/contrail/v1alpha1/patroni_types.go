@@ -8,7 +8,7 @@ type PatroniConfiguration struct{}
 
 // PatroniSpec defines the desired state of Patroni
 type PatroniSpec struct {
-	CommonConfiguration  PodConfiguration    `json:"commonConfiguration,omitempty"`
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration PatroniConfiguration `json:"serviceConfiguration"`
 }
 
@@ -36,6 +36,9 @@ type PatroniList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Patroni `json:"items"`
 }
+
+// PatroniInstanceType is type unique name used for labels
+const PatroniInstanceType = "Patroni"
 
 func init() {
 	SchemeBuilder.Register(&Patroni{}, &PatroniList{})
