@@ -69,8 +69,8 @@ spec:
                   fieldPath: status.podIP
           imagePullPolicy: Always
           volumeMounts:
-            - mountPath: /var/log/contrail
-              name: config-logs
+            - mountPath: /var/log/contrail/config-device-manager
+              name: config-device-manager-logs
         - name: dnsmasq
           image: docker.io/michaelhenkel/contrail-external-dnsmasq:5.2.0-dev1
           env:
@@ -225,6 +225,10 @@ spec:
             path: /var/log/contrail/config
             type: ""
           name: config-logs
+        - hostPath:
+            path: /var/log/contrail/config-device-manager
+            type: ""
+          name: config-device-manager-logs
         - hostPath:
             path: /var/contrail/crashes
             type: ""
