@@ -70,6 +70,9 @@ kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
+enable_latency_stats_log=False
+enable_api_stats_log=True
+
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=True
@@ -89,7 +92,7 @@ api_server_use_ssl=True
 analytics_server_ip={{ .AnalyticsServerList}}
 analytics_server_port=8081
 push_mode=1
-log_file=/var/log/contrail/contrail-device-manager.log
+log_file=/var/log/contrail/config-device-manager/contrail-device-manager.log
 log_level={{ .LogLevel }}
 log_local=1
 cassandra_server_list={{ .CassandraServerList }}
@@ -139,7 +142,7 @@ region_name = {{ .KeystoneRegion }}`))
 
 // FabricAnsibleConf is the template of the DeviceManager configuration for fabric management.
 var FabricAnsibleConf = template.Must(template.New("").Parse(`[DEFAULTS]
-log_file = /var/log/contrail/contrail-fabric-ansible.log
+log_file = /var/log/contrail/config-device-manager/contrail-fabric-ansible.log
 log_level={{ .LogLevel }}
 log_local=1
 collectors={{ .CollectorServerList }}
