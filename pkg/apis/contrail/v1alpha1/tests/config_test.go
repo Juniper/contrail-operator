@@ -414,6 +414,10 @@ func SetupEnv() Environment {
 		podTemplate.Name = pod
 		podTemplate.Namespace = "default"
 		podTemplate.Status.PodIP = ip
+		podTemplate.Status.Conditions = []corev1.PodCondition{{
+			Type:   corev1.PodReady,
+			Status: corev1.ConditionTrue,
+		}}
 		cassandraPodItems = append(cassandraPodItems, podTemplate)
 	}
 	cassandraPodList := corev1.PodList{
