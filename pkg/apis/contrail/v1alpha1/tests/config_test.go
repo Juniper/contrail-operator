@@ -960,6 +960,9 @@ kombu_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+enable_latency_stats_log=False
+enable_api_stats_log=True
+
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=True
@@ -1225,7 +1228,7 @@ api_server_use_ssl=True
 analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 analytics_server_port=8081
 push_mode=1
-log_file=/var/log/contrail/contrail-device-manager.log
+log_file=/var/log/contrail/config-device-manager/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
@@ -1736,7 +1739,7 @@ api_server_use_ssl=True
 analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
 analytics_server_port=8081
 push_mode=1
-log_file=/var/log/contrail/contrail-device-manager.log
+log_file=/var/log/contrail/config-device-manager/contrail-device-manager.log
 log_level=SYS_NOTICE
 log_local=1
 cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
