@@ -125,7 +125,6 @@ func newCassandra() *contrail.Cassandra {
 		},
 		Spec: contrail.CassandraSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
@@ -239,9 +238,10 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get statefulset: (%v)", err)
 	}
+
 	// Check if the quantity of Replicas for this statefulset is equals the specification.
-	ssize := *sts.Spec.Replicas
-	if ssize != replicas {
-		t.Errorf("sts size (%d) is not the expected size (%d)", ssize, replicas)
-	}
+	assert.Equal(t, replicas, *sts.Spec.Replicas)
+
+	// Check if the pod management policy is set to ordered ready.
+	assert.Equal(t, apps.OrderedReadyPodManagement, sts.Spec.PodManagementPolicy)
 }
