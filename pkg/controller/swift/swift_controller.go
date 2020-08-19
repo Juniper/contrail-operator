@@ -349,7 +349,7 @@ func (r *ReconcileSwift) startRingReconcilingJob(ringConfigMapName, ringType str
 			return err
 		}
 	}
-	job, err := theRing.BuildJob(jobName)
+	job, err := theRing.BuildJob(jobName, swift.Spec.CommonConfiguration.NodeSelector)
 	if err != nil {
 		return err
 	}
