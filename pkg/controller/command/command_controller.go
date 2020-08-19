@@ -273,6 +273,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		},
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
+	deployment.Spec.Template.Spec.NodeSelector = command.Spec.CommonConfiguration.NodeSelector
 
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
 		_, err = command.PrepareIntendedDeployment(deployment,
