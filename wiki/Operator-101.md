@@ -23,7 +23,7 @@ Every custom resource built with operator contains 2 elements.<br/>
 First element is API which defines how resource is defined and what's it's structure.
 This definition is used afterwards by Operator Framework to generate CRD manifests applied on a cluster and defines how user should write manifests to deploy custom resource successfully.<br/>
 Second element is controller which runs on an operator pod and handles logic of custom resource.
-Every controller has Reconcile method which is run periodically and contain code which defines what to do every loop.
+Every controller use Kubernetes watch API to observe state of the cluster and if necessary trigger Reconcile method containing code which defines what to do.
 Commonly, it creates, deletes or updates standard Kubernetes resources like pods, sets, secrets etc.
 
 ## How does it work here?
