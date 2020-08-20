@@ -122,15 +122,6 @@ func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	envVariablesConfigMapName := request.Name + "-" + instanceType + "-env"
-	envVariablesConfigMap := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
-		envVariablesConfigMap)
-	if err != nil {
-		return err
-	}
-
 	clusterName, err := clusterInfo.KubernetesClusterName()
 	if err != nil {
 		return err
@@ -140,16 +131,6 @@ func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
 	vrouterConfig := vrouterConfigInstance.(VrouterConfiguration)
 
 	var data = make(map[string]string)
-	var envVariables = make(map[string]string)
-	var physicalInterface = vrouterConfig.PhysicalInterface
-	envVariables["PHYSICAL_INTERFACE"] = physicalInterface
-	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
-	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
-	//This vrouter kernel module option has to be enabled so that flows will be deleted after
-	//receiving tcp reset. Without that, in case of many linklocal connections, many file
-	//descriptors were created and with enough connections the fd limit was hit what caused a
-	//restart of the vrouter agent. In future releases it may be set as a default option.
-	envVariables["VROUTER_MODULE_OPTIONS"] = "vr_close_flow_on_tcp_rst=1"
 	var contrailCNIBuffer bytes.Buffer
 	configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
 		KubernetesClusterName string
@@ -162,11 +143,6 @@ func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
 
 	configMapInstanceDynamicConfig.Data = data
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
-	envVariablesConfigMap.Data = envVariables
-	err = client.Update(context.TODO(), envVariablesConfigMap)
 	if err != nil {
 		return err
 	}

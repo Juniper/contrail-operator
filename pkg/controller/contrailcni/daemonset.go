@@ -24,14 +24,6 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 		},
 	}
 
-	var envFromConfigMap = []core.EnvFromSource{{
-		ConfigMapRef: &core.ConfigMapEnvSource{
-			LocalObjectReference: core.LocalObjectReference{
-				Name: requestName + "-" + instanceType + "-env",
-			},
-		},
-	}}
-
 	var podInitContainers = []core.Container{
 		{
 			Name:  "vroutercni",
@@ -46,7 +38,6 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 			Env: []core.EnvVar{
 				podIPEnv,
 			},
-			EnvFrom: envFromConfigMap,
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
 					Name:      "var-lib-contrail",

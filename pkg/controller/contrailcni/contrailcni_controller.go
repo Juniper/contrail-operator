@@ -111,11 +111,6 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	_, err = instance.CreateConfigMap(request.Name+"-"+instanceType+"-env", r.Client, r.Scheme, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	cniDirs := CniDirs{
 		BinariesDirectory: r.ClusterInfo.CNIBinariesDirectory(),
 		DeploymentType:    r.ClusterInfo.DeploymentType(),
