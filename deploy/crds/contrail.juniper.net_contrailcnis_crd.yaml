@@ -110,6 +110,8 @@ spec:
               description: ContrailCNIConfiguration is the Service Configuration for
                 ContrailCNI
               properties:
+                cniMetaPlugin:
+                  type: string
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -124,6 +126,10 @@ spec:
                         type: string
                     type: object
                   type: array
+                physicalInterface:
+                  type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - serviceConfiguration

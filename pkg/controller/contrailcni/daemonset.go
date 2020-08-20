@@ -12,7 +12,7 @@ type CniDirs struct {
 }
 
 //GetDaemonset returns DaemonSet object for vRouter CNI
-func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName string) *apps.DaemonSet {
+func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.DaemonSet {
 	var trueVal = true
 
 	var podIPEnv = core.EnvVar{
@@ -27,7 +27,7 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 	var envFromConfigMap = []core.EnvFromSource{{
 		ConfigMapRef: &core.ConfigMapEnvSource{
 			LocalObjectReference: core.LocalObjectReference{
-				Name: requestName + "-" + instanceType + "-configmap-1",
+				Name: requestName + "-" + instanceType + "-env",
 			},
 		},
 	}}
@@ -38,11 +38,11 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 			Image: "hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2008.54",
 			Command: []string{"sh", "-c",
 				"mkdir -p /host/etc_cni/net.d && " +
-				"mkdir -p /var/lib/contrail/ports/vm && " +
-				"cp -f /usr/bin/contrail-k8s-cni /host/opt_cni_bin && " +
-				"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
-				"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
-				"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"},
+					"mkdir -p /var/lib/contrail/ports/vm && " +
+					"cp -f /usr/bin/contrail-k8s-cni /host/opt_cni_bin && " +
+					"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
+					"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"},
 			Env: []core.EnvVar{
 				podIPEnv,
 			},
@@ -82,8 +82,8 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 
 	var podContainers = []core.Container{
 		{
-			Name: "contrail-cni-dummy-container",
-			Image: "busybox",
+			Name:    "contrail-cni-dummy-container",
+			Image:   "busybox",
 			Command: []string{"tail", "-f", "/dev/null"},
 		},
 	}
@@ -134,13 +134,12 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: configMapName,
+						Name: requestName + "-" + instanceType + "-configuration",
 					},
 				},
 			},
 		},
 	}
-
 
 	var podTolerations = []core.Toleration{
 		core.Toleration{
@@ -163,7 +162,6 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 		Tolerations:    podTolerations,
 	}
 
-
 	var daemonSetSelector = meta.LabelSelector{
 		MatchLabels: map[string]string{"app": "contrailcni"},
 	}
@@ -173,14 +171,13 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType, configMapName strin
 		Spec:       podSpec,
 	}
 
-
 	var daemonSet = apps.DaemonSet{
 		TypeMeta: meta.TypeMeta{
 			Kind:       "DaemonSet",
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "vrouter",
+			Name:      "contrailcni",
 			Namespace: "default",
 		},
 		Spec: apps.DaemonSetSpec{

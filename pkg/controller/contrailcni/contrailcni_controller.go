@@ -4,13 +4,13 @@ import (
 	"context"
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -84,8 +84,8 @@ var _ reconcile.Reconciler = &ReconcileContrailCNI{}
 type ReconcileContrailCNI struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client      client.Client
+	Scheme      *runtime.Scheme
 	ClusterInfo v1alpha1.VrouterClusterInfo
 }
 
@@ -106,7 +106,12 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
+	_, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configuration", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	_, err = instance.CreateConfigMap(request.Name+"-"+instanceType+"-env", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -116,7 +121,7 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		DeploymentType:    r.ClusterInfo.DeploymentType(),
 	}
 
-	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType, configMap.Name)
+	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType)
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -128,6 +133,10 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 			}
 		}
+	}
+
+	if err = instance.InstanceConfiguration(request, r.Client, r.ClusterInfo, instanceType); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	_, err = ctrl.CreateOrUpdate(ctx, r.Client, daemonSet, func() error {
