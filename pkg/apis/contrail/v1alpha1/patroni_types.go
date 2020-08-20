@@ -38,7 +38,7 @@ type PatroniList struct {
 }
 
 // PatroniInstanceType is type unique name used for labels
-const PatroniInstanceType = "Patroni"
+const PatroniInstanceType = "patroni"
 
 func init() {
 	SchemeBuilder.Register(&Patroni{}, &PatroniList{})

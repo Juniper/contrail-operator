@@ -4,6 +4,8 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 )
 
 func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
@@ -64,16 +66,13 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 
 	var stsTemplate = core.PodTemplateSpec{
 		ObjectMeta: meta.ObjectMeta{
-			Labels: map[string]string{
-				"app":              "patroni",
-				"contrail_manager": "patroni",
-			},
+			Labels: contraillabel.New("patroni", resource.Name),
 		},
 		Spec: podSpec,
 	}
 
 	var stsSelector = meta.LabelSelector{
-		MatchLabels: map[string]string{"app": "patroni"},
+		MatchLabels: map[string]string{"contrail_manager": "patroni"},
 	}
 
 	return &apps.StatefulSet{
