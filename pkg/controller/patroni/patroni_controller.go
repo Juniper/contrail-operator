@@ -145,7 +145,11 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
 	statefulSet := GetSTS(instance.ObjectMeta, "patroni-service-account")
-	if err := contrailv1alpha1.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, "patroni", request, r.scheme, instance, r.client, true); err != nil {
+	if err := contrailv1alpha1.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, contrailv1alpha1.PatroniInstanceType, request, r.scheme, instance, r.client, true); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = contrailv1alpha1.CreateSTS(statefulSet, contrailv1alpha1.PatroniInstanceType, request, r.client); err != nil {
 		return reconcile.Result{}, err
 	}
 
