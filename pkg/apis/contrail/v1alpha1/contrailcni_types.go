@@ -1,37 +1,20 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"context"
+	"strconv"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ContrailCNISpec defines the desired state of ContrailCNI
-type ContrailCNISpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration ContrailCNIConfiguration `json:"serviceConfiguration"`
-}
-
-//ContrailCNIConfiguration is the Service Configuration for ContrailCNI
-// +k8s:openapi-gen=true
-type ContrailCNIConfiguration struct {
-	Containers          []*Container  `json:"containers,omitempty"`
-}
-
-// ContrailCNIStatus defines the observed state of ContrailCNI
-type ContrailCNIStatus struct {
-	Active *bool             `json:"active,omitempty"`
-}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -44,6 +27,26 @@ type ContrailCNI struct {
 
 	Spec   ContrailCNISpec   `json:"spec,omitempty"`
 	Status ContrailCNIStatus `json:"status,omitempty"`
+}
+
+// ContrailCNISpec defines the desired state of ContrailCNI
+type ContrailCNISpec struct {
+	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration ContrailCNIConfiguration `json:"serviceConfiguration"`
+}
+
+//ContrailCNIConfiguration is the Service Configuration for ContrailCNI
+// +k8s:openapi-gen=true
+type ContrailCNIConfiguration struct {
+	Containers        []*Container `json:"containers,omitempty"`
+	PhysicalInterface string       `json:"physicalInterface,omitempty"`
+	CniMetaPlugin     string       `json:"cniMetaPlugin,omitempty"`
+	VrouterEncryption bool         `json:"vrouterEncryption,omitempty"`
+}
+
+// ContrailCNIStatus defines the observed state of ContrailCNI
+type ContrailCNIStatus struct {
+	Active *bool             `json:"active,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -59,6 +62,7 @@ func init() {
 	SchemeBuilder.Register(&ContrailCNI{}, &ContrailCNIList{})
 }
 
+// CreateConfigMap creates configMap referenced to contrailCNI
 func (c *ContrailCNI) CreateConfigMap(configMapName string,
 	client client.Client,
 	scheme *runtime.Scheme,
@@ -92,6 +96,101 @@ func (c *ContrailCNI) PrepareDaemonSet(ds *appsv1.DaemonSet,
 		return err
 	}
 	return nil
+}
+
+// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
+func (c *ContrailCNI) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client, getPhysicalInterface bool, getPhysicalInterfaceMac bool, getPrefixLength bool, getGateway bool) (*corev1.PodList, map[string]string, error) {
+	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, getPhysicalInterface, getPhysicalInterfaceMac, getPrefixLength, getGateway)
+}
+
+// SetPodsToReady sets Kubemanager PODs to ready.
+func (c *ContrailCNI) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
+	return SetPodsToReady(podIPList, client)
+}
+
+// InstanceConfiguration configure values of instance config maps
+func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
+	client client.Client,
+	clusterInfo VrouterClusterInfo,
+	instanceType string) error {
+	instanceConfigMapName := request.Name + "-" + instanceType + "-configuration"
+	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(),
+		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
+		configMapInstanceDynamicConfig)
+	if err != nil {
+		return err
+	}
+
+	envVariablesConfigMapName := request.Name + "-" + instanceType + "-env"
+	envVariablesConfigMap := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(),
+		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
+		envVariablesConfigMap)
+	if err != nil {
+		return err
+	}
+
+	clusterName, err := clusterInfo.KubernetesClusterName()
+	if err != nil {
+		return err
+	}
+
+	vrouterConfigInstance := c.ConfigurationParameters()
+	vrouterConfig := vrouterConfigInstance.(VrouterConfiguration)
+
+	var data = make(map[string]string)
+	var envVariables = make(map[string]string)
+	var physicalInterface = vrouterConfig.PhysicalInterface
+	envVariables["PHYSICAL_INTERFACE"] = physicalInterface
+	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
+	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+	//This vrouter kernel module option has to be enabled so that flows will be deleted after
+	//receiving tcp reset. Without that, in case of many linklocal connections, many file
+	//descriptors were created and with enough connections the fd limit was hit what caused a
+	//restart of the vrouter agent. In future releases it may be set as a default option.
+	envVariables["VROUTER_MODULE_OPTIONS"] = "vr_close_flow_on_tcp_rst=1"
+	var contrailCNIBuffer bytes.Buffer
+	configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
+		KubernetesClusterName string
+		CniMetaPlugin         string
+	}{
+		KubernetesClusterName: clusterName,
+		CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
+	})
+	data["10-contrail.conf"] = contrailCNIBuffer.String()
+
+	configMapInstanceDynamicConfig.Data = data
+	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
+	if err != nil {
+		return err
+	}
+	envVariablesConfigMap.Data = envVariables
+	err = client.Update(context.TODO(), envVariablesConfigMap)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ConfigurationParameters configure vrouter basic parameters
+func (c *ContrailCNI) ConfigurationParameters() interface{} {
+	vrouterConfiguration := VrouterConfiguration{}
+	var physicalInterface string
+	if c.Spec.ServiceConfiguration.PhysicalInterface != "" {
+		physicalInterface = c.Spec.ServiceConfiguration.PhysicalInterface
+	}
+
+	if c.Spec.ServiceConfiguration.CniMetaPlugin != "" {
+		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
+	} else {
+		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
+	}
+
+	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption
+	vrouterConfiguration.PhysicalInterface = physicalInterface
+
+	return vrouterConfiguration
 }
 
 // SetInstanceActive sets the instance to active.

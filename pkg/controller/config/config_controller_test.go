@@ -425,7 +425,6 @@ func testcase5() *TestCase {
 	return tc
 }
 
-
 func testcase6() *TestCase {
 	falseVal := false
 	cfg := newConfigInst()

@@ -1,7 +1,13 @@
-apiVersion: contrail/v1alpha1
+apiVersion: contrail.juniper.net/v1alpha1
 kind: ContrailCNI
 metadata:
   name: example-contrailcni
+  namespace: contrail
 spec:
-  # Add fields here
-  size: 3
+    serviceConfiguration:
+        Containers:
+          - name: vroutercni
+            image: dysproz/cni-init
+    commonConfiguration:
+      create: true
+
