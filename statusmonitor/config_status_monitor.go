@@ -86,7 +86,8 @@ func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restCl
 	}
 	err = updateConfigStatus(&config, configStatusMap, restClient)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error in updateConfigStatus in func: %s", err)
+		return
 	}
 }
 
@@ -218,14 +219,15 @@ func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTyp
 		if update {
 			_, err = configClient.UpdateStatus(config.NodeName, configObject)
 			if err != nil {
-				fmt.Println(err)
+				log.Printf("warning: Update failed: %v", err)
 			}
 			return err
 		}
 		return nil
 	})
 	if retryErr != nil {
-		panic(fmt.Errorf("Update failed: %v", retryErr))
+		log.Printf("warning: Update failed: %v", retryErr)
+		return retryErr
 	}
 	return nil
 }
