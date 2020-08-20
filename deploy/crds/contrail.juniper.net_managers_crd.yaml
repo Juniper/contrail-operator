@@ -963,6 +963,11 @@ spec:
                                 type: object
                               type: array
                             externalAddress:
+                              description: IP address or domain name (withouth protocol
+                                prefix) of the external keystone. If defined no keystone
+                                releated resource will be created in cluster and other
+                                components will be configured to use this address
+                                as keystone endpoint.
                               type: string
                             keystoneSecretName:
                               type: string

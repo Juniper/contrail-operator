@@ -20,11 +20,11 @@ import (
 
 func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Config, k *contrail.Keystone) (*Client, error) {
 	if k.Status.External {
-		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, "keystone")
+		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, k.GetName())
 		caBundle, _ := caCertificate.GetCaCert()
 		return &Client{
-			client:       NewExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
-			keystoneConf: &k.Spec.ServiceConfiguration,
+			Client:       NewExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
+			KeystoneConf: &k.Spec.ServiceConfiguration,
 		}, nil
 	}
 	proxy, err := kubeproxy.New(config)
@@ -33,13 +33,13 @@ func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Con
 	}
 	if k.Spec.ServiceConfiguration.AuthProtocol == "https" {
 		return &Client{
-			client:       proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
-			keystoneConf: &k.Spec.ServiceConfiguration,
+			Client:       proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
+			KeystoneConf: &k.Spec.ServiceConfiguration,
 		}, nil
 	}
 	return &Client{
-		client:       proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
-		keystoneConf: &k.Spec.ServiceConfiguration,
+		Client:       proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
+		KeystoneConf: &k.Spec.ServiceConfiguration,
 	}, nil
 }
 
@@ -49,8 +49,8 @@ type KeystoneClient interface {
 }
 
 type Client struct {
-	client       KeystoneClient
-	keystoneConf *contrail.KeystoneConfiguration
+	Client       KeystoneClient
+	KeystoneConf *contrail.KeystoneConfiguration
 }
 
 type ExtKeystoneClient struct {
@@ -99,15 +99,15 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 	kar := &keystoneAuthRequest{}
 	kar.Auth.Identity.Methods = []string{"password"}
 	kar.Auth.Identity.Password.User.Name = username
-	kar.Auth.Identity.Password.User.Domain.ID = c.keystoneConf.UserDomainID
+	kar.Auth.Identity.Password.User.Domain.ID = c.KeystoneConf.UserDomainID
 	kar.Auth.Identity.Password.User.Password = password
-	kar.Auth.Scope.Project.Domain.ID = c.keystoneConf.ProjectDomainID
+	kar.Auth.Scope.Project.Domain.ID = c.KeystoneConf.ProjectDomainID
 	kar.Auth.Scope.Project.Name = project
 	karBody, err := json.Marshal(kar)
 	if err != nil {
 		return AuthTokens{}, err
 	}
-	request, err := c.client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
+	request, err := c.Client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
 	if err != nil {
 		return AuthTokens{}, err
 	}
@@ -117,7 +117,7 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 			request.Header.Add(name, value)
 		}
 	}
-	response, err := c.client.Do(request)
+	response, err := c.Client.Do(request)
 	if err != nil {
 		return AuthTokens{}, err
 	}

@@ -14,6 +14,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
@@ -159,9 +160,9 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
-				keystoneProxy := proxy.NewSecureClientForService("contrail", "openstacktest-keystone-service", 5555)
-				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+				keystoneClient, err := getKeystoneClient(f, namespace, "openstacktest-keystone")
+				assert.NoError(t, err)
+				_, err = keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
 				assert.NoError(t, err)
 			})
 		})
@@ -247,21 +248,20 @@ func TestOpenstackServices(t *testing.T) {
 			})
 
 			t.Run("then swift user can request for token in keystone", func(t *testing.T) {
-				keystoneProxy := proxy.NewSecureClientForService("contrail", "openstacktest-keystone-service", 5555)
-				keystoneClient := keystone.NewClient(keystoneProxy)
-				_, err := keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
+				keystoneClient, err := getKeystoneClient(f, namespace, "openstacktest-keystone")
+				assert.NoError(t, err)
+				_, err = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				assert.NoError(t, err)
 			})
 		})
 
 		t.Run("when swift file is uploaded", func(t *testing.T) {
 			var (
-				keystoneProxy    = proxy.NewSecureClientForService("contrail", "openstacktest-keystone-service", 5555)
-				keystoneClient   = keystone.NewClient(keystoneProxy)
-				tokens, _        = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
-				swiftProxy       = proxy.NewSecureClientForService("contrail", "openstacktest-swift-proxy-swift-proxy", 5070)
-				swiftURL         = tokens.EndpointURL("swift", "internal")
-				swiftClient, err = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+				keystoneClient, _ = getKeystoneClient(f, namespace, "openstacktest-keystone")
+				tokens, _         = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
+				swiftProxy        = proxy.NewSecureClientForService("contrail", "openstacktest-swift-proxy-swift-proxy", 5070)
+				swiftURL          = tokens.EndpointURL("swift", "internal")
+				swiftClient, err  = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
 			require.NoError(t, err)
 			err = swiftClient.PutContainer("test-container")
@@ -299,4 +299,25 @@ func TestOpenstackServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func getKeystoneClient(f *test.Framework, namespace string, instanceName string) (*keystone.Client, error) {
+	keystoneCRD := &contrail.Keystone{}
+	err := f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      instanceName,
+		}, keystoneCRD)
+	if err != nil {
+		return nil, err
+	}
+	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+	if err != nil {
+		return nil, err
+	}
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCRD)
+	if err != nil {
+		return nil, err
+	}
+	return keystoneClient, err
 }

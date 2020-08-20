@@ -26,7 +26,10 @@ type KeystoneConfiguration struct {
 	ProjectDomainID   string `json:"projectDomainID,omitempty"`
 	UserDomainName    string `json:"userDomainName,omitempty"`
 	ProjectDomainName string `json:"projectDomainName,omitempty"`
-	ExternalAddress   string `json:"externalAddress,omitempty"`
+	// IP address or domain name (withouth protocol prefix) of the external keystone.
+	// If defined no keystone releated resource will be created in cluster and other
+	// components will be configured to use this address as keystone endpoint.
+	ExternalAddress string `json:"externalAddress,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone

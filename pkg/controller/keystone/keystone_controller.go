@@ -26,6 +26,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -135,7 +136,16 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	if keystone.Spec.ServiceConfiguration.ExternalAddress != "" {
-		return reconcile.Result{}, r.updateStatusWithExternalKeystone(keystone)
+		adminPasswordSecretName := keystone.Spec.ServiceConfiguration.KeystoneSecretName
+		adminPasswordSecret := &core.Secret{}
+		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: keystone.Namespace}, adminPasswordSecret); err != nil {
+			return reconcile.Result{}, err
+		}
+		ready, err := r.externalKeystoneReady(keystone, string(adminPasswordSecret.Data["password"]))
+		if ready {
+			return reconcile.Result{}, r.updateStatusWithExternalKeystone(keystone)
+		}
+		return reconcile.Result{}, err
 	}
 
 	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"
@@ -298,6 +308,19 @@ func (r *ReconcileKeystone) updateStatus(
 	}
 	k.Status.ClusterIP = cip
 	return r.client.Status().Update(context.Background(), k)
+}
+
+func (r *ReconcileKeystone) externalKeystoneReady(k *contrail.Keystone, adminPasswordSecret string) (bool, error) {
+	keystoneClient, err := keystone.NewClient(r.client, r.scheme, r.restConfig, k)
+	if err != nil {
+		return false, err
+	}
+	_, err = keystoneClient.PostAuthTokens("admin", adminPasswordSecret, "admin")
+
+	if err != nil {
+		return false, fmt.Errorf("failed to get keystone token: %v", err)
+	}
+	return true, nil
 }
 
 func (r *ReconcileKeystone) updateStatusWithExternalKeystone(
