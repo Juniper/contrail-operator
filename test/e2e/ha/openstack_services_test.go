@@ -472,7 +472,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			CommonConfiguration: contrail.ManagerConfiguration{
 				NodeSelector: map[string]string{nodeLabel: ""},
-				HostNetwork: &trueVal,
+				HostNetwork:  &trueVal,
 				Tolerations: []core.Toleration{
 					{
 						Effect:   core.TaintEffectNoSchedule,

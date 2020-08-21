@@ -531,7 +531,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ProvisionManagerSpec{
-
 			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
@@ -571,7 +570,7 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 }
 
 func labelKeyToSelector(key string) string {
-	return key+"="
+	return key + "="
 }
 
 func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace string, log logger.Logger) {
