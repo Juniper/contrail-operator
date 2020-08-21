@@ -2,7 +2,7 @@
 
 ## What is an operator?
 
-Operator is an automated software extension which allow to easily manage applications and its' components.<br/>
+Operator is an automated software extension which allows to easily manage applications and their components.<br/>
 It's used to package, deploy and manage applications based on Kubernetes custom resources.
 
 Operator acts as a controller which extend Kubernetes API to manage lifecycle of dependent application resources. Controller implements logic which periodically compares desired state of a cluster to it's actual state and applies corrections to meet declared state.
@@ -64,7 +64,7 @@ To fix that problem, operator itself has to be deployed on cluster.<br/>
 Example manifest may be found [here](https://github.com/Juniper/contrail-operator/blob/master/deploy/openshift/manifests/0000000-contrail-08-operator.yaml).
 Applied operator will create separate Pod which will act as controller of custom resources in cluster.
 
-Afterwards, when manifest is applied on cluster in namespace *contrail* (*contrail* namespace has to be created beforehand), status of all pods create by Contrail may be observed.<br/>
+Afterwards, when manifest is applied on cluster in namespace *contrail* (*contrail* namespace has to be created beforehand), status of all pods created by Contrail may be observed.<br/>
 Because operator allows to create custom logic in code, some components wait for other components to be deployed in order to start its' Pods which protects deployment against race conditions and potential failures.
 
 After example infrastructure is deployed following Pods run in contrail namespace:
@@ -102,7 +102,7 @@ zookeeper1-zookeeper-statefulset-0            1/1     Running            0      
 zookeeper1-zookeeper-statefulset-1            1/1     Running            0          8m
 zookeeper1-zookeeper-statefulset-2            1/1     Running            0          8m
 ```
-That's just one resource type which creates all the custom Contrail resources in cluster during deployment.<br/>
+That's just one resource type which creates all the custom Contrail resources the in cluster during deployment.<br/>
 
 
 ![operator-components](images/operator_components.png)
