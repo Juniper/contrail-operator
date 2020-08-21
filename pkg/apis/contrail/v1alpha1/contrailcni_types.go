@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
-	"strconv"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	appsv1 "k8s.io/api/apps/v1"
@@ -38,15 +37,18 @@ type ContrailCNISpec struct {
 //ContrailCNIConfiguration is the Service Configuration for ContrailCNI
 // +k8s:openapi-gen=true
 type ContrailCNIConfiguration struct {
-	Containers        []*Container `json:"containers,omitempty"`
-	PhysicalInterface string       `json:"physicalInterface,omitempty"`
-	CniMetaPlugin     string       `json:"cniMetaPlugin,omitempty"`
-	VrouterEncryption bool         `json:"vrouterEncryption,omitempty"`
+	Containers    []*Container `json:"containers,omitempty"`
+	CniMetaPlugin string       `json:"cniMetaPlugin,omitempty"`
+	VrouterIP     string       `json:"vrouterIP,omitempty"`
+	VrouterPort   string       `json:"vrouterPort,omitempty"`
+	PollTimeout   string       `json:"pollTimeout,omitempty"`
+	PollRetries   string       `json:"pollRetries,omitempty"`
+	LogLevel      string       `json:"logLevel,omitempty"`
 }
 
 // ContrailCNIStatus defines the observed state of ContrailCNI
 type ContrailCNIStatus struct {
-	Active *bool             `json:"active,omitempty"`
+	Active *bool `json:"active,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -135,9 +137,19 @@ func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
 	configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
 		KubernetesClusterName string
 		CniMetaPlugin         string
+		VrouterIP             string
+		VrouterPort           string
+		PollTimeout           string
+		PollRetries           string
+		LogLevel              string
 	}{
 		KubernetesClusterName: clusterName,
 		CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
+		VrouterIP:             vrouterConfig.VrouterIP,
+		VrouterPort:           vrouterConfig.VrouterPort,
+		PollTimeout:           vrouterConfig.PollTimeout,
+		PollRetries:           vrouterConfig.PollRetries,
+		LogLevel:              vrouterConfig.LogLevel,
 	})
 	data["10-contrail.conf"] = contrailCNIBuffer.String()
 
@@ -152,10 +164,6 @@ func (c *ContrailCNI) InstanceConfiguration(request reconcile.Request,
 // ConfigurationParameters configure vrouter basic parameters
 func (c *ContrailCNI) ConfigurationParameters() interface{} {
 	vrouterConfiguration := VrouterConfiguration{}
-	var physicalInterface string
-	if c.Spec.ServiceConfiguration.PhysicalInterface != "" {
-		physicalInterface = c.Spec.ServiceConfiguration.PhysicalInterface
-	}
 
 	if c.Spec.ServiceConfiguration.CniMetaPlugin != "" {
 		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
@@ -163,8 +171,35 @@ func (c *ContrailCNI) ConfigurationParameters() interface{} {
 		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
 	}
 
-	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption
-	vrouterConfiguration.PhysicalInterface = physicalInterface
+	if c.Spec.ServiceConfiguration.VrouterIP != "" {
+		vrouterConfiguration.VrouterIP = c.Spec.ServiceConfiguration.VrouterIP
+	} else {
+		vrouterConfiguration.VrouterIP = DefaultVrouterIP
+	}
+
+	if c.Spec.ServiceConfiguration.VrouterPort != "" {
+		vrouterConfiguration.VrouterPort = c.Spec.ServiceConfiguration.VrouterPort
+	} else {
+		vrouterConfiguration.VrouterPort = DefaultVrouterPort
+	}
+
+	if c.Spec.ServiceConfiguration.PollTimeout != "" {
+		vrouterConfiguration.PollTimeout = c.Spec.ServiceConfiguration.PollTimeout
+	} else {
+		vrouterConfiguration.PollTimeout = DefaultPollTimeout
+	}
+
+	if c.Spec.ServiceConfiguration.PollRetries != "" {
+		vrouterConfiguration.PollRetries = c.Spec.ServiceConfiguration.PollRetries
+	} else {
+		vrouterConfiguration.PollRetries = DefaultPollRetries
+	}
+
+	if c.Spec.ServiceConfiguration.LogLevel != "" {
+		vrouterConfiguration.LogLevel = c.Spec.ServiceConfiguration.LogLevel
+	} else {
+		vrouterConfiguration.LogLevel = DefaultLogLevel
+	}
 
 	return vrouterConfiguration
 }
