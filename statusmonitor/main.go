@@ -105,7 +105,7 @@ func main() {
 				switch config.NodeType {
 				case "control":
 					err := getControlStatus(client, clientset, restClient, config)
-					if err != nil{
+					if err != nil {
 						log.Printf("warning: Error in  getControlStatus func: %v", err)
 						continue
 					}
@@ -119,7 +119,7 @@ func main() {
 	fmt.Println("Ticker stopped")
 }
 
-func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) (error){
+func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
@@ -392,7 +392,8 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 		return nil
 	})
 	if retryErr != nil {
-		panic(fmt.Errorf("Update failed: %v", retryErr))
+		log.Printf("Update failed: %v", retryErr)
+		return retryErr
 	}
 	return nil
 }
