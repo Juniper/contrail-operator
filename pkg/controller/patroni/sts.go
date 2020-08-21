@@ -5,10 +5,11 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 )
 
-func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
+func GetSTS(resource *contrailv1alpha1.Patroni, serviceAccount string) *apps.StatefulSet {
 	var replicas = int32(1)
 
 	var podIPEnv = core.EnvVar{
@@ -21,7 +22,7 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 	}
 
 	var namespaceEnv = core.EnvVar{
-		Name: "patroni-namespace",
+		Name: "PATRONI_KUBERNETES_NAMESPACE",
 		ValueFrom: &core.EnvVarSource{
 			FieldRef: &core.ObjectFieldSelector{
 				FieldPath: "metadata.namespace",
@@ -30,7 +31,7 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 	}
 
 	var labelsEnv = core.EnvVar{
-		Name: "patroni-labels",
+		Name: "PATRONI_KUBERNETES_LABELS",
 		ValueFrom: &core.EnvVarSource{
 			FieldRef: &core.ObjectFieldSelector{
 				FieldPath: "metadata.labels",
@@ -41,6 +42,15 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 	var endpointsEnv = core.EnvVar{
 		Name:  "PATRONI_KUBERNETES_USE_ENDPOINTS",
 		Value: "true",
+	}
+
+	var podAffinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+				LabelSelector: &meta.LabelSelector{MatchLabels: resource.Labels},
+				TopologyKey:   "kubernetes.io/hostname",
+			}},
+		},
 	}
 
 	var podContainers = []core.Container{
@@ -57,11 +67,24 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 		},
 	}
 
+	var podTolerations = []core.Toleration{
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoSchedule",
+		},
+		core.Toleration{
+			Operator: "Exists",
+			Effect:   "NoExecute",
+		},
+	}
+
 	var podSpec = core.PodSpec{
+		Affinity:           podAffinity,
 		Containers:         podContainers,
 		HostNetwork:        true,
-		NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
+		NodeSelector:       resource.Spec.CommonConfiguration.NodeSelector,
 		ServiceAccountName: serviceAccount,
+		Tolerations:        podTolerations,
 	}
 
 	var stsTemplate = core.PodTemplateSpec{
@@ -72,7 +95,7 @@ func GetSTS(resource meta.ObjectMeta, serviceAccount string) *apps.StatefulSet {
 	}
 
 	var stsSelector = meta.LabelSelector{
-		MatchLabels: map[string]string{"contrail_manager": "patroni"},
+		MatchLabels: contraillabel.New("patroni", resource.Name),
 	}
 
 	return &apps.StatefulSet{

@@ -13,6 +13,8 @@ type PatroniSpec struct {
 }
 
 type PatroniStatus struct {
+	Active bool     `json:"active"`
+	IPs    []string `json:"ip,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -6,9 +6,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -144,13 +146,19 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - master exposed as ClusterIP service
 	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
-	statefulSet := GetSTS(instance.ObjectMeta, "patroni-service-account")
-	if err := contrailv1alpha1.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, contrailv1alpha1.PatroniInstanceType, request, r.scheme, instance, r.client, true); err != nil {
+	statefulSet, err := r.createOrUpdateSts(request, instance)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = contrailv1alpha1.CreateSTS(statefulSet, contrailv1alpha1.PatroniInstanceType, request, r.client); err != nil {
-		return reconcile.Result{}, err
+	instance.Status.Active = false
+	intendentReplicas := int32(1)
+	if statefulSet.Spec.Replicas != nil {
+		intendentReplicas = *statefulSet.Spec.Replicas
+	}
+
+	if statefulSet.Status.ReadyReplicas == intendentReplicas {
+		instance.Status.Active = true
 	}
 
 	return reconcile.Result{}, nil
@@ -341,4 +349,54 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Pa
 	})
 
 	return err
+}
+
+func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrailv1alpha1.Patroni) (*apps.StatefulSet, error) {
+
+	statefulSet := GetSTS(instance, "patroni-service-account")
+
+	statefulSet.Namespace = request.Namespace
+	statefulSet.Name = request.Name + "-statefulset"
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
+
+		contrailv1alpha1.SetSTSCommonConfiguration(statefulSet, &instance.Spec.CommonConfiguration)
+
+		var patroniGroupId int64 = 0
+		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
+		statefulSet.Spec.Template.Spec.SecurityContext.FSGroup = &patroniGroupId
+		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &patroniGroupId
+		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &patroniGroupId
+
+		storageClassName := "local-storage"
+		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Name:      "storage-device",
+					Namespace: request.Namespace,
+					Labels:    instance.Labels,
+				},
+				Spec: core.PersistentVolumeClaimSpec{
+					AccessModes: []core.PersistentVolumeAccessMode{
+						core.ReadWriteOnce,
+					},
+					StorageClassName: &storageClassName,
+					Resources: core.ResourceRequirements{
+						Requests: map[core.ResourceName]resource.Quantity{
+							core.ResourceStorage: resource.MustParse("5Gi"),
+						},
+					},
+				},
+			},
+		}
+
+		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: instance.Labels}
+		return controllerutil.SetControllerReference(instance, statefulSet, r.scheme)
+	})
+	return statefulSet, err
+}
+
+type containerGenerator struct {
+	containersSpec []*contrailv1alpha1.Container
+	device         string
 }
