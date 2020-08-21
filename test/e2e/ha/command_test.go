@@ -64,7 +64,8 @@ func TestHACommand(t *testing.T) {
 			Logger:        log,
 		}
 
-		cluster := getHACommandCluster(namespace)
+		nodeLabelKey := "test-command-ha"
+		cluster := getHACommandCluster(namespace, nodeLabelKey)
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
@@ -89,14 +90,14 @@ func TestHACommand(t *testing.T) {
 		}
 
 		t.Run("when cluster with Command service and dependencies is created", func(t *testing.T) {
-			var replicas int32 = 1
+			err = labelOneNode(f.KubeClient, nodeLabelKey)
+			require.NoError(t, err)
 			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 			err = f.Client.Create(context.TODO(), swiftPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			_, err := controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
-				cluster.Spec.CommonConfiguration.Replicas = &replicas
 				return nil
 			})
 			require.NoError(t, err)
@@ -202,7 +203,7 @@ func assertCommandPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager
 	})
 }
 
-func getHACommandCluster(namespace string) *contrail.Manager {
+func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 	trueVal := true
 
 	memcached := &contrail.Memcached{
@@ -212,9 +213,8 @@ func getHACommandCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			CommonConfiguration: contrail.PodConfiguration{
+				Create: &trueVal,
 			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{
@@ -244,9 +244,8 @@ func getHACommandCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Create:       &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			CommonConfiguration: contrail.PodConfiguration{
+				Create: &trueVal,
 			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
@@ -267,9 +266,6 @@ func getHACommandCluster(namespace string) *contrail.Manager {
 			Name:      "swift",
 		},
 		Spec: contrail.SwiftSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + scmBranch + "." + scmRevision},
@@ -319,11 +315,10 @@ func getHACommandCluster(namespace string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.CommandSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
-				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			CommonConfiguration: contrail.PodConfiguration{
+				Activate:    &trueVal,
+				Create:      &trueVal,
+				HostNetwork: &trueVal,
 			},
 			ServiceConfiguration: contrail.CommandConfiguration{
 				PostgresInstance:   "postgres",
@@ -347,8 +342,9 @@ func getHACommandCluster(namespace string) *contrail.Manager {
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.CommonConfiguration{
-				HostNetwork: &trueVal,
+			CommonConfiguration: contrail.ManagerConfiguration{
+				NodeSelector: map[string]string{nodeLabel: ""},
+				HostNetwork:  &trueVal,
 				Tolerations: []core.Toleration{
 					{
 						Effect:   core.TaintEffectNoSchedule,
