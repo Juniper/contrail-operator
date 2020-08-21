@@ -18,12 +18,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// NewClient prepares keystone client based on properties of passed keystone CRD.
 func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Config, k *contrail.Keystone) (*Client, error) {
-	if k.Status.External {
+	if k.Spec.ServiceConfiguration.ExternalAddress != "" {
 		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, k.GetName())
 		caBundle, _ := caCertificate.GetCaCert()
 		return &Client{
-			Client:       NewExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
+			Client:       newExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
 			KeystoneConf: &k.Spec.ServiceConfiguration,
 		}, nil
 	}
@@ -43,22 +44,22 @@ func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Con
 	}, nil
 }
 
-type KeystoneClient interface {
+type keystoneClient interface {
 	NewRequest(method, path string, body io.Reader) (*http.Request, error)
 	Do(req *http.Request) (*http.Response, error)
 }
 
 type Client struct {
-	Client       KeystoneClient
+	Client       keystoneClient
 	KeystoneConf *contrail.KeystoneConfiguration
 }
 
-type ExtKeystoneClient struct {
+type extKeystoneClient struct {
 	url    string
 	client http.Client
 }
 
-func NewExtKeystoneClient(protocol string, address string, port int, ca []byte) *ExtKeystoneClient {
+func newExtKeystoneClient(protocol string, address string, port int, ca []byte) *extKeystoneClient {
 	var httpClient http.Client
 
 	if protocol == "https" && ca != nil {
@@ -77,17 +78,17 @@ func NewExtKeystoneClient(protocol string, address string, port int, ca []byte) 
 	}
 
 	url := fmt.Sprintf("%s://%s:%d", protocol, address, port)
-	return &ExtKeystoneClient{
+	return &extKeystoneClient{
 		url:    url,
 		client: httpClient,
 	}
 }
 
-func (c *ExtKeystoneClient) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
+func (c *extKeystoneClient) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
 	return http.NewRequest(method, c.url+path, body)
 }
 
-func (c *ExtKeystoneClient) Do(req *http.Request) (*http.Response, error) {
+func (c *extKeystoneClient) Do(req *http.Request) (*http.Response, error) {
 	return c.client.Do(req)
 }
 
