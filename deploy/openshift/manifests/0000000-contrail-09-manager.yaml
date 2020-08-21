@@ -43,8 +43,16 @@ spec:
               image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-rhel
             - name: devicemanager
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-rhel
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "tail -f /dev/null"
             - name: dnsmasq
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-rhel
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "tail -f /dev/null"
             - name: init
               image: python:3.8.2-alpine
             - name: init2
