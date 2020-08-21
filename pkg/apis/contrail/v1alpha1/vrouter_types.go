@@ -70,6 +70,11 @@ type VrouterConfiguration struct {
 	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
 	CniMetaPlugin       string        `json:"cniMetaPlugin,omitempty"`
 	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
+	VrouterIP           string        `json:"vrouterIP,omitempty"`
+	VrouterPort         string        `json:"vrouterPort,omitempty"`
+	PollTimeout         string        `json:"pollTimeout,omitempty"`
+	PollRetries         string        `json:"pollRetries,omitempty"`
+	LogLevel            string        `json:"logLevel,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -90,6 +95,11 @@ const (
 )
 
 const DefaultCniMetaPlugin = "multus"
+const DefaultVrouterIP = "127.0.0.1"
+const DefaultVrouterPort = "9091"
+const DefaultPollTimeout = "5"
+const DefaultPollRetries = "15"
+const DefaultLogLevel = "4"
 
 func init() {
 	SchemeBuilder.Register(&Vrouter{}, &VrouterList{})
@@ -396,9 +406,19 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
 			KubernetesClusterName string
 			CniMetaPlugin         string
+			VrouterIP             string
+			VrouterPort           string
+			PollTimeout           string
+			PollRetries           string
+			LogLevel              string
 		}{
 			KubernetesClusterName: clusterName,
 			CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
+			VrouterIP:             vrouterConfig.VrouterIP,
+			VrouterPort:           vrouterConfig.VrouterPort,
+			PollTimeout:           vrouterConfig.PollTimeout,
+			PollRetries:           vrouterConfig.PollRetries,
+			LogLevel:              vrouterConfig.LogLevel,
 		})
 		data["10-contrail.conf"] = contrailCNIBuffer.String()
 	}
@@ -460,6 +480,36 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
 	} else {
 		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
+	}
+
+	if c.Spec.ServiceConfiguration.VrouterIP != "" {
+		vrouterConfiguration.VrouterIP = c.Spec.ServiceConfiguration.VrouterIP
+	} else {
+		vrouterConfiguration.VrouterIP = DefaultVrouterIP
+	}
+
+	if c.Spec.ServiceConfiguration.VrouterPort != "" {
+		vrouterConfiguration.VrouterPort = c.Spec.ServiceConfiguration.VrouterPort
+	} else {
+		vrouterConfiguration.VrouterPort = DefaultVrouterPort
+	}
+
+	if c.Spec.ServiceConfiguration.PollTimeout != "" {
+		vrouterConfiguration.PollTimeout = c.Spec.ServiceConfiguration.PollTimeout
+	} else {
+		vrouterConfiguration.PollTimeout = DefaultPollTimeout
+	}
+
+	if c.Spec.ServiceConfiguration.PollRetries != "" {
+		vrouterConfiguration.PollRetries = c.Spec.ServiceConfiguration.PollRetries
+	} else {
+		vrouterConfiguration.PollRetries = DefaultPollRetries
+	}
+
+	if c.Spec.ServiceConfiguration.LogLevel != "" {
+		vrouterConfiguration.LogLevel = c.Spec.ServiceConfiguration.LogLevel
+	} else {
+		vrouterConfiguration.LogLevel = DefaultLogLevel
 	}
 
 	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption

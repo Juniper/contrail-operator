@@ -55,13 +55,13 @@ var ContrailCNIConfig = template.Must(template.New("").Parse(`{
   "contrail" : {
       "cluster-name"  : "{{ .KubernetesClusterName }}",
       "meta-plugin"   : "{{ .CniMetaPlugin }}",
-      "vrouter-ip"    : "127.0.0.1",
-      "vrouter-port"  : 9091,
+      "vrouter-ip"    : "{{ .VrouterIP }}",
+      "vrouter-port"  : {{ .VrouterPort }},
       "config-dir"    : "/var/lib/contrail/ports/vm",
-      "poll-timeout"  : 5,
-      "poll-retries"  : 15,
+      "poll-timeout"  : {{ .PollTimeout }},
+      "poll-retries"  : {{ .PollRetries }},
       "log-file"      : "/var/log/contrail/cni/opencontrail.log",
-      "log-level"     : "4"
+      "log-level"     : "{{ .LogLevel }}"
   },
   "name": "contrail-k8s-cni",
   "type": "contrail-k8s-cni"
