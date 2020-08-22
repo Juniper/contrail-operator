@@ -110,7 +110,11 @@ func main() {
 						continue
 					}
 				case "config":
-					getConfigStatus(client, clientset, restClient, config)
+					err := getConfigStatus(client, clientset, restClient, config)
+					if err != nil {
+						log.Printf("warning: Error in  getConfigStatus func: %v", err)
+						continue
+					}
 				}
 			}
 		}
