@@ -93,16 +93,22 @@ func main() {
 				}
 				client, err := CreateRestClient(config)
 				if err != nil {
-					log.Fatalf("rest client creation failed: %v", err)
+					log.Printf("rest client creation failed: %v", err)
+					continue
 				}
 				clientset, restClient, err := kubeClient(config)
 				if err != nil {
-					log.Fatalf("kubernates client creation failed: %v", err)
+					log.Printf("kubernates client creation failed: %v", err)
+					continue
 				}
 				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
 				switch config.NodeType {
 				case "control":
-					getControlStatus(client, clientset, restClient, config)
+					err := getControlStatus(client, clientset, restClient, config)
+					if err != nil {
+						log.Printf("warning: Error in  getControlStatus func: %v", err)
+						continue
+					}
 				case "config":
 					getConfigStatus(client, clientset, restClient, config)
 				}
@@ -113,17 +119,19 @@ func main() {
 	fmt.Println("Ticker stopped")
 }
 
-func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) {
+func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
 	var controlStatusMap = make(map[string]contrailOperatorTypes.ControlServiceStatus)
 	for _, apiServer := range config.APIServerList {
 		hostnameList, err := getPods(config, clientset)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("warning: Unable to get the hostnameList in getControlStatus func: %v", err)
+			return err
 		}
 
 		err = GetControlStatusFromApiServer(apiServer, &config, &client, hostnameList, controlStatusMap)
 		if err != nil {
-			log.Printf("warning: getting control nodes status failed: %v", err)
+			log.Printf("warning: Failed in GetControlStatusFromApiServer func: %v", err)
+			return err
 		}
 		if len(controlStatusMap) == len(hostnameList) {
 			break
@@ -131,8 +139,10 @@ func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restC
 	}
 	err := updateControlStatus(&config, controlStatusMap, restClient)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("warning: Getting error in updateControlStatus: %v", err)
+		return err
 	}
+	return nil
 }
 
 func CreateRestClient(config Config) (http.Client, error) {
@@ -382,7 +392,8 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 		return nil
 	})
 	if retryErr != nil {
-		panic(fmt.Errorf("Update failed: %v", retryErr))
+		log.Printf("Update failed: %v", retryErr)
+		return retryErr
 	}
 	return nil
 }
