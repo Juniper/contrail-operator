@@ -5,9 +5,9 @@ metadata:
   namespace: contrail
 spec:
     serviceConfiguration:
-        Containers:
-          - name: vroutercni
-            image: dysproz/cni-init
+      containers:
+        - name: vroutercni
+          image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:master.latest
     commonConfiguration:
       create: true
 

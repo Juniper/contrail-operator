@@ -27,7 +27,7 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 	var podInitContainers = []core.Container{
 		{
 			Name:  "vroutercni",
-			Image: "hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2008.54",
+			Image: "hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:master.latest",
 			Command: []string{"sh", "-c",
 				"mkdir -p /host/etc_cni/net.d && " +
 					"mkdir -p /var/lib/contrail/ports/vm && " +
@@ -69,6 +69,31 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 				Privileged: &trueVal,
 			},
 		},
+	}
+
+	if cniDir.DeploymentType == "openshift" {
+		podInitContainers = append(podInitContainers, core.Container{
+			Name:  "multusconfig",
+			Image: "busybox",
+			Command: []string{
+				"sh",
+				"-c",
+				"mkdir -p /etc/kubernetes/cni/net.d && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
+					"mkdir -p /var/run/multus/cni/net.d && " +
+					"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
+			VolumeMounts: []core.VolumeMount{
+				core.VolumeMount{
+					Name:      "etc-kubernetes-cni",
+					MountPath: "/etc/kubernetes/cni",
+				},
+				core.VolumeMount{
+					Name:      "multus-cni",
+					MountPath: "/var/run/multus",
+				},
+			},
+			ImagePullPolicy: "Always",
+		})
 	}
 
 	var podContainers = []core.Container{
