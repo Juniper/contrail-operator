@@ -7,8 +7,12 @@ go_library(
         "cassandra_types.go",
         "command_types.go",
         "config_types.go",
+<<<<<<< HEAD
         "contrailmonitor_types.go",
         "contrailstatusmonitor_types.go",
+=======
+        "contrailcni_types.go",
+>>>>>>> Update bazel
         "control_types.go",
         "defaults.go",
         "doc.go",
