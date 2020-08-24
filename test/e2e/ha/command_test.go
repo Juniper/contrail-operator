@@ -213,9 +213,6 @@ func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create: &trueVal,
-			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "memcached", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"},
@@ -244,9 +241,6 @@ func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create: &trueVal,
-			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
 				PostgresInstance:  "postgres",
@@ -316,8 +310,6 @@ func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.CommandSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:    &trueVal,
-				Create:      &trueVal,
 				HostNetwork: &trueVal,
 			},
 			ServiceConfiguration: contrail.CommandConfiguration{
