@@ -179,12 +179,25 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
+	psql, err := r.getPostgres(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !psql.Status.Active {
+		return reconcile.Result{}, nil
+	}
+
 	commandConfigName := command.Name + "-command-configmap"
 	ips := command.Status.IPs
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort, keystoneAuthProtocol); err != nil {
+
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).
+		ensureCommandConfigExist(ips[0], keystoneIP, keystonePort, keystoneAuthProtocol, psql.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -193,19 +206,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-	}
-
-	psql, err := r.getPostgres(command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if !psql.Status.Active {
-		return reconcile.Result{}, nil
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
@@ -411,16 +411,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
 							}},
-							Env: []core.EnvVar{
-								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-							},
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,

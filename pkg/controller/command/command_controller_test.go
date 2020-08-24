@@ -42,7 +42,7 @@ func TestCommand(t *testing.T) {
 		"Swift secret name is empty": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwiftWithEmptyCredentialsSecretName(false),
@@ -83,7 +83,7 @@ func TestCommand(t *testing.T) {
 		"no Swift": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
@@ -92,7 +92,7 @@ func TestCommand(t *testing.T) {
 		"no Keystone": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
@@ -101,7 +101,7 @@ func TestCommand(t *testing.T) {
 		"no Swift secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
@@ -110,7 +110,7 @@ func TestCommand(t *testing.T) {
 		"no admin secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
@@ -119,7 +119,7 @@ func TestCommand(t *testing.T) {
 		"no Swift container exists": {
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
@@ -148,7 +148,7 @@ func TestCommand(t *testing.T) {
 	t.Run("Swift secret name is empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
 			newCommand(),
-			newPostgres(true),
+			newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 			newAdminSecret(),
 			newSwiftSecret(),
 			newSwiftWithEmptyCredentialsSecretName(false),
@@ -181,7 +181,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
@@ -196,7 +196,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment and check swift containers existence",
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(true),
@@ -212,7 +212,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment with inactive Keystone",
 			initObjs: []runtime.Object{
 				newCommand(),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
@@ -231,7 +231,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 0,
 				}),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -249,7 +249,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 0,
 				}),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -267,7 +267,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
-				newPostgres(true),
+				newPostgres(contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.17"}),
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -408,7 +408,7 @@ func newCommand() *contrail.Command {
 	}
 }
 
-func newPostgres(active bool) *contrail.Postgres {
+func newPostgres(status contrail.PostgresStatus) *contrail.Postgres {
 	return &contrail.Postgres{
 		TypeMeta: meta.TypeMeta{
 			Kind:       "Postgres",
@@ -418,9 +418,7 @@ func newPostgres(active bool) *contrail.Postgres {
 			Name:      "command-db",
 			Namespace: "default",
 		},
-		Status: contrail.PostgresStatus{
-			Active: active,
-		},
+		Status: status,
 	}
 }
 
@@ -471,7 +469,7 @@ func newPodList() *core.PodList {
 
 func newPostgresWithOwner(active bool) *contrail.Postgres {
 	falseVal := false
-	psql := newPostgres(active)
+	psql := newPostgres(contrail.PostgresStatus{Active: active, Endpoint: "10.0.2.17"})
 	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
 		{
 			APIVersion:         "contrail.juniper.net/v1alpha1",
@@ -608,16 +606,6 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 							ImagePullPolicy: core.PullAlways,
 							Image:           "registry:5000/contrail-command",
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-							Env: []core.EnvVar{
-								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-							},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "command-command-volume",
 								MountPath: "/etc/contrail",
@@ -755,7 +743,7 @@ func newSwiftSecret() *core.Secret {
 
 const expectedCommandConfig = `
 database:
-  host: 0.0.0.0
+  host: 10.0.2.17
   user: root
   password: contrail123
   name: contrail_test
@@ -875,7 +863,7 @@ replication:
 const expectedBootstrapScript = `
 #!/bin/bash
 export PGPASSWORD=contrail123
-QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+QUERY_RESULT=$(psql -w -h 10.0.2.17 -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -886,8 +874,8 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
+psql -w -h 10.0.2.17 -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h 10.0.2.17 -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
 commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
 commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `
