@@ -8,10 +8,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -23,6 +26,65 @@ import (
 )
 
 var log = logf.Log.WithName("controller_contrailcni")
+
+func resourceHandler(myclient client.Client) handler.Funcs {
+	appHandler := handler.Funcs{
+		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
+			list := &v1alpha1.ContrailCNIList{}
+			err := myclient.List(context.TODO(), list, listOps)
+			if err == nil {
+				for _, app := range list.Items {
+					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+						Name:      app.GetName(),
+						Namespace: e.Meta.GetNamespace(),
+					}})
+				}
+			}
+		},
+		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			listOps := &client.ListOptions{Namespace: e.MetaNew.GetNamespace()}
+			list := &v1alpha1.ContrailCNIList{}
+			err := myclient.List(context.TODO(), list, listOps)
+			if err == nil {
+				for _, app := range list.Items {
+					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+						Name:      app.GetName(),
+						Namespace: e.MetaNew.GetNamespace(),
+					}})
+				}
+			}
+		},
+		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
+			list := &v1alpha1.ContrailCNIList{}
+			err := myclient.List(context.TODO(), list, listOps)
+			if err == nil {
+				for _, app := range list.Items {
+					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+						Name:      app.GetName(),
+						Namespace: e.Meta.GetNamespace(),
+					}})
+				}
+			}
+		},
+
+		GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
+			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
+			list := &v1alpha1.ContrailCNIList{}
+			err := myclient.List(context.TODO(), list, listOps)
+			if err == nil {
+				for _, app := range list.Items {
+					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+						Name:      app.GetName(),
+						Namespace: e.Meta.GetNamespace(),
+					}})
+				}
+			}
+		},
+	}
+	return appHandler
+}
 
 // Add creates a new ContrailCNI Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -54,13 +116,21 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner ContrailCNI
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &contrailv1alpha1.ContrailCNI{},
-	})
-	if err != nil {
+	// Watch for changes to PODs.
+	serviceMap := map[string]string{"contrail_manager": "vrouter"}
+	srcPod := &source.Kind{Type: &corev1.Pod{}}
+	podHandler := resourceHandler(mgr.GetClient())
+	predInitStatus := utils.PodInitStatusChange(serviceMap)
+	predPodIPChange := utils.PodIPChange(serviceMap)
+	predInitRunning := utils.PodInitRunning(serviceMap)
+
+	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
+		return err
+	}
+	if err = c.Watch(srcPod, podHandler, predInitStatus); err != nil {
+		return err
+	}
+	if err = c.Watch(srcPod, podHandler, predInitRunning); err != nil {
 		return err
 	}
 
@@ -117,17 +187,18 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType)
-	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	for idx, container := range daemonSet.Spec.Template.Spec.InitContainers {
 		if container.Name == "vroutercni" {
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer != nil {
+				reqLogger.Info("Overwritting ContrailCNI container image")
 				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 			}
 		}
+	}
+
+	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if err = instance.InstanceConfiguration(request, r.Client, r.ClusterInfo, instanceType); err != nil {
