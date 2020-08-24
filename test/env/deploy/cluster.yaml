@@ -17,8 +17,6 @@ spec:
             contrail_cluster: cluster1
           name: cassandra1
         spec:
-          commonConfiguration:
-            create: true
           serviceConfiguration:
             containers:
               - name: cassandra
@@ -33,8 +31,6 @@ spec:
           contrail_cluster: cluster1
         name: config1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           keystoneInstance: keystone
@@ -73,8 +69,6 @@ spec:
             control_role: master
           name: control1
         spec:
-          commonConfiguration:
-            create: true
           serviceConfiguration:
             cassandraInstance: cassandra1
             containers:
@@ -96,7 +90,6 @@ spec:
         name: provmanager1
       spec:
         commonConfiguration:
-          create: true
           replicas: 1
         serviceConfiguration:
           keystoneInstance: keystone
@@ -121,8 +114,6 @@ spec:
           contrail_cluster: cluster1
         name: rabbitmq1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           containers:
             - name: init
@@ -135,8 +126,6 @@ spec:
           contrail_cluster: cluster1
         name: webui1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           keystoneInstance: keystone
@@ -155,8 +144,6 @@ spec:
             contrail_cluster: cluster1
           name: zookeeper1
         spec:
-          commonConfiguration:
-            create: true
           serviceConfiguration:
             containers:
               - name: init
@@ -168,8 +155,6 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          activate: true
-          create: true
           hostNetwork: true
           tolerations:
             - effect: NoSchedule

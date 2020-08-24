@@ -375,9 +375,6 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
-			},
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "memcached", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"},
@@ -406,9 +403,6 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
-			},
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
 				PostgresInstance:  "postgres",

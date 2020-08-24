@@ -388,8 +388,6 @@ func newCommand() *contrail.Command {
 		},
 		Spec: contrail.CommandSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Activate:     &trueVal,
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},

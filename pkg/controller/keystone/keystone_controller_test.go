@@ -335,8 +335,6 @@ func newKeystone() *contrail.Keystone {
 		Spec: contrail.KeystoneSpec{
 			CommonConfiguration: contrail.PodConfiguration{
 				Replicas:    &oneVal,
-				Activate:    &trueVal,
-				Create:      &trueVal,
 				HostNetwork: &trueVal,
 				Tolerations: []core.Toleration{
 					{

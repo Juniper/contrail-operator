@@ -75,7 +75,6 @@ func TestVrouterController(t *testing.T) {
 				CassandraInstance: "cassandra1",
 			},
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "vrouter"},
 				Replicas:     &replicas,
 			},

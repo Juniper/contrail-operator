@@ -148,8 +148,6 @@ func TestCommandServices(t *testing.T) {
 			},
 			Spec: contrail.CommandSpec{
 				CommonConfiguration: contrail.PodConfiguration{
-					Activate:    &trueVal,
-					Create:      &trueVal,
 					HostNetwork: &trueVal,
 				},
 				ServiceConfiguration: contrail.CommandConfiguration{

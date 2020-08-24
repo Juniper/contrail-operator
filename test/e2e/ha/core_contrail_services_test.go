@@ -400,7 +400,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.CassandraSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
@@ -421,7 +420,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.ZookeeperSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
@@ -440,9 +438,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
-			},
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:" + versionMap["rabbitmq"]},
@@ -460,7 +455,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.ConfigSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 			},
 			ServiceConfiguration: contrail.ConfigConfiguration{
@@ -493,7 +487,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.ControlSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 			},
 			ServiceConfiguration: contrail.ControlConfiguration{
@@ -517,7 +510,6 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.WebuiSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				HostNetwork:  &trueVal,
 			},
 			ServiceConfiguration: contrail.WebuiConfiguration{
@@ -539,9 +531,7 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ProvisionManagerSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
-			},
+
 			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},

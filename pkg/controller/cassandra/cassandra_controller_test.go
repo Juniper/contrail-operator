@@ -138,7 +138,6 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 		name            = "cassandra1"
 		namespace       = "default"
 		replicas  int32 = 3
-		create          = true
 	)
 	// A Memcached object with metadata and spec.
 	var cassandra = &contrail.Cassandra{
@@ -149,7 +148,6 @@ func TestCassandraControllerStatefulSetCreate(t *testing.T) {
 		},
 		Spec: contrail.CassandraSpec{
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &create,
 				Replicas:     &replicas,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},

@@ -198,7 +198,6 @@ func ManagerCluster(t *testing.T) {
 }
 
 func getManager(namespace string, replicas int32, hostNetwork bool, versionMap map[string]string) v1alpha1.Manager {
-	create := true
 	return v1alpha1.Manager{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Manager",
@@ -222,9 +221,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.RabbitmqSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.RabbitmqConfiguration{
 							Containers: []*v1alpha1.Container{
 								{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:" + versionMap["rabbitmq"]},
@@ -240,9 +236,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.ZookeeperSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.ZookeeperConfiguration{
 							Containers: []*v1alpha1.Container{
 								{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:" + versionMap["zookeeper"]},
@@ -258,9 +251,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.CassandraSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.CassandraConfiguration{
 							Containers: []*v1alpha1.Container{
 								{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:" + versionMap["cassandra"]},
@@ -277,9 +267,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.ConfigSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.ConfigConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
@@ -311,9 +298,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 					Spec: v1alpha1.ControlSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.ControlConfiguration{
 							CassandraInstance: "cassandra1",
 							Containers: []*v1alpha1.Container{
@@ -334,7 +318,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.ProvisionManagerSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
 							Replicas:     &replicas,
 						},
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
@@ -352,9 +335,6 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
 					Spec: v1alpha1.KubemanagerSpec{
-						CommonConfiguration: v1alpha1.PodConfiguration{
-							Create:       &create,
-						},
 						ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",

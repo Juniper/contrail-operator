@@ -5,8 +5,6 @@ metadata:
   namespace: contrail
 spec:
   commonConfiguration:
-    activate: true
-    create: true
     hostNetwork: true
     tolerations:
       - effect: NoSchedule

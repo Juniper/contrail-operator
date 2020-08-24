@@ -18,8 +18,6 @@ spec:
           contrail_cluster: cluster1
         name: cassandra1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           containers:
             - name: cassandra
@@ -34,8 +32,6 @@ spec:
           contrail_cluster: cluster1
         name: config1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -72,8 +68,6 @@ spec:
           control_role: master
         name: control1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -95,7 +89,6 @@ spec:
         name: provmanager1
       spec:
         commonConfiguration:
-          create: true
           replicas: 1
         serviceConfiguration:
           containers:
@@ -109,8 +102,6 @@ spec:
           contrail_cluster: cluster1
         name: rabbitmq1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           containers:
           - name: init
@@ -123,8 +114,6 @@ spec:
           contrail_cluster: cluster1
         name: webui1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -142,8 +131,6 @@ spec:
           contrail_cluster: cluster1
         name: zookeeper1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           containers:
             - name: init
@@ -156,8 +143,6 @@ spec:
           contrail_cluster: cluster1
         name: kubemanager1
       spec:
-        commonConfiguration:
-          create: true
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
@@ -180,7 +165,6 @@ spec:
         name: vroutermasternodes
       spec:
         commonConfiguration:
-          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
@@ -210,7 +194,6 @@ spec:
         name: vrouterworkernodes
       spec:
         commonConfiguration:
-          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
