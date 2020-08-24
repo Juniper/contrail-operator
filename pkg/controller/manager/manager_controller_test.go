@@ -160,6 +160,23 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		contrailcni := &contrail.ContrailCNI{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "contrailcni",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ContrailCNISpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Create: &createNew,
+				},
+				ServiceConfiguration: contrail.ContrailCNIConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "vroutercni", Image: "vroutercni:3.5"},
+					},
+				},
+			},
+		}
 		rabbitmq := &contrail.Rabbitmq{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "rabbitmq-instance",
@@ -208,6 +225,7 @@ func TestManagerController(t *testing.T) {
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.Vrouter{vrouter},
+					ContrailCNI:      []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -225,6 +243,7 @@ func TestManagerController(t *testing.T) {
 			webui,
 			control,
 			vrouter,
+			contrailcni,
 			config,
 			newNode(),
 		}
@@ -420,6 +439,23 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		contrailcni := &contrail.ContrailCNI{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "contrailcni",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ContrailCNISpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Create: &createVal,
+				},
+				ServiceConfiguration: contrail.ContrailCNIConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "vroutercni", Image: "vroutercni:3.5"},
+					},
+				},
+			},
+		}
 		rabbitmq := &contrail.Rabbitmq{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "rabbitmq-instance",
@@ -468,6 +504,7 @@ func TestManagerController(t *testing.T) {
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.Vrouter{vrouter},
+					ContrailCNI:      []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -479,6 +516,7 @@ func TestManagerController(t *testing.T) {
 				Config:           mgrstatusConfig,
 				Controls:         mgrstatusControl,
 				Vrouters:         mgrstatusVrouter,
+				ContrailCNI:      mgrstatusContrailCNI,
 				Webui:            mgrstatusWebui,
 				ProvisionManager: mgrstatusProvisionmanager,
 				Kubemanagers:     mgrstatusKubemanager,
@@ -496,6 +534,7 @@ func TestManagerController(t *testing.T) {
 			webui,
 			control,
 			vrouter,
+			contrailcni,
 			config,
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -678,6 +717,23 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		contrailcni := &contrail.ContrailCNI{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "contrailcni",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ContrailCNISpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Create: &setBool,
+				},
+				ServiceConfiguration: contrail.ContrailCNIConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "vroutercni", Image: "vroutercni:3.5"},
+					},
+				},
+			},
+		}
 		rabbitmq := &contrail.Rabbitmq{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "rabbitmq-instance",
@@ -726,6 +782,7 @@ func TestManagerController(t *testing.T) {
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.Vrouter{vrouter},
+					ContrailCNI:      []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -737,6 +794,7 @@ func TestManagerController(t *testing.T) {
 				Config:           mgrstatusConfig,
 				Controls:         mgrstatusControl,
 				Vrouters:         mgrstatusVrouter,
+				ContrailCNI:      mgrstatusContrailCNI,
 				Webui:            mgrstatusWebui,
 				ProvisionManager: mgrstatusProvisionmanager,
 				Kubemanagers:     mgrstatusKubemanager,
@@ -754,6 +812,7 @@ func TestManagerController(t *testing.T) {
 			webui,
 			control,
 			vrouter,
+			contrailcni,
 			config,
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -2021,12 +2080,20 @@ var managerstatus9 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
+var NameValue10 = "contrailcni"
+var managerstatus10 = &contrail.ServiceStatus{
+	Name:    &NameValue9,
+	Active:  &trueVal,
+	Created: &trueVal,
+}
+
 var mgrstatusCassandras = []*contrail.ServiceStatus{managerstatus}
 var mgrstatusZookeeper = []*contrail.ServiceStatus{managerstatus1}
 var mgrstatusRabbitmq = managerstatus2
 var mgrstatusConfig = managerstatus3
 var mgrstatusControl = []*contrail.ServiceStatus{managerstatus4}
 var mgrstatusVrouter = []*contrail.ServiceStatus{managerstatus5}
+var mgrstatusContrailCNI = []*contrail.ServiceStatus{managerstatus10}
 var mgrstatusWebui = managerstatus6
 var mgrstatusProvisionmanager = managerstatus7
 var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}

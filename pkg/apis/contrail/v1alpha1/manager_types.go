@@ -37,6 +37,7 @@ type Services struct {
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
+	ContrailCNI      []*ContrailCNI    `json:"contrailCNI,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -81,6 +82,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	ContrailCNI      []*ServiceStatus `json:"contrailCNI,omitempty"`
 	Replicas         int32            `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
@@ -204,6 +206,31 @@ func (m Manager) IsClusterReady() bool {
 			}
 		}
 	}
+
+	for _, vrouterService := range m.Spec.Services.Vrouters {
+		for _, vrouterStatus := range m.Status.Vrouters {
+			if vrouterService.Name == *vrouterStatus.Name && !vrouterStatus.ready() {
+				return false
+			}
+		}
+	}
+
+	for _, contrailCNIService := range m.Spec.Services.ContrailCNI {
+		for _, contrailCNIStatus := range m.Status.ContrailCNI {
+			if contrailCNIService.Name == *contrailCNIStatus.Name && !contrailCNIStatus.ready() {
+				return false
+			}
+		}
+	}
+
+	for _, kubemanagerService := range m.Spec.Services.Kubemanagers {
+		for _, kubemanagerStatus := range m.Status.Kubemanagers {
+			if kubemanagerService.Name == *kubemanagerStatus.Name && !kubemanagerStatus.ready() {
+				return false
+			}
+		}
+	}
+
 	if m.Spec.Services.Webui != nil && !m.Status.Webui.ready() {
 		return false
 	}

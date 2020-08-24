@@ -44,6 +44,7 @@ var resourcesList = []runtime.Object{
 	&v1alpha1.Memcached{},
 	&v1alpha1.Vrouter{},
 	&v1alpha1.Kubemanager{},
+	&v1alpha1.ContrailCNI{},
 	&corev1.ConfigMap{},
 }
 

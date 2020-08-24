@@ -126,10 +126,16 @@ spec:
                         type: string
                     type: object
                   type: array
-                physicalInterface:
+                logLevel:
                   type: string
-                vrouterEncryption:
-                  type: boolean
+                pollRetries:
+                  type: string
+                pollTimeout:
+                  type: string
+                vrouterIP:
+                  type: string
+                vrouterPort:
+                  type: string
               type: object
           required:
           - serviceConfiguration
