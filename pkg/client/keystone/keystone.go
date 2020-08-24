@@ -24,7 +24,7 @@ func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Con
 		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, k.GetName())
 		caBundle, _ := caCertificate.GetCaCert()
 		return &Client{
-			Client:       newExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Status.ClusterIP, k.Spec.ServiceConfiguration.ListenPort, caBundle),
+			Client:       newExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Spec.ServiceConfiguration.ExternalAddress, k.Spec.ServiceConfiguration.ListenPort, caBundle),
 			KeystoneConf: &k.Spec.ServiceConfiguration,
 		}, nil
 	}
