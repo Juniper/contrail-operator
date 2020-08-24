@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cassandra.go",
+        "config.go",
+        "contrailCNI.go",
+        "control.go",
+        "kubemanager.go",
+        "provisionManger.go",
+        "rabbitmq.go",
+        "vrouter.go",
+        "webui.go",
+        "zookeeper.go",
+    ],
+    importpath = "github.com/Juniper/contrail-operator/pkg/controller/manager/crs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "@com_github_ghodss//:go_default_library",
+    ],
+)
