@@ -4,7 +4,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PatroniConfiguration struct{}
+type PatroniConfiguration struct {
+	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
+}
 
 // PatroniSpec defines the desired state of Patroni
 type PatroniSpec struct {
@@ -12,9 +14,11 @@ type PatroniSpec struct {
 	ServiceConfiguration PatroniConfiguration `json:"serviceConfiguration"`
 }
 
+// SwiftStorageStatus defines the observed state of SwiftStorage
 type PatroniStatus struct {
-	Active bool     `json:"active"`
-	IPs    []string `json:"ip,omitempty"`
+	Active                bool     `json:"active"`
+	IPs                   []string `json:"ip,omitempty"`
+	CredentialsSecretName string   `json:"credentialsSecretName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -2,7 +2,9 @@ package patroni
 
 import (
 	"context"
+	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -22,9 +24,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	contrailcertificates "github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
+	"github.com/Juniper/contrail-operator/pkg/randomstring"
 )
+
+type secret struct {
+	sc *k8s.Secret
+}
+
+func (s *secret) FillSecret(sc *core.Secret) error {
+	if sc.Data != nil {
+		return nil
+	}
+
+	pass := randomstring.RandString{10}.Generate()
+
+	sc.StringData = map[string]string{
+		"user":     "patroni",
+		"password": pass,
+	}
+	return nil
+}
 
 var log = logf.Log.WithName("controller_patroni")
 
@@ -114,8 +136,19 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	err = r.ensureServicesExist(instance)
+	patroniService, err := r.ensureServicesExist(instance)
 	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	patroniPods, err := r.listPatroniPods(instance.Name)
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
+	}
+
+	patroniClusterIP := patroniService.Spec.ClusterIP
+
+	if err := r.ensureCertificatesExist(instance, patroniPods, patroniClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -151,6 +184,16 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	credentialsSecretName := instance.Name + "-patroni-credentials-secret"
+	if instance.Spec.ServiceConfiguration.CredentialsSecretName != "" {
+		credentialsSecretName = instance.Spec.ServiceConfiguration.CredentialsSecretName
+	}
+
+	if err = r.secret(credentialsSecretName, "patroni", instance).ensureCredentialSecretExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+	instance.Status.CredentialsSecretName = credentialsSecretName
+
 	instance.Status.Active = false
 	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
@@ -173,7 +216,35 @@ func (r *ReconcilePatroni) ensureLabelExists(p *contrailv1alpha1.Patroni) error 
 	return r.client.Update(context.Background(), p)
 }
 
-func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureCertificatesExist(instance *contrailv1alpha1.Patroni, pods *core.PodList, serviceIP string) error {
+	hostNetwork := true
+	if instance.Spec.CommonConfiguration.HostNetwork != nil {
+		hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+	}
+	return contrailcertificates.NewCertificateWithServiceIP(r.client, r.scheme, instance, pods, serviceIP, "patroni", hostNetwork).EnsureExistsAndIsSigned()
+}
+
+func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, error) {
+	pods := &core.PodList{}
+	labelSelector := labels.SelectorFromSet(contraillabel.New(contrailv1alpha1.PatroniInstanceType, instanceName))
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
+		return &core.PodList{}, err
+	}
+	return pods, nil
+}
+
+func (r *ReconcilePatroni) secret(secretName, ownerType string, instance *contrailv1alpha1.Patroni) *secret {
+	return &secret{
+		sc: r.kubernetes.Secret(secretName, ownerType, instance),
+	}
+}
+
+func (s *secret) ensureCredentialSecretExists() error {
+	return s.sc.EnsureExists(s)
+}
+
+func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patroni) (*core.Service, error) {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-service",
@@ -197,7 +268,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	})
 
 	if err != nil {
-		return err
+		return service, err
 	}
 
 	endpoints := &core.Endpoints{
@@ -213,7 +284,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	})
 
 	if err != nil {
-		return err
+		return service, err
 	}
 
 	serviceRepl := &core.Service{
@@ -244,7 +315,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 		return controllerutil.SetControllerReference(instance, serviceRepl, r.scheme)
 	})
 
-	return err
+	return service, err
 }
 
 func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrailv1alpha1.Patroni) error {
