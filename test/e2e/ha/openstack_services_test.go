@@ -14,6 +14,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -23,7 +24,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
 	"github.com/Juniper/contrail-operator/test/wait"
-	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestHAOpenStackServices(t *testing.T) {
@@ -226,16 +226,16 @@ func TestHAOpenStackServices(t *testing.T) {
 }
 
 func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
-	keystoneCRD := &contrail.Keystone{}
+	keystoneCR := &contrail.Keystone{}
 	err := f.Client.Get(context.TODO(),
 		types.NamespacedName{
 			Namespace: namespace,
 			Name:      "keystone",
-		}, keystoneCRD)
+		}, keystoneCR)
 	assert.NoError(t, err)
 	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
 	assert.NoError(t, err)
-	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCRD)
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
 	assert.NoError(t, err)
 
 	t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
@@ -482,7 +482,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			CommonConfiguration: contrail.ManagerConfiguration{
 				NodeSelector: map[string]string{nodeLabel: ""},
-				HostNetwork: &trueVal,
+				HostNetwork:  &trueVal,
 				Tolerations: []core.Toleration{
 					{
 						Effect:   core.TaintEffectNoSchedule,

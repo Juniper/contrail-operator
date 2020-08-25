@@ -10,12 +10,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
 // NewClient prepares keystone client based on properties of passed keystone CRD.

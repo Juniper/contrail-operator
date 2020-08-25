@@ -102,7 +102,7 @@ func TestOpenstackServices(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.ManagerConfiguration{
-					HostNetwork: &trueVal,
+					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{
@@ -302,12 +302,12 @@ func TestOpenstackServices(t *testing.T) {
 }
 
 func getKeystoneClient(f *test.Framework, namespace string, instanceName string) (*keystone.Client, error) {
-	keystoneCRD := &contrail.Keystone{}
+	keystoneCR := &contrail.Keystone{}
 	err := f.Client.Get(context.TODO(),
 		types.NamespacedName{
 			Namespace: namespace,
 			Name:      instanceName,
-		}, keystoneCRD)
+		}, keystoneCR)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func getKeystoneClient(f *test.Framework, namespace string, instanceName string)
 	if err != nil {
 		return nil, err
 	}
-	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCRD)
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
 	if err != nil {
 		return nil, err
 	}

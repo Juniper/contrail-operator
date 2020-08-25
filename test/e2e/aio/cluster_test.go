@@ -18,6 +18,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/config"
@@ -26,7 +27,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
 	wait "github.com/Juniper/contrail-operator/test/wait"
-	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestCluster(t *testing.T) {
@@ -115,12 +115,12 @@ func TestCluster(t *testing.T) {
 
 			configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
 
-			keystoneCRD := &contrail.Keystone{}
+			keystoneCR := &contrail.Keystone{}
 			err := f.Client.Get(context.TODO(),
 				types.NamespacedName{
 					Namespace: namespace,
 					Name:      "keystone",
-				}, keystoneCRD)
+				}, keystoneCR)
 			assert.NoError(t, err)
 
 			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestCluster(t *testing.T) {
 			t.Run("then config nodes are created", func(t *testing.T) {
 				// Test framework client has incompatible Create method signature
 				runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-				keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCRD)
+				keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
 				assert.NoError(t, err)
 				tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 				assert.NoError(t, err)
