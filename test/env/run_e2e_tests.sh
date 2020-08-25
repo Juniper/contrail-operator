@@ -14,9 +14,6 @@ if [[ -z "$CEM_RELEASE" ]]; then
     fi
 fi
 
-## Use fixed working version of CEM
-export CEM_RELEASE="master.1312"
-
 E2E_TEST_SUITE=${E2E_TEST_SUITE:-aio}
 
 DIR="$(cd "$(dirname "$0")" && pwd)/../../"
