@@ -6,13 +6,8 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CniDirs struct {
-	BinariesDirectory string
-	DeploymentType    string
-}
-
 //GetDaemonset returns DaemonSet object for vRouter
-func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
+func GetDaemonset() *apps.DaemonSet {
 	var labelsMountPermission int32 = 0644
 	var trueVal = true
 
@@ -101,64 +96,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 				Privileged: &trueVal,
 			},
 		},
-		core.Container{
-			Name:  "vroutercni",
-			Image: "docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1",
-			Env: []core.EnvVar{
-				podIPEnv,
-			},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
-					Name:      "var-lib-contrail",
-					MountPath: "/var/lib/contrail",
-				},
-				core.VolumeMount{
-					Name:      "cni-config-files",
-					MountPath: "/host/etc_cni",
-				},
-				core.VolumeMount{
-					Name:      "cni-bin",
-					MountPath: "/host/opt_cni_bin",
-				},
-				core.VolumeMount{
-					Name:      "var-log-contrail-cni",
-					MountPath: "/host/log_cni",
-				},
-				core.VolumeMount{
-					Name:      "vrouter-logs",
-					MountPath: "/var/log/contrail",
-				},
-			},
-			ImagePullPolicy: "Always",
-			SecurityContext: &core.SecurityContext{
-				Privileged: &trueVal,
-			},
-		},
-	}
-
-	if cniDir.DeploymentType == "openshift" {
-		podInitContainers = append(podInitContainers, core.Container{
-			Name:  "multusconfig",
-			Image: "busybox",
-			Command: []string{
-				"sh",
-				"-c",
-				"mkdir -p /etc/kubernetes/cni/net.d && " +
-					"cp -f /etc/contrailconfigmaps/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
-					"mkdir -p /var/run/multus/cni/net.d && " +
-					"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
-			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
-					Name:      "etc-kubernetes-cni",
-					MountPath: "/etc/kubernetes/cni",
-				},
-				core.VolumeMount{
-					Name:      "multus-cni",
-					MountPath: "/var/run/multus",
-				},
-			},
-			ImagePullPolicy: "Always",
-		})
 	}
 
 	var podContainers = []core.Container{
@@ -272,22 +209,6 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			},
 		},
 		core.Volume{
-			Name: "var-log-contrail-cni",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/var/log/contrail/cni",
-				},
-			},
-		},
-		core.Volume{
-			Name: "cni-config-files",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/etc/cni",
-				},
-			},
-		},
-		core.Volume{
 			Name: "var-crashes",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -336,42 +257,10 @@ func GetDaemonset(cniDir CniDirs) *apps.DaemonSet {
 			},
 		},
 		core.Volume{
-			Name: "cni-bin",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: cniDir.BinariesDirectory,
-				},
-			},
-		},
-		core.Volume{
-			Name: "var-run-contrail",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/var/run/contrail",
-				},
-			},
-		},
-		core.Volume{
 			Name: "resolv-conf",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
 					Path: "/etc/resolv.conf",
-				},
-			},
-		},
-		core.Volume{
-			Name: "etc-kubernetes-cni",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/etc/kubernetes/cni",
-				},
-			},
-		},
-		core.Volume{
-			Name: "multus-cni",
-			VolumeSource: core.VolumeSource{
-				HostPath: &core.HostPathVolumeSource{
-					Path: "/var/run/multus",
 				},
 			},
 		},

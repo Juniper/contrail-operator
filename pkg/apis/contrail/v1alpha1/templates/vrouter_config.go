@@ -50,7 +50,7 @@ fabric_snat_hash_table_size = 4096
 slo_destination = collector
 sample_destination = collector`))
 
-var ContrailCNIConfig = template.Must(template.New("").Parse(`{
+var VrouterContrailCNIConfig = template.Must(template.New("").Parse(`{
   "cniVersion": "0.3.1",
   "contrail" : {
       "cluster-name"  : "{{ .KubernetesClusterName }}",

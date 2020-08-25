@@ -37,7 +37,7 @@ type Services struct {
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
-	ContrailCNI      []*ContrailCNI    `json:"contrailCNI,omitempty"`
+	ContrailCNIs     []*ContrailCNI    `json:"contrailCNIs,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -82,7 +82,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
-	ContrailCNI      []*ServiceStatus `json:"contrailCNI,omitempty"`
+	ContrailCNIs     []*ServiceStatus `json:"contrailCNIs,omitempty"`
 	Replicas         int32            `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
@@ -215,8 +215,8 @@ func (m Manager) IsClusterReady() bool {
 		}
 	}
 
-	for _, contrailCNIService := range m.Spec.Services.ContrailCNI {
-		for _, contrailCNIStatus := range m.Status.ContrailCNI {
+	for _, contrailCNIService := range m.Spec.Services.ContrailCNIs {
+		for _, contrailCNIStatus := range m.Status.ContrailCNIs {
 			if contrailCNIService.Name == *contrailCNIStatus.Name && !contrailCNIStatus.ready() {
 				return false
 			}
