@@ -217,8 +217,8 @@ func (m Manager) IsClusterReady() bool {
 		}
 	}
 
-	for _, contrailCNIService := range m.Spec.Services.ContrailCNI {
-		for _, contrailCNIStatus := range m.Status.ContrailCNI {
+	for _, contrailCNIService := range m.Spec.Services.ContrailCNIs {
+		for _, contrailCNIStatus := range m.Status.ContrailCNIs {
 			if contrailCNIService.Name == *contrailCNIStatus.Name && !contrailCNIStatus.ready() {
 				return false
 			}

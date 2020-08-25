@@ -15,15 +15,6 @@ type CniDirs struct {
 func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.DaemonSet {
 	var trueVal = true
 
-	var podIPEnv = core.EnvVar{
-		Name: "POD_IP",
-		ValueFrom: &core.EnvVarSource{
-			FieldRef: &core.ObjectFieldSelector{
-				FieldPath: "status.podIP",
-			},
-		},
-	}
-
 	var podInitContainers = []core.Container{
 		{
 			Name:  "vroutercni",
@@ -35,9 +26,6 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 					"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
 					"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
 					"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"},
-			Env: []core.EnvVar{
-				podIPEnv,
-			},
 			VolumeMounts: []core.VolumeMount{
 				core.VolumeMount{
 					Name:      "var-lib-contrail",
@@ -60,7 +48,7 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 					MountPath: "/var/log/contrail",
 				},
 				core.VolumeMount{
-					Name:      requestName + "-" + instanceType + "-volume",
+					Name:      "configmap-volume",
 					MountPath: "/etc/contrailconfigmaps",
 				},
 			},
@@ -146,7 +134,7 @@ func GetDaemonset(cniDir CniDirs, requestName, instanceType string) *apps.Daemon
 			},
 		},
 		core.Volume{
-			Name: requestName + "-" + instanceType + "-volume",
+			Name: "configmap-volume",
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
 					LocalObjectReference: core.LocalObjectReference{

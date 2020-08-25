@@ -25,11 +25,6 @@ var expectedCniBinVolume = core.Volume{
 	},
 }
 
-var configMapMount = core.VolumeMount{
-	Name:      "test-request-contrailcni-volume",
-	MountPath: "/etc/contrailconfigmaps",
-}
-
 var multusContainer = core.Container{
 	Name:  "multusconfig",
 	Image: "busybox",
@@ -60,7 +55,6 @@ func TestGetDaemonsetK8s(t *testing.T) {
 	}
 	ds := contrailcni.GetDaemonset(testCNIDirs, requestName, instanceType)
 	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
-	assert.Contains(t, ds.Spec.Template.Spec.InitContainers[0].VolumeMounts, configMapMount)
 	assert.NotContains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
 }
 
@@ -71,6 +65,5 @@ func TestGetDaemonsetOpenshift(t *testing.T) {
 	}
 	ds := contrailcni.GetDaemonset(testCNIDirs, requestName, instanceType)
 	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
-	assert.Contains(t, ds.Spec.Template.Spec.InitContainers[0].VolumeMounts, configMapMount)
 	assert.Contains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller"
 	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
-	"github.com/Juniper/contrail-operator/pkg/controller/vrouter"
 	"github.com/Juniper/contrail-operator/pkg/controller/contrailcni"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
@@ -98,7 +97,7 @@ func main() {
 	}
 
 	var kubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
-	var vrouterClusterInfo v1alpha1.VrouterClusterInfo
+	var cniClusterInfo v1alpha1.CNIClusterInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
 		dynamicClient, err := v1alpha1.GetDynamicClient()
 		if err != nil {
@@ -110,11 +109,11 @@ func main() {
 			DynamicClient: dynamicClient,
 		}
 		kubemanagerClusterInfo = config
-		vrouterClusterInfo = config
+		cniClusterInfo = config
 	} else {
 		config := k8s.ClusterConfig{Client: clientset.CoreV1()}
 		kubemanagerClusterInfo = config
-		vrouterClusterInfo = config
+		cniClusterInfo = config
 	}
 
 	// Setup all Controllers.
@@ -128,12 +127,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := vrouter.Add(mgr, vrouterClusterInfo); err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	if err := contrailcni.Add(mgr, vrouterClusterInfo); err != nil {
+	if err := contrailcni.Add(mgr, cniClusterInfo); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

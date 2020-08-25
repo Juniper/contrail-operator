@@ -5,16 +5,12 @@ import (
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -23,83 +19,26 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_contrailcni")
 
-func resourceHandler(myclient client.Client) handler.Funcs {
-	appHandler := handler.Funcs{
-		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
-			list := &v1alpha1.ContrailCNIList{}
-			err := myclient.List(context.TODO(), list, listOps)
-			if err == nil {
-				for _, app := range list.Items {
-					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-						Name:      app.GetName(),
-						Namespace: e.Meta.GetNamespace(),
-					}})
-				}
-			}
-		},
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			listOps := &client.ListOptions{Namespace: e.MetaNew.GetNamespace()}
-			list := &v1alpha1.ContrailCNIList{}
-			err := myclient.List(context.TODO(), list, listOps)
-			if err == nil {
-				for _, app := range list.Items {
-					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-						Name:      app.GetName(),
-						Namespace: e.MetaNew.GetNamespace(),
-					}})
-				}
-			}
-		},
-		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
-			list := &v1alpha1.ContrailCNIList{}
-			err := myclient.List(context.TODO(), list, listOps)
-			if err == nil {
-				for _, app := range list.Items {
-					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-						Name:      app.GetName(),
-						Namespace: e.Meta.GetNamespace(),
-					}})
-				}
-			}
-		},
-
-		GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
-			listOps := &client.ListOptions{Namespace: e.Meta.GetNamespace()}
-			list := &v1alpha1.ContrailCNIList{}
-			err := myclient.List(context.TODO(), list, listOps)
-			if err == nil {
-				for _, app := range list.Items {
-					q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-						Name:      app.GetName(),
-						Namespace: e.Meta.GetNamespace(),
-					}})
-				}
-			}
-		},
-	}
-	return appHandler
-}
-
 // Add creates a new ContrailCNI Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) error {
+func Add(mgr manager.Manager, clusterInfo v1alpha1.CNIClusterInfo) error {
 	return add(mgr, newReconciler(mgr, clusterInfo))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), clusterInfo)
+func newReconciler(mgr manager.Manager, clusterInfo v1alpha1.CNIClusterInfo) reconcile.Reconciler {
+	kubernetes := k8s.New(mgr.GetClient(), mgr.GetScheme())
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), kubernetes, clusterInfo)
 }
 
 // NewReconciler returns a new reconcile.Reconciler
-func NewReconciler(client client.Client, scheme *runtime.Scheme, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
-	return &ReconcileContrailCNI{Client: client, Scheme: scheme, ClusterInfo: clusterInfo}
+func NewReconciler(client client.Client, scheme *runtime.Scheme,  kubernetes *k8s.Kubernetes, clusterInfo v1alpha1.CNIClusterInfo) reconcile.Reconciler {
+	return &ReconcileContrailCNI{Client: client, Scheme: scheme, kubernetes: kubernetes, ClusterInfo: clusterInfo}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -116,31 +55,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to PODs.
-	serviceMap := map[string]string{"contrail_manager": "vrouter"}
-	srcPod := &source.Kind{Type: &corev1.Pod{}}
-	podHandler := resourceHandler(mgr.GetClient())
-	predInitStatus := utils.PodInitStatusChange(serviceMap)
-	predPodIPChange := utils.PodIPChange(serviceMap)
-	predInitRunning := utils.PodInitRunning(serviceMap)
-
-	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
-		return err
-	}
-	if err = c.Watch(srcPod, podHandler, predInitStatus); err != nil {
-		return err
-	}
-	if err = c.Watch(srcPod, podHandler, predInitRunning); err != nil {
-		return err
-	}
-
-	srcDS := &source.Kind{Type: &appsv1.DaemonSet{}}
-	dsHandler := &handler.EnqueueRequestForOwner{
+	// Watch for changes to Daemonset
+	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &v1alpha1.ContrailCNI{},
-	}
-	dsPred := utils.DSStatusChange(utils.ContrailCNIGroupKind())
-	if err = c.Watch(srcDS, dsHandler, dsPred); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -156,7 +76,8 @@ type ReconcileContrailCNI struct {
 	// that reads objects from the cache and writes to the apiserver
 	Client      client.Client
 	Scheme      *runtime.Scheme
-	ClusterInfo v1alpha1.VrouterClusterInfo
+	kubernetes  *k8s.Kubernetes
+	ClusterInfo v1alpha1.CNIClusterInfo
 }
 
 // Reconcile reads that state of the cluster for a ContrailCNI object and makes changes based on the state read
@@ -176,8 +97,8 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	_, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configuration", r.Client, r.Scheme, request)
-	if err != nil {
+	contrailCNIConfigName := request.Name + "-" + instanceType + "-configuration"
+	if err := r.configMap(contrailCNIConfigName, instanceType, instance).ensureContrailCNIConfigExist(r.ClusterInfo); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -188,25 +109,30 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 
 	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType)
 	for idx, container := range daemonSet.Spec.Template.Spec.InitContainers {
-		if container.Name == "vroutercni" {
-			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
-			if instanceContainer != nil {
-				reqLogger.Info("Overwritting ContrailCNI container image")
-				(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
-			}
+		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+		if instanceContainer != nil {
+			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
 		}
 	}
 
-	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	for idx, container := range daemonSet.Spec.Template.Spec.Containers {
+		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+		if instanceContainer != nil {
+			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
+		}
+	}
+
+	if err := instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = instance.InstanceConfiguration(request, r.Client, r.ClusterInfo, instanceType); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	_, err = ctrl.CreateOrUpdate(ctx, r.Client, daemonSet, func() error {
-		return controllerutil.SetControllerReference(instance, daemonSet, r.Scheme)
+	var clusterDaemonset appsv1.DaemonSet
+	(&clusterDaemonset).ObjectMeta.Name = daemonSet.ObjectMeta.Name
+	(&clusterDaemonset).ObjectMeta.Namespace = daemonSet.ObjectMeta.Namespace
+	_, err := ctrl.CreateOrUpdate(ctx, r.Client, &clusterDaemonset, func() error {
+		(&clusterDaemonset).ObjectMeta.Labels = daemonSet.ObjectMeta.Labels
+		(&clusterDaemonset).Spec = daemonSet.Spec
+		return controllerutil.SetControllerReference(instance, &clusterDaemonset, r.Scheme)
 	})
 	if err != nil {
 		return reconcile.Result{}, err

@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 type contrailcniClusterInfoFake struct {
@@ -36,7 +37,7 @@ func (c contrailcniClusterInfoFake) DeploymentType() string {
 	return c.deploymentType
 }
 
-func TestContrilCNIController(t *testing.T) {
+func TestContrailCNIController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err)
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
@@ -75,7 +76,7 @@ func TestContrilCNIController(t *testing.T) {
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, contrailcniCR)
 	fakeClusterInfo := contrailcniClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
-	reconciler := NewReconciler(fakeClient, scheme, fakeClusterInfo)
+	reconciler := NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), fakeClusterInfo)
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
 	// then

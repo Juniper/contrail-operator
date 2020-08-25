@@ -287,8 +287,7 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
-	client client.Client,
-	clusterInfo VrouterClusterInfo) error {
+	client client.Client) error {
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(),
@@ -318,11 +317,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, client)
-	if err != nil {
-		return err
-	}
-
-	clusterName, err := clusterInfo.KubernetesClusterName()
 	if err != nil {
 		return err
 	}
@@ -401,26 +395,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
-
-		var contrailCNIBuffer bytes.Buffer
-		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
-			KubernetesClusterName string
-			CniMetaPlugin         string
-			VrouterIP             string
-			VrouterPort           string
-			PollTimeout           string
-			PollRetries           string
-			LogLevel              string
-		}{
-			KubernetesClusterName: clusterName,
-			CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
-			VrouterIP:             vrouterConfig.VrouterIP,
-			VrouterPort:           vrouterConfig.VrouterPort,
-			PollTimeout:           vrouterConfig.PollTimeout,
-			PollRetries:           vrouterConfig.PollRetries,
-			LogLevel:              vrouterConfig.LogLevel,
-		})
-		data["10-contrail.conf"] = contrailCNIBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
@@ -518,10 +492,4 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
 
 	return vrouterConfiguration
-}
-
-type VrouterClusterInfo interface {
-	KubernetesClusterName() (string, error)
-	CNIBinariesDirectory() string
-	DeploymentType() string
 }
