@@ -496,7 +496,7 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	}
 }
 
-func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string, nodeSelector map[string]string) *batch.Job {
+func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName string, psqlIP string, nodeSelector map[string]string) *batch.Job {
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,

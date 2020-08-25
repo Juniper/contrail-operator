@@ -155,8 +155,6 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
           hostNetwork: true
           tolerations:
             - effect: NoSchedule
@@ -267,8 +265,6 @@ spec:
               - name: swiftAccountServer
                 image: registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train-2005
         commonConfiguration:
-          activate: true
-          create: true
           hostNetwork: true
           tolerations:
             - effect: NoSchedule
