@@ -548,7 +548,6 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 		}
 	}
 
-<<<<<<< HEAD
 	var controlServiceStatus []*v1alpha1.ServiceStatus
 	for _, controlService := range manager.Spec.Services.Controls {
 		control := &v1alpha1.Control{}
@@ -559,35 +558,6 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 			control.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, control.Spec.CommonConfiguration)
 			if control.Spec.CommonConfiguration.Replicas == nil {
 				control.Spec.CommonConfiguration.Replicas = replicas
-=======
-	for _, contrailCNIService := range instance.Spec.Services.ContrailCNIs {
-		create := *contrailCNIService.Spec.CommonConfiguration.Create
-		delete := false
-		update := false
-
-		cr := cr.GetContrailCNICr()
-		cr.ObjectMeta = contrailCNIService.ObjectMeta
-		cr.Labels = contrailCNIService.ObjectMeta.Labels
-		cr.Namespace = instance.Namespace
-		cr.Spec.ServiceConfiguration = contrailCNIService.Spec.ServiceConfiguration
-		cr.TypeMeta.APIVersion = "contrail.juniper.net/v1alpha1"
-		cr.TypeMeta.Kind = "ContrailCNI"
-		for _, contrailCNIStatus := range instance.Status.ContrailCNIs {
-			if contrailCNIService.Name == *contrailCNIStatus.Name {
-				if *contrailCNIService.Spec.CommonConfiguration.Create && *contrailCNIStatus.Created {
-					err = r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr)
-					if err == nil {
-						create = false
-						delete = false
-						update = true
-					}
-				}
-				if !*contrailCNIService.Spec.CommonConfiguration.Create && *contrailCNIStatus.Created {
-					create = false
-					delete = true
-					update = false
-				}
->>>>>>> Minor review adjustments, configmap architecture migration, removed cluster info from vrouter
 			}
 			return controllerutil.SetControllerReference(manager, control, r.scheme)
 		})
@@ -638,6 +608,8 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 	return err
 }
 
+// TODO: Add similar for contrailCNI
+
 func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *int32) error {
 	for _, existingVRouter := range manager.Status.Vrouters {
 		found := false
@@ -646,7 +618,6 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 				found = true
 				break
 			}
-<<<<<<< HEAD
 		}
 		if !found {
 			oldVRouter := &v1alpha1.Vrouter{}
@@ -657,25 +628,6 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 			err := r.client.Delete(context.TODO(), oldVRouter)
 			if err != nil && !errors.IsNotFound(err) {
 				return err
-=======
-			status := &v1alpha1.ServiceStatus{}
-			contrailCNIStatusList := []*v1alpha1.ServiceStatus{}
-			if instance.Status.ContrailCNIs != nil {
-				contrailCNIStatusList = instance.Status.ContrailCNIs
-			}
-			if instance.Status.ContrailCNIs != nil {
-				for _, contrailCNIStatus := range instance.Status.ContrailCNIs {
-					if contrailCNIService.Name == *contrailCNIStatus.Name {
-						status = contrailCNIStatus
-						status.Created = &create
-					}
-				}
-			} else {
-				status.Name = &cr.Name
-				status.Created = &create
-				contrailCNIStatusList = append(contrailCNIStatusList, status)
-				instance.Status.ContrailCNIs = contrailCNIStatusList
->>>>>>> Minor review adjustments, configmap architecture migration, removed cluster info from vrouter
 			}
 		}
 	}
