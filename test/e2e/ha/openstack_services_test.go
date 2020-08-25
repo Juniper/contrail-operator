@@ -234,9 +234,9 @@ func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPPro
 		}, keystoneCR)
 	assert.NoError(t, err)
 	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
 		_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")

@@ -263,7 +263,7 @@ func TestCommandServices(t *testing.T) {
 					Namespace: namespace,
 					Name:      "commandtest-keystone",
 				}, keystoneCR)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
 			keystoneClient := &keystone.Client{
@@ -284,9 +284,9 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			keystoneClient, err = keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			require.NoError(t, err)

@@ -121,7 +121,7 @@ func TestCluster(t *testing.T) {
 					Namespace: namespace,
 					Name:      "keystone",
 				}, keystoneCR)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			t.Run("then unauthorized list of virtual networks on contrail config api returns 401", func(t *testing.T) {
 				req, err := configProxy.NewRequest(http.MethodGet, "/virtual-networks", nil)
@@ -134,8 +134,9 @@ func TestCluster(t *testing.T) {
 			t.Run("then config nodes are created", func(t *testing.T) {
 				// Test framework client has incompatible Create method signature
 				runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+				require.NoError(t, err)
 				keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 				assert.NoError(t, err)
 				configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
