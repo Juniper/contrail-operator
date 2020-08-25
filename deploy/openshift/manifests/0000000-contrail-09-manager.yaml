@@ -41,6 +41,10 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
+          analyticsDataTTL: 48
+          analyticsConfigAuditTTL: 2160
+          analyticsFlowTTL: 2
+          analyticsStatisticsTTL: 4
           containers:
             - name: analyticsapi
               image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-rhel
