@@ -6,6 +6,7 @@ go_library(
         "command_config.go",
         "command_config_maps.go",
         "command_controller.go",
+        "command_status.go",
     ],
     importpath = "github.com/Juniper/contrail-operator/pkg/controller/command",
     visibility = ["//visibility:public"],

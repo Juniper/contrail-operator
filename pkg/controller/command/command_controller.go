@@ -454,33 +454,14 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 	return c.Command
 }
 
-func (r *ReconcileCommand) updateStatus(
-	command *contrail.Command,
-	deployment *apps.Deployment,
-) error {
-
-	pods := core.PodList{}
-	var labels client.MatchingLabels = deployment.Spec.Selector.MatchLabels
-	if err := r.client.List(context.Background(), &pods, labels); err != nil {
+func (r *ReconcileCommand) updateStatus(command *contrail.Command, deployment *apps.Deployment) error {
+	if err := updateStatusIPs(command, deployment, r.client); err != nil {
 		return err
 	}
-	command.Status.IPs = []string{}
-	for _, pod := range pods.Items {
-		if pod.Status.PodIP != "" {
-			command.Status.IPs = append(command.Status.IPs, pod.Status.PodIP)
-		}
+	updateStatusActive(command, deployment)
+	if err := updateStatusUpgradeState(command, deployment, r.client); err != nil {
+		return err
 	}
-
-	command.Status.Active = false
-	intendentReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		intendentReplicas = *deployment.Spec.Replicas
-	}
-
-	if deployment.Status.ReadyReplicas == intendentReplicas {
-		command.Status.Active = true
-	}
-
 	return r.client.Status().Update(context.Background(), command)
 }
 
