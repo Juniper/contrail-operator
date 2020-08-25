@@ -306,7 +306,7 @@ func (r *ReconcileKeystone) updateStatus(
 		k.Status.Active = true
 		k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
 	}
-	k.Status.ClusterIP = cip
+	k.Status.Endpoint = cip
 	return r.client.Status().Update(context.Background(), k)
 }
 
@@ -330,7 +330,7 @@ func (r *ReconcileKeystone) updateStatusWithExternalKeystone(
 	k.Status.Active = true
 	k.Status.External = true
 	k.Status.Port = k.Spec.ServiceConfiguration.ListenPort
-	k.Status.ClusterIP = k.Spec.ServiceConfiguration.ExternalAddress
+	k.Status.Endpoint = k.Spec.ServiceConfiguration.ExternalAddress
 	return r.client.Status().Update(context.Background(), k)
 }
 

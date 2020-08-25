@@ -164,8 +164,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
-	if keystone.Status.ClusterIP == "" {
-		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
+	if keystone.Status.Endpoint == "" {
+		log.Info(fmt.Sprintf("%q Status.Endpoint empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
 
@@ -193,8 +193,8 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	keystoneData := &keystoneEndpoint{
-		keystoneIP:      keystone.Status.ClusterIP,
-		keystonePort:    keystone.Spec.ServiceConfiguration.ListenPort,
+		address:         keystone.Status.Endpoint,
+		port:            keystone.Spec.ServiceConfiguration.ListenPort,
 		authProtocol:    keystone.Spec.ServiceConfiguration.AuthProtocol,
 		projectDomainID: keystone.Spec.ServiceConfiguration.ProjectDomainID,
 		userDomainID:    keystone.Spec.ServiceConfiguration.UserDomainID,

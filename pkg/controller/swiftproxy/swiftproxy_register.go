@@ -69,8 +69,8 @@ func (r *ReconcileSwiftProxy) ensureRegisterJobConfig(
 	k *contrail.Keystone,
 ) error {
 	keystoneData := &keystoneEndpoint{
-		keystoneIP:      k.Status.ClusterIP,
-		keystonePort:    k.Spec.ServiceConfiguration.ListenPort,
+		address:         k.Status.Endpoint,
+		port:            k.Spec.ServiceConfiguration.ListenPort,
 		region:          k.Spec.ServiceConfiguration.Region,
 		authProtocol:    k.Spec.ServiceConfiguration.AuthProtocol,
 		userDomainID:    k.Spec.ServiceConfiguration.UserDomainID,

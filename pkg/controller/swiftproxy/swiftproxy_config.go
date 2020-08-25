@@ -9,7 +9,7 @@ import (
 
 type swiftProxyConfig struct {
 	ListenPort              int
-	KeystoneIP              string
+	KeystoneAddress         string
 	KeystonePort            int
 	KeystoneAuthProtocol    string
 	KeystoneProjectDomainID string
@@ -98,7 +98,7 @@ use = egg:swift#proxy_logging
 
 [filter:authtoken]
 paste.filter_factory = keystonemiddleware.auth_token:filter_factory
-auth_url = {{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}
+auth_url = {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
 auth_type = password
 auth_protocol = {{ .KeystoneAuthProtocol }}
 insecure = true

@@ -90,8 +90,8 @@ type WebuiList struct {
 }
 
 type keystoneEndpoint struct {
-	keystoneIP        string
-	keystonePort      int
+	address           string
+	port              int
 	authProtocol      string
 	region            string
 	userDomainName    string
@@ -172,7 +172,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminPassword          string
 			Manager                string
 			CAFilePath             string
-			KeystoneIP             string
+			KeystoneAddress        string
 			KeystonePort           string
 			KeystoneRegion         string
 			KeystoneAuthProtocol   string
@@ -194,8 +194,8 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AdminPassword:          webUIConfig.AdminPassword,
 			Manager:                manager,
 			CAFilePath:             certificates.SignerCAFilepath,
-			KeystoneIP:             keystoneData.keystoneIP,
-			KeystonePort:           strconv.Itoa(keystoneData.keystonePort),
+			KeystoneAddress:        keystoneData.address,
+			KeystonePort:           strconv.Itoa(keystoneData.port),
 			KeystoneRegion:         keystoneData.region,
 			KeystoneAuthProtocol:   keystoneData.authProtocol,
 			KeystoneUserDomainName: keystoneData.userDomainName,
@@ -318,11 +318,11 @@ func (c *Webui) getKeystoneEndpoint(k *keystoneEndpoint, client client.Client) e
 	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 		return err
 	}
-	if keystone.Status.ClusterIP == "" {
-		return fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
+	if keystone.Status.Endpoint == "" {
+		return fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
 	}
-	k.keystoneIP = keystone.Status.ClusterIP
-	k.keystonePort = keystone.Spec.ServiceConfiguration.ListenPort
+	k.address = keystone.Status.Endpoint
+	k.port = keystone.Spec.ServiceConfiguration.ListenPort
 	k.region = keystone.Spec.ServiceConfiguration.Region
 	k.authProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
 	k.userDomainName = keystone.Spec.ServiceConfiguration.UserDomainName

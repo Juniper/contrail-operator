@@ -154,9 +154,14 @@ spec:
           properties:
             active:
               type: boolean
-            clusterIP:
+            endpoint:
+              description: When keystone is a part of the cluster Endpoint will be
+                set to the service cluster IP. When keystone is external then value
+                of ExternalAddress will be used.
               type: string
             external:
+              description: Set to true when keystone service is not directly managed
+                by controller.
               type: boolean
             port:
               type: integer

@@ -74,7 +74,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 		{
 			name: "set active status",
@@ -94,7 +94,7 @@ func TestKeystone(t *testing.T) {
 				newKeystoneService(),
 				newFernetSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, Endpoint: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
@@ -136,7 +136,7 @@ func TestKeystone(t *testing.T) {
 				newKeystoneService(),
 				newFernetSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, Endpoint: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedFilledKeystoneConfigMap(),
@@ -185,7 +185,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 		{
 			name: "statefulset shouldn't be created when postgres is not active",
@@ -240,7 +240,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 	}
 
@@ -418,7 +418,7 @@ func TestExternalKeystone(t *testing.T) {
 	k := &contrail.Keystone{}
 	err = cl.Get(context.Background(), req.NamespacedName, k)
 	assert.NoError(t, err)
-	expectedStatus := contrail.KeystoneStatus{ClusterIP: host, Active: true, External: true, Port: port}
+	expectedStatus := contrail.KeystoneStatus{Endpoint: host, Active: true, External: true, Port: port}
 	assert.Equal(t, expectedStatus, k.Status)
 }
 

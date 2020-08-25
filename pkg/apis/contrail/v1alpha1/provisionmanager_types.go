@@ -242,10 +242,10 @@ func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string)
 	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 		return nil, err
 	}
-	if keystone.Status.ClusterIP == "" {
-		return nil, fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
+	if keystone.Status.Endpoint == "" {
+		return nil, fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
 	}
-	k.AuthUrl = fmt.Sprintf("%s://%s:%d/v3/auth", keystone.Spec.ServiceConfiguration.AuthProtocol, keystone.Status.ClusterIP, keystone.Spec.ServiceConfiguration.ListenPort)
+	k.AuthUrl = fmt.Sprintf("%s://%s:%d/v3/auth", keystone.Spec.ServiceConfiguration.AuthProtocol, keystone.Status.Endpoint, keystone.Spec.ServiceConfiguration.ListenPort)
 
 	return k, nil
 }

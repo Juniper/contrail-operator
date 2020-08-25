@@ -35,10 +35,16 @@ type KeystoneConfiguration struct {
 // KeystoneStatus defines the observed state of Keystone
 // +k8s:openapi-gen=true
 type KeystoneStatus struct {
-	Active    bool   `json:"active,omitempty"`
-	Port      int    `json:"port,omitempty"`
-	ClusterIP string `json:"clusterIP,omitempty"`
-	External  bool   `json:"external,omitempty"`
+	Active bool `json:"active,omitempty"`
+	Port   int  `json:"port,omitempty"`
+	// When keystone is a part of the cluster
+	// Endpoint will be set to the service cluster IP.
+	// When keystone is external then value of
+	// ExternalAddress will be used.
+	Endpoint string `json:"endpoint,omitempty"`
+	// Set to true when keystone service is not
+	// directly managed by controller.
+	External bool `json:"external,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

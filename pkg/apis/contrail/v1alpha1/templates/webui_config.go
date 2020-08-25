@@ -18,9 +18,9 @@ config.endpoints.opServiceType = "OpServer";
 config.regions = {};
 {{- /* Create syntactically correct config when keystone not used. */}}
 {{- if .KeystoneRegion }}
-config.regions.{{ .KeystoneRegion }} = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+config.regions.{{ .KeystoneRegion }} = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}/v3";
 {{- else }}
-config.regions.RegionOne = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3";
+config.regions.RegionOne = "{{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}/v3";
 {{- end }}
 config.serviceEndPointTakePublicURL = true;
 config.networkManager = {};
@@ -45,7 +45,7 @@ config.computeManager.apiVersion = ['v1.1', 'v2'];
 config.computeManager.strictSSL = false;
 config.computeManager.ca = "";
 config.identityManager = {};
-config.identityManager.ip = "{{ .KeystoneIP }}";
+config.identityManager.ip = "{{ .KeystoneAddress }}";
 config.identityManager.port = "{{ .KeystonePort }}";
 config.identityManager.authProtocol = "{{ .KeystoneAuthProtocol }}";
 config.identityManager.apiVersion = ['v3'];

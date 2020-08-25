@@ -171,11 +171,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if keystone.Status.ClusterIP == "" {
-		log.Info(fmt.Sprintf("%q Status.ClusterIP empty", keystone.Name))
+	if keystone.Status.Endpoint == "" {
+		log.Info(fmt.Sprintf("%q Status.Endpoint empty", keystone.Name))
 		return reconcile.Result{}, nil
 	}
-	keystoneIP := keystone.Status.ClusterIP
+	keystoneAddress := keystone.Status.Endpoint
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
@@ -184,7 +184,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if len(ips) == 0 {
 		ips = []string{"0.0.0.0"}
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneIP, keystonePort, keystoneAuthProtocol); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneAddress, keystonePort, keystoneAuthProtocol); err != nil {
 		return reconcile.Result{}, err
 	}
 

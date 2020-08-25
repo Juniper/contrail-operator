@@ -56,9 +56,9 @@ type keystoneClient interface {
 // tokens, endpoints etc.
 type Client struct {
 	// Connector specifies backend mechanism used to communicate with Keystone.
-	// When keystone is deployed as part of k8s cluster this should be a kubeproxy client.
+	// When keystone is deployed as part of the cluster this should be a kubeproxy client.
 	// If keystone service resides outside of the cluster, then general http client
-	// can be used.
+	// can be used which implements keystoneClient interface methods.
 	Connector keystoneClient
 	// Service configuration of the Keystone CR.
 	KeystoneConf *contrail.KeystoneConfiguration
