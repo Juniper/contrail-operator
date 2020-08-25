@@ -267,7 +267,7 @@ func TestCommandServices(t *testing.T) {
 
 			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
 			keystoneClient := &keystone.Client{
-				Client:       commandProxy,
+				Connector:    commandProxy,
 				KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
 			}
 

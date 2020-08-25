@@ -21,28 +21,30 @@ import (
 
 // NewClient prepares keystone client based on properties of passed keystone CRD.
 func NewClient(kubClient client.Client, scheme *runtime.Scheme, config *rest.Config, k *contrail.Keystone) (*Client, error) {
+	connector, err := newConnector(kubClient, scheme, config, k)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{
+		Connector:    connector,
+		KeystoneConf: &k.Spec.ServiceConfiguration,
+	}, nil
+}
+
+func newConnector(kubClient client.Client, scheme *runtime.Scheme, config *rest.Config, k *contrail.Keystone) (keystoneClient, error) {
 	if k.Spec.ServiceConfiguration.ExternalAddress != "" {
 		caCertificate := certificates.NewCACertificate(kubClient, scheme, k, k.GetName())
 		caBundle, _ := caCertificate.GetCaCert()
-		return &Client{
-			Client:       newExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Spec.ServiceConfiguration.ExternalAddress, k.Spec.ServiceConfiguration.ListenPort, caBundle),
-			KeystoneConf: &k.Spec.ServiceConfiguration,
-		}, nil
+		return newExtKeystoneClient(k.Spec.ServiceConfiguration.AuthProtocol, k.Spec.ServiceConfiguration.ExternalAddress, k.Spec.ServiceConfiguration.ListenPort, caBundle), nil
 	}
 	proxy, err := kubeproxy.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	if k.Spec.ServiceConfiguration.AuthProtocol == "https" {
-		return &Client{
-			Client:       proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
-			KeystoneConf: &k.Spec.ServiceConfiguration,
-		}, nil
+		return proxy.NewSecureClientForService(k.Namespace, k.Name+"-service", k.Status.Port), nil
 	}
-	return &Client{
-		Client:       proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port),
-		KeystoneConf: &k.Spec.ServiceConfiguration,
-	}, nil
+	return proxy.NewClientForService(k.Namespace, k.Name+"-service", k.Status.Port), nil
 }
 
 type keystoneClient interface {
@@ -50,8 +52,15 @@ type keystoneClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// A Client is an interface to the Keystone endpoint which allows retrieving
+// tokens, endpoints etc.
 type Client struct {
-	Client       keystoneClient
+	// Connector specifies backend mechanism used to communicate with Keystone.
+	// When keystone is deployed as part of k8s cluster this should be a kubeproxy client.
+	// If keystone service resides outside of the cluster, then general http client
+	// can be used.
+	Connector keystoneClient
+	// Service configuration of the Keystone CR.
 	KeystoneConf *contrail.KeystoneConfiguration
 }
 
@@ -109,7 +118,7 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 	if err != nil {
 		return AuthTokens{}, err
 	}
-	request, err := c.Client.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
+	request, err := c.Connector.NewRequest(http.MethodPost, "/v3/auth/tokens", bytes.NewReader(karBody))
 	if err != nil {
 		return AuthTokens{}, err
 	}
@@ -119,7 +128,7 @@ func (c *Client) PostAuthTokensWithHeaders(username, password, project string, h
 			request.Header.Add(name, value)
 		}
 	}
-	response, err := c.Client.Do(request)
+	response, err := c.Connector.Do(request)
 	if err != nil {
 		return AuthTokens{}, err
 	}
