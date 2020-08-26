@@ -3,8 +3,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "credentials_secret.go",
         "patroni_controller.go",
-        "sts.go",
     ],
     importpath = "github.com/Juniper/contrail-operator/pkg/controller/patroni",
     visibility = ["//visibility:public"],
@@ -13,6 +13,7 @@ go_library(
         "//pkg/certificates:go_default_library",
         "//pkg/k8s:go_default_library",
         "//pkg/label:go_default_library",
+        "//pkg/localvolume:go_default_library",
         "//pkg/randomstring:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

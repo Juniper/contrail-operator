@@ -220,8 +220,6 @@ func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, 
 	return pods, nil
 }
 
-
-
 func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*core.Service, error) {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
@@ -400,10 +398,127 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrail.Patroni) e
 
 func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrail.Patroni, serviceAccountName string) (*apps.StatefulSet, error) {
 
-	statefulSet := GetSTS(instance, serviceAccountName)
-
+	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
+
+	var podAffinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+				LabelSelector: &meta.LabelSelector{MatchLabels: instance.Labels},
+				TopologyKey:   "kubernetes.io/hostname",
+			}},
+		},
+	}
+
+	var podIPEnv = core.EnvVar{
+		Name: "POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
+			},
+		},
+	}
+
+	var namespaceEnv = core.EnvVar{
+		Name: "PATRONI_KUBERNETES_NAMESPACE",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.namespace",
+			},
+		},
+	}
+
+	var labelsEnv = core.EnvVar{
+		Name: "PATRONI_KUBERNETES_LABELS",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.labels",
+			},
+		},
+	}
+
+	var endpointsEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_USE_ENDPOINTS",
+		Value: "true",
+	}
+
+	var podContainers = []core.Container{
+		{
+			Name:  "patroni",
+			Image: "svl-artifactory.juniper.net/common-docker-third-party/contrail/patroni:1.6.5",
+			Env: []core.EnvVar{
+				podIPEnv,
+				namespaceEnv,
+				labelsEnv,
+				endpointsEnv,
+			},
+			ImagePullPolicy: "Always",
+		},
+	}
+
+	var podSpec = core.PodSpec{
+		Affinity:           podAffinity,
+		Containers:         podContainers,
+		HostNetwork:        true,
+		NodeSelector:       instance.Spec.CommonConfiguration.NodeSelector,
+		ServiceAccountName: serviceAccountName,
+		Tolerations:        instance.Spec.CommonConfiguration.Tolerations,
+		Volumes: []core.Volume{
+			{
+				Name: "pgdata",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: "pgdata",
+						ReadOnly:  false,
+					},
+				},
+			},
+		}}
+
+	var stsSelector = meta.LabelSelector{
+		MatchLabels: contraillabel.New("patroni", instance.Name),
+	}
+
+	var replicas = int32(1)
+
+	var stsTemplate = core.PodTemplateSpec{
+		ObjectMeta: meta.ObjectMeta{
+			Labels: contraillabel.New("patroni", instance.Name),
+		},
+		Spec: podSpec,
+	}
+
+	storageClassName := "local-storage"
+	volumeClaimTemplates := []core.PersistentVolumeClaim{
+		{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "pgdata-claim",
+				Namespace: instance.Namespace,
+				Labels:    instance.Labels,
+			},
+			Spec: core.PersistentVolumeClaimSpec{
+
+				AccessModes: []core.PersistentVolumeAccessMode{
+					core.ReadWriteOnce,
+				},
+				StorageClassName: &storageClassName,
+				Resources: core.ResourceRequirements{
+					Requests: map[core.ResourceName]resource.Quantity{
+						core.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
+		},
+	}
+
+	statefulSet.Spec = apps.StatefulSetSpec{
+		Selector:             &stsSelector,
+		ServiceName:          "patroni",
+		Replicas:             &replicas,
+		Template:             stsTemplate,
+		VolumeClaimTemplates: volumeClaimTemplates,
+	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 
