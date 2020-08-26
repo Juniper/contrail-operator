@@ -1,0 +1,42 @@
+{
+    "composites": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint",
+            "pkg/controller/swift/swift_conf.go": "",
+            "pkg/controller/rabbitmq/rabbitmq_controller.go": "",
+            "pkg/controller/manager/manager_keystone_secret.go": "",
+            "contrail-provisioner": "",
+            "_test.go$": ""
+        }
+    },
+    "shadow": {
+        "only_files": {
+            "pkg/label": ""
+        }
+    },
+    "stringintconv": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    },
+    "structtag": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    },
+    "unreachable": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    },
+    "unsafeptr": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    },
+    "unusedresult": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    }
+}
