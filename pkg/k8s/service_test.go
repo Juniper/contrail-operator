@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
@@ -12,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestEnsureServiceExists(t *testing.T) {

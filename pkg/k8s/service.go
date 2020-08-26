@@ -3,13 +3,14 @@ package k8s
 import (
 	"context"
 
-	"github.com/Juniper/contrail-operator/pkg/label"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/Juniper/contrail-operator/pkg/label"
 )
 
 // Service is used to create and manage kubernetes services
