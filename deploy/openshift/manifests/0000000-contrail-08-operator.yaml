@@ -31,10 +31,6 @@ spec:
       - name: contrail-registry
       tolerations:
         - effect: NoExecute
-          key: node.kubernetes.io/unreachable
-          operator: Exists
-          tolerationSeconds: 2
-        - effect: NoExecute
           operator: Exists
         - effect: NoSchedule
           operator: Exists
