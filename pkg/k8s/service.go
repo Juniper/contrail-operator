@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// Service is used to create and manage kubernetes services
 type Service struct {
 	name      string
 	servType  core.ServiceType
@@ -23,6 +24,7 @@ type Service struct {
 	svc       core.Service
 }
 
+// EnsureExists is used to make sure that kubernetes service exists and is correctly configured
 func (s *Service) EnsureExists() error {
 	labels := label.New(s.ownerType, s.owner.GetName())
 	s.svc = core.Service{
@@ -39,16 +41,18 @@ func (s *Service) EnsureExists() error {
 				nodePort = s.svc.Spec.Ports[i].NodePort
 			}
 		}
+
 		s.svc.Spec.Ports = []core.ServicePort{
 			{Port: s.port, Protocol: "TCP", NodePort: nodePort},
 		}
 		s.svc.Spec.Selector = labels
-		s.svc.Spec.Type = core.ServiceTypeLoadBalancer
+		s.svc.Spec.Type = s.servType
 		return controllerutil.SetControllerReference(s.owner, &s.svc, s.scheme)
 	})
 	return err
 }
 
+// ClusterIP is used to read clusterIP of service
 func (s *Service) ClusterIP() string {
 	return s.svc.Spec.ClusterIP
 }

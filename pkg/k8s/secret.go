@@ -58,10 +58,10 @@ func (s *Secret) createNewOrGetExistingSecret() (*core.Secret, error) {
 			},
 			Data: make(map[string][]byte),
 		}
-		if err := controllerutil.SetControllerReference(s.owner, secret, s.scheme); err != nil {
+		if err = controllerutil.SetControllerReference(s.owner, secret, s.scheme); err != nil {
 			return nil, err
 		}
-		err := s.client.Create(context.Background(), secret)
+		err = s.client.Create(context.Background(), secret)
 		return secret, err
 	}
 	return nil, err
