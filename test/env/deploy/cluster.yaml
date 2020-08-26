@@ -155,7 +155,6 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          hostNetwork: true
           tolerations:
             - effect: NoSchedule
               operator: Exists
@@ -214,6 +213,12 @@ spec:
       metadata:
         name: swift
       spec:
+        commonConfiguration:
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:

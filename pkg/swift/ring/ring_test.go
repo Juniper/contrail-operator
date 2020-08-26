@@ -30,6 +30,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestRing_BuildJob(t *testing.T) {
+	nodeSelector := map[string]string{"node-role.kubernetes.io/master": ""}
 	jobName := types.NamespacedName{
 		Namespace: "contrail",
 		Name:      "ring-account-job",
@@ -43,14 +44,14 @@ func TestRing_BuildJob(t *testing.T) {
 	}
 	t.Run("should return error when no devices have been added", func(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
-		_, err := account.BuildJob(jobName)
+		_, err := account.BuildJob(jobName, nodeSelector)
 		assert.Error(t, err)
 	})
 	t.Run("should create a job with given name", func(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, err := account.BuildJob(jobName)
+		job, err := account.BuildJob(jobName, nodeSelector)
 		require.NoError(t, err)
 		assert.Equal(t, jobName.Name, job.Name)
 		assert.Equal(t, jobName.Namespace, job.Namespace)
@@ -62,7 +63,7 @@ func TestRing_BuildJob(t *testing.T) {
 		job, err := account.BuildJob(types.NamespacedName{
 			Namespace: "",
 			Name:      "ring-account-job",
-		})
+		}, nodeSelector)
 		require.NoError(t, err)
 		assert.Equal(t, "default", job.Namespace)
 	})
@@ -73,7 +74,7 @@ func TestRing_BuildJob(t *testing.T) {
 		_, err := account.BuildJob(types.NamespacedName{
 			Namespace: "contrail",
 			Name:      "",
-		})
+		}, nodeSelector)
 		assert.Error(t, err)
 	})
 	t.Run("should return error when config map name not given", func(t *testing.T) {
@@ -103,7 +104,7 @@ func TestRing_BuildJob(t *testing.T) {
 				account, _ := ring.New(test.configMap, "account", "service-account")
 				_ = account.AddDevice(device)
 				// when
-				job, _ := account.BuildJob(jobName)
+				job, _ := account.BuildJob(jobName, nodeSelector)
 				// then
 				containers := job.Spec.Template.Spec.Containers
 				require.Len(t, containers, 1)
@@ -121,7 +122,7 @@ func TestRing_BuildJob(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, _ := account.BuildJob(jobName)
+		job, _ := account.BuildJob(jobName, nodeSelector)
 		// then
 		containers := job.Spec.Template.Spec.Containers
 		require.Len(t, containers, 1)
@@ -192,7 +193,7 @@ func TestRing_BuildJob(t *testing.T) {
 					_ = account.AddDevice(device)
 				}
 				// when
-				job, err := account.BuildJob(jobName)
+				job, err := account.BuildJob(jobName, nodeSelector)
 				// then
 				require.NoError(t, err)
 				containers := job.Spec.Template.Spec.Containers
@@ -206,7 +207,7 @@ func TestRing_BuildJob(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, _ := account.BuildJob(jobName)
+		job, _ := account.BuildJob(jobName, nodeSelector)
 		// then
 		containers := job.Spec.Template.Spec.Containers
 		require.NotEmpty(t, containers)
@@ -224,7 +225,7 @@ func TestRing_BuildJob(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, _ := account.BuildJob(jobName)
+		job, _ := account.BuildJob(jobName, nodeSelector)
 		// then
 		containers := job.Spec.Template.Spec.Containers
 		require.NotEmpty(t, containers)
@@ -236,16 +237,25 @@ func TestRing_BuildJob(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, _ := account.BuildJob(jobName)
+		job, _ := account.BuildJob(jobName, nodeSelector)
 		// then
 		assert.Equal(t, core.RestartPolicyNever, job.Spec.Template.Spec.RestartPolicy)
+	})
+
+	t.Run("should specify nodeSelector", func(t *testing.T) {
+		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
+		_ = account.AddDevice(device)
+		// when
+		job, _ := account.BuildJob(jobName, nodeSelector)
+		// then
+		assert.Equal(t, nodeSelector, job.Spec.Template.Spec.NodeSelector)
 	})
 
 	t.Run("should pass service account name", func(t *testing.T) {
 		account, _ := ring.New(types.NamespacedName{Name: "rings"}, "account", "service-account")
 		_ = account.AddDevice(device)
 		// when
-		job, _ := account.BuildJob(jobName)
+		job, _ := account.BuildJob(jobName, nodeSelector)
 		// then
 		assert.Equal(t, "service-account", job.Spec.Template.Spec.ServiceAccountName)
 	})
@@ -294,7 +304,7 @@ func TestRing_AddDevice(t *testing.T) {
 				_, err = theRing.BuildJob(types.NamespacedName{
 					Namespace: "t",
 					Name:      "t",
-				})
+				}, map[string]string{})
 				// then
 				require.Error(t, err)
 			})

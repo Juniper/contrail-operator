@@ -496,7 +496,7 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	}
 }
 
-func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName string, psqlIP string) *batch.Job {
+func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string) *batch.Job {
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,
@@ -507,6 +507,7 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 				Spec: core.PodSpec{
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
+					NodeSelector: cr.Spec.CommonConfiguration.NodeSelector,
 					Volumes: []core.Volume{
 						{
 							Name: "keystone-bootstrap-config-volume",

@@ -50,7 +50,7 @@ func (r *ReconcileSwiftProxy) ensureSwiftRegistered(sp *contrail.SwiftProxy, adm
 
 	job = newBootstrapJob(
 		jobNamespacedName, jobConfigMapName(sp),
-		sp.Spec.ServiceConfiguration.Containers, sp.Spec.CommonConfiguration.Tolerations,
+		sp.Spec.ServiceConfiguration.Containers, sp.Spec.CommonConfiguration,
 	)
 	if err = controllerutil.SetControllerReference(sp, job, r.scheme); err != nil {
 		return reconcile.Result{}, err
@@ -125,7 +125,7 @@ func newBootstrapJob(
 	nameSpacedName types.NamespacedName,
 	jobConfigName string,
 	containers []*contrail.Container,
-	tolerations []core.Toleration,
+	commonConfiguration contrail.PodConfiguration,
 ) *batch.Job {
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
@@ -135,6 +135,7 @@ func newBootstrapJob(
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					NodeSelector: commonConfiguration.NodeSelector,
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
@@ -172,7 +173,7 @@ func newBootstrapJob(
 							Args: []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
 						},
 					},
-					Tolerations: tolerations,
+					Tolerations: commonConfiguration.Tolerations,
 				},
 			},
 		},

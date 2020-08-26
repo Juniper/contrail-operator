@@ -758,6 +758,7 @@ func newExpectedBootstrapJob() *batch.Job {
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{

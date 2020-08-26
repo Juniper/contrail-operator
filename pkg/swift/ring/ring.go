@@ -73,7 +73,7 @@ func (r *Ring) AddDevice(device Device) error {
 	return nil
 }
 
-func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
+func (r *Ring) BuildJob(name types.NamespacedName, nodeSelector map[string]string) (batch.Job, error) {
 	if r == nil {
 		return batch.Job{}, errors.New("nil ring")
 	}
@@ -95,6 +95,7 @@ func (r *Ring) BuildJob(name types.NamespacedName) (batch.Job, error) {
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
+					NodeSelector:       nodeSelector,
 					HostNetwork:        true,
 					RestartPolicy:      core.RestartPolicyNever,
 					ServiceAccountName: r.serviceAccountName,
