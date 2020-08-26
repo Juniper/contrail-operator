@@ -97,31 +97,16 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
-	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Name < podList.Items[j].Name })
 	cassandraConfigInterface := c.ConfigurationParameters()
 	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
 	cassandraSecret := &corev1.Secret{}
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret", Namespace: request.Namespace}, cassandraSecret); err != nil {
 		return err
 	}
-	for idx, pod := range podList.Items {
-		var seeds []string
-		for _, pod := range podList.Items {
-			for _, c := range pod.Status.Conditions {
-				if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
-					seeds = append(seeds, pod.Status.PodIP)
-					break
-				}
-			}
-		}
-		seedsListString := ""
-		if len(seeds) != 0 {
-			numberOfSeeds := (len(seeds) - 1) / 2
-			seedsList := seeds[:numberOfSeeds+1]
-			seedsListString = strings.Join(seedsList, ",")
-		} else {
-			seedsListString = pod.Status.PodIP
-		}
+
+	seedsListString := strings.Join(c.seeds(podList), ",")
+
+	for idx := range podList.Items {
 		var cassandraConfigBuffer bytes.Buffer
 		configtemplates.CassandraConfig.Execute(&cassandraConfigBuffer, struct {
 			ClusterName         string
@@ -348,4 +333,29 @@ func (c *Cassandra) ConfigurationParameters() interface{} {
 		cassandraConfiguration.ListenAddress = "auto"
 	}
 	return cassandraConfiguration
+}
+
+func (c *Cassandra) seeds(podList *corev1.PodList) []string {
+	pods := make([]corev1.Pod, len(podList.Items))
+	copy(pods, podList.Items)
+	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+
+	var seeds []string
+	for _, pod := range pods {
+		for _, c := range pod.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				seeds = append(seeds, pod.Status.PodIP)
+				break
+			}
+		}
+	}
+
+	if len(seeds) != 0 {
+		numberOfSeeds := (len(seeds) - 1) / 2
+		seeds = seeds[:numberOfSeeds+1]
+	} else if len(pods) > 0 {
+		seeds = []string{pods[0].Status.PodIP}
+	}
+
+	return seeds
 }

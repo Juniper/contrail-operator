@@ -62,10 +62,10 @@ func (s *ConfigMap) createNewOrGetExistingConfigMap() (*core.ConfigMap, error) {
 			},
 			Data: make(map[string]string),
 		}
-		if err := controllerutil.SetControllerReference(s.owner, configMap, s.scheme); err != nil {
+		if err = controllerutil.SetControllerReference(s.owner, configMap, s.scheme); err != nil {
 			return nil, err
 		}
-		err := s.client.Create(context.Background(), configMap)
+		err = s.client.Create(context.Background(), configMap)
 		return configMap, err
 	}
 	return nil, err
