@@ -25,7 +25,7 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
 	clusterConfigMap := configMap{}
-	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+	if err = yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return 0, err
 	}
 	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint
@@ -50,7 +50,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	clusterConfig := kcm.Data["ClusterConfiguration"]
 	clusterConfigByte := []byte(clusterConfig)
 	clusterConfigMap := configMap{}
-	if err := yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
+	if err = yaml.Unmarshal(clusterConfigByte, &clusterConfigMap); err != nil {
 		return "", err
 	}
 	controlPlaneEndpoint := clusterConfigMap.ControlPlaneEndpoint

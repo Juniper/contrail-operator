@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -44,4 +45,9 @@ func (k *Kubernetes) ConfigMap(name, ownerType string, owner v1.Object) *ConfigM
 // Secret is used to create Secret object
 func (k *Kubernetes) Secret(name, ownerType string, owner v1.Object) *Secret {
 	return &Secret{name: name, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
+}
+
+// Service is used to create Service object
+func (k *Kubernetes) Service(name string, servType core.ServiceType, port int32, ownerType string, owner v1.Object) *Service {
+	return &Service{name: name, servType: servType, port: port, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
 }

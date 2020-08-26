@@ -258,6 +258,8 @@ spec:
                         properties:
                           active:
                             type: boolean
+                          clusterIP:
+                            type: string
                           nodes:
                             additionalProperties:
                               type: string

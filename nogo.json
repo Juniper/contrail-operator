@@ -11,7 +11,8 @@
     },
     "shadow": {
         "only_files": {
-            "pkg/label": ""
+            "pkg/label": "",
+            "pkg/k8s": ""
         }
     },
     "stringintconv": {

@@ -59,9 +59,10 @@ type CassandraConfiguration struct {
 // CassandraStatus defines the status of the cassandra object.
 // +k8s:openapi-gen=true
 type CassandraStatus struct {
-	Active *bool                `json:"active,omitempty"`
-	Nodes  map[string]string    `json:"nodes,omitempty"`
-	Ports  CassandraStatusPorts `json:"ports,omitempty"`
+	Active    *bool                `json:"active,omitempty"`
+	Nodes     map[string]string    `json:"nodes,omitempty"`
+	Ports     CassandraStatusPorts `json:"ports,omitempty"`
+	ClusterIP string               `json:"clusterIP,omitempty"`
 }
 
 // CassandraStatusPorts defines the status of the ports of the cassandra object.
@@ -96,22 +97,16 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
-	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	cassandraConfigInterface := c.ConfigurationParameters()
 	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
 	cassandraSecret := &corev1.Secret{}
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret", Namespace: request.Namespace}, cassandraSecret); err != nil {
 		return err
 	}
+
+	seedsListString := strings.Join(c.seeds(podList), ",")
+
 	for idx := range podList.Items {
-		var seeds []string
-		for idx2 := range podList.Items {
-			seeds = append(seeds, podList.Items[idx2].Status.PodIP)
-		}
-		numberOfSeeds := (len(seeds) - 1) / 2
-		seedsList := seeds[:numberOfSeeds+1]
-		seedsListString := strings.Join(seedsList, ",")
-		//seedsListString = strings.Join(seeds, ",")
 		var cassandraConfigBuffer bytes.Buffer
 		configtemplates.CassandraConfig.Execute(&cassandraConfigBuffer, struct {
 			ClusterName         string
@@ -186,7 +181,7 @@ func (c *Cassandra) CreateSecret(secretName string,
 
 // PrepareSTS prepares the intended deployment for the Cassandra object.
 func (c *Cassandra) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
-	return PrepareSTS(sts, commonConfiguration, "cassandra", request, scheme, c, client, true)
+	return PrepareSTS(sts, commonConfiguration, "cassandra", request, scheme, c, client, false)
 }
 
 // AddVolumesToIntendedSTS adds volumes to the Cassandra deployment.
@@ -216,7 +211,7 @@ func (c *Cassandra) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, requ
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
 func (c *Cassandra) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
+	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, false, false, false, false)
 }
 
 // SetInstanceActive sets the Cassandra instance to active.
@@ -338,4 +333,29 @@ func (c *Cassandra) ConfigurationParameters() interface{} {
 		cassandraConfiguration.ListenAddress = "auto"
 	}
 	return cassandraConfiguration
+}
+
+func (c *Cassandra) seeds(podList *corev1.PodList) []string {
+	pods := make([]corev1.Pod, len(podList.Items))
+	copy(pods, podList.Items)
+	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+
+	var seeds []string
+	for _, pod := range pods {
+		for _, c := range pod.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				seeds = append(seeds, pod.Status.PodIP)
+				break
+			}
+		}
+	}
+
+	if len(seeds) != 0 {
+		numberOfSeeds := (len(seeds) - 1) / 2
+		seeds = seeds[:numberOfSeeds+1]
+	} else if len(pods) > 0 {
+		seeds = []string{pods[0].Status.PodIP}
+	}
+
+	return seeds
 }
