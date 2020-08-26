@@ -88,6 +88,10 @@ type ConfigConfiguration struct {
 	AAAMode                     AAAMode            `json:"aaaMode,omitempty"`
 	Storage                     Storage            `json:"storage,omitempty"`
 	FabricMgmtIP                string             `json:"fabricMgmtIP,omitempty"`
+	AnalyticsDataTTL            *int               `json:"analyticsDataTTL,omitempty"`
+	AnalyticsConfigAuditTTL     *int               `json:"analyticsConfigAuditTTL,omitempty"`
+	AnalyticsStatisticsTTL      *int               `json:"analyticsStatisticsTTL,omitempty"`
+	AnalyticsFlowTTL            *int               `json:"analyticsFlowTTL,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -477,6 +481,10 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel                string
 			CAFilePath              string
 			CollectorIntrospectPort string
+			AnalyticsDataTTL        string
+			AnalyticsConfigAuditTTL string
+			AnalyticsStatisticsTTL  string
+			AnalyticsFlowTTL        string
 		}{
 			Hostname:                hostname,
 			HostIP:                  podList.Items[idx].Status.PodIP,
@@ -490,6 +498,10 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel:                configConfig.LogLevel,
 			CAFilePath:              certificates.SignerCAFilepath,
 			CollectorIntrospectPort: strconv.Itoa(*configConfig.CollectorIntrospectPort),
+			AnalyticsDataTTL:        strconv.Itoa(*configConfig.AnalyticsDataTTL),
+			AnalyticsConfigAuditTTL: strconv.Itoa(*configConfig.AnalyticsConfigAuditTTL),
+			AnalyticsStatisticsTTL:  strconv.Itoa(*configConfig.AnalyticsStatisticsTTL),
+			AnalyticsFlowTTL:        strconv.Itoa(*configConfig.AnalyticsFlowTTL),
 		})
 		data["collector."+podList.Items[idx].Status.PodIP] = configCollectorConfigBuffer.String()
 
@@ -501,6 +513,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList string
 			RedisServerList     string
 			CAFilePath          string
+			AnalyticsDataTTL    string
 		}{
 			Hostname:            hostname,
 			HostIP:              podList.Items[idx].Status.PodIP,
@@ -508,6 +521,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			CollectorServerList: collectorServerList,
 			RedisServerList:     redisServerSpaceSeparatedList,
 			CAFilePath:          certificates.SignerCAFilepath,
+			AnalyticsDataTTL:    strconv.Itoa(*configConfig.AnalyticsDataTTL),
 		})
 		data["queryengine."+podList.Items[idx].Status.PodIP] = configQueryEngineConfigBuffer.String()
 
@@ -880,6 +894,38 @@ func (c *Config) ConfigurationParameters() interface{} {
 			configConfiguration.AAAMode = AAAModeRBAC
 		}
 	}
+
+	var analyticsDataTTL int
+	if c.Spec.ServiceConfiguration.AnalyticsDataTTL != nil {
+		analyticsDataTTL = *c.Spec.ServiceConfiguration.AnalyticsDataTTL
+	} else {
+		analyticsDataTTL = AnalyticsDataTTL
+	}
+	configConfiguration.AnalyticsDataTTL = &analyticsDataTTL
+
+	var analyticsConfigAuditTTL int
+	if c.Spec.ServiceConfiguration.AnalyticsConfigAuditTTL != nil {
+		analyticsConfigAuditTTL = *c.Spec.ServiceConfiguration.AnalyticsConfigAuditTTL
+	} else {
+		analyticsConfigAuditTTL = AnalyticsConfigAuditTTL
+	}
+	configConfiguration.AnalyticsConfigAuditTTL = &analyticsConfigAuditTTL
+
+	var analyticsStatisticsTTL int
+	if c.Spec.ServiceConfiguration.AnalyticsStatisticsTTL != nil {
+		analyticsStatisticsTTL = *c.Spec.ServiceConfiguration.AnalyticsStatisticsTTL
+	} else {
+		analyticsStatisticsTTL = AnalyticsStatisticsTTL
+	}
+	configConfiguration.AnalyticsStatisticsTTL = &analyticsStatisticsTTL
+
+	var analyticsFlowTTL int
+	if c.Spec.ServiceConfiguration.AnalyticsFlowTTL != nil {
+		analyticsFlowTTL = *c.Spec.ServiceConfiguration.AnalyticsFlowTTL
+	} else {
+		analyticsFlowTTL = AnalyticsFlowTTL
+	}
+	configConfiguration.AnalyticsFlowTTL = &analyticsFlowTTL
 
 	return configConfiguration
 
