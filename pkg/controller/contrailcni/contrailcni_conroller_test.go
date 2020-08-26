@@ -67,7 +67,6 @@ func TestContrailCNIController(t *testing.T) {
 				},
 			},
 			CommonConfiguration: contrail.PodConfiguration{
-				Create:       &trueVal,
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "contrailcni"},
 				Replicas:     &replicas,
 			},

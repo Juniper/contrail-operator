@@ -167,9 +167,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ContrailCNISpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &createNew,
-				},
 				ServiceConfiguration: contrail.ContrailCNIConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vroutercni", Image: "vroutercni:3.5"},
@@ -446,9 +443,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ContrailCNISpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &createVal,
-				},
 				ServiceConfiguration: contrail.ContrailCNIConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vroutercni", Image: "vroutercni:3.5"},
@@ -724,9 +718,6 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ContrailCNISpec{
-				CommonConfiguration: contrail.PodConfiguration{
-					Create: &setBool,
-				},
 				ServiceConfiguration: contrail.ContrailCNIConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "vroutercni", Image: "vroutercni:3.5"},

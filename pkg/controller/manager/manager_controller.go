@@ -212,6 +212,10 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if err := r.processContrailCNIs(instance, replicas); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if err = r.processPostgres(instance, replicas); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -608,8 +612,6 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 	return err
 }
 
-// TODO: Add similar for contrailCNI
-
 func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *int32) error {
 	for _, existingVRouter := range manager.Status.Vrouters {
 		found := false
@@ -655,6 +657,54 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 	}
 
 	manager.Status.Vrouters = vRouterServiceStatus
+	return nil
+}
+
+func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager, replicas *int32) error {
+	for _, existingContrailCNI := range manager.Status.ContrailCNIs {
+		found := false
+		for _, intendedContrailCNI := range manager.Spec.Services.ContrailCNIs {
+			if *existingContrailCNI.Name == intendedContrailCNI.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			oldContrailCNI := &v1alpha1.ContrailCNI{}
+			oldContrailCNI.ObjectMeta = v1.ObjectMeta{
+				Namespace: manager.Namespace,
+				Name:      *existingContrailCNI.Name,
+			}
+			err := r.client.Delete(context.TODO(), oldContrailCNI)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
+	var ContrailCNIServiceStatus []*v1alpha1.ServiceStatus
+	for _, ContrailCNIService := range manager.Spec.Services.ContrailCNIs {
+		ContrailCNI := &v1alpha1.ContrailCNI{}
+		ContrailCNI.ObjectMeta = ContrailCNIService.ObjectMeta
+		ContrailCNI.ObjectMeta.Namespace = manager.Namespace
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, ContrailCNI, func() error {
+			ContrailCNI.Spec = ContrailCNIService.Spec
+			ContrailCNI.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, ContrailCNI.Spec.CommonConfiguration)
+			if ContrailCNI.Spec.CommonConfiguration.Replicas == nil {
+				ContrailCNI.Spec.CommonConfiguration.Replicas = replicas
+			}
+			return controllerutil.SetControllerReference(manager, ContrailCNI, r.scheme)
+		})
+		if err != nil {
+			return err
+		}
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &ContrailCNI.Name
+		status.Active = ContrailCNI.Status.Active
+		ContrailCNIServiceStatus = append(ContrailCNIServiceStatus, status)
+	}
+
+	manager.Status.ContrailCNIs = ContrailCNIServiceStatus
 	return nil
 }
 
