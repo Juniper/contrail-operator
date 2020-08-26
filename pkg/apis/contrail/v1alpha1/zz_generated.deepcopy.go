@@ -555,6 +555,26 @@ func (in *ConfigConfiguration) DeepCopyInto(out *ConfigConfiguration) {
 		**out = **in
 	}
 	out.Storage = in.Storage
+	if in.AnalyticsDataTTL != nil {
+		in, out := &in.AnalyticsDataTTL, &out.AnalyticsDataTTL
+		*out = new(int)
+		**out = **in
+	}
+	if in.AnalyticsConfigAuditTTL != nil {
+		in, out := &in.AnalyticsConfigAuditTTL, &out.AnalyticsConfigAuditTTL
+		*out = new(int)
+		**out = **in
+	}
+	if in.AnalyticsStatisticsTTL != nil {
+		in, out := &in.AnalyticsStatisticsTTL, &out.AnalyticsStatisticsTTL
+		*out = new(int)
+		**out = **in
+	}
+	if in.AnalyticsFlowTTL != nil {
+		in, out := &in.AnalyticsFlowTTL, &out.AnalyticsFlowTTL
+		*out = new(int)
+		**out = **in
+	}
 	return
 }
 

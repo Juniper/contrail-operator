@@ -289,10 +289,10 @@ sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigCollectorConfig is the template of the Collector service configuration.
 var ConfigCollectorConfig = template.Must(template.New("").Parse(`[DEFAULT]
-analytics_data_ttl=48
-analytics_config_audit_ttl=2160
-analytics_statistics_ttl=4
-analytics_flow_ttl=2
+analytics_data_ttl={{ .AnalyticsDataTTL }}
+analytics_config_audit_ttl={{ .AnalyticsConfigAuditTTL }}
+analytics_statistics_ttl={{ .AnalyticsStatisticsTTL }}
+analytics_flow_ttl={{ .AnalyticsFlowTTL }}
 partitions=30
 hostip={{ .HostIP }}
 hostname={{ .Hostname }}
@@ -353,7 +353,7 @@ sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ConfigQueryEngineConfig is the template of the Config Nodemanager service configuration.
 var ConfigQueryEngineConfig = template.Must(template.New("").Parse(`[DEFAULT]
-analytics_data_ttl=48
+analytics_data_ttl={{ .AnalyticsDataTTL }}
 hostip={{ .HostIP }}
 hostname={{ .Hostname }}
 http_server_ip=0.0.0.0
