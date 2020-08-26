@@ -47,7 +47,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -57,7 +57,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+				contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -78,7 +78,7 @@ func TestSwiftProxyController(t *testing.T) {
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
 				newKeystone(
-					contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+					contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 					[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 				),
 				newExpectedDeployment(apps.DeploymentStatus{}),
@@ -93,7 +93,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+				contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedConfigs: []*core.ConfigMap{
@@ -113,7 +113,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxy(contrail.SwiftProxyStatus{}),
-				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{
 					ReadyReplicas: 1,
 				}),
@@ -126,7 +126,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+				contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
@@ -148,7 +148,7 @@ func TestSwiftProxyController(t *testing.T) {
 						Active: true,
 					},
 				}),
-				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newExpectedDeployment(apps.DeploymentStatus{}),
 				newMemcached(),
 				newAdminSecret(),
@@ -159,7 +159,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeployment(apps.DeploymentStatus{}),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+				contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{
@@ -175,7 +175,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// given
 			initObjs: []runtime.Object{
 				newSwiftProxyWithCustomImages(),
-				newKeystone(contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"}, nil),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newMemcached(),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -185,7 +185,7 @@ func TestSwiftProxyController(t *testing.T) {
 			// then
 			expectedDeployment: newExpectedDeploymentWithCustomImages(),
 			expectedKeystone: newKeystone(
-				contrail.KeystoneStatus{Active: true, ClusterIP: "10.0.2.16"},
+				contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"},
 				[]meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "SwiftProxy", "swiftproxy", "", &falseVal, &falseVal}},
 			),
 			expectedStatus: contrail.SwiftProxyStatus{

@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
@@ -255,8 +257,19 @@ func TestCommandServices(t *testing.T) {
 				assert.NotEmpty(t, commandPods.Items)
 			})
 
+			keystoneCR := &contrail.Keystone{}
+			err := f.Client.Get(context.TODO(),
+				types.NamespacedName{
+					Namespace: namespace,
+					Name:      "commandtest-keystone",
+				}, keystoneCR)
+			require.NoError(t, err)
+
 			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
-			keystoneClient := keystone.NewClient(commandProxy)
+			keystoneClient := &keystone.Client{
+				Connector:    commandProxy,
+				KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
+			}
 
 			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
 				_, err := keystoneClient.PostAuthTokens("admin", "test123", "admin")
@@ -270,8 +283,11 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, err)
 			})
 
-			keystoneProxy := proxy.NewSecureClientForService("contrail", "commandtest-keystone-service", 5555)
-			keystoneClient = keystone.NewClient(keystoneProxy)
+			runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+			require.NoError(t, err)
+			keystoneClient, err = keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
+			require.NoError(t, err)
+
 			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			require.NoError(t, err)
 			swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)

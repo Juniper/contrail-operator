@@ -26,14 +26,25 @@ type KeystoneConfiguration struct {
 	ProjectDomainID   string `json:"projectDomainID,omitempty"`
 	UserDomainName    string `json:"userDomainName,omitempty"`
 	ProjectDomainName string `json:"projectDomainName,omitempty"`
+	// IP address or domain name (withouth protocol prefix) of the external keystone.
+	// If defined no keystone releated resource will be created in cluster and other
+	// components will be configured to use this address as keystone endpoint.
+	ExternalAddress string `json:"externalAddress,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone
 // +k8s:openapi-gen=true
 type KeystoneStatus struct {
-	Active    bool   `json:"active,omitempty"`
-	Port      int    `json:"port,omitempty"`
-	ClusterIP string `json:"clusterIP,omitempty"`
+	Active bool `json:"active,omitempty"`
+	Port   int  `json:"port,omitempty"`
+	// When keystone is a part of the cluster
+	// Endpoint will be set to the service cluster IP.
+	// When keystone is external then value of
+	// ExternalAddress will be used.
+	Endpoint string `json:"endpoint,omitempty"`
+	// Set to true when keystone service is not
+	// directly managed by controller.
+	External bool `json:"external,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

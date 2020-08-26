@@ -14,6 +14,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -108,7 +109,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy)
+				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -121,7 +122,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy)
+				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -141,7 +142,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy)
+				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -171,7 +172,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy)
+				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -190,7 +191,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy)
+				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -224,9 +225,18 @@ func TestHAOpenStackServices(t *testing.T) {
 	}
 }
 
-func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy) {
-	keystoneProxy := proxy.NewSecureClientForService("contrail", "keystone-service", 5555)
-	keystoneClient := keystone.NewClient(keystoneProxy)
+func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
+	keystoneCR := &contrail.Keystone{}
+	err := f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      "keystone",
+		}, keystoneCR)
+	assert.NoError(t, err)
+	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+	require.NoError(t, err)
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
+	require.NoError(t, err)
 
 	t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
 		_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
@@ -472,7 +482,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.ManagerSpec{
 			CommonConfiguration: contrail.ManagerConfiguration{
 				NodeSelector: map[string]string{nodeLabel: ""},
-				HostNetwork: &trueVal,
+				HostNetwork:  &trueVal,
 				Tolerations: []core.Toleration{
 					{
 						Effect:   core.TaintEffectNoSchedule,

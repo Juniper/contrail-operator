@@ -19,8 +19,8 @@ type configMaps struct {
 }
 
 type keystoneEndpoint struct {
-	keystoneIP      string
-	keystonePort    int
+	address         string
+	port            int
 	authProtocol    string
 	projectDomainID string
 	userDomainID    string
@@ -45,8 +45,8 @@ func (r *ReconcileSwiftProxy) configMap(
 func (c *configMaps) ensureExists(memcachedNode string) error {
 	spc := &swiftProxyConfig{
 		ListenPort:              c.swiftProxySpec.ServiceConfiguration.ListenPort,
-		KeystoneIP:              c.keystone.keystoneIP,
-		KeystonePort:            c.keystone.keystonePort,
+		KeystoneAddress:         c.keystone.address,
+		KeystonePort:            c.keystone.port,
 		KeystoneAuthProtocol:    c.keystone.authProtocol,
 		KeystoneUserDomainID:    c.keystone.userDomainID,
 		KeystoneProjectDomainID: c.keystone.projectDomainID,
@@ -61,8 +61,8 @@ func (c *configMaps) ensureExists(memcachedNode string) error {
 
 func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) error {
 	spc := &registerServiceConfig{
-		KeystoneIP:              c.keystone.keystoneIP,
-		KeystonePort:            c.keystone.keystonePort,
+		KeystoneAddress:         c.keystone.address,
+		KeystonePort:            c.keystone.port,
 		KeystoneAdminPassword:   string(c.keystoneAdminPassSecret.Data["password"]),
 		KeystoneAuthProtocol:    c.keystone.authProtocol,
 		KeystoneUserDomainID:    c.keystone.userDomainID,

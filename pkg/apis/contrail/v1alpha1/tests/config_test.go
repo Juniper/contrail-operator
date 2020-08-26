@@ -156,7 +156,7 @@ var keystone = &v1alpha1.Keystone{
 		},
 	},
 	Status: v1alpha1.KeystoneStatus{
-		ClusterIP: "10.11.12.14",
+		Endpoint: "10.11.12.14",
 	},
 }
 

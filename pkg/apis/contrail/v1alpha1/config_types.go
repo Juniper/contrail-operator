@@ -276,7 +276,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ListenPort             string
 			AuthMode               AuthenticationMode
 			CAFilePath             string
-			KeystoneIP             string
+			KeystoneAddress        string
 			KeystonePort           int
 			KeystoneUserDomainName string
 			KeystoneAuthProtocol   string
@@ -285,8 +285,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ListenPort:             strconv.Itoa(*configConfig.APIPort),
 			AuthMode:               configConfig.AuthMode,
 			CAFilePath:             certificates.SignerCAFilepath,
-			KeystoneIP:             configAuth.KeystoneIP,
-			KeystonePort:           configAuth.KeystonePort,
+			KeystoneAddress:        configAuth.Address,
+			KeystonePort:           configAuth.Port,
 			KeystoneUserDomainName: configAuth.UserDomainName,
 			KeystoneAuthProtocol:   configAuth.AuthProtocol,
 		})
@@ -350,7 +350,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		configtemplates.ConfigKeystoneAuthConf.Execute(&configKeystoneAuthConfBuffer, struct {
 			AdminUsername             string
 			AdminPassword             string
-			KeystoneIP                string
+			KeystoneAddress           string
 			KeystonePort              int
 			KeystoneAuthProtocol      string
 			KeystoneUserDomainName    string
@@ -360,8 +360,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		}{
 			AdminUsername:             configAuth.AdminUsername,
 			AdminPassword:             configAuth.AdminPassword,
-			KeystoneIP:                configAuth.KeystoneIP,
-			KeystonePort:              configAuth.KeystonePort,
+			KeystoneAddress:           configAuth.Address,
+			KeystonePort:              configAuth.Port,
 			KeystoneAuthProtocol:      configAuth.AuthProtocol,
 			KeystoneUserDomainName:    configAuth.UserDomainName,
 			KeystoneProjectDomainName: configAuth.ProjectDomainName,
@@ -571,8 +571,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 type ConfigAuthParameters struct {
 	AdminUsername     string
 	AdminPassword     string
-	KeystoneIP        string
-	KeystonePort      int
+	Address           string
+	Port              int
 	Region            string
 	AuthProtocol      string
 	UserDomainName    string
@@ -596,15 +596,15 @@ func (c *Config) AuthParameters(client client.Client) (*ConfigAuthParameters, er
 		if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
 			return nil, err
 		}
-		if keystone.Status.ClusterIP == "" {
-			return nil, fmt.Errorf("%q Status.ClusterIP empty", keystoneInstanceName)
+		if keystone.Status.Endpoint == "" {
+			return nil, fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
 		}
-		w.KeystonePort = keystone.Spec.ServiceConfiguration.ListenPort
+		w.Port = keystone.Spec.ServiceConfiguration.ListenPort
 		w.Region = keystone.Spec.ServiceConfiguration.Region
 		w.AuthProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
 		w.UserDomainName = keystone.Spec.ServiceConfiguration.UserDomainName
 		w.ProjectDomainName = keystone.Spec.ServiceConfiguration.ProjectDomainName
-		w.KeystoneIP = keystone.Status.ClusterIP
+		w.Address = keystone.Status.Endpoint
 	}
 
 	return w, nil

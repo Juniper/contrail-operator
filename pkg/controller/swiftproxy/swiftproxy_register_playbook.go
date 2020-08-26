@@ -8,7 +8,7 @@ import (
 )
 
 type registerServiceConfig struct {
-	KeystoneIP              string
+	KeystoneAddress         string
 	KeystonePort            int
 	KeystoneAuthProtocol    string
 	KeystoneUserDomainID    string
@@ -98,7 +98,7 @@ const registerPlaybook = `
 
 var registerConfig = template.Must(template.New("").Parse(`
 openstack_auth:
-  auth_url: "{{ .KeystoneAuthProtocol }}://{{ .KeystoneIP }}:{{ .KeystonePort }}/v3"
+  auth_url: "{{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}/v3"
   username: "admin"
   password: "{{ .KeystoneAdminPassword }}"
   project_name: "admin"

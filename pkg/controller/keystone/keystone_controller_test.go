@@ -2,6 +2,11 @@ package keystone_test
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,7 +74,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 		{
 			name: "set active status",
@@ -89,7 +94,7 @@ func TestKeystone(t *testing.T) {
 				newKeystoneService(),
 				newFernetSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, Endpoint: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedKeystoneConfigMap(),
@@ -131,7 +136,7 @@ func TestKeystone(t *testing.T) {
 				newKeystoneService(),
 				newFernetSecret(),
 			},
-			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Active: true, Port: 5555, Endpoint: "10.10.10.10"},
 			expectedSTS:    newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 			expectedConfigs: []*core.ConfigMap{
 				newExpectedFilledKeystoneConfigMap(),
@@ -180,7 +185,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 		{
 			name: "statefulset shouldn't be created when postgres is not active",
@@ -235,7 +240,7 @@ func TestKeystone(t *testing.T) {
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
 				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
 			},
-			expectedStatus: contrail.KeystoneStatus{ClusterIP: "10.10.10.10"},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 	}
 
@@ -324,6 +329,99 @@ func TestKeystone(t *testing.T) {
 
 }
 
+func TestExternalKeystone(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	assert.NoError(t, err)
+	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
+
+	tokenResponse := `{
+		"token": {
+		  "domain": {
+			"id": "default",
+			"name": "Default"
+		  },
+		  "methods": ["password"],
+		  "roles": [{
+			"id": "c703057be878458588961ce9a0ce686b",
+			"name": "admin"
+		  }],
+		  "expires_at": "2014-06-10T21:52:58.852167Z",
+		  "catalog": [{
+			"endpoints": [{
+			  "url": "http://localhost:35357/v2.0",
+			  "region": "RegionOne",
+			  "interface": "admin",
+			  "id": "29beb2f1567642eb810b042b6719ea88"
+			}, {
+			  "url": "http://localhost:5000/v2.0",
+			  "region": "RegionOne",
+			  "interface": "internal",
+			  "id": "87057e3735d4415c97ae231b4841eb1c"
+			}, {
+			  "url": "http://localhost:5000/v2.0",
+			  "region": "RegionOne",
+			  "interface": "public",
+			  "id": "ef303187fc8d41668f25199c298396a5"
+			}],
+			"type": "identity",
+			"id": "bd7397d2c0e14fb69bae8ff76e112a90",
+			"name": "keystone"
+		  }],
+		  "extras": {},
+		  "user": {
+			"domain": {
+			  "id": "default",
+			  "name": "Default"
+			},
+			"id": "3ec3164f750146be97f21559ee4d9c51",
+			"name": "admin"
+		  },
+		  "audit_ids": ["Xpa6Uyn-T9S6mTREudUH3w"],
+		  "issued_at": "2014-06-10T20:52:58.852194Z"
+		}
+	  }`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(201)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Subject-Token:", "test123")
+		w.Write([]byte(tokenResponse))
+	}))
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	assert.NoError(t, err)
+	host, portstr, _ := net.SplitHostPort(u.Host)
+	port, _ := strconv.Atoi(portstr)
+	initObjs := []runtime.Object{
+		newAdminSecret(),
+		newExtKeystone(u.Scheme, host, port),
+	}
+
+	cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+	r := keystone.NewReconciler(
+		cl, scheme, k8s.New(cl, scheme), &rest.Config{},
+	)
+
+	req := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "keystone",
+			Namespace: "default",
+		},
+	}
+
+	res, err := r.Reconcile(req)
+	assert.NoError(t, err)
+	assert.False(t, res.Requeue)
+
+	k := &contrail.Keystone{}
+	err = cl.Get(context.Background(), req.NamespacedName, k)
+	assert.NoError(t, err)
+	expectedStatus := contrail.KeystoneStatus{Endpoint: host, Active: true, External: true, Port: port}
+	assert.Equal(t, expectedStatus, k.Status)
+}
+
 func newKeystone() *contrail.Keystone {
 	trueVal := true
 	oneVal := int32(1)
@@ -354,6 +452,26 @@ func newKeystone() *contrail.Keystone {
 				ListenPort:         5555,
 				KeystoneSecretName: "keystone-adminpass-secret",
 				AuthProtocol:       "https",
+				Region:             "RegionOne",
+				UserDomainName:     "Default",
+				ProjectDomainName:  "Default",
+			},
+		},
+	}
+}
+
+func newExtKeystone(protocol string, address string, port int) *contrail.Keystone {
+	return &contrail.Keystone{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone",
+			Namespace: "default",
+		},
+		Spec: contrail.KeystoneSpec{
+			ServiceConfiguration: contrail.KeystoneConfiguration{
+				ExternalAddress:    address,
+				ListenPort:         port,
+				KeystoneSecretName: "keystone-adminpass-secret",
+				AuthProtocol:       protocol,
 				Region:             "RegionOne",
 				UserDomainName:     "Default",
 				ProjectDomainName:  "Default",

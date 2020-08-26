@@ -54,6 +54,14 @@ func (p *HTTPProxy) NewSecureClientWithPath(namespace string, pod string, port i
 	}
 }
 
+func (p *HTTPProxy) NewClientForService(namespace string, serviceName string, port int) *Client {
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/services/http:%s:%d/proxy", p.serverURL, namespace, serviceName, port)
+	return &Client{
+		url:    url,
+		client: p.client,
+	}
+}
+
 func (p *HTTPProxy) NewSecureClientForService(namespace string, serviceName string, port int) *Client {
 	url := fmt.Sprintf("%sapi/v1/namespaces/%s/services/https:%s:%d/proxy", p.serverURL, namespace, serviceName, port)
 	return &Client{
