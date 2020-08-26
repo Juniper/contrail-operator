@@ -275,10 +275,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		r.updateCommandDeploymentContainers(deployment, command, request.Name, request.Namespace, configVolumeName, csrSignerCaVolumeName)
-		deployment.Spec.Strategy = apps.DeploymentStrategy{
-			Type: apps.RecreateDeploymentStrategyType,
-		}
 		_, err = command.PrepareIntendedDeployment(deployment,
 			&command.Spec.CommonConfiguration, request, r.scheme)
 		return err
@@ -507,10 +503,4 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
-}
-
-func (r *ReconcileCommand) updateCommandDeploymentContainers(deployment *apps.Deployment, command *contrail.Command, name, namespace, configVolumeName, csrSignerCaVolumeName string) {
-	newDeployment := newDeployment(name, namespace, configVolumeName, csrSignerCaVolumeName, command.Spec.ServiceConfiguration.Containers)
-	deployment.Spec.Template.Spec.Containers = newDeployment.Spec.Template.Spec.Containers
-	deployment.Spec.Template.Spec.InitContainers = newDeployment.Spec.Template.Spec.InitContainers
 }
