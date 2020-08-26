@@ -8,7 +8,7 @@ import (
 
 func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment,
 	newDeployment *apps.Deployment, k8sClient client.Client) error {
-	if isImageUpgraded(commandCR, currentDeployment) {
+	if isImageUpgraded(currentDeployment, newDeployment) {
 		newDeployment.Spec.Replicas = int32ToPtr(0)
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
@@ -29,38 +29,18 @@ func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *
 	return nil
 }
 
-func getDeployedCommandImages(deployment *apps.Deployment) map[string]string {
-	images := map[string]string{
-		"api":                 "",
-		"wait-for-ready-conf": "",
-		"init":                "",
-	}
-	// relation container name-image is taken from function newDeployment in command_controller.go
-	for _, container := range deployment.Spec.Template.Spec.Containers {
-		if container.Name == "command" {
-			images["api"] = container.Image
+func isImageUpgraded(currentDeployment *apps.Deployment, newDeployment *apps.Deployment) bool {
+	for i, container := range currentDeployment.Spec.Template.Spec.Containers {
+		if newDeployment.Spec.Template.Spec.Containers[i].Image != container.Image {
+			return true
 		}
 	}
-	for _, container := range deployment.Spec.Template.Spec.InitContainers {
-		if container.Name == "wait-for-ready-conf" {
-			images["wait-for-ready-conf"] = container.Image
-		}
-		if container.Name == "command-init" {
-			images["init"] = container.Image
+	for i, container := range currentDeployment.Spec.Template.Spec.InitContainers {
+		if newDeployment.Spec.Template.Spec.InitContainers[i].Image != container.Image {
+			return true
 		}
 	}
-	return images
-}
-
-func isImageUpgraded(commandCR *contrail.Command, currentDeployment *apps.Deployment) bool {
-	if currentDeployment.Status.Replicas == 0 {
-		return false
-	}
-	expectedContainers := commandCR.Spec.ServiceConfiguration.Containers
-	deployedImages := getDeployedCommandImages(currentDeployment)
-	return getImage(expectedContainers, "api") != deployedImages["api"] ||
-		getImage(expectedContainers, "wait-for-ready-conf") != deployedImages["wait-for-ready-conf"] ||
-		getImage(expectedContainers, "init") != deployedImages["init"]
+	return false
 }
 
 func int32ToPtr(value int32) *int32 {
