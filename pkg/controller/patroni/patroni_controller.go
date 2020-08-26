@@ -4,51 +4,34 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	contrailcertificates "github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
-	"github.com/Juniper/contrail-operator/pkg/randomstring"
+	"github.com/Juniper/contrail-operator/pkg/localvolume"
 )
 
-type secret struct {
-	sc *k8s.Secret
-}
-
-func (s *secret) FillSecret(sc *core.Secret) error {
-	if sc.Data != nil {
-		return nil
-	}
-
-	pass := randomstring.RandString{10}.Generate()
-
-	sc.StringData = map[string]string{
-		"user":     "patroni",
-		"password": pass,
-	}
-	return nil
-}
-
 var log = logf.Log.WithName("controller_patroni")
+
+const defaultPatroniStoragePath = "/mnt/patroni"
 
 // Add creates a new Patroni Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -58,7 +41,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcilePatroni{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcilePatroni{
+		client:     mgr.GetClient(),
+		scheme:     mgr.GetScheme(),
+		kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+		volumes:    localvolume.New(mgr.GetClient()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -70,16 +58,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Patroni
-	err = c.Watch(&source.Kind{Type: &contrailv1alpha1.Patroni{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &contrail.Patroni{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Patroni
-	err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+	// Watch for changes to secondary resource StatefulSet and requeue the owner Patroni
+	err = c.Watch(&source.Kind{Type: &apps.StatefulSet{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &contrailv1alpha1.Patroni{},
+		OwnerType:    &contrail.Patroni{},
 	})
 	if err != nil {
 		return err
@@ -97,6 +84,7 @@ func NewReconciler(client client.Client, scheme *runtime.Scheme) *ReconcilePatro
 		client:     client,
 		scheme:     scheme,
 		kubernetes: k8s.New(client, scheme),
+		volumes:    localvolume.New(client),
 	}
 }
 
@@ -107,6 +95,7 @@ type ReconcilePatroni struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	kubernetes *k8s.Kubernetes
+	volumes    localvolume.Volumes
 }
 
 // Reconcile reads that state of the cluster for a Patroni object and makes changes based on the state read
@@ -119,13 +108,11 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	reqLogger.Info("Reconciling Patroni")
 
 	// Fetch the Patroni instance
-	instance := &contrailv1alpha1.Patroni{}
+	instance := &contrail.Patroni{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -141,33 +128,32 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	serviceAccount, err := r.ensureServiceAccountExists(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensureRoleExists(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensureRoleBindingExists(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	patroniPods, err := r.listPatroniPods(instance.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	patroniClusterIP := patroniService.Spec.ClusterIP
-
-	if err := r.ensureCertificatesExist(instance, patroniPods, patroniClusterIP); err != nil {
+	if err := r.ensureCertificatesExist(instance, patroniPods, patroniService.Spec.ClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = r.ensureServiceAccountExists(instance)
-	if err != nil {
+	if err = r.ensureLocalPVsExist(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = r.ensureRoleExists(instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	err = r.ensureRoleBindingExists(instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// TODO - create Service, service account, role and role binding
 	// TODO - create STS -
 	// TODO - create PVs and PVCs
 	// TODO - create secret with passwords
@@ -179,7 +165,7 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - master exposed as ClusterIP service
 	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
-	statefulSet, err := r.createOrUpdateSts(request, instance)
+	statefulSet, err := r.createOrUpdateSts(request, instance, serviceAccount.Name)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -189,7 +175,7 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		credentialsSecretName = instance.Spec.ServiceConfiguration.CredentialsSecretName
 	}
 
-	if err = r.secret(credentialsSecretName, "patroni", instance).ensureCredentialSecretExists(); err != nil {
+	if err = r.credentialsSecret(credentialsSecretName, "patroni", instance).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 	instance.Status.CredentialsSecretName = credentialsSecretName
@@ -207,16 +193,16 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcilePatroni) ensureLabelExists(p *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureLabelExists(p *contrail.Patroni) error {
 	if len(p.Labels) != 0 {
 		return nil
 	}
 
-	p.Labels = contraillabel.New(contrailv1alpha1.PatroniInstanceType, p.Name)
+	p.Labels = contraillabel.New(contrail.PatroniInstanceType, p.Name)
 	return r.client.Update(context.Background(), p)
 }
 
-func (r *ReconcilePatroni) ensureCertificatesExist(instance *contrailv1alpha1.Patroni, pods *core.PodList, serviceIP string) error {
+func (r *ReconcilePatroni) ensureCertificatesExist(instance *contrail.Patroni, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
 	if instance.Spec.CommonConfiguration.HostNetwork != nil {
 		hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
@@ -226,7 +212,7 @@ func (r *ReconcilePatroni) ensureCertificatesExist(instance *contrailv1alpha1.Pa
 
 func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, error) {
 	pods := &core.PodList{}
-	labelSelector := labels.SelectorFromSet(contraillabel.New(contrailv1alpha1.PatroniInstanceType, instanceName))
+	labelSelector := labels.SelectorFromSet(contraillabel.New(contrail.PatroniInstanceType, instanceName))
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
 	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
 		return &core.PodList{}, err
@@ -234,17 +220,9 @@ func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, 
 	return pods, nil
 }
 
-func (r *ReconcilePatroni) secret(secretName, ownerType string, instance *contrailv1alpha1.Patroni) *secret {
-	return &secret{
-		sc: r.kubernetes.Secret(secretName, ownerType, instance),
-	}
-}
 
-func (s *secret) ensureCredentialSecretExists() error {
-	return s.sc.EnsureExists(s)
-}
 
-func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patroni) (*core.Service, error) {
+func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*core.Service, error) {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-service",
@@ -253,7 +231,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		service.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
 		service.Spec = core.ServiceSpec{
 			Type: core.ServiceTypeClusterIP,
 			Ports: []core.ServicePort{{
@@ -268,7 +246,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	})
 
 	if err != nil {
-		return service, err
+		return nil, err
 	}
 
 	endpoints := &core.Endpoints{
@@ -279,12 +257,12 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, endpoints, func() error {
-		endpoints.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		endpoints.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
 		return controllerutil.SetControllerReference(instance, service, r.scheme)
 	})
 
 	if err != nil {
-		return service, err
+		return nil, err
 	}
 
 	serviceRepl := &core.Service{
@@ -295,15 +273,13 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
-		serviceRepl.ObjectMeta.Labels = map[string]string{"app": "patroni", "role": "replica", "cluster-manager": "patroni", "patroni": instance.Name}
+		labels := contraillabel.New(instance.Kind, instance.Name)
+		labels["role"] = "replica"
+		serviceRepl.ObjectMeta.Labels = labels
+
 		serviceRepl.Spec = core.ServiceSpec{
-			Selector: map[string]string{
-				"app":              "patroni",
-				"contrail_manager": "patroni",
-				"patroni":          instance.Name,
-				"role":             "replica",
-			},
-			Type: core.ServiceTypeClusterIP,
+			Selector: labels,
+			Type:     core.ServiceTypeClusterIP,
 			Ports: []core.ServicePort{{
 				Port: 5432,
 				TargetPort: intstr.IntOrString{
@@ -318,7 +294,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrailv1alpha1.Patron
 	return service, err
 }
 
-func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrail.Patroni) (*core.ServiceAccount, error) {
 	serviceAccount := &core.ServiceAccount{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-service-account",
@@ -327,14 +303,14 @@ func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrailv1alpha1
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serviceAccount, func() error {
-		serviceAccount.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		serviceAccount.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
 		return controllerutil.SetControllerReference(instance, serviceAccount, r.scheme)
 	})
 
-	return err
+	return serviceAccount, err
 }
 
-func (r *ReconcilePatroni) ensureRoleExists(instance *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureRoleExists(instance *contrail.Patroni) error {
 	role := &rbac.Role{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-role",
@@ -343,7 +319,7 @@ func (r *ReconcilePatroni) ensureRoleExists(instance *contrailv1alpha1.Patroni) 
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, role, func() error {
-		role.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		role.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
 		role.Rules = []rbac.PolicyRule{
 			{
 				APIGroups: []string{""},
@@ -397,7 +373,7 @@ func (r *ReconcilePatroni) ensureRoleExists(instance *contrailv1alpha1.Patroni) 
 
 	return err
 }
-func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Patroni) error {
+func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrail.Patroni) error {
 	rb := &rbac.RoleBinding{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      instance.Name + "-patroni-role-binding",
@@ -406,7 +382,7 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Pa
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, rb, func() error {
-		rb.ObjectMeta.Labels = map[string]string{"app": "patroni", "cluster-manager": "patroni", "patroni": instance.Name}
+		rb.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
 		rb.Subjects = []rbac.Subject{{
 			Kind: "ServiceAccount",
 			Name: instance.Name + "-patroni-service-account",
@@ -422,16 +398,16 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrailv1alpha1.Pa
 	return err
 }
 
-func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrailv1alpha1.Patroni) (*apps.StatefulSet, error) {
+func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrail.Patroni, serviceAccountName string) (*apps.StatefulSet, error) {
 
-	statefulSet := GetSTS(instance, "patroni-service-account")
+	statefulSet := GetSTS(instance, serviceAccountName)
 
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 
-		contrailv1alpha1.SetSTSCommonConfiguration(statefulSet, &instance.Spec.CommonConfiguration)
+		contrail.SetSTSCommonConfiguration(statefulSet, &instance.Spec.CommonConfiguration)
 
 		var patroniGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
@@ -468,6 +444,53 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 }
 
 type containerGenerator struct {
-	containersSpec []*contrailv1alpha1.Container
+	containersSpec []*contrail.Container
 	device         string
+}
+
+func (r *ReconcilePatroni) ensureLocalPVsExist(patroni *contrail.Patroni) error {
+	path := patroni.Spec.ServiceConfiguration.Storage.Path
+	size := patroni.Spec.ServiceConfiguration.Storage.Size
+	var storage resource.Quantity
+	var err error
+	if size == "" {
+		storage = resource.MustParse("5Gi")
+	} else {
+		storage, err = resource.ParseQuantity(size)
+		if err != nil {
+			return err
+		}
+	}
+
+	if path == "" {
+		path = defaultPatroniStoragePath
+	}
+
+	for i := int32(0); i < patroni.Spec.CommonConfiguration.GetReplicas(); i++ {
+		name := fmt.Sprintf("%v-%v-patroni-data-%v", patroni.Name, patroni.Namespace, i)
+		nodeSelectors := patroni.Spec.CommonConfiguration.NodeSelector
+		lv, err := r.volumes.New(name, path, storage, patroni.Labels, nodeSelectors)
+		if err != nil {
+			return err
+		}
+		if err := lv.EnsureExists(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *ReconcilePatroni) ensurePVCOwnershipExists(patroni *contrail.Patroni) error {
+	listOps := &client.ListOptions{Namespace: patroni.Namespace, LabelSelector: labels.SelectorFromSet(patroni.Labels)}
+	pvcList := &core.PersistentVolumeClaimList{}
+	if err := r.client.List(context.TODO(), pvcList, listOps); err != nil {
+		return err
+	}
+	for _, pvc := range pvcList.Items {
+		if err := r.kubernetes.Owner(patroni).EnsureOwns(&pvc); err != nil {
+			return err
+		}
+	}
+	return nil
 }

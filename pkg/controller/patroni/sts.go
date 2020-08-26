@@ -3,13 +3,15 @@ package patroni
 import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 )
 
-func GetSTS(resource *contrailv1alpha1.Patroni, serviceAccount string) *apps.StatefulSet {
+func GetSTS(instance *contrail.Patroni, serviceAccount string) *apps.StatefulSet {
 	var replicas = int32(1)
 
 	var podIPEnv = core.EnvVar{
@@ -47,7 +49,7 @@ func GetSTS(resource *contrailv1alpha1.Patroni, serviceAccount string) *apps.Sta
 	var podAffinity = &core.Affinity{
 		PodAntiAffinity: &core.PodAntiAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-				LabelSelector: &meta.LabelSelector{MatchLabels: resource.Labels},
+				LabelSelector: &meta.LabelSelector{MatchLabels: instance.Labels},
 				TopologyKey:   "kubernetes.io/hostname",
 			}},
 		},
@@ -67,14 +69,26 @@ func GetSTS(resource *contrailv1alpha1.Patroni, serviceAccount string) *apps.Sta
 		},
 	}
 
-	var podTolerations = []core.Toleration{
-		core.Toleration{
-			Operator: "Exists",
-			Effect:   "NoSchedule",
-		},
-		core.Toleration{
-			Operator: "Exists",
-			Effect:   "NoExecute",
+	storageClassName := "local-storage"
+	volumeClaimTemplates := []core.PersistentVolumeClaim{
+		{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "pgdata-claim",
+				Namespace: instance.Namespace,
+				Labels:    instance.Labels,
+			},
+			Spec: core.PersistentVolumeClaimSpec{
+
+				AccessModes: []core.PersistentVolumeAccessMode{
+					core.ReadWriteOnce,
+				},
+				StorageClassName: &storageClassName,
+				Resources: core.ResourceRequirements{
+					Requests: map[core.ResourceName]resource.Quantity{
+						core.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
 		},
 	}
 
@@ -82,32 +96,43 @@ func GetSTS(resource *contrailv1alpha1.Patroni, serviceAccount string) *apps.Sta
 		Affinity:           podAffinity,
 		Containers:         podContainers,
 		HostNetwork:        true,
-		NodeSelector:       resource.Spec.CommonConfiguration.NodeSelector,
+		NodeSelector:       instance.Spec.CommonConfiguration.NodeSelector,
 		ServiceAccountName: serviceAccount,
-		Tolerations:        podTolerations,
-	}
+		Tolerations:        instance.Spec.CommonConfiguration.Tolerations,
+		Volumes: []core.Volume{
+			{
+				Name: "pgdata",
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: "pgdata",
+						ReadOnly:  false,
+					},
+				},
+			},
+		}}
 
 	var stsTemplate = core.PodTemplateSpec{
 		ObjectMeta: meta.ObjectMeta{
-			Labels: contraillabel.New("patroni", resource.Name),
+			Labels: contraillabel.New("patroni", instance.Name),
 		},
 		Spec: podSpec,
 	}
 
 	var stsSelector = meta.LabelSelector{
-		MatchLabels: contraillabel.New("patroni", resource.Name),
+		MatchLabels: contraillabel.New("patroni", instance.Name),
 	}
 
 	return &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      resource.Name + "-patroni-service",
-			Namespace: resource.Namespace,
+			Name:      "patroni-" + instance.Name,
+			Namespace: instance.Namespace,
 		},
 		Spec: apps.StatefulSetSpec{
-			Selector:    &stsSelector,
-			ServiceName: "patroni",
-			Replicas:    &replicas,
-			Template:    stsTemplate,
+			Selector:             &stsSelector,
+			ServiceName:          "patroni",
+			Replicas:             &replicas,
+			Template:             stsTemplate,
+			VolumeClaimTemplates: volumeClaimTemplates,
 		},
 	}
 }
