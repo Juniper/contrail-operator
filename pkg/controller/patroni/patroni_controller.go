@@ -3,6 +3,7 @@ package patroni
 import (
 	"context"
 	"fmt"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -165,11 +166,6 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	// - master exposed as ClusterIP service
 	// - patroni pods have to have label: "patroni": instance.Name for Service selector
 
-	statefulSet, err := r.createOrUpdateSts(request, instance, serviceAccount.Name)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	credentialsSecretName := instance.Name + "-patroni-credentials-secret"
 	if instance.Spec.ServiceConfiguration.CredentialsSecretName != "" {
 		credentialsSecretName = instance.Spec.ServiceConfiguration.CredentialsSecretName
@@ -178,6 +174,12 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err = r.credentialsSecret(credentialsSecretName, "patroni", instance).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	statefulSet, err := r.createOrUpdateSts(request, instance, credentialsSecretName, patroniService.Name, serviceAccount.Name)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	instance.Status.CredentialsSecretName = credentialsSecretName
 
 	instance.Status.Active = false
@@ -396,20 +398,11 @@ func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrail.Patroni) e
 	return err
 }
 
-func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrail.Patroni, serviceAccountName string) (*apps.StatefulSet, error) {
+func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrail.Patroni, passSecretName, serviceName, serviceAccountName string) (*apps.StatefulSet, error) {
 
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = request.Namespace
 	statefulSet.Name = request.Name + "-statefulset"
-
-	var podAffinity = &core.Affinity{
-		PodAntiAffinity: &core.PodAntiAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-				LabelSelector: &meta.LabelSelector{MatchLabels: instance.Labels},
-				TopologyKey:   "kubernetes.io/hostname",
-			}},
-		},
-	}
 
 	var podIPEnv = core.EnvVar{
 		Name: "POD_IP",
@@ -438,27 +431,92 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		},
 	}
 
+	var replicationUserEnv = core.EnvVar{
+		Name:  "PATRONI_REPLICATION_USERNAME",
+		Value: "standby",
+	}
+
+	var replicationPassEnv = core.EnvVar{
+		Name: "PATRONI_REPLICATION_PASSWORD",
+		ValueFrom: &core.EnvVarSource{
+			SecretKeyRef: &core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: passSecretName,
+				},
+				Key: "replication-password",
+			},
+		},
+	}
+
+	var superuserEnv = core.EnvVar{
+		Name:  "PATRONI_SUPERUSER_USERNAME",
+		Value: "root",
+	}
+
+	var postgresDBEnv = core.EnvVar{
+		Name:  "POSTGRES_DB",
+		Value: "contrail_test",
+	}
+
+	var superuserPassEnv = core.EnvVar{
+		Name: "PATRONI_SUPERUSER_PASSWORD",
+		ValueFrom: &core.EnvVarSource{
+			SecretKeyRef: &core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: passSecretName,
+				},
+				Key: "superuser-password",
+			},
+		},
+	}
+
 	var endpointsEnv = core.EnvVar{
 		Name:  "PATRONI_KUBERNETES_USE_ENDPOINTS",
 		Value: "true",
 	}
 
+	var dataDirEnv = core.EnvVar{
+		Name:  "PATRONI_POSTGRESQL_DATA_DIR",
+		Value: "/var/lib/postgresql/data/postgres",
+	}
+
 	var podContainers = []core.Container{
 		{
 			Name:  "patroni",
-			Image: "svl-artifactory.juniper.net/common-docker-third-party/contrail/patroni:1.6.5",
+			Image: getImage(instance.Spec.ServiceConfiguration.Containers, "patroni"),
 			Env: []core.EnvVar{
 				podIPEnv,
 				namespaceEnv,
 				labelsEnv,
 				endpointsEnv,
+				replicationUserEnv,
+				replicationPassEnv,
+				superuserEnv,
+				superuserPassEnv,
+				dataDirEnv,
+				postgresDBEnv,
 			},
 			ImagePullPolicy: "Always",
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "pgdata",
+					ReadOnly:  false,
+					MountPath: "/var/lib/postgresql/data",
+					SubPath:   "postgres",
+				},
+			},
 		},
 	}
 
 	var podSpec = core.PodSpec{
-		Affinity:           podAffinity,
+		Affinity: &core.Affinity{
+			PodAntiAffinity: &core.PodAntiAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+					LabelSelector: &meta.LabelSelector{MatchLabels: instance.Labels},
+					TopologyKey:   "kubernetes.io/hostname",
+				}},
+			},
+		},
 		Containers:         podContainers,
 		HostNetwork:        true,
 		NodeSelector:       instance.Spec.CommonConfiguration.NodeSelector,
@@ -469,7 +527,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 				Name: "pgdata",
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: "pgdata",
+						ClaimName: "pgdata-claim",
 						ReadOnly:  false,
 					},
 				},
@@ -480,8 +538,6 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		MatchLabels: contraillabel.New("patroni", instance.Name),
 	}
 
-	var replicas = int32(1)
-
 	var stsTemplate = core.PodTemplateSpec{
 		ObjectMeta: meta.ObjectMeta{
 			Labels: contraillabel.New("patroni", instance.Name),
@@ -490,34 +546,11 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 	}
 
 	storageClassName := "local-storage"
-	volumeClaimTemplates := []core.PersistentVolumeClaim{
-		{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "pgdata-claim",
-				Namespace: instance.Namespace,
-				Labels:    instance.Labels,
-			},
-			Spec: core.PersistentVolumeClaimSpec{
-
-				AccessModes: []core.PersistentVolumeAccessMode{
-					core.ReadWriteOnce,
-				},
-				StorageClassName: &storageClassName,
-				Resources: core.ResourceRequirements{
-					Requests: map[core.ResourceName]resource.Quantity{
-						core.ResourceStorage: resource.MustParse("5Gi"),
-					},
-				},
-			},
-		},
-	}
-
 	statefulSet.Spec = apps.StatefulSetSpec{
-		Selector:             &stsSelector,
-		ServiceName:          "patroni",
-		Replicas:             &replicas,
-		Template:             stsTemplate,
-		VolumeClaimTemplates: volumeClaimTemplates,
+		Selector:    &stsSelector,
+		ServiceName: serviceName,
+		Replicas:    instance.Spec.CommonConfiguration.Replicas,
+		Template:    stsTemplate,
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
@@ -530,12 +563,16 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &patroniGroupId
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &patroniGroupId
 
-		storageClassName := "local-storage"
+		pvSize, err := instance.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
+		if err != nil {
+			return err
+		}
+
 		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
 			{
 				ObjectMeta: meta.ObjectMeta{
-					Name:      "storage-device",
-					Namespace: request.Namespace,
+					Name:      "pgdata-claim",
+					Namespace: instance.Namespace,
 					Labels:    instance.Labels,
 				},
 				Spec: core.PersistentVolumeClaimSpec{
@@ -545,7 +582,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 					StorageClassName: &storageClassName,
 					Resources: core.ResourceRequirements{
 						Requests: map[core.ResourceName]resource.Quantity{
-							core.ResourceStorage: resource.MustParse("5Gi"),
+							core.ResourceStorage: pvSize,
 						},
 					},
 				},
@@ -556,11 +593,6 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		return controllerutil.SetControllerReference(instance, statefulSet, r.scheme)
 	})
 	return statefulSet, err
-}
-
-type containerGenerator struct {
-	containersSpec []*contrail.Container
-	device         string
 }
 
 func (r *ReconcilePatroni) ensureLocalPVsExist(patroni *contrail.Patroni) error {
@@ -608,4 +640,16 @@ func (r *ReconcilePatroni) ensurePVCOwnershipExists(patroni *contrail.Patroni) e
 		}
 	}
 	return nil
+}
+
+func getImage(containers []*contrail.Container, containerName string) string {
+	var defaultContainersImages = map[string]string{
+		"patroni": "localhost:5000/patroni",
+	}
+	c := utils.GetContainerFromList(containerName, containers)
+	if c == nil {
+		return defaultContainersImages[containerName]
+	}
+
+	return c.Image
 }

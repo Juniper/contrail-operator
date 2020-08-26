@@ -16,11 +16,9 @@ func (s *secret) FillSecret(sc *core.Secret) error {
 		return nil
 	}
 
-	pass := randomstring.RandString{10}.Generate()
-
 	sc.StringData = map[string]string{
-		"user":     "patroni",
-		"password": pass,
+		"superuser-password":   randomstring.RandString{10}.Generate(),
+		"replication-password": randomstring.RandString{10}.Generate(),
 	}
 	return nil
 }
