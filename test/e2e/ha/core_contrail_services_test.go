@@ -365,11 +365,10 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", r))
 	})
 
-	t.Run(fmt.Sprintf("then a ProvisionManager StatefulSet has %d ready replicas", r), func(t *testing.T) {
+	// ProvisionManager is not scalable and is deployed in one replica
+	t.Run("then a ProvisionManager StatefulSet has 1 ready replica", func(t *testing.T) {
 		t.Parallel()
-		// TODO Uncomment this after fixing ProvisionManager scaling issues
-		t.Skip()
-		assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", r))
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", 1))
 	})
 }
 
