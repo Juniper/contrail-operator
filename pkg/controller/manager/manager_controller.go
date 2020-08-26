@@ -668,8 +668,8 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 	command.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
-		command.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, command.Spec.CommonConfiguration)
 		command.Spec = manager.Spec.Services.Command.Spec
+		command.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, command.Spec.CommonConfiguration)
 		if command.Spec.ServiceConfiguration.ClusterName == "" {
 			command.Spec.ServiceConfiguration.ClusterName = manager.GetName()
 		}

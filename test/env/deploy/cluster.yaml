@@ -155,7 +155,6 @@ spec:
         name: command
       spec:
         commonConfiguration:
-          hostNetwork: true
           tolerations:
             - effect: NoSchedule
               operator: Exists
