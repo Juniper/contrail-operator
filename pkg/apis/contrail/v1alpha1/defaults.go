@@ -37,6 +37,10 @@ const (
 	AnalyticsApiIntrospectPort                  int    = 8090
 	AnalyticsdbPort                             int    = 9160
 	AnalyticsdbCqlPort                          int    = 9042
+	AnalyticsDataTTL                            int    = 48
+	AnalyticsConfigAuditTTL                     int    = 2160
+	AnalyticsStatisticsTTL                      int    = 4
+	AnalyticsFlowTTL                            int    = 2
 	TopologyIntrospectPort                      int    = 5921
 	QueryengineIntrospectPort                   int    = 8091
 	AnalyticsServers                            string = ""

@@ -526,9 +526,25 @@ spec:
                               - noauth
                               - rbac
                               type: string
+                            analyticsConfigAuditTTL:
+                              description: Time (in hours) the analytics config data entering the
+                                collector stays in the Cassandra database. Defaults to 2160 hours.
+                              type: integer
+                            analyticsDataTTL:
+                              description: Time (in hours) that the analytics object and log data
+                                stays in the Cassandra database. Defaults to 48 hours.
+                              type: integer
+                            analyticsFlowTTL:
+                              description: Time to live (TTL) for flow data in hours. Defaults to
+                                2 hours.
+                              type: integer
                             analyticsMonitorIntrospectPort:
                               type: integer
                             analyticsPort:
+                              type: integer
+                            analyticsStatisticsTTL:
+                              description: Time to live (TTL) for statistics data in hours.
+                                Defaults to 4 hours.
                               type: integer
                             apiIntrospectPort:
                               type: integer

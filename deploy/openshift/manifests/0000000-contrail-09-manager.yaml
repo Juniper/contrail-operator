@@ -34,6 +34,10 @@ spec:
       spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
+          analyticsDataTTL: 2
+          analyticsConfigAuditTTL: 2160
+          analyticsFlowTTL: 1
+          analyticsStatisticsTTL: 2
           containers:
             - name: analyticsapi
               image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-rhel
