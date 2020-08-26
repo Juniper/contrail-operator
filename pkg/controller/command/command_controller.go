@@ -210,6 +210,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	currentDeployment, err := r.getCurrentDeployment(request.Name, request.Namespace)
+	if err != nil && !errors.IsNotFound(err) { // ignore error not found - the deployment may not exist yet
+		return reconcile.Result{}, err
+	}
 	deployment := newDeployment(
 		request.Name,
 		request.Namespace,
@@ -274,6 +278,9 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
+	if err := performUpgradeStepIfNeeded(command, currentDeployment, deployment, r.client); err != nil {
+		return reconcile.Result{}, err
+	}
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
 		_, err = command.PrepareIntendedDeployment(deployment,
 			&command.Spec.CommonConfiguration, request, r.scheme)
@@ -331,6 +338,15 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	}, keystoneServ)
 
 	return keystoneServ, err
+}
+
+func (r *ReconcileCommand) getCurrentDeployment(name, namespace string) (*apps.Deployment, error) {
+	deployemnt := &apps.Deployment{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: namespace,
+		Name:      name + "-command-deployment",
+	}, deployemnt)
+	return deployemnt, err
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
@@ -451,14 +467,31 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 }
 
 func (r *ReconcileCommand) updateStatus(command *contrail.Command, deployment *apps.Deployment) error {
-	if err := updateStatusIPs(command, deployment, r.client); err != nil {
+	if err := r.updateStatusIPs(command, deployment); err != nil {
 		return err
 	}
-	updateStatusActive(command, deployment)
-	if err := updateStatusUpgradeState(command, deployment, r.client); err != nil {
-		return err
+	expectedReplicas := ptrToInt32(deployment.Spec.Replicas, 1)
+	if deployment.Status.ReadyReplicas == expectedReplicas && command.Status.UpgradeState == contrail.CommandNotUpgrading {
+		command.Status.Active = true
+	} else {
+		command.Status.Active = false
 	}
 	return r.client.Status().Update(context.Background(), command)
+}
+
+func (r *ReconcileCommand) updateStatusIPs(commandCR *contrail.Command, deployment *apps.Deployment) error {
+	pods := core.PodList{}
+	var labels client.MatchingLabels = deployment.Spec.Selector.MatchLabels
+	if err := r.client.List(context.Background(), &pods, labels); err != nil {
+		return err
+	}
+	commandCR.Status.IPs = []string{}
+	for _, pod := range pods.Items {
+		if pod.Status.PodIP != "" {
+			commandCR.Status.IPs = append(commandCR.Status.IPs, pod.Status.PodIP)
+		}
+	}
+	return nil
 }
 
 func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, kPort, sPort int, adminPass *core.Secret) error {

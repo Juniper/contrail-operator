@@ -50,8 +50,9 @@ type CommandStatus struct {
 }
 
 const (
-	CommandNotUpgrading   = "not upgrading"
-	CommandUpgradeStarted = "upgrade started"
+	CommandNotUpgrading               = "not upgrading"
+	CommandShuttingDownBeforeUpgrade  = "shutting down before upgrade"
+	CommandStartingUpgradedDeployment = "starting upgraded deployment"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
