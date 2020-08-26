@@ -8,23 +8,33 @@ import (
 
 func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment,
 	newDeployment *apps.Deployment, k8sClient client.Client) error {
-	if isImageUpgraded(currentDeployment, newDeployment) {
-		newDeployment.Spec.Replicas = int32ToPtr(0)
-		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
-	}
 	switch commandCR.Status.UpgradeState {
 	case contrail.CommandShuttingDownBeforeUpgrade:
 		if currentDeployment.Status.Replicas == 0 {
 			newDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 			commandCR.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
+		} else {
+			newDeployment.Spec.Replicas = int32ToPtr(0)
 		}
 	case contrail.CommandStartingUpgradedDeployment:
-		expectedReplicas := ptrToInt32(newDeployment.Spec.Replicas, 1)
-		if currentDeployment.Status.ReadyReplicas == expectedReplicas {
+		if isImageUpgraded(currentDeployment, newDeployment) {
+			newDeployment.Spec.Replicas = int32ToPtr(0)
+			commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
+		} else {
+			newDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
+			expectedReplicas := ptrToInt32(newDeployment.Spec.Replicas, 1)
+			if currentDeployment.Status.ReadyReplicas == expectedReplicas {
+				commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+			}
+		}
+	default: // case contrail.CommandNotUpgrading or UpgradeState is not set
+		if isImageUpgraded(currentDeployment, newDeployment) {
+			newDeployment.Spec.Replicas = int32ToPtr(0)
+			commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
+		} else {
+			newDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 			commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
 		}
-	default:
-		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
 	}
 	return nil
 }
