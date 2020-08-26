@@ -106,7 +106,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f)
+				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -126,7 +126,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then command service are correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f)
+				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -155,15 +155,27 @@ func TestHACommand(t *testing.T) {
 	}
 }
 
-func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework) {
+func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	commandPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 		LabelSelector: "command=command",
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, commandPods.Items)
 
+	keystoneCR := &contrail.Keystone{}
+	err = f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      "keystone",
+		}, keystoneCR)
+	assert.NoError(t, err)
 	commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
-	keystoneClient := keystone.NewClient(commandProxy)
+	keystoneClient := &keystone.Client{
+		Connector:    commandProxy,
+		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
+	}
+
+	require.NoError(t, err)
 
 	t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
 		_, err = keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
