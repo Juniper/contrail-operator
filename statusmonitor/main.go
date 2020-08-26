@@ -63,12 +63,6 @@ type encryption struct {
 	Insecure bool    `yaml:"insecure,omitempty"`
 }
 
-func check(err error) {
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-}
-
 func main() {
 	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
@@ -81,7 +75,7 @@ func main() {
 		for {
 			select {
 			case t := <-ticker.C:
-				fmt.Println("Tick at", t)
+				log.Println("Tick at", t)
 				var config Config
 				configYaml, err := ioutil.ReadFile(*configPtr)
 				if err != nil {
@@ -120,7 +114,7 @@ func main() {
 		}
 	}()
 	done <- true
-	fmt.Println("Ticker stopped")
+	log.Println("Ticker stopped")
 }
 
 func getControlStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
@@ -239,7 +233,7 @@ func getPods(config Config, clientSet kubernetes.Interface) ([]string, error) {
 		podHostnames = append(podHostnames, podAnnotations["hostname"])
 	}
 	if len(podHostnames) > 0 {
-		fmt.Println(podHostnames)
+		log.Println(podHostnames)
 	}
 	return podHostnames, nil
 }
@@ -370,7 +364,10 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 			restClient: restClient,
 		}
 		controlObject, err := controlCient.Get(config.NodeName, metav1.GetOptions{})
-		check(err)
+		if err != nil {
+			log.Printf("error: updateControlStatus: Failed to get status: %s", err)
+			return err
+		}
 		update := false
 		if controlObject.Status.ServiceStatus == nil {
 			controlObject.Status.ServiceStatus = controlStatusMap
@@ -389,9 +386,9 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 		if update {
 			_, err = controlCient.UpdateStatus(config.NodeName, controlObject)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
+				return err
 			}
-			return err
 		}
 		return nil
 	})
@@ -502,11 +499,11 @@ func typeSwitch(tst interface{}) []string {
 			}
 		}
 	case string:
-		fmt.Println("String:", v)
+		log.Println("String:", v)
 	case [][]interface{}:
-		fmt.Println("[][]interface{}:", v)
+		log.Println("[][]interface{}:", v)
 	default:
-		fmt.Println("unknown")
+		log.Println("unknown")
 	}
 	return nodeList
 }
