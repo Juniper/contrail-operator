@@ -28,7 +28,8 @@ func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			w.Logger.Logf("request to kube api returned error: %v", err)
+			return false, nil
 		}
 		if statefulSet.Status.ReadyReplicas == expectedReplicas {
 			return true, nil
@@ -47,7 +48,8 @@ func (w Wait) ForReadyDeployment(name string, expectedReplicas int32) error {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			w.Logger.Logf("request to kube api returned error: %v", err)
+			return false, nil
 		}
 
 		if deployment.Status.ReadyReplicas == expectedReplicas {
@@ -69,7 +71,8 @@ func (w Wait) ForStatefulSet(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		return false, err
+		w.Logger.Logf("request to kube api returned error: %v", err)
+		return false, nil
 	})
 	w.dumpPodsOnError(err)
 	return err
@@ -85,7 +88,8 @@ func (w Wait) ForDeployment(name string) error {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		return false, err
+		w.Logger.Logf("request to kube api returned error: %v", err)
+		return false, nil
 	})
 	w.dumpPodsOnError(err)
 	return err

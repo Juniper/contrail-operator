@@ -377,7 +377,7 @@ func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
 	var res *http.Response
 
-	err := k8swait.Poll(retryInterval, time.Minute*20, func() (done bool, err error) {
+	err := k8swait.Poll(retryInterval, time.Minute*5, func() (done bool, err error) {
 		req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
 		if err != nil {
 			t.Log(err)
