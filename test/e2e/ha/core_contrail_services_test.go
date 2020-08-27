@@ -375,12 +375,20 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 
 func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod) {
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
-	req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
-	assert.NoError(t, err)
 	var res *http.Response
-	err = k8swait.Poll(retryInterval, time.Second*20, func() (done bool, err error) {
+
+	err := k8swait.Poll(retryInterval, time.Minute*20, func() (done bool, err error) {
+		req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
+		if err != nil {
+			t.Log(err)
+			return false, nil
+		}
 		res, err = configProxy.Do(req)
 		if err == nil {
+			if res.StatusCode > 500 {
+				t.Logf("received status %v", res.StatusCode)
+				return false, nil
+			}
 			return true, nil
 		}
 		t.Log(err)
