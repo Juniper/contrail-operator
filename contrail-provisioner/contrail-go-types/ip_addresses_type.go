@@ -9,5 +9,5 @@ type IpAddressesType struct {
 }
 
 func (obj *IpAddressesType) AddIpAddress(value string) {
-        obj.IpAddress = append(obj.IpAddress, value)
+	obj.IpAddress = append(obj.IpAddress, value)
 }

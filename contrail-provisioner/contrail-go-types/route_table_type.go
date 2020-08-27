@@ -9,5 +9,5 @@ type RouteTableType struct {
 }
 
 func (obj *RouteTableType) AddRoute(value *RouteType) {
-        obj.Route = append(obj.Route, *value)
+	obj.Route = append(obj.Route, *value)
 }

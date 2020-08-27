@@ -9,12 +9,12 @@ type ProtocolStaticType struct {
 }
 
 func (obj *ProtocolStaticType) AddRoute(value string) {
-        obj.Route = append(obj.Route, value)
+	obj.Route = append(obj.Route, value)
 }
 
 type AttachmentInfoType struct {
 	Static *ProtocolStaticType `json:"_static,omitempty"`
-	Bgp *ProtocolBgpType `json:"bgp,omitempty"`
-	Ospf *ProtocolOspfType `json:"ospf,omitempty"`
-	State string `json:"state,omitempty"`
+	Bgp    *ProtocolBgpType    `json:"bgp,omitempty"`
+	Ospf   *ProtocolOspfType   `json:"ospf,omitempty"`
+	State  string              `json:"state,omitempty"`
 }

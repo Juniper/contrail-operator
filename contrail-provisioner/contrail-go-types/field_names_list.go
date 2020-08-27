@@ -9,5 +9,5 @@ type FieldNamesList struct {
 }
 
 func (obj *FieldNamesList) AddFieldNames(value string) {
-        obj.FieldNames = append(obj.FieldNames, value)
+	obj.FieldNames = append(obj.FieldNames, value)
 }

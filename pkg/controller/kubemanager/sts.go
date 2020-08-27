@@ -38,7 +38,7 @@ func GetSTS() *apps.StatefulSet {
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{
+				{
 					Name:      "status",
 					MountPath: "/tmp/podinfo",
 				},
@@ -94,14 +94,14 @@ func GetSTS() *apps.StatefulSet {
 			VolumeSource: core.VolumeSource{
 				DownwardAPI: &core.DownwardAPIVolumeSource{
 					Items: []core.DownwardAPIVolumeFile{
-						core.DownwardAPIVolumeFile{
+						{
 							Path: "pod_labels",
 							FieldRef: &core.ObjectFieldSelector{
 								APIVersion: "v1",
 								FieldPath:  "metadata.labels",
 							},
 						},
-						core.DownwardAPIVolumeFile{
+						{
 							Path: "pod_labelsx",
 							FieldRef: &core.ObjectFieldSelector{
 								APIVersion: "v1",
@@ -116,11 +116,11 @@ func GetSTS() *apps.StatefulSet {
 	}
 
 	var podTolerations = []core.Toleration{
-		core.Toleration{
+		{
 			Operator: "Exists",
 			Effect:   "NoSchedule",
 		},
-		core.Toleration{
+		{
 			Operator: "Exists",
 			Effect:   "NoExecute",
 		},

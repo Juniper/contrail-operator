@@ -5,18 +5,18 @@
 package types
 
 type StaticRouteType struct {
-	Prefix string `json:"prefix,omitempty"`
-	NextHop string `json:"next_hop,omitempty"`
+	Prefix      string   `json:"prefix,omitempty"`
+	NextHop     string   `json:"next_hop,omitempty"`
 	RouteTarget []string `json:"route_target,omitempty"`
-	Community []string `json:"community,omitempty"`
+	Community   []string `json:"community,omitempty"`
 }
 
 func (obj *StaticRouteType) AddRouteTarget(value string) {
-        obj.RouteTarget = append(obj.RouteTarget, value)
+	obj.RouteTarget = append(obj.RouteTarget, value)
 }
 
 func (obj *StaticRouteType) AddCommunity(value string) {
-        obj.Community = append(obj.Community, value)
+	obj.Community = append(obj.Community, value)
 }
 
 type StaticRouteEntriesType struct {
@@ -24,5 +24,5 @@ type StaticRouteEntriesType struct {
 }
 
 func (obj *StaticRouteEntriesType) AddRoute(value *StaticRouteType) {
-        obj.Route = append(obj.Route, *value)
+	obj.Route = append(obj.Route, *value)
 }

@@ -1,4 +1,9 @@
 {
+    "assign": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint"
+        }
+    },
     "composites": {
         "exclude_files": {
             "external/": "external tools don't pass lint",
@@ -7,6 +12,12 @@
             "pkg/controller/manager/manager_keystone_secret.go": "",
             "contrail-provisioner": "",
             "_test.go$": ""
+        }
+    },
+    "gofmt": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint",
+            "go_default_test": ""
         }
     },
     "shadow": {

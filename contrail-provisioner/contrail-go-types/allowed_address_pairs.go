@@ -9,5 +9,5 @@ type AllowedAddressPairs struct {
 }
 
 func (obj *AllowedAddressPairs) AddAllowedAddressPair(value *AllowedAddressPair) {
-        obj.AllowedAddressPair = append(obj.AllowedAddressPair, *value)
+	obj.AllowedAddressPair = append(obj.AllowedAddressPair, *value)
 }

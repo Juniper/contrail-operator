@@ -9,5 +9,5 @@ type FloatingIpPoolSubnetType struct {
 }
 
 func (obj *FloatingIpPoolSubnetType) AddSubnetUuid(value string) {
-        obj.SubnetUuid = append(obj.SubnetUuid, value)
+	obj.SubnetUuid = append(obj.SubnetUuid, value)
 }

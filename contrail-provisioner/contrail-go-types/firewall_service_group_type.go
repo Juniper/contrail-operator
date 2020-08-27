@@ -9,5 +9,5 @@ type FirewallServiceGroupType struct {
 }
 
 func (obj *FirewallServiceGroupType) AddFirewallService(value *FirewallServiceType) {
-        obj.FirewallService = append(obj.FirewallService, *value)
+	obj.FirewallService = append(obj.FirewallService, *value)
 }

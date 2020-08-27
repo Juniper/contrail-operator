@@ -13,5 +13,5 @@ type EncryptionTunnelEndpointList struct {
 }
 
 func (obj *EncryptionTunnelEndpointList) AddEndpoint(value *EncryptionTunnelEndpoint) {
-        obj.Endpoint = append(obj.Endpoint, *value)
+	obj.Endpoint = append(obj.Endpoint, *value)
 }

@@ -5,6 +5,6 @@
 package types
 
 type RouteOriginOverride struct {
-	OriginOverride bool `json:"origin_override,omitempty"`
-	Origin string `json:"origin,omitempty"`
+	OriginOverride bool   `json:"origin_override,omitempty"`
+	Origin         string `json:"origin,omitempty"`
 }

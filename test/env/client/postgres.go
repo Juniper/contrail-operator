@@ -33,8 +33,8 @@ func (p *Postgres) ping(ctx context.Context) error {
 }
 
 type TestUser struct {
-	ID     int64
-	Name   string
+	ID   int64
+	Name string
 }
 
 func (p *Postgres) CreateTestTable(ctx context.Context) error {
@@ -43,7 +43,7 @@ func (p *Postgres) CreateTestTable(ctx context.Context) error {
 	}
 	model := &TestUser{}
 	return p.db.CreateTable(model, &orm.CreateTableOptions{
-		Temp: false,
+		Temp:        false,
 		IfNotExists: true,
 	})
 }
@@ -53,8 +53,8 @@ func (p *Postgres) InsertTestUser(ctx context.Context, id int64, testData string
 		return err
 	}
 	user := &TestUser{
-		ID: id,
-		Name:   testData,
+		ID:   id,
+		Name: testData,
 	}
 	return p.db.Insert(user)
 }

@@ -5,7 +5,7 @@
 package types
 
 type StructuredSyslogLinkType struct {
-	Overlay string `json:"overlay,omitempty"`
+	Overlay  string `json:"overlay,omitempty"`
 	Underlay string `json:"underlay,omitempty"`
 }
 
@@ -14,5 +14,5 @@ type StructuredSyslogLinkmap struct {
 }
 
 func (obj *StructuredSyslogLinkmap) AddLinks(value *StructuredSyslogLinkType) {
-        obj.Links = append(obj.Links, *value)
+	obj.Links = append(obj.Links, *value)
 }

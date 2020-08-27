@@ -132,7 +132,7 @@ func newBootstrapJob(
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
-					NodeSelector: commonConfiguration.NodeSelector,
+					NodeSelector:  commonConfiguration.NodeSelector,
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{
@@ -164,8 +164,8 @@ func newBootstrapJob(
 							ImagePullPolicy: core.PullAlways,
 							Command:         getCommand(containers, "init"),
 							VolumeMounts: []core.VolumeMount{
-								core.VolumeMount{Name: "register", MountPath: "/var/lib/ansible/register", ReadOnly: true},
-								core.VolumeMount{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+								{Name: "register", MountPath: "/var/lib/ansible/register", ReadOnly: true},
+								{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
 							},
 							Args: []string{"/var/lib/ansible/register/register.yaml", "-e", "@/var/lib/ansible/register/config.yaml"},
 						},

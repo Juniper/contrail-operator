@@ -9,5 +9,5 @@ type IpamSubnets struct {
 }
 
 func (obj *IpamSubnets) AddSubnets(value *IpamSubnetType) {
-        obj.Subnets = append(obj.Subnets, *value)
+	obj.Subnets = append(obj.Subnets, *value)
 }

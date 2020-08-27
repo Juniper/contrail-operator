@@ -476,8 +476,8 @@ func getCommand(cr *contrail.Keystone, containerName string) []string {
 }
 
 var defaultContainersCommand = map[string][]string{
-	"keystoneDbInit":      []string{"/bin/sh"},
-	"wait-for-ready-conf": []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+	"keystoneDbInit":      {"/bin/sh"},
+	"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 }
 
 const initDBScript = `DB_USER=${DB_USER:-root}
@@ -545,7 +545,7 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 				Spec: core.PodSpec{
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
-					NodeSelector: cr.Spec.CommonConfiguration.NodeSelector,
+					NodeSelector:  cr.Spec.CommonConfiguration.NodeSelector,
 					Volumes: []core.Volume{
 						{
 							Name: "keystone-bootstrap-config-volume",

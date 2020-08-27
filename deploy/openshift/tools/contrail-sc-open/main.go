@@ -54,12 +54,12 @@ func setRules(svc *ec2.EC2, group string) error {
 		_, err := svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
 			GroupId: &group,
 			IpPermissions: []*ec2.IpPermission{
-				&ec2.IpPermission{
+				{
 					IpProtocol: &ports[portIndex].protocol,
 					FromPort:   &ports[portIndex].from,
 					ToPort:     &ports[portIndex].to,
 					IpRanges: []*ec2.IpRange{
-						&ec2.IpRange{
+						{
 							CidrIp: &ruleCIDR,
 						},
 					},
@@ -102,7 +102,7 @@ func main() {
 	tagValueString := "tag-value"
 	vpc, err := svc.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: &tagValueString,
 				Values: []*string{
 					&clusterRegex,
@@ -124,7 +124,7 @@ func main() {
 	vpcIdstring := "vpc-id"
 	result, err := svc.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: &vpcIdstring,
 				Values: []*string{
 					&vpcID,

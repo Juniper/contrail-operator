@@ -78,7 +78,7 @@ func TestLocalVolumeEnsureExists(t *testing.T) {
 				Required: &core.NodeSelector{
 					NodeSelectorTerms: []core.NodeSelectorTerm{{
 						MatchExpressions: []core.NodeSelectorRequirement{
-							core.NodeSelectorRequirement{Key: "node", Operator: "In", Values: []string{""}},
+							{Key: "node", Operator: "In", Values: []string{""}},
 						},
 					}},
 				},

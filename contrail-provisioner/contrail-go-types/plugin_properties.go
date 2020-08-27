@@ -6,7 +6,7 @@ package types
 
 type PluginProperty struct {
 	Property string `json:"property,omitempty"`
-	Value string `json:"value,omitempty"`
+	Value    string `json:"value,omitempty"`
 }
 
 type PluginProperties struct {
@@ -14,5 +14,5 @@ type PluginProperties struct {
 }
 
 func (obj *PluginProperties) AddPluginProperty(value *PluginProperty) {
-        obj.PluginProperty = append(obj.PluginProperty, *value)
+	obj.PluginProperty = append(obj.PluginProperty, *value)
 }

@@ -6,7 +6,7 @@ package types
 
 type SecurityLoggingObjectRuleEntryType struct {
 	RuleUuid string `json:"rule_uuid,omitempty"`
-	Rate int `json:"rate,omitempty"`
+	Rate     int    `json:"rate,omitempty"`
 }
 
 type SecurityLoggingObjectRuleListType struct {
@@ -14,5 +14,5 @@ type SecurityLoggingObjectRuleListType struct {
 }
 
 func (obj *SecurityLoggingObjectRuleListType) AddRule(value *SecurityLoggingObjectRuleEntryType) {
-        obj.Rule = append(obj.Rule, *value)
+	obj.Rule = append(obj.Rule, *value)
 }

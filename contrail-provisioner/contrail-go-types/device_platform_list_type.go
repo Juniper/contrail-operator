@@ -9,5 +9,5 @@ type DevicePlatformListType struct {
 }
 
 func (obj *DevicePlatformListType) AddPlatformName(value string) {
-        obj.PlatformName = append(obj.PlatformName, value)
+	obj.PlatformName = append(obj.PlatformName, value)
 }

@@ -5,9 +5,9 @@
 package types
 
 type DeviceCredential struct {
-	Credential *UserCredentials `json:"credential,omitempty"`
-	Vendor string `json:"vendor,omitempty"`
-	DeviceFamily string `json:"device_family,omitempty"`
+	Credential   *UserCredentials `json:"credential,omitempty"`
+	Vendor       string           `json:"vendor,omitempty"`
+	DeviceFamily string           `json:"device_family,omitempty"`
 }
 
 type DeviceCredentialList struct {
@@ -15,5 +15,5 @@ type DeviceCredentialList struct {
 }
 
 func (obj *DeviceCredentialList) AddDeviceCredential(value *DeviceCredential) {
-        obj.DeviceCredential = append(obj.DeviceCredential, *value)
+	obj.DeviceCredential = append(obj.DeviceCredential, *value)
 }

@@ -10,13 +10,13 @@ type RbacPermType struct {
 }
 
 type RbacRuleType struct {
-	RuleObject string `json:"rule_object,omitempty"`
-	RuleField string `json:"rule_field,omitempty"`
-	RulePerms []RbacPermType `json:"rule_perms,omitempty"`
+	RuleObject string         `json:"rule_object,omitempty"`
+	RuleField  string         `json:"rule_field,omitempty"`
+	RulePerms  []RbacPermType `json:"rule_perms,omitempty"`
 }
 
 func (obj *RbacRuleType) AddRulePerms(value *RbacPermType) {
-        obj.RulePerms = append(obj.RulePerms, *value)
+	obj.RulePerms = append(obj.RulePerms, *value)
 }
 
 type RbacRuleEntriesType struct {
@@ -24,5 +24,5 @@ type RbacRuleEntriesType struct {
 }
 
 func (obj *RbacRuleEntriesType) AddRbacRule(value *RbacRuleType) {
-        obj.RbacRule = append(obj.RbacRule, *value)
+	obj.RbacRule = append(obj.RbacRule, *value)
 }

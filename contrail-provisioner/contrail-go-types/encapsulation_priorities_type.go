@@ -9,5 +9,5 @@ type EncapsulationPrioritiesType struct {
 }
 
 func (obj *EncapsulationPrioritiesType) AddEncapsulation(value string) {
-        obj.Encapsulation = append(obj.Encapsulation, value)
+	obj.Encapsulation = append(obj.Encapsulation, value)
 }

@@ -9,5 +9,5 @@ type UveKeysType struct {
 }
 
 func (obj *UveKeysType) AddUveKey(value string) {
-        obj.UveKey = append(obj.UveKey, value)
+	obj.UveKey = append(obj.UveKey, value)
 }

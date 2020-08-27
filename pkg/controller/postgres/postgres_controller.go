@@ -279,7 +279,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 				},
 			},
 			Volumes: []core.Volume{
-				core.Volume{
+				{
 					Name: cr.Name + "-volume",
 					VolumeSource: core.VolumeSource{
 						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
@@ -287,7 +287,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						},
 					},
 				},
-				core.Volume{
+				{
 					Name: cr.Name + "-secret-certificates",
 					VolumeSource: core.VolumeSource{
 						Secret: &core.SecretVolumeSource{
@@ -296,7 +296,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						},
 					},
 				},
-				core.Volume{
+				{
 					Name: "status",
 					VolumeSource: core.VolumeSource{
 						DownwardAPI: &core.DownwardAPIVolumeSource{
@@ -313,7 +313,7 @@ func newPodForCR(cr *contrail.Postgres, claimName string, csrSignerCaVolumeName 
 						},
 					},
 				},
-				core.Volume{
+				{
 					Name: csrSignerCaVolumeName,
 					VolumeSource: core.VolumeSource{
 						ConfigMap: &core.ConfigMapVolumeSource{

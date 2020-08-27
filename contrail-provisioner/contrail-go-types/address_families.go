@@ -9,5 +9,5 @@ type AddressFamilies struct {
 }
 
 func (obj *AddressFamilies) AddFamily(value string) {
-        obj.Family = append(obj.Family, value)
+	obj.Family = append(obj.Family, value)
 }

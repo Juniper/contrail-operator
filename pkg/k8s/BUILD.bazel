@@ -35,6 +35,7 @@ go_test(
         "config_map_test.go",
         "owner_test.go",
         "secret_test.go",
+        "service_test.go",
     ],
     embed = [":go_default_library"],
     deps = [

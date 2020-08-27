@@ -5,7 +5,7 @@
 package types
 
 type QosIdForwardingClassPair struct {
-	Key int `json:"key,omitempty"`
+	Key               int `json:"key,omitempty"`
 	ForwardingClassId int `json:"forwarding_class_id,omitempty"`
 }
 
@@ -14,5 +14,5 @@ type QosIdForwardingClassPairs struct {
 }
 
 func (obj *QosIdForwardingClassPairs) AddQosIdForwardingClassPair(value *QosIdForwardingClassPair) {
-        obj.QosIdForwardingClassPair = append(obj.QosIdForwardingClassPair, *value)
+	obj.QosIdForwardingClassPair = append(obj.QosIdForwardingClassPair, *value)
 }

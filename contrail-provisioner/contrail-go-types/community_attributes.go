@@ -9,5 +9,5 @@ type CommunityAttributes struct {
 }
 
 func (obj *CommunityAttributes) AddCommunityAttribute(value string) {
-        obj.CommunityAttribute = append(obj.CommunityAttribute, value)
+	obj.CommunityAttribute = append(obj.CommunityAttribute, value)
 }

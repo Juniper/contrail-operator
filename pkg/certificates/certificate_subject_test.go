@@ -102,35 +102,35 @@ func TestSubjectGenerateCertificateTemplate(t *testing.T) {
 	testPodIP := "1.1.1.1"
 
 	tests := []struct {
-		name string
-		serviceIP string
-		subject    certificateSubject
+		name         string
+		serviceIP    string
+		subject      certificateSubject
 		expectedCert x509.Certificate
 	}{
 		{
-			name:    "should create Certificate with one IP",
+			name: "should create Certificate with one IP",
 			subject: certificateSubject{
-					name:     testPodName,
-					hostname: testPodNodeName,
-					ip:       testPodIP,
+				name:     testPodName,
+				hostname: testPodNodeName,
+				ip:       testPodIP,
 			},
 			expectedCert: x509.Certificate{
-			Subject: pkix.Name{
-			CommonName:         testPodIP,
-			Country:            []string{"US"},
-			Province:           []string{"CA"},
-			Locality:           []string{"Sunnyvale"},
-			Organization:       []string{"Juniper Networks"},
-			OrganizationalUnit: []string{"Contrail"},
-		},
-			DNSNames:    []string{testPodNodeName},
-			IPAddresses: []net.IP{net.ParseIP(testPodIP)},
-			KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
-		},
+				Subject: pkix.Name{
+					CommonName:         testPodIP,
+					Country:            []string{"US"},
+					Province:           []string{"CA"},
+					Locality:           []string{"Sunnyvale"},
+					Organization:       []string{"Juniper Networks"},
+					OrganizationalUnit: []string{"Contrail"},
+				},
+				DNSNames:    []string{testPodNodeName},
+				IPAddresses: []net.IP{net.ParseIP(testPodIP)},
+				KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+				ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+			},
 		},
 		{
-			name:        "should create Certificate with IP and Service IP",
+			name: "should create Certificate with IP and Service IP",
 			subject: certificateSubject{
 				name:     testPodName,
 				hostname: testPodNodeName,
@@ -138,21 +138,20 @@ func TestSubjectGenerateCertificateTemplate(t *testing.T) {
 			},
 			serviceIP: "2.2.2.2",
 			expectedCert: x509.Certificate{
-			Subject: pkix.Name{
-				CommonName:         testPodIP,
-				Country:            []string{"US"},
-				Province:           []string{"CA"},
-				Locality:           []string{"Sunnyvale"},
-				Organization:       []string{"Juniper Networks"},
-				OrganizationalUnit: []string{"Contrail"},
+				Subject: pkix.Name{
+					CommonName:         testPodIP,
+					Country:            []string{"US"},
+					Province:           []string{"CA"},
+					Locality:           []string{"Sunnyvale"},
+					Organization:       []string{"Juniper Networks"},
+					OrganizationalUnit: []string{"Contrail"},
+				},
+				DNSNames:    []string{testPodNodeName},
+				IPAddresses: []net.IP{net.ParseIP(testPodIP), net.ParseIP("2.2.2.2")},
+				KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+				ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 			},
-			DNSNames:    []string{testPodNodeName},
-			IPAddresses: []net.IP{net.ParseIP(testPodIP), net.ParseIP("2.2.2.2")},
-			KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		},
-		},
-
 	}
 
 	for _, test := range tests {
@@ -161,7 +160,6 @@ func TestSubjectGenerateCertificateTemplate(t *testing.T) {
 		assertCertificatesEqual(t, test.expectedCert, cert)
 	}
 }
-
 
 func assertCertificatesEqual(t *testing.T, expectedCert, actualCert x509.Certificate) {
 	assert.Equal(t, expectedCert.Subject, actualCert.Subject)

@@ -9,5 +9,5 @@ type RoutingBridgingRolesType struct {
 }
 
 func (obj *RoutingBridgingRolesType) AddRbRoles(value string) {
-        obj.RbRoles = append(obj.RbRoles, value)
+	obj.RbRoles = append(obj.RbRoles, value)
 }

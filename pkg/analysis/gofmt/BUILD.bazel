@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["gofmt.go"],
+    importpath = "github.com/Juniper/contrail-operator/pkg/analysis/gofmt",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_golangci_gofmt//gofmt:go_default_library",
+        "@org_golang_x_tools//go/analysis:go_default_library",
+    ],
+)
+
+go_tool_library(
+    name = "go_tool_library",
+    srcs = ["gofmt.go"],
+    importpath = "github.com/Juniper/contrail-operator/pkg/gofmt",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_golangci_gofmt//gofmt:go_tool_library",
+        "@org_golang_x_tools//go/analysis:go_tool_library",
+    ],
+)

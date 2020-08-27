@@ -9,5 +9,5 @@ type DeviceFamilyListType struct {
 }
 
 func (obj *DeviceFamilyListType) AddDeviceFamily(value string) {
-        obj.DeviceFamily = append(obj.DeviceFamily, value)
+	obj.DeviceFamily = append(obj.DeviceFamily, value)
 }
