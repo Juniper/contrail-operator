@@ -211,7 +211,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 			CommonConfiguration: v1alpha1.ManagerConfiguration{
 				HostNetwork:      &hostNetwork,
 				ImagePullSecrets: []string{"contrail-nightly"},
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: v1alpha1.Services{
 				Rabbitmq: &v1alpha1.Rabbitmq{
@@ -318,7 +318,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 					Spec: v1alpha1.ProvisionManagerSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
-							Replicas:     &replicas,
+							Replicas: &replicas,
 						},
 						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
 							Containers: []*v1alpha1.Container{

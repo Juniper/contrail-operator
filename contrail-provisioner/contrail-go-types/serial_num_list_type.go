@@ -9,5 +9,5 @@ type SerialNumListType struct {
 }
 
 func (obj *SerialNumListType) AddSerialNum(value string) {
-        obj.SerialNum = append(obj.SerialNum, value)
+	obj.SerialNum = append(obj.SerialNum, value)
 }

@@ -11,11 +11,11 @@ type TelemetryResourceInfo struct {
 }
 
 type TelemetryStateInfo struct {
-	Resource []TelemetryResourceInfo `json:"resource,omitempty"`
-	ServerIp string `json:"server_ip,omitempty"`
-	ServerPort int `json:"server_port,omitempty"`
+	Resource   []TelemetryResourceInfo `json:"resource,omitempty"`
+	ServerIp   string                  `json:"server_ip,omitempty"`
+	ServerPort int                     `json:"server_port,omitempty"`
 }
 
 func (obj *TelemetryStateInfo) AddResource(value *TelemetryResourceInfo) {
-        obj.Resource = append(obj.Resource, *value)
+	obj.Resource = append(obj.Resource, *value)
 }

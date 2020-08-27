@@ -9,5 +9,5 @@ type DhcpOptionsListType struct {
 }
 
 func (obj *DhcpOptionsListType) AddDhcpOption(value *DhcpOptionType) {
-        obj.DhcpOption = append(obj.DhcpOption, *value)
+	obj.DhcpOption = append(obj.DhcpOption, *value)
 }

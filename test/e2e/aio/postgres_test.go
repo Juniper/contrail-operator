@@ -61,7 +61,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.ManagerConfiguration{
-					HostNetwork: &trueVal,
+					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 				},
 				Services: contrail.Services{

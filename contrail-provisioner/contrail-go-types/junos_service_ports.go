@@ -9,5 +9,5 @@ type JunosServicePorts struct {
 }
 
 func (obj *JunosServicePorts) AddServicePort(value string) {
-        obj.ServicePort = append(obj.ServicePort, value)
+	obj.ServicePort = append(obj.ServicePort, value)
 }

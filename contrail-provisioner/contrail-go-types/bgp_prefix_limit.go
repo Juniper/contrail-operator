@@ -5,6 +5,6 @@
 package types
 
 type BgpPrefixLimit struct {
-	Maximum int `json:"maximum,omitempty"`
+	Maximum     int `json:"maximum,omitempty"`
 	IdleTimeout int `json:"idle_timeout,omitempty"`
 }

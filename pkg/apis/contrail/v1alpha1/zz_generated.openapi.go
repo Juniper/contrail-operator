@@ -20,7 +20,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandConfiguration":          schema_pkg_apis_contrail_v1alpha1_CommandConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandSpec":                   schema_pkg_apis_contrail_v1alpha1_CommandSpec(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.CommandStatus":                 schema_pkg_apis_contrail_v1alpha1_CommandStatus(ref),
-		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration":           schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
+		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.PodConfiguration":              schema_pkg_apis_contrail_v1alpha1_CommonConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.Config":                        schema_pkg_apis_contrail_v1alpha1_Config(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigConfiguration":           schema_pkg_apis_contrail_v1alpha1_ConfigConfiguration(ref),
 		"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1.ConfigSpec":                    schema_pkg_apis_contrail_v1alpha1_ConfigSpec(ref),

@@ -6,18 +6,18 @@ package types
 
 type AlarmOperand2 struct {
 	UveAttribute string `json:"uve_attribute,omitempty"`
-	JsonValue string `json:"json_value,omitempty"`
+	JsonValue    string `json:"json_value,omitempty"`
 }
 
 type AlarmExpression struct {
-	Operation string `json:"operation,omitempty"`
-	Operand1 string `json:"operand1,omitempty"`
-	Operand2 *AlarmOperand2 `json:"operand2,omitempty"`
-	Variables []string `json:"variables,omitempty"`
+	Operation string         `json:"operation,omitempty"`
+	Operand1  string         `json:"operand1,omitempty"`
+	Operand2  *AlarmOperand2 `json:"operand2,omitempty"`
+	Variables []string       `json:"variables,omitempty"`
 }
 
 func (obj *AlarmExpression) AddVariables(value string) {
-        obj.Variables = append(obj.Variables, value)
+	obj.Variables = append(obj.Variables, value)
 }
 
 type AlarmAndList struct {
@@ -25,7 +25,7 @@ type AlarmAndList struct {
 }
 
 func (obj *AlarmAndList) AddAndList(value *AlarmExpression) {
-        obj.AndList = append(obj.AndList, *value)
+	obj.AndList = append(obj.AndList, *value)
 }
 
 type AlarmOrList struct {
@@ -33,5 +33,5 @@ type AlarmOrList struct {
 }
 
 func (obj *AlarmOrList) AddOrList(value *AlarmAndList) {
-        obj.OrList = append(obj.OrList, *value)
+	obj.OrList = append(obj.OrList, *value)
 }

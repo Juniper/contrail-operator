@@ -20,11 +20,11 @@ var multusContainer = v1.Container{
 			"mkdir -p /var/run/multus/cni/net.d && " +
 			"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"},
 	VolumeMounts: []v1.VolumeMount{
-		v1.VolumeMount{
+		{
 			Name:      "etc-kubernetes-cni",
 			MountPath: "/etc/kubernetes/cni",
 		},
-		v1.VolumeMount{
+		{
 			Name:      "multus-cni",
 			MountPath: "/var/run/multus",
 		},

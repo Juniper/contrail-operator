@@ -5,7 +5,7 @@
 package types
 
 type KeyValuePair struct {
-	Key string `json:"key,omitempty"`
+	Key   string `json:"key,omitempty"`
 	Value string `json:"value,omitempty"`
 }
 
@@ -14,5 +14,5 @@ type KeyValuePairs struct {
 }
 
 func (obj *KeyValuePairs) AddKeyValuePair(value *KeyValuePair) {
-        obj.KeyValuePair = append(obj.KeyValuePair, *value)
+	obj.KeyValuePair = append(obj.KeyValuePair, *value)
 }

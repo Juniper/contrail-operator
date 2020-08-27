@@ -1761,7 +1761,7 @@ func TestManagerController(t *testing.T) {
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
 			Status: contrail.ManagerStatus{
-				Cassandras: []*contrail.ServiceStatus{&contrail.ServiceStatus{
+				Cassandras: []*contrail.ServiceStatus{{
 					Name:   &cassandraName,
 					Active: &trueVal,
 				},

@@ -834,10 +834,10 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 				},
 			},
 			VolumeMounts: []core.VolumeMount{
-				core.VolumeMount{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-				core.VolumeMount{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
-				core.VolumeMount{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
-				core.VolumeMount{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
+				{Name: "keystone-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+				{Name: "keystone-fernet-keys", MountPath: "/etc/keystone/fernet-keys"},
+				{Name: "keystone-credential-keys", MountPath: "/etc/keystone/credential-keys"},
+				{Name: "keystone-secret-certificates", MountPath: "/etc/certificates"},
 			},
 			ReadinessProbe: &core.Probe{
 				Handler: core.Handler{
@@ -876,7 +876,7 @@ func newExpectedBootstrapJob() *batch.Job {
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
-					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+					NodeSelector:  map[string]string{"node-role.kubernetes.io/master": ""},
 					HostNetwork:   true,
 					RestartPolicy: core.RestartPolicyNever,
 					Volumes: []core.Volume{

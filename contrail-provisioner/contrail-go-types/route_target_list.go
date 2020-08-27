@@ -9,5 +9,5 @@ type RouteTargetList struct {
 }
 
 func (obj *RouteTargetList) AddRouteTarget(value string) {
-        obj.RouteTarget = append(obj.RouteTarget, value)
+	obj.RouteTarget = append(obj.RouteTarget, value)
 }

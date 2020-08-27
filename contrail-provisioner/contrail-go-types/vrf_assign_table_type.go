@@ -5,10 +5,10 @@
 package types
 
 type VrfAssignRuleType struct {
-	MatchCondition *MatchConditionType `json:"match_condition,omitempty"`
-	VlanTag int `json:"vlan_tag,omitempty"`
-	RoutingInstance string `json:"routing_instance,omitempty"`
-	IgnoreAcl bool `json:"ignore_acl,omitempty"`
+	MatchCondition  *MatchConditionType `json:"match_condition,omitempty"`
+	VlanTag         int                 `json:"vlan_tag,omitempty"`
+	RoutingInstance string              `json:"routing_instance,omitempty"`
+	IgnoreAcl       bool                `json:"ignore_acl,omitempty"`
 }
 
 type VrfAssignTableType struct {
@@ -16,5 +16,5 @@ type VrfAssignTableType struct {
 }
 
 func (obj *VrfAssignTableType) AddVrfAssignRule(value *VrfAssignRuleType) {
-        obj.VrfAssignRule = append(obj.VrfAssignRule, *value)
+	obj.VrfAssignRule = append(obj.VrfAssignRule, *value)
 }

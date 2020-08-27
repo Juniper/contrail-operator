@@ -9,5 +9,5 @@ type VendorHardwaresType struct {
 }
 
 func (obj *VendorHardwaresType) AddVendorHardware(value string) {
-        obj.VendorHardware = append(obj.VendorHardware, value)
+	obj.VendorHardware = append(obj.VendorHardware, value)
 }

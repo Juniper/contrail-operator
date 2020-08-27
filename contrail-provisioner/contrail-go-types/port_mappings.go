@@ -6,8 +6,8 @@ package types
 
 type PortMap struct {
 	Protocol string `json:"protocol,omitempty"`
-	SrcPort int `json:"src_port,omitempty"`
-	DstPort int `json:"dst_port,omitempty"`
+	SrcPort  int    `json:"src_port,omitempty"`
+	DstPort  int    `json:"dst_port,omitempty"`
 }
 
 type PortMappings struct {
@@ -15,5 +15,5 @@ type PortMappings struct {
 }
 
 func (obj *PortMappings) AddPortMappings(value *PortMap) {
-        obj.PortMappings = append(obj.PortMappings, *value)
+	obj.PortMappings = append(obj.PortMappings, *value)
 }

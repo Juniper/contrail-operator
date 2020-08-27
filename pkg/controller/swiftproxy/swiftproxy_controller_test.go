@@ -513,11 +513,11 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 		Name:  "api",
 		Image: "image2",
 		VolumeMounts: []core.VolumeMount{
-			core.VolumeMount{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
-			core.VolumeMount{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
-			core.VolumeMount{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
-			core.VolumeMount{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
+			{Name: "config-volume", MountPath: "/var/lib/kolla/config_files/", ReadOnly: true},
+			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
+			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
+			{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
+			{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{

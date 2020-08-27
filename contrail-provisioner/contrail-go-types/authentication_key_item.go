@@ -5,6 +5,6 @@
 package types
 
 type AuthenticationKeyItem struct {
-	KeyId int `json:"key_id,omitempty"`
-	Key string `json:"key,omitempty"`
+	KeyId int    `json:"key_id,omitempty"`
+	Key   string `json:"key,omitempty"`
 }

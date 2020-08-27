@@ -9,5 +9,5 @@ type AutonomousSystemsType struct {
 }
 
 func (obj *AutonomousSystemsType) AddAsn(value int) {
-        obj.Asn = append(obj.Asn, value)
+	obj.Asn = append(obj.Asn, value)
 }

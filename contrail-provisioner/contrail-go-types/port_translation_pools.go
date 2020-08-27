@@ -5,9 +5,9 @@
 package types
 
 type PortTranslationPool struct {
-	Protocol string `json:"protocol,omitempty"`
+	Protocol  string    `json:"protocol,omitempty"`
 	PortRange *PortType `json:"port_range,omitempty"`
-	PortCount string `json:"port_count,omitempty"`
+	PortCount string    `json:"port_count,omitempty"`
 }
 
 type PortTranslationPools struct {
@@ -15,5 +15,5 @@ type PortTranslationPools struct {
 }
 
 func (obj *PortTranslationPools) AddPortTranslationPool(value *PortTranslationPool) {
-        obj.PortTranslationPool = append(obj.PortTranslationPool, *value)
+	obj.PortTranslationPool = append(obj.PortTranslationPool, *value)
 }

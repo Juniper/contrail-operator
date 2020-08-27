@@ -379,7 +379,7 @@ func updatePodTemplate(
 			{Name: "swift-conf-volume", MountPath: "/var/lib/kolla/swift_config/", ReadOnly: true},
 			{Name: "rings", MountPath: "/etc/rings", ReadOnly: true},
 			{Name: "csr-signer-ca", MountPath: certificates.SignerCAMountPath, ReadOnly: true},
-			core.VolumeMount{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
+			{Name: "swiftproxy-secret-certificates", MountPath: "/var/lib/kolla/certificates"},
 		},
 		ReadinessProbe: &core.Probe{
 			Handler: core.Handler{
@@ -498,8 +498,8 @@ func getImage(containers []*contrail.Container, containerName string) string {
 
 func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init":                []string{"ansible-playbook"},
-		"wait-for-ready-conf": []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+		"init":                {"ansible-playbook"},
+		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
 	c := utils.GetContainerFromList(containerName, containers)

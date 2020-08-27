@@ -9,5 +9,5 @@ type FirewallRuleMatchTagsTypeIdList struct {
 }
 
 func (obj *FirewallRuleMatchTagsTypeIdList) AddTagType(value int) {
-        obj.TagType = append(obj.TagType, value)
+	obj.TagType = append(obj.TagType, value)
 }

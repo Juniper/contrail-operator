@@ -610,8 +610,8 @@ var InitContainers = []core.Container{
 			Value: "COPY_ALWAYS",
 		}},
 		VolumeMounts: []core.VolumeMount{
-			core.VolumeMount{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
-			core.VolumeMount{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
+			{Name: "keystone-init-config-volume", MountPath: "/var/lib/kolla/config_files/"},
+			{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 		},
 	},
 }
@@ -623,9 +623,7 @@ var cassandraTwo = &contrail.Cassandra{
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
 	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.PodConfiguration{
-
-		},
+		CommonConfiguration: contrail.PodConfiguration{},
 	},
 }
 
@@ -637,9 +635,7 @@ func newZookeeperTwo() *contrail.Zookeeper {
 			Namespace: "default",
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-
-			},
+			CommonConfiguration: contrail.PodConfiguration{},
 		},
 	}
 }
@@ -651,9 +647,7 @@ func newRabbitmqTwo() *contrail.Rabbitmq {
 			Namespace: "default",
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-
-			},
+			CommonConfiguration: contrail.PodConfiguration{},
 		},
 	}
 }

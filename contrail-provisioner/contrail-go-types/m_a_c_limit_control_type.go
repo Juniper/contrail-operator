@@ -5,6 +5,6 @@
 package types
 
 type MACLimitControlType struct {
-	MacLimit int `json:"mac_limit,omitempty"`
+	MacLimit       int    `json:"mac_limit,omitempty"`
 	MacLimitAction string `json:"mac_limit_action,omitempty"`
 }

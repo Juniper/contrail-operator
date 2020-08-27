@@ -9,5 +9,5 @@ type MacAddressesType struct {
 }
 
 func (obj *MacAddressesType) AddMacAddress(value string) {
-        obj.MacAddress = append(obj.MacAddress, value)
+	obj.MacAddress = append(obj.MacAddress, value)
 }

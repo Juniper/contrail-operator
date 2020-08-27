@@ -9,5 +9,5 @@ type SubnetListType struct {
 }
 
 func (obj *SubnetListType) AddSubnet(value *SubnetType) {
-        obj.Subnet = append(obj.Subnet, *value)
+	obj.Subnet = append(obj.Subnet, *value)
 }

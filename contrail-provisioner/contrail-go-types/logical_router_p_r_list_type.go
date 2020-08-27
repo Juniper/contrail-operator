@@ -5,12 +5,12 @@
 package types
 
 type LogicalRouterPRListParams struct {
-	LogicalRouterUuid string `json:"logical_router_uuid,omitempty"`
+	LogicalRouterUuid      string   `json:"logical_router_uuid,omitempty"`
 	PhysicalRouterUuidList []string `json:"physical_router_uuid_list,omitempty"`
 }
 
 func (obj *LogicalRouterPRListParams) AddPhysicalRouterUuidList(value string) {
-        obj.PhysicalRouterUuidList = append(obj.PhysicalRouterUuidList, value)
+	obj.PhysicalRouterUuidList = append(obj.PhysicalRouterUuidList, value)
 }
 
 type LogicalRouterPRListType struct {
@@ -18,5 +18,5 @@ type LogicalRouterPRListType struct {
 }
 
 func (obj *LogicalRouterPRListType) AddLogicalRouterList(value *LogicalRouterPRListParams) {
-        obj.LogicalRouterList = append(obj.LogicalRouterList, *value)
+	obj.LogicalRouterList = append(obj.LogicalRouterList, *value)
 }

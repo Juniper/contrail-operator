@@ -5,8 +5,8 @@
 package types
 
 type CliDiffInfoType struct {
-	Username string `json:"username,omitempty"`
-	Time string `json:"time,omitempty"`
+	Username      string `json:"username,omitempty"`
+	Time          string `json:"time,omitempty"`
 	ConfigChanges string `json:"config_changes,omitempty"`
 }
 
@@ -15,5 +15,5 @@ type CliDiffListType struct {
 }
 
 func (obj *CliDiffListType) AddCommitDiffInfo(value *CliDiffInfoType) {
-        obj.CommitDiffInfo = append(obj.CommitDiffInfo, *value)
+	obj.CommitDiffInfo = append(obj.CommitDiffInfo, *value)
 }

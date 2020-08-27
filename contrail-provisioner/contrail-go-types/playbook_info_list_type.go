@@ -5,12 +5,12 @@
 package types
 
 type PlaybookInfoType struct {
-	PlaybookUri string `json:"playbook_uri,omitempty"`
-	MultiDevicePlaybook bool `json:"multi_device_playbook,omitempty"`
-	Vendor string `json:"vendor,omitempty"`
-	DeviceFamily string `json:"device_family,omitempty"`
-	JobCompletionWeightage int `json:"job_completion_weightage,omitempty"`
-	SequenceNo int `json:"sequence_no,omitempty"`
+	PlaybookUri            string `json:"playbook_uri,omitempty"`
+	MultiDevicePlaybook    bool   `json:"multi_device_playbook,omitempty"`
+	Vendor                 string `json:"vendor,omitempty"`
+	DeviceFamily           string `json:"device_family,omitempty"`
+	JobCompletionWeightage int    `json:"job_completion_weightage,omitempty"`
+	SequenceNo             int    `json:"sequence_no,omitempty"`
 }
 
 type PlaybookInfoListType struct {
@@ -18,5 +18,5 @@ type PlaybookInfoListType struct {
 }
 
 func (obj *PlaybookInfoListType) AddPlaybookInfo(value *PlaybookInfoType) {
-        obj.PlaybookInfo = append(obj.PlaybookInfo, *value)
+	obj.PlaybookInfo = append(obj.PlaybookInfo, *value)
 }

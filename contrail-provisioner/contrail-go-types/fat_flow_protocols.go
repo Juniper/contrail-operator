@@ -5,13 +5,13 @@
 package types
 
 type ProtocolType struct {
-	Protocol string `json:"protocol,omitempty"`
-	Port int `json:"port,omitempty"`
-	IgnoreAddress string `json:"ignore_address,omitempty"`
-	SourcePrefix *SubnetType `json:"source_prefix,omitempty"`
-	SourceAggregatePrefixLength int `json:"source_aggregate_prefix_length,omitempty"`
-	DestinationPrefix *SubnetType `json:"destination_prefix,omitempty"`
-	DestinationAggregatePrefixLength int `json:"destination_aggregate_prefix_length,omitempty"`
+	Protocol                         string      `json:"protocol,omitempty"`
+	Port                             int         `json:"port,omitempty"`
+	IgnoreAddress                    string      `json:"ignore_address,omitempty"`
+	SourcePrefix                     *SubnetType `json:"source_prefix,omitempty"`
+	SourceAggregatePrefixLength      int         `json:"source_aggregate_prefix_length,omitempty"`
+	DestinationPrefix                *SubnetType `json:"destination_prefix,omitempty"`
+	DestinationAggregatePrefixLength int         `json:"destination_aggregate_prefix_length,omitempty"`
 }
 
 type FatFlowProtocols struct {
@@ -19,5 +19,5 @@ type FatFlowProtocols struct {
 }
 
 func (obj *FatFlowProtocols) AddFatFlowProtocol(value *ProtocolType) {
-        obj.FatFlowProtocol = append(obj.FatFlowProtocol, *value)
+	obj.FatFlowProtocol = append(obj.FatFlowProtocol, *value)
 }

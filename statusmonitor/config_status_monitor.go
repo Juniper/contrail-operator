@@ -53,7 +53,7 @@ func isBackupImplementedService(fullServiceName string) bool {
 	return false
 }
 
-func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) (error) {
+func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
 	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(config.PodName, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Getting pod failed: %s", err)
