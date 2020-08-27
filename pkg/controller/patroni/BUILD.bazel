@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/certificates:go_default_library",
+        "//pkg/controller/utils:go_default_library",
         "//pkg/k8s:go_default_library",
         "//pkg/label:go_default_library",
         "//pkg/localvolume:go_default_library",
