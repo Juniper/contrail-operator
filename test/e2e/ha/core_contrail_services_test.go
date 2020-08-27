@@ -158,7 +158,6 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: labelKeyToSelector(nodeLabelKey),
 			})
