@@ -18,9 +18,9 @@ type PatroniSpec struct {
 
 // PatroniStatus defines the observed state of Patroni
 type PatroniStatus struct {
-	Active                bool     `json:"active"`
-	IPs                   []string `json:"ip,omitempty"`
-	CredentialsSecretName string   `json:"credentialsSecretName,omitempty"`
+	Status                `json:",inline"`
+	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
+	ClusterIP             string `json:"clusterIP,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

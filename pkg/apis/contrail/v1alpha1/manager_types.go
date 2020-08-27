@@ -37,6 +37,7 @@ type Services struct {
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
+	Patroni          *Patroni          `json:"patroni,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -81,6 +82,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	Patroni          *ServiceStatus   `json:"patroni,omitempty"`
 	Replicas         int32            `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
