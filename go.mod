@@ -12,6 +12,7 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-pg/pg/v10 v10.0.0-beta.2
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect

@@ -5469,3 +5469,12 @@ go_repository(
     sum = "h1:fM/+TGh/O1KkqGR5xjTKg6bU8OKBkg7p0Y+x/J9m8Os=",
     version = "v0.1.0",
 )
+
+go_repository(
+    name = "com_github_golangci_gofmt",
+    importpath = "github.com/golangci/gofmt",
+    patch_args = ["-p1"],
+    patches = ["//:third_party/com_github_golangci_gofmt.patch"],
+    sum = "h1:iR3fYXUjHCR97qWS8ch1y9zPNsgXThGwjKPrYfqMPks=",
+    version = "v0.0.0-20190930125516-244bba706f1a",
+)
