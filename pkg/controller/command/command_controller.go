@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -208,10 +209,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
-	currentDeployment, err := r.getCurrentDeployment(request.Name, request.Namespace)
-	if err != nil && !errors.IsNotFound(err) { // ignore error not found - the deployment may not exist yet
-		return reconcile.Result{}, err
-	}
 	deployment := newDeployment(
 		request.Name,
 		request.Namespace,
@@ -276,14 +273,26 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
-	if err := performUpgradeStepIfNeeded(command, currentDeployment, deployment, r.client); err != nil {
-		return reconcile.Result{}, err
-	}
-	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		_, err = command.PrepareIntendedDeployment(deployment,
-			&command.Spec.CommonConfiguration, request, r.scheme)
-		return err
-	}); err != nil {
+	//currentDeployment, deploymentExists, err := r.getCurrentDeployment(request.Name, request.Namespace)
+	//if err != nil {
+	//	return reconcile.Result{}, err
+	//}
+	expectedDeployment := deployment.DeepCopy()
+	createOoUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
+		reqLogger.Info("CreateOrUpdate - mutate func called")
+		_, err := command.PrepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme)
+		if err != nil {
+			return err
+		}
+		reqLogger.Info(fmt.Sprintf("Images: CR %s, current %s, expected %s",
+			listImages(command.Spec.ServiceConfiguration.Containers),
+			listImagesFromDeployment(deployment),
+			listImagesFromDeployment(expectedDeployment),
+		))
+		return performUpgradeStepIfNeeded(command, deployment, expectedDeployment)
+	})
+	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult))
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -304,6 +313,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	reqLogger.Info("Command - done")
 	return reconcile.Result{}, nil
 }
 
@@ -337,13 +347,16 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	return keystoneServ, err
 }
 
-func (r *ReconcileCommand) getCurrentDeployment(name, namespace string) (*apps.Deployment, error) {
+func (r *ReconcileCommand) getCurrentDeployment(name, namespace string) (*apps.Deployment, bool, error) {
 	deployemnt := &apps.Deployment{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{
 		Namespace: namespace,
 		Name:      name + "-command-deployment",
 	}, deployemnt)
-	return deployemnt, err
+	if errors.IsNotFound(err) {
+		return deployemnt, false, nil
+	}
+	return deployemnt, true, err
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
@@ -534,4 +547,35 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+//WIP - will be removed
+func listImages(containers []*contrail.Container) string {
+	builder := strings.Builder{}
+	builder.Write([]byte("[ "))
+	for _, c := range containers {
+		builder.Write([]byte(c.Name))
+		builder.Write([]byte(": "))
+		builder.Write([]byte(c.Image))
+		builder.Write([]byte(", "))
+	}
+	builder.Write([]byte("]"))
+	return builder.String()
+}
+
+//WIP - will be removed
+func listImagesFromDeployment(deployment *apps.Deployment) string {
+	builder := strings.Builder{}
+	builder.Write([]byte("[ "))
+	spec := deployment.Spec.Template.Spec
+	for _, containers := range [][]core.Container{spec.Containers, spec.InitContainers} {
+		for _, c := range containers {
+			builder.Write([]byte(c.Name))
+			builder.Write([]byte(": "))
+			builder.Write([]byte(c.Image))
+			builder.Write([]byte(", "))
+		}
+	}
+	builder.Write([]byte("]"))
+	return builder.String()
 }
