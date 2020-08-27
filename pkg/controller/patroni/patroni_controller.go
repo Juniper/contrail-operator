@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
 	apps "k8s.io/api/apps/v1"
@@ -521,6 +522,10 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 					MountPath: "/var/lib/postgresql/data",
 					SubPath:   "postgres",
 				},
+				{
+					Name:      instance.Name + "-secret-certificates",
+					MountPath: "/var/lib/ssl_certificates",
+				},
 			},
 		},
 	}
@@ -576,6 +581,24 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 						ClaimName: "pgdata",
 						ReadOnly:  false,
+					},
+				},
+			},
+			{
+				Name: instance.Name + "-secret-certificates",
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						SecretName: instance.Name + "-secret-certificates",
+					},
+				},
+			},
+			{
+				Name: instance.Name + "-csr-signer-ca",
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: contrailcertificates.SignerCAConfigMapName,
+						},
 					},
 				},
 			},
