@@ -53,11 +53,11 @@ func isBackupImplementedService(fullServiceName string) bool {
 	return false
 }
 
-func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) {
+func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
 	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(config.PodName, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Getting pod failed: %s", err)
-		return
+		return err
 	}
 	ServiceAddressMap := map[string]string{}
 	for _, ServicePort := range config.APIServerList {
@@ -87,8 +87,9 @@ func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restCl
 	err = updateConfigStatus(&config, configStatusMap, restClient)
 	if err != nil {
 		log.Printf("Error in updateConfigStatus in func: %s", err)
-		return
+		return err
 	}
+	return nil
 }
 
 // gets status for specific service from config pod using introspect port
@@ -196,7 +197,10 @@ func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTyp
 			restClient: restClient,
 		}
 		configObject, err := configClient.Get(config.NodeName, metav1.GetOptions{})
-		check(err)
+		if err != nil {
+			log.Printf("error: updateConfigStatus: Filed to get config status %v", err)
+			return err
+		}
 		update := false
 		if configObject.Status.ServiceStatus == nil {
 			configObject.Status.ServiceStatus = map[string]map[string]contrailOperatorTypes.ConfigServiceStatus{}
@@ -219,14 +223,14 @@ func updateConfigStatus(config *Config, StatusMap map[string]contrailOperatorTyp
 		if update {
 			_, err = configClient.UpdateStatus(config.NodeName, configObject)
 			if err != nil {
-				log.Printf("warning: Update failed: %v", err)
+				log.Printf("error: updateConfigStatus: Filed to update config status %v", err)
+				return err
 			}
-			return err
 		}
 		return nil
 	})
 	if retryErr != nil {
-		log.Printf("warning: Update failed: %v", retryErr)
+		log.Printf("Error: Update retry failed: %v", retryErr)
 		return retryErr
 	}
 	return nil
