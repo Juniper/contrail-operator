@@ -4,7 +4,7 @@ metadata:
   name: contrail-operator
   namespace: contrail
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       name: contrail-operator
@@ -13,6 +13,18 @@ spec:
       labels:
         name: contrail-operator
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - "contrail-operator"
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
       serviceAccountName: contrail-operator
       hostNetwork: true
       imagePullSecrets:
