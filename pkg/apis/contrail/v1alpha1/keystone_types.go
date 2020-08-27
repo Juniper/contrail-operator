@@ -72,3 +72,29 @@ type KeystoneList struct {
 func init() {
 	SchemeBuilder.Register(&Keystone{}, &KeystoneList{})
 }
+
+func (k *Keystone) SetServiceConfiguration() {
+	// After migration to CRD apiextensions.k8s.io/v1 replace those conditions
+	// with +kubebuilder:default markers on keystone struct fields
+	if k.Spec.ServiceConfiguration.ListenPort == 0 {
+		k.Spec.ServiceConfiguration.ListenPort = 5555
+	}
+	if k.Spec.ServiceConfiguration.Region == "" {
+		k.Spec.ServiceConfiguration.Region = "RegionOne"
+	}
+	if k.Spec.ServiceConfiguration.AuthProtocol == "" {
+		k.Spec.ServiceConfiguration.AuthProtocol = "https"
+	}
+	if k.Spec.ServiceConfiguration.UserDomainName == "" {
+		k.Spec.ServiceConfiguration.UserDomainName = "default"
+	}
+	if k.Spec.ServiceConfiguration.UserDomainID == "" {
+		k.Spec.ServiceConfiguration.UserDomainID = "default"
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainName == "" {
+		k.Spec.ServiceConfiguration.ProjectDomainName = "default"
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainID == "" {
+		k.Spec.ServiceConfiguration.ProjectDomainID = "default"
+	}
+}

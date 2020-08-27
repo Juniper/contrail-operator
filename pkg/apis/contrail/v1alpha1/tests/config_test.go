@@ -151,8 +151,8 @@ var keystone = &v1alpha1.Keystone{
 		ServiceConfiguration: v1alpha1.KeystoneConfiguration{
 			ListenPort:        5555,
 			AuthProtocol:      "https",
-			UserDomainName:    "Default",
-			ProjectDomainName: "Default",
+			UserDomainName:    "default",
+			ProjectDomainName: "default",
 			Region:            "RegionOne",
 		},
 	},
@@ -850,7 +850,7 @@ config.identityManager.port = "5555";
 config.identityManager.authProtocol = "https";
 config.identityManager.apiVersion = ['v3'];
 config.identityManager.strictSSL = false;
-config.identityManager.defaultDomain = "Default";
+config.identityManager.defaultDomain = "default";
 config.identityManager.ca = "/etc/ssl/certs/kubernetes/ca-bundle.crt";
 config.storageManager = {};
 config.storageManager.ip = "127.0.0.1";
@@ -954,8 +954,8 @@ auth.admin_user = 'admin';
 auth.admin_password = 'test123';
 auth.admin_token = '';
 auth.admin_tenant_name = 'admin';
-auth.project_domain_name = 'Default';
-auth.user_domain_name = 'Default';
+auth.project_domain_name = 'default';
+auth.user_domain_name = 'default';
 module.exports = auth;
 `
 
@@ -1813,7 +1813,7 @@ AUTHN_PROTOCOL = https
 AUTHN_SERVER = 10.11.12.14
 AUTHN_PORT = 5555
 AUTHN_URL = /v3/auth/tokens
-AUTHN_DOMAIN = Default
+AUTHN_DOMAIN = default
 cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
 ;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `
@@ -1827,6 +1827,6 @@ auth_protocol = https
 auth_url = https://10.11.12.14:5555/v3
 auth_type = password
 cafile = /etc/ssl/certs/kubernetes/ca-bundle.crt
-user_domain_name = Default
-project_domain_name = Default
+user_domain_name = default
+project_domain_name = default
 region_name = RegionOne`

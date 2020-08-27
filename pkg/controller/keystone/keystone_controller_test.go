@@ -340,7 +340,7 @@ func TestExternalKeystone(t *testing.T) {
 		"token": {
 		  "domain": {
 			"id": "default",
-			"name": "Default"
+			"name": "default"
 		  },
 		  "methods": ["password"],
 		  "roles": [{
@@ -373,7 +373,7 @@ func TestExternalKeystone(t *testing.T) {
 		  "user": {
 			"domain": {
 			  "id": "default",
-			  "name": "Default"
+			  "name": "default"
 			},
 			"id": "3ec3164f750146be97f21559ee4d9c51",
 			"name": "admin"
@@ -453,8 +453,8 @@ func newKeystone() *contrail.Keystone {
 				KeystoneSecretName: "keystone-adminpass-secret",
 				AuthProtocol:       "https",
 				Region:             "RegionOne",
-				UserDomainName:     "Default",
-				ProjectDomainName:  "Default",
+				UserDomainName:     "default",
+				ProjectDomainName:  "default",
 			},
 		},
 	}
@@ -473,8 +473,8 @@ func newExtKeystone(protocol string, address string, port int) *contrail.Keyston
 				KeystoneSecretName: "keystone-adminpass-secret",
 				AuthProtocol:       protocol,
 				Region:             "RegionOne",
-				UserDomainName:     "Default",
-				ProjectDomainName:  "Default",
+				UserDomainName:     "default",
+				ProjectDomainName:  "default",
 			},
 		},
 	}

@@ -709,27 +709,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
 		// After migration to CRD apiextensions.k8s.io/v1 replace those conditions
 		// with +kubebuilder:default markers on keystone struct fileds
-		if keystone.Spec.ServiceConfiguration.ListenPort == 0 {
-			keystone.Spec.ServiceConfiguration.ListenPort = 5555
-		}
-		if keystone.Spec.ServiceConfiguration.Region == "" {
-			keystone.Spec.ServiceConfiguration.Region = "RegionOne"
-		}
-		if keystone.Spec.ServiceConfiguration.AuthProtocol == "" {
-			keystone.Spec.ServiceConfiguration.AuthProtocol = "https"
-		}
-		if keystone.Spec.ServiceConfiguration.UserDomainName == "" {
-			keystone.Spec.ServiceConfiguration.UserDomainName = "Default"
-		}
-		if keystone.Spec.ServiceConfiguration.UserDomainID == "" {
-			keystone.Spec.ServiceConfiguration.UserDomainID = "default"
-		}
-		if keystone.Spec.ServiceConfiguration.ProjectDomainName == "" {
-			keystone.Spec.ServiceConfiguration.ProjectDomainName = "Default"
-		}
-		if keystone.Spec.ServiceConfiguration.ProjectDomainID == "" {
-			keystone.Spec.ServiceConfiguration.ProjectDomainID = "default"
-		}
+		keystone.SetServiceConfiguration()
 		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
 		if keystone.Spec.CommonConfiguration.Replicas == nil {
 			keystone.Spec.CommonConfiguration.Replicas = replicas
