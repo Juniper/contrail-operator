@@ -26,7 +26,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress string, keystonePort int, keystoneAuthProtocol string) error {
+func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress string, keystonePort int, keystoneAuthProtocol string, postgresAddress string) error {
 	cc := &commandConf{
 		ClusterName:          "default",
 		AdminUsername:        "admin",
@@ -35,6 +35,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress str
 		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
 		ConfigAPIURL:         "https://" + hostIP + ":8082",
 		TelemetryURL:         "http://" + hostIP + ":8081",
+		PostgresAddress:      postgresAddress,
 		PostgresUser:         "root",
 		PostgresDBName:       "contrail_test",
 		HostIP:               hostIP,

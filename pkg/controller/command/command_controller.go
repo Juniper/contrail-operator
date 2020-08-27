@@ -179,22 +179,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
-	commandConfigName := command.Name + "-command-configmap"
-	ips := command.Status.IPs
-	if len(ips) == 0 {
-		ips = []string{"0.0.0.0"}
-	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneAddress, keystonePort, keystoneAuthProtocol); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if len(commandPods.Items) > 0 {
-		err = contrail.SetPodsToReady(commandPods, r.client)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
 	psql, err := r.getPostgres(command)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -206,6 +190,22 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if !psql.Status.Active {
 		return reconcile.Result{}, nil
+	}
+
+	commandConfigName := command.Name + "-command-configmap"
+	ips := command.Status.IPs
+	if len(ips) == 0 {
+		ips = []string{"0.0.0.0"}
+	}
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(ips[0], keystoneAddress, keystonePort, keystoneAuthProtocol, psql.Status.Endpoint); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if len(commandPods.Items) > 0 {
+		err = contrail.SetPodsToReady(commandPods, r.client)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"

@@ -16,6 +16,7 @@ type commandConf struct {
 	AdminPassword        string
 	SwiftUsername        string
 	SwiftPassword        string
+	PostgresAddress      string
 	PostgresUser         string
 	PostgresDBName       string
 	HostIP               string
@@ -53,7 +54,7 @@ update-ca-trust
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
 export PGPASSWORD={{ .PGPassword }}
-QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -64,8 +65,8 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h ${MY_POD_IP} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
+psql -w -h {{ .PostgresAddress }} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
 commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
 commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `))
@@ -267,7 +268,7 @@ resources:
 
 var commandConfig = template.Must(template.New("").Parse(`
 database:
-  host: {{ .HostIP }}
+  host: {{ .PostgresAddress }}
   user: root
   password: contrail123
   name: contrail_test
