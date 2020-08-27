@@ -542,6 +542,7 @@ func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "command", "command": "command"},
 			},
+			Strategy: apps.DeploymentStrategy{Type: apps.RecreateDeploymentStrategyType},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
