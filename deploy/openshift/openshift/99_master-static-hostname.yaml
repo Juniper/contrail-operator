@@ -16,23 +16,13 @@ spec:
           [Unit]
           Description=Sets the static hostname required by Contrail
           After=syslog.target
-          AssertPathExists=/etc/contrail/static-hostname.sh
           
           [Service]
           Type=oneshot
           RemainAfterExit=yes
-          ExecStart=/etc/contrail/static-hostname.sh
+          ExecStart=/bin/bash -c 'echo $(hostname -A) > /etc/hostname'
           StandardOutput=syslog
           StandardError=syslog
           
           [Install]
           WantedBy=basic.target
-    storage:
-      files:
-      - filesystem: root
-        path: /etc/contrail/static-hostname.sh
-        mode: 0744
-        user:
-          name: root
-        contents:
-          source: data:,%23%21%2Fbin%2Fbash%0A%0Ahostnamectl%20set-hostname%20%24%28hostname%20-A%29
