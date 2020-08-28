@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -24,7 +25,6 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/statusmonitor/uves"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,6 +61,29 @@ type encryption struct {
 	Cert     *string `yaml:"cert,omitempty"`
 	Key      *string `yaml:"key,omitempty"`
 	Insecure bool    `yaml:"insecure,omitempty"`
+}
+
+type ControlConnectionInfo struct {
+	Type   string   `xml:"type"`
+	Name   string   `xml:"name"`
+	Status string   `xml:"status"`
+	Nodes  []string `xml:"server_addrs>list>element"`
+}
+
+type ProcessControlStatus struct {
+	XMLName           xml.Name                `xml:"__NodeStatusUVE_list"`
+	State             string                  `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>state"`
+	ConConnectionInfo []ControlConnectionInfo `xml:"NodeStatusUVE>data>NodeStatus>process_status>list>ProcessStatus>connection_infos>list>ConnectionInfo"`
+}
+
+type ServiceStatusControl struct {
+	XMLName                  xml.Name `xml:"__BGPRouterInfo_list"`
+	NumberOfXMPPPeers        int      `xml:"BGPRouterInfo>data>BgpRouterState>num_xmpp_peer"`
+	NumberOfRoutingInstances int      `xml:"BGPRouterInfo>data>BgpRouterState>num_routing_instance"`
+	NumStaticRoutes     int `xml:"BGPRouterInfo>data>BgpRouterState>num_static_routes"`
+	NumDownStaticRoutes int `xml:"BGPRouterInfo>data>BgpRouterState>num_down_static_routes"`
+	NumBgpPeer          int `xml:"BGPRouterInfo>data>BgpRouterState>num_bgp_peer"`
+	NumUpBgpPeer        int `xml:"BGPRouterInfo>data>BgpRouterState>num_up_bgp_peer"`
 }
 
 func check(err error) {
@@ -176,36 +199,41 @@ func CreateRestClient(config Config) (http.Client, error) {
 
 func GetControlStatusFromApiServer(apiServer string, config *Config, client *http.Client, hostnameList []string,
 	controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus) error {
-	var nodeType string
-	switch config.NodeType {
-	case "config":
-		nodeType = "config-node"
-	case "control":
-		nodeType = "control-node"
-	case "analytics":
-		nodeType = "analytics-node"
-	case "vrouter":
-		nodeType = "vrouter"
-	}
+
 	for _, hostname := range hostnameList {
 		var url string
-		url = "https://" + apiServer + "/analytics/uves/" + nodeType + "/" + hostname
+		var process_url string
+		url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=BgpRouterState"
+		process_url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 		resp, err := client.Get(url)
+		process_resp, err_p := client.Get(process_url)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
+		if err_p != nil {
+			log.Println(err_p)
+			return err_p
+		}
 		log.Print(url)
+		log.Print(process_url)
 		defer closeResp(resp)
-		if resp != nil {
+		defer closeResp(process_resp)
+		if resp != nil && process_resp != nil {
 			log.Printf("resp not nil %d ", resp.StatusCode)
-			if resp.StatusCode == http.StatusOK {
+			log.Printf("Process resp not nil %d ", process_resp.StatusCode)
+			if resp.StatusCode == http.StatusOK && process_resp.StatusCode == http.StatusOK {
 				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				bodyBytes_p, err_p := ioutil.ReadAll(process_resp.Body)
 				if err != nil {
 					log.Println(err)
 					return err
 				}
-				controlStatus := getControlStatusFromResponse(bodyBytes)
+				if err_p != nil {
+					log.Println(err_p)
+					return err_p
+				}
+				controlStatus := getControlStatusFromResponse(bodyBytes, bodyBytes_p)
 				controlStatusMap[hostname] = *controlStatus
 			}
 		}
@@ -373,6 +401,7 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 		check(err)
 		update := false
 		if controlObject.Status.ServiceStatus == nil {
+			controlObject.Status.ServiceStatus = map[string]contrailOperatorTypes.ControlServiceStatus{}
 			controlObject.Status.ServiceStatus = controlStatusMap
 			update = true
 		} else {
@@ -402,57 +431,41 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 	return nil
 }
 
-func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.ControlServiceStatus {
-	controlUVEStatus := &uves.ControlUVEStatus{}
-	err := json.Unmarshal(statusBody, controlUVEStatus)
+func getControlStatusFromResponse(statusBody []byte, statusBody_p []byte) *contrailOperatorTypes.ControlServiceStatus {
+	controlst := ServiceStatusControl{}
+	processst := ProcessControlStatus{}
+
+	err := xml.Unmarshal(statusBody, &controlst)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = xml.Unmarshal(statusBody_p, &processst)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	staticRoutes := contrailOperatorTypes.StaticRoutes{
+		Down:   strconv.Itoa(controlst.NumDownStaticRoutes),
+		Number: strconv.Itoa(controlst.NumStaticRoutes),
+	}
+	bgpPeer := contrailOperatorTypes.BGPPeer{
+		Up:     strconv.Itoa(controlst.NumUpBgpPeer),
+		Number: strconv.Itoa(controlst.NumBgpPeer),
+	}
+	numUpXMPPPeer := strconv.Itoa(controlst.NumberOfXMPPPeers)
+	numRoutingInstance := strconv.Itoa(controlst.NumberOfRoutingInstances)
+
 	connectionList := []contrailOperatorTypes.Connection{}
 
-	bgpRouterList := typeSwitch(controlUVEStatus.BgpRouterState.BgpRouterIPList)
-	bgpRouterConnection := contrailOperatorTypes.Connection{
-		Type:  "BGPRouter",
-		Nodes: bgpRouterList,
-	}
-	connectionList = append(connectionList, bgpRouterConnection)
-	if len(connectionList) > 0 && len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
-		for _, connectionInfo := range controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].ConnectionInfos.List.ConnectionInfo {
-			nodeList := typeSwitch(connectionInfo.ServerAddrs.List.Element)
-			connection := contrailOperatorTypes.Connection{
-				Type:   connectionInfo.Type.Text,
-				Name:   connectionInfo.Name.Text,
-				Status: connectionInfo.Status.Text,
-				Nodes:  nodeList,
-			}
-			connectionList = append(connectionList, connection)
+	for _, ConnectionInfo := range processst.ConConnectionInfo {
+		connection_ps := contrailOperatorTypes.Connection{
+			Type:   ConnectionInfo.Type,
+			Name:   ConnectionInfo.Name,
+			Status: ConnectionInfo.Status,
+			Nodes:  ConnectionInfo.Nodes,
 		}
-	}
-
-	numUpXMPPPeer := "0"
-	numRoutingInstance := "0"
-	staticRoutes := contrailOperatorTypes.StaticRoutes{}
-	bgpPeer := contrailOperatorTypes.BGPPeer{}
-	state := "down"
-
-	if controlUVEStatus != nil {
-		numDownStaticRoutes := controlUVEStatus.BgpRouterState.NumDownStaticRoutes.Status()
-		numStaticRoutes := controlUVEStatus.BgpRouterState.NumStaticRoutes.Status()
-		staticRoutes = contrailOperatorTypes.StaticRoutes{
-			Down:   numDownStaticRoutes,
-			Number: numStaticRoutes,
-		}
-		numUpBgpPeer := controlUVEStatus.BgpRouterState.NumUpBgpPeer.Status()
-		numBgpPeer := controlUVEStatus.BgpRouterState.NumBgpPeer.Status()
-		bgpPeer = contrailOperatorTypes.BGPPeer{
-			Up:     numUpBgpPeer,
-			Number: numBgpPeer,
-		}
-		numUpXMPPPeer = controlUVEStatus.BgpRouterState.NumUpXMPPPeer.Status()
-		numRoutingInstance = controlUVEStatus.BgpRouterState.NumRoutingInstance.Status()
-		if len(controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus) > 0 {
-			state = controlUVEStatus.NodeStatus.ProcessStatus.List.ProcessStatus[0].State.Text
-		}
+		connectionList = append(connectionList, connection_ps)
 	}
 
 	controlStatus := contrailOperatorTypes.ControlServiceStatus{
@@ -461,8 +474,9 @@ func getControlStatusFromResponse(statusBody []byte) *contrailOperatorTypes.Cont
 		NumberOfRoutingInstances: numRoutingInstance,
 		StaticRoutes:             staticRoutes,
 		BGPPeer:                  bgpPeer,
-		State:                    state,
+		State:                    processst.State,
 	}
+
 	return &controlStatus
 }
 
