@@ -3,8 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -128,8 +126,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if !command.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
-	reqLogger.Info("Command UpgradeState: " + command.Status.UpgradeState)
 
 	commandPods, err := r.listCommandsPods(command.Name)
 	if err != nil {
@@ -275,25 +271,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
-	//currentDeployment, deploymentExists, err := r.getCurrentDeployment(request.Name, request.Namespace)
-	//if err != nil {
-	//	return reconcile.Result{}, err
-	//}
 	expectedDeployment := deployment.DeepCopy()
 	createOoUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		reqLogger.Info("CreateOrUpdate - mutate func called")
 		_, err := command.PrepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme)
 		if err != nil {
 			return err
 		}
-		reqLogger.Info(fmt.Sprintf("Images: CR %s, current %s, expected %s",
-			listImages(command.Spec.ServiceConfiguration.Containers),
-			listImagesFromDeployment(deployment),
-			listImagesFromDeployment(expectedDeployment),
-		))
 		return performUpgradeStepIfNeeded(command, deployment, expectedDeployment)
 	})
-	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult))
+	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult) + ", state " + command.Status.UpgradeState)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -347,18 +333,6 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 	}, keystoneServ)
 
 	return keystoneServ, err
-}
-
-func (r *ReconcileCommand) getCurrentDeployment(name, namespace string) (*apps.Deployment, bool, error) {
-	deployemnt := &apps.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Namespace: namespace,
-		Name:      name + "-command-deployment",
-	}, deployemnt)
-	if errors.IsNotFound(err) {
-		return deployemnt, false, nil
-	}
-	return deployemnt, true, err
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
@@ -550,35 +524,4 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
-}
-
-//WIP - will be removed
-func listImages(containers []*contrail.Container) string {
-	builder := strings.Builder{}
-	builder.Write([]byte("[ "))
-	for _, c := range containers {
-		builder.Write([]byte(c.Name))
-		builder.Write([]byte(": "))
-		builder.Write([]byte(c.Image))
-		builder.Write([]byte(", "))
-	}
-	builder.Write([]byte("]"))
-	return builder.String()
-}
-
-//WIP - will be removed
-func listImagesFromDeployment(deployment *apps.Deployment) string {
-	builder := strings.Builder{}
-	builder.Write([]byte("[ "))
-	spec := deployment.Spec.Template.Spec
-	for _, containers := range [][]core.Container{spec.Containers, spec.InitContainers} {
-		for _, c := range containers {
-			builder.Write([]byte(c.Name))
-			builder.Write([]byte(": "))
-			builder.Write([]byte(c.Image))
-			builder.Write([]byte(", "))
-		}
-	}
-	builder.Write([]byte("]"))
-	return builder.String()
 }
