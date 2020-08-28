@@ -419,7 +419,8 @@ func newPostgres(active bool) *contrail.Postgres {
 			Namespace: "default",
 		},
 		Status: contrail.PostgresStatus{
-			Active: active,
+			Active:   active,
+			Endpoint: "10.219.10.10",
 		},
 	}
 }
@@ -752,7 +753,7 @@ func newSwiftSecret() *core.Secret {
 
 const expectedCommandConfig = `
 database:
-  host: 0.0.0.0
+  host: 10.219.10.10
   user: root
   password: contrail123
   name: contrail_test
@@ -872,7 +873,7 @@ replication:
 const expectedBootstrapScript = `
 #!/bin/bash
 export PGPASSWORD=contrail123
-QUERY_RESULT=$(psql -w -h ${MY_POD_IP} -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
+QUERY_RESULT=$(psql -w -h 10.219.10.10 -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
     exit 0
@@ -883,8 +884,8 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
-psql -w -h ${MY_POD_IP} -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
+psql -w -h 10.219.10.10 -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h 10.219.10.10 -U root -d contrail_test -f /usr/share/contrail/init_psql.sql
 commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
 commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
 `
