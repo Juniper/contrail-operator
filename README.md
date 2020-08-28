@@ -202,7 +202,7 @@ You can access Contrail Command application via web browser. Before that you hav
 
 Go to http://localhost:9091
 
-Authenticate using `admin` username and `contrail123` password. 
+Authenticate using `admin` username, `contrail123` password and `Default` domain. 
 
 ## Run unit tests
 
