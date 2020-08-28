@@ -1,0 +1,38 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 10-worker-static-hostname
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: static-hostname-contrail.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Sets the static hostname required by Contrail
+          After=syslog.target
+          AssertPathExists=/etc/contrail/static-hostname.sh
+          
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/etc/contrail/static-hostname.sh
+          StandardOutput=syslog
+          StandardError=syslog
+          
+          [Install]
+          WantedBy=basic.target
+    storage:
+      files:
+      - filesystem: root
+        path: /etc/contrail/static-hostname.sh
+        mode: 0744
+        user:
+          name: root
+        contents:
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Ahostnamectl%20set-hostname%20%24%28hostname%20-A%29
