@@ -279,7 +279,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 		return performUpgradeStepIfNeeded(command, deployment, expectedDeployment)
 	})
-	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult) + ", state " + command.Status.UpgradeState)
+	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
