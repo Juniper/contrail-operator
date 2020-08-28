@@ -7,32 +7,29 @@ import (
 )
 
 func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, expectedDeployment *apps.Deployment) error {
-	commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
-	updateContainers(currentDeployment, expectedDeployment)
+	if updateContainers(currentDeployment, expectedDeployment) {
+		currentDeployment.Spec.Replicas = int32ToPtr(0)
+		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
+	}
+	switch commandCR.Status.UpgradeState {
+	case contrail.CommandShuttingDownBeforeUpgrade:
+		if currentDeployment.Status.Replicas == 0 {
+			currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
+			commandCR.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
+		} else {
+			currentDeployment.Spec.Replicas = int32ToPtr(0)
+		}
+	case contrail.CommandStartingUpgradedDeployment:
+		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
+		expectedReplicas := ptrToInt32(currentDeployment.Spec.Replicas, 1)
+		if currentDeployment.Status.ReadyReplicas == expectedReplicas {
+			commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+		}
+	default: // case contrail.CommandNotUpgrading or UpgradeState is not set
+		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
+		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+	}
 	return nil
-	//if updateContainers(currentDeployment, expectedDeployment) {
-	//	currentDeployment.Spec.Replicas = int32ToPtr(0)
-	//	commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
-	//}
-	//switch commandCR.Status.UpgradeState {
-	//case contrail.CommandShuttingDownBeforeUpgrade:
-	//	if currentDeployment.Status.Replicas == 0 {
-	//		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
-	//		commandCR.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
-	//	} else {
-	//		currentDeployment.Spec.Replicas = int32ToPtr(0)
-	//	}
-	//case contrail.CommandStartingUpgradedDeployment:
-	//	currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
-	//	expectedReplicas := ptrToInt32(currentDeployment.Spec.Replicas, 1)
-	//	if currentDeployment.Status.ReadyReplicas == expectedReplicas {
-	//		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
-	//	}
-	//default: // case contrail.CommandNotUpgrading or UpgradeState is not set
-	//	currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
-	//	commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
-	//}
-	//return nil
 }
 
 func updateContainers(currentDeployment *apps.Deployment, expectedDeployment *apps.Deployment) bool {

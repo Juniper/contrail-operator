@@ -129,6 +129,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
+	reqLogger.Info("Command UpgradeState: " + command.Status.UpgradeState)
+
 	commandPods, err := r.listCommandsPods(command.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
