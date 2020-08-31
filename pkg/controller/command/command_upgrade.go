@@ -6,8 +6,8 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, expectedDeployment *apps.Deployment) error {
-	if updateContainers(currentDeployment, expectedDeployment) {
+func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) error {
+	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) {
 		currentDeployment.Spec.Replicas = int32ToPtr(0)
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
@@ -32,22 +32,18 @@ func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *
 	return nil
 }
 
-func updateContainers(currentDeployment *apps.Deployment, expectedDeployment *apps.Deployment) bool {
-	updated := false
-	for i, container := range currentDeployment.Spec.Template.Spec.Containers {
-		if expectedDeployment.Spec.Template.Spec.Containers[i].Image != container.Image {
-			currentDeployment.Spec.Template.Spec.Containers[i].Image = expectedDeployment.Spec.Template.Spec.Containers[i].Image
-			updated = true
-		}
-		//TODO (?) update container Command
-	}
-	for i, container := range currentDeployment.Spec.Template.Spec.InitContainers {
-		if expectedDeployment.Spec.Template.Spec.InitContainers[i].Image != container.Image {
-			currentDeployment.Spec.Template.Spec.InitContainers[i].Image = expectedDeployment.Spec.Template.Spec.InitContainers[i].Image
-			updated = true
+func imageIsUpgraded(currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) bool {
+	for i, container := range oldDeploymentSpec.Template.Spec.Containers {
+		if currentDeployment.Spec.Template.Spec.Containers[i].Image != container.Image {
+			return true
 		}
 	}
-	return updated
+	for i, container := range oldDeploymentSpec.Template.Spec.InitContainers {
+		if currentDeployment.Spec.Template.Spec.InitContainers[i].Image != container.Image {
+			return true
+		}
+	}
+	return false
 }
 
 func int32ToPtr(value int32) *int32 {

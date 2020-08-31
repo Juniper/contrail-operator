@@ -273,11 +273,12 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	expectedDeployment := deployment.DeepCopy()
 	createOrUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		_, err := prepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme, command)
-		if err != nil {
+		oldDeploymentSpec := deployment.Spec.DeepCopy() // it is different than expectedDeployment.Spec, because CreateOrUpdate gets current object
+		expectedDeployment.Spec.DeepCopyInto(&deployment.Spec)
+		if err := prepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme, command); err != nil {
 			return err
 		}
-		return performUpgradeStepIfNeeded(command, deployment, expectedDeployment)
+		return performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
 	})
 	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {
@@ -531,7 +532,7 @@ func prepareIntendedDeployment(instanceDeployment *apps.Deployment,
 	commonConfiguration *contrail.PodConfiguration,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
-	commandCR *contrail.Command) (*apps.Deployment, error) {
+	commandCR *contrail.Command) error {
 	instanceType := "command"
 	instanceDeploymentName := request.Name + "-" + instanceType + "-deployment"
 	intendedDeployment := contrail.SetDeploymentCommonConfiguration(instanceDeployment, commonConfiguration)
@@ -545,7 +546,7 @@ func prepareIntendedDeployment(instanceDeployment *apps.Deployment,
 		instanceType: request.Name})
 	intendedDeployment.Spec.Strategy = instanceDeployment.Spec.Strategy
 	if err := controllerutil.SetControllerReference(commandCR, intendedDeployment, scheme); err != nil {
-		return nil, err
+		return err
 	}
-	return intendedDeployment, nil
+	return nil
 }
