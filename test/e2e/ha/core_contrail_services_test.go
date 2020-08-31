@@ -29,7 +29,7 @@ import (
 
 var versionMap = map[string]string{
 	"cassandra":                     "3.11.3",
-	"zookeeper":                     "3.5.4-beta",
+	"zookeeper":                     "3.5.5",
 	"cemVersion":                    "2008.10",
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
@@ -41,7 +41,7 @@ var versionMap = map[string]string{
 
 var targetVersionMap = map[string]string{
 	"cassandra":                     "3.11.4",
-	"zookeeper":                     "3.5.5",
+	"zookeeper":                     "3.5.6",
 	"cemVersion":                    cemRelease,
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
@@ -122,7 +122,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NotEmpty(t, configPods.Items)
 
 				for _, pod := range configPods.Items {
-					assertConfigIsHealthy(t, proxy, &pod, "projects")
+					assertConfigIsHealthy(t, proxy, &pod)
 				}
 			})
 		})
@@ -152,7 +152,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NotEmpty(t, configPods.Items)
 
 				for _, pod := range configPods.Items {
-					assertConfigIsHealthy(t, proxy, &pod, "projects")
+					assertConfigIsHealthy(t, proxy, &pod)
 				}
 			})
 		})
@@ -195,7 +195,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				for _, pod := range configPods.Items {
 					for _, c := range pod.Status.Conditions {
 						if c.Type == core.PodReady && c.Status == core.ConditionTrue {
-							assertConfigIsHealthy(t, proxy, &pod, "virtual-networks")
+							assertConfigIsHealthy(t, proxy, &pod)
 							healthyConfigs++
 						}
 					}
@@ -226,7 +226,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				require.NotEmpty(t, configPods.Items)
 
 				for _, pod := range configPods.Items {
-					assertConfigIsHealthy(t, proxy, &pod, "projects")
+					assertConfigIsHealthy(t, proxy, &pod)
 				}
 			})
 		})
@@ -374,12 +374,12 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	})
 }
 
-func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod, testPath string) {
+func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod) {
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
 	var res *http.Response
 
 	err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
-		req, err := configProxy.NewRequest(http.MethodGet, "/"+testPath, nil)
+		req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
 		if err != nil {
 			t.Log(err)
 			return false, nil
