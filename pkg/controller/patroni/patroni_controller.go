@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Juniper/contrail-operator/pkg/controller/utils"
-
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +24,7 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	contrailcertificates "github.com/Juniper/contrail-operator/pkg/certificates"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"github.com/Juniper/contrail-operator/pkg/localvolume"
@@ -110,9 +108,9 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Patroni")
 
-	// Fetch the Patroni instance
-	instance := &contrail.Patroni{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	// Fetch the Patroni patroni
+	patroni := &contrail.Patroni{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, patroni)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -122,68 +120,58 @@ func (r *ReconcilePatroni) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.ensureLabelExists(instance); err != nil {
+	if err := r.ensureLabelExists(patroni); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	patroniService, err := r.ensureServicesExist(instance)
+	patroniService, err := r.ensureServicesExist(patroni)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	serviceAccount, err := r.ensureServiceAccountExists(instance)
-	if err != nil {
+	if err = contrail.CreateAccount("patroni", request.Namespace, r.client, r.scheme, patroni); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureRoleExists(instance); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.ensureRoleBindingExists(instance); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	patroniPods, err := r.listPatroniPods(instance.Name)
+	patroniPods, err := r.listPatroniPods(patroni.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(instance, patroniPods, patroniService.Spec.ClusterIP); err != nil {
+	if err := r.ensureCertificatesExist(patroni, patroniPods, patroniService.Spec.ClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.ensureLocalPVsExist(instance); err != nil {
+	if err = r.ensureLocalPVsExist(patroni); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// TODO - create certs, mount them to sts and point their location in patroni container
 	// TODO - implement master election
 
-	credentialsSecretName := instance.Name + "-patroni-credentials-secret"
-	if instance.Spec.ServiceConfiguration.CredentialsSecretName != "" {
-		credentialsSecretName = instance.Spec.ServiceConfiguration.CredentialsSecretName
+	credentialsSecretName := patroni.Name + "-patroni-credentials-secret"
+	if patroni.Spec.ServiceConfiguration.CredentialsSecretName != "" {
+		credentialsSecretName = patroni.Spec.ServiceConfiguration.CredentialsSecretName
 	}
 
-	if err = r.credentialsSecret(credentialsSecretName, "patroni", instance).ensureExists(); err != nil {
+	if err = r.credentialsSecret(credentialsSecretName, "patroni", patroni).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
-
-	statefulSet, err := r.createOrUpdateSts(request, instance, patroniService, credentialsSecretName, serviceAccount.Name)
+	serviceAccountName := "serviceaccount-patroni"
+	statefulSet, err := r.createOrUpdateSts(patroni, patroniService, credentialsSecretName, serviceAccountName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	instance.Status.CredentialsSecretName = credentialsSecretName
-	instance.Status.ClusterIP = patroniService.Spec.ClusterIP
-	instance.Status.Active = false
+	patroni.Status.CredentialsSecretName = credentialsSecretName
+	patroni.Status.ClusterIP = patroniService.Spec.ClusterIP
+	patroni.Status.Active = false
 	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
 		intendentReplicas = *statefulSet.Spec.Replicas
 	}
 
 	if statefulSet.Status.ReadyReplicas == intendentReplicas {
-		instance.Status.Active = true
+		patroni.Status.Active = true
 	}
 
 	return reconcile.Result{}, nil
@@ -198,17 +186,17 @@ func (r *ReconcilePatroni) ensureLabelExists(p *contrail.Patroni) error {
 	return r.client.Update(context.Background(), p)
 }
 
-func (r *ReconcilePatroni) ensureCertificatesExist(instance *contrail.Patroni, pods *core.PodList, serviceIP string) error {
+func (r *ReconcilePatroni) ensureCertificatesExist(patroni *contrail.Patroni, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
-	if instance.Spec.CommonConfiguration.HostNetwork != nil {
-		hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
+	if patroni.Spec.CommonConfiguration.HostNetwork != nil {
+		hostNetwork = *patroni.Spec.CommonConfiguration.HostNetwork
 	}
-	return contrailcertificates.NewCertificateWithServiceIP(r.client, r.scheme, instance, pods, serviceIP, "patroni", hostNetwork).EnsureExistsAndIsSigned()
+	return contrailcertificates.NewCertificateWithServiceIP(r.client, r.scheme, patroni, pods, serviceIP, "patroni", hostNetwork).EnsureExistsAndIsSigned()
 }
 
-func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, error) {
+func (r *ReconcilePatroni) listPatroniPods(patroniName string) (*core.PodList, error) {
 	pods := &core.PodList{}
-	labelSelector := labels.SelectorFromSet(contraillabel.New(contrail.PatroniInstanceType, instanceName))
+	labelSelector := labels.SelectorFromSet(contraillabel.New(contrail.PatroniInstanceType, patroniName))
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
 	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
 		return &core.PodList{}, err
@@ -216,15 +204,15 @@ func (r *ReconcilePatroni) listPatroniPods(instanceName string) (*core.PodList, 
 	return pods, nil
 }
 
-func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*core.Service, error) {
+func (r *ReconcilePatroni) ensureServicesExist(patroni *contrail.Patroni) (*core.Service, error) {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-service",
-			Namespace: instance.Namespace,
+			Name:      patroni.Name + "-patroni-service",
+			Namespace: patroni.Namespace,
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
+		service.ObjectMeta.Labels = contraillabel.New(patroni.Kind, patroni.Name)
 		service.Spec.Type = core.ServiceTypeClusterIP
 		service.Spec.Ports = []core.ServicePort{{
 			Port: 5432,
@@ -233,7 +221,7 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*cor
 				IntVal: 5432,
 			},
 		}}
-		return controllerutil.SetControllerReference(instance, service, r.scheme)
+		return controllerutil.SetControllerReference(patroni, service, r.scheme)
 	})
 
 	if err != nil {
@@ -242,14 +230,14 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*cor
 
 	endpoints := &core.Endpoints{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-service",
-			Namespace: instance.Namespace,
+			Name:      patroni.Name + "-patroni-service",
+			Namespace: patroni.Namespace,
 		},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, endpoints, func() error {
-		endpoints.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
-		return controllerutil.SetControllerReference(instance, service, r.scheme)
+		endpoints.ObjectMeta.Labels = contraillabel.New(patroni.Kind, patroni.Name)
+		return controllerutil.SetControllerReference(patroni, service, r.scheme)
 	})
 
 	if err != nil {
@@ -258,13 +246,13 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*cor
 
 	serviceRepl := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-service-replica",
-			Namespace: instance.Namespace,
+			Name:      patroni.Name + "-patroni-service-replica",
+			Namespace: patroni.Namespace,
 		},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
-		labels := contraillabel.New(instance.Kind, instance.Name)
+		labels := contraillabel.New(patroni.Kind, patroni.Name)
 		labels["role"] = "replica"
 		serviceRepl.ObjectMeta.Labels = labels
 		serviceRepl.Spec.Selector = labels
@@ -276,122 +264,19 @@ func (r *ReconcilePatroni) ensureServicesExist(instance *contrail.Patroni) (*cor
 				IntVal: 5432,
 			},
 		}}
-		return controllerutil.SetControllerReference(instance, serviceRepl, r.scheme)
+		return controllerutil.SetControllerReference(patroni, serviceRepl, r.scheme)
 	})
 
 	return service, err
 }
 
-func (r *ReconcilePatroni) ensureServiceAccountExists(instance *contrail.Patroni) (*core.ServiceAccount, error) {
-	serviceAccount := &core.ServiceAccount{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-service-account",
-			Namespace: instance.Namespace,
-		},
-	}
 
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serviceAccount, func() error {
-		serviceAccount.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
-		return controllerutil.SetControllerReference(instance, serviceAccount, r.scheme)
-	})
-
-	return serviceAccount, err
-}
-
-func (r *ReconcilePatroni) ensureRoleExists(instance *contrail.Patroni) error {
-	role := &rbac.Role{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-role",
-			Namespace: instance.Namespace,
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, role, func() error {
-		role.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
-		role.Rules = []rbac.PolicyRule{
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"create",
-					"get",
-					"list",
-					"patch",
-					"update",
-					"watch",
-					"delete",
-					"deletecollection",
-				},
-				Resources: []string{"configmaps"},
-			},
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"get",
-					"patch",
-					"update",
-					"create",
-					"list",
-					"watch",
-					"delete",
-					"deletecollection",
-				},
-				Resources: []string{"endpoints"},
-			},
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"get",
-					"list",
-					"patch",
-					"update",
-					"watch",
-				},
-				Resources: []string{"pods"},
-			},
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"create",
-				},
-				Resources: []string{"services"},
-			},
-		}
-		return controllerutil.SetControllerReference(instance, role, r.scheme)
-	})
-
-	return err
-}
-func (r *ReconcilePatroni) ensureRoleBindingExists(instance *contrail.Patroni) error {
-	rb := &rbac.RoleBinding{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      instance.Name + "-patroni-role-binding",
-			Namespace: instance.Namespace,
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, rb, func() error {
-		rb.ObjectMeta.Labels = contraillabel.New(instance.Kind, instance.Name)
-		rb.Subjects = []rbac.Subject{{
-			Kind: "ServiceAccount",
-			Name: instance.Name + "-patroni-service-account",
-		}}
-		rb.RoleRef = rbac.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     instance.Name + "-patroni-role",
-		}
-		return controllerutil.SetControllerReference(instance, rb, r.scheme)
-	})
-
-	return err
-}
-
-func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance *contrail.Patroni, service *core.Service, passSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
+func (r *ReconcilePatroni) createOrUpdateSts(patroni *contrail.Patroni, service *core.Service, passSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
 
 	statefulSet := &apps.StatefulSet{}
-	statefulSet.Namespace = request.Namespace
-	statefulSet.Name = request.Name + "-statefulset"
-
+	statefulSet.Namespace = patroni.Namespace
+	statefulSet.Name = patroni.Name + "-statefulset"
+	csrSignerCaVolumeName := patroni.Name + "-csr-signer-ca"
 	var podIPEnv = core.EnvVar{
 		Name: "PATRONI_KUBERNETES_POD_IP",
 		ValueFrom: &core.EnvVarSource{
@@ -412,7 +297,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 
 	var scopeEnv = core.EnvVar{
 		Name: "PATRONI_SCOPE",
-		Value: instance.Name,
+		Value: patroni.Name,
 	}
 
 	var namespaceEnv = core.EnvVar{
@@ -426,7 +311,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 
 	var labelsEnv = core.EnvVar{
 		Name: "PATRONI_KUBERNETES_LABELS",
-		Value: contraillabel.AsString("patroni", instance.Name),
+		Value: contraillabel.AsString("patroni", patroni.Name),
 	}
 
 	var postgresListenAddressEnv = core.EnvVar{
@@ -496,7 +381,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 	var podContainers = []core.Container{
 		{
 			Name:  "patroni",
-			Image: getImage(instance.Spec.ServiceConfiguration.Containers, "patroni"),
+			Image: getImage(patroni.Spec.ServiceConfiguration.Containers, "patroni"),
 			Env: []core.EnvVar{
 				nameEnv,
 				scopeEnv,
@@ -523,8 +408,12 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 					SubPath:   "postgres",
 				},
 				{
-					Name:      instance.Name + "-secret-certificates",
+					Name:      patroni.Name + "-secret-certificates",
 					MountPath: "/var/lib/ssl_certificates",
+				},
+				{
+					Name:      csrSignerCaVolumeName,
+					MountPath: contrailcertificates.SignerCAMountPath,
 				},
 			},
 		},
@@ -533,7 +422,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 	var podInitContainers = []core.Container{
 		{
 			Name:            "init",
-			Image:           getImage(instance.Spec.ServiceConfiguration.Containers, "init"),
+			Image:           getImage(patroni.Spec.ServiceConfiguration.Containers, "init"),
 			ImagePullPolicy: "Always",
 			VolumeMounts: []core.VolumeMount{
 				{
@@ -545,7 +434,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		},
 	}
 
-	storagePath := instance.Spec.ServiceConfiguration.Storage.Path
+	storagePath := patroni.Spec.ServiceConfiguration.Storage.Path
 	if storagePath == "" {
 		storagePath = defaultPatroniStoragePath
 	}
@@ -554,7 +443,7 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		Affinity: &core.Affinity{
 			PodAntiAffinity: &core.PodAntiAffinity{
 				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-					LabelSelector: &meta.LabelSelector{MatchLabels: instance.Labels},
+					LabelSelector: &meta.LabelSelector{MatchLabels: patroni.Labels},
 					TopologyKey:   "kubernetes.io/hostname",
 				}},
 			},
@@ -562,9 +451,9 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		InitContainers:     podInitContainers,
 		Containers:         podContainers,
 		HostNetwork:        true,
-		NodeSelector:       instance.Spec.CommonConfiguration.NodeSelector,
+		NodeSelector:       patroni.Spec.CommonConfiguration.NodeSelector,
 		ServiceAccountName: serviceAccountName,
-		Tolerations:        instance.Spec.CommonConfiguration.Tolerations,
+		Tolerations:        patroni.Spec.CommonConfiguration.Tolerations,
 		Volumes: []core.Volume{
 			{
 				Name: "patroni-storage-init",
@@ -576,24 +465,15 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 				},
 			},
 			{
-				Name: "pgdata",
-				VolumeSource: core.VolumeSource{
-					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-						ClaimName: "pgdata",
-						ReadOnly:  false,
-					},
-				},
-			},
-			{
-				Name: instance.Name + "-secret-certificates",
+				Name: patroni.Name + "-secret-certificates",
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
-						SecretName: instance.Name + "-secret-certificates",
+						SecretName: patroni.Name + "-secret-certificates",
 					},
 				},
 			},
 			{
-				Name: instance.Name + "-csr-signer-ca",
+				Name: csrSignerCaVolumeName,
 				VolumeSource: core.VolumeSource{
 					ConfigMap: &core.ConfigMapVolumeSource{
 						LocalObjectReference: core.LocalObjectReference{
@@ -605,12 +485,12 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		}}
 
 	var stsSelector = meta.LabelSelector{
-		MatchLabels: contraillabel.New("patroni", instance.Name),
+		MatchLabels: contraillabel.New("patroni", patroni.Name),
 	}
 
 	var stsTemplate = core.PodTemplateSpec{
 		ObjectMeta: meta.ObjectMeta{
-			Labels: contraillabel.New("patroni", instance.Name),
+			Labels: contraillabel.New("patroni", patroni.Name),
 		},
 		Spec: podSpec,
 	}
@@ -618,13 +498,13 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 	statefulSet.Spec = apps.StatefulSetSpec{
 		Selector:    &stsSelector,
 		ServiceName: service.Name,
-		Replicas:    instance.Spec.CommonConfiguration.Replicas,
+		Replicas:    patroni.Spec.CommonConfiguration.Replicas,
 		Template:    stsTemplate,
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 
-		contrail.SetSTSCommonConfiguration(statefulSet, &instance.Spec.CommonConfiguration)
+		contrail.SetSTSCommonConfiguration(statefulSet, &patroni.Spec.CommonConfiguration)
 
 		var patroniGroupId int64 = 0
 		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
@@ -632,18 +512,13 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &patroniGroupId
 		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &patroniGroupId
 
-		//pvSize, err := instance.Spec.ServiceConfiguration.Storage.SizeAsQuantity()
-		//if err != nil {
-		//	pvSize = resource.MustParse("5Gi")
-		//}
-
 		storageClassName := "local-storage"
 		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
 			{
 				ObjectMeta: meta.ObjectMeta{
 					Name:      "pgdata",
-					Namespace: instance.Namespace,
-					Labels:    instance.Labels,
+					Namespace: patroni.Namespace,
+					Labels:    patroni.Labels,
 				},
 				Spec: core.PersistentVolumeClaimSpec{
 					AccessModes: []core.PersistentVolumeAccessMode{
@@ -659,8 +534,8 @@ func (r *ReconcilePatroni) createOrUpdateSts(request reconcile.Request, instance
 			},
 		}
 
-		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: instance.Labels}
-		return controllerutil.SetControllerReference(instance, statefulSet, r.scheme)
+		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: patroni.Labels}
+		return controllerutil.SetControllerReference(patroni, statefulSet, r.scheme)
 	})
 	return statefulSet, err
 }
