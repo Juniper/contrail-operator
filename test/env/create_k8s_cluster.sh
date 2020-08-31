@@ -26,13 +26,14 @@ containerdConfigPatches:
 networking:
   disableDefaultCNI: false
 nodes:
+- role: control-plane
 EOF
 )"
 
 node="
-- role: control-plane"
+- role: worker"
 
-for (( i=0; i<$number_of_nodes; i++ ))
+for (( i=0; i<(($number_of_nodes-1)); i++ ))
 do
   kindConfig+="$node"
 done
@@ -47,6 +48,7 @@ for node in $(kind get nodes --name "${kind_cluster_name}"); do
 done
 
 # untaint nodes
-if [[ $number_of_nodes > 1 ]] ; then
-  kubectl taint nodes --all node-role.kubernetes.io/master-
-fi
+kubectl taint nodes --all node-role.kubernetes.io/master- &>/dev/null || true
+
+# label nodes
+kubectl label nodes --all node-role.juniper.net/contrail=""
