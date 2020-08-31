@@ -599,7 +599,3 @@ func getImage(containers []*contrail.Container, containerName string) string {
 	return c.Image
 }
 
-func marshalPorts(ports []core.ServicePort) string {
-	bytes, _ := json.Marshal(ports)
-	return string(bytes)
-}
