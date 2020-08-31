@@ -276,9 +276,9 @@ func TestCommand(t *testing.T) {
 			expectedSwift:      newSwiftWithOwner(false),
 		},
 		{
-			name: "when images are changed, command upgrade is started",
+			name: "when images are changed in 1-replica deployment, deployment is shut down before the upgrade",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(),
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading),
 				newDeployment(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}),
 				newPostgres(true),
 				newSwift(true),
@@ -293,6 +293,111 @@ func TestCommand(t *testing.T) {
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
 			}, int32ToPtr(int32(0))),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when images are changed in 0-replica deployment, upgrade is started immediately",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading),
+				newDeployment(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Active:       false,
+				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+			},
+			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0,
+			}, nil),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command is shutting down before upgrade and deployment is not scaled down yet, nothing changes",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0)),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Active:       false,
+				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
+			},
+			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
+				Replicas: 1, ReadyReplicas: 1,
+			}, int32ToPtr(0)),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command is shutting down before upgrade and deployment is scaled down to 0 replicas, upgrade is started",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0)),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Active:       false,
+				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+			},
+			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0,
+			}, nil),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command is starting upgraded deployment and it is not scaled up yet, nothing changes",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Active:       false,
+				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+			},
+			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0,
+			}, nil),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command is starting upgraded deployment and it is scaled up, upgrade ends with success",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Active:       true,
+				UpgradeState: contrail.CommandNotUpgrading,
+			},
+			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
+				Replicas: 1, ReadyReplicas: 1,
+			}, nil),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
@@ -526,13 +631,14 @@ func newCommandWithEmptyToleration() *contrail.Command {
 	return cc
 }
 
-func newCommandWithUpdatedImages() *contrail.Command {
+func newCommandWithUpdatedImages(upgradeState contrail.CommandUpgradeState) *contrail.Command {
 	cc := newCommand()
 	cc.Spec.ServiceConfiguration.Containers = []*contrail.Container{
 		{Name: "init", Image: "registry:5000/contrail-command:new"},
 		{Name: "api", Image: "registry:5000/contrail-command:new"},
 		{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 	}
+	cc.Status.UpgradeState = upgradeState
 	return cc
 }
 
