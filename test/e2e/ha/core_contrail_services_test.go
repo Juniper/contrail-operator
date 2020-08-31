@@ -158,6 +158,8 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
+			// TODO: Fix this case
+			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: labelKeyToSelector(nodeLabelKey),
 			})
@@ -183,8 +185,6 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then ready Config pods can process requests", func(t *testing.T) {
-				// TODO: Fix this case
-				t.Skip()
 				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
