@@ -272,14 +272,14 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	expectedDeployment := deployment.DeepCopy()
-	createOoUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		_, err := command.PrepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme)
+	createOrUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
+		_, err := prepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme, command)
 		if err != nil {
 			return err
 		}
 		return performUpgradeStepIfNeeded(command, deployment, expectedDeployment)
 	})
-	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOoUpdateResult) + ", state " + string(command.Status.UpgradeState))
+	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -524,4 +524,28 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+// function moved here from pkg/apis/contrail/v1alpha1/base_types.go because it was used only once
+func prepareIntendedDeployment(instanceDeployment *apps.Deployment,
+	commonConfiguration *contrail.PodConfiguration,
+	request reconcile.Request,
+	scheme *runtime.Scheme,
+	commandCR *contrail.Command) (*apps.Deployment, error) {
+	instanceType := "command"
+	instanceDeploymentName := request.Name + "-" + instanceType + "-deployment"
+	intendedDeployment := contrail.SetDeploymentCommonConfiguration(instanceDeployment, commonConfiguration)
+	intendedDeployment.SetName(instanceDeploymentName)
+	intendedDeployment.SetNamespace(request.Namespace)
+	intendedDeployment.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	intendedDeployment.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name}
+	intendedDeployment.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
+		instanceType: request.Name})
+	intendedDeployment.Spec.Strategy = instanceDeployment.Spec.Strategy
+	if err := controllerutil.SetControllerReference(commandCR, intendedDeployment, scheme); err != nil {
+		return nil, err
+	}
+	return intendedDeployment, nil
 }

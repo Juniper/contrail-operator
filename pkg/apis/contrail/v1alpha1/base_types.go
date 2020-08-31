@@ -372,30 +372,6 @@ func CurrentConfigMapExists(configMapName string,
 	return *configMap, configMapExists
 }
 
-// PrepareIntendedDeployment prepares the intended deployment.
-func PrepareIntendedDeployment(instanceDeployment *appsv1.Deployment,
-	commonConfiguration *PodConfiguration,
-	instanceType string,
-	request reconcile.Request,
-	scheme *runtime.Scheme,
-	object v1.Object) (*appsv1.Deployment, error) {
-	instanceDeploymentName := request.Name + "-" + instanceType + "-deployment"
-	intendedDeployment := SetDeploymentCommonConfiguration(instanceDeployment, commonConfiguration)
-	intendedDeployment.SetName(instanceDeploymentName)
-	intendedDeployment.SetNamespace(request.Namespace)
-	intendedDeployment.SetLabels(map[string]string{"contrail_manager": instanceType,
-		instanceType: request.Name})
-	intendedDeployment.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
-		instanceType: request.Name}
-	intendedDeployment.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
-		instanceType: request.Name})
-	intendedDeployment.Spec.Strategy = instanceDeployment.Spec.Strategy
-	if err := controllerutil.SetControllerReference(object, intendedDeployment, scheme); err != nil {
-		return nil, err
-	}
-	return intendedDeployment, nil
-}
-
 // PrepareSTS prepares the intended podList.
 func PrepareSTS(sts *appsv1.StatefulSet,
 	commonConfiguration *PodConfiguration,

@@ -1,10 +1,7 @@
 package v1alpha1
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -69,10 +66,4 @@ type CommandList struct {
 
 func init() {
 	SchemeBuilder.Register(&Command{}, &CommandList{})
-}
-
-func (c *Command) PrepareIntendedDeployment(
-	instanceDeployment *appsv1.Deployment, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme,
-) (*appsv1.Deployment, error) {
-	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "command", request, scheme, c)
 }
