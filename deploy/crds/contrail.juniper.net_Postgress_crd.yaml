@@ -134,9 +134,9 @@ spec:
           properties:
             active:
               type: boolean
-            clusterIP:
-              type: string
             credentialsSecretName:
+              type: string
+            endpoint:
               type: string
             readyReplicas:
               format: int32

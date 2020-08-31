@@ -177,7 +177,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	postgres.Status.CredentialsSecretName = credentialsSecretName
-	postgres.Status.ClusterIP = postgresService.Spec.ClusterIP
+	postgres.Status.Endpoint = postgresService.Spec.ClusterIP
 	postgres.Status.Active = false
 	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
@@ -188,7 +188,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		postgres.Status.Active = true
 	}
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{}, r.client.Status().Update(context.Background(), postgres)
 }
 
 func (r *ReconcilePostgres) ensureLabelExists(p *contrail.Postgres) error {
@@ -289,6 +289,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = postgres.Namespace
 	statefulSet.Name = postgres.Name + "-statefulset"
+	statefulSet.Labels = postgres.Labels
 	csrSignerCaVolumeName := postgres.Name + "-csr-signer-ca"
 	var podIPEnv = core.EnvVar{
 		Name: "PATRONI_KUBERNETES_POD_IP",
@@ -393,8 +394,8 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 
 	var podContainers = []core.Container{
 		{
-			Name:  "postgres",
-			Image: getImage(postgres.Spec.ServiceConfiguration.Containers, "postgres"),
+			Name:  "patroni",
+			Image: getImage(postgres.Spec.ServiceConfiguration.Containers, "patroni"),
 			Env: []core.EnvVar{
 				nameEnv,
 				scopeEnv,
@@ -447,7 +448,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		},
 		{
 			Name:            "init",
-			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
+			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "postgres-storage-init"),
 			ImagePullPolicy: "Always",
 			VolumeMounts: []core.VolumeMount{
 				{
@@ -614,7 +615,7 @@ func (r *ReconcilePostgres) ensurePVCOwnershipExists(postgres *contrail.Postgres
 
 func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"postgres":              "localhost:5000/patroni",
+		"patroni":              "localhost:5000/patroni",
 		"postgres-storage-init": "localhost:5000/busybox:1.31",
 		"wait-for-ready-conf":   "localhost:5000/busybox:1.31",
 	}

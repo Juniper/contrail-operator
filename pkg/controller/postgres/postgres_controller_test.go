@@ -2,13 +2,15 @@ package postgres
 
 import (
 	"context"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/api/certificates/v1beta1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -24,11 +26,13 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/volumeclaims"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
+	"github.com/Juniper/contrail-operator/pkg/localvolume"
 )
 
 func TestNewReconciler(t *testing.T) {
@@ -41,7 +45,8 @@ func TestNewReconciler(t *testing.T) {
 			expectedReconciler: &ReconcilePostgres{
 				client: nil,
 				scheme: nil,
-				claims: volumeclaims.New(nil, nil),
+				kubernetes: k8s.New(nil, nil),
+				volumes:    localvolume.New(nil),
 			},
 		},
 	}
@@ -84,180 +89,528 @@ func TestPostgresController(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, v1beta1.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, rbac.SchemeBuilder.AddToScheme(scheme))
 
-	name := types.NamespacedName{Namespace: "default", Name: "testDB"}
-	podName := types.NamespacedName{Namespace: "default", Name: "testDB-pod"}
+	namespacedName := types.NamespacedName{Namespace: "default", Name: "postgres"}
+	stsName := types.NamespacedName{Namespace: "default", Name: "postgres-statefulset"}
+	replica := int32(1)
+	trueVal := true
 	postgresCR := &contrail.Postgres{
 		ObjectMeta: meta.ObjectMeta{
-			Namespace: name.Namespace,
-			Name:      name.Name,
+			Namespace: namespacedName.Namespace,
+			Name:      namespacedName.Name,
+		},
+		Spec: contrail.PostgresSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				HostNetwork:  &trueVal,
+				Replicas:     &replica,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				Tolerations: []core.Toleration{
+					{
+						Effect:   core.TaintEffectNoSchedule,
+						Operator: core.TolerationOpExists,
+					},
+					{
+						Effect:   core.TaintEffectNoExecute,
+						Operator: core.TolerationOpExists,
+					},
+				},
+			},
 		},
 	}
 
 	t.Run("no Postgres CR", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme)
-		reconcilePostgres := &ReconcilePostgres{
-			client: fakeClient,
-			scheme: scheme,
-			claims: volumeclaims.NewFake(),
-		}
+		reconcilePostgres := NewReconciler(fakeClient, scheme)
 		// when
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
 		// then
 		assert.NoError(t, err)
 	})
 
-	t.Run("should create Postgres k8s Pod when Postgres CR is created", func(t *testing.T) {
-		// given
+	t.Run("when Postgres CR is created", func(t *testing.T) {
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-		reconcilePostgres := &ReconcilePostgres{
-			client: fakeClient,
-			scheme: scheme,
-			claims: volumeclaims.NewFake(),
-			config: &rest.Config{},
-		}
-		// when
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
+		reconcilePostgres := NewReconciler(fakeClient, scheme)
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
 		assert.NoError(t, err)
-		assertPodExist(t, fakeClient, podName, "localhost:5000/postgres")
-		// and
-		assertPostgresStatusActive(t, fakeClient, name, false)
+
+		t.Run("Postgres StatefulSet should be created", func(t *testing.T) {
+			assertSTSExist(t, fakeClient, stsName)
+		})
+
+		t.Run("Postgres should not be active", func(t *testing.T) {
+			assertPostgresStatusActive(t, fakeClient, namespacedName, false)
+		})
+
+		t.Run("services and endpoint should be created", func(t *testing.T) {
+			name := types.NamespacedName{
+				Name:      namespacedName.Name + "-postgres-service",
+				Namespace: namespacedName.Namespace,
+			}
+
+			nameRepl := types.NamespacedName{
+				Name:      namespacedName.Name + "-postgres-service-replica",
+				Namespace: namespacedName.Namespace,
+			}
+
+			service := core.Service{}
+			err = fakeClient.Get(context.Background(), name, &service)
+			assert.NoError(t, err)
+
+			serviceRepl := core.Service{}
+			err = fakeClient.Get(context.Background(), nameRepl, &serviceRepl)
+			assert.NoError(t, err)
+
+			endpoint := core.Endpoints{}
+			err = fakeClient.Get(context.Background(), name, &endpoint)
+			assert.NoError(t, err)
+		})
+
+		t.Run("service account should be created", func(t *testing.T) {
+			name := types.NamespacedName{
+				Name:      "serviceaccount-"+namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			}
+
+			serviceAccount := core.ServiceAccount{}
+			err = fakeClient.Get(context.Background(), name, &serviceAccount)
+			assert.NoError(t, err)
+		})
+
+		t.Run("clusterRole and clusterRole binding should be created", func(t *testing.T) {
+			roleName := types.NamespacedName{
+				Name:      "clusterrole-"+namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			}
+
+			roleBindingName := types.NamespacedName{
+				Name:      "clusterrolebinding-"+namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			}
+
+			role := rbac.ClusterRole{}
+			roleBinding := rbac.ClusterRoleBinding{}
+
+			err = fakeClient.Get(context.Background(), roleName, &role)
+			assert.NoError(t, err)
+
+			err = fakeClient.Get(context.Background(), roleBindingName, &roleBinding)
+			assert.NoError(t, err)
+		})
+
 	})
 
-	t.Run("should create Postgres k8s with provided registry Pod when Postgres CR is created", func(t *testing.T) {
-		// given
-		postgresCR = &contrail.Postgres{
-			ObjectMeta: meta.ObjectMeta{
-				Namespace: name.Namespace,
-				Name:      name.Name,
+	//t.Run("when Postgres CR exist and sts has ready replicas", func(t *testing.T) {
+	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
+	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
+	//	assert.NoError(t, err)
+	//
+	//	t.Run("Postgres should be active", func(t *testing.T) {
+	//		assertPostgresStatusActive(t, fakeClient, namespacedName, false)
+	//	})
+	//})
+
+
+	//t.Run("should create Postgres k8s with provided registry Pod when Postgres CR is created", func(t *testing.T) {
+	//	// given
+	//	postgresCR = &contrail.Postgres{
+	//		ObjectMeta: meta.ObjectMeta{
+	//			Namespace: namespacedName.Namespace,
+	//			Name:      namespacedName.Name,
+	//		},
+	//		Spec: contrail.PostgresSpec{
+	//			Containers: []*contrail.Container{
+	//				{Name: "postgres", Image: "registry:5000/postgres"},
+	//			},
+	//		},
+	//	}
+	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
+	//	// when
+	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
+	//	// then
+	//	assert.NoError(t, err)
+	//	assertPodExist(t, fakeClient, podName, "registry:5000/postgres")
+	//	// and
+	//	assertPostgresStatusActive(t, fakeClient, namespacedName, false)
+	//})
+	//
+	//t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
+	//	// given
+	//	postgresService := newPostgreService()
+	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, postgresService)
+	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
+	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{
+	//		NamespacedName: namespacedName,
+	//	})
+	//	assert.NoError(t, err)
+	//	// when
+	//	makePodReady(t, fakeClient, podName, namespacedName)
+	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{
+	//		NamespacedName: namespacedName,
+	//	})
+	//	assert.NoError(t, err)
+	//	// then
+	//	assertPostgresStatusActive(t, fakeClient, namespacedName, true)
+	//	// and
+	//	assertPostgresStatusNode(t, fakeClient, namespacedName, "10.10.10.20")
+	//})
+
+	//t.Run("postgres persistent volume claim", func(t *testing.T) {
+	//	quantity5Gi := resource.MustParse("5Gi")
+	//	quantity1Gi := resource.MustParse("1Gi")
+	//	tests := map[string]struct {
+	//		size         string
+	//		path         string
+	//		expectedSize *resource.Quantity
+	//	}{
+	//		"no size and path given": {},
+	//		"only size given": {
+	//			size:         "1Gi",
+	//			expectedSize: &quantity1Gi,
+	//		},
+	//		"size and path given": {
+	//			size:         "5Gi",
+	//			path:         "/path",
+	//			expectedSize: &quantity5Gi,
+	//		},
+	//		"size and path given 2": {
+	//			size:         "1Gi",
+	//			path:         "/other",
+	//			expectedSize: &quantity1Gi,
+	//		},
+	//	}
+	//	for testName, test := range tests {
+	//		t.Run(testName, func(t *testing.T) {
+	//			postgresCR := &contrail.Postgres{
+	//				ObjectMeta: meta.ObjectMeta{
+	//					Namespace: namespacedName.Namespace,
+	//					Name:      namespacedName.Name,
+	//				},
+	//				Spec: contrail.PostgresSpec{
+	//					Storage: contrail.Storage{
+	//						Size: test.size,
+	//						Path: test.path,
+	//					},
+	//				},
+	//			}
+	//			fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+	//			claims := volumeclaims.NewFake()
+	//			reconcilePostgres := &ReconcilePostgres{
+	//				client: fakeClient,
+	//				scheme: scheme,
+	//				claims: claims,
+	//				config: &rest.Config{},
+	//			}
+	//			_, err = reconcilePostgres.Reconcile(reconcile.Request{
+	//				NamespacedName: namespacedName,
+	//			})
+	//			// when
+	//			makePodReady(t, fakeClient, podName, namespacedName)
+	//			_, err = reconcilePostgres.Reconcile(reconcile.Request{
+	//				NamespacedName: namespacedName,
+	//			})
+	//			assert.NoError(t, err)
+	//			// then
+	//			t.Run("should add volume to pod", func(t *testing.T) {
+	//				assertVolumeMountedToPod(t, fakeClient, namespacedName, podName)
+	//			})
+	//			t.Run("should mount volume to container", func(t *testing.T) {
+	//				assertVolumeMountedToContainer(t, fakeClient, namespacedName, podName)
+	//			})
+	//			t.Run("should create persistent volume claim", func(t *testing.T) {
+	//				claimName := types.NamespacedName{
+	//					Name:      namespacedName.Name + "-pv-claim",
+	//					Namespace: namespacedName.Namespace,
+	//				}
+	//				claim, ok := claims.Claim(claimName)
+	//				require.True(t, ok, "missing claim")
+	//				assert.Equal(t, test.path, claim.StoragePath())
+	//				assert.Equal(t, test.expectedSize, claim.StorageSize())
+	//				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
+	//			})
+	//		})
+	//	}
+	//})
+
+}
+func newSTSWithStatus(status apps.StatefulSetStatus) apps.StatefulSet {
+	sts := newSTS("postgres")
+	sts.Status = status
+	return sts
+}
+
+func newSTS(name string) apps.StatefulSet {
+	trueVal := true
+	oneVal := int32(1)
+
+	var podIPEnv = core.EnvVar{
+		Name: "PATRONI_KUBERNETES_POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
 			},
-			Spec: contrail.PostgresSpec{
-				Containers: []*contrail.Container{
-					{Name: "postgres", Image: "registry:5000/postgres"},
+		},
+	}
+
+	var nameEnv = core.EnvVar{
+		Name: "PATRONI_NAME",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.name",
+			},
+		},
+	}
+
+	var scopeEnv = core.EnvVar{
+		Name:  "PATRONI_SCOPE",
+		Value: "postgres",
+	}
+
+	var namespaceEnv = core.EnvVar{
+		Name: "PATRONI_KUBERNETES_NAMESPACE",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.namespace",
+			},
+		},
+	}
+
+	var labelsEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_LABELS",
+		Value: contraillabel.AsString("postgres", "postgres"),
+	}
+
+	var postgresListenAddressEnv = core.EnvVar{
+		Name:  "PATRONI_POSTGRESQL_LISTEN",
+		Value: "0.0.0.0:5432",
+	}
+
+	var restApiListenAddressEnv = core.EnvVar{
+		Name:  "PATRONI_RESTAPI_LISTEN",
+		Value: "0.0.0.0:8008",
+	}
+
+	var replicationUserEnv = core.EnvVar{
+		Name:  "PATRONI_REPLICATION_USERNAME",
+		Value: "standby",
+	}
+
+	var replicationPassEnv = core.EnvVar{
+		Name: "PATRONI_REPLICATION_PASSWORD",
+		ValueFrom: &core.EnvVarSource{
+			SecretKeyRef: &core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: "postgres-postgres-credentials-secret",
 				},
+				Key: "replication-password",
 			},
-		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-		reconcilePostgres := &ReconcilePostgres{
-			client: fakeClient,
-			scheme: scheme,
-			claims: volumeclaims.NewFake(),
-			config: &rest.Config{},
-		}
-		// when
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: name})
-		// then
-		assert.NoError(t, err)
-		assertPodExist(t, fakeClient, podName, "registry:5000/postgres")
-		// and
-		assertPostgresStatusActive(t, fakeClient, name, false)
-	})
+		},
+	}
 
-	t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
-		// given
-		postgresService := newPostgreService()
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, postgresService)
-		reconcilePostgres := &ReconcilePostgres{
-			client: fakeClient,
-			scheme: scheme,
-			claims: volumeclaims.NewFake(),
-			config: &rest.Config{},
-		}
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{
-			NamespacedName: name,
-		})
-		assert.NoError(t, err)
-		// when
-		makePodReady(t, fakeClient, podName, name)
-		_, err = reconcilePostgres.Reconcile(reconcile.Request{
-			NamespacedName: name,
-		})
-		assert.NoError(t, err)
-		// then
-		assertPostgresStatusActive(t, fakeClient, name, true)
-		// and
-		assertPostgresStatusNode(t, fakeClient, name, "10.10.10.20")
-	})
+	var superuserEnv = core.EnvVar{
+		Name:  "PATRONI_SUPERUSER_USERNAME",
+		Value: "root",
+	}
 
-	t.Run("postgres persistent volume claim", func(t *testing.T) {
-		quantity5Gi := resource.MustParse("5Gi")
-		quantity1Gi := resource.MustParse("1Gi")
-		tests := map[string]struct {
-			size         string
-			path         string
-			expectedSize *resource.Quantity
-		}{
-			"no size and path given": {},
-			"only size given": {
-				size:         "1Gi",
-				expectedSize: &quantity1Gi,
+	var postgresDBEnv = core.EnvVar{
+		Name:  "POSTGRES_DB",
+		Value: "contrail_test",
+	}
+
+	var superuserPassEnv = core.EnvVar{
+		Name: "PATRONI_SUPERUSER_PASSWORD",
+		ValueFrom: &core.EnvVarSource{
+			SecretKeyRef: &core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: "postgres-postgres-credentials-secret",
+				},
+				Key: "superuser-password",
 			},
-			"size and path given": {
-				size:         "5Gi",
-				path:         "/path",
-				expectedSize: &quantity5Gi,
+		},
+	}
+
+	var endpointsEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_USE_ENDPOINTS",
+		Value: "true",
+	}
+
+	var dataDirEnv = core.EnvVar{
+		Name:  "PATRONI_POSTGRESQL_DATA_DIR",
+		Value: "/var/lib/postgresql/data/postgres",
+	}
+
+	var pgpassEnv = core.EnvVar{
+		Name:  "PATRONI_POSTGRESQL_PGPASS",
+		Value: "/tmp/pgpass",
+	}
+
+	storageClassName := "local-storage"
+	initHostPathType := core.HostPathDirectoryOrCreate
+	var postgresGroupId int64 = 0
+	return apps.StatefulSet{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Postgres", "postgres", "", &trueVal, &trueVal},
 			},
-			"size and path given 2": {
-				size:         "1Gi",
-				path:         "/other",
-				expectedSize: &quantity1Gi,
+		},
+		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
+		Spec: apps.StatefulSetSpec{
+			ServiceName: "postgres-postgres-service",
+			Replicas: &oneVal,
+			Selector: &meta.LabelSelector{
+				MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
 			},
-		}
-		for testName, test := range tests {
-			t.Run(testName, func(t *testing.T) {
-				postgresCR := &contrail.Postgres{
+			VolumeClaimTemplates: []core.PersistentVolumeClaim{
+				{
 					ObjectMeta: meta.ObjectMeta{
-						Namespace: name.Namespace,
-						Name:      name.Name,
+						Name:      "pgdata",
+						Namespace: "default",
+						Labels:    map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
 					},
-					Spec: contrail.PostgresSpec{
-						Storage: contrail.Storage{
-							Size: test.size,
-							Path: test.path,
+					Spec: core.PersistentVolumeClaimSpec{
+						AccessModes: []core.PersistentVolumeAccessMode{
+							core.ReadWriteOnce,
+						},
+						StorageClassName: &storageClassName,
+						Resources: core.ResourceRequirements{
+							Requests: map[core.ResourceName]resource.Quantity{
+								core.ResourceStorage: resource.MustParse("5Gi"),
+							},
 						},
 					},
-				}
-				fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-				claims := volumeclaims.NewFake()
-				reconcilePostgres := &ReconcilePostgres{
-					client: fakeClient,
-					scheme: scheme,
-					claims: claims,
-					config: &rest.Config{},
-				}
-				_, err = reconcilePostgres.Reconcile(reconcile.Request{
-					NamespacedName: name,
-				})
-				// when
-				makePodReady(t, fakeClient, podName, name)
-				_, err = reconcilePostgres.Reconcile(reconcile.Request{
-					NamespacedName: name,
-				})
-				assert.NoError(t, err)
-				// then
-				t.Run("should add volume to pod", func(t *testing.T) {
-					assertVolumeMountedToPod(t, fakeClient, name, podName)
-				})
-				t.Run("should mount volume to container", func(t *testing.T) {
-					assertVolumeMountedToContainer(t, fakeClient, name, podName)
-				})
-				t.Run("should create persistent volume claim", func(t *testing.T) {
-					claimName := types.NamespacedName{
-						Name:      name.Name + "-pv-claim",
-						Namespace: name.Namespace,
-					}
-					claim, ok := claims.Claim(claimName)
-					require.True(t, ok, "missing claim")
-					assert.Equal(t, test.path, claim.StoragePath())
-					assert.Equal(t, test.expectedSize, claim.StorageSize())
-					assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
-				})
-			})
-		}
-	})
+				},
+			},
+			Template: core.PodTemplateSpec{
+				ObjectMeta: meta.ObjectMeta{
+					Labels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
+				},
+				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{
+									MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
+								},
+								TopologyKey: "kubernetes.io/hostname",
+							}},
+						},
+					},
+					SecurityContext: &core.PodSecurityContext{
+						RunAsGroup: &postgresGroupId,
+						RunAsUser: &postgresGroupId,
+						FSGroup: &postgresGroupId,
+					},
+					HostNetwork:  true,
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+					ServiceAccountName: "serviceaccount-postgres",
+					InitContainers: []core.Container{
+						{
+							Name:            "wait-for-ready-conf",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "localhost:5000/busybox:1.31",
+							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      "status",
+								MountPath: "/tmp/podinfo",
+							}},
+						},
+						{
+							Name:            "init",
+							Image:           "localhost:5000/busybox:1.31",
+							ImagePullPolicy: "Always",
+							VolumeMounts: []core.VolumeMount{
+								{
+									Name:      "postgres-storage-init",
+									ReadOnly:  false,
+									MountPath: "/mnt/",
+								},
+							},
+						},
 
+					},
+					Containers: []core.Container{
+						{
+							Image:           "localhost:5000/patroni",
+							Name:            "patroni",
+							ImagePullPolicy: core.PullAlways,
+							Env: []core.EnvVar{
+								nameEnv,
+								scopeEnv,
+								podIPEnv,
+								namespaceEnv,
+								labelsEnv,
+								endpointsEnv,
+								replicationUserEnv,
+								replicationPassEnv,
+								superuserEnv,
+								superuserPassEnv,
+								dataDirEnv,
+								postgresDBEnv,
+								postgresListenAddressEnv,
+								restApiListenAddressEnv,
+								pgpassEnv,
+							},
+							VolumeMounts: []core.VolumeMount{
+								{
+									Name:      "pgdata",
+									ReadOnly:  false,
+									MountPath: "/var/lib/postgresql/data",
+									SubPath:   "postgres",
+								},
+								{
+									Name:      "postgres-secret-certificates",
+									MountPath: "/var/lib/ssl_certificates",
+								},
+								{
+									Name:      "postgres-csr-signer-ca",
+									MountPath: certificates.SignerCAMountPath,
+								},
+							},
+						},
+					},
+					Tolerations: []core.Toleration{
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
+						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
+					},
+					Volumes: []core.Volume{
+						{
+							Name: "postgres-storage-init",
+							VolumeSource: core.VolumeSource{
+								HostPath: &core.HostPathVolumeSource{
+									Path: "/mnt/postgres",
+									Type: &initHostPathType,
+								},
+							},
+						},
+						{
+							Name: "postgres-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "postgres-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: "postgres-csr-signer-ca",
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: certificates.SignerCAConfigMapName,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 type mockManager struct {
@@ -337,12 +690,13 @@ func (m *mockReconciler) Reconcile(reconcile.Request) (reconcile.Result, error) 
 	return reconcile.Result{}, nil
 }
 
-func assertPodExist(t *testing.T, c client.Client, name types.NamespacedName, containerImage string) {
-	pod := core.Pod{}
-	err := c.Get(context.TODO(), name, &pod)
+func assertSTSExist(t *testing.T, c client.Client, name types.NamespacedName) {
+	sts := apps.StatefulSet{}
+	err := c.Get(context.TODO(), name, &sts)
 	assert.NoError(t, err)
-	assert.Len(t, pod.Spec.Containers, 1)
-	assert.Equal(t, containerImage, pod.Spec.Containers[0].Image)
+	expectedSTS := newSTS(name.Name)
+	sts.SetResourceVersion("")
+	assert.Equal(t, expectedSTS, sts)
 }
 
 func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, name types.NamespacedName) {

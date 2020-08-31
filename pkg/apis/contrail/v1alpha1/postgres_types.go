@@ -12,7 +12,7 @@ type PostgresConfiguration struct {
 
 // PostgresSpec defines the desired state of Postgres
 type PostgresSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration PostgresConfiguration `json:"serviceConfiguration"`
 }
 
@@ -20,7 +20,7 @@ type PostgresSpec struct {
 type PostgresStatus struct {
 	Status                `json:",inline"`
 	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
-	ClusterIP             string `json:"clusterIP,omitempty"`
+	Endpoint              string `json:"endpoint,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -47,6 +47,7 @@ type PostgresList struct {
 
 // PostgresInstanceType is type unique name used for labels
 const PostgresInstanceType = "Postgres"
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
