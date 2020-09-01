@@ -765,6 +765,9 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
 		psql.Spec = manager.Spec.Services.Postgres.Spec
 		psql.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, psql.Spec.CommonConfiguration)
+		if psql.Spec.CommonConfiguration.Replicas == nil {
+			psql.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

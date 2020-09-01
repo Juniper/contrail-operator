@@ -16,7 +16,6 @@ go_library(
         "kubemanager_types.go",
         "manager_types.go",
         "memcached_types.go",
-        "patroni_types.go",
         "postgres_types.go",
         "provisionmanager_types.go",
         "rabbitmq_types.go",
