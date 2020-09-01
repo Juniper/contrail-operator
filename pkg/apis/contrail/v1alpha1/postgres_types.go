@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:openapi-gen=true
 type PostgresConfiguration struct {
 	CredentialsSecretName string       `json:"credentialsSecretName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
@@ -11,12 +12,14 @@ type PostgresConfiguration struct {
 }
 
 // PostgresSpec defines the desired state of Postgres
+// +k8s:openapi-gen=true
 type PostgresSpec struct {
 	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration PostgresConfiguration `json:"serviceConfiguration"`
 }
 
 // PostgresStatus defines the observed state of Postgres
+// +k8s:openapi-gen=true
 type PostgresStatus struct {
 	Status                `json:",inline"`
 	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
@@ -26,8 +29,8 @@ type PostgresStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Postgres is the Schema for the Postgress API
+// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=Postgress,scope=Namespaced
 type Postgres struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
