@@ -9,7 +9,9 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -47,9 +49,12 @@ func TestPostgresDataPersistence(t *testing.T) {
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "postgrestest-psql"},
 			Spec: contrail.PostgresSpec{
-				Containers: []*contrail.Container{
-					{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/postgres:12.2"},
-					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5"},
+						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
 				},
 			},
 		}
@@ -85,8 +90,9 @@ func TestPostgresDataPersistence(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": psql.Name, "role": "master"})
 			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-				LabelSelector: "app=" + psql.Name,
+				LabelSelector: labelSelector.String(),
 			})
 			assert.NoError(t, err)
 			assert.NotEmpty(t, psqlPods.Items)
@@ -185,4 +191,9 @@ func TestPostgresDataPersistence(t *testing.T) {
 			})
 		})
 	})
+
+	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

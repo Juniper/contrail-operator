@@ -42,8 +42,8 @@ func TestNewReconciler(t *testing.T) {
 		"empty manager": {
 			manager: &mockManager{},
 			expectedReconciler: &ReconcilePostgres{
-				client: nil,
-				scheme: nil,
+				client:     nil,
+				scheme:     nil,
 				kubernetes: k8s.New(nil, nil),
 				volumes:    localvolume.New(nil),
 			},
@@ -169,7 +169,7 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("service account should be created", func(t *testing.T) {
 			name := types.NamespacedName{
-				Name:      "serviceaccount-"+namespacedName.Name,
+				Name:      "serviceaccount-" + namespacedName.Name,
 				Namespace: namespacedName.Namespace,
 			}
 
@@ -180,12 +180,12 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("clusterRole and clusterRole binding should be created", func(t *testing.T) {
 			roleName := types.NamespacedName{
-				Name:      "clusterrole-"+namespacedName.Name,
+				Name:      "clusterrole-" + namespacedName.Name,
 				Namespace: namespacedName.Namespace,
 			}
 
 			roleBindingName := types.NamespacedName{
-				Name:      "clusterrolebinding-"+namespacedName.Name,
+				Name:      "clusterrolebinding-" + namespacedName.Name,
 				Namespace: namespacedName.Namespace,
 			}
 
@@ -418,7 +418,7 @@ func newSTS(name string) apps.StatefulSet {
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
 			ServiceName: "postgres-postgres-service",
-			Replicas: &oneVal,
+			Replicas:    &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
 			},
@@ -459,11 +459,11 @@ func newSTS(name string) apps.StatefulSet {
 					},
 					SecurityContext: &core.PodSecurityContext{
 						RunAsGroup: &postgresGroupId,
-						RunAsUser: &postgresGroupId,
-						FSGroup: &postgresGroupId,
+						RunAsUser:  &postgresGroupId,
+						FSGroup:    &postgresGroupId,
 					},
-					HostNetwork:  true,
-					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+					HostNetwork:        true,
+					NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
 					ServiceAccountName: "serviceaccount-postgres",
 					InitContainers: []core.Container{
 						{
@@ -488,7 +488,6 @@ func newSTS(name string) apps.StatefulSet {
 								},
 							},
 						},
-
 					},
 					Containers: []core.Container{
 						{
@@ -583,4 +582,3 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	assert.NoError(t, err)
 	assert.Equal(t, active, postgres.Status.Active)
 }
-
