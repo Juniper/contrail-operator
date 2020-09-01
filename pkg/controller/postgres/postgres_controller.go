@@ -447,7 +447,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		},
 		{
 			Name:            "init",
-			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "postgres-storage-init"),
+			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
 			ImagePullPolicy: "Always",
 			VolumeMounts: []core.VolumeMount{
 				{
@@ -614,9 +614,9 @@ func (r *ReconcilePostgres) ensurePVCOwnershipExists(postgres *contrail.Postgres
 
 func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"patroni":              "localhost:5000/patroni",
-		"postgres-storage-init": "localhost:5000/busybox:1.31",
-		"wait-for-ready-conf":   "localhost:5000/busybox:1.31",
+		"patroni":             "localhost:5000/patroni",
+		"init":                "localhost:5000/busybox:1.31",
+		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
 	c := utils.GetContainerFromList(containerName, containers)
 	if c == nil {
