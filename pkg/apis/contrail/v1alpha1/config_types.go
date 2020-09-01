@@ -103,11 +103,13 @@ type ConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active        *bool                             `json:"active,omitempty"`
-	Nodes         map[string]string                 `json:"nodes,omitempty"`
-	Ports         ConfigStatusPorts                 `json:"ports,omitempty"`
-	ConfigChanged *bool                             `json:"configChanged,omitempty"`
-	ServiceStatus map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
+	Active            *bool                             `json:"active,omitempty"`
+	Nodes             map[string]string                 `json:"nodes,omitempty"`
+	Ports             ConfigStatusPorts                 `json:"ports,omitempty"`
+	ConfigChanged     *bool                             `json:"configChanged,omitempty"`
+	ServiceStatus     map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
+	ConfigApiEndpoint string                            `json:"configapiendpoint,omitempty"`
+	AnalyticsEndpoint string                            `json:"analyticsendpoint,omitempty"`
 }
 
 type ConfigServiceStatusMap map[string]ConfigServiceStatus
@@ -755,7 +757,7 @@ func (c *Config) WaitForPeerPods(request reconcile.Request, reconcileClient clie
 	return nil
 }
 
-func (c *Config) ManageNodeStatus(podNameIPMap map[string]string,
+func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, configApiEndpoint string, analyticsEndpoint string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
 	configConfigInterface := c.ConfigurationParameters()
@@ -764,6 +766,8 @@ func (c *Config) ManageNodeStatus(podNameIPMap map[string]string,
 	c.Status.Ports.AnalyticsPort = strconv.Itoa(*configConfig.AnalyticsPort)
 	c.Status.Ports.CollectorPort = strconv.Itoa(*configConfig.CollectorPort)
 	c.Status.Ports.RedisPort = strconv.Itoa(*configConfig.RedisPort)
+	c.Status.ConfigApiEndpoint = configApiEndpoint
+	c.Status.AnalyticsEndpoint = analyticsEndpoint
 	err := client.Status().Update(context.TODO(), c)
 	if err != nil {
 		return err

@@ -28,11 +28,10 @@ type CommandSpec struct {
 // +k8s:openapi-gen=true
 type CommandConfiguration struct {
 	ClusterName        string       `json:"clusterName,omitempty"`
-	ConfigAPIURL       string       `json:"configAPIURL,omitempty"`
-	TelemetryURL       string       `json:"telemetryURL,omitempty"`
 	PostgresInstance   string       `json:"postgresInstance,omitempty"`
 	SwiftInstance      string       `json:"swiftInstance,omitempty"`
 	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
+	ConfigInstance     string       `json:"configInstance,omitempty"`
 	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
 	ContrailVersion    string       `json:"contrailVersion,omitempty"`
 	Containers         []*Container `json:"containers,omitempty"`
@@ -42,7 +41,7 @@ type CommandConfiguration struct {
 // +k8s:openapi-gen=true
 type CommandStatus struct {
 	Active       bool                `json:"active,omitempty"`
-	IPs          []string            `json:"ips,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
 	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
 }
 

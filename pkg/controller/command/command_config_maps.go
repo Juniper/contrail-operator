@@ -26,15 +26,15 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress string, keystonePort int, keystoneAuthProtocol string, postgresAddress string) error {
+func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress string, keystonePort int, keystoneAuthProtocol, postgresAddress, ConfigApiEndpoint, AnalyticsEndpoint string) error {
 	cc := &commandConf{
 		ClusterName:          "default",
 		AdminUsername:        "admin",
 		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
 		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
-		ConfigAPIURL:         "https://" + hostIP + ":8082",
-		TelemetryURL:         "http://" + hostIP + ":8081",
+		ConfigAPIURL:         ConfigApiEndpoint,
+		TelemetryURL:         AnalyticsEndpoint,
 		PostgresAddress:      postgresAddress,
 		PostgresUser:         "root",
 		PostgresDBName:       "contrail_test",
@@ -51,13 +51,5 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress str
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {
 		cc.ClusterName = c.ccSpec.ServiceConfiguration.ClusterName
 	}
-	if c.ccSpec.ServiceConfiguration.ConfigAPIURL != "" {
-		cc.ConfigAPIURL = c.ccSpec.ServiceConfiguration.ConfigAPIURL
-	}
-
-	if c.ccSpec.ServiceConfiguration.TelemetryURL != "" {
-		cc.TelemetryURL = c.ccSpec.ServiceConfiguration.TelemetryURL
-	}
-
 	return c.cm.EnsureExists(cc)
 }
