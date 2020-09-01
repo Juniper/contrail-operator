@@ -404,9 +404,11 @@ func newSTS(name string) apps.StatefulSet {
 	}
 
 	storageClassName := "local-storage"
-	initHostPathType := core.HostPathDirectoryOrCreate
-	var postgresGroupId int64 = 0
-	var labelsMountPermission int32 = 0644
+	var (
+		initHostPathType            = core.HostPathDirectoryOrCreate
+		postgresUID           int64 = 999
+		labelsMountPermission int32 = 0644
+	)
 	return apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name,
@@ -459,9 +461,9 @@ func newSTS(name string) apps.StatefulSet {
 						},
 					},
 					SecurityContext: &core.PodSecurityContext{
-						RunAsGroup: &postgresGroupId,
-						RunAsUser:  &postgresGroupId,
-						FSGroup:    &postgresGroupId,
+						RunAsUser:          &postgresUID,
+						FSGroup:            &postgresUID,
+						SupplementalGroups: []int64{999, 1000},
 					},
 					HostNetwork:        true,
 					NodeSelector:       map[string]string{"node-role.kubernetes.io/master": ""},
@@ -492,7 +494,7 @@ func newSTS(name string) apps.StatefulSet {
 					},
 					Containers: []core.Container{
 						{
-							Image:           "localhost:5000/patroni",
+							Image:           "localhost:5000/patroni:1.6.5",
 							Name:            "patroni",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{

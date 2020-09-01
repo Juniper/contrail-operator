@@ -30,7 +30,7 @@ import (
 
 var log = logf.Log.WithName("controller_postgres")
 
-const defaultPostgresStoragePath = "/var/lib/postgres"
+const defaultPostgresStoragePath = "/mnt/postgres"
 
 // Add creates a new Postgres Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.

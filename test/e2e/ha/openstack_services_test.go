@@ -106,6 +106,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 			require.NoError(t, err)
 			t.Run("then OpenStack services have single replica ready", func(t *testing.T) {
+				assertPostgresReady(t, w, 1)
 				assertOpenStackReplicasReady(t, w, 1)
 			})
 
@@ -119,6 +120,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
+				assertPostgresReady(t, w, 3)
 				assertOpenStackReplicasReady(t, w, 3)
 			})
 
@@ -300,6 +302,13 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Swift Proxy deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", r))
+	})
+}
+
+func assertPostgresReady(t *testing.T, w wait.Wait, r int32) {
+	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("postgres-postgres-statefulset", r))
 	})
 }
 
