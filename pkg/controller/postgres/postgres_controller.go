@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -226,7 +225,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = contraillabel.New(postgres.Kind, postgres.Name)
+		service.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
 		service.Spec.Type = core.ServiceTypeClusterIP
 		service.Spec.Ports = []core.ServicePort{{
 			Port: 5432,
@@ -250,7 +249,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, endpoints, func() error {
-		endpoints.ObjectMeta.Labels = contraillabel.New(postgres.Kind, postgres.Name)
+		endpoints.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
 		return controllerutil.SetControllerReference(postgres, service, r.scheme)
 	})
 
@@ -266,7 +265,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
-		labels := contraillabel.New(postgres.Kind, postgres.Name)
+		labels := contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
 		labels["role"] = "replica"
 		serviceRepl.ObjectMeta.Labels = labels
 		serviceRepl.Spec.Selector = labels

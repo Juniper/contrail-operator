@@ -46,7 +46,7 @@ type PostgresList struct {
 }
 
 // PostgresInstanceType is type unique name used for labels
-const PostgresInstanceType = "Postgres"
+const PostgresInstanceType = "postgres"
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
