@@ -358,7 +358,7 @@ func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPPro
 	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
 	require.NoError(t, err)
 
-	tokens, err := keystoneClient.PostAuthTokens("admin", adminPassword, "admin")
+	tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassword), "admin")
 	require.NoError(t, err)
 	swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
 	swiftURL := tokens.EndpointURL("swift", "internal")
@@ -390,5 +390,4 @@ func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPPro
 			assert.Equal(t, "payload", string(contents))
 		})
 	})
-
 }
