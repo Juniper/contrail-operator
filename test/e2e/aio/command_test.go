@@ -324,6 +324,7 @@ func TestCommandServices(t *testing.T) {
 
 			t.Run("when command image is upgraded", func(t *testing.T) {
 				newImage := "registry:5000/contrail-nightly/contrail-command:2008.10"
+				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
 				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
 				utils.GetContainerFromList("init", containers).Image = newImage
 				utils.GetContainerFromList("api", containers).Image = newImage
