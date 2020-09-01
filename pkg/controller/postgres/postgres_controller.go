@@ -30,7 +30,7 @@ import (
 
 var log = logf.Log.WithName("controller_postgres")
 
-const defaultPostgresStoragePath = "/mnt/postgres"
+const defaultPostgresStoragePath = "/var/lib/postgres"
 
 // Add creates a new Postgres Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -463,8 +463,11 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 	if storagePath == "" {
 		storagePath = defaultPostgresStoragePath
 	}
-	initHostPathType := core.HostPathDirectoryOrCreate
-	var labelsMountPermission int32 = 0644
+	var (
+		initHostPathType            = core.HostPathDirectoryOrCreate
+		postgresUID           int64 = 999
+		labelsMountPermission int32 = 0644
+	)
 	var podSpec = core.PodSpec{
 		Affinity: &core.Affinity{
 			PodAntiAffinity: &core.PodAntiAffinity{
@@ -480,6 +483,11 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		NodeSelector:       postgres.Spec.CommonConfiguration.NodeSelector,
 		ServiceAccountName: serviceAccountName,
 		Tolerations:        postgres.Spec.CommonConfiguration.Tolerations,
+		SecurityContext: &core.PodSecurityContext{
+			RunAsUser:          &postgresUID,
+			FSGroup:            &postgresUID,
+			SupplementalGroups: []int64{999, 1000},
+		},
 		Volumes: []core.Volume{
 			{
 				Name: "postgres-storage-init",
@@ -548,12 +556,6 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 
 		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
-
-		var postgresGroupId int64 = 0
-		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{}
-		statefulSet.Spec.Template.Spec.SecurityContext.FSGroup = &postgresGroupId
-		statefulSet.Spec.Template.Spec.SecurityContext.RunAsGroup = &postgresGroupId
-		statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser = &postgresGroupId
 
 		storageClassName := "local-storage"
 		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
@@ -632,7 +634,7 @@ func (r *ReconcilePostgres) ensurePVCOwnershipExists(postgres *contrail.Postgres
 
 func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"patroni":             "localhost:5000/patroni",
+		"patroni":             "localhost:5000/patroni:1.6.5",
 		"init":                "localhost:5000/busybox:1.31",
 		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
