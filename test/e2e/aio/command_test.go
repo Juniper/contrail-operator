@@ -21,8 +21,9 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
+	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
-	wait "github.com/Juniper/contrail-operator/test/wait"
+	"github.com/Juniper/contrail-operator/test/wait"
 )
 
 func TestCommandServices(t *testing.T) {
@@ -318,6 +319,29 @@ func TestCommandServices(t *testing.T) {
 					contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
 					require.NoError(t, err)
 					assert.Equal(t, "payload", string(contents))
+				})
+			})
+
+			t.Run("when command image is upgraded", func(t *testing.T) {
+				newImage := "registry:5000/contrail-nightly/contrail-command:2008.10"
+				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
+				utils.GetContainerFromList("init", containers).Image = newImage
+				utils.GetContainerFromList("api", containers).Image = newImage
+				require.NoError(t, f.Client.Update(context.TODO(), cluster))
+
+				t.Run("then Command has updated image", func(t *testing.T) {
+					err := wait.Contrail{
+						Namespace:     cluster.Namespace,
+						Timeout:       5 * time.Minute,
+						RetryInterval: retryInterval,
+						Client:        f.Client,
+						Logger:        log,
+					}.ForPodImageChange(f.KubeClient, "command=commandtest", newImage, "command")
+					assert.NoError(t, err)
+				})
+
+				t.Run("then ready Command Deployment should be recreated", func(t *testing.T) {
+					assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment", 1))
 				})
 			})
 		})
