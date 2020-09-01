@@ -195,11 +195,21 @@ spec:
       metadata:
         name: postgres
       spec:
-        containers:
-          - name: postgres
-            image: registry:5000/common-docker-third-party/contrail/postgres:12.2
-          - name: wait-for-ready-conf
-            image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+        commonConfiguration:
+          hostNetwork: true
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
+        serviceConfiguration:
+          containers:
+            - name: init
+              image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+            - name:  wait-for-ready-conf
+              image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+            - name: patroni
+              image: registry:5000/common-docker-third-party/contrail/patroni:1.6.5
     memcached:
       metadata:
         name: memcached
