@@ -145,12 +145,12 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("services and endpoint should be created", func(t *testing.T) {
 			name := types.NamespacedName{
-				Name:      namespacedName.Name + "-postgres-service",
+				Name:      namespacedName.Name,
 				Namespace: namespacedName.Namespace,
 			}
 
 			nameRepl := types.NamespacedName{
-				Name:      namespacedName.Name + "-postgres-service-replica",
+				Name:      namespacedName.Name + "-replica",
 				Namespace: namespacedName.Namespace,
 			}
 
@@ -162,9 +162,6 @@ func TestPostgresController(t *testing.T) {
 			err = fakeClient.Get(context.Background(), nameRepl, &serviceRepl)
 			assert.NoError(t, err)
 
-			endpoint := core.Endpoints{}
-			err = fakeClient.Get(context.Background(), name, &endpoint)
-			assert.NoError(t, err)
 		})
 
 		t.Run("service account should be created", func(t *testing.T) {
@@ -334,6 +331,11 @@ func newSTS(name string) apps.StatefulSet {
 		},
 	}
 
+	var scopeLabelEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_SCOPE_LABEL",
+		Value: "postgres",
+	}
+
 	var labelsEnv = core.EnvVar{
 		Name:  "PATRONI_KUBERNETES_LABELS",
 		Value: contraillabel.AsString("postgres", "postgres"),
@@ -420,7 +422,7 @@ func newSTS(name string) apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
-			ServiceName: "postgres-postgres-service",
+			ServiceName: "postgres",
 			Replicas:    &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
@@ -502,6 +504,7 @@ func newSTS(name string) apps.StatefulSet {
 								scopeEnv,
 								podIPEnv,
 								namespaceEnv,
+								scopeLabelEnv,
 								labelsEnv,
 								endpointsEnv,
 								replicationUserEnv,

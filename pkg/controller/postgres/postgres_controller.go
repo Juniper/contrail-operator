@@ -220,7 +220,7 @@ func (r *ReconcilePostgres) listPostgresPods(postgresName string) (*core.PodList
 func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*core.Service, error) {
 	service := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      postgres.Name + "-postgres-service",
+			Name:      postgres.Name,
 			Namespace: postgres.Namespace,
 		},
 	}
@@ -241,25 +241,9 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		return nil, err
 	}
 
-	endpoints := &core.Endpoints{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      postgres.Name + "-postgres-service",
-			Namespace: postgres.Namespace,
-		},
-	}
-
-	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, endpoints, func() error {
-		endpoints.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
-		return controllerutil.SetControllerReference(postgres, service, r.scheme)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
 	serviceRepl := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      postgres.Name + "-postgres-service-replica",
+			Name:      postgres.Name + "-replica",
 			Namespace: postgres.Namespace,
 		},
 	}
@@ -320,6 +304,11 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 				FieldPath: "metadata.namespace",
 			},
 		},
+	}
+
+	var scopeLabelEnv = core.EnvVar{
+		Name:  "PATRONI_KUBERNETES_SCOPE_LABEL",
+		Value: "postgres",
 	}
 
 	var labelsEnv = core.EnvVar{
@@ -400,6 +389,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 				scopeEnv,
 				podIPEnv,
 				namespaceEnv,
+				scopeLabelEnv,
 				labelsEnv,
 				endpointsEnv,
 				replicationUserEnv,
