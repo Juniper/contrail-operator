@@ -464,6 +464,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		storagePath = defaultPostgresStoragePath
 	}
 	initHostPathType := core.HostPathDirectoryOrCreate
+	var labelsMountPermission int32 = 0644
 	var podSpec = core.PodSpec{
 		Affinity: &core.Affinity{
 			PodAntiAffinity: &core.PodAntiAffinity{
@@ -504,6 +505,23 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 						LocalObjectReference: core.LocalObjectReference{
 							Name: certificates.SignerCAConfigMapName,
 						},
+					},
+				},
+			},
+			{
+				Name: "status",
+				VolumeSource: core.VolumeSource{
+					DownwardAPI: &core.DownwardAPIVolumeSource{
+						Items: []core.DownwardAPIVolumeFile{
+							{
+								FieldRef: &core.ObjectFieldSelector{
+									APIVersion: "v1",
+									FieldPath:  "metadata.labels",
+								},
+								Path: "pod_labels",
+							},
+						},
+						DefaultMode: &labelsMountPermission,
 					},
 				},
 			},

@@ -406,6 +406,7 @@ func newSTS(name string) apps.StatefulSet {
 	storageClassName := "local-storage"
 	initHostPathType := core.HostPathDirectoryOrCreate
 	var postgresGroupId int64 = 0
+	var labelsMountPermission int32 = 0644
 	return apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name,
@@ -558,6 +559,23 @@ func newSTS(name string) apps.StatefulSet {
 									LocalObjectReference: core.LocalObjectReference{
 										Name: certificates.SignerCAConfigMapName,
 									},
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
 								},
 							},
 						},
