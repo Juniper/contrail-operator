@@ -5,7 +5,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -214,86 +213,6 @@ func TestPostgresController(t *testing.T) {
 			assertPostgresStatusActive(t, fakeClient, namespacedName, true)
 		})
 	})
-
-
-
-	//t.Run("postgres persistent volume claim", func(t *testing.T) {
-	//	quantity5Gi := resource.MustParse("5Gi")
-	//	quantity1Gi := resource.MustParse("1Gi")
-	//	tests := map[string]struct {
-	//		size         string
-	//		path         string
-	//		expectedSize *resource.Quantity
-	//	}{
-	//		"no size and path given": {},
-	//		"only size given": {
-	//			size:         "1Gi",
-	//			expectedSize: &quantity1Gi,
-	//		},
-	//		"size and path given": {
-	//			size:         "5Gi",
-	//			path:         "/path",
-	//			expectedSize: &quantity5Gi,
-	//		},
-	//		"size and path given 2": {
-	//			size:         "1Gi",
-	//			path:         "/other",
-	//			expectedSize: &quantity1Gi,
-	//		},
-	//	}
-	//	for testName, test := range tests {
-	//		t.Run(testName, func(t *testing.T) {
-	//			postgresCR := &contrail.Postgres{
-	//				ObjectMeta: meta.ObjectMeta{
-	//					Namespace: namespacedName.Namespace,
-	//					Name:      namespacedName.Name,
-	//				},
-	//				Spec: contrail.PostgresSpec{
-	//					Storage: contrail.Storage{
-	//						Size: test.size,
-	//						Path: test.path,
-	//					},
-	//				},
-	//			}
-	//			fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-	//			claims := volumeclaims.NewFake()
-	//			reconcilePostgres := &ReconcilePostgres{
-	//				client: fakeClient,
-	//				scheme: scheme,
-	//				claims: claims,
-	//				config: &rest.Config{},
-	//			}
-	//			_, err = reconcilePostgres.Reconcile(reconcile.Request{
-	//				NamespacedName: namespacedName,
-	//			})
-	//			// when
-	//			makePodReady(t, fakeClient, podName, namespacedName)
-	//			_, err = reconcilePostgres.Reconcile(reconcile.Request{
-	//				NamespacedName: namespacedName,
-	//			})
-	//			assert.NoError(t, err)
-	//			// then
-	//			t.Run("should add volume to pod", func(t *testing.T) {
-	//				assertVolumeMountedToPod(t, fakeClient, namespacedName, podName)
-	//			})
-	//			t.Run("should mount volume to container", func(t *testing.T) {
-	//				assertVolumeMountedToContainer(t, fakeClient, namespacedName, podName)
-	//			})
-	//			t.Run("should create persistent volume claim", func(t *testing.T) {
-	//				claimName := types.NamespacedName{
-	//					Name:      namespacedName.Name + "-pv-claim",
-	//					Namespace: namespacedName.Namespace,
-	//				}
-	//				claim, ok := claims.Claim(claimName)
-	//				require.True(t, ok, "missing claim")
-	//				assert.Equal(t, test.path, claim.StoragePath())
-	//				assert.Equal(t, test.expectedSize, claim.StorageSize())
-	//				assert.EqualValues(t, map[string]string{"node-role.kubernetes.io/master": ""}, claim.NodeSelector())
-	//			})
-	//		})
-	//	}
-	//})
-
 }
 
 type mockManager struct {
@@ -658,53 +577,6 @@ func assertSTSExistAndIsAsExpected(t *testing.T, c client.Client, name types.Nam
 	assert.Equal(t, expected, sts)
 }
 
-func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, name types.NamespacedName) {
-	pod := core.Pod{}
-	err := cl.Get(context.TODO(), podName, &pod)
-	require.NoError(t, err)
-	for _, container := range pod.Spec.Containers {
-		pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, core.ContainerStatus{
-			Name:  container.Name,
-			Ready: true,
-		})
-	}
-	pod.Status.PodIP = "1.1.1.1"
-	pod.Spec.NodeName = "test"
-	err = cl.Update(context.TODO(), &pod)
-	require.NoError(t, err)
-	csr := &v1beta1.CertificateSigningRequest{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      name.Name + "-" + pod.Spec.NodeName,
-			Namespace: name.Namespace,
-		},
-		Spec: v1beta1.CertificateSigningRequestSpec{
-			Groups:  []string{"system:authenticated"},
-			Request: []byte{},
-			Usages: []v1beta1.KeyUsage{
-				"digital signature",
-				"key encipherment",
-				"server auth",
-				"client auth",
-			},
-		},
-	}
-	err = cl.Create(context.TODO(), csr)
-	require.NoError(t, err)
-	csrSecret := &core.Secret{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      name.Name + "-secret-certificates",
-			Namespace: name.Namespace,
-		},
-		Data: map[string][]byte{
-			"status-" + pod.Status.PodIP:              []byte("Approved"),
-			"server-key-" + pod.Status.PodIP + ".pem": []byte("Dummy .pem"),
-			"server-" + pod.Status.PodIP + ".crt":     []byte("Dummy .crt"),
-		},
-	}
-	err = cl.Update(context.TODO(), csrSecret)
-	require.NoError(t, err)
-}
-
 func assertPostgresStatusActive(t *testing.T, c client.Client, name types.NamespacedName, active bool) {
 	postgres := contrail.Postgres{}
 	err := c.Get(context.TODO(), name, &postgres)
@@ -712,81 +584,3 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	assert.Equal(t, active, postgres.Status.Active)
 }
 
-func assertPostgresStatusNode(t *testing.T, c client.Client, name types.NamespacedName, endpoint string) {
-	postgres := contrail.Postgres{}
-	err := c.Get(context.TODO(), name, &postgres)
-	assert.NoError(t, err)
-	assert.Equal(t, endpoint, postgres.Status.Endpoint)
-}
-
-func assertVolumeMountedToPod(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
-	postgres := contrail.Postgres{}
-	postgresPod := core.Pod{}
-	err := c.Get(context.TODO(), name, &postgres)
-	assert.NoError(t, err)
-
-	err = c.Get(context.TODO(), podName, &postgresPod)
-	assert.NoError(t, err)
-
-	expected := core.Volume{
-		Name: postgres.Name + "-volume",
-		VolumeSource: core.VolumeSource{
-			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-				ClaimName: postgres.Name + "-pv-claim",
-			},
-		},
-	}
-	var mounted bool
-	for _, volume := range postgresPod.Spec.Volumes {
-		mounted = reflect.DeepEqual(expected, volume) || mounted
-	}
-
-	assert.NoError(t, err)
-	assert.True(t, mounted)
-}
-
-func assertVolumeMountedToContainer(t *testing.T, c client.Client, name types.NamespacedName, podName types.NamespacedName) {
-	postgres := contrail.Postgres{}
-	postgresPod := core.Pod{}
-	err := c.Get(context.TODO(), name, &postgres)
-	assert.NoError(t, err)
-
-	err = c.Get(context.TODO(), podName, &postgresPod)
-	assert.NoError(t, err)
-
-	expected := core.Volume{
-		Name: postgres.Name + "-volume",
-		VolumeSource: core.VolumeSource{
-			PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-				ClaimName: postgres.Name + "-pv-claim",
-			},
-		},
-	}
-	var mounted bool
-	for _, volume := range postgresPod.Spec.Volumes {
-		mounted = reflect.DeepEqual(expected, volume) || mounted
-	}
-
-	assert.NoError(t, err)
-	assert.True(t, mounted)
-}
-
-func newPostgreService() *core.Service {
-	trueVal := true
-	return &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "testDB-service",
-			Namespace: "default",
-			Labels:    map[string]string{"app": "postgres"},
-			OwnerReferences: []meta.OwnerReference{
-				{"contrail.juniper.net/v1alpha1", "Postgres", "testDB", "", &trueVal, &trueVal},
-			},
-		},
-		Spec: core.ServiceSpec{
-			Ports: []core.ServicePort{
-				{Port: 5432, Protocol: "TCP"},
-			},
-			ClusterIP: "10.10.10.20",
-		},
-	}
-}
