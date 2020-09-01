@@ -6,7 +6,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) error {
+func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) {
 	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) {
 		currentDeployment.Spec.Replicas = int32ToPtr(0)
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
@@ -29,7 +29,6 @@ func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *
 		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
 	}
-	return nil
 }
 
 func imageIsUpgraded(currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) bool {

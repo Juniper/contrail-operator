@@ -278,7 +278,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err := prepareIntendedDeployment(deployment, &command.Spec.CommonConfiguration, request, r.scheme, command); err != nil {
 			return err
 		}
-		return performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
+		performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
+		return nil
 	})
 	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {
