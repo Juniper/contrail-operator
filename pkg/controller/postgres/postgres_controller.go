@@ -162,21 +162,21 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// TODO - implement master election
 
-	credentialsSecretName := postgres.Name + "-postgres-credentials-secret"
-	if postgres.Spec.ServiceConfiguration.CredentialsSecretName != "" {
-		credentialsSecretName = postgres.Spec.ServiceConfiguration.CredentialsSecretName
+	replicationPassSecretName := postgres.Name + "-postgres-replication-secret"
+	if postgres.Spec.ServiceConfiguration.ReplicationPassSecretName != "" {
+		replicationPassSecretName = postgres.Spec.ServiceConfiguration.ReplicationPassSecretName
 	}
 
-	if err = r.credentialsSecret(credentialsSecretName, "postgres", postgres).ensureExists(); err != nil {
+	if err = r.replicationPassSecret(replicationPassSecretName, "postgres", postgres).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 	serviceAccountName := "serviceaccount-postgres"
-	statefulSet, err := r.createOrUpdateSts(postgres, postgresService, credentialsSecretName, serviceAccountName)
+	rootPassSecretName := postgres.Spec.ServiceConfiguration.RootPassSecretName
+	statefulSet, err := r.createOrUpdateSts(postgres, postgresService, replicationPassSecretName, rootPassSecretName, serviceAccountName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	postgres.Status.CredentialsSecretName = credentialsSecretName
 	postgres.Status.Endpoint = leaderClusterIP
 	postgres.Status.Active = false
 	intendentReplicas := int32(1)
@@ -229,7 +229,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		service.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
 		service.Spec.Type = core.ServiceTypeClusterIP
 		nodePort := int32(0)
-		listenPort := int32(5432) // TODO make listen port configurable in spec
+		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
 		for i, p := range service.Spec.Ports {
 			if p.Port == listenPort {
 				nodePort = service.Spec.Ports[i].NodePort
@@ -259,7 +259,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		serviceRepl.Spec.Selector = labels
 		serviceRepl.Spec.Type = core.ServiceTypeClusterIP
 		nodePort := int32(0)
-		listenPort := int32(5432) // TODO make listen port configurable in spec
+		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
 		for i, p := range serviceRepl.Spec.Ports {
 			if p.Port == listenPort {
 				nodePort = serviceRepl.Spec.Ports[i].NodePort
@@ -274,7 +274,8 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 	return service, err
 }
 
-func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, service *core.Service, passSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
+func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, service *core.Service,
+	replicationPassSecretName, rootPassSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
 
 	statefulSet := &apps.StatefulSet{}
 	statefulSet.Namespace = postgres.Namespace
@@ -343,7 +344,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		ValueFrom: &core.EnvVarSource{
 			SecretKeyRef: &core.SecretKeySelector{
 				LocalObjectReference: core.LocalObjectReference{
-					Name: passSecretName,
+					Name: replicationPassSecretName,
 				},
 				Key: "replication-password",
 			},
@@ -365,9 +366,9 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		ValueFrom: &core.EnvVarSource{
 			SecretKeyRef: &core.SecretKeySelector{
 				LocalObjectReference: core.LocalObjectReference{
-					Name: passSecretName,
+					Name: rootPassSecretName,
 				},
-				Key: "superuser-password",
+				Key: "password",
 			},
 		},
 	}

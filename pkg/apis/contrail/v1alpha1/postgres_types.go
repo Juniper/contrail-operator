@@ -6,9 +6,11 @@ import (
 
 // +k8s:openapi-gen=true
 type PostgresConfiguration struct {
-	CredentialsSecretName string       `json:"credentialsSecretName,omitempty"`
-	Containers            []*Container `json:"containers,omitempty"`
-	Storage               Storage      `json:"storage,omitempty"`
+	ListenPort                int          `json:"listenPort,omitempty"`
+	RootPassSecretName        string       `json:"rootPassSecretName,omitempty"`
+	ReplicationPassSecretName string       `json:"replicationPassSecretName,omitempty"`
+	Containers                []*Container `json:"containers,omitempty"`
+	Storage                   Storage      `json:"storage,omitempty"`
 }
 
 // PostgresSpec defines the desired state of Postgres
@@ -22,7 +24,6 @@ type PostgresSpec struct {
 // +k8s:openapi-gen=true
 type PostgresStatus struct {
 	Status                `json:",inline"`
-	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
 	Endpoint              string `json:"endpoint,omitempty"`
 }
 

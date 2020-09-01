@@ -1044,6 +1044,10 @@ func TestManagerController(t *testing.T) {
 				CommonConfiguration: contrail.PodConfiguration{
 					Replicas: &replicas,
 				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort: 5432,
+					RootPassSecretName: "keystone-adminpass-secret",
+				},
 			},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
@@ -1131,6 +1135,10 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				CommonConfiguration: contrail.PodConfiguration{
 					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort: 5432,
+					RootPassSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}
@@ -1249,6 +1257,10 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				CommonConfiguration: contrail.PodConfiguration{
 					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort: 5432,
+					RootPassSecretName: "keystone-adminpass-secret",
 				},
 			},
 		}

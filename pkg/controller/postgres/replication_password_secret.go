@@ -16,15 +16,13 @@ func (s *secret) FillSecret(sc *core.Secret) error {
 		return nil
 	}
 
-	//TODO remove superuser-password and use cluster admin credential
 	sc.StringData = map[string]string{
-		"superuser-password":   "contrail123",
 		"replication-password": randomstring.RandString{Size: 10}.Generate(),
 	}
 	return nil
 }
 
-func (r *ReconcilePostgres) credentialsSecret(secretName, ownerType string, instance *contrail.Postgres) *secret {
+func (r *ReconcilePostgres) replicationPassSecret(secretName, ownerType string, instance *contrail.Postgres) *secret {
 	return &secret{
 		sc: r.kubernetes.Secret(secretName, ownerType, instance),
 	}

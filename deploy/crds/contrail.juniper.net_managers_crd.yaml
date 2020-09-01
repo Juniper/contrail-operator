@@ -1469,7 +1469,11 @@ spec:
                                     type: string
                                 type: object
                               type: array
-                            credentialsSecretName:
+                            listenPort:
+                              type: integer
+                            replicationPassSecretName:
+                              type: string
+                            rootPassSecretName:
                               type: string
                             storage:
                               properties:
@@ -1488,8 +1492,6 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        credentialsSecretName:
-                          type: string
                         endpoint:
                           type: string
                         readyReplicas:

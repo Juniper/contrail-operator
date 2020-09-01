@@ -906,6 +906,14 @@ func newExpectedBootstrapJob() *batch.Job {
 								},
 							},
 						},
+						{
+							Name: "keystone-adminpass-secret",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-adminpass-secret",
+								},
+							},
+						},
 					},
 					InitContainers: []core.Container{
 						{
@@ -918,6 +926,17 @@ func newExpectedBootstrapJob() *batch.Job {
 								{
 									Name:  "PSQL_ENDPOINT",
 									Value: "10.10.10.20:5432",
+								},
+								{
+									Name: "PGPASSWORD",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: "keystone-adminpass-secret",
+											},
+											Key: "password",
+										},
+									},
 								},
 							},
 						},

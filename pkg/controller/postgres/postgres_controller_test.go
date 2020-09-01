@@ -115,9 +115,12 @@ func TestPostgresController(t *testing.T) {
 					},
 				},
 			},
+			ServiceConfiguration: contrail.PostgresConfiguration{
+				RootPassSecretName: "rootpass-secret",
+			},
 		},
 	}
-
+	rootPassSecret := newAdminSecret()
 	t.Run("no Postgres CR", func(t *testing.T) {
 		// given
 		fakeClient := fake.NewFakeClientWithScheme(scheme)
@@ -129,7 +132,7 @@ func TestPostgresController(t *testing.T) {
 	})
 
 	t.Run("when Postgres CR is created", func(t *testing.T) {
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, rootPassSecret)
 		reconcilePostgres := NewReconciler(fakeClient, scheme)
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
 		assert.NoError(t, err)
@@ -201,7 +204,7 @@ func TestPostgresController(t *testing.T) {
 	t.Run("when Postgres CR exist and sts has ready replicas", func(t *testing.T) {
 		replica := int32(1)
 		readySTS := newSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: replica}, stsName.Name)
-		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, &readySTS)
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, &readySTS, rootPassSecret)
 		reconcilePostgres := NewReconciler(fakeClient, scheme)
 		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
 		assert.NoError(t, err)
@@ -361,7 +364,7 @@ func newSTS(name string) apps.StatefulSet {
 		ValueFrom: &core.EnvVarSource{
 			SecretKeyRef: &core.SecretKeySelector{
 				LocalObjectReference: core.LocalObjectReference{
-					Name: "postgres-postgres-credentials-secret",
+					Name: "postgres-postgres-replication-secret",
 				},
 				Key: "replication-password",
 			},
@@ -383,9 +386,9 @@ func newSTS(name string) apps.StatefulSet {
 		ValueFrom: &core.EnvVarSource{
 			SecretKeyRef: &core.SecretKeySelector{
 				LocalObjectReference: core.LocalObjectReference{
-					Name: "postgres-postgres-credentials-secret",
+					Name: "rootpass-secret",
 				},
-				Key: "superuser-password",
+				Key: "password",
 			},
 		},
 	}
@@ -587,6 +590,23 @@ func newSTS(name string) apps.StatefulSet {
 					},
 				},
 			},
+		},
+	}
+}
+
+func newAdminSecret() *core.Secret {
+	trueVal := true
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "rootpass-secret",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Postgres", "postgres", "", &trueVal, &trueVal},
+			},
+		},
+		Data: map[string][]byte{
+			"password": []byte("test123"),
 		},
 	}
 }

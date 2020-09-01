@@ -40,7 +40,7 @@ func (c *configMaps) ensureCommandConfigExist(hostIP string, keystoneAddress str
 		PostgresDBName:       "contrail_test",
 		HostIP:               hostIP,
 		CAFilePath:           certificates.SignerCAFilepath,
-		PGPassword:           "contrail123",
+		PGPassword:           string(c.keystoneAdminPassSecret.Data["password"]),
 		KeystoneAddress:      keystoneAddress,
 		KeystonePort:         keystonePort,
 		KeystoneAuthProtocol: keystoneAuthProtocol,
