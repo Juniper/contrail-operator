@@ -136,7 +136,8 @@ func TestPostgresController(t *testing.T) {
 		assert.NoError(t, err)
 
 		t.Run("Postgres StatefulSet should be created", func(t *testing.T) {
-			assertSTSExist(t, fakeClient, stsName)
+			expectedSTS := newSTS(stsName.Name)
+			assertSTSExistAndIsAsExpected(t, fakeClient, stsName, expectedSTS)
 		})
 
 		t.Run("Postgres should not be active", func(t *testing.T) {
@@ -201,62 +202,20 @@ func TestPostgresController(t *testing.T) {
 
 	})
 
-	//t.Run("when Postgres CR exist and sts has ready replicas", func(t *testing.T) {
-	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
-	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
-	//	assert.NoError(t, err)
-	//
-	//	t.Run("Postgres should be active", func(t *testing.T) {
-	//		assertPostgresStatusActive(t, fakeClient, namespacedName, false)
-	//	})
-	//})
+	t.Run("when Postgres CR exist and sts has ready replicas", func(t *testing.T) {
+		replica := int32(1)
+		readySTS := newSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: replica}, stsName.Name)
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, &readySTS)
+		reconcilePostgres := NewReconciler(fakeClient, scheme)
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
+		assert.NoError(t, err)
+
+		t.Run("Postgres should be active", func(t *testing.T) {
+			assertPostgresStatusActive(t, fakeClient, namespacedName, true)
+		})
+	})
 
 
-	//t.Run("should create Postgres k8s with provided registry Pod when Postgres CR is created", func(t *testing.T) {
-	//	// given
-	//	postgresCR = &contrail.Postgres{
-	//		ObjectMeta: meta.ObjectMeta{
-	//			Namespace: namespacedName.Namespace,
-	//			Name:      namespacedName.Name,
-	//		},
-	//		Spec: contrail.PostgresSpec{
-	//			Containers: []*contrail.Container{
-	//				{Name: "postgres", Image: "registry:5000/postgres"},
-	//			},
-	//		},
-	//	}
-	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR)
-	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
-	//	// when
-	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
-	//	// then
-	//	assert.NoError(t, err)
-	//	assertPodExist(t, fakeClient, podName, "registry:5000/postgres")
-	//	// and
-	//	assertPostgresStatusActive(t, fakeClient, namespacedName, false)
-	//})
-	//
-	//t.Run("should update postgres.Status when Postgres Pod is in ready state", func(t *testing.T) {
-	//	// given
-	//	postgresService := newPostgreService()
-	//	fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, postgresService)
-	//	reconcilePostgres := NewReconciler(fakeClient, scheme)
-	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{
-	//		NamespacedName: namespacedName,
-	//	})
-	//	assert.NoError(t, err)
-	//	// when
-	//	makePodReady(t, fakeClient, podName, namespacedName)
-	//	_, err = reconcilePostgres.Reconcile(reconcile.Request{
-	//		NamespacedName: namespacedName,
-	//	})
-	//	assert.NoError(t, err)
-	//	// then
-	//	assertPostgresStatusActive(t, fakeClient, namespacedName, true)
-	//	// and
-	//	assertPostgresStatusNode(t, fakeClient, namespacedName, "10.10.10.20")
-	//})
 
 	//t.Run("postgres persistent volume claim", func(t *testing.T) {
 	//	quantity5Gi := resource.MustParse("5Gi")
@@ -336,8 +295,86 @@ func TestPostgresController(t *testing.T) {
 	//})
 
 }
-func newSTSWithStatus(status apps.StatefulSetStatus) apps.StatefulSet {
-	sts := newSTS("postgres")
+
+type mockManager struct {
+	scheme *runtime.Scheme
+}
+
+func (m *mockManager) Add(r manager.Runnable) error {
+	if err := m.SetFields(r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *mockManager) SetFields(i interface{}) error {
+	if _, err := inject.SchemeInto(m.scheme, i); err != nil {
+		return err
+	}
+	if _, err := inject.InjectorInto(m.SetFields, i); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *mockManager) AddHealthzCheck(name string, check healthz.Checker) error {
+	return nil
+}
+
+func (m *mockManager) AddReadyzCheck(name string, check healthz.Checker) error {
+	return nil
+}
+
+func (m *mockManager) Start(<-chan struct{}) error {
+	return nil
+}
+
+func (m *mockManager) GetConfig() *rest.Config {
+	return nil
+}
+
+func (m *mockManager) GetScheme() *runtime.Scheme {
+	return nil
+}
+
+func (m *mockManager) GetClient() client.Client {
+	return nil
+}
+
+func (m *mockManager) GetFieldIndexer() client.FieldIndexer {
+	return nil
+}
+
+func (m *mockManager) GetCache() cache.Cache {
+	return nil
+}
+
+func (m *mockManager) GetEventRecorderFor(name string) record.EventRecorder {
+	return nil
+}
+
+func (m *mockManager) GetRESTMapper() apimeta.RESTMapper {
+	return nil
+}
+
+func (m *mockManager) GetAPIReader() client.Reader {
+	return nil
+}
+
+func (m *mockManager) GetWebhookServer() *webhook.Server {
+	return nil
+}
+
+type mockReconciler struct{}
+
+func (m *mockReconciler) Reconcile(reconcile.Request) (reconcile.Result, error) {
+	return reconcile.Result{}, nil
+}
+
+func newSTSWithStatus(status apps.StatefulSetStatus, name string) apps.StatefulSet {
+	sts := newSTS(name)
 	sts.Status = status
 	return sts
 }
@@ -613,90 +650,12 @@ func newSTS(name string) apps.StatefulSet {
 	}
 }
 
-type mockManager struct {
-	scheme *runtime.Scheme
-}
-
-func (m *mockManager) Add(r manager.Runnable) error {
-	if err := m.SetFields(r); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *mockManager) SetFields(i interface{}) error {
-	if _, err := inject.SchemeInto(m.scheme, i); err != nil {
-		return err
-	}
-	if _, err := inject.InjectorInto(m.SetFields, i); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *mockManager) AddHealthzCheck(name string, check healthz.Checker) error {
-	return nil
-}
-
-func (m *mockManager) AddReadyzCheck(name string, check healthz.Checker) error {
-	return nil
-}
-
-func (m *mockManager) Start(<-chan struct{}) error {
-	return nil
-}
-
-func (m *mockManager) GetConfig() *rest.Config {
-	return nil
-}
-
-func (m *mockManager) GetScheme() *runtime.Scheme {
-	return nil
-}
-
-func (m *mockManager) GetClient() client.Client {
-	return nil
-}
-
-func (m *mockManager) GetFieldIndexer() client.FieldIndexer {
-	return nil
-}
-
-func (m *mockManager) GetCache() cache.Cache {
-	return nil
-}
-
-func (m *mockManager) GetEventRecorderFor(name string) record.EventRecorder {
-	return nil
-}
-
-func (m *mockManager) GetRESTMapper() apimeta.RESTMapper {
-	return nil
-}
-
-func (m *mockManager) GetAPIReader() client.Reader {
-	return nil
-}
-
-func (m *mockManager) GetWebhookServer() *webhook.Server {
-	return nil
-}
-
-type mockReconciler struct{}
-
-func (m *mockReconciler) Reconcile(reconcile.Request) (reconcile.Result, error) {
-	return reconcile.Result{}, nil
-}
-
-func assertSTSExist(t *testing.T, c client.Client, name types.NamespacedName) {
+func assertSTSExistAndIsAsExpected(t *testing.T, c client.Client, name types.NamespacedName, expected apps.StatefulSet) {
 	sts := apps.StatefulSet{}
 	err := c.Get(context.TODO(), name, &sts)
 	assert.NoError(t, err)
-	expectedSTS := newSTS(name.Name)
 	sts.SetResourceVersion("")
-	assert.Equal(t, expectedSTS, sts)
+	assert.Equal(t, expected, sts)
 }
 
 func makePodReady(t *testing.T, cl client.Client, podName types.NamespacedName, name types.NamespacedName) {
