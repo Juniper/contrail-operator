@@ -185,11 +185,10 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 	for idx := range podList.Items {
 		hostname := podList.Items[idx].Annotations["hostname"]
 		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
-		/*
-			for idx, configNode := range configNodesList {
-				configNodesList[idx] = configNode + ":" + configNodesInformation.APIServerPort
-			}
-		*/
+		for idx, configNode := range configNodesList {
+			configNodeIP := strings.Split(configNode, ":")
+			configNodesList[idx] = configNodeIP[0] + ":" + strconv.Itoa(ControlIntrospectPort)
+		}
 		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP,
 			"control", request.Name, request.Namespace, podList.Items[idx].Name)
 		if err != nil {
