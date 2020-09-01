@@ -278,7 +278,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when images are changed in 1-replica deployment, deployment is shut down before the upgrade",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, "new"),
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
 				newDeployment(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}),
 				newPostgres(true),
 				newSwift(true),
@@ -292,14 +292,14 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
-			}, int32ToPtr(int32(0)), "new"),
+			}, int32ToPtr(int32(0)), ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when images are changed in 0-replica deployment, upgrade is started immediately",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, "new"),
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
 				newDeployment(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}),
 				newPostgres(true),
 				newSwift(true),
@@ -313,15 +313,15 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
-			}, nil, "new"),
+			}, nil, ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when command is shutting down before upgrade and deployment is not scaled down yet, nothing changes",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, "new"),
-				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0), "new"),
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0), ":new"),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -334,15 +334,15 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
-			}, int32ToPtr(0), "new"),
+			}, int32ToPtr(0), ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when command is shutting down before upgrade and deployment is scaled down to 0 replicas, upgrade is started",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, "new"),
-				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), "new"),
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ":new"),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -355,15 +355,15 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
-			}, nil, "new"),
+			}, nil, ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when command is starting upgraded deployment and it is not scaled up yet, nothing changes",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, "new"),
-				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, "new"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":new"),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -376,15 +376,15 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
-			}, nil, "new"),
+			}, nil, ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when command is starting upgraded deployment and it is scaled up, upgrade ends with success",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, "new"),
-				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil, "new"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil, ":new"),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -397,15 +397,15 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
-			}, nil, "new"),
+			}, nil, ":new"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
 		{
 			name: "when command is starting upgraded deployment and images change again, deployment starts to shut down",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, "new2"),
-				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 0}, nil, "new"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new2"),
+				newDeploymentWithUpdatedImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 0}, nil, ":new"),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -418,7 +418,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithUpdatedImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 0,
-			}, int32ToPtr(0), "new2"),
+			}, int32ToPtr(0), ":new2"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
@@ -614,7 +614,7 @@ func newPodList() *core.PodList {
 
 func newPostgresWithOwner(active bool) *contrail.Postgres {
 	falseVal := false
-	psql := newPostgres(true)
+	psql := newPostgres(active)
 	psql.ObjectMeta.OwnerReferences = []meta.OwnerReference{
 		{
 			APIVersion:         "contrail.juniper.net/v1alpha1",
@@ -655,8 +655,8 @@ func newCommandWithEmptyToleration() *contrail.Command {
 func newCommandWithUpdatedImages(upgradeState contrail.CommandUpgradeState, fakeImageTag string) *contrail.Command {
 	cc := newCommand()
 	cc.Spec.ServiceConfiguration.Containers = []*contrail.Container{
-		{Name: "init", Image: "registry:5000/contrail-command:" + fakeImageTag},
-		{Name: "api", Image: "registry:5000/contrail-command:" + fakeImageTag},
+		{Name: "init", Image: "registry:5000/contrail-command" + fakeImageTag},
+		{Name: "api", Image: "registry:5000/contrail-command" + fakeImageTag},
 		{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 	}
 	cc.Status.UpgradeState = upgradeState
@@ -670,163 +670,7 @@ func newDeploymentWithEmptyToleration(s apps.DeploymentStatus) *apps.Deployment 
 }
 
 func newDeployment(s apps.DeploymentStatus) *apps.Deployment {
-	trueVal := true
-	executableMode := int32(0744)
-	var labelsMountPermission int32 = 0644
-	return &apps.Deployment{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "command-command-deployment",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
-			OwnerReferences: []meta.OwnerReference{
-				{
-					APIVersion:         "contrail.juniper.net/v1alpha1",
-					Kind:               "Command",
-					Name:               "command",
-					UID:                "",
-					Controller:         &trueVal,
-					BlockOwnerDeletion: &trueVal,
-				},
-			},
-		},
-		TypeMeta: meta.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
-		Spec: apps.DeploymentSpec{
-			Selector: &meta.LabelSelector{
-				MatchLabels: map[string]string{"contrail_manager": "command", "command": "command"},
-			},
-			Strategy: apps.DeploymentStrategy{Type: apps.RecreateDeploymentStrategyType},
-			Template: core.PodTemplateSpec{
-				ObjectMeta: meta.ObjectMeta{
-					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
-				},
-				Spec: core.PodSpec{
-					Affinity: &core.Affinity{
-						PodAntiAffinity: &core.PodAntiAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-								LabelSelector: &meta.LabelSelector{
-									MatchExpressions: []meta.LabelSelectorRequirement{{
-										Key:      "command",
-										Operator: "In",
-										Values:   []string{"command"},
-									}},
-								},
-								TopologyKey: "kubernetes.io/hostname",
-							}},
-						},
-					},
-					HostNetwork:  true,
-					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-					DNSPolicy:    core.DNSClusterFirst,
-					Containers: []core.Container{
-						{
-							Image:           "registry:5000/contrail-command",
-							Name:            "command",
-							ImagePullPolicy: core.PullAlways,
-							ReadinessProbe: &core.Probe{
-								Handler: core.Handler{
-									HTTPGet: &core.HTTPGetAction{Scheme: core.URISchemeHTTPS, Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
-								},
-							},
-							Command:    []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
-							WorkingDir: "/home/contrail/",
-							VolumeMounts: []core.VolumeMount{
-								{
-									Name:      "command-command-volume",
-									MountPath: "/etc/contrail",
-								},
-								{
-									Name:      "command-secret-certificates",
-									MountPath: "/etc/certificates",
-								},
-								{
-									Name:      "command-csr-signer-ca",
-									MountPath: certificates.SignerCAMountPath,
-								},
-							},
-						},
-					},
-					InitContainers: []core.Container{
-						{
-							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
-							Image:           "registry:5000/busybox",
-							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
-							VolumeMounts: []core.VolumeMount{{
-								Name:      "status",
-								MountPath: "/tmp/podinfo",
-							}},
-						}, {
-							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
-							Image:           "registry:5000/contrail-command",
-							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-							VolumeMounts: []core.VolumeMount{{
-								Name:      "command-command-volume",
-								MountPath: "/etc/contrail",
-							}},
-						}},
-					Volumes: []core.Volume{
-						{
-							Name: "command-command-volume",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: "command-command-configmap",
-									},
-									Items: []core.KeyToPath{
-										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
-										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-										{Key: "command-app-server.yml", Path: "command-app-server.yml"},
-										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
-									},
-								},
-							},
-						},
-						{
-							Name: "command-secret-certificates",
-							VolumeSource: core.VolumeSource{
-								Secret: &core.SecretVolumeSource{
-									SecretName: "command-secret-certificates",
-								},
-							},
-						},
-						{
-							Name: "command-csr-signer-ca",
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: certificates.SignerCAConfigMapName,
-									},
-								},
-							},
-						},
-						{
-							Name: "status",
-							VolumeSource: core.VolumeSource{
-								DownwardAPI: &core.DownwardAPIVolumeSource{
-									Items: []core.DownwardAPIVolumeFile{
-										{
-											FieldRef: &core.ObjectFieldSelector{
-												APIVersion: "v1",
-												FieldPath:  "metadata.labels",
-											},
-											Path: "pod_labels",
-										},
-									},
-									DefaultMode: &labelsMountPermission,
-								},
-							},
-						},
-					},
-					Tolerations: []core.Toleration{
-						{Key: "", Operator: "Exists", Value: "", Effect: "NoSchedule"},
-						{Key: "", Operator: "Exists", Value: "", Effect: "NoExecute"},
-					},
-				},
-			},
-		},
-		Status: s,
-	}
+	return newDeploymentWithUpdatedImages(s, nil, "")
 }
 
 func newDeploymentWithUpdatedImages(s apps.DeploymentStatus, replicas *int32, fakeImageTag string) *apps.Deployment {
@@ -880,7 +724,7 @@ func newDeploymentWithUpdatedImages(s apps.DeploymentStatus, replicas *int32, fa
 					DNSPolicy:    core.DNSClusterFirst,
 					Containers: []core.Container{
 						{
-							Image:           "registry:5000/contrail-command:" + fakeImageTag,
+							Image:           "registry:5000/contrail-command" + fakeImageTag,
 							Name:            "command",
 							ImagePullPolicy: core.PullAlways,
 							ReadinessProbe: &core.Probe{
@@ -919,7 +763,7 @@ func newDeploymentWithUpdatedImages(s apps.DeploymentStatus, replicas *int32, fa
 						}, {
 							Name:            "command-init",
 							ImagePullPolicy: core.PullAlways,
-							Image:           "registry:5000/contrail-command:" + fakeImageTag,
+							Image:           "registry:5000/contrail-command" + fakeImageTag,
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "command-command-volume",
