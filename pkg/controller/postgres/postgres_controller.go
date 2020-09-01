@@ -10,7 +10,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -144,7 +143,9 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, fmt.Errorf("failed to list Postgres pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(postgres, postgresPods, postgresService.Spec.ClusterIP); err != nil {
+	leaderClusterIP := postgresService.Spec.ClusterIP
+
+	if err := r.ensureCertificatesExist(postgres, postgresPods, leaderClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -176,7 +177,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	postgres.Status.CredentialsSecretName = credentialsSecretName
-	postgres.Status.Endpoint = postgresService.Spec.ClusterIP
+	postgres.Status.Endpoint = leaderClusterIP
 	postgres.Status.Active = false
 	intendentReplicas := int32(1)
 	if statefulSet.Spec.Replicas != nil {
@@ -227,13 +228,16 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
 		service.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
 		service.Spec.Type = core.ServiceTypeClusterIP
-		service.Spec.Ports = []core.ServicePort{{
-			Port: 5432,
-			TargetPort: intstr.IntOrString{
-				Type:   intstr.Int,
-				IntVal: 5432,
-			},
-		}}
+		nodePort := int32(0)
+		listenPort := int32(5432) // TODO make listen port configurable in spec
+		for i, p := range service.Spec.Ports {
+			if p.Port == listenPort {
+				nodePort = service.Spec.Ports[i].NodePort
+			}
+		}
+		service.Spec.Ports = []core.ServicePort{
+			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
+		}
 		return controllerutil.SetControllerReference(postgres, service, r.scheme)
 	})
 
@@ -254,13 +258,16 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		serviceRepl.ObjectMeta.Labels = labels
 		serviceRepl.Spec.Selector = labels
 		serviceRepl.Spec.Type = core.ServiceTypeClusterIP
-		serviceRepl.Spec.Ports = []core.ServicePort{{
-			Port: 5432,
-			TargetPort: intstr.IntOrString{
-				Type:   intstr.Int,
-				IntVal: 5432,
-			},
-		}}
+		nodePort := int32(0)
+		listenPort := int32(5432) // TODO make listen port configurable in spec
+		for i, p := range serviceRepl.Spec.Ports {
+			if p.Port == listenPort {
+				nodePort = serviceRepl.Spec.Ports[i].NodePort
+			}
+		}
+		serviceRepl.Spec.Ports = []core.ServicePort{
+			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
+		}
 		return controllerutil.SetControllerReference(postgres, serviceRepl, r.scheme)
 	})
 

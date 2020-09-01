@@ -16,8 +16,9 @@ func (s *secret) FillSecret(sc *core.Secret) error {
 		return nil
 	}
 
+	//TODO remove superuser-password and use cluster admin credential
 	sc.StringData = map[string]string{
-		"superuser-password":   randomstring.RandString{Size: 10}.Generate(),
+		"superuser-password":   "contrail123",
 		"replication-password": randomstring.RandString{Size: 10}.Generate(),
 	}
 	return nil
