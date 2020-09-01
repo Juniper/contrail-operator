@@ -229,3 +229,38 @@ spec:
               image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
             - name: multusconfig
               image: busybox:1.31
+
+    contrailCNIs:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cnimasternodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          containers:
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cniworkernodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/worker: ""
+        serviceConfiguration:
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
+          containers:
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31

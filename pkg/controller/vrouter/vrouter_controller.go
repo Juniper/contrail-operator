@@ -171,9 +171,9 @@ var _ reconcile.Reconciler = &ReconcileVrouter{}
 type ReconcileVrouter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client      client.Client
-	Scheme      *runtime.Scheme
-	Config      *rest.Config
+	Client client.Client
+	Scheme *runtime.Scheme
+	Config *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read

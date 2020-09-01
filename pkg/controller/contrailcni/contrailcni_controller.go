@@ -4,7 +4,8 @@ import (
 	"context"
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,7 +38,7 @@ func newReconciler(mgr manager.Manager, clusterInfo v1alpha1.CNIClusterInfo) rec
 }
 
 // NewReconciler returns a new reconcile.Reconciler
-func NewReconciler(client client.Client, scheme *runtime.Scheme,  kubernetes *k8s.Kubernetes, clusterInfo v1alpha1.CNIClusterInfo) reconcile.Reconciler {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, kubernetes *k8s.Kubernetes, clusterInfo v1alpha1.CNIClusterInfo) reconcile.Reconciler {
 	return &ReconcileContrailCNI{Client: client, Scheme: scheme, kubernetes: kubernetes, ClusterInfo: clusterInfo}
 }
 
@@ -55,11 +56,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to Daemonset
-	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1alpha1.ContrailCNI{},
-	})
+	// Watch for changes to Nodes
+	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -107,32 +105,38 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		DeploymentType:    r.ClusterInfo.DeploymentType(),
 	}
 
-	daemonSet := GetDaemonset(cniDirs, request.Name, instanceType)
-	for idx, container := range daemonSet.Spec.Template.Spec.InitContainers {
+	var nodesListOptions client.MatchingLabels = instance.Spec.CommonConfiguration.NodeSelector
+	var nodes corev1.NodeList
+	if err := r.Client.List(ctx, &nodes, nodesListOptions); err != nil && errors.IsNotFound(err) {
+		return reconcile.Result{}, nil
+	}
+	jobReplicas := int32(len(nodes.Items))
+
+	job := GetJob(cniDirs, request.Name, instanceType, &jobReplicas)
+	for idx, container := range job.Spec.Template.Spec.InitContainers {
 		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 		if instanceContainer != nil {
-			(&daemonSet.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
+			(&job.Spec.Template.Spec.InitContainers[idx]).Image = instanceContainer.Image
+		}
+	}
+	for idx, container := range job.Spec.Template.Spec.Containers {
+		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
+		if instanceContainer != nil {
+			(&job.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		}
 	}
 
-	for idx, container := range daemonSet.Spec.Template.Spec.Containers {
-		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
-		if instanceContainer != nil {
-			(&daemonSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
-		}
-	}
-
-	if err := instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	if err := instance.PrepareJob(job, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	var clusterDaemonset appsv1.DaemonSet
-	(&clusterDaemonset).ObjectMeta.Name = daemonSet.ObjectMeta.Name
-	(&clusterDaemonset).ObjectMeta.Namespace = daemonSet.ObjectMeta.Namespace
-	_, err := ctrl.CreateOrUpdate(ctx, r.Client, &clusterDaemonset, func() error {
-		(&clusterDaemonset).ObjectMeta.Labels = daemonSet.ObjectMeta.Labels
-		(&clusterDaemonset).Spec = daemonSet.Spec
-		return controllerutil.SetControllerReference(instance, &clusterDaemonset, r.Scheme)
+	var clusterJob batchv1.Job
+	(&clusterJob).ObjectMeta.Name = job.ObjectMeta.Name
+	(&clusterJob).ObjectMeta.Namespace = job.ObjectMeta.Namespace
+	_, err := ctrl.CreateOrUpdate(ctx, r.Client, &clusterJob, func() error {
+		(&clusterJob).ObjectMeta.Labels = job.ObjectMeta.Labels
+		(&clusterJob).Spec = job.Spec
+		return controllerutil.SetControllerReference(instance, &clusterJob, r.Scheme)
 	})
 	if err != nil {
 		return reconcile.Result{}, err
@@ -142,7 +146,7 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		active := false
 		instance.Status.Active = &active
 	}
-	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, daemonSet, request, instance); err != nil {
+	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance); err != nil {
 		return reconcile.Result{}, err
 	}
 

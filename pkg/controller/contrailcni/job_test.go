@@ -48,22 +48,24 @@ var multusContainer = core.Container{
 	ImagePullPolicy: "Always",
 }
 
-func TestGetDaemonsetK8s(t *testing.T) {
+var replicas int32 = 6
+
+func TestGetJobK8s(t *testing.T) {
 	testCNIDirs := contrailcni.CniDirs{
 		BinariesDirectory: testBinariesPath,
 		DeploymentType:    "k8s",
 	}
-	ds := contrailcni.GetDaemonset(testCNIDirs, requestName, instanceType)
-	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
-	assert.NotContains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
+	job := contrailcni.GetJob(testCNIDirs, requestName, instanceType, &replicas)
+	assert.Contains(t, job.Spec.Template.Spec.Volumes, expectedCniBinVolume)
+	assert.NotContains(t, job.Spec.Template.Spec.Containers, multusContainer)
 }
 
-func TestGetDaemonsetOpenshift(t *testing.T) {
+func TestGetJobOpenshift(t *testing.T) {
 	testCNIDirs := contrailcni.CniDirs{
 		BinariesDirectory: testBinariesPath,
 		DeploymentType:    "openshift",
 	}
-	ds := contrailcni.GetDaemonset(testCNIDirs, requestName, instanceType)
-	assert.Contains(t, ds.Spec.Template.Spec.Volumes, expectedCniBinVolume)
-	assert.Contains(t, ds.Spec.Template.Spec.InitContainers, multusContainer)
+	job := contrailcni.GetJob(testCNIDirs, requestName, instanceType, &replicas)
+	assert.Contains(t, job.Spec.Template.Spec.Volumes, expectedCniBinVolume)
+	assert.Contains(t, job.Spec.Template.Spec.Containers, multusContainer)
 }

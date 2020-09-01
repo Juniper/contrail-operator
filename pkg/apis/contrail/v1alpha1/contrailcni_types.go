@@ -3,7 +3,8 @@ package v1alpha1
 import (
 	"context"
 
-	appsv1 "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -62,36 +63,63 @@ func init() {
 }
 
 // PrepareDaemonSet prepares the intended podList.
-func (c *ContrailCNI) PrepareDaemonSet(ds *appsv1.DaemonSet,
+func (c *ContrailCNI) PrepareJob(job *batch.Job,
 	commonConfiguration *PodConfiguration,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
 	client client.Client) error {
 	instanceType := "contrailcni"
-	SetDSCommonConfiguration(ds, commonConfiguration)
-	ds.SetName(request.Name + "-" + instanceType + "-daemonset")
-	ds.SetNamespace(request.Namespace)
-	ds.SetLabels(map[string]string{"contrail_manager": instanceType,
+	SetJobCommonConfiguration(job, commonConfiguration)
+	job.SetName(request.Name + "-" + instanceType + "-daemonset")
+	job.SetNamespace(request.Namespace)
+	job.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
-	ds.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
+	job.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name}
-	ds.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
+	job.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
-	err := controllerutil.SetControllerReference(c, ds, scheme)
+	err := controllerutil.SetControllerReference(c, job, scheme)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// SetDSCommonConfiguration takes common configuration parameters
+// and applies it to the pod.
+func SetJobCommonConfiguration(job *batch.Job,
+	commonConfiguration *PodConfiguration) {
+	if len(commonConfiguration.Tolerations) > 0 {
+		job.Spec.Template.Spec.Tolerations = commonConfiguration.Tolerations
+	}
+	if len(commonConfiguration.NodeSelector) > 0 {
+		job.Spec.Template.Spec.NodeSelector = commonConfiguration.NodeSelector
+	}
+	if commonConfiguration.HostNetwork != nil {
+		job.Spec.Template.Spec.HostNetwork = *commonConfiguration.HostNetwork
+	} else {
+		job.Spec.Template.Spec.HostNetwork = false
+	}
+	if len(commonConfiguration.ImagePullSecrets) > 0 {
+		imagePullSecretList := []corev1.LocalObjectReference{}
+		for _, imagePullSecretName := range commonConfiguration.ImagePullSecrets {
+			imagePullSecret := corev1.LocalObjectReference{
+				Name: imagePullSecretName,
+			}
+			imagePullSecretList = append(imagePullSecretList, imagePullSecret)
+		}
+		job.Spec.Template.Spec.ImagePullSecrets = imagePullSecretList
+	}
+}
+
 // SetInstanceActive sets the instance to active.
-func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus *bool, ds *appsv1.DaemonSet, request reconcile.Request, object runtime.Object) error {
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: ds.Name, Namespace: request.Namespace},
-		ds); err != nil {
+func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus *bool, job *batch.Job, request reconcile.Request, object runtime.Object) error {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: request.Namespace},
+		job); err != nil {
 		return err
 	}
 	active := false
-	if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+	if job.Status.Succeeded == *job.Spec.Completions {
 		active = true
 	}
 

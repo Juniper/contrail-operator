@@ -16,7 +16,7 @@ import (
 type ClusterInfoSuite struct {
 	suite.Suite
 	KubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
-	CNIClusterInfo     v1alpha1.CNIClusterInfo
+	CNIClusterInfo         v1alpha1.CNIClusterInfo
 	CoreV1Interface        typedCorev1.CoreV1Interface
 }
 
