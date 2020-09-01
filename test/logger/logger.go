@@ -38,6 +38,10 @@ func (l Logger) DumpPods() {
 	l.t.Logf(logBuilder.String())
 }
 
+func (l Logger) Logf(format string, args ...interface{}) {
+	l.t.Logf(format, args...)
+}
+
 func logPodStatuses(logBuilder *strings.Builder, pods []k8score.Pod) {
 	logBuilder.WriteString("\nPods statuses\n")
 	maxLen := findMaxPodNameLength(pods)

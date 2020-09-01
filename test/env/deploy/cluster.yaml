@@ -8,7 +8,7 @@ spec:
   commonConfiguration:
     hostNetwork: true
     nodeSelector:
-      node-role.kubernetes.io/master: ""
+      node-role.juniper.net/contrail: ""
   keystoneSecretInstance: cluster1-admin-password
   services:
     cassandras:

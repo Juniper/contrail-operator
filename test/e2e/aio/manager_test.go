@@ -211,7 +211,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 			CommonConfiguration: v1alpha1.ManagerConfiguration{
 				HostNetwork:      &hostNetwork,
 				ImagePullSecrets: []string{"contrail-nightly"},
-				NodeSelector:     map[string]string{"node-role.kubernetes.io/master": ""},
+				NodeSelector:     map[string]string{"node-role.juniper.net/contrail": ""},
 			},
 			Services: v1alpha1.Services{
 				Rabbitmq: &v1alpha1.Rabbitmq{

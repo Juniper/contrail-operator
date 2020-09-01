@@ -29,7 +29,7 @@ import (
 
 var versionMap = map[string]string{
 	"cassandra":                     "3.11.3",
-	"zookeeper":                     "3.5.4-beta",
+	"zookeeper":                     "3.5.5",
 	"cemVersion":                    "2008.10",
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
@@ -41,7 +41,7 @@ var versionMap = map[string]string{
 
 var targetVersionMap = map[string]string{
 	"cassandra":                     "3.11.4",
-	"zookeeper":                     "3.5.5",
+	"zookeeper":                     "3.5.6",
 	"cemVersion":                    cemRelease,
 	"python":                        "3.8.2-alpine",
 	"redis":                         "4.0.2",
@@ -158,6 +158,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
+			// TODO: Fix this case
 			t.Skip()
 			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
 				LabelSelector: labelKeyToSelector(nodeLabelKey),
@@ -256,7 +257,7 @@ func TestHACoreContrailServices(t *testing.T) {
 
 func labelOneNode(k kubernetes.Interface, labelKey string) error {
 	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
-		LabelSelector: "node-role.kubernetes.io/master=",
+		LabelSelector: "node-role.juniper.net/contrail=",
 	})
 	if err != nil {
 		return err
@@ -273,7 +274,7 @@ func labelOneNode(k kubernetes.Interface, labelKey string) error {
 
 func labelAllNodes(k kubernetes.Interface, labelKey string) error {
 	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
-		LabelSelector: "node-role.kubernetes.io/master=",
+		LabelSelector: "node-role.juniper.net/contrail=",
 	})
 	if err != nil {
 		return err
@@ -375,12 +376,20 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 
 func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod) {
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
-	req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
-	assert.NoError(t, err)
 	var res *http.Response
-	err = k8swait.Poll(retryInterval, time.Second*20, func() (done bool, err error) {
+
+	err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+		req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
+		if err != nil {
+			t.Log(err)
+			return false, nil
+		}
 		res, err = configProxy.Do(req)
 		if err == nil {
+			if res.StatusCode > 500 {
+				t.Logf("received status %v", res.StatusCode)
+				return false, nil
+			}
 			return true, nil
 		}
 		t.Log(err)

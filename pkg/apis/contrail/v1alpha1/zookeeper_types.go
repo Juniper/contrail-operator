@@ -213,7 +213,7 @@ func (c *Zookeeper) IsUpgrading(name string, namespace string, client client.Cli
 
 // PrepareSTS prepares the intended deployment for the Zookeeper object.
 func (c *Zookeeper) PrepareSTS(sts *appsv1.StatefulSet, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme, client client.Client) error {
-	return PrepareSTS(sts, commonConfiguration, "zookeeper", request, scheme, c, client, true)
+	return PrepareSTS(sts, commonConfiguration, "zookeeper", request, scheme, c, client, false)
 }
 
 // AddVolumesToIntendedSTS adds volumes to the Zookeeper deployment.
@@ -243,7 +243,7 @@ func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, requ
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
 func (c *Zookeeper) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, false, false, false, false, false)
+	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, false, false, false, false, false)
 }
 
 // SetInstanceActive sets the Cassandra instance to active.

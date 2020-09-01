@@ -103,7 +103,7 @@ func TestOpenstackServices(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				CommonConfiguration: contrail.ManagerConfiguration{
 					HostNetwork:  &trueVal,
-					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+					NodeSelector: map[string]string{"node-role.juniper.net/contrail": ""},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
