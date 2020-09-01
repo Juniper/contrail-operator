@@ -248,78 +248,12 @@ func TestCommandServices(t *testing.T) {
 				assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment", 1))
 			})
 
-			var commandPods *core.PodList
-
-			t.Run("then a ready Command deployment pod should be created", func(t *testing.T) {
-				commandPods, err = f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "command=commandtest",
-				})
-				assert.NoError(t, err)
-				assert.NotEmpty(t, commandPods.Items)
+			t.Run("then command service is responding", func(t *testing.T) {
+				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
 
-			keystoneCR := &contrail.Keystone{}
-			err := f.Client.Get(context.TODO(),
-				types.NamespacedName{
-					Namespace: namespace,
-					Name:      "commandtest-keystone",
-				}, keystoneCR)
-			require.NoError(t, err)
-
-			commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
-			keystoneClient := &keystone.Client{
-				Connector:    commandProxy,
-				KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
-			}
-
-			t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-				_, err := keystoneClient.PostAuthTokens("admin", "test123", "admin")
-				assert.NoError(t, err)
-			})
-
-			t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
-				headers := http.Header{}
-				headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-				_, err = keystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
-				assert.NoError(t, err)
-			})
-
-			runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-			require.NoError(t, err)
-			keystoneClient, err = keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-			require.NoError(t, err)
-
-			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-			require.NoError(t, err)
-			swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
-			swiftURL := tokens.EndpointURL("swift", "internal")
-			swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
-			require.NoError(t, err)
-
-			t.Run("then swift container should be created", func(t *testing.T) {
-				err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
-					err = swiftClient.GetContainer("contrail_container")
-					if err == nil {
-						return true, nil
-					}
-					t.Log(err)
-					return false, nil
-				})
-
-				assert.NoError(t, err)
-			})
-
-			t.Run("and when a file is put to the created container", func(t *testing.T) {
-				err = swiftClient.PutFile("contrail_container", "test-file", []byte("payload"))
-				require.NoError(t, err)
-
-				t.Run("then the file can be downloaded without authentication and has proper payload", func(t *testing.T) {
-					swiftNoAuthClient, err := swift.NewClient(swiftProxy, "", swiftURL)
-					require.NoError(t, err)
-					contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
-					require.NoError(t, err)
-					assert.Equal(t, "payload", string(contents))
-				})
+			t.Run("then command container is created in swift", func(t *testing.T) {
+				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
 			})
 
 			t.Run("when command image is upgraded", func(t *testing.T) {
@@ -343,6 +277,10 @@ func TestCommandServices(t *testing.T) {
 
 				t.Run("then ready Command Deployment should be recreated", func(t *testing.T) {
 					assert.NoError(t, w.ForReadyDeployment("commandtest-command-deployment", 1))
+				})
+
+				t.Run("then Command service is responding", func(t *testing.T) {
+					assertCommandServiceIsResponding(t, proxy, f, namespace)
 				})
 			})
 		})
@@ -370,4 +308,87 @@ func TestCommandServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
+	commandPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+		LabelSelector: "command=command",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, commandPods.Items)
+
+	keystoneCR := &contrail.Keystone{}
+	err = f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      "commandtest-keystone",
+		}, keystoneCR)
+	require.NoError(t, err)
+
+	commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+	proxiedKeystoneClient := &keystone.Client{
+		Connector:    commandProxy,
+		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
+	}
+
+	t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
+		_, err := proxiedKeystoneClient.PostAuthTokens("admin", "test123", "admin")
+		assert.NoError(t, err)
+	})
+
+	t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
+		headers := http.Header{}
+		headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
+		_, err = proxiedKeystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
+		assert.NoError(t, err)
+	})
+}
+
+func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string, adminPassword []byte) {
+	keystoneCR := &contrail.Keystone{}
+	err := f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      "commandtest-keystone",
+		}, keystoneCR)
+	require.NoError(t, err)
+
+	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+	require.NoError(t, err)
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
+	require.NoError(t, err)
+
+	tokens, err := keystoneClient.PostAuthTokens("admin", adminPassword, "admin")
+	require.NoError(t, err)
+	swiftProxy := proxy.NewSecureClientForService("contrail", "commandtest-swift-proxy-swift-proxy", 5080)
+	swiftURL := tokens.EndpointURL("swift", "internal")
+	swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
+	require.NoError(t, err)
+
+	t.Run("then swift container should be created", func(t *testing.T) {
+		err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+			err = swiftClient.GetContainer("contrail_container")
+			if err == nil {
+				return true, nil
+			}
+			t.Log(err)
+			return false, nil
+		})
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("and when a file is put to the created container", func(t *testing.T) {
+		err = swiftClient.PutFile("contrail_container", "test-file", []byte("payload"))
+		require.NoError(t, err)
+
+		t.Run("then the file can be downloaded without authentication and has proper payload", func(t *testing.T) {
+			swiftNoAuthClient, err := swift.NewClient(swiftProxy, "", swiftURL)
+			require.NoError(t, err)
+			contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
+			require.NoError(t, err)
+			assert.Equal(t, "payload", string(contents))
+		})
+	})
+
 }
