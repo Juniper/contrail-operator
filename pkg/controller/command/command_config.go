@@ -23,7 +23,6 @@ type commandConf struct {
 	CAFilePath           string
 	PGPassword           string
 	KeystoneAddress      string
-	KeystonePort         int
 	KeystoneAuthProtocol string
 	ContrailVersion      string
 	PostgresIP           string
@@ -235,8 +234,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: {{ .TelemetryURL }}
-      public_url: {{ .TelemetryURL }}
+      private_url: https://{{ .TelemetryURL }}
+      public_url: https://{{ .TelemetryURL }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
@@ -248,8 +247,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
-      private_url: {{ .ConfigAPIURL }}
-      public_url: {{ .ConfigAPIURL }}
+      private_url: https://{{ .ConfigAPIURL }}
+      public_url: https://{{ .ConfigAPIURL }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
@@ -261,8 +260,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
-      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
+      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}
+      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
@@ -316,7 +315,7 @@ server:
   dynamic_proxy_path: proxy
   proxy:
     /contrail:
-    - {{ .ConfigAPIURL }}
+    - https://{{ .ConfigAPIURL }}
   notify_etcd: false
 
 no_auth: false

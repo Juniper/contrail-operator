@@ -74,6 +74,31 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
+		config := &contrail.Config{
+			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-config"},
+			Spec: contrail.ConfigSpec{
+				ServiceConfiguration: contrail.ConfigConfiguration{
+					CassandraInstance: "cassandra1",
+					ZookeeperInstance: "zookeeper1",
+
+					Containers: []*contrail.Container{
+						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-controller-config-api:" + cemRelease},
+						{Name: "devicemanager", Image: "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + cemRelease},
+						{Name: "dnsmasq", Image: "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + cemRelease},
+						{Name: "schematransformer", Image: "registry:5000/contrail-nightly/contrail-controller-config-schema:" + cemRelease},
+						{Name: "servicemonitor", Image: "registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:" + cemRelease},
+						{Name: "analyticsapi", Image: "registry:5000/contrail-nightly/contrail-analytics-api:" + cemRelease},
+						{Name: "collector", Image: "registry:5000/contrail-nightly/contrail-analytics-collector:" + cemRelease},
+						{Name: "queryengine", Image: "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + cemRelease},
+						{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+						{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag},
+					},
+				},
+			},
+		}
+
 		memcached := &contrail.Memcached{
 			ObjectMeta: meta.ObjectMeta{
 				Namespace: namespace,
@@ -163,8 +188,7 @@ func TestCommandServices(t *testing.T) {
 				ServiceConfiguration: contrail.CommandConfiguration{
 					PostgresInstance:   "commandtest-psql",
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
-					ConfigAPIURL:       "https://kind-control-plane:8082",
-					TelemetryURL:       "https://kind-control-plane:8081",
+					ConfigInstance:     "commandtest-config",
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: []*contrail.Container{
@@ -196,6 +220,7 @@ func TestCommandServices(t *testing.T) {
 					Memcached: memcached,
 					Command:   command,
 					Swift:     swiftInstance,
+					Config:    config,
 				},
 				KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 			},

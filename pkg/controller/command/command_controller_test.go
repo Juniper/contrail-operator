@@ -552,6 +552,7 @@ func newCommand() *contrail.Command {
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
+				ConfigInstance:   "config",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-command"},
 					{Name: "api", Image: "registry:5000/contrail-command"},
@@ -579,6 +580,24 @@ func newPostgres(active bool) *contrail.Postgres {
 				Active: active,
 			},
 			Endpoint: "10.219.10.10",
+		},
+	}
+}
+
+func newConfig(active bool) *contrail.Config {
+	return &contrail.Config{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Config",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config",
+			Namespace: "default",
+		},
+		Status: contrail.ConfigStatus{
+			Active:            &active,
+			ConfigApiEndpoint: "10.10.10.10",
+			AnalyticsEndpoint: "10.10.10.20",
 		},
 	}
 }
