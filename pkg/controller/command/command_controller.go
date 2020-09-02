@@ -344,7 +344,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 			Namespace: namespace,
 		},
 		Spec: apps.DeploymentSpec{
-			Strategy: apps.DeploymentStrategy{Type: apps.RecreateDeploymentStrategyType},
 			Selector: &meta.LabelSelector{},
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{

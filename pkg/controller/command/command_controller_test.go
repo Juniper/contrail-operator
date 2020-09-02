@@ -699,7 +699,6 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "command", "command": "command"},
 			},
-			Strategy: apps.DeploymentStrategy{Type: apps.RecreateDeploymentStrategyType},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Labels: map[string]string{"contrail_manager": "command", "command": "command"},
