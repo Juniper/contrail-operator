@@ -1027,9 +1027,10 @@ replication:
 `
 const expectedBootstrapScript = `
 #!/bin/bash
+
 export PGPASSWORD=test123
 
-createdb -h 10.219.10.10 -U root contrail_test
+echo "SELECT 'CREATE DATABASE contrail_test' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'contrail_test')\gexec" | psql -w -h 10.219.10.10 -U root -d postgres
 
 QUERY_RESULT=$(psql -w -h 10.219.10.10 -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
