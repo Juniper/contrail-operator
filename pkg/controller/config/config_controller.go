@@ -196,14 +196,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		request.Namespace, r.Client)
 	rabbitmqActive := rabbitmqInstance.IsActive(config.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
-	cassandraUpgrading := cassandraInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	zookeeperUpgrading := zookeeperInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	rabbitmqUpgrading := rabbitmqInstance.IsUpgrading(config.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
 
-	if !cassandraActive || !rabbitmqActive || !zookeeperActive || cassandraUpgrading || zookeeperUpgrading || rabbitmqUpgrading {
+	if !cassandraActive || !rabbitmqActive || !zookeeperActive {
 		return reconcile.Result{}, nil
 	}
 

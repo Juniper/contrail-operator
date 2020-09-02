@@ -687,7 +687,25 @@ func (c *Config) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request
 
 // SetInstanceActive sets the Cassandra instance to active
 func (c *Config) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
-	return SetInstanceActive(client, activeStatus, sts, request, c)
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: request.Namespace},
+		sts); err != nil {
+		return err
+	}
+
+	*activeStatus = false
+	acceptableReadyReplicaCnt := int32(1)
+	if sts.Spec.Replicas != nil {
+		acceptableReadyReplicaCnt = *sts.Spec.Replicas/2 + 1
+	}
+
+	if sts.Status.ReadyReplicas >= acceptableReadyReplicaCnt {
+		*activeStatus = true
+	}
+
+	if err := client.Status().Update(context.TODO(), c); err != nil {
+		return err
+	}
+	return nil
 }
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.

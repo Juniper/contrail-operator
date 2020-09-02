@@ -225,13 +225,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		request.Namespace, r.Client)
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
 		request.Namespace, r.Client)
-	cassandraUpgrading := cassandraInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	zookeeperUpgrading := zookeeperInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	rabbitmqUpgrading := rabbitmqInstance.IsUpgrading(instance.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive || cassandraUpgrading || zookeeperUpgrading || rabbitmqUpgrading {
+	if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive {
 		return reconcile.Result{}, nil
 	}
 

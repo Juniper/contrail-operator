@@ -596,7 +596,6 @@ func SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.Sta
 		return err
 	}
 	active := false
-
 	if sts.Status.ReadyReplicas == *sts.Spec.Replicas {
 		active = true
 	}
