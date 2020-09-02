@@ -312,7 +312,7 @@ func TestCommandServices(t *testing.T) {
 
 func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	commandPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-		LabelSelector: "command=command",
+		LabelSelector: "command=commandtest",
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, commandPods.Items)
