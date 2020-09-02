@@ -10,12 +10,12 @@ spec:
       version: 2.2.0
     systemd:
       units:
-      - name: nm-stop.service
+      - name: static-hostname.service
         enabled: true
         contents: |
           [Unit]
           Description=Sets static hostname required by Contrail
-          After=syslog.target network.target systemd-hostnamed.service
+          After=syslog.target network.target
           AssertPathExists=/etc/contrail/static_hostname.sh
           
           [Service]
