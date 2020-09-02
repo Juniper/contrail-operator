@@ -23,6 +23,7 @@ import (
 )
 
 func TestUpgradeCoreContrailServices(t *testing.T) {
+	t.Skip()
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
@@ -42,8 +43,6 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		//TODO: Include this test after fixing upgrade issues
-		t.Skip()
 
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
@@ -95,7 +94,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then Zookeeper StatefulSet should be ready", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", 1))
 			})
 		})
 
@@ -148,7 +147,6 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			analyticsapiContainer := utils.GetContainerFromList("analyticsapi", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			collectorContainer := utils.GetContainerFromList("collector", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			queryengineContainer := utils.GetContainerFromList("queryengine", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
-			//TODO: Uncomment this after fixing Statusmonitor issues
 			//statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			apiContainer.Image = targetImage
 			devicemanagerContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + targetVersionMap["cemVersion"]
@@ -243,7 +241,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then ProvisionManager StatefulSet should be updated and ready", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", replicas))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", 1))
 			})
 		})
 

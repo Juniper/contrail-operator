@@ -47,8 +47,8 @@ var targetVersionMap = map[string]string{
 	"redis":                         "4.0.2",
 	"busybox":                       "1.31",
 	"rabbitmq":                      "3.7.16",
-	"contrail-statusmonitor":        "R2008.latest",
-	"contrail-operator-provisioner": "R2008.latest",
+	"contrail-statusmonitor":        "master.latest",
+	"contrail-operator-provisioner": "master.latest",
 }
 
 func TestHACoreContrailServices(t *testing.T) {
