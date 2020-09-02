@@ -7,11 +7,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -56,8 +56,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+
 	// Watch for changes to Nodes
-	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: handler.ToRequestsFunc(func(nodeObject handler.MapObject) []reconcile.Request {
+			var cniObjects v1alpha1.ContrailCNIList
+			_ = mgr.GetClient().List(context.TODO(), &cniObjects)
+			var requests = []reconcile.Request{}
+			for _, cniObject := range cniObjects.Items {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name: cniObject.Name,
+						Namespace: cniObject.Namespace,
+					},
+				})
+			}
+			return requests
+		}),
+	})
 	if err != nil {
 		return err
 	}
@@ -88,15 +104,18 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	ctx := context.TODO()
 
 	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Exit on instance get")
 		return reconcile.Result{}, nil
 	}
 
 	if !instance.GetDeletionTimestamp().IsZero() {
+		reqLogger.Info("Exit on deletion timestamp")
 		return reconcile.Result{}, nil
 	}
 
 	contrailCNIConfigName := request.Name + "-" + instanceType + "-configuration"
 	if err := r.configMap(contrailCNIConfigName, instanceType, instance).ensureContrailCNIConfigExist(r.ClusterInfo); err != nil {
+		reqLogger.Info("Exit on configMap")
 		return reconcile.Result{}, err
 	}
 
@@ -108,10 +127,11 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	var nodesListOptions client.MatchingLabels = instance.Spec.CommonConfiguration.NodeSelector
 	var nodes corev1.NodeList
 	if err := r.Client.List(ctx, &nodes, nodesListOptions); err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Exit on node list")
 		return reconcile.Result{}, nil
 	}
 	jobReplicas := int32(len(nodes.Items))
-
+	reqLogger.Info("jobReplicas", "replicas", jobReplicas)
 	job := GetJob(cniDirs, request.Name, instanceType, &jobReplicas)
 	for idx, container := range job.Spec.Template.Spec.InitContainers {
 		instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
@@ -127,18 +147,17 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	if err := instance.PrepareJob(job, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+		reqLogger.Info("Exit on Preparejob")
 		return reconcile.Result{}, err
 	}
 
-	var clusterJob batchv1.Job
-	(&clusterJob).ObjectMeta.Name = job.ObjectMeta.Name
-	(&clusterJob).ObjectMeta.Namespace = job.ObjectMeta.Namespace
-	_, err := ctrl.CreateOrUpdate(ctx, r.Client, &clusterJob, func() error {
-		(&clusterJob).ObjectMeta.Labels = job.ObjectMeta.Labels
-		(&clusterJob).Spec = job.Spec
-		return controllerutil.SetControllerReference(instance, &clusterJob, r.Scheme)
-	})
-	if err != nil {
+
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, &batchv1.Job{}); err == nil {
+		_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}})
+		return reconcile.Result{RequeueAfter: 5}, nil
+	}
+	if err := r.Client.Create(ctx, job); err != nil {
+		reqLogger.Info("Exit on create")
 		return reconcile.Result{}, err
 	}
 
@@ -146,9 +165,11 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		active := false
 		instance.Status.Active = &active
 	}
-	if err = instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance); err != nil {
+	if err := instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance); err != nil {
+		reqLogger.Info("Exit on set active")
 		return reconcile.Result{}, err
 	}
 
+	reqLogger.Info("Exit on the end")
 	return reconcile.Result{}, nil
 }

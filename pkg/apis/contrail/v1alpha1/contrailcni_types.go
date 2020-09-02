@@ -70,7 +70,7 @@ func (c *ContrailCNI) PrepareJob(job *batch.Job,
 	client client.Client) error {
 	instanceType := "contrailcni"
 	SetJobCommonConfiguration(job, commonConfiguration)
-	job.SetName(request.Name + "-" + instanceType + "-daemonset")
+	job.SetName(request.Name + "-" + instanceType + "-job")
 	job.SetNamespace(request.Namespace)
 	job.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
