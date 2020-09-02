@@ -16,7 +16,8 @@ func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *
 			currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 			commandCR.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
 		} else {
-			oldDeploymentSpec.DeepCopyInto(&currentDeployment.Spec)
+			currentDeployment.Spec.Template.Spec.Containers = oldDeploymentSpec.Template.Spec.Containers
+			currentDeployment.Spec.Template.Spec.InitContainers = oldDeploymentSpec.Template.Spec.InitContainers
 			currentDeployment.Spec.Replicas = int32ToPtr(0)
 		}
 	case contrail.CommandStartingUpgradedDeployment:
