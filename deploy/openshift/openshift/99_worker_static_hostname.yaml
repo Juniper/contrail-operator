@@ -1,0 +1,39 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 10-worker-static-hostname
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: nm-stop.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Sets static hostname required by Contrail
+          After=syslog.target network.target systemd-hostnamed.service
+          AssertPathExists=/etc/contrail/static_hostname.sh
+          
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/etc/contrail/static_hostname.sh
+          StandardOutput=syslog
+          StandardError=syslog
+          
+          [Install]
+          WantedBy=basic.target
+    storage:
+      files:
+      - filesystem: root
+        path: /etc/contrail/static_hostname.sh
+        mode: 0744
+        user:
+          name: root
+        contents:
+          # 'data:,' and URL encoded openshift-install/sources/static_hostname.sh
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Awhile%20true%3B%20do%0A%20%20FQHOSTNAME%3D%24%28hostname%20-f%29%0A%20%20if%20%5B%5B%20%24FQHOSTNAME%20%21%3D%20%27localhost%27%20%5D%5D%20%26%26%20%5B%5B%20%24FQHOSTNAME%20%21%3D%20%27localhost.localdomain%27%20%5D%5D%3B%20then%0A%20%20%20%20break%0A%20%20fi%0A%20%20sleep%202%0Adone%0A%0Awhile%20true%3B%20do%0A%20%20FQHOSTNAME%3D%24%28hostname%20-f%29%0A%20%20echo%20%22Setting%20static%20hostname%20to%20%24FQHOSTNAME%22%0A%20%20hostnamectl%20set-hostname%20%24FQHOSTNAME%0A%20%20if%20%5B%5B%20%24%3F%20-eq%200%20%5D%5D%3B%20then%0A%20%20%20%20break%3B%0A%20%20fi%0Adone%0A%0A
