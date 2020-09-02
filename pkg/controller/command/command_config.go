@@ -54,7 +54,11 @@ update-ca-trust
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
+
 export PGPASSWORD={{ .PGPassword }}
+
+createdb -h {{ .PostgresAddress }} -U {{ .PostgresUser }} {{ .PostgresDBName }}
+
 QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
@@ -66,7 +70,7 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h {{ .PostgresAddress }} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
 commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
 commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml

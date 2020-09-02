@@ -979,8 +979,8 @@ KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
 createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
 createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
