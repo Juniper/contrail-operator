@@ -342,7 +342,7 @@ func TestCommand(t *testing.T) {
 			name: "when command is shutting down before upgrade and deployment is scaled down to 0 replicas, upgrade is started",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
-				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ":new"),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ""),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
