@@ -79,7 +79,7 @@ func TestManager(t *testing.T) {
 var targetVersionMap = map[string]string{
 	"rabbitmq":    "3.7.17",
 	"cassandra":   "3.11.4",
-	"zookeeper":   "3.5.5",
+	"zookeeper":   "3.5.6",
 	"config":      "2002-latest",
 	"control":     "2002-latest",
 	"kubemanager": "2002-latest",
@@ -90,7 +90,7 @@ func ManagerCluster(t *testing.T) {
 	initialVersionMap := map[string]string{
 		"rabbitmq":                      "3.7.16",
 		"cassandra":                     "3.11.3",
-		"zookeeper":                     "3.5.4-beta",
+		"zookeeper":                     "3.5.5",
 		"config":                        cemRelease,
 		"control":                       cemRelease,
 		"kubemanager":                   cemRelease,

@@ -128,7 +128,6 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when manager resource is upgraded", func(t *testing.T) {
-			t.Skip()
 			var replicas int32 = 3
 			instance := &contrail.Manager{}
 			err := f.Client.Get(context.TODO(), types.NamespacedName{Name: "cluster1", Namespace: namespace}, instance)
@@ -605,95 +604,98 @@ func labelKeyToSelector(key string) string {
 }
 
 func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace string, log logger.Logger) {
-	t.Run("then Zookeeper has updated image", func(t *testing.T) {
-		t.Parallel()
-		zkContainerImage := "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=zookeeper", zkContainerImage, "zookeeper")
-		require.NoError(t, err)
-	})
+	t.Run("then third party base services are updated ", func(t *testing.T) {
+		t.Run("Zookeeper has updated image", func(t *testing.T) {
+			t.Parallel()
+			zkContainerImage := "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=zookeeper", zkContainerImage, "zookeeper")
+			require.NoError(t, err)
+		})
 
-	t.Run("then Rabbitmq has updated image", func(t *testing.T) {
-		t.Parallel()
-		rmqContainerImage := "registry:5000/common-docker-third-party/contrail/rabbitmq:" + targetVersionMap["rabbitmq"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=rabbitmq", rmqContainerImage, "rabbitmq")
-		require.NoError(t, err)
-	})
+		t.Run("Rabbitmq has updated image", func(t *testing.T) {
+			t.Parallel()
+			rmqContainerImage := "registry:5000/common-docker-third-party/contrail/rabbitmq:" + targetVersionMap["rabbitmq"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=rabbitmq", rmqContainerImage, "rabbitmq")
+			require.NoError(t, err)
+		})
 
-	t.Run("then Cassandra has updated image", func(t *testing.T) {
-		t.Parallel()
-		csContainerImage := "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=cassandra", csContainerImage, "cassandra")
-		require.NoError(t, err)
+		t.Run("Cassandra has updated image", func(t *testing.T) {
+			t.Parallel()
+			csContainerImage := "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=cassandra", csContainerImage, "cassandra")
+			require.NoError(t, err)
+		})
 	})
+	t.Run("then contrail core services are updated ", func(t *testing.T) {
+		t.Run("Control has updated image", func(t *testing.T) {
+			t.Parallel()
+			controlContainerImage := "registry:5000/contrail-nightly/contrail-controller-control-control:" + targetVersionMap["cemVersion"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=control", controlContainerImage, "control")
+			require.NoError(t, err)
+		})
 
-	t.Run("then Control has updated image", func(t *testing.T) {
-		t.Parallel()
-		controlContainerImage := "registry:5000/contrail-nightly/contrail-controller-control-control:" + targetVersionMap["cemVersion"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=control", controlContainerImage, "control")
-		require.NoError(t, err)
-	})
+		t.Run("Config has updated image", func(t *testing.T) {
+			t.Parallel()
+			apiContainerImage := "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=config", apiContainerImage, "api")
+			require.NoError(t, err)
+		})
 
-	t.Run("then Config has updated image", func(t *testing.T) {
-		t.Parallel()
-		apiContainerImage := "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=config", apiContainerImage, "api")
-		require.NoError(t, err)
-	})
+		t.Run("Webui has updated image", func(t *testing.T) {
+			t.Parallel()
+			webuijobContainerImage := "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=webui", webuijobContainerImage, "webuijob")
+			require.NoError(t, err)
+		})
 
-	t.Run("then Webui has updated image", func(t *testing.T) {
-		t.Parallel()
-		webuijobContainerImage := "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=webui", webuijobContainerImage, "webuijob")
-		require.NoError(t, err)
-	})
-
-	t.Run("then ProvisionManager has updated image", func(t *testing.T) {
-		t.Parallel()
-		pmContainerImage := "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", pmContainerImage, "provisioner")
-		require.NoError(t, err)
+		t.Run("ProvisionManager has updated image", func(t *testing.T) {
+			t.Parallel()
+			pmContainerImage := "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
+			err := wait.Contrail{
+				Namespace:     namespace,
+				Timeout:       5 * time.Minute,
+				RetryInterval: retryInterval,
+				Client:        f.Client,
+				Logger:        log,
+			}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", pmContainerImage, "provisioner")
+			require.NoError(t, err)
+		})
 	})
 }
 
