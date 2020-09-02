@@ -693,7 +693,11 @@ func (c *Config) SetInstanceActive(client client.Client, activeStatus *bool, sts
 	}
 
 	*activeStatus = false
-	var acceptableReadyReplicaCnt = *sts.Spec.Replicas/2 + 1
+	acceptableReadyReplicaCnt := int32(1)
+	if sts.Spec.Replicas != nil {
+		acceptableReadyReplicaCnt = *sts.Spec.Replicas/2 + 1
+	}
+
 	if sts.Status.ReadyReplicas >= acceptableReadyReplicaCnt {
 		*activeStatus = true
 	}
