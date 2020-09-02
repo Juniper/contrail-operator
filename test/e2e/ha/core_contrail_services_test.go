@@ -183,6 +183,9 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then ready Config pods can process requests", func(t *testing.T) {
+				// TODO: In failover test scenario requests which are sent to contrail config api servier don't reach
+				// backed server. It looks like kubernetes api server is dropping them.
+				// It requires further debugging.
 				t.Skip()
 				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 					LabelSelector: "config=hatest-config",
@@ -338,6 +341,8 @@ func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
 func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run("then a Zookeeper StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
+		// TODO: Scaling of zookeeper service in not working correctly therefore it is not testested in e2e tests.
+		// It should be tested once fixed.
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", 1))
 	})
 
