@@ -57,7 +57,15 @@ var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 
 export PGPASSWORD={{ .PGPassword }}
 
-echo "SELECT 'CREATE DATABASE {{ .PostgresDBName }}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .PostgresDBName }}')\gexec" | psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d postgres
+DB_QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d postgres -tAc "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{ .PostgresDBName }}')")
+DB_QUERY_EXIT_CODE=$?
+if [[ $DB_QUERY_EXIT_CODE == 0 && $DB_QUERY_RESULT == 'f' ]]; then
+    createdb -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} {{ .PostgresDBName }}
+fi
+
+if [[ $DB_QUERY_EXIT_CODE == 2 ]]; then
+    exit 1
+fi
 
 QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
