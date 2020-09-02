@@ -8,7 +8,6 @@ import (
 
 func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) {
 	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) {
-		currentDeployment.Spec.Replicas = int32ToPtr(0)
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
 	switch commandCR.Status.UpgradeState {
@@ -17,6 +16,7 @@ func performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *
 			currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 			commandCR.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
 		} else {
+			oldDeploymentSpec.DeepCopyInto(&currentDeployment.Spec)
 			currentDeployment.Spec.Replicas = int32ToPtr(0)
 		}
 	case contrail.CommandStartingUpgradedDeployment:
