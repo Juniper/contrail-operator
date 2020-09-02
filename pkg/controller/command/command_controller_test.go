@@ -42,6 +42,7 @@ func TestCommand(t *testing.T) {
 		"Swift secret name is empty": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -74,6 +75,7 @@ func TestCommand(t *testing.T) {
 		"no Postgres": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
@@ -83,6 +85,7 @@ func TestCommand(t *testing.T) {
 		"no Swift": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -92,6 +95,7 @@ func TestCommand(t *testing.T) {
 		"no Keystone": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -101,6 +105,7 @@ func TestCommand(t *testing.T) {
 		"no Swift secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwift(false),
@@ -110,6 +115,7 @@ func TestCommand(t *testing.T) {
 		"no admin secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newSwiftSecret(),
 				newSwift(false),
@@ -119,6 +125,7 @@ func TestCommand(t *testing.T) {
 		"no Swift container exists": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -148,6 +155,7 @@ func TestCommand(t *testing.T) {
 	t.Run("Swift secret name is empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
 			newCommand(),
+			newConfig(true),
 			newPostgres(true),
 			newAdminSecret(),
 			newSwiftSecret(),
@@ -181,6 +189,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -196,6 +205,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment and check swift containers existence",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -212,6 +222,7 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment with inactive Keystone",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -229,6 +240,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithEmptyToleration(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
@@ -245,6 +257,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommand(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
@@ -261,6 +274,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommand(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),

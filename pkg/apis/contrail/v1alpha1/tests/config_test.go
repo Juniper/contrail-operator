@@ -41,6 +41,34 @@ var config = &v1alpha1.Config{
 	},
 }
 
+var configAPIService = &corev1.Service{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "config1-api",
+		Namespace: "default",
+		Labels:    map[string]string{"service": "config1"},
+	},
+	Spec: corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{Port: 8082, Protocol: "TCP"},
+		},
+		ClusterIP: "10.10.10.10",
+	},
+}
+
+var configAnalyticsService = &corev1.Service{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "config1-analytics",
+		Namespace: "default",
+		Labels:    map[string]string{"service": "config1"},
+	},
+	Spec: corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{Port: 8081, Protocol: "TCP"},
+		},
+		ClusterIP: "10.10.10.20",
+	},
+}
+
 var control = &v1alpha1.Control{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "control1",
@@ -476,7 +504,7 @@ func SetupEnv() Environment {
 		Items: vrouterPodItems,
 	}
 
-	configResource.ManageNodeStatus(podMap.configPods, cl)
+	configResource.ManageNodeStatus(podMap.configPods, cl, configAPIService.Spec.ClusterIP, configAnalyticsService.Spec.ClusterIP)
 	rabbitmqResource.ManageNodeStatus(podMap.rabbitmqPods, cl)
 
 	cassandraResource.ManageNodeStatus(podMap.cassandraPods, cl)

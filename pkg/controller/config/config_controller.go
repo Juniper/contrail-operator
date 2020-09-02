@@ -116,6 +116,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	predPodIPChange := utils.PodIPChange(serviceMap)
 	predInitRunning := utils.PodInitRunning(serviceMap)
 
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Config{},
+	}); err != nil {
+		return err
+	}
+
 	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
 		return err
 	}
@@ -696,7 +703,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{}, err
 		}
 
-		if err = config.ManageNodeStatus(podIPMap, configApiService.Spec.ClusterIP, configAnalyticsService.Spec.ClusterIP, r.Client); err != nil {
+		if err = config.ManageNodeStatus(podIPMap, r.Client, configApiService.Spec.ClusterIP, configAnalyticsService.Spec.ClusterIP); err != nil {
 			return reconcile.Result{}, err
 		}
 	}

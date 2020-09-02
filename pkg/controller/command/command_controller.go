@@ -84,6 +84,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(&source.Kind{Type: &contrail.Swift{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Command{},
 	})
+	if err != nil {
+		return err
+	}
+	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &contrail.Command{},
+	})
 	return err
 }
 
@@ -207,7 +214,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	commandConfigName := command.Name + "-command-configmap"
-	var podIPs []string
+	podIPs := []string{"0.0.0.0"}
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
