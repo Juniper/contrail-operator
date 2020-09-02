@@ -361,7 +361,7 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 		}, keystoneCR)
 	require.NoError(t, err)
 
-	commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "commandtest-service", 9091, "/keystone")
 	proxiedKeystoneClient := &keystone.Client{
 		Connector:    commandProxy,
 		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
