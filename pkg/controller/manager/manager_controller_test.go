@@ -1045,7 +1045,7 @@ func TestManagerController(t *testing.T) {
 					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.PostgresConfiguration{
-					ListenPort: 5432,
+					ListenPort:         5432,
 					RootPassSecretName: "keystone-adminpass-secret",
 				},
 			},
@@ -1137,7 +1137,7 @@ func TestManagerController(t *testing.T) {
 					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.PostgresConfiguration{
-					ListenPort: 5432,
+					ListenPort:         5432,
 					RootPassSecretName: "keystone-adminpass-secret",
 				},
 			},
@@ -1259,7 +1259,7 @@ func TestManagerController(t *testing.T) {
 					Replicas: &replicas,
 				},
 				ServiceConfiguration: contrail.PostgresConfiguration{
-					ListenPort: 5432,
+					ListenPort:         5432,
 					RootPassSecretName: "keystone-adminpass-secret",
 				},
 			},
