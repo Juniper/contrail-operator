@@ -441,6 +441,9 @@ func newSTS(name string) apps.StatefulSet {
 						AccessModes: []core.PersistentVolumeAccessMode{
 							core.ReadWriteOnce,
 						},
+						Selector: &meta.LabelSelector{
+							MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
+						},
 						StorageClassName: &storageClassName,
 						Resources: core.ResourceRequirements{
 							Requests: map[core.ResourceName]resource.Quantity{
