@@ -568,6 +568,9 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 					AccessModes: []core.PersistentVolumeAccessMode{
 						core.ReadWriteOnce,
 					},
+					Selector: &meta.LabelSelector{
+						MatchLabels: postgres.Labels,
+					},
 					StorageClassName: &storageClassName,
 					Resources: core.ResourceRequirements{
 						Requests: map[core.ResourceName]resource.Quantity{

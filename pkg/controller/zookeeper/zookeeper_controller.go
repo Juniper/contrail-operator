@@ -202,6 +202,9 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				"ReadWriteOnce",
 			},
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"contrail_manager": instanceType, instanceType: request.Name},
+			},
 			StorageClassName: &storageClassName,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{storageResource: diskSize},
@@ -336,7 +339,8 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	for i := 0; i < replicasInt; i++ {
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: instance.Name + "-pv-" + strconv.Itoa(i),
+				Name:   instance.Name + "-pv-" + strconv.Itoa(i),
+				Labels: map[string]string{"contrail_manager": instanceType, instanceType: request.Name},
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},

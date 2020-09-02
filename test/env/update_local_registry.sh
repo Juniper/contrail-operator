@@ -69,6 +69,7 @@ common-docker-third-party/contrail/python:3.8.2-alpine
 common-docker-third-party/contrail/redis:4.0.2
 common-docker-third-party/contrail/rabbitmq:3.7
 common-docker-third-party/contrail/rabbitmq:3.7.16
+common-docker-third-party/contrail/patroni:1.6.5
 common-docker-third-party/contrail/centos-binary-memcached:train-2005
 common-docker-third-party/contrail/centos-binary-keystone:train-2005
 common-docker-third-party/contrail/centos-binary-swift-account:train-2005
