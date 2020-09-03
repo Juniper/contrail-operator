@@ -56,7 +56,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-
 	// Watch for changes to Nodes
 	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: handler.ToRequestsFunc(func(nodeObject handler.MapObject) []reconcile.Request {
@@ -66,7 +65,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			for _, cniObject := range cniObjects.Items {
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
-						Name: cniObject.Name,
+						Name:      cniObject.Name,
 						Namespace: cniObject.Namespace,
 					},
 				})
@@ -139,10 +138,9 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-
 	var clusterJob batchv1.Job
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, &clusterJob); err == nil {
-		if clusterJob.Spec.Completions == &jobReplicas {
+		if clusterJob.Spec.Completions != &jobReplicas {
 			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}})
 			return reconcile.Result{RequeueAfter: 5}, nil
 		}
