@@ -145,6 +145,13 @@ spec:
               items:
                 type: string
               type: array
+            upgradeState:
+              enum:
+              - ""
+              - not upgrading
+              - shutting down before upgrade
+              - starting upgraded deployment
+              type: string
           type: object
       type: object
   version: v1alpha1

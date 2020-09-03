@@ -1,10 +1,7 @@
 package v1alpha1
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -44,9 +41,19 @@ type CommandConfiguration struct {
 // CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
 type CommandStatus struct {
-	Active bool     `json:"active,omitempty"`
-	IPs    []string `json:"ips,omitempty"`
+	Active       bool                `json:"active,omitempty"`
+	IPs          []string            `json:"ips,omitempty"`
+	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
 }
+
+// +kubebuilder:validation:Enum={"","not upgrading","shutting down before upgrade","starting upgraded deployment"}
+type CommandUpgradeState string
+
+const (
+	CommandNotUpgrading               CommandUpgradeState = "not upgrading"
+	CommandShuttingDownBeforeUpgrade  CommandUpgradeState = "shutting down before upgrade"
+	CommandStartingUpgradedDeployment CommandUpgradeState = "starting upgraded deployment"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -59,10 +66,4 @@ type CommandList struct {
 
 func init() {
 	SchemeBuilder.Register(&Command{}, &CommandList{})
-}
-
-func (c *Command) PrepareIntendedDeployment(
-	instanceDeployment *appsv1.Deployment, commonConfiguration *PodConfiguration, request reconcile.Request, scheme *runtime.Scheme,
-) (*appsv1.Deployment, error) {
-	return PrepareIntendedDeployment(instanceDeployment, commonConfiguration, "command", request, scheme, c)
 }

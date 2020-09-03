@@ -24,7 +24,6 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-
 	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
@@ -183,11 +182,9 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
@@ -274,11 +271,18 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
-	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		_, err = command.PrepareIntendedDeployment(deployment,
-			&command.Spec.CommonConfiguration, request, r.scheme)
-		return err
-	}); err != nil {
+	expectedDeployment := deployment.DeepCopy()
+	createOrUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
+		oldDeploymentSpec := deployment.Spec.DeepCopy() // it is different than expectedDeployment.Spec, because CreateOrUpdate gets current object
+		expectedDeployment.Spec.DeepCopyInto(&deployment.Spec)
+		if err := r.prepareIntendedDeployment(deployment, command); err != nil {
+			return err
+		}
+		performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
+		return nil
+	})
+	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -299,6 +303,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	reqLogger.Info("Command - done")
 	return reconcile.Result{}, nil
 }
 
@@ -406,16 +411,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
 							}},
-							Env: []core.EnvVar{
-								{
-									Name: "MY_POD_IP",
-									ValueFrom: &core.EnvVarSource{
-										FieldRef: &core.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-							},
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
@@ -459,34 +454,32 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 	return c.Command
 }
 
-func (r *ReconcileCommand) updateStatus(
-	command *contrail.Command,
-	deployment *apps.Deployment,
-) error {
+func (r *ReconcileCommand) updateStatus(command *contrail.Command, deployment *apps.Deployment) error {
+	if err := r.updateStatusIPs(command, deployment); err != nil {
+		return err
+	}
+	expectedReplicas := ptrToInt32(deployment.Spec.Replicas, 1)
+	if deployment.Status.ReadyReplicas == expectedReplicas && command.Status.UpgradeState == contrail.CommandNotUpgrading {
+		command.Status.Active = true
+	} else {
+		command.Status.Active = false
+	}
+	return r.client.Status().Update(context.Background(), command)
+}
 
+func (r *ReconcileCommand) updateStatusIPs(commandCR *contrail.Command, deployment *apps.Deployment) error {
 	pods := core.PodList{}
 	var labels client.MatchingLabels = deployment.Spec.Selector.MatchLabels
 	if err := r.client.List(context.Background(), &pods, labels); err != nil {
 		return err
 	}
-	command.Status.IPs = []string{}
+	commandCR.Status.IPs = []string{}
 	for _, pod := range pods.Items {
 		if pod.Status.PodIP != "" {
-			command.Status.IPs = append(command.Status.IPs, pod.Status.PodIP)
+			commandCR.Status.IPs = append(commandCR.Status.IPs, pod.Status.PodIP)
 		}
 	}
-
-	command.Status.Active = false
-	intendentReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		intendentReplicas = *deployment.Spec.Replicas
-	}
-
-	if deployment.Status.ReadyReplicas == intendentReplicas {
-		command.Status.Active = true
-	}
-
-	return r.client.Status().Update(context.Background(), command)
+	return nil
 }
 
 func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, k *contrail.Keystone, sPort int, adminPass *core.Secret) error {
@@ -532,4 +525,18 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 		return &core.PodList{}, err
 	}
 	return pods, nil
+}
+
+func (r *ReconcileCommand) prepareIntendedDeployment(instanceDeployment *apps.Deployment, commandCR *contrail.Command) error {
+	instanceDeploymentName := commandCR.Name + "-command-deployment"
+	intendedDeployment := contrail.SetDeploymentCommonConfiguration(instanceDeployment, &commandCR.Spec.CommonConfiguration)
+	intendedDeployment.SetName(instanceDeploymentName)
+	intendedDeployment.SetNamespace(commandCR.Namespace)
+	intendedDeployment.SetLabels(map[string]string{"contrail_manager": "command", "command": commandCR.Name})
+	intendedDeployment.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": "command", "command": commandCR.Name}
+	intendedDeployment.Spec.Template.SetLabels(map[string]string{"contrail_manager": "command", "command": commandCR.Name})
+	if err := controllerutil.SetControllerReference(commandCR, intendedDeployment, r.scheme); err != nil {
+		return err
+	}
+	return nil
 }
