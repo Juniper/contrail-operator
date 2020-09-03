@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "add_cassandra.go",
         "add_command.go",
+        "add_contrailmonitor.go",
         "add_config.go",
         "add_control.go",
         "add_keystone.go",
@@ -26,6 +27,7 @@ go_library(
         "//pkg/controller/cassandra:go_default_library",
         "//pkg/controller/command:go_default_library",
         "//pkg/controller/config:go_default_library",
+        "//pkg/controller/contrailmonitor:go_default_library",
         "//pkg/controller/control:go_default_library",
         "//pkg/controller/keystone:go_default_library",
         "//pkg/controller/manager:go_default_library",
