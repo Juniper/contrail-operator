@@ -98,6 +98,8 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then Zookeeper StatefulSet should be ready", func(t *testing.T) {
+				// TODO: Scaling of zookeeper service in not working correctly therefore it is not testested in e2e tests.
+				// It should be tested once fixed.
 				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", 1))
 			})
 		})
@@ -151,7 +153,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			analyticsapiContainer := utils.GetContainerFromList("analyticsapi", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			collectorContainer := utils.GetContainerFromList("collector", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			queryengineContainer := utils.GetContainerFromList("queryengine", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
-			//statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+			statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 			apiContainer.Image = targetImage
 			devicemanagerContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + targetVersionMap["cemVersion"]
 			dnsmasqContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + targetVersionMap["cemVersion"]
@@ -160,8 +162,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			analyticsapiContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-api:" + targetVersionMap["cemVersion"]
 			collectorContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-collector:" + targetVersionMap["cemVersion"]
 			queryengineContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + targetVersionMap["cemVersion"]
-			//TODO: Uncomment this after fixing Statusmonitor issues
-			//statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + intendedVersionMap["contrail-statusmonitor"]
+			statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + targetVersionMap["contrail-statusmonitor"]
 
 			err = f.Client.Update(context.TODO(), instance)
 			require.NoError(t, err)
