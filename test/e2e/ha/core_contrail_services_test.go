@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -89,7 +90,8 @@ func TestHACoreContrailServices(t *testing.T) {
 		}
 
 		nodeLabelKey := "test-ha"
-		cluster := getHACluster(namespace, nodeLabelKey)
+		storagePath := "/mnt/storage/" + uuid.New().String()
+		cluster := getHACluster(namespace, nodeLabelKey, storagePath)
 
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
 			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
@@ -248,6 +250,12 @@ func TestHACoreContrailServices(t *testing.T) {
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})
+
+			t.Run("then persistent volumes are removed", func(t *testing.T) {
+				err := deleteAllPVs(f.KubeClient, "local-storage")
+				require.NoError(t, err)
+			})
+
 			t.Run("then test label is removed from nodes", func(t *testing.T) {
 				err := removeLabel(f.KubeClient, nodeLabelKey)
 				require.NoError(t, err)
@@ -404,7 +412,7 @@ func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod
 	assert.Equal(t, 200, res.StatusCode, string(body))
 }
 
-func getHACluster(namespace, nodeLabel string) *contrail.Manager {
+func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	trueVal := true
 	oneVal := int32(1)
 
@@ -419,6 +427,9 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 				HostNetwork: &trueVal,
 			},
 			ServiceConfiguration: contrail.CassandraConfiguration{
+				Storage: contrail.Storage{
+					Path: storagePath + "/cassandra",
+				},
 				Containers: []*contrail.Container{
 					{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:" + versionMap["cassandra"]},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
@@ -450,6 +461,9 @@ func getHACluster(namespace, nodeLabel string) *contrail.Manager {
 				Replicas: &oneVal,
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
+				Storage: contrail.Storage{
+					Path: storagePath + "/zookeeper",
+				},
 				Containers: []*contrail.Container{
 					{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:" + versionMap["zookeeper"]},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
@@ -717,9 +731,7 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	analyticsapiContainer := utils.GetContainerFromList("analyticsapi", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 	collectorContainer := utils.GetContainerFromList("collector", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 	queryengineContainer := utils.GetContainerFromList("queryengine", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
-	//Status monitor upgrade is skipped since this fails.
-	//TODO: Uncomment this after fixing Statusmonitor issues
-	//statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
+	statusmonitorContainer := utils.GetContainerFromList("statusmonitor", instance.Spec.Services.Config.Spec.ServiceConfiguration.Containers)
 	apiContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
 	devicemanagerContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + targetVersionMap["cemVersion"]
 	dnsmasqContainer.Image = "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + targetVersionMap["cemVersion"]
@@ -728,7 +740,7 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	analyticsapiContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-api:" + targetVersionMap["cemVersion"]
 	collectorContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-collector:" + targetVersionMap["cemVersion"]
 	queryengineContainer.Image = "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + targetVersionMap["cemVersion"]
-	//statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + intendedVersionMap["contrail-statusmonitor"]
+	statusmonitorContainer.Image = "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + targetVersionMap["contrail-statusmonitor"]
 
 	webuijobContainer := utils.GetContainerFromList("webuijob", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)
 	webuiwebContainer := utils.GetContainerFromList("webuiweb", instance.Spec.Services.Webui.Spec.ServiceConfiguration.Containers)

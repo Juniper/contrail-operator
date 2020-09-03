@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,9 @@ import (
 )
 
 func TestUpgradeCoreContrailServices(t *testing.T) {
-	t.Skip()
+	if testing.Short() {
+		t.Skip("it is a long test")
+	}
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
@@ -58,8 +61,9 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			Logger:        log,
 		}
 
-		nodeLabelKey := "test-ha"
-		cluster := getHACluster(namespace, nodeLabelKey)
+		nodeLabelKey := "test-ha-upgrade"
+		storagePath := "/mnt/storage/" + uuid.New().String()
+		cluster := getHACluster(namespace, nodeLabelKey, storagePath)
 		var replicas int32 = 3
 
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
@@ -261,6 +265,12 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 				}.ForManagerDeletion(cluster.Name)
 				require.NoError(t, err)
 			})
+
+			t.Run("then persistent volumes are removed", func(t *testing.T) {
+				err := deleteAllPVs(f.KubeClient, "local-storage")
+				require.NoError(t, err)
+			})
+
 			t.Run("then test label is removed from nodes", func(t *testing.T) {
 				err := removeLabel(f.KubeClient, nodeLabelKey)
 				require.NoError(t, err)

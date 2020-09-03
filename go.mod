@@ -14,6 +14,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a
 	github.com/google/gofuzz v1.1.0 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/kylelemons/godebug v1.1.0
