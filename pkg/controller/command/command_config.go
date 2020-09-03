@@ -282,9 +282,9 @@ resources:
 var commandConfig = template.Must(template.New("").Parse(`
 database:
   host: {{ .PostgresAddress }}
-  user: root
-  password: contrail123
-  name: contrail_test
+  user: {{ .PostgresUser }}
+  password: {{ .PGPassword }}
+  name: {{ .PostgresDBName }}
   max_open_conn: 100
   connection_retries: 10
   retry_period: 3s

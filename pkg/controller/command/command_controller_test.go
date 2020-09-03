@@ -910,7 +910,7 @@ const expectedCommandConfig = `
 database:
   host: 10.219.10.10
   user: root
-  password: contrail123
+  password: test123
   name: contrail_test
   max_open_conn: 100
   connection_retries: 10

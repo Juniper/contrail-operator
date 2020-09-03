@@ -51,7 +51,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			Spec: contrail.PostgresSpec{
 				ServiceConfiguration: contrail.PostgresConfiguration{
 					Containers: []*contrail.Container{
-						{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5"},
+						{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5"},
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},
