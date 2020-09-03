@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"reflect"
+	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -196,7 +197,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if !config.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
 	cassandraActive := cassandraInstance.IsActive(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
 	zookeeperActive := zookeeperInstance.IsActive(config.Spec.ServiceConfiguration.ZookeeperInstance,
@@ -207,17 +207,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if !cassandraActive || !rabbitmqActive || !zookeeperActive {
 		return reconcile.Result{}, nil
 	}
-
-	configApiService, err := r.ensureServiceExists(config, "api", 8082)
+	configService, err := r.ensureServiceExists(config)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	configAnalyticsService, err := r.ensureServiceExists(config, "analytics", 8081)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
 	configMap, err := config.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -703,7 +696,9 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{}, err
 		}
 
-		if err = config.ManageNodeStatus(podIPMap, r.Client, configApiService.Spec.ClusterIP, configAnalyticsService.Spec.ClusterIP); err != nil {
+		configApiEndpoint := configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
+		configAnalyticsEndpoint := configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
+		if err = config.ManageNodeStatus(podIPMap, r.Client, configApiEndpoint, configAnalyticsEndpoint); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -734,11 +729,12 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileConfig) ensureServiceExists(config *v1alpha1.Config, serviceName string, port int32) (*corev1.Service, error) {
-	configService := newConfigService(config, serviceName)
+func (r *ReconcileConfig) ensureServiceExists(config *v1alpha1.Config) (*corev1.Service, error) {
+	configService := newConfigService(config)
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, configService, func() error {
 		configService.Spec.Ports = []corev1.ServicePort{
-			{Port: port, Protocol: "TCP"},
+			{Port: int32(v1alpha1.ConfigApiPort), Protocol: "TCP", Name: "api"},
+			{Port: int32(v1alpha1.AnalyticsApiPort), Protocol: "TCP", Name: "analytics"},
 		}
 		configService.Spec.Selector = map[string]string{"contrail_manager": "config"}
 		return controllerutil.SetControllerReference(config, configService, r.Scheme)
@@ -749,10 +745,10 @@ func (r *ReconcileConfig) ensureServiceExists(config *v1alpha1.Config, serviceNa
 	return configService, nil
 }
 
-func newConfigService(cr *v1alpha1.Config, name string) *corev1.Service {
+func newConfigService(cr *v1alpha1.Config) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + name,
+			Name:      cr.Name + "-service",
 			Namespace: cr.Namespace,
 			Labels:    map[string]string{"service": cr.Name},
 		},

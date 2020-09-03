@@ -23,6 +23,7 @@ type commandConf struct {
 	CAFilePath           string
 	PGPassword           string
 	KeystoneAddress      string
+	KeystonePort         int
 	KeystoneAuthProtocol string
 	ContrailVersion      string
 	PostgresIP           string
@@ -260,8 +261,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
-      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}
-      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}
+      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
+      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291

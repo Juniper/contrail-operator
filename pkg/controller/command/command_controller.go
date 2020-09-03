@@ -87,6 +87,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	// Watch for changes to secondary resource Config and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &contrail.Config{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Command{},
@@ -187,6 +195,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 	keystoneAddress := keystone.Status.Endpoint
+	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
 	psql, err := r.getPostgres(command)
@@ -218,7 +227,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(podIPs[0], keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.ConfigApiEndpoint, config.Status.AnalyticsEndpoint); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(keystonePort, podIPs[0], keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.ConfigApiEndpoint, config.Status.AnalyticsEndpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 

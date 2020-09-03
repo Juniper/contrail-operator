@@ -73,13 +73,61 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
-
+		rabbitmq := &contrail.Rabbitmq{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-rabbitmq",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.RabbitmqSpec{
+				ServiceConfiguration: contrail.RabbitmqConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7.16"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
+				},
+			},
+		}
+		zookeeper := []*contrail.Zookeeper{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-zookeeper",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ZookeeperSpec{
+				ServiceConfiguration: contrail.ZookeeperConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
+				},
+			},
+		}}
+		cassandra := []*contrail.Cassandra{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-cassandra",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.CassandraSpec{
+				ServiceConfiguration: contrail.CassandraConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
+					},
+				},
+			},
+		}}
 		config := &contrail.Config{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-config"},
+			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-config", Labels: map[string]string{"contrail_cluster": "cluster1"}},
 			Spec: contrail.ConfigSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					HostNetwork: &trueVal,
+				},
 				ServiceConfiguration: contrail.ConfigConfiguration{
-					CassandraInstance: "cassandra1",
-					ZookeeperInstance: "zookeeper1",
+					CassandraInstance: "commandtest-cassandra",
+					ZookeeperInstance: "commandtest-zookeeper",
 
 					Containers: []*contrail.Container{
 						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-controller-config-api:" + cemRelease},
@@ -215,12 +263,15 @@ func TestCommandServices(t *testing.T) {
 					},
 				},
 				Services: contrail.Services{
-					Postgres:  psql,
-					Keystone:  keystoneResource,
-					Memcached: memcached,
-					Command:   command,
-					Swift:     swiftInstance,
-					Config:    config,
+					Postgres:   psql,
+					Keystone:   keystoneResource,
+					Memcached:  memcached,
+					Command:    command,
+					Swift:      swiftInstance,
+					Config:     config,
+					Cassandras: cassandra,
+					Zookeepers: zookeeper,
+					Rabbitmq:   rabbitmq,
 				},
 				KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 			},
@@ -267,6 +318,9 @@ func TestCommandServices(t *testing.T) {
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))
+			})
+			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+				assert.NoError(t, w.ForReadyStatefulSet("commandtest-config-config-statefulset", 1))
 			})
 
 			t.Run("then Swift should become active", func(t *testing.T) {
