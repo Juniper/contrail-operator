@@ -9,7 +9,3 @@ ${DIR}/../../deploy/create_manifest.sh -l
 kubectl apply -f ${DIR}/../../deploy/local_operator.yaml
 kubectl apply -f ${DIR}/deploy/secret.yaml
 kubectl apply -f ${DIR}/deploy/cluster.yaml
-
-pushd ${DIR}/../../
-operator-sdk run --local --watch-namespace contrail --enable-delve
-popd

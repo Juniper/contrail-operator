@@ -46,7 +46,9 @@ Contrail operator can be run outside of K8s/OpenShift cluster what makes it easi
 
 Next the [Delve](https://github.com/go-delve/delve) go debugger needs to be installed and available in `PATH`. Please check [installation notes](https://github.com/go-delve/delve/tree/master/Documentation/installation).
 
-To start operator locally run `test/env/debug_operator.sh`. Then go to VSCode set some breakpoints in source files by clicking on red dots before line numbers. Switch to `Run` view and on the top left choose `Run operator locally` and hit `Start Debugging`. Operator's log will appear in `DEBUG CONSOLE` and panels on the left will give insight to variables values, call stack etc. at defined breakpoints.
+Prepare env for start of local operator by running `test/env/debug_operator.sh` script. Then go to VSCode set some breakpoints in source files by clicking on red dots before line numbers. Switch to `Run` view and on the top left choose `Run operator locally` and hit `Start Debugging`. Operator's log will appear in `DEBUG CONSOLE` and panels on the left will give insight to variables values, call stack etc. at defined breakpoints.
+
+To run operator locally with debugger enabled outside of VSCode this command can be used: `operator-sdk run --local --watch-namespace contrail --enable-delve`.
 
 ## Updating Contrail operator
     operator-sdk build contrail-operator
