@@ -3,9 +3,11 @@ build/contrail-api-client
 build/contrail-go-api
 .bazel
 bazel-*
-.vscode
+.vscode/*
+!.vscode/launch.json
 .DS_Store
 build/_output/
+deploy/local_operator.yaml
 main
 .idea
 __pycache__
