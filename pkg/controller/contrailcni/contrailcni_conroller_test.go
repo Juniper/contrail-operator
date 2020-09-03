@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apps "k8s.io/api/apps/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -76,9 +76,7 @@ func TestContrailCNIController(t *testing.T) {
 	fakeClient := fake.NewFakeClientWithScheme(scheme, contrailcniCR)
 	fakeClusterInfo := contrailcniClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
 	reconciler := NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), fakeClusterInfo)
-	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
-	// then
 	assert.NoError(t, err)
 
 	t.Run("should create configMap for contrailcni", func(t *testing.T) {
@@ -96,18 +94,20 @@ func TestContrailCNIController(t *testing.T) {
 		assert.Equal(t, expectedOwnerRefs, cm.OwnerReferences)
 	})
 
-	t.Run("should create DaemonSet for contrailcni", func(t *testing.T) {
-		ds := &appsv1.DaemonSet{}
+	t.Run("should create job for contrailcni", func(t *testing.T) {
+		job := &batchv1.Job{}
 		err = fakeClient.Get(context.Background(), types.NamespacedName{
-			Name:      "test-contrailcni-contrailcni-daemonset",
+			Name:      "test-contrailcni-contrailcni-job",
 			Namespace: "default",
-		}, ds)
+		}, job)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, ds)
+		assert.NotEmpty(t, job)
 		expectedOwnerRefs := []v1.OwnerReference{{
 			APIVersion: "contrail.juniper.net/v1alpha1", Kind: "ContrailCNI", Name: "test-contrailcni",
 			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 		}}
-		assert.Equal(t, expectedOwnerRefs, ds.OwnerReferences)
+		assert.Equal(t, expectedOwnerRefs, job.OwnerReferences)
+		var expectedCompletions int32 = 0
+		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
 	})
 }
