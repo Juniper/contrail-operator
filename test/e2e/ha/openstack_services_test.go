@@ -308,7 +308,7 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 func assertPostgresReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("postgres-postgres-statefulset", r))
+		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 }
 
