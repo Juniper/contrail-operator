@@ -584,6 +584,23 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}
 
+	contrailCNIs := []*contrail.ContrailCNI{
+		{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "hatest-contrailcni",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ContrailCNISpec{
+				ServiceConfiguration: contrail.ContrailCNIConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "vroutercni", Image: "registry:5000/contrail-nightly/contrail-kubernetes-cni-init:" + versionMap["cemVersion"]},
+					},
+				},
+			},
+		},
+	}
+
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "cluster1",
@@ -608,6 +625,7 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 				Webui:            webui,
 				Rabbitmq:         rabbitmq,
 				ProvisionManager: provisionManager,
+				ContrailCNIs:     contrailCNIs,
 			},
 		},
 	}
