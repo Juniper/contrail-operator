@@ -181,6 +181,10 @@ func TestCommandServices(t *testing.T) {
 				CommonConfiguration: contrail.ManagerConfiguration{
 					HostNetwork:  &trueVal,
 					NodeSelector: map[string]string{"node-role.juniper.net/contrail": ""},
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
 				},
 				Services: contrail.Services{
 					Postgres:  psql,
