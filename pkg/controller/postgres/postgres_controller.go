@@ -449,6 +449,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		{
 			Name:            "init",
 			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
+			Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
 			ImagePullPolicy: "Always",
 			VolumeMounts: []core.VolumeMount{
 				{
