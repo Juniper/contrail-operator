@@ -40,6 +40,26 @@ func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 	return err
 }
 
+// ForReadyStatefulSet is used to wait until StatefulSet is ready
+func (w Wait) ForReadyJob(name string, expectedCompletions int32) error {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+		statefulSet, err := w.KubeClient.BatchV1().Jobs(w.Namespace).Get(name, meta.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			w.Logger.Logf("request to kube api returned error: %v", err)
+			return false, nil
+		}
+		if statefulSet.Status.Succeeded == expectedCompletions {
+			return true, nil
+		}
+		return false, nil
+	})
+	w.dumpPodsOnError(err)
+	return err
+}
+
 // ForReadyDeployment is used to wait until Deployment is ready
 func (w Wait) ForReadyDeployment(name string, expectedReplicas int32) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {

@@ -378,15 +378,15 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", r))
 	})
 
+	t.Run(fmt.Sprintf("then a ContrailCNI Job has %d completions", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyJob("hatest-contrailcni-contrailcni-job", r))
+	})
+
 	// ProvisionManager is not scalable and is deployed in one replica
 	t.Run("then a ProvisionManager StatefulSet has 1 ready replica", func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", 1))
-	})
-
-	t.Run(fmt.Sprintf("then a ContrailCNI Job has %d completions", r), func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("hatest-contrailcni-contrailcni-job", r))
 	})
 }
 
