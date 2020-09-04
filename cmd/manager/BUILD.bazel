@@ -10,9 +10,7 @@ go_library(
     deps = [
         "//pkg/apis:go_default_library",
         "//pkg/controller:go_default_library",
-        "//pkg/controller/contrailcni:go_default_library",
         "//pkg/controller/kubemanager:go_default_library",
-        "//pkg/controller/vrouter:go_default_library",
         "//pkg/k8s:go_default_library",
         "//pkg/openshift:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/k8sutil:go_default_library",

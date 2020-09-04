@@ -45,6 +45,7 @@ go_library(
         "@com_github_go_openapi//:go_default_library",
         "@in_gopkg_yaml.v2//:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
+        "@io_k8s_api//batch/v1:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_api//rbac/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
