@@ -20,8 +20,8 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller"
-	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	"github.com/Juniper/contrail-operator/pkg/controller/contrailcni"
+	"github.com/Juniper/contrail-operator/pkg/controller/kubemanager"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )

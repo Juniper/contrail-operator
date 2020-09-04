@@ -27,35 +27,35 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
 				"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz"},
 		VolumeMounts: []core.VolumeMount{
-			core.VolumeMount{
+			{
 				Name:      "var-lib-contrail",
 				MountPath: "/var/lib/contrail",
 			},
-			core.VolumeMount{
+			{
 				Name:      "cni-config-files",
 				MountPath: "/host/etc_cni",
 			},
-			core.VolumeMount{
+			{
 				Name:      "cni-bin",
 				MountPath: "/host/opt_cni_bin",
 			},
-			core.VolumeMount{
+			{
 				Name:      "var-log-contrail-cni",
 				MountPath: "/host/log_cni",
 			},
-			core.VolumeMount{
+			{
 				Name:      "vrouter-logs",
 				MountPath: "/var/log/contrail",
 			},
-			core.VolumeMount{
+			{
 				Name:      "configmap-volume",
 				MountPath: "/etc/contrailconfigmaps",
 			},
-			core.VolumeMount{
+			{
 				Name:      "etc-kubernetes-cni",
 				MountPath: "/etc/kubernetes/cni",
 			},
-			core.VolumeMount{
+			{
 				Name:      "multus-cni",
 				MountPath: "/var/run/multus",
 			},
@@ -76,7 +76,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 	}
 
 	var podVolumes = []core.Volume{
-		core.Volume{
+		{
 			Name: "vrouter-logs",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -84,7 +84,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "var-log-contrail-cni",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -92,7 +92,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "cni-config-files",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -100,7 +100,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "var-lib-contrail",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -108,7 +108,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "cni-bin",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -116,7 +116,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "configmap-volume",
 			VolumeSource: core.VolumeSource{
 				ConfigMap: &core.ConfigMapVolumeSource{
@@ -126,7 +126,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "etc-kubernetes-cni",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -134,7 +134,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "multus-cni",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -145,11 +145,11 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 	}
 
 	var podTolerations = []core.Toleration{
-		core.Toleration{
+		{
 			Operator: "Exists",
 			Effect:   "NoSchedule",
 		},
-		core.Toleration{
+		{
 			Operator: "Exists",
 			Effect:   "NoExecute",
 		},

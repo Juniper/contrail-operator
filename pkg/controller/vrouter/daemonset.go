@@ -208,7 +208,7 @@ func GetDaemonset() *apps.DaemonSet {
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "var-crashes",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -256,7 +256,7 @@ func GetDaemonset() *apps.DaemonSet {
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "resolv-conf",
 			VolumeSource: core.VolumeSource{
 				HostPath: &core.HostPathVolumeSource{
@@ -264,7 +264,7 @@ func GetDaemonset() *apps.DaemonSet {
 				},
 			},
 		},
-		core.Volume{
+		{
 			Name: "status",
 			VolumeSource: core.VolumeSource{
 				DownwardAPI: &core.DownwardAPIVolumeSource{
