@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Juniper/contrail-go-api"
+
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 )
 

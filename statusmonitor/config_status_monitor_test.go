@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"errors"
-	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+
+	"github.com/stretchr/testify/assert"
+
+	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 
 	"net/http"
 	"testing"
