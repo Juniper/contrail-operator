@@ -209,7 +209,7 @@ spec:
             - name:  wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: patroni
-              image: registry:5000/common-docker-third-party/contrail/patroni:1.6.5
+              image: registry:5000/common-docker-third-party/contrail/patroni:1.6.5-logical
     memcached:
       metadata:
         name: memcached
