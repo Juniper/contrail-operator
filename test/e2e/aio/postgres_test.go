@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"k8s.io/client-go/kubernetes"
 	"testing"
 	"time"
 
