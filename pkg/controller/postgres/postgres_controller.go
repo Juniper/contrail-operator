@@ -139,7 +139,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	postgresPods, err := r.listPostgresPods(postgres.Name)
+	postgresPods, err := r.listPostgresPods(postgres)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list Postgres pods: %v", err)
 	}
@@ -209,9 +209,9 @@ func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres,
 	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, postgres, pods, serviceIP, "postgres", hostNetwork).EnsureExistsAndIsSigned()
 }
 
-func (r *ReconcilePostgres) listPostgresPods(postgresName string) (*core.PodList, error) {
+func (r *ReconcilePostgres) listPostgresPods(postgres *contrail.Postgres) (*core.PodList, error) {
 	pods := &core.PodList{}
-	labelSelector := labels.SelectorFromSet(contraillabel.New(contrail.PostgresInstanceType, postgresName))
+	labelSelector := labels.SelectorFromSet(postgres.Labels)
 	listOpts := client.ListOptions{LabelSelector: labelSelector}
 	if err := r.client.List(context.TODO(), pods, &listOpts); err != nil {
 		return &core.PodList{}, err
@@ -227,7 +227,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
+		service.ObjectMeta.Labels = postgres.Labels
 		service.Spec.Type = core.ServiceTypeClusterIP
 		nodePort := int32(0)
 		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
@@ -254,7 +254,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
-		labels := contraillabel.New(contrail.PostgresInstanceType, postgres.Name)
+		labels := copyStringMap(postgres.Labels)
 		labels["role"] = "replica"
 		serviceRepl.ObjectMeta.Labels = labels
 		serviceRepl.Spec.Selector = labels
@@ -535,12 +535,12 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		}}
 
 	var stsSelector = meta.LabelSelector{
-		MatchLabels: contraillabel.New("postgres", postgres.Name),
+		MatchLabels: postgres.Labels,
 	}
 
 	var stsTemplate = core.PodTemplateSpec{
 		ObjectMeta: meta.ObjectMeta{
-			Labels: contraillabel.New("postgres", postgres.Name),
+			Labels: postgres.Labels,
 		},
 		Spec: podSpec,
 	}
@@ -659,4 +659,14 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 	}
 
 	return c.Command
+}
+
+func copyStringMap(m map[string]string) map[string]string {
+	newMap := make(map[string]string)
+
+	for k, v := range m {
+		newMap[k] = v
+	}
+
+	return newMap
 }
