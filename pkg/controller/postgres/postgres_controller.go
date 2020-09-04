@@ -636,7 +636,7 @@ func (r *ReconcilePostgres) ensurePVCOwnershipExists(postgres *contrail.Postgres
 
 func getImage(containers []*contrail.Container, containerName string) string {
 	var defaultContainersImages = map[string]string{
-		"patroni":             "localhost:5000/patroni:1.6.5-logical",
+		"patroni":             "localhost:5000/patroni:1.6.5.logical",
 		"init":                "localhost:5000/busybox:1.31",
 		"wait-for-ready-conf": "localhost:5000/busybox:1.31",
 	}
