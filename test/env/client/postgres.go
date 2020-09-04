@@ -21,7 +21,7 @@ func New(address, user, password, dbName string) (*Postgres, error) {
 	db := pg.Connect(opt)
 	return &Postgres{
 		db: db,
-	}, nil
+	}, db.Ping(context.Background())
 }
 
 func (p *Postgres) Close() error {

@@ -441,6 +441,9 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.PostgresSpec{
 			ServiceConfiguration: contrail.PostgresConfiguration{
+				Storage: contrail.Storage{
+					Path: "/mnt/openstack_test/patroni",
+				},
 				Containers: []*contrail.Container{
 					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5.logical"},
 					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},

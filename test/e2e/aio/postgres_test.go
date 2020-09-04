@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"k8s.io/client-go/kubernetes"
 	"testing"
 	"time"
 
@@ -38,7 +39,6 @@ func TestPostgresDataPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("given contrail-operator is running", func(t *testing.T) {
-		t.Skip()
 		err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "contrail-operator", 1, retryInterval, waitForOperatorTimeout)
 		if err != nil {
 			log.DumpPods()
@@ -47,10 +47,23 @@ func TestPostgresDataPersistence(t *testing.T) {
 
 		trueVal := true
 
+		rootPassSecretName := "rootpass-secret"
+		rootPassWordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      rootPassSecretName,
+				Namespace: namespace,
+			},
+
+			StringData: map[string]string{
+				"password": "contrail123",
+			},
+		}
+
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "postgrestest-psql"},
 			Spec: contrail.PostgresSpec{
 				ServiceConfiguration: contrail.PostgresConfiguration{
+					RootPassSecretName: rootPassSecretName,
 					Storage: contrail.Storage{
 						Path: "/mnt/postgres_test/patroni",
 					},
@@ -80,10 +93,14 @@ func TestPostgresDataPersistence(t *testing.T) {
 				Services: contrail.Services{
 					Postgres: psql,
 				},
+				KeystoneSecretName: rootPassSecretName,
 			},
 		}
 
 		t.Run("when manager resource with Postgres is created", func(t *testing.T) {
+			err = f.Client.Create(context.TODO(), rootPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
+
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
@@ -98,15 +115,17 @@ func TestPostgresDataPersistence(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": psql.Name, "role": "master"})
+			labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": "postgres", "postgres": psql.Name})
 			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
 				LabelSelector: labelSelector.String(),
 			})
 			assert.NoError(t, err)
 			assert.NotEmpty(t, psqlPods.Items)
 
+			// todo get address of psql cluster IP instead of pod IP
 			psqlAddress := psqlPods.Items[0].Status.PodIP
-			psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "contrail_test")
+			psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
+
 			require.NoError(t, err)
 			require.NotNil(t, psqlClient)
 
@@ -125,7 +144,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			})
 
 			t.Run("and when Postgres pod is deleted", func(t *testing.T) {
-				podName := psql.Name + "-statefulset"
+				podName := psql.Name + "-statefulset-0"
 				pod, err := f.KubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
 				require.NoError(t, err)
 				uid := pod.UID
@@ -155,13 +174,13 @@ func TestPostgresDataPersistence(t *testing.T) {
 					require.NoError(t, err)
 				})
 				psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "app=" + psql.Name,
+					LabelSelector: "postgres=" + psql.Name,
 				})
 				assert.NoError(t, err)
 				assert.NotEmpty(t, psqlPods.Items)
 
 				psqlAddress := psqlPods.Items[0].Status.PodIP
-				psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "contrail_test")
+				psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
 				require.NoError(t, err)
 				require.NotNil(t, psqlClient)
 
