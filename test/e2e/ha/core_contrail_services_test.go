@@ -383,6 +383,11 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-provmanager-provisionmanager-statefulset", 1))
 	})
+
+	t.Run(fmt.Sprintf("then a ContrailCNI Job has %d completions", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-contrailcni-contrailcni-job", r))
+	})
 }
 
 func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod) {
@@ -728,19 +733,6 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", pmContainerImage, "provisioner")
 			require.NoError(t, err)
 		})
-	})
-
-	t.Run("then ContrailCNI has updated image", func(t *testing.T) {
-		t.Parallel()
-		cniContainerImage := "registry:5000/contrail-nightly/contrail-kubernetes-cni-init:" + versionMap["cemVersion"]
-		err := wait.Contrail{
-			Namespace:     namespace,
-			Timeout:       5 * time.Minute,
-			RetryInterval: retryInterval,
-			Client:        f.Client,
-			Logger:        log,
-		}.ForPodImageChange(f.KubeClient, "contrail_manager=provisionmanager", cniContainerImage, "provisioner")
-		require.NoError(t, err)
 	})
 }
 
