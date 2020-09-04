@@ -1,0 +1,109 @@
+diff -ruN org_golang_x_tools/imports/BUILD.bazel org_golang_x_tools_/imports/BUILD.bazel
+--- org_golang_x_tools/imports/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
++++ org_golang_x_tools_/imports/BUILD.bazel	2020-09-04 16:17:20.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -7,3 +7,11 @@
+     visibility = ["//visibility:public"],
+     deps = ["//internal/imports:go_default_library"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["forward.go"],
++    importpath = "golang.org/x/tools/imports",
++    visibility = ["//visibility:public"],
++    deps = ["//internal/imports:go_tool_library"],
++)
+diff -ruN org_golang_x_tools/internal/fastwalk/BUILD.bazel org_golang_x_tools_/internal/fastwalk/BUILD.bazel
+--- org_golang_x_tools/internal/fastwalk/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
++++ org_golang_x_tools_/internal/fastwalk/BUILD.bazel	2020-09-04 16:20:02.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -15,6 +15,21 @@
+     visibility = ["//:__subpackages__"],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "fastwalk.go",
++        "fastwalk_dirent_fileno.go",
++        "fastwalk_dirent_ino.go",
++        "fastwalk_dirent_namlen_bsd.go",
++        "fastwalk_dirent_namlen_linux.go",
++        "fastwalk_portable.go",
++        "fastwalk_unix.go",
++    ],
++    importpath = "golang.org/x/tools/internal/fastwalk",
++    visibility = ["//:__subpackages__"],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = ["fastwalk_test.go"],
+diff -ruN org_golang_x_tools/internal/gopathwalk/BUILD.bazel org_golang_x_tools_/internal/gopathwalk/BUILD.bazel
+--- org_golang_x_tools/internal/gopathwalk/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
++++ org_golang_x_tools_/internal/gopathwalk/BUILD.bazel	2020-09-04 16:34:52.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -8,6 +8,14 @@
+     deps = ["//internal/fastwalk:go_default_library"],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["walk.go"],
++    importpath = "golang.org/x/tools/internal/gopathwalk",
++    visibility = ["//:__subpackages__"],
++    deps = ["//internal/fastwalk:go_tool_library"],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = ["walk_test.go"],
+diff -ruN org_golang_x_tools/internal/imports/BUILD.bazel org_golang_x_tools_/internal/imports/BUILD.bazel
+--- org_golang_x_tools/internal/imports/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
++++ org_golang_x_tools_/internal/imports/BUILD.bazel	2020-09-04 16:18:45.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -43,3 +43,23 @@
+         "@org_golang_x_mod//module:go_default_library",
+     ],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "fix.go",
++        "imports.go",
++        "mod.go",
++        "mod_cache.go",
++        "sortimports.go",
++        "zstdlib.go",
++    ],
++    importpath = "golang.org/x/tools/internal/imports",
++    visibility = ["//:__subpackages__"],
++    deps = [
++        "//go/ast/astutil:go_tool_library",
++        "//internal/gopathwalk:go_tool_library",
++        "@org_golang_x_mod//module:go_tool_library",
++        "@org_golang_x_mod//semver:go_tool_library",
++    ],
++)

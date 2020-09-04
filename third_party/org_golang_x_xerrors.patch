@@ -1,0 +1,52 @@
+diff -ruN org_golang_x_xerrors/BUILD.bazel org_golang_x_xerrors_/BUILD.bazel
+--- org_golang_x_xerrors/BUILD.bazel	2020-09-04 16:27:57.000000000 +0200
++++ org_golang_x_xerrors_/BUILD.bazel	2020-09-04 16:29:09.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -16,6 +16,22 @@
+     deps = ["//internal:go_default_library"],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "adaptor.go",
++        "doc.go",
++        "errors.go",
++        "fmt.go",
++        "format.go",
++        "frame.go",
++        "wrap.go",
++    ],
++    importpath = "golang.org/x/xerrors",
++    visibility = ["//visibility:public"],
++    deps = ["//internal:go_tool_library"],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = [
+diff -ruN org_golang_x_xerrors/internal/BUILD.bazel org_golang_x_xerrors_/internal/BUILD.bazel
+--- org_golang_x_xerrors/internal/BUILD.bazel	2020-09-04 16:27:57.000000000 +0200
++++ org_golang_x_xerrors_/internal/BUILD.bazel	2020-09-04 16:29:23.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -6,3 +6,10 @@
+     importpath = "golang.org/x/xerrors/internal",
+     visibility = ["//:__subpackages__"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["internal.go"],
++    importpath = "golang.org/x/xerrors/internal",
++    visibility = ["//:__subpackages__"],
++)

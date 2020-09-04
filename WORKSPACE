@@ -27,13 +27,32 @@ http_file(
     urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl"],
 )
 
+# overriding org_golang_x_tools from go_rules_dependencies in io_bazel_rules_go
+http_archive(
+    name = "org_golang_x_tools",
+    patch_args = ["-p1"],
+    patches = [
+        "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
+        "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
+        "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
+        # Extra go_tool_library targets for gofmt and goimport
+        "//:third_party/org_golang_x_tools.patch",
+    ],
+    sha256 = "cfd9f941c397e6809117a9893bfe53683d963f58fcd3b9d44a2d784eaaacbade",
+    strip_prefix = "tools-57f3fb51f5075e8af9f6ae8bd25e374f4e6b92ed",
+    # master, as of 2020-02-21
+    urls = [
+        "https://mirror.bazel.build/github.com/golang/tools/archive/57f3fb51f5075e8af9f6ae8bd25e374f4e6b92ed.zip",
+        "https://github.com/golang/tools/archive/57f3fb51f5075e8af9f6ae8bd25e374f4e6b92ed.zip",
+    ],
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
 go_register_toolchains(nogo = "@//:nogo")
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 gazelle_dependencies()
 
@@ -3527,6 +3546,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_mod",
     importpath = "golang.org/x/mod",
+    patch_args = ["-p1"],
+    patches = ["//:third_party/org_golang_x_mod.patch"],
     sum = "h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=",
     version = "v0.2.0",
 )
@@ -3567,15 +3588,10 @@ go_repository(
 )
 
 go_repository(
-    name = "org_golang_x_tools",
-    importpath = "golang.org/x/tools",
-    sum = "h1:qCZ8SbsZMjT0OuDPCEBxgLZic4NMj8Gj4vNXiTVRAaA=",
-    version = "v0.0.0-20200327195553-82bb89366a1e",
-)
-
-go_repository(
     name = "org_golang_x_xerrors",
     importpath = "golang.org/x/xerrors",
+    patch_args = ["-p1"],
+    patches = ["//:third_party/org_golang_x_xerrors.patch"],
     sum = "h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=",
     version = "v0.0.0-20191204190536-9bdfabe68543",
 )
