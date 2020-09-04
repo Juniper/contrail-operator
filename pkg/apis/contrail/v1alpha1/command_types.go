@@ -41,7 +41,7 @@ type CommandConfiguration struct {
 // +k8s:openapi-gen=true
 type CommandStatus struct {
 	Active       bool                `json:"active,omitempty"`
-	Endpoint string `json:"endpoint,omitempty"`
+	Endpoint     string              `json:"endpoint,omitempty"`
 	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
 }
 

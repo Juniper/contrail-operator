@@ -294,6 +294,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
 				newDeployment(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -315,6 +316,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
 				newDeployment(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -336,6 +338,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0), ""),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -357,6 +360,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ""),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -378,6 +382,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -399,6 +404,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -420,6 +426,7 @@ func TestCommand(t *testing.T) {
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new2"),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 0}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -596,8 +603,8 @@ func newConfig(active bool) *contrail.Config {
 		},
 		Status: contrail.ConfigStatus{
 			Active:            &active,
-			ConfigApiEndpoint: "10.10.10.10",
-			AnalyticsEndpoint: "10.10.10.20",
+			ConfigApiEndpoint: "10.10.10.10:8082",
+			AnalyticsEndpoint: "10.10.10.20:8081",
 		},
 	}
 }
@@ -976,7 +983,7 @@ server:
   dynamic_proxy_path: proxy
   proxy:
     /contrail:
-    - https://0.0.0.0:8082
+    - https://10.10.10.10:8082
   notify_etcd: false
 
 no_auth: false
@@ -1237,8 +1244,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: http://0.0.0.0:8081
-      public_url: http://0.0.0.0:8081
+      private_url: http://10.10.10.20:8081
+      public_url: http://10.10.10.20:8081
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
@@ -1250,8 +1257,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
-      private_url: https://0.0.0.0:8082
-      public_url: https://0.0.0.0:8082
+      private_url: https://10.10.10.10:8082
+      public_url: https://10.10.10.10:8082
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
