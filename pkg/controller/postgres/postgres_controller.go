@@ -161,8 +161,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	// TODO - implement master election
-
 	replicationPassSecretName := postgres.Name + "-postgres-replication-secret"
 	if postgres.Spec.ServiceConfiguration.ReplicationPassSecretName != "" {
 		replicationPassSecretName = postgres.Spec.ServiceConfiguration.ReplicationPassSecretName
@@ -175,6 +173,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	rootPassSecretName := postgres.Spec.ServiceConfiguration.RootPassSecretName
 	statefulSet, err := r.createOrUpdateSts(postgres, postgresService, replicationPassSecretName, rootPassSecretName, serviceAccountName)
 	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.ensurePVCOwnershipExists(postgres); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -627,7 +629,10 @@ func (r *ReconcilePostgres) ensurePVCOwnershipExists(postgres *contrail.Postgres
 		return err
 	}
 	for _, pvc := range pvcList.Items {
-		if err := r.kubernetes.Owner(postgres).EnsureOwns(&pvc); err != nil {
+		if err := controllerutil.SetControllerReference(postgres, &pvc, r.scheme); err != nil {
+			return err
+		}
+		if err := r.client.Update(context.TODO(), &pvc); err != nil {
 			return err
 		}
 	}
