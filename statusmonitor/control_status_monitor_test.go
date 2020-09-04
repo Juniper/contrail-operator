@@ -1,8 +1,8 @@
 package main
 
 import (
-        "github.com/stretchr/testify/assert"
-        "testing"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestParseControlIntrospectResp(t *testing.T) {
@@ -92,7 +92,7 @@ func processIntrospectData() []byte {
 }
 
 func routerIntrospectData() []byte {
-        return []byte(`<?xml-stylesheet type="text/xsl" href="/universal_parse.xsl"?>
+	return []byte(`<?xml-stylesheet type="text/xsl" href="/universal_parse.xsl"?>
 <__BGPRouterInfo_list type="slist">
   <BGPRouterInfo type="sandesh">
     <data type="struct" identifier="1">

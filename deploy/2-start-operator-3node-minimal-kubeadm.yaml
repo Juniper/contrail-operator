@@ -34,7 +34,7 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           images:
-            zookeeper: docker.io/zookeeper:3.5.4-beta
+            zookeeper: docker.io/zookeeper:3.5.5
             init: python:alpine
     rabbitmq:
       metadata:

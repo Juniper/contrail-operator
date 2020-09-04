@@ -212,6 +212,11 @@ func TestHAOpenStackServices(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			t.Run("then persistent volumes are removed", func(t *testing.T) {
+				err := deleteAllPVs(f.KubeClient, "local-storage")
+				require.NoError(t, err)
+			})
+
 			t.Run("then test label is removed from nodes", func(t *testing.T) {
 				err := removeLabel(f.KubeClient, nodeLabelKey)
 				require.NoError(t, err)

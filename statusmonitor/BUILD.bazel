@@ -12,7 +12,6 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
-        "//statusmonitor/uves:go_default_library",
         "@in_gopkg_yaml.v2//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
@@ -70,6 +69,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "config_status_monitor_test.go",
+        "control_status_monitor_test.go",
         "main_test.go",
     ],
     embed = [":go_default_library"],
