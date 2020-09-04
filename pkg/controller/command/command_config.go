@@ -235,8 +235,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: http://{{ .TelemetryURL }}
-      public_url: http://{{ .TelemetryURL }}
+      private_url: {{ .TelemetryURL }}
+      public_url: {{ .TelemetryURL }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
@@ -248,8 +248,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
-      private_url: https://{{ .ConfigAPIURL }}
-      public_url: https://{{ .ConfigAPIURL }}
+      private_url: {{ .ConfigAPIURL }}
+      public_url: {{ .ConfigAPIURL }}
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
@@ -316,7 +316,7 @@ server:
   dynamic_proxy_path: proxy
   proxy:
     /contrail:
-    - https://{{ .ConfigAPIURL }}
+    - {{ .ConfigAPIURL }}
   notify_etcd: false
 
 no_auth: false

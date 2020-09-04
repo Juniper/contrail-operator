@@ -696,11 +696,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 			return reconcile.Result{}, err
 		}
 
-		configApiEndpoint := configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
-		configAnalyticsEndpoint := configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
-		if err = config.ManageNodeStatus(podIPMap, r.Client, configApiEndpoint, configAnalyticsEndpoint); err != nil {
+		if err = config.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
+	}
+
+	configApiUrl := "https://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
+	configAnalyticsUrl := "http://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
+	if err = config.SetEndpointInStatus(r.Client, configApiUrl, configAnalyticsUrl); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if currentConfigExists {

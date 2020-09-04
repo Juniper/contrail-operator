@@ -283,10 +283,33 @@ func newZookeeper() *contrail.Zookeeper {
 	}
 }
 
+func configService() *core.Service {
+	trueVal := true
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config-instance-service",
+			Namespace: "default",
+			Labels:    map[string]string{"service": "config-instance"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Config", "config-instance", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 8082, Protocol: "TCP", Name: "api"},
+				{Port: 8081, Protocol: "TCP", Name: "analytics"},
+			},
+			ClusterIP: "20.20.20.20",
+		},
+	}
+}
+
 func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.ConfigStatus) {
 	require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
 	require.NotNil(t, realStatus.Active, "realStatus.Active Should not be nil")
 	assert.Equal(t, *expectedStatus.Active, *realStatus.Active)
+	assert.Equal(t, expectedStatus.ConfigAPIURL, realStatus.ConfigAPIURL)
+	assert.Equal(t, expectedStatus.TelemetryURL, realStatus.TelemetryURL)
 }
 
 // ------------------------ TEST CASES ------------------------------------
@@ -301,11 +324,12 @@ func testcase1() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -322,6 +346,7 @@ func testcase2() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
@@ -373,11 +398,12 @@ func testcase3() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -395,6 +421,7 @@ func testcase4() *TestCase {
 			newManager(cfg),
 			zkp,
 			cfg,
+			configService(),
 			newCassandra(),
 			newRabbitmq(),
 		},
@@ -417,11 +444,12 @@ func testcase5() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -437,11 +465,12 @@ func testcase6() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -481,11 +510,12 @@ func testcase7() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -502,11 +532,12 @@ func testcase8() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }
@@ -527,9 +558,10 @@ func testcase9() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 			cfg,
+			configService(),
 		},
 		requeued:       trueVal,
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
 	}
 	return tc
 }

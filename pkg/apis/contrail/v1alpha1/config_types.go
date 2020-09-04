@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,10 +19,6 @@ import (
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +kubebuilder:validation:Enum=noauth;keystone
@@ -103,13 +102,13 @@ type ConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Active            *bool                             `json:"active,omitempty"`
-	Nodes             map[string]string                 `json:"nodes,omitempty"`
-	Ports             ConfigStatusPorts                 `json:"ports,omitempty"`
-	ConfigChanged     *bool                             `json:"configChanged,omitempty"`
-	ServiceStatus     map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
-	ConfigApiEndpoint string                            `json:"configapiendpoint,omitempty"`
-	AnalyticsEndpoint string                            `json:"analyticsendpoint,omitempty"`
+	Active        *bool                             `json:"active,omitempty"`
+	Nodes         map[string]string                 `json:"nodes,omitempty"`
+	Ports         ConfigStatusPorts                 `json:"ports,omitempty"`
+	ConfigChanged *bool                             `json:"configChanged,omitempty"`
+	ServiceStatus map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
+	ConfigAPIURL  string                            `json:"configapiurl,omitempty"`
+	TelemetryURL  string                            `json:"telemetryurl,omitempty"`
 }
 
 type ConfigServiceStatusMap map[string]ConfigServiceStatus
@@ -757,7 +756,7 @@ func (c *Config) WaitForPeerPods(request reconcile.Request, reconcileClient clie
 	return nil
 }
 
-func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, client client.Client, configApiEndpoint, analyticsEndpoint string) error {
+func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, client client.Client) error {
 	c.Status.Nodes = podNameIPMap
 	configConfigInterface := c.ConfigurationParameters()
 	configConfig := configConfigInterface.(ConfigConfiguration)
@@ -765,8 +764,6 @@ func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, client client.
 	c.Status.Ports.AnalyticsPort = strconv.Itoa(*configConfig.AnalyticsPort)
 	c.Status.Ports.CollectorPort = strconv.Itoa(*configConfig.CollectorPort)
 	c.Status.Ports.RedisPort = strconv.Itoa(*configConfig.RedisPort)
-	c.Status.ConfigApiEndpoint = configApiEndpoint
-	c.Status.AnalyticsEndpoint = analyticsEndpoint
 	err := client.Status().Update(context.TODO(), c)
 	if err != nil {
 		return err
@@ -960,4 +957,14 @@ func (c *Config) ConfigurationParameters() interface{} {
 
 	return configConfiguration
 
+}
+
+func (c *Config) SetEndpointInStatus(client client.Client, configApiUrl, telemetryUrl string) error {
+	c.Status.ConfigAPIURL = configApiUrl
+	c.Status.TelemetryURL = telemetryUrl
+	err := client.Status().Update(context.TODO(), c)
+	if err != nil {
+		return err
+	}
+	return nil
 }

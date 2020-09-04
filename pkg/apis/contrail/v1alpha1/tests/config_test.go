@@ -3,6 +3,7 @@ package contrailtest
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
@@ -41,7 +42,7 @@ var config = &v1alpha1.Config{
 	},
 }
 
-var configAPIService = &corev1.Service{
+var configService = &corev1.Service{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "config1-api",
 		Namespace: "default",
@@ -49,23 +50,10 @@ var configAPIService = &corev1.Service{
 	},
 	Spec: corev1.ServiceSpec{
 		Ports: []corev1.ServicePort{
-			{Port: 8082, Protocol: "TCP"},
+			{Port: int32(v1alpha1.ConfigApiPort), Protocol: "TCP", Name: "api"},
+			{Port: int32(v1alpha1.AnalyticsApiPort), Protocol: "TCP", Name: "analytics"},
 		},
 		ClusterIP: "10.10.10.10",
-	},
-}
-
-var configAnalyticsService = &corev1.Service{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "config1-analytics",
-		Namespace: "default",
-		Labels:    map[string]string{"service": "config1"},
-	},
-	Spec: corev1.ServiceSpec{
-		Ports: []corev1.ServicePort{
-			{Port: 8081, Protocol: "TCP"},
-		},
-		ClusterIP: "10.10.10.20",
 	},
 }
 
@@ -504,7 +492,10 @@ func SetupEnv() Environment {
 		Items: vrouterPodItems,
 	}
 
-	configResource.ManageNodeStatus(podMap.configPods, cl, configAPIService.Spec.ClusterIP, configAnalyticsService.Spec.ClusterIP)
+	configApiUrl := "https://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
+	telemetryUrl := "http://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
+	configResource.ManageNodeStatus(podMap.configPods, cl)
+	configResource.SetEndpointInStatus(cl, configApiUrl, telemetryUrl)
 	rabbitmqResource.ManageNodeStatus(podMap.rabbitmqPods, cl)
 
 	cassandraResource.ManageNodeStatus(podMap.cassandraPods, cl)
