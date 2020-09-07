@@ -138,9 +138,11 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	var clusterJob batchv1.Job
+	var gracePeriodSeconds int64 = 0
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, &clusterJob); err == nil {
 		if clusterJob.Spec.Completions != &jobReplicas {
-			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}})
+			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}},
+				&client.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds})
 			return reconcile.Result{RequeueAfter: 5}, nil
 		}
 	} else if errors.IsNotFound(err) {
