@@ -73,11 +73,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			return requests
 		}),
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // blank assignment to verify that ReconcileContrailCNI implements reconcile.Reconciler
@@ -102,8 +98,11 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	instance := &v1alpha1.ContrailCNI{}
 	ctx := context.TODO()
 
-	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
-		return reconcile.Result{}, nil
+	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, err
 	}
 
 	if !instance.GetDeletionTimestamp().IsZero() {
@@ -111,7 +110,7 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	contrailCNIConfigName := request.Name + "-" + instanceType + "-configuration"
-	if err := r.configMap(contrailCNIConfigName, instanceType, instance).ensureContrailCNIConfigExist(r.ClusterInfo); err != nil {
+	if err := r.configMap(contrailCNIConfigName, instanceType, instance).ensureContrailCNIConfigExists(r.ClusterInfo); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -144,7 +143,7 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}})
 			return reconcile.Result{RequeueAfter: 5}, nil
 		}
-	} else {
+	} else if errors.IsNotFound(err) {
 		if err := r.Client.Create(ctx, job); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -154,9 +153,6 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		active := false
 		instance.Status.Active = &active
 	}
-	if err := instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	return reconcile.Result{}, nil
+	err := instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance)
+	return reconcile.Result{}, err
 }

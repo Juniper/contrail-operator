@@ -12,7 +12,7 @@ type CniDirs struct {
 	DeploymentType    string
 }
 
-// GetJob is a method that returns k8s Job object filled with containers configuring contrail CNI plugin
+// GetJob is a method that returns k8s Job object filled with containers configuration contrail CNI plugin
 func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *batch.Job {
 	var trueVal = true
 

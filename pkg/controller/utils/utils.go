@@ -89,11 +89,6 @@ func DeploymentGroupKind() schema.GroupKind {
 	return schema.ParseGroupKind(DEPLOYMENT)
 }
 
-// ContrailCNIGroupKind returns group kind.
-func ContrailCNIGroupKind() schema.GroupKind {
-	return schema.ParseGroupKind(CONTRAILCNI)
-}
-
 // DeploymentStatusChange monitors per application size change.
 func DeploymentStatusChange(appGroupKind schema.GroupKind) predicate.Funcs {
 	return predicate.Funcs{

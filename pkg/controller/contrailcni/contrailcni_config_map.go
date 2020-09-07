@@ -18,7 +18,7 @@ func (r *ReconcileContrailCNI) configMap(
 	}
 }
 
-func (c *configMaps) ensureContrailCNIConfigExist(clusterInfo contrail.CNIClusterInfo) error {
+func (c *configMaps) ensureContrailCNIConfigExists(clusterInfo contrail.CNIClusterInfo) error {
 	ccni := &contrailCNIConf{}
 
 	clusterName, err := clusterInfo.KubernetesClusterName()
