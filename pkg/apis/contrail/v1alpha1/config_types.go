@@ -88,10 +88,14 @@ type ConfigConfiguration struct {
 	AAAMode                     AAAMode            `json:"aaaMode,omitempty"`
 	Storage                     Storage            `json:"storage,omitempty"`
 	FabricMgmtIP                string             `json:"fabricMgmtIP,omitempty"`
-	AnalyticsDataTTL            *int               `json:"analyticsDataTTL,omitempty"`
-	AnalyticsConfigAuditTTL     *int               `json:"analyticsConfigAuditTTL,omitempty"`
-	AnalyticsStatisticsTTL      *int               `json:"analyticsStatisticsTTL,omitempty"`
-	AnalyticsFlowTTL            *int               `json:"analyticsFlowTTL,omitempty"`
+	// Time (in hours) that the analytics object and log data stays in the Cassandra database. Defaults to 48 hours.
+	AnalyticsDataTTL *int `json:"analyticsDataTTL,omitempty"`
+	// Time (in hours) the analytics config data entering the collector stays in the Cassandra database. Defaults to 2160 hours.
+	AnalyticsConfigAuditTTL *int `json:"analyticsConfigAuditTTL,omitempty"`
+	// Time to live (TTL) for statistics data in hours. Defaults to 4 hours.
+	AnalyticsStatisticsTTL *int `json:"analyticsStatisticsTTL,omitempty"`
+	// Time to live (TTL) for flow data in hours. Defaults to 2 hours.
+	AnalyticsFlowTTL *int `json:"analyticsFlowTTL,omitempty"`
 }
 
 // +k8s:openapi-gen=true
