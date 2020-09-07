@@ -281,11 +281,203 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*c
 func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, service *core.Service,
 	replicationPassSecretName, rootPassSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
 
-	statefulSet := &apps.StatefulSet{}
-	statefulSet.Namespace = postgres.Namespace
-	statefulSet.Name = postgres.Name + "-statefulset"
-	statefulSet.Labels = postgres.Labels
-	csrSignerCaVolumeName := postgres.Name + "-csr-signer-ca"
+	statefulSet := &apps.StatefulSet{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      postgres.Name + "-statefulset",
+			Namespace: postgres.Namespace,
+		},
+	}
+
+	storagePath := postgres.Spec.ServiceConfiguration.Storage.Path
+	if storagePath == "" {
+		storagePath = defaultPostgresStoragePath
+	}
+
+	var (
+		initHostPathType            = core.HostPathDirectoryOrCreate
+		postgresUID           int64 = 999
+		labelsMountPermission int32 = 0644
+		csrSignerCaVolumeName       = postgres.Name + "-csr-signer-ca"
+		storageClassName            = "local-storage"
+	)
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
+		statefulSet.Labels = postgres.Labels
+		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
+		statefulSet.Spec = apps.StatefulSetSpec{
+			Selector: &meta.LabelSelector{
+				MatchLabels: postgres.Labels,
+			},
+			ServiceName: service.Name,
+			Replicas:    postgres.Spec.CommonConfiguration.Replicas,
+			Template: core.PodTemplateSpec{
+				ObjectMeta: meta.ObjectMeta{
+					Labels: postgres.Labels,
+				},
+				Spec: core.PodSpec{
+					Affinity: &core.Affinity{
+						PodAntiAffinity: &core.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+								LabelSelector: &meta.LabelSelector{MatchLabels: postgres.Labels},
+								TopologyKey:   "kubernetes.io/hostname",
+							}},
+						},
+					},
+					InitContainers:     r.initContainers(postgres),
+					Containers:         r.containers(postgres, rootPassSecretName, replicationPassSecretName, csrSignerCaVolumeName),
+					HostNetwork:        true,
+					NodeSelector:       postgres.Spec.CommonConfiguration.NodeSelector,
+					ServiceAccountName: serviceAccountName,
+					Tolerations:        postgres.Spec.CommonConfiguration.Tolerations,
+					SecurityContext: &core.PodSecurityContext{
+						RunAsUser:          &postgresUID,
+						FSGroup:            &postgresUID,
+						SupplementalGroups: []int64{999, 1000},
+					},
+					Volumes: []core.Volume{
+						{
+							Name: "postgres-storage-init",
+							VolumeSource: core.VolumeSource{
+								HostPath: &core.HostPathVolumeSource{
+									Path: storagePath,
+									Type: &initHostPathType,
+								},
+							},
+						},
+						{
+							Name: postgres.Name + "-secret-certificates",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: postgres.Name + "-secret-certificates",
+								},
+							},
+						},
+						{
+							Name: csrSignerCaVolumeName,
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: certificates.SignerCAConfigMapName,
+									},
+								},
+							},
+						},
+						{
+							Name: "status",
+							VolumeSource: core.VolumeSource{
+								DownwardAPI: &core.DownwardAPIVolumeSource{
+									Items: []core.DownwardAPIVolumeFile{
+										{
+											FieldRef: &core.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.labels",
+											},
+											Path: "pod_labels",
+										},
+									},
+									DefaultMode: &labelsMountPermission,
+								},
+							},
+						},
+					}},
+			},
+			VolumeClaimTemplates: []core.PersistentVolumeClaim{
+				{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "pgdata",
+						Namespace: postgres.Namespace,
+						Labels:    postgres.Labels,
+					},
+					Spec: core.PersistentVolumeClaimSpec{
+						AccessModes: []core.PersistentVolumeAccessMode{
+							core.ReadWriteOnce,
+						},
+						Selector: &meta.LabelSelector{
+							MatchLabels: postgres.Labels,
+						},
+						StorageClassName: &storageClassName,
+						Resources: core.ResourceRequirements{
+							Requests: map[core.ResourceName]resource.Quantity{
+								core.ResourceStorage: resource.MustParse("5Gi"),
+							},
+						},
+					},
+				},
+			},
+		}
+
+		return controllerutil.SetControllerReference(postgres, statefulSet, r.scheme)
+	})
+	return statefulSet, err
+}
+
+func (r *ReconcilePostgres) initContainers(postgres *contrail.Postgres) []core.Container {
+	return []core.Container{
+		{
+			Name:            "wait-for-ready-conf",
+			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "wait-for-ready-conf"),
+			Command:         getCommand(postgres.Spec.ServiceConfiguration.Containers, "wait-for-ready-conf"),
+			ImagePullPolicy: core.PullAlways,
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "status",
+					MountPath: "/tmp/podinfo",
+				},
+			},
+		},
+		{
+			Name:            "init",
+			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
+			Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
+			ImagePullPolicy: "Always",
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "postgres-storage-init",
+					ReadOnly:  false,
+					MountPath: "/mnt/",
+				},
+			},
+		},
+	}
+}
+
+func (r *ReconcilePostgres) containers(postgres *contrail.Postgres, rootPassSecretName, replicationPassSecretName, csrSignerCaVolumeName string) []core.Container {
+	return []core.Container{
+		{
+			Name:  "patroni",
+			Image: getImage(postgres.Spec.ServiceConfiguration.Containers, "patroni"),
+			ReadinessProbe: &core.Probe{
+				Handler: core.Handler{
+					HTTPGet: &core.HTTPGetAction{
+						Scheme: core.URISchemeHTTP,
+						Path:   "/readiness",
+						Port:   intstr.IntOrString{IntVal: 8008},
+					},
+				},
+			},
+			Env:             r.containerEnv(postgres.Name, rootPassSecretName, replicationPassSecretName),
+			ImagePullPolicy: "Always",
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      "pgdata",
+					ReadOnly:  false,
+					MountPath: "/var/lib/postgresql/data",
+					SubPath:   "postgres",
+				},
+				{
+					Name:      postgres.Name + "-secret-certificates",
+					MountPath: "/var/lib/ssl_certificates",
+				},
+				{
+					Name:      csrSignerCaVolumeName,
+					MountPath: certificates.SignerCAMountPath,
+				},
+			},
+		},
+	}
+}
+
+func (r *ReconcilePostgres) containerEnv(name, rootPassSecretName, replicationPassSecretName string) []core.EnvVar {
 	var podIPEnv = core.EnvVar{
 		Name: "PATRONI_KUBERNETES_POD_IP",
 		ValueFrom: &core.EnvVarSource{
@@ -306,7 +498,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 
 	var scopeEnv = core.EnvVar{
 		Name:  "PATRONI_SCOPE",
-		Value: postgres.Name,
+		Value: name,
 	}
 
 	var namespaceEnv = core.EnvVar{
@@ -325,7 +517,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 
 	var labelsEnv = core.EnvVar{
 		Name:  "PATRONI_KUBERNETES_LABELS",
-		Value: contraillabel.AsString("postgres", postgres.Name),
+		Value: contraillabel.AsString("postgres", name),
 	}
 
 	var postgresListenAddressEnv = core.EnvVar{
@@ -392,211 +584,24 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		Value: "/tmp/pgpass",
 	}
 
-	var podContainers = []core.Container{
-		{
-			Name:  "patroni",
-			Image: getImage(postgres.Spec.ServiceConfiguration.Containers, "patroni"),
-			ReadinessProbe: &core.Probe{
-				Handler: core.Handler{
-					HTTPGet: &core.HTTPGetAction{
-						Scheme: core.URISchemeHTTP,
-						Path:   "/readiness",
-						Port:   intstr.IntOrString{IntVal: 8008},
-					},
-				},
-			},
-			Env: []core.EnvVar{
-				nameEnv,
-				scopeEnv,
-				podIPEnv,
-				namespaceEnv,
-				scopeLabelEnv,
-				labelsEnv,
-				endpointsEnv,
-				replicationUserEnv,
-				replicationPassEnv,
-				superuserEnv,
-				superuserPassEnv,
-				dataDirEnv,
-				postgresDBEnv,
-				postgresListenAddressEnv,
-				restApiListenAddressEnv,
-				pgpassEnv,
-			},
-			ImagePullPolicy: "Always",
-			VolumeMounts: []core.VolumeMount{
-				{
-					Name:      "pgdata",
-					ReadOnly:  false,
-					MountPath: "/var/lib/postgresql/data",
-					SubPath:   "postgres",
-				},
-				{
-					Name:      postgres.Name + "-secret-certificates",
-					MountPath: "/var/lib/ssl_certificates",
-				},
-				{
-					Name:      csrSignerCaVolumeName,
-					MountPath: certificates.SignerCAMountPath,
-				},
-			},
-		},
+	return []core.EnvVar{
+		nameEnv,
+		scopeEnv,
+		podIPEnv,
+		namespaceEnv,
+		scopeLabelEnv,
+		labelsEnv,
+		endpointsEnv,
+		replicationUserEnv,
+		replicationPassEnv,
+		superuserEnv,
+		superuserPassEnv,
+		dataDirEnv,
+		postgresDBEnv,
+		postgresListenAddressEnv,
+		restApiListenAddressEnv,
+		pgpassEnv,
 	}
-
-	var podInitContainers = []core.Container{
-		{
-			Name:            "wait-for-ready-conf",
-			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "wait-for-ready-conf"),
-			Command:         getCommand(postgres.Spec.ServiceConfiguration.Containers, "wait-for-ready-conf"),
-			ImagePullPolicy: core.PullAlways,
-			VolumeMounts: []core.VolumeMount{
-				{
-					Name:      "status",
-					MountPath: "/tmp/podinfo",
-				},
-			},
-		},
-		{
-			Name:            "init",
-			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
-			Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
-			ImagePullPolicy: "Always",
-			VolumeMounts: []core.VolumeMount{
-				{
-					Name:      "postgres-storage-init",
-					ReadOnly:  false,
-					MountPath: "/mnt/",
-				},
-			},
-		},
-	}
-
-	storagePath := postgres.Spec.ServiceConfiguration.Storage.Path
-	if storagePath == "" {
-		storagePath = defaultPostgresStoragePath
-	}
-	var (
-		initHostPathType            = core.HostPathDirectoryOrCreate
-		postgresUID           int64 = 999
-		labelsMountPermission int32 = 0644
-	)
-	var podSpec = core.PodSpec{
-		Affinity: &core.Affinity{
-			PodAntiAffinity: &core.PodAntiAffinity{
-				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-					LabelSelector: &meta.LabelSelector{MatchLabels: postgres.Labels},
-					TopologyKey:   "kubernetes.io/hostname",
-				}},
-			},
-		},
-		InitContainers:     podInitContainers,
-		Containers:         podContainers,
-		HostNetwork:        true,
-		NodeSelector:       postgres.Spec.CommonConfiguration.NodeSelector,
-		ServiceAccountName: serviceAccountName,
-		Tolerations:        postgres.Spec.CommonConfiguration.Tolerations,
-		SecurityContext: &core.PodSecurityContext{
-			RunAsUser:          &postgresUID,
-			FSGroup:            &postgresUID,
-			SupplementalGroups: []int64{999, 1000},
-		},
-		Volumes: []core.Volume{
-			{
-				Name: "postgres-storage-init",
-				VolumeSource: core.VolumeSource{
-					HostPath: &core.HostPathVolumeSource{
-						Path: storagePath,
-						Type: &initHostPathType,
-					},
-				},
-			},
-			{
-				Name: postgres.Name + "-secret-certificates",
-				VolumeSource: core.VolumeSource{
-					Secret: &core.SecretVolumeSource{
-						SecretName: postgres.Name + "-secret-certificates",
-					},
-				},
-			},
-			{
-				Name: csrSignerCaVolumeName,
-				VolumeSource: core.VolumeSource{
-					ConfigMap: &core.ConfigMapVolumeSource{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: certificates.SignerCAConfigMapName,
-						},
-					},
-				},
-			},
-			{
-				Name: "status",
-				VolumeSource: core.VolumeSource{
-					DownwardAPI: &core.DownwardAPIVolumeSource{
-						Items: []core.DownwardAPIVolumeFile{
-							{
-								FieldRef: &core.ObjectFieldSelector{
-									APIVersion: "v1",
-									FieldPath:  "metadata.labels",
-								},
-								Path: "pod_labels",
-							},
-						},
-						DefaultMode: &labelsMountPermission,
-					},
-				},
-			},
-		}}
-
-	var stsSelector = meta.LabelSelector{
-		MatchLabels: postgres.Labels,
-	}
-
-	var stsTemplate = core.PodTemplateSpec{
-		ObjectMeta: meta.ObjectMeta{
-			Labels: postgres.Labels,
-		},
-		Spec: podSpec,
-	}
-
-	statefulSet.Spec = apps.StatefulSetSpec{
-		Selector:    &stsSelector,
-		ServiceName: service.Name,
-		Replicas:    postgres.Spec.CommonConfiguration.Replicas,
-		Template:    stsTemplate,
-	}
-
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
-
-		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
-		storageClassName := "local-storage"
-		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
-			{
-				ObjectMeta: meta.ObjectMeta{
-					Name:      "pgdata",
-					Namespace: postgres.Namespace,
-					Labels:    postgres.Labels,
-				},
-				Spec: core.PersistentVolumeClaimSpec{
-					AccessModes: []core.PersistentVolumeAccessMode{
-						core.ReadWriteOnce,
-					},
-					Selector: &meta.LabelSelector{
-						MatchLabels: postgres.Labels,
-					},
-					StorageClassName: &storageClassName,
-					Resources: core.ResourceRequirements{
-						Requests: map[core.ResourceName]resource.Quantity{
-							core.ResourceStorage: resource.MustParse("5Gi"),
-						},
-					},
-				},
-			},
-		}
-
-		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: postgres.Labels}
-		return controllerutil.SetControllerReference(postgres, statefulSet, r.scheme)
-	})
-	return statefulSet, err
 }
 
 func (r *ReconcilePostgres) ensureLocalPVsExist(postgres *contrail.Postgres) error {
