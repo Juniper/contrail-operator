@@ -18,6 +18,7 @@ func New(address, user, password, dbName string) (*Postgres, error) {
 	if err != nil {
 		return nil, err
 	}
+	opt.MaxRetries = 50
 	db := pg.Connect(opt)
 	return &Postgres{
 		db: db,

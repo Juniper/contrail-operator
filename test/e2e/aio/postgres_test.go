@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
 
@@ -122,13 +121,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotEmpty(t, psqlPods.Items)
 
-			p := &contrail.Postgres{}
-			err = f.Client.Get(context.Background(), types.NamespacedName{
-				Namespace: psql.Namespace,
-				Name:      psql.Name,
-			}, p)
-
-			psqlAddress := p.Status.Endpoint
+			psqlAddress := psqlPods.Items[0].Status.PodIP
 			assert.NotEmpty(t, psqlAddress)
 			psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
 
@@ -185,7 +178,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, psqlPods.Items)
 
-				assert.NotEmpty(t, psqlAddress)
+				psqlAddress := psqlPods.Items[0].Status.PodIP
 				psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
 				require.NoError(t, err)
 				require.NotNil(t, psqlClient)
