@@ -5,6 +5,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -523,6 +524,15 @@ func newSTS(name string) apps.StatefulSet {
 								postgresListenAddressEnv,
 								restApiListenAddressEnv,
 								pgpassEnv,
+							},
+							ReadinessProbe: &core.Probe{
+								Handler: core.Handler{
+									HTTPGet: &core.HTTPGetAction{
+										Scheme: core.URISchemeHTTP,
+										Path:   "/readiness",
+										Port:   intstr.IntOrString{IntVal: 8008},
+									},
+								},
 							},
 							VolumeMounts: []core.VolumeMount{
 								{

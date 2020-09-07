@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -395,6 +396,15 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		{
 			Name:  "patroni",
 			Image: getImage(postgres.Spec.ServiceConfiguration.Containers, "patroni"),
+			ReadinessProbe: &core.Probe{
+				Handler: core.Handler{
+					HTTPGet: &core.HTTPGetAction{
+						Scheme: core.URISchemeHTTP,
+						Path:   "/readiness",
+						Port:   intstr.IntOrString{IntVal: 8008},
+					},
+				},
+			},
 			Env: []core.EnvVar{
 				nameEnv,
 				scopeEnv,
@@ -558,7 +568,6 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 
 		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
-
 		storageClassName := "local-storage"
 		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
 			{
