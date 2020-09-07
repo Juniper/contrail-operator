@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
-
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/test/logger"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/test/logger"
 )
 
 // Contrail is used to wait until certain contrail resources reach some condition
