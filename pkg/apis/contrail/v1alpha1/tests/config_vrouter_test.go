@@ -71,7 +71,6 @@ func TestVrouterCustomCniConfigValues(t *testing.T) {
 
 	environment := SetupEnv()
 	cl := *environment.client
-	environment.vrouterResource.Spec.ServiceConfiguration.CniMetaPlugin = "test-meta-plugin"
 
 	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
 		&environment.vrouterPodList, cl); err != nil {

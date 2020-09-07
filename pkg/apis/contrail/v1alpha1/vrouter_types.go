@@ -68,13 +68,7 @@ type VrouterConfiguration struct {
 	ClusterRole         string        `json:"clusterRole,omitempty"`
 	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
 	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
-	CniMetaPlugin       string        `json:"cniMetaPlugin,omitempty"`
 	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
-	VrouterIP           string        `json:"vrouterIP,omitempty"`
-	VrouterPort         string        `json:"vrouterPort,omitempty"`
-	PollTimeout         string        `json:"pollTimeout,omitempty"`
-	PollRetries         string        `json:"pollRetries,omitempty"`
-	LogLevel            string        `json:"logLevel,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -94,17 +88,11 @@ const (
 	UBUNTU Distribution = "ubuntu"
 )
 
-const DefaultCniMetaPlugin = "multus"
-const DefaultVrouterIP = "127.0.0.1"
-const DefaultVrouterPort = "9091"
-const DefaultPollTimeout = "5"
-const DefaultPollRetries = "15"
-const DefaultLogLevel = "4"
-
 func init() {
 	SchemeBuilder.Register(&Vrouter{}, &VrouterList{})
 }
 
+// CreateConfigMap creates configMap with specified name
 func (c *Vrouter) CreateConfigMap(configMapName string,
 	client client.Client,
 	scheme *runtime.Scheme,
@@ -285,6 +273,7 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, getPhysicalInterface, getPhysicalInterfaceMac, getPrefixLength, getGateway)
 }
 
+// InstanceConfiguration creates vRouter configMaps with rendered values
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
@@ -414,6 +403,7 @@ func (c *Vrouter) SetPodsToReady(podIPList *corev1.PodList, client client.Client
 	return SetPodsToReady(podIPList, client)
 }
 
+// ManageNodeStatus manages nodes status
 func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
@@ -424,6 +414,7 @@ func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 	return nil
 }
 
+// ConfigurationParameters is a method for gathering data used in rendering vRouter configuration
 func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration := VrouterConfiguration{}
 	var physicalInterface string
@@ -448,42 +439,6 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	} else {
 		nodeManager := true
 		vrouterConfiguration.NodeManager = &nodeManager
-	}
-
-	if c.Spec.ServiceConfiguration.CniMetaPlugin != "" {
-		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
-	} else {
-		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
-	}
-
-	if c.Spec.ServiceConfiguration.VrouterIP != "" {
-		vrouterConfiguration.VrouterIP = c.Spec.ServiceConfiguration.VrouterIP
-	} else {
-		vrouterConfiguration.VrouterIP = DefaultVrouterIP
-	}
-
-	if c.Spec.ServiceConfiguration.VrouterPort != "" {
-		vrouterConfiguration.VrouterPort = c.Spec.ServiceConfiguration.VrouterPort
-	} else {
-		vrouterConfiguration.VrouterPort = DefaultVrouterPort
-	}
-
-	if c.Spec.ServiceConfiguration.PollTimeout != "" {
-		vrouterConfiguration.PollTimeout = c.Spec.ServiceConfiguration.PollTimeout
-	} else {
-		vrouterConfiguration.PollTimeout = DefaultPollTimeout
-	}
-
-	if c.Spec.ServiceConfiguration.PollRetries != "" {
-		vrouterConfiguration.PollRetries = c.Spec.ServiceConfiguration.PollRetries
-	} else {
-		vrouterConfiguration.PollRetries = DefaultPollRetries
-	}
-
-	if c.Spec.ServiceConfiguration.LogLevel != "" {
-		vrouterConfiguration.LogLevel = c.Spec.ServiceConfiguration.LogLevel
-	} else {
-		vrouterConfiguration.LogLevel = DefaultLogLevel
 	}
 
 	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption

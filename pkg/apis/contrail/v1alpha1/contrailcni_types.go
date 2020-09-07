@@ -58,11 +58,18 @@ type ContrailCNIList struct {
 	Items           []ContrailCNI `json:"items"`
 }
 
+const DefaultCniMetaPlugin = "multus"
+const DefaultVrouterIP = "127.0.0.1"
+const DefaultVrouterPort = "9091"
+const DefaultPollTimeout = "5"
+const DefaultPollRetries = "15"
+const DefaultLogLevel = "4"
+
 func init() {
 	SchemeBuilder.Register(&ContrailCNI{}, &ContrailCNIList{})
 }
 
-// PrepareDaemonSet prepares the intended podList.
+// PrepareJob prepares the intended podList.
 func (c *ContrailCNI) PrepareJob(job *batch.Job,
 	commonConfiguration *PodConfiguration,
 	request reconcile.Request,
@@ -85,7 +92,7 @@ func (c *ContrailCNI) PrepareJob(job *batch.Job,
 	return nil
 }
 
-// SetDSCommonConfiguration takes common configuration parameters
+// SetJobCommonConfiguration takes common configuration parameters
 // and applies it to the pod.
 func SetJobCommonConfiguration(job *batch.Job,
 	commonConfiguration *PodConfiguration) {

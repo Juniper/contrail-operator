@@ -71,7 +71,6 @@ var contrailcniCR = &contrail.ContrailCNI{
 		},
 		CommonConfiguration: contrail.PodConfiguration{
 			NodeSelector: map[string]string{"node-role.opencontrail.org": "contrailcni"},
-			Replicas:     &replicas,
 		},
 	},
 }
