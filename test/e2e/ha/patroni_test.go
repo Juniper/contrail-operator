@@ -74,8 +74,26 @@ func TestPatroni(t *testing.T) {
 				assertPatroniReady(t, w, postgresName, 3)
 			})
 
-			t.Run("then master replica is being elected", func(t *testing.T) {
-				assertLeaderElection(t, f,w, namespace, postgresName)
+			t.Run("then leader replica is being elected", func(t *testing.T) {
+				assertLeaderElected(t, f, w, namespace, postgresName)
+			})
+
+			t.Run("and when leader is going down", func(t *testing.T) {
+				leader := getLeader(t, f, w, namespace, postgresName)
+				oldUID := leader.UID
+				err := f.Client.Delete(context.TODO(), &leader)
+				require.NoError(t, err)
+
+				t.Run("then the pod is recreated and Patroni becomes active again", func(t *testing.T) {
+					assertPatroniReady(t, w, postgresName, 3)
+				})
+
+				t.Run("then a new leader is elected", func(t *testing.T) {
+					assertLeaderElected(t, f, w, namespace, postgresName)
+					newLeader := getLeader(t, f, w, namespace, postgresName)
+					newUID := newLeader.UID
+					assert.NotEqual(t, newUID, oldUID, "leader UID did not change")
+				})
 			})
 
 			t.Run("after", func(t *testing.T) {
@@ -108,14 +126,23 @@ func TestPatroni(t *testing.T) {
 		})
 	})
 
-	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 }
 
-func assertLeaderElection(t *testing.T, f *test.Framework, w wait.Wait, namespace string, pgName string) core.Pod {
+func getLeader(t *testing.T, f *test.Framework, w wait.Wait, namespace string, pgName string) core.Pod{
+	leaders := &core.PodList{}
+	labels := contrailLabel.New("postgres", pgName)
+	labels["role"] = "master"
+	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: k8sLabels.SelectorFromSet(labels)}
+
+	err := w.Poll(func() (done bool, err error) {
+		return f.Client.List(context.TODO(), leaders, listOps) == nil, nil
+	})
+
+	assert.NoError(t, err, "failed to list pods")
+	return leaders.Items[0]
+}
+
+func assertLeaderElected(t *testing.T, f *test.Framework, w wait.Wait, namespace string, pgName string) {
 	leaders := &core.PodList{}
 	labels := contrailLabel.New("postgres", pgName)
 	labels["role"] = "master"
@@ -127,8 +154,6 @@ func assertLeaderElection(t *testing.T, f *test.Framework, w wait.Wait, namespac
 
 	assert.NoError(t, err, "failed to list pods")
 	assert.Equal(t, 1, len(leaders.Items), "more then one leader has been elected")
-
-	return leaders.Items[0]
 }
 
 func createPatroniCluster(ctx *test.TestCtx, f *test.Framework, nodeLabelKey, namespace string) (*contrail.Manager, error) {
@@ -139,7 +164,7 @@ func createPatroniCluster(ctx *test.TestCtx, f *test.Framework, nodeLabelKey, na
 
 	adminPassWordSecret := &core.Secret{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone-adminpass-secret",
+			Name:      "patroni-test-adminpass-secret",
 			Namespace: namespace,
 		},
 
@@ -181,7 +206,7 @@ func getPatroniCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.PostgresSpec{
 			ServiceConfiguration: contrail.PostgresConfiguration{
 				Storage: contrail.Storage{
-					Path: "/mnt/openstack_test/patroni",
+					Path: "/mnt/patroni_test/patroni",
 				},
 				Containers: []*contrail.Container{
 					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5.logical"},
@@ -194,7 +219,7 @@ func getPatroniCluster(namespace, nodeLabel string) *contrail.Manager {
 
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "openstack",
+			Name:      "patroni",
 			Namespace: namespace,
 		},
 		Spec: contrail.ManagerSpec{
@@ -208,7 +233,7 @@ func getPatroniCluster(namespace, nodeLabel string) *contrail.Manager {
 					},
 				},
 			},
-			KeystoneSecretName: "keystone-adminpass-secret",
+			KeystoneSecretName: "patroni-test-adminpass-secret",
 			Services: contrail.Services{
 				Postgres: postgres,
 			},
