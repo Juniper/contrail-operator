@@ -1241,13 +1241,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_go_openapi_spec",
-    importpath = "github.com/go-openapi/spec",
-    sum = "h1:ixzUSnHTd6hCemgtAJgluaTSGYpLNpJY4mA2DIkdOAo=",
-    version = "v0.19.4",
-)
-
-go_repository(
     name = "com_github_go_openapi",
     importpath = "github.com/go-openapi/spec",
     sum = "h1:ixzUSnHTd6hCemgtAJgluaTSGYpLNpJY4mA2DIkdOAo=",
@@ -3142,13 +3135,6 @@ go_repository(
     importpath = "gopkg.in/warnings.v0",
     sum = "h1:XM28wIgFzaBmeZ5dNHIpWLQpt/9DGKxk+rCg/22nnYE=",
     version = "v0.1.1",
-)
-
-go_repository(
-    name = "in_gopkg_yaml_v2",
-    importpath = "gopkg.in/yaml.v2",
-    sum = "h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=",
-    version = "v2.2.8",
 )
 
 go_repository(
