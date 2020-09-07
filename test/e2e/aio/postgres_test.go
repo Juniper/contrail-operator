@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 		trueVal := true
 
 		rootPassSecretName := "rootpass-secret"
-		rootPassWordSecret := &core.Secret{
+		rootPasswordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      rootPassSecretName,
 				Namespace: namespace,
@@ -97,7 +98,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 		}
 
 		t.Run("when manager resource with Postgres is created", func(t *testing.T) {
-			err = f.Client.Create(context.TODO(), rootPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			err = f.Client.Create(context.TODO(), rootPasswordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 			assert.NoError(t, err)
 
 			err = f.Client.Create(context.TODO(), cluster, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -121,8 +122,14 @@ func TestPostgresDataPersistence(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotEmpty(t, psqlPods.Items)
 
-			// todo get address of psql cluster IP instead of pod IP
-			psqlAddress := psqlPods.Items[0].Status.PodIP
+			p := &contrail.Postgres{}
+			err = f.Client.Get(context.Background(), types.NamespacedName{
+				Namespace: psql.Namespace,
+				Name:      psql.Name,
+			}, p)
+
+			psqlAddress := p.Status.Endpoint
+			assert.NotEmpty(t, psqlAddress)
 			psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
 
 			require.NoError(t, err)
@@ -173,12 +180,12 @@ func TestPostgresDataPersistence(t *testing.T) {
 					require.NoError(t, err)
 				})
 				psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
-					LabelSelector: "postgres=" + psql.Name,
+					LabelSelector: labelSelector.String(),
 				})
 				assert.NoError(t, err)
 				assert.NotEmpty(t, psqlPods.Items)
 
-				psqlAddress := psqlPods.Items[0].Status.PodIP
+				assert.NotEmpty(t, psqlAddress)
 				psqlClient, err := testClient.New(psqlAddress, "root", "contrail123", "postgres")
 				require.NoError(t, err)
 				require.NotNil(t, psqlClient)
