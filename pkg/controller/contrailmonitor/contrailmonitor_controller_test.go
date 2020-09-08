@@ -37,7 +37,7 @@ func TestContrailmonitorControllertwo(t *testing.T) {
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
-	t.Run("Add controller to Manager", func(t *testing.T) {
+	t.Run("Add method/watchers Verification", func(t *testing.T) {
 		initObjs := []runtime.Object{
 			contrailmonitorCR,
 		}
