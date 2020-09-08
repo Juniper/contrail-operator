@@ -20,6 +20,12 @@
             "go_default_test": ""
         }
     },
+    "goimports": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint",
+            "go_default_test": ""
+        }
+    },
     "shadow": {
         "only_files": {
             "pkg/label": "",

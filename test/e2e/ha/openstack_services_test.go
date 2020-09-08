@@ -13,6 +13,7 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -244,22 +245,35 @@ func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPPro
 	require.NoError(t, err)
 
 	t.Run("then the Keystone service should handle request for a token", func(t *testing.T) {
-		_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+		err := retryRequest(t, func() error {
+			_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+			return err
+		})
 		assert.NoError(t, err)
 	})
 
 	t.Run("when swift file is uploaded", func(t *testing.T) {
-		tokens, err := keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
+		tokens := keystone.AuthTokens{}
+		err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+			if tokens, err = keystoneClient.PostAuthTokens("swift", "swiftPass", "service"); err != nil {
+				t.Logf("Request to keystone failed: %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		require.NoError(t, err)
 
 		swiftProxy := proxy.NewSecureClientForService("contrail", "swift-proxy-swift-proxy", 5070)
 		swiftURL := tokens.EndpointURL("swift", "internal")
 		swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
-
 		require.NoError(t, err)
-		err = swiftClient.PutContainer("test-container")
+		err = retryRequest(t, func() error {
+			return swiftClient.PutContainer("test-container")
+		})
 		require.NoError(t, err)
-		err = swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+		err = retryRequest(t, func() error {
+			return swiftClient.PutFile("test-container", "test-file", []byte("payload"))
+		})
 		require.NoError(t, err)
 
 		t.Run("then downloaded file has proper payload", func(t *testing.T) {
@@ -324,6 +338,18 @@ func updateOpenStackManagerImages(f *test.Framework, manager *contrail.Manager) 
 	}
 
 	return f.Client.Update(context.TODO(), manager)
+}
+
+func retryRequest(t *testing.T, f func() error) error {
+	err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+		if err = f(); err != nil {
+			t.Logf("request failed: %v", err)
+			return false, nil
+		}
+		return true, nil
+	})
+
+	return err
 }
 
 func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {

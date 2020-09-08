@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/localvolume"
 	"github.com/stretchr/testify/assert"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/Juniper/contrail-operator/pkg/localvolume"
 )
 
 func TestNew(t *testing.T) {

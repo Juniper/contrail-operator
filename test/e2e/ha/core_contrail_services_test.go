@@ -397,7 +397,7 @@ func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod
 		}
 		res, err = configProxy.Do(req)
 		if err == nil {
-			if res.StatusCode > 400 {
+			if res.StatusCode >= 400 {
 				t.Logf("received status %v", res.StatusCode)
 				return false, nil
 			}

@@ -3,8 +3,6 @@ package command
 import (
 	"testing"
 
-	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -19,6 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 // Test function for newReconciler

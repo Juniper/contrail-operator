@@ -271,6 +271,25 @@ System tests can be run using operator-sdk tool
     # To run ha e2e test
     operator-sdk test local ./test/e2e/ha/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
 
+## Before submitting pull request
+
+There is a set of tools that can check your code automatically. This includes static code checks, unit-tests and e2e integration tests. Most of those checks are run for every pull request and vote.
+
+### Run gazelle to make sure that all BUILD.bazel files get updated
+
+    bazel run //:gazelle
+
+### Build and test code. This commands also runs `nogo` linters
+
+    bazel build //... && bazel test //...
+
+It will report errors in case:
+
+* code doesn't build
+* unit-tests fails
+* static checks don't pass
+* code is not correctly formatted
+
 ## Notes
 
 * Contrail Operator creates Persistent Volumes that are used by some of the deployed pods. After deletion of Contrail resources (e.g. after deleting the Manager Custom Resource), those Persistent Volumes will not be deleted. Administrator has to delete them manually and make sure that directories created by these volumes on cluster nodes are in the expected state. Example Persistent Volumes deletion command:

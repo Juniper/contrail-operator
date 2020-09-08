@@ -1,0 +1,50 @@
+diff -ruN org_golang_x_mod/module/BUILD.bazel org_golang_x_mod_/module/BUILD.bazel
+--- org_golang_x_mod/module/BUILD.bazel	2020-09-04 16:22:08.000000000 +0200
++++ org_golang_x_mod_/module/BUILD.bazel	2020-09-04 16:24:25.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -11,6 +11,17 @@
+     ],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["module.go"],
++    importpath = "golang.org/x/mod/module",
++    visibility = ["//visibility:public"],
++    deps = [
++        "//semver:go_tool_library",
++        "@org_golang_x_xerrors//:go_tool_library",
++    ],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = ["module_test.go"],
+diff -ruN org_golang_x_mod/semver/BUILD.bazel org_golang_x_mod_/semver/BUILD.bazel
+--- org_golang_x_mod/semver/BUILD.bazel	2020-09-04 16:22:09.000000000 +0200
++++ org_golang_x_mod_/semver/BUILD.bazel	2020-09-04 16:23:38.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -7,6 +7,13 @@
+     visibility = ["//visibility:public"],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["semver.go"],
++    importpath = "golang.org/x/mod/semver",
++    visibility = ["//visibility:public"],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = ["semver_test.go"],

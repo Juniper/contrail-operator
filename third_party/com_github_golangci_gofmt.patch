@@ -28,3 +28,27 @@ diff -ruN com_github_golangci_gofmt/gofmt/BUILD.bazel com_github_golangci_gofmt_
  go_test(
      name = "go_default_test",
      srcs = [
+
+--- b/goimports/BUILD.bazel	2020-09-04 12:48:16.000000000 +0200
++++ c/goimports/BUILD.bazel	2020-09-04 12:49:19.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -10,3 +10,14 @@
+     visibility = ["//visibility:public"],
+     deps = ["@org_golang_x_tools//imports:go_default_library"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "goimports.go",
++        "golangci.go",
++    ],
++    importpath = "github.com/golangci/gofmt/goimports",
++    visibility = ["//visibility:public"],
++    deps = ["@org_golang_x_tools//imports:go_tool_library"],
++)

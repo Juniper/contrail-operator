@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	contrail "github.com/Juniper/contrail-go-api"
+
 	contrailTypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 	"github.com/Juniper/contrail-operator/contrail-provisioner/fake"
 	"github.com/Juniper/contrail-operator/contrail-provisioner/types"
