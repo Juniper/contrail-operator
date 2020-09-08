@@ -40,7 +40,7 @@ var openshiftCommand = []string{"sh", "-c",
 		"chmod 0755 /host/opt_cni_bin/contrail-k8s-cni && " +
 		"cp -f /etc/contrailconfigmaps/10-contrail.conf /host/etc_cni/net.d/10-contrail.conf && " +
 		"tar -C /host/opt_cni_bin -xzf /opt/cni-v0.3.0.tgz" +
-		"&& mkdir -p /etc/kubernetes/cni/net.d && " +
+		" && mkdir -p /etc/kubernetes/cni/net.d && " +
 		"cp -f /etc/contrailconfigmaps/10-contrail.conf /etc/kubernetes/cni/net.d/10-contrail.conf && " +
 		"mkdir -p /var/run/multus/cni/net.d && " +
 		"cp -f /etc/contrailconfigmaps/10-contrail.conf /var/run/multus/cni/net.d/80-openshift-network.conf"}
