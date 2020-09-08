@@ -25,6 +25,15 @@ func GetDaemonset() *apps.DaemonSet {
 		},
 	}
 
+	var physicalInterfaceEnv = core.EnvVar{
+		Name: "PHYSICAL_INTERFACE",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.annotations['<KEY>']"
+			}
+		},
+	}
+
 	var podInitContainers = []core.Container{
 		{
 			Name:  "init",

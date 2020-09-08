@@ -321,6 +321,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	var data = make(map[string]string)
 	var envVariables = make(map[string]string)
 	for idx := range podList.Items {
+		// GENERATE configmaps peor pod (at least the one with ENV vars)
 		hostname := podList.Items[idx].Annotations["hostname"]
 		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
 		prefixLength := podList.Items[idx].Annotations["prefixLength"]
@@ -336,7 +337,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		} else {
 			gateway = podList.Items[idx].Annotations["gateway"]
 		}
-		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
 		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
 		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
 		var vrouterConfigBuffer bytes.Buffer
