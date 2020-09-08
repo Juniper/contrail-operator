@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Juniper/contrail-operator/pkg/client/swift"
+	"github.com/google/uuid"
 	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"testing"
@@ -70,7 +71,8 @@ func TestHACommand(t *testing.T) {
 		}
 
 		nodeLabelKey := "test-command-ha"
-		cluster := getHACommandCluster(namespace, nodeLabelKey)
+		storagePath := "/mnt/storage/" + uuid.New().String()
+		cluster := getHACommandCluster(namespace, nodeLabelKey, storagePath)
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
@@ -274,7 +276,7 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 	})
 }
 
-func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
+func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	trueVal := true
 
 	memcached := &contrail.Memcached{
@@ -396,6 +398,9 @@ func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.ZookeeperSpec{
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
+				Storage: contrail.Storage{
+					Path: storagePath + "/zookeeper",
+				},
 				Containers: []*contrail.Container{
 					{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
@@ -411,6 +416,9 @@ func getHACommandCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 		Spec: contrail.CassandraSpec{
 			ServiceConfiguration: contrail.CassandraConfiguration{
+				Storage: contrail.Storage{
+					Path: storagePath + "/cassandra",
+				},
 				Containers: []*contrail.Container{
 					{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
