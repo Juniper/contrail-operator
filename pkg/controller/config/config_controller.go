@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"reflect"
-	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -701,9 +700,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	configApiUrl := "https://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
-	configAnalyticsUrl := "http://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
-	if err = config.SetEndpointInStatus(r.Client, configApiUrl, configAnalyticsUrl); err != nil {
+	if err = config.SetEndpointInStatus(r.Client, configService.Spec.ClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 

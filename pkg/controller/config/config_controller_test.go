@@ -308,8 +308,7 @@ func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.Confi
 	require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
 	require.NotNil(t, realStatus.Active, "realStatus.Active Should not be nil")
 	assert.Equal(t, *expectedStatus.Active, *realStatus.Active)
-	assert.Equal(t, expectedStatus.ConfigAPIURL, realStatus.ConfigAPIURL)
-	assert.Equal(t, expectedStatus.TelemetryURL, realStatus.TelemetryURL)
+	assert.Equal(t, expectedStatus.Endpoint, realStatus.Endpoint)
 }
 
 // ------------------------ TEST CASES ------------------------------------
@@ -329,7 +328,7 @@ func testcase1() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -403,7 +402,7 @@ func testcase3() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -449,7 +448,7 @@ func testcase5() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -470,7 +469,7 @@ func testcase6() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -515,7 +514,7 @@ func testcase7() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -537,7 +536,7 @@ func testcase8() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -561,7 +560,7 @@ func testcase9() *TestCase {
 			configService(),
 		},
 		requeued:       trueVal,
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal, ConfigAPIURL: "https://20.20.20.20:8082", TelemetryURL: "http://20.20.20.20:8081"},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }

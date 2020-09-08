@@ -107,8 +107,7 @@ type ConfigStatus struct {
 	Ports         ConfigStatusPorts                 `json:"ports,omitempty"`
 	ConfigChanged *bool                             `json:"configChanged,omitempty"`
 	ServiceStatus map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
-	ConfigAPIURL  string                            `json:"configapiurl,omitempty"`
-	TelemetryURL  string                            `json:"telemetryurl,omitempty"`
+	Endpoint      string                            `json:"endpoint,omitempty"`
 }
 
 type ConfigServiceStatusMap map[string]ConfigServiceStatus
@@ -959,12 +958,8 @@ func (c *Config) ConfigurationParameters() interface{} {
 
 }
 
-func (c *Config) SetEndpointInStatus(client client.Client, configApiUrl, telemetryUrl string) error {
-	c.Status.ConfigAPIURL = configApiUrl
-	c.Status.TelemetryURL = telemetryUrl
+func (c *Config) SetEndpointInStatus(client client.Client, clusterIP string) error {
+	c.Status.Endpoint = clusterIP
 	err := client.Status().Update(context.TODO(), c)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

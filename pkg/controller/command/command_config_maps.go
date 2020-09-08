@@ -1,6 +1,8 @@
 package command
 
 import (
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -26,15 +28,15 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(KeystonePort int, hostIP, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigApiEndpoint, AnalyticsEndpoint string) error {
+func (c *configMaps) ensureCommandConfigExist(KeystonePort int, hostIP, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string) error {
 	cc := &commandConf{
 		ClusterName:          "default",
 		AdminUsername:        "admin",
 		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
 		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
-		ConfigAPIURL:         ConfigApiEndpoint,
-		TelemetryURL:         AnalyticsEndpoint,
+		ConfigAPIURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.ConfigApiPort),
+		TelemetryURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.AnalyticsApiPort),
 		PostgresAddress:      postgresAddress,
 		PostgresUser:         "root",
 		PostgresDBName:       "contrail_test",

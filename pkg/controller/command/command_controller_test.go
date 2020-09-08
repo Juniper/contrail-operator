@@ -335,7 +335,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       true,
+				Status:       contrail.Status{Active: true},
 				UpgradeState: contrail.CommandNotUpgrading,
 				Endpoint:     "20.20.20.20",
 			},
@@ -357,7 +357,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
 				Endpoint:     "20.20.20.20",
 			},
@@ -381,7 +381,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
 				Endpoint:     "20.20.20.20",
 			},
@@ -405,7 +405,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
 				Endpoint:     "20.20.20.20",
 			},
@@ -429,7 +429,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
 				Endpoint:     "20.20.20.20",
 			},
@@ -453,7 +453,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
 				Endpoint:     "20.20.20.20",
 			},
@@ -477,7 +477,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       true,
+				Status:       contrail.Status{Active: true},
 				UpgradeState: contrail.CommandNotUpgrading,
 				Endpoint:     "20.20.20.20",
 			},
@@ -501,7 +501,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
 				Endpoint:     "20.20.20.20",
 			},
@@ -670,9 +670,8 @@ func newConfig(active bool) *contrail.Config {
 			Namespace: "default",
 		},
 		Status: contrail.ConfigStatus{
-			Active:       &active,
-			ConfigAPIURL: "https://10.10.10.10:8082",
-			TelemetryURL: "http://10.10.10.10:8081",
+			Active:   &active,
+			Endpoint: "10.10.10.10",
 		},
 	}
 }
@@ -1348,8 +1347,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: http://10.10.10.10:8081
-      public_url: http://10.10.10.10:8081
+      private_url: https://10.10.10.10:8081
+      public_url: https://10.10.10.10:8081
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291

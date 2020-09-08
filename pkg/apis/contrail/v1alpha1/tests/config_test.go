@@ -3,7 +3,6 @@ package contrailtest
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
@@ -492,10 +491,8 @@ func SetupEnv() Environment {
 		Items: vrouterPodItems,
 	}
 
-	configApiUrl := "https://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.ConfigApiPort)
-	telemetryUrl := "http://" + configService.Spec.ClusterIP + ":" + strconv.Itoa(v1alpha1.AnalyticsApiPort)
 	configResource.ManageNodeStatus(podMap.configPods, cl)
-	configResource.SetEndpointInStatus(cl, configApiUrl, telemetryUrl)
+	configResource.SetEndpointInStatus(cl, configService.Spec.ClusterIP)
 	rabbitmqResource.ManageNodeStatus(podMap.rabbitmqPods, cl)
 
 	cassandraResource.ManageNodeStatus(podMap.cassandraPods, cl)
