@@ -1,5 +1,4 @@
-FROM postgres:11
-MAINTAINER Alexander Kukushkin <alexander.kukushkin@zalando.de>
+FROM postgres:12.4
 
 RUN export DEBIAN_FRONTEND=noninteractive \
     && echo 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend \
@@ -11,7 +10,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     ## Make sure we have a en_US.UTF-8 locale available
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && pip3 install setuptools \
-    && pip3 install 'git+https://github.com/zalando/patroni.git#egg=patroni[kubernetes]' \
+    && pip3 install 'git+https://github.com/zalando/patroni.git@v1.6.5#egg=patroni[kubernetes]' \
     && PGHOME=/home/postgres \
     && mkdir -p $PGHOME \
     && chown postgres $PGHOME \
