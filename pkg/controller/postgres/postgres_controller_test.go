@@ -532,6 +532,8 @@ func newSTS(name string) apps.StatefulSet {
 										Port:   intstr.IntOrString{IntVal: 8008},
 									},
 								},
+								InitialDelaySeconds: 3,
+								TimeoutSeconds:      5,
 							},
 							VolumeMounts: []core.VolumeMount{
 								{

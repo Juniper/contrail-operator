@@ -406,6 +406,8 @@ func (r *ReconcilePostgres) containers(postgres *contrail.Postgres, rootPassSecr
 						Port:   intstr.IntOrString{IntVal: 8008},
 					},
 				},
+				InitialDelaySeconds: 3,
+				TimeoutSeconds:      5,
 			},
 			Env:             r.containerEnv(postgres.Name, rootPassSecretName, replicationPassSecretName),
 			ImagePullPolicy: "Always",
