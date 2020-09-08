@@ -7,8 +7,13 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Command is the Schema for the commands API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:path=commands,scope=Namespaced
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready_Replicas",type=integer,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="Endpoint",type=string,JSONPath=`.status.endpoint`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type Command struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -40,7 +45,7 @@ type CommandConfiguration struct {
 // CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
 type CommandStatus struct {
-	Active       bool                `json:"active,omitempty"`
+	Status       `json:",inline"`
 	Endpoint     string              `json:"endpoint,omitempty"`
 	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
 }
