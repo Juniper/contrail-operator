@@ -205,6 +205,8 @@ spec:
               type: boolean
             configChanged:
               type: boolean
+            configapiurl:
+              type: string
             nodes:
               additionalProperties:
                 type: string
@@ -237,6 +239,8 @@ spec:
                   type: object
                 type: object
               type: object
+            telemetryurl:
+              type: string
           type: object
       type: object
   version: v1alpha1

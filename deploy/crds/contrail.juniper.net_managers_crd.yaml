@@ -379,7 +379,7 @@ spec:
                           properties:
                             clusterName:
                               type: string
-                            configAPIURL:
+                            configInstance:
                               type: string
                             containers:
                               items:
@@ -405,8 +405,6 @@ spec:
                               type: string
                             swiftInstance:
                               type: string
-                            telemetryURL:
-                              type: string
                           type: object
                       required:
                       - serviceConfiguration
@@ -416,10 +414,8 @@ spec:
                       properties:
                         active:
                           type: boolean
-                        ips:
-                          items:
-                            type: string
-                          type: array
+                        endpoint:
+                          type: string
                         upgradeState:
                           enum:
                           - ""
@@ -632,6 +628,8 @@ spec:
                           type: boolean
                         configChanged:
                           type: boolean
+                        configapiurl:
+                          type: string
                         nodes:
                           additionalProperties:
                             type: string
@@ -664,6 +662,8 @@ spec:
                               type: object
                             type: object
                           type: object
+                        telemetryurl:
+                          type: string
                       type: object
                   type: object
                 controls:
