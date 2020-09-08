@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -12,6 +11,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -131,7 +131,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	postgresService, err := r.ensureServicesExist(postgres)
+	leaderClusterIP, err := r.ensureServicesExist(postgres)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -144,8 +144,6 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list Postgres pods: %v", err)
 	}
-
-	leaderClusterIP := postgresService.Spec.ClusterIP
 
 	if err := r.ensureCertificatesExist(postgres, postgresPods, leaderClusterIP); err != nil {
 		return reconcile.Result{}, err
@@ -170,9 +168,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err = r.replicationPassSecret(replicationPassSecretName, "postgres", postgres).ensureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	serviceAccountName := "serviceaccount-postgres"
 	rootPassSecretName := postgres.Spec.ServiceConfiguration.RootPassSecretName
-	statefulSet, err := r.createOrUpdateSts(postgres, postgresService, replicationPassSecretName, rootPassSecretName, serviceAccountName)
+	statefulSet, err := r.createOrUpdateSts(postgres, replicationPassSecretName, rootPassSecretName, serviceAccountName)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -222,64 +221,29 @@ func (r *ReconcilePostgres) listPostgresPods(postgres *contrail.Postgres) (*core
 	return pods, nil
 }
 
-func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (*core.Service, error) {
-	service := &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      postgres.Name,
-			Namespace: postgres.Namespace,
-		},
-	}
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, service, func() error {
-		service.ObjectMeta.Labels = postgres.Labels
-		service.Spec.Type = core.ServiceTypeClusterIP
-		nodePort := int32(0)
-		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
-		for i, p := range service.Spec.Ports {
-			if p.Port == listenPort {
-				nodePort = service.Spec.Ports[i].NodePort
-			}
-		}
-		service.Spec.Ports = []core.ServicePort{
-			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
-		}
-		return controllerutil.SetControllerReference(postgres, service, r.scheme)
-	})
+func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (leaderIP string, err error) {
 
-	if err != nil {
-		return nil, err
+	svc := r.kubernetes.Service(postgres.Name, core.ServiceTypeClusterIP,
+		int32(postgres.Spec.ServiceConfiguration.ListenPort), contrail.PostgresInstanceType, postgres)
+
+	if err = svc.EnsureExists(); err != nil {
+		return "", err
 	}
 
-	serviceRepl := &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      postgres.Name + "-replica",
-			Namespace: postgres.Namespace,
-		},
-	}
+	leaderIP = svc.ClusterIP()
 
-	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, serviceRepl, func() error {
-		labels := copyStringMap(postgres.Labels)
-		labels["role"] = "replica"
-		serviceRepl.ObjectMeta.Labels = labels
-		serviceRepl.Spec.Selector = labels
-		serviceRepl.Spec.Type = core.ServiceTypeClusterIP
-		nodePort := int32(0)
-		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
-		for i, p := range serviceRepl.Spec.Ports {
-			if p.Port == listenPort {
-				nodePort = serviceRepl.Spec.Ports[i].NodePort
-			}
-		}
-		serviceRepl.Spec.Ports = []core.ServicePort{
-			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
-		}
-		return controllerutil.SetControllerReference(postgres, serviceRepl, r.scheme)
-	})
+	replicaServiceName := postgres.Name + "-replica"
+	labels := copyStringMap(postgres.Labels)
+	labels["role"] = "replica"
 
-	return service, err
+	svc = r.kubernetes.Service(replicaServiceName, core.ServiceTypeClusterIP,
+		int32(postgres.Spec.ServiceConfiguration.ListenPort), contrail.PostgresInstanceType, postgres).WithLabels(labels)
+
+	return leaderIP, svc.EnsureExists()
 }
 
-func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, service *core.Service,
-	replicationPassSecretName, rootPassSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
+func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, replicationPassSecretName,
+	rootPassSecretName, serviceAccountName string) (*apps.StatefulSet, error) {
 
 	statefulSet := &apps.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -297,7 +261,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		initHostPathType            = core.HostPathDirectoryOrCreate
 		postgresUID           int64 = 999
 		labelsMountPermission int32 = 0644
-		csrSignerCaVolumeName       = postgres.Name + "-csr-signer-ca"
+		csrSignerCaVolumeName       = "csr-signer-ca"
 		storageClassName            = "local-storage"
 	)
 
@@ -305,7 +269,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 		statefulSet.Labels = postgres.Labels
 		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
 		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: postgres.Labels}
-		statefulSet.Spec.ServiceName = service.Name
+		statefulSet.Spec.ServiceName = postgres.Name + "-" + contrail.PostgresInstanceType
 		statefulSet.Spec.Replicas = postgres.Spec.CommonConfiguration.Replicas
 		statefulSet.Spec.Template.Labels = postgres.Labels
 		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{

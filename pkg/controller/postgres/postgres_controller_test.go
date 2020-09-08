@@ -2,17 +2,20 @@ package postgres
 
 import (
 	"context"
-	"github.com/Juniper/contrail-operator/pkg/certificates"
-	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apps "k8s.io/api/apps/v1"
 	"k8s.io/api/certificates/v1beta1"
+	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -24,14 +27,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	apps "k8s.io/api/apps/v1"
-	core "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
-	apimeta "k8s.io/apimachinery/pkg/api/meta"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
+	contraillabel "github.com/Juniper/contrail-operator/pkg/label"
 	"github.com/Juniper/contrail-operator/pkg/localvolume"
 )
 
@@ -149,12 +148,12 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("services and endpoint should be created", func(t *testing.T) {
 			name := types.NamespacedName{
-				Name:      namespacedName.Name,
+				Name:      namespacedName.Name + "-" + contrail.PostgresInstanceType,
 				Namespace: namespacedName.Namespace,
 			}
 
 			nameRepl := types.NamespacedName{
-				Name:      namespacedName.Name + "-replica",
+				Name:      namespacedName.Name + "-replica-" + contrail.PostgresInstanceType,
 				Namespace: namespacedName.Namespace,
 			}
 
@@ -426,7 +425,7 @@ func newSTS(name string) apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
-			ServiceName: "postgres",
+			ServiceName: "postgres-" + contrail.PostgresInstanceType,
 			Replicas:    &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
@@ -546,7 +545,7 @@ func newSTS(name string) apps.StatefulSet {
 									MountPath: "/var/lib/ssl_certificates",
 								},
 								{
-									Name:      "postgres-csr-signer-ca",
+									Name:      "csr-signer-ca",
 									MountPath: certificates.SignerCAMountPath,
 								},
 							},
@@ -575,7 +574,7 @@ func newSTS(name string) apps.StatefulSet {
 							},
 						},
 						{
-							Name: "postgres-csr-signer-ca",
+							Name: "csr-signer-ca",
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{

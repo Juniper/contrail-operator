@@ -19,6 +19,7 @@ type Service struct {
 	servType  core.ServiceType
 	port      int32
 	ownerType string
+	labels    map[string]string
 	owner     v1.Object
 	scheme    *runtime.Scheme
 	client    client.Client
@@ -27,7 +28,10 @@ type Service struct {
 
 // EnsureExists is used to make sure that kubernetes service exists and is correctly configured
 func (s *Service) EnsureExists() error {
-	labels := label.New(s.ownerType, s.owner.GetName())
+	labels := s.labels
+	if len(labels) == 0 {
+		labels = label.New(s.ownerType, s.owner.GetName())
+	}
 	s.svc = core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      s.name + "-" + s.ownerType,
@@ -56,4 +60,10 @@ func (s *Service) EnsureExists() error {
 // ClusterIP is used to read clusterIP of service
 func (s *Service) ClusterIP() string {
 	return s.svc.Spec.ClusterIP
+}
+
+// WithLabels is used to set labels on Service
+func (s *Service) WithLabels(labels map[string]string) *Service {
+	s.labels = labels
+	return s
 }

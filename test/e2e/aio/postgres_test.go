@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -64,7 +65,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 				ServiceConfiguration: contrail.PostgresConfiguration{
 					RootPassSecretName: rootPassSecretName,
 					Storage: contrail.Storage{
-						Path: "/mnt/postgres_test/patroni",
+						Path: "/mnt/storage/" + uuid.New().String(),
 					},
 					Containers: []*contrail.Container{
 						{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5.logical"},

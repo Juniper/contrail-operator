@@ -31,6 +31,7 @@ go_test(
         "//test/logger:go_default_library",
         "//test/wait:go_default_library",
         "@com_github_ghodss//:go_default_library",
+        "@com_github_google_uuid//:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/test:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/test/e2eutil:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",

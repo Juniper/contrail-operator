@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -30,9 +31,6 @@ func TestPatroni(t *testing.T) {
 	namespace, err := ctx.GetNamespace()
 
 	require.NoError(t, err)
-
-	//proxy, err := kubeproxy.New(f.KubeConfig)
-	//require.NoError(t, err)
 
 	log := logger.New(t, namespace, f.Client)
 
@@ -128,7 +126,7 @@ func TestPatroni(t *testing.T) {
 
 }
 
-func getLeader(t *testing.T, f *test.Framework, w wait.Wait, namespace string, pgName string) core.Pod{
+func getLeader(t *testing.T, f *test.Framework, w wait.Wait, namespace string, pgName string) core.Pod {
 	leaders := &core.PodList{}
 	labels := contrailLabel.New("postgres", pgName)
 	labels["role"] = "master"
@@ -206,7 +204,7 @@ func getPatroniCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.PostgresSpec{
 			ServiceConfiguration: contrail.PostgresConfiguration{
 				Storage: contrail.Storage{
-					Path: "/mnt/patroni_test/patroni",
+					Path: "/mnt/storage/" + uuid.New().String(),
 				},
 				Containers: []*contrail.Container{
 					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5.logical"},

@@ -172,6 +172,7 @@ func TestHAOpenStackServices(t *testing.T) {
 					Logger:        log,
 				}
 				assertOpenStackReplicasReady(t, w, 2)
+				assertPostgresReady(t, w, 2)
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
@@ -191,6 +192,7 @@ func TestHAOpenStackServices(t *testing.T) {
 					Logger:        log,
 				}
 				assertOpenStackReplicasReady(t, w, 3)
+				assertPostgresReady(t, w, 3)
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {

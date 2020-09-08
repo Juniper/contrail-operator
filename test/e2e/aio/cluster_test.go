@@ -172,7 +172,5 @@ func TestCluster(t *testing.T) {
 	})
 
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err, "failed to clean up the persistent volumes")
 }
