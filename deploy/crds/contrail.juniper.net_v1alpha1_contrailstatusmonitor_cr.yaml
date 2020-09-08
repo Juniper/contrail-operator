@@ -1,0 +1,13 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Contrailstatusmonitor
+metadata:
+  name: cassandra1
+status: functional
+errornotes: someerror1
+---
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Contrailstatusmonitor
+metadata:
+  name: zookeeper1
+status: non-functional
+errornotes: someerror2
