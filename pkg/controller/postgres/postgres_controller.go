@@ -304,102 +304,90 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, servi
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, statefulSet, func() error {
 		statefulSet.Labels = postgres.Labels
 		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
-		statefulSet.Spec = apps.StatefulSetSpec{
-			Selector: &meta.LabelSelector{
-				MatchLabels: postgres.Labels,
+		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: postgres.Labels}
+		statefulSet.Spec.ServiceName = service.Name
+		statefulSet.Spec.Replicas = postgres.Spec.CommonConfiguration.Replicas
+		statefulSet.Spec.Template.Labels = postgres.Labels
+		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{
+			PodAntiAffinity: &core.PodAntiAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
+					LabelSelector: &meta.LabelSelector{MatchLabels: postgres.Labels},
+					TopologyKey:   "kubernetes.io/hostname",
+				}},
 			},
-			ServiceName: service.Name,
-			Replicas:    postgres.Spec.CommonConfiguration.Replicas,
-			Template: core.PodTemplateSpec{
-				ObjectMeta: meta.ObjectMeta{
-					Labels: postgres.Labels,
+		}
+		statefulSet.Spec.Template.Spec.InitContainers = r.initContainers(postgres)
+		statefulSet.Spec.Template.Spec.Containers = r.containers(postgres, rootPassSecretName, replicationPassSecretName, csrSignerCaVolumeName)
+		statefulSet.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+		statefulSet.Spec.Template.Spec.SecurityContext = &core.PodSecurityContext{
+			RunAsUser:          &postgresUID,
+			FSGroup:            &postgresUID,
+			SupplementalGroups: []int64{999, 1000},
+		}
+		statefulSet.Spec.Template.Spec.Volumes = []core.Volume{
+			{
+				Name: "postgres-storage-init",
+				VolumeSource: core.VolumeSource{
+					HostPath: &core.HostPathVolumeSource{
+						Path: storagePath,
+						Type: &initHostPathType,
+					},
 				},
-				Spec: core.PodSpec{
-					Affinity: &core.Affinity{
-						PodAntiAffinity: &core.PodAntiAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{{
-								LabelSelector: &meta.LabelSelector{MatchLabels: postgres.Labels},
-								TopologyKey:   "kubernetes.io/hostname",
-							}},
-						},
-					},
-					InitContainers:     r.initContainers(postgres),
-					Containers:         r.containers(postgres, rootPassSecretName, replicationPassSecretName, csrSignerCaVolumeName),
-					HostNetwork:        true,
-					NodeSelector:       postgres.Spec.CommonConfiguration.NodeSelector,
-					ServiceAccountName: serviceAccountName,
-					Tolerations:        postgres.Spec.CommonConfiguration.Tolerations,
-					SecurityContext: &core.PodSecurityContext{
-						RunAsUser:          &postgresUID,
-						FSGroup:            &postgresUID,
-						SupplementalGroups: []int64{999, 1000},
-					},
-					Volumes: []core.Volume{
-						{
-							Name: "postgres-storage-init",
-							VolumeSource: core.VolumeSource{
-								HostPath: &core.HostPathVolumeSource{
-									Path: storagePath,
-									Type: &initHostPathType,
-								},
-							},
-						},
-						{
-							Name: postgres.Name + "-secret-certificates",
-							VolumeSource: core.VolumeSource{
-								Secret: &core.SecretVolumeSource{
-									SecretName: postgres.Name + "-secret-certificates",
-								},
-							},
-						},
-						{
-							Name: csrSignerCaVolumeName,
-							VolumeSource: core.VolumeSource{
-								ConfigMap: &core.ConfigMapVolumeSource{
-									LocalObjectReference: core.LocalObjectReference{
-										Name: certificates.SignerCAConfigMapName,
-									},
-								},
-							},
-						},
-						{
-							Name: "status",
-							VolumeSource: core.VolumeSource{
-								DownwardAPI: &core.DownwardAPIVolumeSource{
-									Items: []core.DownwardAPIVolumeFile{
-										{
-											FieldRef: &core.ObjectFieldSelector{
-												APIVersion: "v1",
-												FieldPath:  "metadata.labels",
-											},
-											Path: "pod_labels",
-										},
-									},
-									DefaultMode: &labelsMountPermission,
-								},
-							},
-						},
-					}},
 			},
-			VolumeClaimTemplates: []core.PersistentVolumeClaim{
-				{
-					ObjectMeta: meta.ObjectMeta{
-						Name:      "pgdata",
-						Namespace: postgres.Namespace,
-						Labels:    postgres.Labels,
+			{
+				Name: postgres.Name + "-secret-certificates",
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						SecretName: postgres.Name + "-secret-certificates",
 					},
-					Spec: core.PersistentVolumeClaimSpec{
-						AccessModes: []core.PersistentVolumeAccessMode{
-							core.ReadWriteOnce,
+				},
+			},
+			{
+				Name: csrSignerCaVolumeName,
+				VolumeSource: core.VolumeSource{
+					ConfigMap: &core.ConfigMapVolumeSource{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: certificates.SignerCAConfigMapName,
 						},
-						Selector: &meta.LabelSelector{
-							MatchLabels: postgres.Labels,
-						},
-						StorageClassName: &storageClassName,
-						Resources: core.ResourceRequirements{
-							Requests: map[core.ResourceName]resource.Quantity{
-								core.ResourceStorage: resource.MustParse("5Gi"),
+					},
+				},
+			},
+			{
+				Name: "status",
+				VolumeSource: core.VolumeSource{
+					DownwardAPI: &core.DownwardAPIVolumeSource{
+						Items: []core.DownwardAPIVolumeFile{
+							{
+								FieldRef: &core.ObjectFieldSelector{
+									APIVersion: "v1",
+									FieldPath:  "metadata.labels",
+								},
+								Path: "pod_labels",
 							},
+						},
+						DefaultMode: &labelsMountPermission,
+					},
+				},
+			},
+		}
+		statefulSet.Spec.VolumeClaimTemplates = []core.PersistentVolumeClaim{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Name:      "pgdata",
+					Namespace: postgres.Namespace,
+					Labels:    postgres.Labels,
+				},
+				Spec: core.PersistentVolumeClaimSpec{
+					AccessModes: []core.PersistentVolumeAccessMode{
+						core.ReadWriteOnce,
+					},
+					Selector: &meta.LabelSelector{
+						MatchLabels: postgres.Labels,
+					},
+					StorageClassName: &storageClassName,
+					Resources: core.ResourceRequirements{
+						Requests: map[core.ResourceName]resource.Quantity{
+							core.ResourceStorage: resource.MustParse("5Gi"),
 						},
 					},
 				},
