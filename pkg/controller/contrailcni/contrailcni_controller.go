@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -149,6 +150,12 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		if err := r.Client.Create(ctx, job); err != nil {
 			return reconcile.Result{}, err
 		}
+	} else {
+		_, err = ctrl.CreateOrUpdate(ctx, r.Client, &clusterJob, func() error {
+			clusterJob.Spec = job.Spec
+			clusterJob.Labels = job.Labels
+			return ctrl.SetControllerReference(instance, &clusterJob, r.Scheme)
+		})
 	}
 
 	if instance.Status.Active == nil {

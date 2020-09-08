@@ -791,15 +791,19 @@ spec:
                                   type: object
                                 type: array
                               logLevel:
-                                type: string
+                                format: int32
+                                type: integer
                               pollRetries:
-                                type: string
+                                format: int32
+                                type: integer
                               pollTimeout:
-                                type: string
+                                format: int32
+                                type: integer
                               vrouterIP:
                                 type: string
                               vrouterPort:
-                                type: string
+                                format: int32
+                                type: integer
                             type: object
                         required:
                         - serviceConfiguration
@@ -2366,8 +2370,6 @@ spec:
                                 type: string
                               clusterRoleBinding:
                                 type: string
-                              cniMetaPlugin:
-                                type: string
                               containers:
                                 items:
                                   description: Container defines name, image and command.
@@ -2390,26 +2392,16 @@ spec:
                                 type: string
                               gateway:
                                 type: string
-                              logLevel:
-                                type: string
                               metaDataSecret:
                                 type: string
                               nodeManager:
                                 type: boolean
                               physicalInterface:
                                 type: string
-                              pollRetries:
-                                type: string
-                              pollTimeout:
-                                type: string
                               serviceAccount:
                                 type: string
                               vrouterEncryption:
                                 type: boolean
-                              vrouterIP:
-                                type: string
-                              vrouterPort:
-                                type: string
                             type: object
                         required:
                         - serviceConfiguration

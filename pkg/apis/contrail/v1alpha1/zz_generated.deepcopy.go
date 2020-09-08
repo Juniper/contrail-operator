@@ -861,6 +861,26 @@ func (in *ContrailCNIConfiguration) DeepCopyInto(out *ContrailCNIConfiguration) 
 			}
 		}
 	}
+	if in.VrouterPort != nil {
+		in, out := &in.VrouterPort, &out.VrouterPort
+		*out = new(int32)
+		**out = **in
+	}
+	if in.PollTimeout != nil {
+		in, out := &in.PollTimeout, &out.PollTimeout
+		*out = new(int32)
+		**out = **in
+	}
+	if in.PollRetries != nil {
+		in, out := &in.PollRetries, &out.PollRetries
+		*out = new(int32)
+		**out = **in
+	}
+	if in.LogLevel != nil {
+		in, out := &in.LogLevel, &out.LogLevel
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 

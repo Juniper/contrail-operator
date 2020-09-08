@@ -113,6 +113,8 @@ spec:
                     hours.
                   type: integer
                 analyticsDataTTL:
+                  description: Time (in hours) that the analytics object and log data
+                    stays in the Cassandra database. Defaults to 48 hours.
                   type: integer
                 analyticsFlowTTL:
                   description: Time to live (TTL) for flow data in hours. Defaults

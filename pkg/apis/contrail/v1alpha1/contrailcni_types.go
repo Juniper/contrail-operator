@@ -38,10 +38,10 @@ type ContrailCNIConfiguration struct {
 	Containers    []*Container `json:"containers,omitempty"`
 	CniMetaPlugin string       `json:"cniMetaPlugin,omitempty"`
 	VrouterIP     string       `json:"vrouterIP,omitempty"`
-	VrouterPort   string       `json:"vrouterPort,omitempty"`
-	PollTimeout   string       `json:"pollTimeout,omitempty"`
-	PollRetries   string       `json:"pollRetries,omitempty"`
-	LogLevel      string       `json:"logLevel,omitempty"`
+	VrouterPort   *int32       `json:"vrouterPort,omitempty"`
+	PollTimeout   *int32       `json:"pollTimeout,omitempty"`
+	PollRetries   *int32       `json:"pollRetries,omitempty"`
+	LogLevel      *int32       `json:"logLevel,omitempty"`
 }
 
 // ContrailCNIStatus defines the observed state of ContrailCNI
@@ -60,10 +60,10 @@ type ContrailCNIList struct {
 
 const DefaultCniMetaPlugin = "multus"
 const DefaultVrouterIP = "127.0.0.1"
-const DefaultVrouterPort = "9091"
-const DefaultPollTimeout = "5"
-const DefaultPollRetries = "15"
-const DefaultLogLevel = "4"
+const DefaultVrouterPort = 9091
+const DefaultPollTimeout = 5
+const DefaultPollRetries = 15
+const DefaultLogLevel = 4
 
 func init() {
 	SchemeBuilder.Register(&ContrailCNI{}, &ContrailCNIList{})

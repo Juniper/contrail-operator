@@ -115,15 +115,19 @@ spec:
                     type: object
                   type: array
                 logLevel:
-                  type: string
+                  format: int32
+                  type: integer
                 pollRetries:
-                  type: string
+                  format: int32
+                  type: integer
                 pollTimeout:
-                  type: string
+                  format: int32
+                  type: integer
                 vrouterIP:
                   type: string
                 vrouterPort:
-                  type: string
+                  format: int32
+                  type: integer
               type: object
           required:
           - serviceConfiguration

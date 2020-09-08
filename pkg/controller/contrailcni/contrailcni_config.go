@@ -11,10 +11,10 @@ type contrailCNIConf struct {
 	KubernetesClusterName string
 	CniMetaPlugin         string
 	VrouterIP             string
-	VrouterPort           string
-	PollTimeout           string
-	PollRetries           string
-	LogLevel              string
+	VrouterPort           *int32
+	PollTimeout           *int32
+	PollRetries           *int32
+	LogLevel              *int32
 }
 
 func (c *contrailCNIConf) FillConfigMap(cm *core.ConfigMap) {

@@ -26,19 +26,26 @@ func (c *configMaps) ensureContrailCNIConfigExists(clusterInfo contrail.CNIClust
 		return err
 	}
 	ccni.KubernetesClusterName = clusterName
-	ccni.CniMetaPlugin = configWithDefault(c.ccniSpec.ServiceConfiguration.CniMetaPlugin, contrail.DefaultCniMetaPlugin)
-	ccni.VrouterIP = configWithDefault(c.ccniSpec.ServiceConfiguration.VrouterIP, contrail.DefaultVrouterIP)
-	ccni.VrouterPort = configWithDefault(c.ccniSpec.ServiceConfiguration.VrouterPort, contrail.DefaultVrouterPort)
-	ccni.PollTimeout = configWithDefault(c.ccniSpec.ServiceConfiguration.PollTimeout, contrail.DefaultPollTimeout)
-	ccni.PollRetries = configWithDefault(c.ccniSpec.ServiceConfiguration.PollRetries, contrail.DefaultPollRetries)
-	ccni.LogLevel = configWithDefault(c.ccniSpec.ServiceConfiguration.LogLevel, contrail.DefaultLogLevel)
+	ccni.CniMetaPlugin = configStringWithDefault(c.ccniSpec.ServiceConfiguration.CniMetaPlugin, contrail.DefaultCniMetaPlugin)
+	ccni.VrouterIP = configStringWithDefault(c.ccniSpec.ServiceConfiguration.VrouterIP, contrail.DefaultVrouterIP)
+	ccni.VrouterPort = configIntWithDefault(c.ccniSpec.ServiceConfiguration.VrouterPort, contrail.DefaultVrouterPort)
+	ccni.PollTimeout = configIntWithDefault(c.ccniSpec.ServiceConfiguration.PollTimeout, contrail.DefaultPollTimeout)
+	ccni.PollRetries = configIntWithDefault(c.ccniSpec.ServiceConfiguration.PollRetries, contrail.DefaultPollRetries)
+	ccni.LogLevel = configIntWithDefault(c.ccniSpec.ServiceConfiguration.LogLevel, contrail.DefaultLogLevel)
 
 	return c.cm.EnsureExists(ccni)
 }
 
-func configWithDefault(specValue, defaultValue string) string {
+func configStringWithDefault(specValue, defaultValue string) string {
 	if specValue != "" {
 		return specValue
 	}
 	return defaultValue
+}
+
+func configIntWithDefault(specValue *int32, defaultValue int32) *int32 {
+	if specValue != nil {
+		return specValue
+	}
+	return &defaultValue
 }
