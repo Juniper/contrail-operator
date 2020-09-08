@@ -51,8 +51,7 @@ func (w Wait) ForReadyJob(name string, expectedCompletions int32) error {
 			w.Logger.Logf("request to kube api returned error: %v", err)
 			return false, nil
 		}
-		w.Logger.Logf("Checking succeeded, failed, active, expected: %v, %v, %v, %v", job.Status.Succeeded, job.Status.Failed, job.Status.Active, expectedCompletions)
-		if job.Status.Succeeded == expectedCompletions {
+		if job.Status.Succeeded >= expectedCompletions {
 			return true, nil
 		}
 		return false, nil
