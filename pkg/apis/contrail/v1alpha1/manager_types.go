@@ -37,7 +37,6 @@ type Services struct {
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
-	Contrailmonitor  *Contrailmonitor  `json:"contrailmonitor,omitempty"`
 }
 
 // ManagerStatus defines the observed state of Manager.
@@ -61,7 +60,6 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
-	Contrailmonitor  *ServiceStatus   `json:"contrailmonitor,omitempty"`
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
@@ -209,9 +207,6 @@ func (m Manager) IsClusterReady() bool {
 		return false
 	}
 	if m.Spec.Services.Memcached != nil && !m.Status.Memcached.ready() {
-		return false
-	}
-	if m.Spec.Services.Contrailmonitor != nil && !m.Status.Contrailmonitor.ready() {
 		return false
 	}
 	return true
