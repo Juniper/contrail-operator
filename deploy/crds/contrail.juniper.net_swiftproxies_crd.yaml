@@ -146,6 +146,9 @@ spec:
                   type: string
                 swiftConfSecretName:
                   type: string
+                swiftServiceName:
+                  description: Service name registered in Keystone, default "swift"
+                  type: string
               type: object
           required:
           - serviceConfiguration

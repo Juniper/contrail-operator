@@ -1517,7 +1517,59 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
+		expectedSwift := contrail.Swift{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-swift",
+				Namespace: "default",
+				OwnerReferences: []meta.OwnerReference{
+					{
+						APIVersion:         "contrail.juniper.net/v1alpha1",
+						Kind:               "Manager",
+						Name:               "test-manager",
+						UID:                "manager-uid-1",
+						Controller:         &trueVar,
+						BlockOwnerDeletion: &trueVar,
+					},
+				},
+			},
+			TypeMeta: meta.TypeMeta{Kind: "Swift", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.SwiftSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.SwiftConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "ringcontroller", Image: "ringcontroller"},
+					},
+					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+						AccountBindPort:   6001,
+						ContainerBindPort: 6002,
+						ObjectBindPort:    6000,
+						Containers: []*contrail.Container{
+							{Name: "container1", Image: "image1"},
+							{Name: "container2", Image: "image2"},
+						},
+						Device: "dev",
+					},
+					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
+						// SwiftServiceName not set explicitly, should comes from defaults.
+						SwiftServiceName:      "swift",
+						ListenPort:            5070,
+						KeystoneInstance:      "keystone",
+						KeystoneSecretName:    "keystone-adminpass-secret",
+						CredentialsSecretName: credentialsSecretName,
+						Containers: []*contrail.Container{
+							{Name: "container3", Image: "image3"},
+							{Name: "container4", Image: "image4"},
+						},
+					},
+				},
+			},
+		}
+
 		assertCommandDeployed(t, expectedCommand, fakeClient)
+		assertSwiftDeployed(t, expectedSwift, fakeClient)
 	})
 
 	t.Run("when a Manager CR with Memcached in Services field is reconciled", func(t *testing.T) {
@@ -1867,6 +1919,17 @@ func assertCommandDeployed(t *testing.T, expected contrail.Command, fakeClient c
 	assert.NoError(t, err)
 	commandLoaded.SetResourceVersion("")
 	assert.Equal(t, expected, commandLoaded)
+}
+
+func assertSwiftDeployed(t *testing.T, expected contrail.Swift, fakeClient client.Client) {
+	swift := contrail.Swift{}
+	err := fakeClient.Get(context.Background(), types.NamespacedName{
+		Name:      expected.Name,
+		Namespace: expected.Namespace,
+	}, &swift)
+	assert.NoError(t, err)
+	swift.SetResourceVersion("")
+	assert.Equal(t, expected, swift)
 }
 
 func assertPostgres(t *testing.T, expected contrail.Postgres, fakeClient client.Client) {

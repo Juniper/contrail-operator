@@ -51,6 +51,13 @@ type SwiftList struct {
 	Items           []Swift `json:"items"`
 }
 
+// SetDefaultValues sets default values for swift resource parameters
+func (s *Swift) SetDefaultValues() {
+	if s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName == "" {
+		s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName = SwiftServiceName
+	}
+}
+
 func init() {
 	SchemeBuilder.Register(&Swift{}, &SwiftList{})
 }

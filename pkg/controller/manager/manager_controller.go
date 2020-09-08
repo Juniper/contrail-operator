@@ -774,6 +774,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec
+		swift.SetDefaultValues()
 		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
 		if swift.Spec.CommonConfiguration.Replicas == nil {
 			swift.Spec.CommonConfiguration.Replicas = replicas

@@ -218,6 +218,7 @@ func TestOpenstackServices(t *testing.T) {
 							ListenPort:         5070,
 							KeystoneInstance:   "openstacktest-keystone",
 							KeystoneSecretName: "openstacktest-keystone-adminpass-secret",
+							SwiftServiceName:   "contrail-swift",
 							Containers: []*contrail.Container{
 								{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005"},
@@ -260,7 +261,7 @@ func TestOpenstackServices(t *testing.T) {
 				keystoneClient, _ = getKeystoneClient(f, namespace, "openstacktest-keystone")
 				tokens, _         = keystoneClient.PostAuthTokens("swift", "swiftPass", "service")
 				swiftProxy        = proxy.NewSecureClientForService("contrail", "openstacktest-swift-proxy-swift-proxy", 5070)
-				swiftURL          = tokens.EndpointURL("swift", "internal")
+				swiftURL          = tokens.EndpointURL("contrail-swift", "internal")
 				swiftClient, err  = swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 			)
 			require.NoError(t, err)

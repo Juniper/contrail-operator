@@ -234,6 +234,7 @@ const (
 	SandeshCertfile                             string = "/etc/contrail/ssl/certs/server.pem"
 	SandeshKeyfile                              string = "/etc/contrail/ssl/private/server-privkey.pem"
 	SandeshCaCertfile                           string = "/etc/contrail/ssl/certs/ca-cert.pem"
+	SwiftServiceName                            string = "swift"
 	MetadataSslEnable                           string = "false"
 	MetadataSslCertfile                         string = ""
 	MetadataSslKeyfile                          string = ""
