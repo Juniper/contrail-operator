@@ -26,6 +26,8 @@ import (
 
 	contrailOperatorTypes "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	_ "net/http/pprof"
 )
 
 //NodeType definition
@@ -87,6 +89,9 @@ type ServiceStatusControl struct {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6542", nil))
+	}()
 	log.Println("Starting status monitor")
 	configPtr := flag.String("config", "/config.yaml", "path to config yaml file")
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")

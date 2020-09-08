@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pprof-logger
+spec:
+  selector:
+    matchLabels:
+      app: pprof
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: pprof
+    spec:
+      volumes:
+        - name: varlogcontrail
+          hostPath:
+            path: /var/log/contrail
+      hostNetwork: true
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - pprof
+            topologyKey: "kubernetes.io/hostname"
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      containers:
+      - name: logger
+        image: curlimages/curl
+        command:
+          - /bin/sh
+          - -c
+          - mkdir -p /var/log/contrail/pprof/config; mkdir -p /var/log/contrail/pprof/control;  mkdir -p /var/log/contrail/pprof/kubemanager; while true; do curtime=$(date +"%Y-%d-%m-%H-%M-%s"); curl http://localhost:6542/debug/pprof/heap > "/var/log/contrail/pprof/control/pprof-heap-${curtime}.pprof"; curl http://localhost:6543/debug/pprof/heap > "/var/log/contrail/pprof/config/pprof-heap-${curtime}.pprof"; curl http://localhost:6541/debug/pprof/heap > "/var/log/contrail/pprof/kubemanager/pprof-heap-${curtime}.pprof"; sleep 10; done
+        volumeMounts:
+          - name: varlogcontrail
+            mountPath: /var/log/contrail
+        securityContext:
+          privileged: true
