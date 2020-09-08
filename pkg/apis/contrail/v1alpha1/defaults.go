@@ -151,12 +151,14 @@ const (
 	KeystoneAuthAdminTenant                     string = "admin"
 	KeystoneAuthAdminUser                       string = "admin"
 	KeystoneAuthAdminPassword                   string = "contrail123"
+	KeystoneAuthProjectDomainID                 string = "default"
+	KeystoneAuthUserDomainID                    string = "default"
 	KeystoneAuthProjectDomainName               string = "Default"
 	KeystoneAuthUserDomainName                  string = "Default"
 	KeystoneAuthRegionName                      string = "RegionOne"
 	KeystoneAuthUrlVersion                      string = "/v3"
 	KeystoneAuthHost                            string = "127.0.0.1"
-	KeystoneAuthProto                           string = "http"
+	KeystoneAuthProto                           string = "https"
 	KeystoneAuthAdminPort                       int    = 35357
 	KeystoneAuthPublicPort                      int    = 5000
 	KeystoneAuthUrlTokens                       string = "/v3/auth/tokens"

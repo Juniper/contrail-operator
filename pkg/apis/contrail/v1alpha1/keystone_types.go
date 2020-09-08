@@ -69,6 +69,33 @@ type KeystoneList struct {
 	Items           []Keystone `json:"items"`
 }
 
+// SetDefaultValues sets default values for keystone resource parameters
+func (k *Keystone) SetDefaultValues() {
+	// After migration to CRD apiextensions.k8s.io/v1 replace those conditions
+	// with +kubebuilder:default markers on keystone struct fileds
+	if k.Spec.ServiceConfiguration.ListenPort == 0 {
+		k.Spec.ServiceConfiguration.ListenPort = KeystoneAuthPublicPort
+	}
+	if k.Spec.ServiceConfiguration.Region == "" {
+		k.Spec.ServiceConfiguration.Region = KeystoneAuthRegionName
+	}
+	if k.Spec.ServiceConfiguration.AuthProtocol == "" {
+		k.Spec.ServiceConfiguration.AuthProtocol = KeystoneAuthProto
+	}
+	if k.Spec.ServiceConfiguration.UserDomainName == "" {
+		k.Spec.ServiceConfiguration.UserDomainName = KeystoneAuthUserDomainName
+	}
+	if k.Spec.ServiceConfiguration.UserDomainID == "" {
+		k.Spec.ServiceConfiguration.UserDomainID = KeystoneAuthUserDomainID
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainName == "" {
+		k.Spec.ServiceConfiguration.ProjectDomainName = KeystoneAuthProjectDomainName
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainID == "" {
+		k.Spec.ServiceConfiguration.ProjectDomainID = KeystoneAuthProjectDomainID
+	}
+}
+
 func init() {
 	SchemeBuilder.Register(&Keystone{}, &KeystoneList{})
 }

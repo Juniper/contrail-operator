@@ -1257,7 +1257,7 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
 					PostgresInstance:   "psql",
-					ListenPort:         5555,
+					ListenPort:         5000,
 					AuthProtocol:       "https",
 					Region:             "RegionOne",
 					UserDomainName:     "Default",
