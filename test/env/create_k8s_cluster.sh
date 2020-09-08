@@ -24,7 +24,7 @@ containerdConfigPatches:
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:5000"]
     endpoint = ["http://registry:5000"]
 networking:
-  disableDefaultCNI: false
+  disableDefaultCNI: true
 nodes:
 - role: control-plane
 EOF
@@ -46,6 +46,9 @@ cmd="echo ${insecure_registry_address} registry >> /etc/hosts"
 for node in $(kind get nodes --name "${kind_cluster_name}"); do
   docker exec "${node}" sh -c "${cmd}"
 done
+
+# remove default storage class
+kubectl delete sc standard
 
 # untaint nodes
 kubectl taint nodes --all node-role.kubernetes.io/master- &>/dev/null || true
