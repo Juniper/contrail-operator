@@ -378,7 +378,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		keystoneContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       6 * time.Minute,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
