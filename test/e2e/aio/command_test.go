@@ -66,7 +66,7 @@ func TestCommandServices(t *testing.T) {
 						Path: "/mnt/storage/" + uuid.New().String(),
 					},
 					Containers: []*contrail.Container{
-						{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:1.6.5.logical"},
+						{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"},
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},

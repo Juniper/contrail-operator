@@ -503,7 +503,7 @@ func newSTS(name string) apps.StatefulSet {
 					},
 					Containers: []core.Container{
 						{
-							Image:           "localhost:5000/patroni:1.6.5.logical",
+							Image:           "localhost:5000/patroni:2.0.0.logical",
 							Name:            "patroni",
 							ImagePullPolicy: core.PullAlways,
 							Env: []core.EnvVar{
