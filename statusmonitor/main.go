@@ -228,6 +228,10 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 					return err_p
 				}
 				controlStatus, err := getControlStatusFromResponse(bodyBytes, bodyBytes_p)
+				if err != nil {
+					log.Printf("Error while reading ControlStatus response: %v", err)
+					return err
+				}
 				controlStatusMap[hostname] = *controlStatus
 			}
 		}
