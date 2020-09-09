@@ -118,7 +118,6 @@ func main() {
 					log.Printf("kubernates client creation failed: %v", err)
 					continue
 				}
-				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
 				switch config.NodeType {
 				case "control":
 					err := getControlStatus(client, clientset, restClient, config)
