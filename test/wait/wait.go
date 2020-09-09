@@ -95,6 +95,11 @@ func (w Wait) ForDeployment(name string) error {
 	return err
 }
 
+// Poll is a wrapper for retrying an function until it ends with success
+func (w Wait) Poll(repeatable func() (done bool, err error)) error {
+	return wait.Poll(w.RetryInterval, w.Timeout, repeatable)
+}
+
 func (w Wait) dumpPodsOnError(err error) {
 	if err != nil {
 		w.Logger.DumpPods()

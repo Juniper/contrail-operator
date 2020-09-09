@@ -106,6 +106,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 			require.NoError(t, err)
 			t.Run("then OpenStack services have single replica ready", func(t *testing.T) {
+				assertPostgresReady(t, w, 1)
 				assertOpenStackReplicasReady(t, w, 1)
 			})
 
@@ -119,6 +120,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
+				assertPostgresReady(t, w, 3)
 				assertOpenStackReplicasReady(t, w, 3)
 			})
 
@@ -170,6 +172,7 @@ func TestHAOpenStackServices(t *testing.T) {
 					Logger:        log,
 				}
 				assertOpenStackReplicasReady(t, w, 2)
+				assertPostgresReady(t, w, 2)
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
@@ -189,6 +192,7 @@ func TestHAOpenStackServices(t *testing.T) {
 					Logger:        log,
 				}
 				assertOpenStackReplicasReady(t, w, 3)
+				assertPostgresReady(t, w, 3)
 			})
 
 			t.Run("then openstack services are correctly responding", func(t *testing.T) {
@@ -300,6 +304,13 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Swift Proxy deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", r))
+	})
+}
+
+func assertPostgresReady(t *testing.T, w wait.Wait, r int32) {
+	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 }
 
@@ -428,12 +439,18 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "postgres",
 			Namespace: namespace,
-			Labels:    map[string]string{"contrail_cluster": "openstack", "app": "postgres"},
+			Labels:    map[string]string{"contrail_manager": "openstack", "postgres": "postgres"},
 		},
 		Spec: contrail.PostgresSpec{
-			Containers: []*contrail.Container{
-				{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/postgres:12.2"},
-				{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+			ServiceConfiguration: contrail.PostgresConfiguration{
+				Storage: contrail.Storage{
+					Path: "/mnt/openstack_test/patroni",
+				},
+				Containers: []*contrail.Container{
+					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+				},
 			},
 		},
 	}

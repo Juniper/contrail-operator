@@ -4,29 +4,39 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// +k8s:openapi-gen=true
+type PostgresConfiguration struct {
+	ListenPort                int          `json:"listenPort,omitempty"`
+	RootPassSecretName        string       `json:"rootPassSecretName,omitempty"`
+	ReplicationPassSecretName string       `json:"replicationPassSecretName,omitempty"`
+	Containers                []*Container `json:"containers,omitempty"`
+	Storage                   Storage      `json:"storage,omitempty"`
+}
 
 // PostgresSpec defines the desired state of Postgres
 // +k8s:openapi-gen=true
 type PostgresSpec struct {
-	Containers  []*Container `json:"containers,omitempty"`
-	Storage     Storage      `json:"storage,omitempty"`
-	HostNetwork *bool        `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
+	CommonConfiguration  PodConfiguration      `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration PostgresConfiguration `json:"serviceConfiguration"`
 }
 
 // PostgresStatus defines the observed state of Postgres
 // +k8s:openapi-gen=true
 type PostgresStatus struct {
-	Active   bool   `json:"active,omitempty"`
+	Status   `json:",inline"`
 	Endpoint string `json:"endpoint,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Postgres is the Schema for the postgres API
+// Postgres is the Schema for the Postgress API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready_Replicas",type=integer,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="Endpoint",type=string,JSONPath=`.status.endpoint`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type Postgres struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -43,6 +53,9 @@ type PostgresList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Postgres `json:"items"`
 }
+
+// PostgresInstanceType is type unique name used for labels
+const PostgresInstanceType = "postgres"
 
 func init() {
 	SchemeBuilder.Register(&Postgres{}, &PostgresList{})

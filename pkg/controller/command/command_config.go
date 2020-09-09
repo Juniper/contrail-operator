@@ -54,7 +54,19 @@ update-ca-trust
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
 #!/bin/bash
+
 export PGPASSWORD={{ .PGPassword }}
+
+DB_QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d postgres -tAc "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{ .PostgresDBName }}')")
+DB_QUERY_EXIT_CODE=$?
+if [[ $DB_QUERY_EXIT_CODE == 0 && $DB_QUERY_RESULT == 'f' ]]; then
+    createdb -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} {{ .PostgresDBName }}
+fi
+
+if [[ $DB_QUERY_EXIT_CODE == 2 ]]; then
+    exit 1
+fi
+
 QUERY_RESULT=$(psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then
@@ -66,7 +78,7 @@ if [[ $QUERY_EXIT_CODE == 2 ]]; then
 fi
 
 set -e
-psql -w -h {{ .PostgresAddress }} -U root -d contrail_test -f /usr/share/contrail/gen_init_psql.sql
+psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
 commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
 commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
@@ -270,9 +282,9 @@ resources:
 var commandConfig = template.Must(template.New("").Parse(`
 database:
   host: {{ .PostgresAddress }}
-  user: root
-  password: contrail123
-  name: contrail_test
+  user: {{ .PostgresUser }}
+  password: {{ .PGPassword }}
+  name: {{ .PostgresDBName }}
   max_open_conn: 100
   connection_retries: 10
   retry_period: 3s

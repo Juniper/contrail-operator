@@ -265,6 +265,9 @@ func (r *ReconcileSwiftStorage) createOrUpdateSts(
 					AccessModes: []core.PersistentVolumeAccessMode{
 						core.ReadWriteOnce,
 					},
+					Selector: &meta.LabelSelector{
+						MatchLabels: swiftStorage.Labels,
+					},
 					StorageClassName: &storageClassName,
 					Resources: core.ResourceRequirements{
 						Requests: map[core.ResourceName]resource.Quantity{

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/label"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -196,11 +197,14 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pvc",
 			Namespace: request.Namespace,
-			Labels:    map[string]string{"contrail_manager": instanceType, instanceType: request.Name},
+			Labels:    label.New(instanceType, request.Name),
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				"ReadWriteOnce",
+			},
+			Selector: &metav1.LabelSelector{
+				MatchLabels: label.New(instanceType, request.Name),
 			},
 			StorageClassName: &storageClassName,
 			Resources: corev1.ResourceRequirements{
@@ -336,7 +340,8 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	for i := 0; i < replicasInt; i++ {
 		pv := &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: instance.Name + "-pv-" + strconv.Itoa(i),
+				Name:   instance.Name + "-pv-" + strconv.Itoa(i),
+				Labels: label.New(instanceType, request.Name),
 			},
 			Spec: corev1.PersistentVolumeSpec{
 				Capacity:   corev1.ResourceList{storageResource: diskSize},
@@ -387,7 +392,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": instanceType, instanceType: request.Name})
+		labelSelector := labels.SelectorFromSet(label.New(instanceType, request.Name))
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
 		err = r.Client.List(context.TODO(), pvcList, listOps)

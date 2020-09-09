@@ -762,9 +762,16 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 	psql := &v1alpha1.Postgres{}
 	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta
 	psql.ObjectMeta.Namespace = manager.Namespace
+	manager.Spec.Services.Postgres.Spec.ServiceConfiguration.RootPassSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
 		psql.Spec = manager.Spec.Services.Postgres.Spec
-		//TODO introduce Common Configuration in PSQL
+		if psql.Spec.ServiceConfiguration.ListenPort == 0 {
+			psql.Spec.ServiceConfiguration.ListenPort = 5432
+		}
+		psql.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, psql.Spec.CommonConfiguration)
+		if psql.Spec.CommonConfiguration.Replicas == nil {
+			psql.Spec.CommonConfiguration.Replicas = replicas
+		}
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}

@@ -157,8 +157,6 @@ func TestCluster(t *testing.T) {
 				PropagationPolicy: &pp,
 			})
 			assert.NoError(t, err)
-			err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
-			assert.NoError(t, err)
 
 			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
@@ -172,4 +170,7 @@ func TestCluster(t *testing.T) {
 			})
 		})
 	})
+
+	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
+	require.NoError(t, err, "failed to clean up the persistent volumes")
 }

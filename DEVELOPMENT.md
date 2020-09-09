@@ -40,6 +40,13 @@ The last line `./create_manifest.sh` generates file `deploy/1-create-operator.ya
       chmod -R 755 build/bin build/_output
       <rebuild operator>
 
+* Bazel run returns error:
+        
+        stdout: stderr: xcodebuild: error: SDK "macosx10.10" cannot be located.
+        xcodebuild: error: SDK "macosx10.10" cannot be located.
+        xcrun: error: unable to lookup item 'Path' in SDK 'macosx10.10'
+     Solution: add to you command `--macos_sdk_version=10.15`
+
 ### Debug Contrail operator in VSCode
 
 Contrail operator can be run outside of K8s/OpenShift cluster what makes it easier to debug. First of all the configuration of the cluster needs to be available on the host where operator will be run. This can be achieved by creating local K8s cluster with script `test/env/create_testenv.sh` or by putting configuration of external cluster to standard directory for example `~/.kube/config`.

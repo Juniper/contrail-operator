@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -57,9 +58,15 @@ func TestOpenstackServices(t *testing.T) {
 		psql := &contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
 			Spec: contrail.PostgresSpec{
-				Containers: []*contrail.Container{
-					{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/postgres:12.2"},
-					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					Storage: contrail.Storage{
+						Path: "/mnt/storage/" + uuid.New().String(),
+					},
+					Containers: []*contrail.Container{
+						{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"},
+						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
 				},
 			},
 		}

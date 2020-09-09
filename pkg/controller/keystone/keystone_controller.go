@@ -236,7 +236,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, nil
 	}
 
-	if err = r.reconcileBootstrapJob(keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psql.Status.Endpoint); err != nil {
+	if err = r.reconcileBootstrapJob(keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPasswordSecretName, psql.Status.Endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -487,9 +487,9 @@ KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
 createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
 createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
 	hostNetwork := true
@@ -534,7 +534,7 @@ func newKeystoneService(cr *contrail.Keystone) *core.Service {
 	}
 }
 
-func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string) *batch.Job {
+func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPassSecretName, psqlIP string) *batch.Job {
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name.Name,
@@ -573,6 +573,14 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 								},
 							},
 						},
+						{
+							Name: adminPassSecretName,
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: adminPassSecretName,
+								},
+							},
+						},
 					},
 					InitContainers: []core.Container{
 						{
@@ -585,6 +593,17 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 								{
 									Name:  "PSQL_ENDPOINT",
 									Value: psqlIP,
+								},
+								{
+									Name: "PGPASSWORD",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: adminPassSecretName,
+											},
+											Key: "password",
+										},
+									},
 								},
 							},
 						},
@@ -621,7 +640,7 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 	}
 }
 
-func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP string) error {
+func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPassSecretName, psqlIP string) error {
 	bootstrapJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: keystone.Namespace, Name: keystone.Name + "-bootstrap-job"}
 	err := r.client.Get(context.Background(), jobName, bootstrapJob)
@@ -630,7 +649,7 @@ func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, k
 		return nil
 	}
 
-	bootstrapJob = newBootStrapJob(keystone, jobName, kcbName, fernetKeysSecretName, credentialKeysSecretName, psqlIP)
+	bootstrapJob = newBootStrapJob(keystone, jobName, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPassSecretName, psqlIP)
 	if err = controllerutil.SetControllerReference(keystone, bootstrapJob, r.scheme); err != nil {
 		return err
 	}

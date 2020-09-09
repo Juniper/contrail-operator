@@ -13,15 +13,16 @@ type Postgres struct {
 }
 
 func New(address, user, password, dbName string) (*Postgres, error) {
-	url := fmt.Sprintf("postgres://%s:%s@%s/%s", user, password, address, dbName)
+	url := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, password, address, dbName)
 	opt, err := pg.ParseURL(url)
 	if err != nil {
 		return nil, err
 	}
+	opt.MaxRetries = 50
 	db := pg.Connect(opt)
 	return &Postgres{
 		db: db,
-	}, nil
+	}, db.Ping(context.Background())
 }
 
 func (p *Postgres) Close() error {

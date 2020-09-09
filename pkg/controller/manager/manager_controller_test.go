@@ -1022,6 +1022,8 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+		var replicas int32
+		replicas = 1
 		expectedPsql := contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "psql",
@@ -1038,6 +1040,15 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.PostgresSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort:         5432,
+					RootPassSecretName: "keystone-adminpass-secret",
+				},
+			},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 	})
@@ -1102,6 +1113,9 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+
+		var replicas int32
+		replicas = 1
 		expectedPsql := contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "psql",
@@ -1118,11 +1132,18 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.PostgresSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort:         5432,
+					RootPassSecretName: "keystone-adminpass-secret",
+				},
+			},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
-		var replicas int32
-		replicas = 1
 		expectedCommand := contrail.Command{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "command",
@@ -1214,6 +1235,9 @@ func TestManagerController(t *testing.T) {
 		// then
 		assert.NoError(t, err)
 		assert.False(t, result.Requeue)
+
+		var replicas int32
+		replicas = 1
 		expectedPsql := contrail.Postgres{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "psql",
@@ -1230,11 +1254,18 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 			TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+			Spec: contrail.PostgresSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas: &replicas,
+				},
+				ServiceConfiguration: contrail.PostgresConfiguration{
+					ListenPort:         5432,
+					RootPassSecretName: "keystone-adminpass-secret",
+				},
+			},
 		}
 		assertPostgres(t, expectedPsql, fakeClient)
 
-		var replicas int32
-		replicas = 1
 		expectedKeystone := contrail.Keystone{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "keystone",
@@ -2057,7 +2088,7 @@ func newManager() *contrail.Manager {
 			Services: contrail.Services{
 				Postgres: &contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.0.2.15:5432"},
+					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.0.2.15:5432"},
 				},
 				Keystone: newKeystone(),
 			},

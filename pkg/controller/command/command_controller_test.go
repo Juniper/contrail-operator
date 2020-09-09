@@ -561,7 +561,9 @@ func newPostgres(active bool) *contrail.Postgres {
 			Namespace: "default",
 		},
 		Status: contrail.PostgresStatus{
-			Active:   active,
+			Status: contrail.Status{
+				Active: active,
+			},
 			Endpoint: "10.219.10.10",
 		},
 	}
@@ -908,7 +910,7 @@ const expectedCommandConfig = `
 database:
   host: 10.219.10.10
   user: root
-  password: contrail123
+  password: test123
   name: contrail_test
   max_open_conn: 100
   connection_retries: 10
@@ -1025,7 +1027,19 @@ replication:
 `
 const expectedBootstrapScript = `
 #!/bin/bash
-export PGPASSWORD=contrail123
+
+export PGPASSWORD=test123
+
+DB_QUERY_RESULT=$(psql -w -h 10.219.10.10 -U root -d postgres -tAc "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'contrail_test')")
+DB_QUERY_EXIT_CODE=$?
+if [[ $DB_QUERY_EXIT_CODE == 0 && $DB_QUERY_RESULT == 'f' ]]; then
+    createdb -w -h 10.219.10.10 -U root contrail_test
+fi
+
+if [[ $DB_QUERY_EXIT_CODE == 2 ]]; then
+    exit 1
+fi
+
 QUERY_RESULT=$(psql -w -h 10.219.10.10 -U root -d contrail_test -tAc "SELECT EXISTS (SELECT 1 FROM node LIMIT 1)")
 QUERY_EXIT_CODE=$?
 if [[ $QUERY_EXIT_CODE == 0 && $QUERY_RESULT == 't' ]]; then

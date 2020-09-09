@@ -51,7 +51,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -72,7 +72,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
@@ -82,7 +82,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				&contrail.FernetKeyManager{
@@ -105,7 +105,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestKeystone(t *testing.T) {
 				newKeystone(),
 				&contrail.Postgres{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 				},
 				newExpectedSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: 1}),
 				&contrail.FernetKeyManager{
@@ -147,7 +147,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedBootstrapJob: newExpectedBootstrapJob(),
 		},
@@ -162,7 +162,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 					},
-					Status: contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+					Status: contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -183,7 +183,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
@@ -220,7 +220,7 @@ func TestKeystone(t *testing.T) {
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
 						OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 					},
-					Status: contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+					Status: contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 				},
 				&contrail.FernetKeyManager{
 					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
@@ -238,7 +238,7 @@ func TestKeystone(t *testing.T) {
 					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
 				},
 				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
-				Status:   contrail.PostgresStatus{Active: true, Endpoint: "10.10.10.20:5432"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
 			},
 			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
@@ -906,6 +906,14 @@ func newExpectedBootstrapJob() *batch.Job {
 								},
 							},
 						},
+						{
+							Name: "keystone-adminpass-secret",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: "keystone-adminpass-secret",
+								},
+							},
+						},
 					},
 					InitContainers: []core.Container{
 						{
@@ -918,6 +926,17 @@ func newExpectedBootstrapJob() *batch.Job {
 								{
 									Name:  "PSQL_ENDPOINT",
 									Value: "10.10.10.20:5432",
+								},
+								{
+									Name: "PGPASSWORD",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: "keystone-adminpass-secret",
+											},
+											Key: "password",
+										},
+									},
 								},
 							},
 						},
@@ -960,8 +979,8 @@ KEYSTONE="keystone"
 export PGPASSWORD=${PGPASSWORD:-contrail123}
 
 createuser -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "ALTER USER $KEYSTONE WITH PASSWORD '$KEYSTONE_USER_PASS'"
 createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
-psql -h ${PSQL_ENDPOINT} -U $DB_USER -d $DB_NAME -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
+psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
