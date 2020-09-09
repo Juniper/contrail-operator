@@ -135,7 +135,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then all Pods have updated image", func(t *testing.T) {
-				assertOpenStackPodsHaveUpdatedImages(t, f, cluster, log)
+				assertPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
 			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
@@ -341,6 +341,9 @@ func updateOpenStackManagerImages(f *test.Framework, manager *contrail.Manager) 
 		{Name: "swiftAccountServer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train"},
 	}
 
+	patroni := utils.GetContainerFromList("patroni", manager.Spec.Services.Postgres.Spec.ServiceConfiguration.Containers)
+	patroni.Image = "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
+
 	return f.Client.Update(context.TODO(), manager)
 }
 
@@ -356,7 +359,7 @@ func retryRequest(t *testing.T, f func() error) error {
 	return err
 }
 
-func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
+func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
 	t.Run("then Memcached has updated image", func(t *testing.T) {
 		t.Parallel()
 		mmContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
@@ -408,6 +411,19 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 		}.ForPodImageChange(f.KubeClient, contrail.SwiftStorageInstanceType+"="+manager.Spec.Services.Swift.Name+"-storage", swiftStorageContainerImage, "swift-object-server")
 		assert.NoError(t, err)
 	})
+
+	t.Run("then Postgres has updated image", func(t *testing.T) {
+		t.Parallel()
+		postgresContainerImage := "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
+		err := wait.Contrail{
+			Namespace:     manager.Namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, contrail.PostgresInstanceType+"="+manager.Spec.Services.Postgres.Name, postgresContainerImage, "patroni")
+		assert.NoError(t, err)
+	})
 }
 
 func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
@@ -440,7 +456,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 					Path: "/mnt/openstack_test/patroni",
 				},
 				Containers: []*contrail.Container{
-					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"},
+					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:e87fc12.logical"},
 					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 				},
