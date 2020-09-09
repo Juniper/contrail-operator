@@ -22,6 +22,8 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName   string       `json:"swiftConfSecretName,omitempty"`
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
+	// Service name registered in Keystone, default "swift"
+	SwiftServiceName string `json:"swiftServiceName,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy

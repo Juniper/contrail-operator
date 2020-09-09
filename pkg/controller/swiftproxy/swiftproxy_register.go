@@ -106,11 +106,11 @@ func (r *ReconcileSwiftProxy) isSwiftRegistered(sp *contrail.SwiftProxy, k *cont
 		return false, fmt.Errorf("failed to get keystone token: %v", err)
 	}
 
-	url := token.EndpointURL("swift", "internal")
+	url := token.EndpointURL(sp.Spec.ServiceConfiguration.SwiftServiceName, "internal")
 	if !strings.Contains(url, sp.Status.ClusterIP) {
 		return false, nil
 	}
-	url = token.EndpointURL("swift", "public")
+	url = token.EndpointURL(sp.Spec.ServiceConfiguration.SwiftServiceName, "public")
 	if sp.Status.LoadBalancerIP != "" && !strings.Contains(url, sp.Status.LoadBalancerIP) {
 		return false, nil
 	}

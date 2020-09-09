@@ -70,6 +70,7 @@ func (c *configMaps) ensureServiceExists(internalIP string, publicIP string) err
 		KeystoneRegion:          c.keystone.region,
 		SwiftPassword:           string(c.credentialsSecret.Data["password"]),
 		SwiftUser:               string(c.credentialsSecret.Data["user"]),
+		SwiftServiceName:        c.swiftProxySpec.ServiceConfiguration.SwiftServiceName,
 		SwiftPublicEndpoint:     fmt.Sprintf("%v:%v", publicIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 		SwiftInternalEndpoint:   fmt.Sprintf("%v:%v", internalIP, c.swiftProxySpec.ServiceConfiguration.ListenPort),
 		CAFilePath:              certificates.SignerCAFilepath,

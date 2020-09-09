@@ -299,7 +299,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	sPort := swiftService.Status.SwiftProxyPort
-	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret); err != nil {
+	swiftServiceName := swiftService.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName
+	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret, swiftServiceName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -482,7 +483,7 @@ func (r *ReconcileCommand) updateStatusIPs(commandCR *contrail.Command, deployme
 	return nil
 }
 
-func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, k *contrail.Keystone, sPort int, adminPass *core.Secret) error {
+func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.Command, k *contrail.Keystone, sPort int, adminPass *core.Secret, serviceName string) error {
 	keystoneClient, err := keystone.NewClient(r.client, r.scheme, r.config, k)
 	if err != nil {
 		return err
@@ -497,7 +498,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 	}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
 	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)
-	swiftURL := token.EndpointURL("swift", "public")
+	swiftURL := token.EndpointURL(serviceName, "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {
 		return fmt.Errorf("failed to create swift client %v", err)

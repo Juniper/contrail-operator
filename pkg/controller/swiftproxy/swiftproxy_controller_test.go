@@ -308,6 +308,7 @@ func newSwiftProxy(status contrail.SwiftProxyStatus) *contrail.SwiftProxy {
 				SwiftConfSecretName:   "test-secret",
 				KeystoneSecretName:    "keystone-adminpass-secret",
 				RingConfigMapName:     "test-ring",
+				SwiftServiceName:      "swift",
 			},
 		},
 		Status: status,
@@ -787,7 +788,7 @@ const registerPlaybook = `
   tasks:
     - name: create swift service
       os_keystone_service:
-        name: "swift"
+        name: "{{ service_name }}"
         service_type: "object-store"
         description: "object store service"
         interface: "admin"
@@ -796,7 +797,7 @@ const registerPlaybook = `
 
     - name: create swift endpoints service
       os_keystone_endpoint:
-        service: "swift"
+        service: "{{ service_name }}"
         url: "{{ item.url }}"
         region: "{{ region_name }}"
         endpoint_interface: "{{ item.interface }}"
@@ -834,7 +835,7 @@ const registerPlaybook = `
         - ResellerAdmin
     - name: grant user role 
       os_user_role:
-        user: "swift"
+        user: "{{ swift_user }}"
         role: "admin"
         project: "service"
         domain: "{{ openstack_auth['user_domain_id'] }}"
@@ -857,6 +858,7 @@ swift_internal_endpoint: "10.10.10.10:5070"
 swift_public_endpoint: "10.255.254.4:5070"
 swift_password: "password2"
 swift_user: "otherUser"
+service_name: "swift"
 
 ca_cert_filepath: "/etc/ssl/certs/kubernetes/ca-bundle.crt"
 `

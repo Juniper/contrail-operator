@@ -707,29 +707,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
 		keystone.Spec = manager.Spec.Services.Keystone.Spec
-		// After migration to CRD apiextensions.k8s.io/v1 replace those conditions
-		// with +kubebuilder:default markers on keystone struct fileds
-		if keystone.Spec.ServiceConfiguration.ListenPort == 0 {
-			keystone.Spec.ServiceConfiguration.ListenPort = 5555
-		}
-		if keystone.Spec.ServiceConfiguration.Region == "" {
-			keystone.Spec.ServiceConfiguration.Region = "RegionOne"
-		}
-		if keystone.Spec.ServiceConfiguration.AuthProtocol == "" {
-			keystone.Spec.ServiceConfiguration.AuthProtocol = "https"
-		}
-		if keystone.Spec.ServiceConfiguration.UserDomainName == "" {
-			keystone.Spec.ServiceConfiguration.UserDomainName = "Default"
-		}
-		if keystone.Spec.ServiceConfiguration.UserDomainID == "" {
-			keystone.Spec.ServiceConfiguration.UserDomainID = "default"
-		}
-		if keystone.Spec.ServiceConfiguration.ProjectDomainName == "" {
-			keystone.Spec.ServiceConfiguration.ProjectDomainName = "Default"
-		}
-		if keystone.Spec.ServiceConfiguration.ProjectDomainID == "" {
-			keystone.Spec.ServiceConfiguration.ProjectDomainID = "default"
-		}
+		keystone.SetDefaultValues()
 		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
 		if keystone.Spec.CommonConfiguration.Replicas == nil {
 			keystone.Spec.CommonConfiguration.Replicas = replicas
@@ -803,6 +781,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
 		swift.Spec = manager.Spec.Services.Swift.Spec
+		swift.SetDefaultValues()
 		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
 		if swift.Spec.CommonConfiguration.Replicas == nil {
 			swift.Spec.CommonConfiguration.Replicas = replicas
