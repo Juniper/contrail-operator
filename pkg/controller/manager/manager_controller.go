@@ -394,6 +394,7 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int
 		return controllerutil.SetControllerReference(manager, webui, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &webui.Name
 	status.Active = &webui.Status.Active
 	manager.Status.Webui = status
 	return err
@@ -429,6 +430,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 		return controllerutil.SetControllerReference(manager, pm, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &pm.Name
 	status.Active = pm.Status.Active
 	manager.Status.ProvisionManager = status
 	return err
@@ -464,6 +466,7 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 		return controllerutil.SetControllerReference(manager, config, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &config.Name
 	status.Active = config.Status.Active
 	manager.Status.Config = status
 	return err
@@ -593,6 +596,7 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 		return controllerutil.SetControllerReference(manager, rabbitMQ, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &rabbitMQ.Name
 	status.Active = rabbitMQ.Status.Active
 	manager.Status.Rabbitmq = status
 	return err
@@ -679,6 +683,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &command.Name
 	status.Active = &command.Status.Active
 	manager.Status.Command = status
 	return err
@@ -737,6 +742,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &keystone.Name
 	status.Active = &keystone.Status.Active
 	manager.Status.Keystone = status
 	return err
@@ -775,6 +781,7 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &psql.Name
 	status.Active = &psql.Status.Active
 	manager.Status.Postgres = status
 	return err
@@ -810,6 +817,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 		return controllerutil.SetControllerReference(manager, swift, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &swift.Name
 	status.Active = &swift.Status.Active
 	manager.Status.Swift = status
 	return err
@@ -844,6 +852,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas 
 		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
 	})
 	status := &v1alpha1.ServiceStatus{}
+	status.Name = &memcached.Name
 	status.Active = &memcached.Status.Active
 	manager.Status.Memcached = status
 	return err
