@@ -222,24 +222,35 @@ func (r *ReconcilePostgres) listPostgresPods(postgres *contrail.Postgres) (*core
 }
 
 func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (leaderIP string, err error) {
-
-	svc := r.kubernetes.Service(postgres.Name, core.ServiceTypeClusterIP,
-		int32(postgres.Spec.ServiceConfiguration.ListenPort), contrail.PostgresInstanceType, postgres)
-
-	if err = svc.EnsureExists(); err != nil {
+	svc := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      postgres.Name,
+			Namespace: postgres.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(context.Background(), r.client, svc, func() error {
+		svc.ObjectMeta.Labels = postgres.Labels
+		svc.Spec.Type = core.ServiceTypeClusterIP
+		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
+		svc.Spec.Ports = []core.ServicePort{
+			{Port: listenPort, Protocol: "TCP"},
+		}
+		return controllerutil.SetControllerReference(postgres, svc, r.scheme)
+	})
+	if err != nil {
 		return "", err
 	}
 
-	leaderIP = svc.ClusterIP()
+	leaderIP = svc.Spec.ClusterIP
 
 	replicaServiceName := postgres.Name + "-replica"
 	labels := copyStringMap(postgres.Labels)
 	labels["role"] = "replica"
 
-	svc = r.kubernetes.Service(replicaServiceName, core.ServiceTypeClusterIP,
+	replicaSvc := r.kubernetes.Service(replicaServiceName, core.ServiceTypeClusterIP,
 		int32(postgres.Spec.ServiceConfiguration.ListenPort), contrail.PostgresInstanceType, postgres).WithLabels(labels)
 
-	return leaderIP, svc.EnsureExists()
+	return leaderIP, replicaSvc.EnsureExists()
 }
 
 func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, replicationPassSecretName,
@@ -269,7 +280,7 @@ func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, repli
 		statefulSet.Labels = postgres.Labels
 		contrail.SetSTSCommonConfiguration(statefulSet, &postgres.Spec.CommonConfiguration)
 		statefulSet.Spec.Selector = &meta.LabelSelector{MatchLabels: postgres.Labels}
-		statefulSet.Spec.ServiceName = postgres.Name + "-" + contrail.PostgresInstanceType
+		statefulSet.Spec.ServiceName = postgres.Name
 		statefulSet.Spec.Replicas = postgres.Spec.CommonConfiguration.Replicas
 		statefulSet.Spec.Template.Labels = postgres.Labels
 		statefulSet.Spec.Template.Spec.Affinity = &core.Affinity{

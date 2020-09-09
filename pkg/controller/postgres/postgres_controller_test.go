@@ -148,7 +148,7 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("services and endpoint should be created", func(t *testing.T) {
 			name := types.NamespacedName{
-				Name:      namespacedName.Name + "-" + contrail.PostgresInstanceType,
+				Name:      namespacedName.Name,
 				Namespace: namespacedName.Namespace,
 			}
 
@@ -425,7 +425,7 @@ func newSTS(name string) apps.StatefulSet {
 		},
 		TypeMeta: meta.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		Spec: apps.StatefulSetSpec{
-			ServiceName: "postgres-" + contrail.PostgresInstanceType,
+			ServiceName: "postgres",
 			Replicas:    &oneVal,
 			Selector: &meta.LabelSelector{
 				MatchLabels: map[string]string{"contrail_manager": "postgres", "postgres": "postgres"},
