@@ -14,7 +14,6 @@ pull_image()
 while read line; do
 	pull_image svl-artifactory.juniper.net "${line}"
 done <<EOF
-common-docker-third-party/contrail/zookeeper:3.5.6
 contrail-operator/engprod-269421/ringcontroller:master.latest
 contrail-operator/engprod-269421/contrail-operator:master.latest
 contrail-operator/engprod-269421/contrail-statusmonitor:master.latest

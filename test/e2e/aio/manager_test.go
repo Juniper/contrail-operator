@@ -99,7 +99,7 @@ func ManagerCluster(t *testing.T) {
 	}
 
 	f := test.Global
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
 
@@ -117,7 +117,7 @@ func ManagerCluster(t *testing.T) {
 
 	t.Log("Initialized cluster resources")
 
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 	if err != nil {
 		t.Fatal(err)
 	}
