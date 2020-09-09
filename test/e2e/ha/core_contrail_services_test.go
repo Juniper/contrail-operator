@@ -378,11 +378,6 @@ func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 		assert.NoError(t, w.ForReadyStatefulSet("hatest-webui-webui-statefulset", r))
 	})
 
-	t.Run(fmt.Sprintf("then a ContrailCNI Job has %d completions", r), func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, w.ForReadyJob("hatest-contrailcni-contrailcni-job", r))
-	})
-
 	// ProvisionManager is not scalable and is deployed in one replica
 	t.Run("then a ProvisionManager StatefulSet has 1 ready replica", func(t *testing.T) {
 		t.Parallel()
@@ -589,23 +584,6 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}
 
-	contrailCNIs := []*contrail.ContrailCNI{
-		{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "hatest-contrailcni",
-				Namespace: namespace,
-				Labels:    map[string]string{"contrail_cluster": "cluster1"},
-			},
-			Spec: contrail.ContrailCNISpec{
-				ServiceConfiguration: contrail.ContrailCNIConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "vroutercni", Image: "registry:5000/contrail-nightly/contrail-kubernetes-cni-init:" + versionMap["cemVersion"]},
-					},
-				},
-			},
-		},
-	}
-
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "cluster1",
@@ -630,7 +608,6 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 				Webui:            webui,
 				Rabbitmq:         rabbitmq,
 				ProvisionManager: provisionManager,
-				ContrailCNIs:     contrailCNIs,
 			},
 		},
 	}
