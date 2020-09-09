@@ -105,13 +105,12 @@ func TestHAOpenStackServices(t *testing.T) {
 				return nil
 			})
 			require.NoError(t, err)
-			t.Run("then OpenStack services have single replica ready", func(t *testing.T) {
-				assertPostgresReady(t, w, 1)
-				assertOpenStackReplicasReady(t, w, 1)
+			t.Run("then services have single replica ready", func(t *testing.T) {
+				assertServicesReplicasReady(t, w, 1)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -120,12 +119,11 @@ func TestHAOpenStackServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
-				assertPostgresReady(t, w, 3)
-				assertOpenStackReplicasReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -141,11 +139,11 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 
 			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
-				assertOpenStackReplicasReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -171,12 +169,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					KubeClient:    f.KubeClient,
 					Logger:        log,
 				}
-				assertOpenStackReplicasReady(t, w, 2)
-				assertPostgresReady(t, w, 2)
+				assertServicesReplicasReady(t, w, 2)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -191,12 +188,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					KubeClient:    f.KubeClient,
 					Logger:        log,
 				}
-				assertOpenStackReplicasReady(t, w, 3)
-				assertPostgresReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -235,7 +231,7 @@ func TestHAOpenStackServices(t *testing.T) {
 	}
 }
 
-func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
+func assertServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	keystoneCR := &contrail.Keystone{}
 	err := f.Client.Get(context.TODO(),
 		types.NamespacedName{
@@ -288,10 +284,14 @@ func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPPro
 	})
 }
 
-func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
+func assertServicesReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Memcached deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", r))
+	})
+	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 	t.Run(fmt.Sprintf("then a Keystone StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
@@ -304,13 +304,6 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Swift Proxy deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", r))
-	})
-}
-
-func assertPostgresReady(t *testing.T, w wait.Wait, r int32) {
-	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 }
 
