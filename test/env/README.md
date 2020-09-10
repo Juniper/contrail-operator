@@ -21,14 +21,15 @@ To run multi-node cluster you will need sufficient amount of memory (RAM) and CP
 
 1. Create a VM which will be your docker host for kind. You can do this by using ready-to-use OVA which is available under `/root/dockerd/dockerd.ova` path on `b5s5-node3` in our lab. You can deploy a VM using following command:
 
-        ovftool --X:logFile=upload.log --X:logLevel=verbose --name=YOUR_VM_NAME /root/dockerd/dockerd.ova  vi://root:c0ntrail123@b5s5-node4.englab.juniper.net
-1. Run your machine using default credentials
+        ovftool --X:logFile=upload.log --diskMode=thin --X:logLevel=verbose --name=YOUR_VM_NAME /root/dockerd/dockerd.ova  vi://root:c0ntrail123@b5s5-node4.englab.juniper.net
+1. Run your machine using default credentials by logging into [ESXi UI](https://b5s5-node4.englab.juniper.net/ui/).
+Afterwards, start virtual machine that you've just created and check IP address that VM received.
 1. You need to set environemt variable on your local machine with address of Docker Daemon from newly created machine (docker host). To do this type following command on your local terminal:
         
-        export DOCKER_HOST=tcp://ip_of_dockerd_vm:2375
+        export DOCKER_HOST=tcp://<IP OF DOCKERD VM>:2375
 1. Kubectl expects k8s APIServer listening on 127.0.0.1 and some random port assigned by Docker. To change k8s `APIServer IP` and `port`, you will have to modify `create_k8s_cluster.sh` script. Change kindConfig by adding those two lines in `networking` section:
 
-        apiServerAddress: "ip_of_dockerd_vm"
+        apiServerAddress: "<IP OF DOCKERD VM>"
         apiServerPort: 6443
 1. Create test env using `create_testenv.sh` (remember to set variable NODES to 3). First two variables are optional and have default values.
 
@@ -41,6 +42,7 @@ To run multi-node cluster you will need sufficient amount of memory (RAM) and CP
 ## Download all required images to a local registry
     export INTERNAL_INSECURE_REGISTRY_PORT=6000
     ./update_local_registry.sh
+   **NOTE**: Afterwards, you may delete downloaded images with `docker image rm -f $(docker image ls -q)` as they are pushed to separate registry.
 
 ## Apply operator and cluster
     export KIND_CLUSTER_NAME=kind
@@ -61,4 +63,4 @@ To run multi-node cluster you will need sufficient amount of memory (RAM) and CP
     # From contrail-operator root directory
     # Use operator-sdk version >= v.0.13
     kubectl create namespace contrail
-    operator-sdk test local ./test/e2e/ --namespace contrail --go-test-flags "-v -timeout=30m" --up-local
+    operator-sdk test local ./test/e2e/ --operator-namespace contrail --go-test-flags "-v -timeout=30m" --up-local
