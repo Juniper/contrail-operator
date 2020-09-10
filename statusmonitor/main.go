@@ -202,7 +202,7 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 			defer closeResp(resp)
 		}
 		process_resp, err_p := client.Get(process_url)
-		if process_resps != nil {
+		if process_resp != nil {
 			defer closeResp(process_resp)
 		}
 		if err != nil {
