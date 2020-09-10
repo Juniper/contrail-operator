@@ -91,8 +91,6 @@ func main() {
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")
 	flag.Parse()
 
-	ticker := time.NewTicker(time.Duration(*intervalPtr) * time.Second)
-	done := make(chan bool)
 	var config Config
 	configYaml, err := ioutil.ReadFile(*configPtr)
 	if err != nil {
@@ -113,20 +111,31 @@ func main() {
 		panic(err)
 	}
 
+	ticker := time.NewTicker(time.Duration(*intervalPtr) * time.Second)
+	done := make(chan bool)
 	go func() {
 		for {
 			select {
 			case t := <-ticker.C:
 				log.Println("Tick at", t)
+				var updatedConfig Config
+				updatedConfigYaml, err := ioutil.ReadFile(*configPtr)
+				if err != nil {
+					panic(err)
+				}
+				err = yaml.Unmarshal(updatedConfigYaml, &updatedConfig)
+				if err != nil {
+					panic(err)
+				}
 				switch config.NodeType {
 				case "control":
-					err := getControlStatus(client, clientset, restClient, config)
+					err := getControlStatus(client, clientset, restClient, updatedConfig)
 					if err != nil {
 						log.Printf("warning: Error in  getControlStatus func: %v", err)
 						continue
 					}
 				case "config":
-					err := getConfigStatus(client, clientset, restClient, config)
+					err := getConfigStatus(client, clientset, restClient, updatedConfig)
 					if err != nil {
 						log.Printf("warning: Error in  getConfigStatus func: %v", err)
 						continue
