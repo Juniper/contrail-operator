@@ -93,30 +93,31 @@ func main() {
 
 	ticker := time.NewTicker(time.Duration(*intervalPtr) * time.Second)
 	done := make(chan bool)
+	var config Config
+	configYaml, err := ioutil.ReadFile(*configPtr)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(configYaml, &config)
+	if err != nil {
+		panic(err)
+	}
+	client, err := CreateRestClient(config)
+	if err != nil {
+		log.Printf("error: rest client creation failed: %v", err)
+		panic(err)
+	}
+	clientset, restClient, err := kubeClient(config)
+	if err != nil {
+		log.Printf("kubernates client creation failed: %v", err)
+		panic(err)
+	}
+
 	go func() {
 		for {
 			select {
 			case t := <-ticker.C:
 				log.Println("Tick at", t)
-				var config Config
-				configYaml, err := ioutil.ReadFile(*configPtr)
-				if err != nil {
-					panic(err)
-				}
-				err = yaml.Unmarshal(configYaml, &config)
-				if err != nil {
-					panic(err)
-				}
-				client, err := CreateRestClient(config)
-				if err != nil {
-					log.Printf("error: rest client creation failed: %v", err)
-					continue
-				}
-				clientset, restClient, err := kubeClient(config)
-				if err != nil {
-					log.Printf("kubernates client creation failed: %v", err)
-					continue
-				}
 				switch config.NodeType {
 				case "control":
 					err := getControlStatus(client, clientset, restClient, config)
@@ -243,6 +244,7 @@ func closeResp(resp *http.Response) {
 		log.Printf("closing http session failed: %v", err)
 	}
 }
+
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
