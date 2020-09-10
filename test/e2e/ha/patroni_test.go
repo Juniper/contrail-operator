@@ -24,6 +24,10 @@ import (
 )
 
 func TestPatroni(t *testing.T) {
+	if testing.Short() {
+		t.Skip("it is a long test")
+	}
+
 	ctx := test.NewTestCtx(t)
 	f := test.Global
 	defer ctx.Cleanup()

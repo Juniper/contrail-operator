@@ -105,13 +105,12 @@ func TestHAOpenStackServices(t *testing.T) {
 				return nil
 			})
 			require.NoError(t, err)
-			t.Run("then OpenStack services have single replica ready", func(t *testing.T) {
-				assertPostgresReady(t, w, 1)
-				assertOpenStackReplicasReady(t, w, 1)
+			t.Run("then services have single replica ready", func(t *testing.T) {
+				assertServicesReplicasReady(t, w, 1)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -120,12 +119,11 @@ func TestHAOpenStackServices(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Run("then all services are scaled up from 1 to 3 node", func(t *testing.T) {
-				assertPostgresReady(t, w, 3)
-				assertOpenStackReplicasReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -137,15 +135,15 @@ func TestHAOpenStackServices(t *testing.T) {
 			assert.NoError(t, err)
 
 			t.Run("then all Pods have updated image", func(t *testing.T) {
-				assertOpenStackPodsHaveUpdatedImages(t, f, cluster, log)
+				assertPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
 			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
-				assertOpenStackReplicasReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -171,12 +169,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					KubeClient:    f.KubeClient,
 					Logger:        log,
 				}
-				assertOpenStackReplicasReady(t, w, 2)
-				assertPostgresReady(t, w, 2)
+				assertServicesReplicasReady(t, w, 2)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -191,12 +188,11 @@ func TestHAOpenStackServices(t *testing.T) {
 					KubeClient:    f.KubeClient,
 					Logger:        log,
 				}
-				assertOpenStackReplicasReady(t, w, 3)
-				assertPostgresReady(t, w, 3)
+				assertServicesReplicasReady(t, w, 3)
 			})
 
-			t.Run("then openstack services are correctly responding", func(t *testing.T) {
-				assertOpenStackServicesAreResponding(t, proxy, f, namespace)
+			t.Run("then services are correctly responding", func(t *testing.T) {
+				assertServicesAreResponding(t, proxy, f, namespace)
 			})
 		})
 
@@ -235,7 +231,7 @@ func TestHAOpenStackServices(t *testing.T) {
 	}
 }
 
-func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
+func assertServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	keystoneCR := &contrail.Keystone{}
 	err := f.Client.Get(context.TODO(),
 		types.NamespacedName{
@@ -288,10 +284,14 @@ func assertOpenStackServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPPro
 	})
 }
 
-func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
+func assertServicesReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Memcached deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", r))
+	})
+	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 	t.Run(fmt.Sprintf("then a Keystone StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
@@ -304,13 +304,6 @@ func assertOpenStackReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Swift Proxy deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", r))
-	})
-}
-
-func assertPostgresReady(t *testing.T, w wait.Wait, r int32) {
-	t.Run(fmt.Sprintf("then a Postgres StatefulSet has %d ready replicas", r), func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("postgres-statefulset", r))
 	})
 }
 
@@ -348,6 +341,9 @@ func updateOpenStackManagerImages(f *test.Framework, manager *contrail.Manager) 
 		{Name: "swiftAccountServer", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-account:train"},
 	}
 
+	patroni := utils.GetContainerFromList("patroni", manager.Spec.Services.Postgres.Spec.ServiceConfiguration.Containers)
+	patroni.Image = "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
+
 	return f.Client.Update(context.TODO(), manager)
 }
 
@@ -363,7 +359,7 @@ func retryRequest(t *testing.T, f func() error) error {
 	return err
 }
 
-func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
+func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contrail.Manager, log logger.Logger) {
 	t.Run("then Memcached has updated image", func(t *testing.T) {
 		t.Parallel()
 		mmContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
@@ -382,7 +378,7 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 		keystoneContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       6 * time.Minute,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -413,6 +409,19 @@ func assertOpenStackPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manag
 			Client:        f.Client,
 			Logger:        log,
 		}.ForPodImageChange(f.KubeClient, contrail.SwiftStorageInstanceType+"="+manager.Spec.Services.Swift.Name+"-storage", swiftStorageContainerImage, "swift-object-server")
+		assert.NoError(t, err)
+	})
+
+	t.Run("then Postgres has updated image", func(t *testing.T) {
+		t.Parallel()
+		postgresContainerImage := "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
+		err := wait.Contrail{
+			Namespace:     manager.Namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForPodImageChange(f.KubeClient, contrail.PostgresInstanceType+"="+manager.Spec.Services.Postgres.Name, postgresContainerImage, "patroni")
 		assert.NoError(t, err)
 	})
 }
@@ -447,7 +456,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 					Path: "/mnt/openstack_test/patroni",
 				},
 				Containers: []*contrail.Container{
-					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"},
+					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:e87fc12.logical"},
 					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 				},

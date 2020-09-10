@@ -247,7 +247,6 @@ Eventually you should get results and command should return success:
     ok      github.com/Juniper/contrail-operator/pkg/k8s    0.558s
     ?       github.com/Juniper/contrail-operator/pkg/randomstring    [no test files]
     ok      github.com/Juniper/contrail-operator/pkg/swift/ring    0.416s
-    ok      github.com/Juniper/contrail-operator/pkg/volumeclaims    0.633s
     
 ## Run e2e tests (aka system tests)
 

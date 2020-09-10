@@ -123,7 +123,7 @@ func ManagerCluster(t *testing.T) {
 	}
 
 	var replicas int32 = 1
-	var hostNetwork = false
+	var hostNetwork = true
 	manager := getManager(namespace, replicas, hostNetwork, initialVersionMap)
 
 	err = f.Client.Create(goctx.TODO(), &manager, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})

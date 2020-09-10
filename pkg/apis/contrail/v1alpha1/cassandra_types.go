@@ -287,7 +287,7 @@ func (c *Cassandra) ConfigurationParameters() interface{} {
 	var storagePort int
 	var sslStoragePort int
 	if c.Spec.ServiceConfiguration.Storage.Path == "" {
-		cassandraConfiguration.Storage.Path = "/var/lib/cassandra"
+		cassandraConfiguration.Storage.Path = "/mnt/cassandra"
 	} else {
 		cassandraConfiguration.Storage.Path = c.Spec.ServiceConfiguration.Storage.Path
 	}
