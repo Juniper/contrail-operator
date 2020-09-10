@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -199,7 +198,13 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 		url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=BgpRouterState"
 		process_url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 		resp, err := client.Get(url)
+		if resp != nil {
+			defer closeResp(resp)
+		}
 		process_resp, err_p := client.Get(process_url)
+		if process_resps != nil {
+			defer closeResp(process_resp)
+		}
 		if err != nil {
 			log.Println(err)
 			return err
@@ -210,8 +215,6 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 		}
 		log.Print(url)
 		log.Print(process_url)
-		defer closeResp(resp)
-		defer closeResp(process_resp)
 		if resp != nil && process_resp != nil {
 			log.Printf("resp not nil %d ", resp.StatusCode)
 			log.Printf("Process resp not nil %d ", process_resp.StatusCode)
@@ -385,7 +388,6 @@ func (c *vrouterClient) UpdateStatus(name string, object *contrailOperatorTypes.
 
 func updateControlStatus(config *Config, controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-
 		controlCient := &controlClient{
 			ns:         config.Namespace,
 			restClient: restClient,
@@ -395,36 +397,17 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 			log.Printf("error: updateControlStatus: Failed to get status: %s", err)
 			return err
 		}
-		update := false
-		if controlObject.Status.ServiceStatus == nil {
-			controlObject.Status.ServiceStatus = map[string]contrailOperatorTypes.ControlServiceStatus{}
-			controlObject.Status.ServiceStatus = controlStatusMap
-			update = true
-		} else {
-			same := reflect.DeepEqual(controlObject.Status.ServiceStatus, controlStatusMap)
-			if !same {
-				controlObject.Status.ServiceStatus = controlStatusMap
-				update = true
-
-			} else {
-				controlObject.Status.ServiceStatus = controlStatusMap
-				update = true
-			}
+		controlObject.Status.ServiceStatus = controlStatusMap
+		_, err = controlCient.UpdateStatus(config.NodeName, controlObject)
+		if err != nil {
+			log.Println(err)
 		}
-		if update {
-			_, err = controlCient.UpdateStatus(config.NodeName, controlObject)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-		return nil
+		return err
 	})
 	if retryErr != nil {
 		log.Printf("Update failed: %v", retryErr)
-		return retryErr
 	}
-	return nil
+	return retryErr
 }
 
 func getControlStatusFromResponse(statusBody []byte, statusBody_p []byte) (*contrailOperatorTypes.ControlServiceStatus, error) {
