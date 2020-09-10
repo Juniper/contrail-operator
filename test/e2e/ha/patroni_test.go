@@ -28,11 +28,11 @@ func TestPatroni(t *testing.T) {
 		t.Skip("it is a long test")
 	}
 
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	f := test.Global
 	defer ctx.Cleanup()
 
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 
 	require.NoError(t, err)
 

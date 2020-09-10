@@ -30,7 +30,7 @@ import (
 )
 
 func TestCluster(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
 
@@ -45,7 +45,7 @@ func TestCluster(t *testing.T) {
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 	assert.NoError(t, err)
 	f := test.Global
 

@@ -53,10 +53,10 @@ var targetVersionMap = map[string]string{
 }
 
 func TestHACoreContrailServices(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 	require.NoError(t, err)
 
 	log := logger.New(t, namespace, test.Global.Client)

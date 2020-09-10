@@ -27,7 +27,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 	if testing.Short() {
 		t.Skip("it is a long test")
 	}
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 	log := logger.New(t, "contrail", test.Global.Client)
 
@@ -38,7 +38,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 	if err := ctx.InitializeClusterResources(&test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}); err != nil {
 		t.Fatalf("Failed to initialize cluster resources: %v", err)
 	}
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 	assert.NoError(t, err)
 	f := test.Global
 
