@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -48,6 +49,7 @@ func (c contrailcniClusterInfoFake) DeploymentType() string {
 }
 
 var trueVal = true
+var falseVal = false
 var replicas int32 = 3
 
 var contrailcniName = types.NamespacedName{
@@ -81,7 +83,7 @@ var controlCR = &contrail.Control{
 		Name:      "control1",
 	},
 	Status: contrail.ControlStatus{
-		Active: &trueVal,
+		Active: &falseVal,
 	},
 }
 
@@ -94,7 +96,7 @@ var configCR = &contrail.Config{
 		},
 	},
 	Status: contrail.ConfigStatus{
-		Active: &trueVal,
+		Active: &falseVal,
 	},
 }
 
@@ -227,10 +229,62 @@ func TestContrailCNIControllerWithControl(t *testing.T) {
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
-	contrailcniCR.Spec.ServiceConfiguration.ControlInstance = "control1"
+	(&contrailcniCR.Spec.ServiceConfiguration).ControlInstance = "control1"
 	fakeClient := fake.NewFakeClientWithScheme(scheme, contrailcniCR, configCR, controlCR)
 	fakeClusterInfo := contrailcniClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
 	reconciler := NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), fakeClusterInfo)
+	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
+	assert.NoError(t, err)
+
+	t.Run("should not create configMap for contrailcni", func(t *testing.T) {
+		cm := &core.ConfigMap{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-configuration",
+			Namespace: "default",
+		}, cm)
+		assert.Error(t, err)
+	})
+
+	t.Run("should not create job for contrailcni", func(t *testing.T) {
+		job := &batchv1.Job{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-job",
+			Namespace: "default",
+		}, job)
+		assert.Error(t, err)
+	})
+
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), fakeClient, controlCR, func() error {
+		controlCR.Status.Active = &trueVal
+		return nil
+	})
+	assert.NoError(t, err)
+	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
+	assert.NoError(t, err)
+
+	t.Run("should not create configMap for contrailcni", func(t *testing.T) {
+		cm := &core.ConfigMap{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-configuration",
+			Namespace: "default",
+		}, cm)
+		assert.Error(t, err)
+	})
+
+	t.Run("should not create job for contrailcni", func(t *testing.T) {
+		job := &batchv1.Job{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-job",
+			Namespace: "default",
+		}, job)
+		assert.Error(t, err)
+	})
+
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), fakeClient, configCR, func() error {
+		configCR.Status.Active = &trueVal
+		return nil
+	})
+	assert.NoError(t, err)
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
 	assert.NoError(t, err)
 
@@ -265,6 +319,7 @@ func TestContrailCNIControllerWithControl(t *testing.T) {
 		var expectedCompletions int32 = 0
 		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
 	})
+
 }
 
 type mockManager struct {

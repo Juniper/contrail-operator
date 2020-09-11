@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"strconv"
 
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,16 +73,17 @@ func init() {
 
 // PrepareJob prepares the intended podList.
 func (c *ContrailCNI) PrepareJob(job *batch.Job,
-	commonConfiguration *PodConfiguration,
+	instance *ContrailCNI,
 	request reconcile.Request,
 	scheme *runtime.Scheme,
 	client client.Client) error {
 	instanceType := "contrailcni"
-	SetJobCommonConfiguration(job, commonConfiguration)
+	SetJobCommonConfiguration(job, &instance.Spec.CommonConfiguration)
 	job.SetName(request.Name + "-" + instanceType + "-job")
 	job.SetNamespace(request.Namespace)
 	job.SetLabels(map[string]string{"contrail_manager": instanceType,
-		instanceType: request.Name})
+		instanceType:            request.Name,
+		"controller_generation": strconv.FormatInt(instance.Generation, 10)})
 	job.Spec.Selector.MatchLabels = map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name}
 	job.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,

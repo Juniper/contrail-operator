@@ -242,6 +242,7 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
+          controlInstance: control1
           containers:
             - name: vroutercni
               image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel

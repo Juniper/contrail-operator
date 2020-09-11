@@ -9,7 +9,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -148,28 +147,20 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		}
 	}
 
-	if err := instance.PrepareJob(job, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	if err := instance.PrepareJob(job, instance, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	var clusterJob batchv1.Job
-	var gracePeriodSeconds int64 = 0
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, &clusterJob); err == nil {
-		if *clusterJob.Spec.Completions != jobReplicas {
-			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}},
-				&client.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds})
+		if *clusterJob.Spec.Completions != jobReplicas || clusterJob.Labels["controller_generation"] != job.Labels["controller_generation"] {
+			_ = r.Client.Delete(ctx, &batchv1.Job{ObjectMeta: v1.ObjectMeta{Name: job.Name, Namespace: job.Namespace}})
 			return reconcile.Result{RequeueAfter: 5}, nil
 		}
 	} else if errors.IsNotFound(err) {
 		if err := r.Client.Create(ctx, job); err != nil {
 			return reconcile.Result{}, err
 		}
-	} else {
-		_, err = ctrl.CreateOrUpdate(ctx, r.Client, &clusterJob, func() error {
-			clusterJob.Spec = job.Spec
-			clusterJob.Labels = job.Labels
-			return ctrl.SetControllerReference(instance, &clusterJob, r.Scheme)
-		})
 	}
 
 	if instance.Status.Active == nil {
