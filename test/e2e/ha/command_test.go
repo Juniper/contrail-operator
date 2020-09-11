@@ -298,12 +298,18 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "postgres",
 			Namespace: namespace,
-			Labels:    map[string]string{"contrail_cluster": "command-ha", "app": "postgres"},
+			Labels:    map[string]string{"contrail_cluster": "command-ha", "postgres": "postgres"},
 		},
 		Spec: contrail.PostgresSpec{
-			Containers: []*contrail.Container{
-				{Name: "postgres", Image: "registry:5000/common-docker-third-party/contrail/postgres:12.2"},
-				{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+			ServiceConfiguration: contrail.PostgresConfiguration{
+				Storage: contrail.Storage{
+					Path: "/mnt/openstack_test/patroni",
+				},
+				Containers: []*contrail.Container{
+					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:e87fc12.logical"},
+					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+				},
 			},
 		},
 	}
