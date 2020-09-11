@@ -187,7 +187,7 @@ func TestCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Config Endpoints is empty", func(t *testing.T) {
+	t.Run("Config Endpoints should not be empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
 			newCommand(),
 			newConfigWithoutEndpoint(true),
@@ -216,12 +216,7 @@ func TestCommand(t *testing.T) {
 			Name:      "command-command-configmap",
 			Namespace: "default",
 		}, configMap)
-		assert.NoError(t, err)
-		configMap.SetResourceVersion("")
-		assert.NotEqual(t, expectedCommandConfig, configMap.Data["command-app-server.yml"])
-		assert.Equal(t, expectedBootstrapScript, configMap.Data["bootstrap.sh"])
-		assert.NotEqual(t, expectedCommandInitCluster, configMap.Data["init_cluster.yml"])
-
+		assert.Error(t, err)
 	})
 
 	tests := []struct {
