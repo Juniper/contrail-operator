@@ -98,6 +98,9 @@ func getConfigStatusFromApiServer(serviceAddress, serviceName string, client *ht
 	url := "https://" + serviceAddress + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 	moduleNameFmt := formatServiceName(serviceName)
 	resp, err := client.Get(url)
+	if resp != nil {
+		defer closeResp(resp)
+	}
 	if err != nil {
 		state := "connection-error"
 		if isBackupImplementedService(serviceName) {
@@ -111,7 +114,6 @@ func getConfigStatusFromApiServer(serviceAddress, serviceName string, client *ht
 		log.Printf("warning: to get status for %s address %s failed: %v", serviceName, serviceAddress, err)
 		return
 	}
-	defer closeResp(resp)
 	if resp != nil {
 		log.Printf("resp not nil %d ", resp.StatusCode)
 		if resp.StatusCode == http.StatusOK {
