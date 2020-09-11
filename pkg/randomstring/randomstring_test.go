@@ -1,7 +1,6 @@
 package randomstring
 
 import (
-	"regexp"
 	"testing"
 	"unicode"
 )
@@ -13,11 +12,6 @@ func hasLettersOnly(s string) bool {
 		}
 	}
 	return true
-}
-
-func isValid(s string) bool {
-	re := regexp.MustCompile("^[a-zA-Z0-9_]*$")
-	return re.MatchString(s)
 }
 
 type TestInterface interface {
@@ -38,14 +32,4 @@ func TestRandomstring(t *testing.T) {
 		testvalue := RandString{Size: 12}
 		checkGenerateString(t, testvalue)
 	})
-
-	t.Run("Random string bytes function verification1", func(t *testing.T) {
-		value2 := 3
-		got := randStringBytes(value2)
-		if !isValid(got) {
-			t.Errorf("failed to verify random bytes")
-		}
-
-	})
-
 }

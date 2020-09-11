@@ -4,6 +4,12 @@
             "external/": "external tools don't pass lint"
         }
     },
+    "deadcode": {
+        "exclude_files": {
+            "external/": "external tools don't pass lint",
+            "test/e2e/": "deadcode doesn't correctly process code only used in tests"
+        }
+    },
     "composites": {
         "exclude_files": {
             "external/": "external tools don't pass lint",

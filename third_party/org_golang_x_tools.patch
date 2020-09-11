@@ -1,6 +1,178 @@
+diff -ruN org_golang_x_tools/go/buildutil/BUILD.bazel org_golang_x_tools_/go/buildutil/BUILD.bazel
+--- org_golang_x_tools/go/buildutil/BUILD.bazel	2020-09-11 10:34:28.000000000 +0200
++++ org_golang_x_tools_/go/buildutil/BUILD.bazel	2020-09-11 10:19:24.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -13,6 +13,19 @@
+     visibility = ["//visibility:public"],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "allpackages.go",
++        "fakecontext.go",
++        "overlay.go",
++        "tags.go",
++        "util.go",
++    ],
++    importpath = "golang.org/x/tools/go/buildutil",
++    visibility = ["//visibility:public"],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = [
+diff -ruN org_golang_x_tools/go/internal/cgo/BUILD.bazel org_golang_x_tools_/go/internal/cgo/BUILD.bazel
+--- org_golang_x_tools/go/internal/cgo/BUILD.bazel	2020-09-11 10:34:28.000000000 +0200
++++ org_golang_x_tools_/go/internal/cgo/BUILD.bazel	2020-09-11 10:21:02.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -9,3 +9,13 @@
+     importpath = "golang.org/x/tools/go/internal/cgo",
+     visibility = ["//go:__subpackages__"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "cgo.go",
++        "cgo_pkgconfig.go",
++    ],
++    importpath = "golang.org/x/tools/go/internal/cgo",
++    visibility = ["//go:__subpackages__"],
++)
+diff -ruN org_golang_x_tools/go/internal/packagesdriver/BUILD.bazel org_golang_x_tools_/go/internal/packagesdriver/BUILD.bazel
+--- org_golang_x_tools/go/internal/packagesdriver/BUILD.bazel	2020-09-11 10:34:28.000000000 +0200
++++ org_golang_x_tools_/go/internal/packagesdriver/BUILD.bazel	2020-09-11 10:39:20.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -6,3 +6,10 @@
+     importpath = "golang.org/x/tools/go/internal/packagesdriver",
+     visibility = ["//go:__subpackages__"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["sizes.go"],
++    importpath = "golang.org/x/tools/go/internal/packagesdriver",
++    visibility = ["//go:__subpackages__"],
++)
+diff -ruN org_golang_x_tools/go/loader/BUILD.bazel org_golang_x_tools_/go/loader/BUILD.bazel
+--- org_golang_x_tools/go/loader/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/go/loader/BUILD.bazel	2020-09-11 10:05:53.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -16,6 +16,22 @@
+     ],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "doc.go",
++        "loader.go",
++        "util.go",
++    ],
++    importpath = "golang.org/x/tools/go/loader",
++    visibility = ["//visibility:public"],
++    deps = [
++        "//go/ast/astutil:go_tool_library",
++        "//go/buildutil:go_tool_library",
++        "//go/internal/cgo:go_tool_library",
++    ],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = [
+diff -ruN org_golang_x_tools/go/packages/BUILD.bazel org_golang_x_tools_/go/packages/BUILD.bazel
+--- org_golang_x_tools/go/packages/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/go/packages/BUILD.bazel	2020-09-11 10:31:42.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -20,6 +20,26 @@
+     ],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "doc.go",
++        "external.go",
++        "golist.go",
++        "golist_overlay.go",
++        "loadmode_string.go",
++        "packages.go",
++        "visit.go",
++    ],
++    importpath = "golang.org/x/tools/go/packages",
++    visibility = ["//visibility:public"],
++    deps = [
++        "//go/gcexportdata:go_tool_library",
++        "//go/internal/packagesdriver:go_tool_library",
++        "//internal/packagesinternal:go_tool_library",
++    ],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = [
+diff -ruN org_golang_x_tools/go/ssa/ssautil/BUILD.bazel org_golang_x_tools_/go/ssa/ssautil/BUILD.bazel
+--- org_golang_x_tools/go/ssa/ssautil/BUILD.bazel	2020-09-11 10:34:28.000000000 +0200
++++ org_golang_x_tools_/go/ssa/ssautil/BUILD.bazel	2020-09-11 10:42:59.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -16,6 +16,22 @@
+     ],
+ )
+ 
++go_tool_library(
++    name = "go_tool_library",
++    srcs = [
++        "load.go",
++        "switch.go",
++        "visit.go",
++    ],
++    importpath = "golang.org/x/tools/go/ssa/ssautil",
++    visibility = ["//visibility:public"],
++    deps = [
++        "//go/loader:go_tool_library",
++        "//go/packages:go_tool_library",
++        "//go/ssa:go_tool_library",
++    ],
++)
++
+ go_test(
+     name = "go_default_test",
+     srcs = [
 diff -ruN org_golang_x_tools/imports/BUILD.bazel org_golang_x_tools_/imports/BUILD.bazel
---- org_golang_x_tools/imports/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
-+++ org_golang_x_tools_/imports/BUILD.bazel	2020-09-04 16:17:20.000000000 +0200
+--- org_golang_x_tools/imports/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/imports/BUILD.bazel	2020-09-11 10:02:04.000000000 +0200
 @@ -1,4 +1,4 @@
 -load("@io_bazel_rules_go//go:def.bzl", "go_library")
 +load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
@@ -20,8 +192,8 @@ diff -ruN org_golang_x_tools/imports/BUILD.bazel org_golang_x_tools_/imports/BUI
 +    deps = ["//internal/imports:go_tool_library"],
 +)
 diff -ruN org_golang_x_tools/internal/fastwalk/BUILD.bazel org_golang_x_tools_/internal/fastwalk/BUILD.bazel
---- org_golang_x_tools/internal/fastwalk/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
-+++ org_golang_x_tools_/internal/fastwalk/BUILD.bazel	2020-09-04 16:20:02.000000000 +0200
+--- org_golang_x_tools/internal/fastwalk/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/internal/fastwalk/BUILD.bazel	2020-09-11 10:02:04.000000000 +0200
 @@ -1,4 +1,4 @@
 -load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 +load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
@@ -51,8 +223,8 @@ diff -ruN org_golang_x_tools/internal/fastwalk/BUILD.bazel org_golang_x_tools_/i
      name = "go_default_test",
      srcs = ["fastwalk_test.go"],
 diff -ruN org_golang_x_tools/internal/gopathwalk/BUILD.bazel org_golang_x_tools_/internal/gopathwalk/BUILD.bazel
---- org_golang_x_tools/internal/gopathwalk/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
-+++ org_golang_x_tools_/internal/gopathwalk/BUILD.bazel	2020-09-04 16:34:52.000000000 +0200
+--- org_golang_x_tools/internal/gopathwalk/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/internal/gopathwalk/BUILD.bazel	2020-09-11 10:02:04.000000000 +0200
 @@ -1,4 +1,4 @@
 -load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 +load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
@@ -75,8 +247,8 @@ diff -ruN org_golang_x_tools/internal/gopathwalk/BUILD.bazel org_golang_x_tools_
      name = "go_default_test",
      srcs = ["walk_test.go"],
 diff -ruN org_golang_x_tools/internal/imports/BUILD.bazel org_golang_x_tools_/internal/imports/BUILD.bazel
---- org_golang_x_tools/internal/imports/BUILD.bazel	2020-09-04 16:13:11.000000000 +0200
-+++ org_golang_x_tools_/internal/imports/BUILD.bazel	2020-09-04 16:18:45.000000000 +0200
+--- org_golang_x_tools/internal/imports/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/internal/imports/BUILD.bazel	2020-09-11 10:02:04.000000000 +0200
 @@ -1,4 +1,4 @@
 -load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 +load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_tool_library")
@@ -106,4 +278,24 @@ diff -ruN org_golang_x_tools/internal/imports/BUILD.bazel org_golang_x_tools_/in
 +        "@org_golang_x_mod//module:go_tool_library",
 +        "@org_golang_x_mod//semver:go_tool_library",
 +    ],
++)
+diff -ruN org_golang_x_tools/internal/packagesinternal/BUILD.bazel org_golang_x_tools_/internal/packagesinternal/BUILD.bazel
+--- org_golang_x_tools/internal/packagesinternal/BUILD.bazel	2020-09-11 10:34:29.000000000 +0200
++++ org_golang_x_tools_/internal/packagesinternal/BUILD.bazel	2020-09-11 10:36:14.000000000 +0200
+@@ -1,4 +1,4 @@
+-load("@io_bazel_rules_go//go:def.bzl", "go_library")
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_tool_library")
+ 
+ go_library(
+     name = "go_default_library",
+@@ -6,3 +6,10 @@
+     importpath = "golang.org/x/tools/internal/packagesinternal",
+     visibility = ["//:__subpackages__"],
+ )
++
++go_tool_library(
++    name = "go_tool_library",
++    srcs = ["packages.go"],
++    importpath = "golang.org/x/tools/internal/packagesinternal",
++    visibility = ["//:__subpackages__"],
 +)

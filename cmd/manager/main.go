@@ -26,11 +26,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/openshift"
 )
 
-// Change below variables to serve metrics on different host or port.
-var (
-	metricsHost       = "0.0.0.0"
-	metricsPort int32 = 8383
-)
 var log = logf.Log.WithName("cmd")
 
 func printVersion() {

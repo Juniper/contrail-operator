@@ -111,9 +111,8 @@ func TestManagerTypeTwo(t *testing.T) {
 }
 
 var (
-	createNew       = true
-	replicas  int32 = 3
-	falseVal        = false
+	replicas int32 = 3
+	falseVal       = false
 )
 
 var managerCR = &contrail.Manager{
@@ -267,27 +266,6 @@ var command = &contrail.Command{
 	},
 }
 
-var swift = &contrail.Swift{
-	ObjectMeta: meta.ObjectMeta{
-		Namespace: "default",
-		Name:      "test-swift",
-	},
-}
-
-var memcached = &contrail.Memcached{
-	ObjectMeta: meta.ObjectMeta{
-		Namespace: "default",
-		Name:      "test-memcached",
-	},
-	Spec: contrail.MemcachedSpec{
-		ServiceConfiguration: contrail.MemcachedConfiguration{
-			ListenPort:      11211,
-			ConnectionLimit: 5000,
-			MaxMemory:       256,
-		},
-	},
-}
-
 var postgres = &contrail.Postgres{
 	TypeMeta: meta.TypeMeta{},
 	ObjectMeta: meta.ObjectMeta{
@@ -308,23 +286,8 @@ var managerstatus = &contrail.ServiceStatus{
 }
 
 var NameValue1 = "zookeeper"
-var falVal = false
 var managerstatus1 = &contrail.ServiceStatus{
 	Name:    &NameValue1,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
-var NameValue2 = "rabbitmq-instance"
-var managerstatus2 = &contrail.ServiceStatus{
-	Name:    &NameValue2,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
-var NameValue3 = "config"
-var managerstatus3 = &contrail.ServiceStatus{
-	Name:    &NameValue3,
 	Active:  &trueVal,
 	Created: &trueVal,
 }
@@ -336,20 +299,6 @@ var managerstatus4 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
-var NameValue5 = "vrouter"
-var managerstatus5 = &contrail.ServiceStatus{
-	Name:    &NameValue5,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
-var NameValue6 = "webui"
-var managerstatus6 = &contrail.ServiceStatus{
-	Name:    &NameValue6,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
 var NameValue7 = "provisionmanager"
 var managerstatus7 = &contrail.ServiceStatus{
 	Name:    &NameValue7,
@@ -357,27 +306,7 @@ var managerstatus7 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
-var NameValue8 = "kubemanager"
-var managerstatus8 = &contrail.ServiceStatus{
-	Name:    &NameValue8,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
-var NameValue9 = "keystone"
-var managerstatus9 = &contrail.ServiceStatus{
-	Name:    &NameValue9,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
 var mgrstatusCassandras = []*contrail.ServiceStatus{managerstatus}
 var mgrstatusZookeeper = []*contrail.ServiceStatus{managerstatus1}
-var mgrstatusRabbitmq = managerstatus2
-var mgrstatusConfig = managerstatus3
 var mgrstatusControl = []*contrail.ServiceStatus{managerstatus4}
-var mgrstatusVrouter = []*contrail.ServiceStatus{managerstatus5}
-var mgrstatusWebui = managerstatus6
 var mgrstatusProvisionmanager = managerstatus7
-var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
-var mgrstatusKeystone = managerstatus9
