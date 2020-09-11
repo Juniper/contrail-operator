@@ -35,13 +35,14 @@ type ContrailCNISpec struct {
 //ContrailCNIConfiguration is the Service Configuration for ContrailCNI
 // +k8s:openapi-gen=true
 type ContrailCNIConfiguration struct {
-	Containers    []*Container `json:"containers,omitempty"`
-	CniMetaPlugin string       `json:"cniMetaPlugin,omitempty"`
-	VrouterIP     string       `json:"vrouterIP,omitempty"`
-	VrouterPort   *int32       `json:"vrouterPort,omitempty"`
-	PollTimeout   *int32       `json:"pollTimeout,omitempty"`
-	PollRetries   *int32       `json:"pollRetries,omitempty"`
-	LogLevel      *int32       `json:"logLevel,omitempty"`
+	Containers      []*Container `json:"containers,omitempty"`
+	ControlInstance string       `json:"controlInstance,omitempty"`
+	CniMetaPlugin   string       `json:"cniMetaPlugin,omitempty"`
+	VrouterIP       string       `json:"vrouterIP,omitempty"`
+	VrouterPort     *int32       `json:"vrouterPort,omitempty"`
+	PollTimeout     *int32       `json:"pollTimeout,omitempty"`
+	PollRetries     *int32       `json:"pollRetries,omitempty"`
+	LogLevel        *int32       `json:"logLevel,omitempty"`
 }
 
 // ContrailCNIStatus defines the observed state of ContrailCNI

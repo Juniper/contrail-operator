@@ -75,6 +75,29 @@ var contrailcniCR = &contrail.ContrailCNI{
 	},
 }
 
+var controlCR = &contrail.Control{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "control1",
+	},
+	Status: contrail.ControlStatus{
+		Active: &trueVal,
+	},
+}
+
+var configCR = &contrail.Config{
+	ObjectMeta: v1.ObjectMeta{
+		Namespace: "default",
+		Name:      "config1",
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Status: contrail.ConfigStatus{
+		Active: &trueVal,
+	},
+}
+
 func TestContrailCNIController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err)
@@ -195,6 +218,53 @@ func TestAdd(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestContrailCNIControllerWithControl(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
+
+	contrailcniCR.Spec.ServiceConfiguration.ControlInstance = "control1"
+	fakeClient := fake.NewFakeClientWithScheme(scheme, contrailcniCR, configCR, controlCR)
+	fakeClusterInfo := contrailcniClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
+	reconciler := NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), fakeClusterInfo)
+	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: contrailcniName})
+	assert.NoError(t, err)
+
+	t.Run("should create configMap for contrailcni", func(t *testing.T) {
+		cm := &core.ConfigMap{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-configuration",
+			Namespace: "default",
+		}, cm)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, cm)
+		expectedOwnerRefs := []v1.OwnerReference{{
+			APIVersion: "contrail.juniper.net/v1alpha1", Kind: "ContrailCNI", Name: "test-contrailcni",
+			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+		}}
+		assert.Equal(t, expectedOwnerRefs, cm.OwnerReferences)
+	})
+
+	t.Run("should create job for contrailcni", func(t *testing.T) {
+		job := &batchv1.Job{}
+		err = fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni-contrailcni-job",
+			Namespace: "default",
+		}, job)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, job)
+		expectedOwnerRefs := []v1.OwnerReference{{
+			APIVersion: "contrail.juniper.net/v1alpha1", Kind: "ContrailCNI", Name: "test-contrailcni",
+			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
+		}}
+		assert.Equal(t, expectedOwnerRefs, job.OwnerReferences)
+		var expectedCompletions int32 = 0
+		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
+	})
 }
 
 type mockManager struct {
