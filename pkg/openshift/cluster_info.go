@@ -122,14 +122,6 @@ func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error)
 	return installConfigMap, nil
 }
 
-type consoleConfig struct {
-	ClusterInfo clusterInfo `yaml:"clusterInfo"`
-}
-
-type clusterInfo struct {
-	MasterPublicURL string `yaml:"masterPublicURL"`
-}
-
 type installConfig struct {
 	Metadata   metadata   `yaml:"metadata"`
 	Networking networking `yaml:"networking"`

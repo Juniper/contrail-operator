@@ -2040,8 +2040,7 @@ func newNode() *core.Node {
 }
 
 var (
-	trueVal  = true
-	falseVal = false
+	trueVal = true
 )
 
 var NameValue = "cassandra"
@@ -2052,7 +2051,6 @@ var managerstatus = &contrail.ServiceStatus{
 }
 
 var NameValue1 = "zookeeper"
-var falVal = false
 var managerstatus1 = &contrail.ServiceStatus{
 	Name:    &NameValue1,
 	Active:  &trueVal,
@@ -2108,13 +2106,6 @@ var managerstatus8 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
-var NameValue9 = "keystone"
-var managerstatus9 = &contrail.ServiceStatus{
-	Name:    &NameValue9,
-	Active:  &trueVal,
-	Created: &trueVal,
-}
-
 var mgrstatusCassandras = []*contrail.ServiceStatus{managerstatus}
 var mgrstatusZookeeper = []*contrail.ServiceStatus{managerstatus1}
 var mgrstatusRabbitmq = managerstatus2
@@ -2124,7 +2115,6 @@ var mgrstatusVrouter = []*contrail.ServiceStatus{managerstatus5}
 var mgrstatusWebui = managerstatus6
 var mgrstatusProvisionmanager = managerstatus7
 var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}
-var mgrstatusKeystone = managerstatus9
 
 func newManager() *contrail.Manager {
 	trueVal := true

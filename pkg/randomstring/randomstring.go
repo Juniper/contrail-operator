@@ -32,11 +32,3 @@ func (s RandString) Generate() string {
 	}
 	return string(b)
 }
-
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[mRand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}

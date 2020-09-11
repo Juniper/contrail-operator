@@ -31,17 +31,6 @@ import (
 //NodeType definition
 type NodeType string
 
-const (
-	//VROUTER nodetype
-	VROUTER NodeType = "vrouter"
-	//CONFIG nodetype
-	CONFIG = "config"
-	//ANALYTICS nodetype
-	ANALYTICS = "analytics"
-	//CONTROL nodetype
-	CONTROL = "control"
-)
-
 //Config struct
 type Config struct {
 	APIServerList  []string   `yaml:"apiServerList,omitempty"`
@@ -481,49 +470,4 @@ func getControlStatusFromResponse(statusBody []byte, statusBody_p []byte) (*cont
 	}
 
 	return &controlStatus, err
-}
-
-func typeSwitch(tst interface{}) []string {
-	var nodeList []string
-	switch v := tst.(type) {
-	case interface{}:
-		inter, ok := v.([][]interface{})
-		if ok {
-			for _, element := range inter {
-				for _, element2 := range element {
-					x, ok := element2.(map[string]interface{})
-					if ok {
-						y, ok := x["list"].(map[string]interface{})
-						if ok {
-							z, ok := y["element"].([]interface{})
-							if ok {
-								for _, zz := range z {
-									nodeList = append(nodeList, zz.(string))
-								}
-							}
-						}
-					}
-				}
-			}
-		} else {
-			inter2, ok := v.([]interface{})
-			if ok {
-				for _, element := range inter2 {
-					nodeList = append(nodeList, element.(string))
-				}
-			} else {
-				inter3, ok := v.(interface{})
-				if ok {
-					nodeList = append(nodeList, inter3.(string))
-				}
-			}
-		}
-	case string:
-		log.Println("String:", v)
-	case [][]interface{}:
-		log.Println("[][]interface{}:", v)
-	default:
-		log.Println("unknown")
-	}
-	return nodeList
 }

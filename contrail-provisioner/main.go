@@ -23,12 +23,6 @@ import (
 	"github.com/Juniper/contrail-operator/contrail-provisioner/vrouternodes"
 )
 
-// ProvisionConfig defines the structure of the provison config
-type ProvisionConfig struct {
-	Nodes     *types.Nodes `yaml:"nodes,omitempty"`
-	APIServer *APIServer   `yaml:"apiServer,omitempty"`
-}
-
 // APIServer struct contains API Server configuration
 type APIServer struct {
 	APIPort       string     `yaml:"apiPort,omitempty"`
@@ -493,14 +487,6 @@ func connectionError(err error) bool {
 		fmt.Println(t)
 	}
 	return false
-}
-
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
 }
 
 func getAPIClient(apiServerObj *APIServer, keystoneAuthParameters *KeystoneAuthParameters) (*contrail.Client, error) {

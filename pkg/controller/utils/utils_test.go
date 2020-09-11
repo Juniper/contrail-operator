@@ -327,7 +327,6 @@ func TestUtilsSecond(t *testing.T) {
 
 var (
 	replicas int32 = 3
-	create         = true
 )
 
 var cassandra = &contrail.Cassandra{
@@ -416,31 +415,6 @@ func newZookeeper() *contrail.Zookeeper {
 			},
 		},
 		Status: contrail.ZookeeperStatus{Active: &falseVal},
-	}
-}
-
-var rbt = newRabbitmq()
-var zoo = newZookeeper()
-
-func newManager() *contrail.Manager {
-	return &contrail.Manager{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "config1",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-		},
-		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.ManagerConfiguration{
-				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			Services: contrail.Services{
-				Zookeepers: []*contrail.Zookeeper{zoo},
-				Cassandras: []*contrail.Cassandra{cassandra},
-				Rabbitmq:   rbt,
-			},
-		},
-		Status: contrail.ManagerStatus{},
 	}
 }
 
@@ -616,64 +590,6 @@ var InitContainers = []core.Container{
 			{Name: "keystone-fernet-tokens-volume", MountPath: "/etc/keystone/fernet-keys"},
 		},
 	},
-}
-
-var cassandraTwo = &contrail.Cassandra{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "cassandra1",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.CassandraSpec{
-		CommonConfiguration: contrail.PodConfiguration{},
-	},
-}
-
-func newZookeeperTwo() *contrail.Zookeeper {
-	// falseVal := false
-	return &contrail.Zookeeper{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "zookeeper-instance",
-			Namespace: "default",
-		},
-		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: contrail.PodConfiguration{},
-		},
-	}
-}
-
-func newRabbitmqTwo() *contrail.Rabbitmq {
-	return &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "rabbitmq-instance",
-			Namespace: "default",
-		},
-		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.PodConfiguration{},
-		},
-	}
-}
-
-func newManagerTwo() *contrail.Manager {
-	return &contrail.Manager{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "config1",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-		},
-		Spec: contrail.ManagerSpec{
-			CommonConfiguration: contrail.ManagerConfiguration{
-				HostNetwork:  &trueVal,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			Services: contrail.Services{
-				Zookeepers: []*contrail.Zookeeper{newZookeeperTwo()},
-				Cassandras: []*contrail.Cassandra{cassandraTwo},
-				Rabbitmq:   newRabbitmqTwo(),
-			},
-		},
-		Status: contrail.ManagerStatus{},
-	}
 }
 
 var TestContainers = []*contrail.Container{
