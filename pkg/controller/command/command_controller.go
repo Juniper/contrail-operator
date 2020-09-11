@@ -150,7 +150,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
-
 	commandClusterIP := commandService.Spec.ClusterIP
 	if err := r.ensureCertificatesExist(command, commandPods, instanceType, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
@@ -213,6 +212,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	if config.Status.Endpoint == "" {
+		return reconcile.Result{}, nil
+	}
+
+	if err = r.kubernetes.Owner(command).EnsureOwns(config); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	podIPs := []string{"0.0.0.0"}
 	if len(commandPods.Items) > 0 {
 		err = contrail.SetPodsToReady(commandPods, r.client)
@@ -562,18 +570,18 @@ func (r *ReconcileCommand) getConfig(command *contrail.Command) (*contrail.Confi
 }
 
 func (r *ReconcileCommand) ensureServiceExists(command *contrail.Command) (*core.Service, error) {
-	commnadService := newCommandService(command)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, commnadService, func() error {
-		commnadService.Spec.Ports = []core.ServicePort{
+	commandService := newCommandService(command)
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, commandService, func() error {
+		commandService.Spec.Ports = []core.ServicePort{
 			{Port: int32(9091), Protocol: "TCP"},
 		}
-		commnadService.Spec.Selector = map[string]string{"contrail_manager": "command"}
-		return controllerutil.SetControllerReference(command, commnadService, r.scheme)
+		commandService.Spec.Selector = map[string]string{"contrail_manager": "command"}
+		return controllerutil.SetControllerReference(command, commandService, r.scheme)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return commnadService, nil
+	return commandService, nil
 }
 
 func newCommandService(cr *contrail.Command) *core.Service {
