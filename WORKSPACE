@@ -281,6 +281,24 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_anuvu_bazelnogolint",
+    importpath = "github.com/anuvu/bazel-nogo-lint",
+    sum = "h1:WVR6KZCp0yInlBv0Xd9jvhdIP85O1twszyuVHukml8A=",
+    version = "v0.0.0-20190906231121-7faf06e1f0ec",
+)
+
+go_repository(
+    name = "com_github_golangci_go_misc",
+    build_extra_args = ["-exclude=vendor"],
+    build_file_proto_mode = "disable",
+    importpath = "github.com/golangci/go-misc",
+    patch_args = ["-p1"],
+    patches = ["@com_github_anuvu_bazelnogolint//:third_party/com_github_golangci_go_misc.patch"],
+    sum = "h1:9kfjN3AdxcbsZBf8NjltjWihK2QfBBBZuv91cMFfDHw=",
+    version = "v0.0.0-20180628070357-927a3d87b613",
+)
+
+go_repository(
     name = "com_github_gogo_protobuf_proto",
     importpath = "github.com/gogo/protobuf",
     tag = "v1.3.1",
