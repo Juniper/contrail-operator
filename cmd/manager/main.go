@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
 	"runtime"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	_ "github.com/operator-framework/operator-sdk/pkg/metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
@@ -77,19 +75,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx := context.TODO()
-
-	// Become the leader before proceeding.
-	err = leader.Become(ctx, "contrail-manager-lock")
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
 	// Create a new Cmd to provide shared dependencies and start components.
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
 		MetricsBindAddress: "0",
+		LeaderElection:     true,
+		LeaderElectionID:   "contrail-manager-lock",
 	})
 	if err != nil {
 		log.Error(err, "")

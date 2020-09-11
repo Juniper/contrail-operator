@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -92,6 +91,26 @@ func main() {
 	intervalPtr := flag.Int64("interval", 1, "interval for getting status")
 	flag.Parse()
 
+	var config Config
+	configYaml, err := ioutil.ReadFile(*configPtr)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(configYaml, &config)
+	if err != nil {
+		panic(err)
+	}
+	client, err := CreateRestClient(config)
+	if err != nil {
+		log.Printf("error: rest client creation failed: %v", err)
+		panic(err)
+	}
+	clientset, restClient, err := kubeClient(config)
+	if err != nil {
+		log.Printf("kubernates client creation failed: %v", err)
+		panic(err)
+	}
+
 	ticker := time.NewTicker(time.Duration(*intervalPtr) * time.Second)
 	done := make(chan bool)
 	go func() {
@@ -99,35 +118,24 @@ func main() {
 			select {
 			case t := <-ticker.C:
 				log.Println("Tick at", t)
-				var config Config
-				configYaml, err := ioutil.ReadFile(*configPtr)
+				var updatedConfig Config
+				updatedConfigYaml, err := ioutil.ReadFile(*configPtr)
 				if err != nil {
 					panic(err)
 				}
-				err = yaml.Unmarshal(configYaml, &config)
+				err = yaml.Unmarshal(updatedConfigYaml, &updatedConfig)
 				if err != nil {
 					panic(err)
 				}
-				client, err := CreateRestClient(config)
-				if err != nil {
-					log.Printf("error: rest client creation failed: %v", err)
-					continue
-				}
-				clientset, restClient, err := kubeClient(config)
-				if err != nil {
-					log.Printf("kubernates client creation failed: %v", err)
-					continue
-				}
-				ticker = time.NewTicker(time.Duration(config.Interval) * time.Second)
 				switch config.NodeType {
 				case "control":
-					err := getControlStatus(client, clientset, restClient, config)
+					err := getControlStatus(client, clientset, restClient, updatedConfig)
 					if err != nil {
 						log.Printf("warning: Error in  getControlStatus func: %v", err)
 						continue
 					}
 				case "config":
-					err := getConfigStatus(client, clientset, restClient, config)
+					err := getConfigStatus(client, clientset, restClient, updatedConfig)
 					if err != nil {
 						log.Printf("warning: Error in  getConfigStatus func: %v", err)
 						continue
@@ -200,7 +208,13 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 		url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=BgpRouterState"
 		process_url = "https://" + apiServer + "/Snh_SandeshUVECacheReq?x=NodeStatus"
 		resp, err := client.Get(url)
+		if resp != nil {
+			defer closeResp(resp)
+		}
 		process_resp, err_p := client.Get(process_url)
+		if process_resp != nil {
+			defer closeResp(process_resp)
+		}
 		if err != nil {
 			log.Println(err)
 			return err
@@ -211,8 +225,6 @@ func GetControlStatusFromApiServer(apiServer string, config *Config, client *htt
 		}
 		log.Print(url)
 		log.Print(process_url)
-		defer closeResp(resp)
-		defer closeResp(process_resp)
 		if resp != nil && process_resp != nil {
 			log.Printf("resp not nil %d ", resp.StatusCode)
 			log.Printf("Process resp not nil %d ", process_resp.StatusCode)
@@ -245,6 +257,7 @@ func closeResp(resp *http.Response) {
 		log.Printf("closing http session failed: %v", err)
 	}
 }
+
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
@@ -390,7 +403,6 @@ func (c *vrouterClient) UpdateStatus(name string, object *contrailOperatorTypes.
 
 func updateControlStatus(config *Config, controlStatusMap map[string]contrailOperatorTypes.ControlServiceStatus, restClient *rest.RESTClient) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-
 		controlCient := &controlClient{
 			ns:         config.Namespace,
 			restClient: restClient,
@@ -400,36 +412,17 @@ func updateControlStatus(config *Config, controlStatusMap map[string]contrailOpe
 			log.Printf("error: updateControlStatus: Failed to get status: %s", err)
 			return err
 		}
-		update := false
-		if controlObject.Status.ServiceStatus == nil {
-			controlObject.Status.ServiceStatus = map[string]contrailOperatorTypes.ControlServiceStatus{}
-			controlObject.Status.ServiceStatus = controlStatusMap
-			update = true
-		} else {
-			same := reflect.DeepEqual(controlObject.Status.ServiceStatus, controlStatusMap)
-			if !same {
-				controlObject.Status.ServiceStatus = controlStatusMap
-				update = true
-
-			} else {
-				controlObject.Status.ServiceStatus = controlStatusMap
-				update = true
-			}
+		controlObject.Status.ServiceStatus = controlStatusMap
+		_, err = controlCient.UpdateStatus(config.NodeName, controlObject)
+		if err != nil {
+			log.Println(err)
 		}
-		if update {
-			_, err = controlCient.UpdateStatus(config.NodeName, controlObject)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-		return nil
+		return err
 	})
 	if retryErr != nil {
 		log.Printf("Update failed: %v", retryErr)
-		return retryErr
 	}
-	return nil
+	return retryErr
 }
 
 func getControlStatusFromResponse(statusBody []byte, statusBody_p []byte) (*contrailOperatorTypes.ControlServiceStatus, error) {
