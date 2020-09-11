@@ -71,7 +71,7 @@ var contrailcniCR = &contrail.ContrailCNI{
 				{Name: "vroutercni", Image: "image1"},
 			},
 		},
-		CommonConfiguration: contrail.PodConfiguration{
+		CommonConfiguration: contrail.CNIPodConfiguration{
 			NodeSelector: map[string]string{"node-role.opencontrail.org": "contrailcni"},
 		},
 	},

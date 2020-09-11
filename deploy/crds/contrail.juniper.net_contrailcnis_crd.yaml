@@ -32,7 +32,7 @@ spec:
           description: ContrailCNISpec defines the desired state of ContrailCNI
           properties:
             commonConfiguration:
-              description: PodConfiguration is the common services struct.
+              description: CNIPodConfiguration is the Common Configuration for ContrailCNI
               properties:
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's

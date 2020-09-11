@@ -2156,8 +2156,8 @@ var managerstatus8 = &contrail.ServiceStatus{
 	Created: &trueVal,
 }
 
-var NameValue10 = "contrailcni"
-var managerstatus10 = &contrail.ServiceStatus{
+var NameValue9 = "contrailcni"
+var managerstatus9 = &contrail.ServiceStatus{
 	Name:    &NameValue9,
 	Active:  &trueVal,
 	Created: &trueVal,
@@ -2169,7 +2169,7 @@ var mgrstatusRabbitmq = managerstatus2
 var mgrstatusConfig = managerstatus3
 var mgrstatusControl = []*contrail.ServiceStatus{managerstatus4}
 var mgrstatusVrouter = []*contrail.ServiceStatus{managerstatus5}
-var mgrstatusContrailCNI = []*contrail.ServiceStatus{managerstatus10}
+var mgrstatusContrailCNI = []*contrail.ServiceStatus{managerstatus9}
 var mgrstatusWebui = managerstatus6
 var mgrstatusProvisionmanager = managerstatus7
 var mgrstatusKubemanager = []*contrail.ServiceStatus{managerstatus8}

@@ -212,7 +212,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processContrailCNIs(instance, replicas); err != nil {
+	if err := r.processContrailCNIs(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -660,7 +660,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 	return nil
 }
 
-func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error {
 	for _, existingContrailCNI := range manager.Status.ContrailCNIs {
 		found := false
 		for _, intendedContrailCNI := range manager.Spec.Services.ContrailCNIs {
@@ -689,9 +689,17 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager, replic
 		ContrailCNI.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, ContrailCNI, func() error {
 			ContrailCNI.Spec = ContrailCNIService.Spec
-			ContrailCNI.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, ContrailCNI.Spec.CommonConfiguration)
-			if ContrailCNI.Spec.CommonConfiguration.Replicas == nil {
-				ContrailCNI.Spec.CommonConfiguration.Replicas = replicas
+			if len(ContrailCNI.Spec.CommonConfiguration.NodeSelector) == 0 && len(manager.Spec.CommonConfiguration.NodeSelector) > 0 {
+				(&ContrailCNI.Spec.CommonConfiguration).NodeSelector = manager.Spec.CommonConfiguration.NodeSelector
+			}
+			if ContrailCNI.Spec.CommonConfiguration.HostNetwork == nil && manager.Spec.CommonConfiguration.HostNetwork != nil {
+				(&ContrailCNI.Spec.CommonConfiguration).HostNetwork = manager.Spec.CommonConfiguration.HostNetwork
+			}
+			if len(ContrailCNI.Spec.CommonConfiguration.ImagePullSecrets) == 0 && len(manager.Spec.CommonConfiguration.ImagePullSecrets) > 0 {
+				(&ContrailCNI.Spec.CommonConfiguration).ImagePullSecrets = manager.Spec.CommonConfiguration.ImagePullSecrets
+			}
+			if len(ContrailCNI.Spec.CommonConfiguration.Tolerations) == 0 && len(manager.Spec.CommonConfiguration.Tolerations) > 0 {
+				(&ContrailCNI.Spec.CommonConfiguration).Tolerations = manager.Spec.CommonConfiguration.Tolerations
 			}
 			return controllerutil.SetControllerReference(manager, ContrailCNI, r.scheme)
 		})
