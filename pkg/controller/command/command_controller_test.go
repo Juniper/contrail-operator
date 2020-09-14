@@ -1028,7 +1028,7 @@ func newCommandService() *core.Service {
 	trueVal := true
 	return &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "command-service",
+			Name:      "command-command",
 			Namespace: "default",
 			Labels:    map[string]string{"service": "command"},
 			OwnerReferences: []meta.OwnerReference{

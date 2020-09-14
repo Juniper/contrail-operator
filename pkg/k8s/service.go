@@ -17,7 +17,7 @@ import (
 type Service struct {
 	name      string
 	servType  core.ServiceType
-	port      int32
+	ports     map[int32]string
 	ownerType string
 	labels    map[string]string
 	owner     v1.Object
@@ -40,16 +40,23 @@ func (s *Service) EnsureExists() error {
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), s.client, &s.svc, func() error {
-		nodePort := int32(0)
-		for i, p := range s.svc.Spec.Ports {
-			if p.Port == s.port {
-				nodePort = s.svc.Spec.Ports[i].NodePort
+		portToNodePortMap := make(map[int32]int32, 0)
+		for _, p := range s.svc.Spec.Ports {
+			for port := range s.ports {
+				if p.Port == port {
+					portToNodePortMap[port] = p.NodePort
+				}
 			}
 		}
-
-		s.svc.Spec.Ports = []core.ServicePort{
-			{Port: s.port, Protocol: "TCP", NodePort: nodePort},
+		var servicePortList []core.ServicePort
+		for port, name := range s.ports {
+			svcPort := core.ServicePort{Port: port, Protocol: "TCP", NodePort: portToNodePortMap[port]}
+			if name != "" {
+				svcPort.Name = name
+			}
+			servicePortList = append(servicePortList, svcPort)
 		}
+		s.svc.Spec.Ports = servicePortList
 		s.svc.Spec.Selector = labels
 		s.svc.Spec.Type = s.servType
 		return controllerutil.SetControllerReference(s.owner, &s.svc, s.scheme)

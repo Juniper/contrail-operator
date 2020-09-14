@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -24,6 +23,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_config")
@@ -93,9 +93,10 @@ func Add(mgr manager.Manager) error {
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileConfig{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Manager: mgr,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Manager:    mgr,
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
 	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -174,9 +175,10 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Manager    manager.Manager
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reconciles Config.
@@ -206,8 +208,13 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if !cassandraActive || !rabbitmqActive || !zookeeperActive {
 		return reconcile.Result{}, nil
 	}
-	configService, err := r.ensureServiceExists(config)
-	if err != nil {
+	servicePortsMap := map[int32]string{
+		int32(v1alpha1.ConfigApiPort):    "api",
+		int32(v1alpha1.AnalyticsApiPort): "analytics",
+	}
+	configService := r.Kubernetes.Service(request.Name, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config)
+
+	if err := configService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -700,7 +707,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	if err = config.SetEndpointInStatus(r.Client, configService.Spec.ClusterIP); err != nil {
+	if err = config.SetEndpointInStatus(r.Client, configService.ClusterIP()); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -728,30 +735,4 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileConfig) ensureServiceExists(config *v1alpha1.Config) (*corev1.Service, error) {
-	configService := newConfigService(config)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, configService, func() error {
-		configService.Spec.Ports = []corev1.ServicePort{
-			{Port: int32(v1alpha1.ConfigApiPort), Protocol: "TCP", Name: "api"},
-			{Port: int32(v1alpha1.AnalyticsApiPort), Protocol: "TCP", Name: "analytics"},
-		}
-		configService.Spec.Selector = map[string]string{"contrail_manager": "config"}
-		return controllerutil.SetControllerReference(config, configService, r.Scheme)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return configService, nil
-}
-
-func newConfigService(cr *v1alpha1.Config) *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-service",
-			Namespace: cr.Namespace,
-			Labels:    map[string]string{"service": cr.Name},
-		},
-	}
 }

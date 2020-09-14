@@ -143,18 +143,16 @@ func TestCluster(t *testing.T) {
 				assert.NoError(t, err)
 				res, err := configClient.GetResource("/config-nodes")
 				assert.NoError(t, err)
-				var configResponse config.ConfigNodeResponse
-				err = json.Unmarshal(res, &configResponse)
-				assert.NoError(t, err)
-				assert.True(t, configResponse.IsValidConfigApiResponse())
+				assertConfigResponseValid(res, t)
 			})
 
-			commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-service", 9091, "/proxy/53494ca8-f40c-11e9-83ae-38c986460fd4")
+			commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-command", 9091, "/proxy/53494ca8-f40c-11e9-83ae-38c986460fd4")
 
 			t.Run("then config api is accessible via command proxy", func(t *testing.T) {
 				configClient, err := config.NewClient(commandProxy, tokens.XAuthTokenHeader)
-				_, err = configClient.GetResource("/config/virtual-networks")
+				res, err := configClient.GetResource("/config/config-nodes")
 				assert.NoError(t, err)
+				assertConfigResponseValid(res, t)
 			})
 
 			t.Run("then analytics api is accessible via command proxy", func(t *testing.T) {
@@ -187,4 +185,12 @@ func TestCluster(t *testing.T) {
 
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
 	require.NoError(t, err, "failed to clean up the persistent volumes")
+}
+
+func assertConfigResponseValid(response []byte, t *testing.T) {
+	var configResponse config.ConfigNodeResponse
+	err := json.Unmarshal(response, &configResponse)
+	assert.NoError(t, err)
+	assert.True(t, configResponse.IsValidConfigApiResponse())
+
 }

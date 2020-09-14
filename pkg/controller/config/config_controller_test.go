@@ -19,6 +19,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestConfigResourceHandler(t *testing.T) {
@@ -131,7 +132,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := &ReconcileConfig{Client: cl, Scheme: scheme}
+			r := &ReconcileConfig{Client: cl, Scheme: scheme, Manager: nil, Kubernetes: k8s.New(cl, scheme)}
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -287,7 +288,7 @@ func configService() *core.Service {
 	trueVal := true
 	return &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "config-instance-service",
+			Name:      "config-instance-config",
 			Namespace: "default",
 			Labels:    map[string]string{"service": "config-instance"},
 			OwnerReferences: []meta.OwnerReference{

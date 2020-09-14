@@ -141,16 +141,17 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if !command.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
+	commandService := r.kubernetes.Service(request.Name, core.ServiceTypeClusterIP, map[int32]string{9091: ""}, instanceType, command)
 
-	commandService, err := r.ensureServiceExists(command)
-	if err != nil {
+	if err := commandService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	commandPods, err := r.listCommandsPods(command.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
-	commandClusterIP := commandService.Spec.ClusterIP
+	commandClusterIP := commandService.ClusterIP()
 	if err := r.ensureCertificatesExist(command, commandPods, instanceType, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -212,13 +213,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	if config.Status.Endpoint == "" {
-		return reconcile.Result{}, nil
-	}
-
 	if err = r.kubernetes.Owner(command).EnsureOwns(config); err != nil {
 		return reconcile.Result{}, err
+	}
+	if config.Status.Endpoint == "" {
+		return reconcile.Result{}, nil
 	}
 
 	podIPs := []string{"0.0.0.0"}
@@ -567,29 +566,4 @@ func (r *ReconcileCommand) getConfig(command *contrail.Command) (*contrail.Confi
 	}, config)
 
 	return config, err
-}
-
-func (r *ReconcileCommand) ensureServiceExists(command *contrail.Command) (*core.Service, error) {
-	commandService := newCommandService(command)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, commandService, func() error {
-		commandService.Spec.Ports = []core.ServicePort{
-			{Port: int32(9091), Protocol: "TCP"},
-		}
-		commandService.Spec.Selector = map[string]string{"contrail_manager": "command"}
-		return controllerutil.SetControllerReference(command, commandService, r.scheme)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return commandService, nil
-}
-
-func newCommandService(cr *contrail.Command) *core.Service {
-	return &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      cr.Name + "-service",
-			Namespace: cr.Namespace,
-			Labels:    map[string]string{"service": cr.Name},
-		},
-	}
 }

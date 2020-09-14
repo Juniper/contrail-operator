@@ -3,13 +3,11 @@ package ha
 import (
 	"context"
 	"fmt"
-	"github.com/Juniper/contrail-operator/pkg/client/swift"
-	"github.com/google/uuid"
-	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +16,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -29,7 +26,6 @@ import (
 )
 
 func TestHACommand(t *testing.T) {
-	//TODO: Unskip this test once Command works in HA mode
 	t.Skip()
 	ctx := test.NewContext(t)
 	f := test.Global
@@ -115,10 +111,6 @@ func TestHACommand(t *testing.T) {
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
 				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
-
-			t.Run("then command container is created in swift", func(t *testing.T) {
-				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
-			})
 		})
 
 		t.Run("when nodes are replicated to 3", func(t *testing.T) {
@@ -131,10 +123,6 @@ func TestHACommand(t *testing.T) {
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
 				assertCommandServiceIsResponding(t, proxy, f, namespace)
-			})
-
-			t.Run("then command container is created in swift", func(t *testing.T) {
-				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
 			})
 		})
 		t.Run("when one of the nodes fails", func(t *testing.T) {
@@ -165,10 +153,6 @@ func TestHACommand(t *testing.T) {
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
 				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
-
-			t.Run("then command container is created in swift", func(t *testing.T) {
-				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
-			})
 		})
 
 		t.Run("when all nodes are back operational", func(t *testing.T) {
@@ -189,9 +173,6 @@ func TestHACommand(t *testing.T) {
 				assertCommandServiceIsResponding(t, proxy, f, namespace)
 			})
 
-			t.Run("then command container is created in swift", func(t *testing.T) {
-				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
-			})
 		})
 
 		t.Run("when reference cluster is deleted", func(t *testing.T) {
@@ -215,7 +196,7 @@ func TestHACommand(t *testing.T) {
 
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
 	if err != nil {
-		t.Fatal(err)
+		require.NoError(t, err)
 	}
 }
 
@@ -234,7 +215,7 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 		}, keystoneCR)
 	require.NoError(t, err)
 
-	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-service", 9091, "/keystone")
+	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-command", 9091, "/keystone")
 	proxiedKeystoneClient := &keystone.Client{
 		Connector:    commandProxy,
 		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
@@ -274,6 +255,10 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", r))
 	})
+	t.Run(fmt.Sprintf("then a Memcached deployment has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", r))
+	})
 }
 
 func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
@@ -303,7 +288,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		Spec: contrail.PostgresSpec{
 			ServiceConfiguration: contrail.PostgresConfiguration{
 				Storage: contrail.Storage{
-					Path: "/mnt/openstack_test/patroni",
+					Path: storagePath + uuid.New().String(),
 				},
 				Containers: []*contrail.Container{
 					{Name: "patroni", Image: "registry:5000/common-docker-third-party/contrail/patroni:e87fc12.logical"},
@@ -345,6 +330,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 				},
 				CredentialsSecretName: "swift-pass-secret",
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
+					Storage:           contrail.Storage{Path: storagePath + uuid.New().String()},
 					AccountBindPort:   6001,
 					ContainerBindPort: 6002,
 					ObjectBindPort:    6000,
@@ -405,7 +391,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		Spec: contrail.ZookeeperSpec{
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Storage: contrail.Storage{
-					Path: storagePath + "/zookeeper",
+					Path: storagePath + uuid.New().String(),
 				},
 				Containers: []*contrail.Container{
 					{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
@@ -423,7 +409,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		Spec: contrail.CassandraSpec{
 			ServiceConfiguration: contrail.CassandraConfiguration{
 				Storage: contrail.Storage{
-					Path: storagePath + "/cassandra",
+					Path: storagePath + uuid.New().String(),
 				},
 				Containers: []*contrail.Container{
 					{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
@@ -515,52 +501,4 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}
-}
-
-func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string, adminPassword []byte) {
-	keystoneCR := &contrail.Keystone{}
-	err := f.Client.Get(context.TODO(),
-		types.NamespacedName{
-			Namespace: namespace,
-			Name:      "keystone",
-		}, keystoneCR)
-	require.NoError(t, err)
-
-	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-	require.NoError(t, err)
-	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-	require.NoError(t, err)
-
-	tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassword), "admin")
-	require.NoError(t, err)
-	swiftProxy := proxy.NewSecureClientForService("contrail", "swift-proxy-swift-proxy", 5070)
-	swiftURL := tokens.EndpointURL("swift", "internal")
-	swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
-	require.NoError(t, err)
-
-	t.Run("then swift container should be created", func(t *testing.T) {
-		err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
-			err = swiftClient.GetContainer("contrail_container")
-			if err == nil {
-				return true, nil
-			}
-			t.Log(err)
-			return false, nil
-		})
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("and when a file is put to the created container", func(t *testing.T) {
-		err = swiftClient.PutFile("contrail_container", "test-file", []byte("payload"))
-		require.NoError(t, err)
-
-		t.Run("then the file can be downloaded without authentication and has proper payload", func(t *testing.T) {
-			swiftNoAuthClient, err := swift.NewClient(swiftProxy, "", swiftURL)
-			require.NoError(t, err)
-			contents, err := swiftNoAuthClient.GetFile("contrail_container", "test-file")
-			require.NoError(t, err)
-			assert.Equal(t, "payload", string(contents))
-		})
-	})
 }
