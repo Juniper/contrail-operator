@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
@@ -51,7 +50,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource ContrailCNI
-	err = c.Watch(&source.Kind{Type: &contrailv1alpha1.ContrailCNI{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &v1alpha1.ContrailCNI{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}

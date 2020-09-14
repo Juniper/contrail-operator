@@ -9,8 +9,6 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/controller/contrailcni"
 )
 
-var trueVal = true
-
 var requestName = "test-request"
 var instanceType = "contrailcni"
 

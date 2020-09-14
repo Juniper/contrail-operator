@@ -50,7 +50,6 @@ func (c contrailcniClusterInfoFake) DeploymentType() string {
 
 var trueVal = true
 var falseVal = false
-var replicas int32 = 3
 
 var contrailcniName = types.NamespacedName{
 	Namespace: "default",
