@@ -15,6 +15,7 @@ type CniDirs struct {
 // GetJob is a method that returns k8s Job object filled with containers configuration contrail CNI plugin
 func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *batch.Job {
 	var trueVal = true
+	var TTLseconds int32 = 3
 
 	var cniContainer = core.Container{
 		Name:  "vroutercni",
@@ -198,11 +199,12 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 			Namespace: "default",
 		},
 		Spec: batch.JobSpec{
-			Parallelism:    replicas,
-			Completions:    replicas,
-			Selector:       &jobSelector,
-			Template:       jobTemplate,
-			ManualSelector: &trueVal,
+			Parallelism:             replicas,
+			Completions:             replicas,
+			Selector:                &jobSelector,
+			Template:                jobTemplate,
+			ManualSelector:          &trueVal,
+			TTLSecondsAfterFinished: &TTLseconds,
 		},
 	}
 
