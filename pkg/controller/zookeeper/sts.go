@@ -48,6 +48,24 @@ spec:
         volumeMounts:
         - mountPath: /tmp/podinfo
           name: status
+      - image: busybox
+        command:
+          - sh
+          - -c
+          - cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && sleep 120
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: conf-init
+        resources: {}
+        securityContext:
+          privileged: false
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       containers:
       - name: zookeeper
         env:

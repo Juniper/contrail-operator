@@ -2,6 +2,8 @@ package zookeeper
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strconv"
 
 	storagev1 "k8s.io/api/storage/v1"
@@ -169,11 +171,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 
 	currentZookeeperInstance := *instance
 
-	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	configMap2, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-1", r.Client, r.Scheme, request)
+	_, err := instance.CreateConfigMap("correct-zookeeper-conf", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -182,7 +180,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume", configMap2.Name: request.Name + "-" + instanceType + "-volume-1"})
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{"correct-zookeeper-conf": "correct-zookeeper-conf"})
 
 	zookeeperDefaultConfigurationInterface := instance.ConfigurationParameters()
 	zookeeperDefaultConfiguration := zookeeperDefaultConfigurationInterface.(v1alpha1.ZookeeperConfiguration)
@@ -216,12 +214,8 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 
 		if container.Name == "zookeeper" {
 			command := []string{
-				"bash", "-c", "grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000|" +
-					"sed -e 's/.*server.\\(.*\\)=.*/\\1/' > /var/lib/zookeeper/myid && " +
-					"cp /conf-1/* /conf/ && " +
-					"sed -i \"s/clientPortAddress=.*/clientPortAddress=${POD_IP}/g\" /conf/zoo.cfg && " +
-					"zkServer.sh --config /conf start-foreground"}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				"bash", "-c", "zkServer.sh --config /var/lib/zookeeper start-foreground"}
+			//"zkServer.sh --config /var/lib/zookeeper start-foreground"
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -230,16 +224,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			volumeMount := corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume-1",
-				MountPath: "/conf-1",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			volumeMount = corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/mydata",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			volumeMount = corev1.VolumeMount{
 				Name:      "pvc",
 				MountPath: "/var/lib/zookeeper",
 			}
@@ -262,6 +246,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		},
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
+	statefulSet.Spec.PodManagementPolicy = appsv1.OrderedReadyPodManagement
 	// Configure InitContainers.
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
@@ -289,6 +274,21 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: zookeeperDefaultConfiguration.Storage.Path,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
+		if container.Name == "conf-init" {
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-init",
+				MountPath: zookeeperDefaultConfiguration.Storage.Path,
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      "correct-zookeeper-conf",
+				MountPath: "/zookeeper-conf",
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = []string{
+				"sh", "-c", " if [ -f /mnt/zookeeper/zoo.cfg ]; then echo 'not empty'; else cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && cp /mnt/zookeeper/myid.$POD_IP /mnt/zookeeper/myid; fi;"}
+			//
 		}
 	}
 
@@ -392,6 +392,34 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
+
+		pods := make([]corev1.Pod, len(podIPList.Items))
+		copy(pods, podIPList.Items)
+		sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+
+		var notReady []corev1.Pod
+		for _, pod := range pods {
+			for _, c := range pod.Status.Conditions {
+				if c.Type == corev1.PodReady && c.Status == corev1.ConditionFalse {
+					notReady = append(notReady, pod)
+					break
+				}
+			}
+		}
+
+		if len(notReady) > 0 && len(pods) > 1 {
+			if instance.Status.Reconfigs < len(pods)-1 {
+				runScript := fmt.Sprintf("zkCli.sh -server %s reconfig --file /var/lib/zookeeper/zoo.cfg.dynamic.%s", notReady[0].Status.PodIP, notReady[0].Status.PodIP)
+				command := []string{"bash", "-c", runScript}
+				_, _, err := v1alpha1.ExecToPodThroughAPI(command, "zookeeper", notReady[0].Name, notReady[0].Namespace, nil)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				instance.Status.Reconfigs = instance.Status.Reconfigs + 1
+			}
+
+		}
+
 		labelSelector := labels.SelectorFromSet(label.New(instanceType, request.Name))
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
