@@ -65,9 +65,6 @@ type CNIPodConfiguration struct {
 	// If specified, the pod's tolerations.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
-	// Number of desired pods. This is a pointer to distinguish between explicit
-	// zero and not specified. Defaults to 1.
-	// +optional
 }
 
 // ContrailCNIStatus defines the observed state of ContrailCNI

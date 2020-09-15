@@ -674,6 +674,9 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 			oldContrailCNI.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingContrailCNI.Name,
+				Labels: map[string]string{
+					"contrail_cluster": "cluster1",
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldContrailCNI)
 			if err != nil && !errors.IsNotFound(err) {
@@ -688,19 +691,7 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 		ContrailCNI.ObjectMeta = ContrailCNIService.ObjectMeta
 		ContrailCNI.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, ContrailCNI, func() error {
-			ContrailCNI.Spec = ContrailCNIService.Spec
-			if len(ContrailCNI.Spec.CommonConfiguration.NodeSelector) == 0 && len(manager.Spec.CommonConfiguration.NodeSelector) > 0 {
-				(&ContrailCNI.Spec.CommonConfiguration).NodeSelector = manager.Spec.CommonConfiguration.NodeSelector
-			}
-			if ContrailCNI.Spec.CommonConfiguration.HostNetwork == nil && manager.Spec.CommonConfiguration.HostNetwork != nil {
-				(&ContrailCNI.Spec.CommonConfiguration).HostNetwork = manager.Spec.CommonConfiguration.HostNetwork
-			}
-			if len(ContrailCNI.Spec.CommonConfiguration.ImagePullSecrets) == 0 && len(manager.Spec.CommonConfiguration.ImagePullSecrets) > 0 {
-				(&ContrailCNI.Spec.CommonConfiguration).ImagePullSecrets = manager.Spec.CommonConfiguration.ImagePullSecrets
-			}
-			if len(ContrailCNI.Spec.CommonConfiguration.Tolerations) == 0 && len(manager.Spec.CommonConfiguration.Tolerations) > 0 {
-				(&ContrailCNI.Spec.CommonConfiguration).Tolerations = manager.Spec.CommonConfiguration.Tolerations
-			}
+			modifyContrailCNI(ContrailCNI, ContrailCNIService, manager)
 			return controllerutil.SetControllerReference(manager, ContrailCNI, r.scheme)
 		})
 		if err != nil {
@@ -940,4 +931,20 @@ func (r *ReconcileManager) processContrailmonitor(manager *v1alpha1.Manager) err
 	status.Active = &cms.Status.Active
 	manager.Status.Contrailmonitor = status
 	return err
+}
+
+func modifyContrailCNI(ContrailCNI, ContrailCNIService *v1alpha1.ContrailCNI, manager *v1alpha1.Manager) {
+	ContrailCNI.Spec = ContrailCNIService.Spec
+	if len(ContrailCNI.Spec.CommonConfiguration.NodeSelector) == 0 && len(manager.Spec.CommonConfiguration.NodeSelector) > 0 {
+		(&ContrailCNI.Spec.CommonConfiguration).NodeSelector = manager.Spec.CommonConfiguration.NodeSelector
+	}
+	if ContrailCNI.Spec.CommonConfiguration.HostNetwork == nil && manager.Spec.CommonConfiguration.HostNetwork != nil {
+		(&ContrailCNI.Spec.CommonConfiguration).HostNetwork = manager.Spec.CommonConfiguration.HostNetwork
+	}
+	if len(ContrailCNI.Spec.CommonConfiguration.ImagePullSecrets) == 0 && len(manager.Spec.CommonConfiguration.ImagePullSecrets) > 0 {
+		(&ContrailCNI.Spec.CommonConfiguration).ImagePullSecrets = manager.Spec.CommonConfiguration.ImagePullSecrets
+	}
+	if len(ContrailCNI.Spec.CommonConfiguration.Tolerations) == 0 && len(manager.Spec.CommonConfiguration.Tolerations) > 0 {
+		(&ContrailCNI.Spec.CommonConfiguration).Tolerations = manager.Spec.CommonConfiguration.Tolerations
+	}
 }

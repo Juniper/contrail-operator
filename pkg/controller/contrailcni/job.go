@@ -6,7 +6,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CniDirs is a struct with data deciding which directories to cover with cni configurtion
+// CniDirs is a struct with data deciding which directories to cover with cni configuration
 type CniDirs struct {
 	BinariesDirectory string
 	DeploymentType    string
@@ -62,9 +62,6 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 			},
 		},
 		ImagePullPolicy: "Always",
-		SecurityContext: &core.SecurityContext{
-			Privileged: &trueVal,
-		},
 	}
 
 	if cniDir.DeploymentType == "openshift" {

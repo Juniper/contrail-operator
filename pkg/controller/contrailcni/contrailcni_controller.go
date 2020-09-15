@@ -160,6 +160,8 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		if err := r.Client.Create(ctx, job); err != nil {
 			return reconcile.Result{}, err
 		}
+	} else {
+		return reconcile.Result{}, err
 	}
 
 	if instance.Status.Active == nil {
