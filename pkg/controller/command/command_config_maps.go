@@ -28,7 +28,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(KeystonePort int, hostIP, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string) error {
+func (c *configMaps) ensureCommandConfigExist(keystonePort int, hostIP, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string) error {
 	cc := &commandConf{
 		ClusterName:          "default",
 		AdminUsername:        "admin",
@@ -44,7 +44,7 @@ func (c *configMaps) ensureCommandConfigExist(KeystonePort int, hostIP, keystone
 		CAFilePath:           certificates.SignerCAFilepath,
 		PGPassword:           string(c.keystoneAdminPassSecret.Data["password"]),
 		KeystoneAddress:      keystoneAddress,
-		KeystonePort:         KeystonePort,
+		KeystonePort:         keystonePort,
 		KeystoneAuthProtocol: keystoneAuthProtocol,
 		ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
 		PostgresIP:           postgresAddress,
