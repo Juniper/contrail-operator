@@ -161,8 +161,7 @@ spec:
             - effect: NoExecute
               operator: Exists
         serviceConfiguration:
-          configAPIURL: https://kind-control-plane:8082
-          telemetryURL: https://kind-control-plane:8081
+          configInstance: config1
           postgresInstance: postgres
           swiftInstance: swift
           swiftProxyPort: 5080

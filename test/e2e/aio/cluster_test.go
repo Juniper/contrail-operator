@@ -131,22 +131,34 @@ func TestCluster(t *testing.T) {
 				assert.Equal(t, 401, res.StatusCode)
 			})
 
+			// Test framework client has incompatible Create method signature
+			runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+			require.NoError(t, err)
+			keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
+			require.NoError(t, err)
+			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+			assert.NoError(t, err)
 			t.Run("then config nodes are created", func(t *testing.T) {
-				// Test framework client has incompatible Create method signature
-				runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-				require.NoError(t, err)
-				keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-				require.NoError(t, err)
-				tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-				assert.NoError(t, err)
 				configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
 				assert.NoError(t, err)
 				res, err := configClient.GetResource("/config-nodes")
 				assert.NoError(t, err)
-				var configResponse config.ConfigNodeResponse
-				err = json.Unmarshal(res, &configResponse)
+				assertConfigResponseValid(res, t)
+			})
+
+			commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-command", 9091, "/proxy/53494ca8-f40c-11e9-83ae-38c986460fd4")
+
+			t.Run("then config api is accessible via command proxy", func(t *testing.T) {
+				configClient, err := config.NewClient(commandProxy, tokens.XAuthTokenHeader)
+				res, err := configClient.GetResource("/config/config-nodes")
 				assert.NoError(t, err)
-				assert.True(t, configResponse.IsValidConfigApiResponse())
+				assertConfigResponseValid(res, t)
+			})
+
+			t.Run("then analytics api is accessible via command proxy", func(t *testing.T) {
+				configClient, err := config.NewClient(commandProxy, tokens.XAuthTokenHeader)
+				_, err = configClient.GetResource("/telemetry/analytics")
+				assert.NoError(t, err)
 			})
 
 		})
@@ -173,4 +185,12 @@ func TestCluster(t *testing.T) {
 
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
 	require.NoError(t, err, "failed to clean up the persistent volumes")
+}
+
+func assertConfigResponseValid(response []byte, t *testing.T) {
+	var configResponse config.ConfigNodeResponse
+	err := json.Unmarshal(response, &configResponse)
+	assert.NoError(t, err)
+	assert.True(t, configResponse.IsValidConfigApiResponse())
+
 }

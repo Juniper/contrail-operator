@@ -23,6 +23,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_config")
@@ -92,9 +93,10 @@ func Add(mgr manager.Manager) error {
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileConfig{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Manager: mgr,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Manager:    mgr,
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
 	}
 }
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -114,6 +116,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	predInitStatus := utils.PodInitStatusChange(serviceMap)
 	predPodIPChange := utils.PodIPChange(serviceMap)
 	predInitRunning := utils.PodInitRunning(serviceMap)
+
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Config{},
+	}); err != nil {
+		return err
+	}
 
 	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
 		return err
@@ -166,9 +175,10 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Manager    manager.Manager
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reconciles Config.
@@ -188,7 +198,6 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if !config.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-
 	cassandraActive := cassandraInstance.IsActive(config.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, r.Client)
 	zookeeperActive := zookeeperInstance.IsActive(config.Spec.ServiceConfiguration.ZookeeperInstance,
@@ -199,7 +208,15 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if !cassandraActive || !rabbitmqActive || !zookeeperActive {
 		return reconcile.Result{}, nil
 	}
+	servicePortsMap := map[int32]string{
+		int32(v1alpha1.ConfigApiPort):    "api",
+		int32(v1alpha1.AnalyticsApiPort): "analytics",
+	}
+	configService := r.Kubernetes.Service(request.Name, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config)
 
+	if err := configService.EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
 	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
 	configMap, err := config.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -688,6 +705,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if err = config.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
+	}
+
+	if err = config.SetEndpointInStatus(r.Client, configService.ClusterIP()); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if currentConfigExists {

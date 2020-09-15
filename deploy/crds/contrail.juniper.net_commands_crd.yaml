@@ -3,6 +3,22 @@ kind: CustomResourceDefinition
 metadata:
   name: commands.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .status.endpoint
+    name: Endpoint
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: Command
@@ -104,7 +120,7 @@ spec:
               properties:
                 clusterName:
                   type: string
-                configAPIURL:
+                configInstance:
                   type: string
                 containers:
                   items:
@@ -130,8 +146,6 @@ spec:
                   type: string
                 swiftInstance:
                   type: string
-                telemetryURL:
-                  type: string
               type: object
           required:
           - serviceConfiguration
@@ -141,10 +155,14 @@ spec:
           properties:
             active:
               type: boolean
-            ips:
-              items:
-                type: string
-              type: array
+            endpoint:
+              type: string
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
             upgradeState:
               enum:
               - ""

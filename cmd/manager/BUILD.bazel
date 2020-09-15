@@ -16,7 +16,6 @@ go_library(
         "//pkg/k8s:go_default_library",
         "//pkg/openshift:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/k8sutil:go_default_library",
-        "@com_github_operator_framework_operator_sdk//pkg/leader:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/log/zap:go_default_library",
         "@com_github_operator_framework_operator_sdk//pkg/metrics:go_default_library",
         "@com_github_operator_framework_operator_sdk//version:go_default_library",

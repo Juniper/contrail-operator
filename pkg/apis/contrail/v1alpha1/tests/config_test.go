@@ -41,6 +41,21 @@ var config = &v1alpha1.Config{
 	},
 }
 
+var configService = &corev1.Service{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "config1-api",
+		Namespace: "default",
+		Labels:    map[string]string{"service": "config1"},
+	},
+	Spec: corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{Port: int32(v1alpha1.ConfigApiPort), Protocol: "TCP", Name: "api"},
+			{Port: int32(v1alpha1.AnalyticsApiPort), Protocol: "TCP", Name: "analytics"},
+		},
+		ClusterIP: "10.10.10.10",
+	},
+}
+
 var control = &v1alpha1.Control{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "control1",
@@ -477,6 +492,7 @@ func SetupEnv() Environment {
 	}
 
 	configResource.ManageNodeStatus(podMap.configPods, cl)
+	configResource.SetEndpointInStatus(cl, configService.Spec.ClusterIP)
 	rabbitmqResource.ManageNodeStatus(podMap.rabbitmqPods, cl)
 
 	cassandraResource.ManageNodeStatus(podMap.cassandraPods, cl)

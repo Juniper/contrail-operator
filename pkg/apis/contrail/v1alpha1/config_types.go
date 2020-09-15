@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,10 +19,6 @@ import (
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // +kubebuilder:validation:Enum=noauth;keystone
@@ -108,6 +107,7 @@ type ConfigStatus struct {
 	Ports         ConfigStatusPorts                 `json:"ports,omitempty"`
 	ConfigChanged *bool                             `json:"configChanged,omitempty"`
 	ServiceStatus map[string]ConfigServiceStatusMap `json:"serviceStatus,omitempty"`
+	Endpoint      string                            `json:"endpoint,omitempty"`
 }
 
 type ConfigServiceStatusMap map[string]ConfigServiceStatus
@@ -755,8 +755,7 @@ func (c *Config) WaitForPeerPods(request reconcile.Request, reconcileClient clie
 	return nil
 }
 
-func (c *Config) ManageNodeStatus(podNameIPMap map[string]string,
-	client client.Client) error {
+func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, client client.Client) error {
 	c.Status.Nodes = podNameIPMap
 	configConfigInterface := c.ConfigurationParameters()
 	configConfig := configConfigInterface.(ConfigConfiguration)
@@ -957,4 +956,10 @@ func (c *Config) ConfigurationParameters() interface{} {
 
 	return configConfiguration
 
+}
+
+func (c *Config) SetEndpointInStatus(client client.Client, clusterIP string) error {
+	c.Status.Endpoint = clusterIP
+	err := client.Status().Update(context.TODO(), c)
+	return err
 }
