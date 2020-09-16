@@ -469,9 +469,8 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 
 	instance.Status.Name = "contrailmonitor"
 	instance.Status.Active = true
-	x0 := r.client.Status()
-	if err := x0.Update(context.Background(), instance); err != nil {
-		return reconcile.Result{}, nil
+	if err := r.client.Status().Update(context.Background(), instance); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
