@@ -187,124 +187,10 @@ func testcase3() *TestCase {
 	return tc
 }
 
-func testcase4() *TestCase {
-	replica := int32(1)
-	trueVal := true
-	namespacedName := types.NamespacedName{Namespace: "default", Name: "postgres"}
-	postgresCR := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
-			Namespace: namespacedName.Namespace,
-			Name:      namespacedName.Name,
-		},
-		Spec: contrail.PostgresSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				HostNetwork:  &trueVal,
-				Replicas:     &replica,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				Tolerations: []core.Toleration{
-					{
-						Effect:   core.TaintEffectNoSchedule,
-						Operator: core.TolerationOpExists,
-					},
-					{
-						Effect:   core.TaintEffectNoExecute,
-						Operator: core.TolerationOpExists,
-					},
-				},
-			},
-		},
-	}
-
-	var contrailmonitorName = types.NamespacedName{
-		Namespace: "default",
-		Name:      "contrailmonitor-instance",
-	}
-
-	var contrailmonitorCR = &contrail.Contrailmonitor{
-		ObjectMeta: meta.ObjectMeta{
-			Namespace: contrailmonitorName.Namespace,
-			Name:      contrailmonitorName.Name,
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Spec: contrail.ContrailmonitorSpec{
-			ServiceConfiguration: contrail.ContrailmonitorConfiguration{
-				PostgresInstance: "psql_instance",
-			},
-		},
-	}
-
-	tc := &TestCase{
-		name: "create a new Contrail monitor  postgress",
-		initObjs: []runtime.Object{
-			contrailmonitorCR,
-			postgresCR,
-		},
-		expectedStatus: contrail.ContrailmonitorStatus{Active: trueVal},
-	}
-	return tc
-}
-
 func compareContrailmonitorStatus(t *testing.T, expectedStatus, realStatus contrail.ContrailmonitorStatus) {
 	require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
 	require.NotNil(t, realStatus.Active, "realStatus.Active Should not be nil")
 	assert.Equal(t, expectedStatus, realStatus)
-}
-
-func newConfigInst() *contrail.Config {
-	trueVal := true
-	falseVal := false
-	replica := int32(1)
-	return &contrail.Config{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "config-instance",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-			OwnerReferences: []meta.OwnerReference{
-				{
-					Name:       "config1",
-					Kind:       "Manager",
-					Controller: &trueVal,
-				},
-			},
-		},
-		Spec: contrail.ConfigSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				HostNetwork:  &trueVal,
-				Replicas:     &replica,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: contrail.ConfigConfiguration{
-				CassandraInstance:  "cassandra-instance",
-				ZookeeperInstance:  "zookeeper-instance",
-				KeystoneSecretName: "keystone-adminpass-secret",
-				Containers: []*contrail.Container{
-					{Name: "nodemanagerconfig", Image: "contrail-nodemanager-config"},
-					{Name: "nodemanageranalytics", Image: "contrail-nodemanager-analytics"},
-					{Name: "config", Image: "contrail-config-api"},
-					{Name: "analyticsapi", Image: "contrail-analytics-api"},
-					{Name: "api", Image: "contrail-controller-config-api"},
-					{Name: "collector", Image: "contrail-analytics-collector"},
-					{Name: "devicemanager", Image: "contrail-controller-config-devicemgr"},
-					{Name: "dnsmasq", Image: "contrail-controller-config-dnsmasq"},
-					{Name: "init", Image: "python:alpine"},
-					{Name: "init2", Image: "busybox"},
-					{Name: "redis", Image: "redis"},
-					{Name: "schematransformer", Image: "contrail-controller-config-schema"},
-					{Name: "servicemonitor", Image: "contrail-controller-config-svcmonitor"},
-					{Name: "queryengine", Image: "contrail-analytics-query-engine"},
-					{Name: "statusmonitor", Image: "contrail-statusmonitor:debug"},
-				},
-				Storage: contrail.Storage{
-					Size: "10G",
-					Path: "/mnt/my-storage",
-				},
-				NodeManager: &falseVal,
-			},
-		},
-		Status: contrail.ConfigStatus{Active: &falseVal},
-	}
 }
 
 func newCassandra() *contrail.Cassandra {
@@ -327,22 +213,6 @@ func newRabbitmq() *contrail.Rabbitmq {
 			Labels:    map[string]string{"contrail_cluster": "config1"},
 		},
 		Status: contrail.RabbitmqStatus{Active: &trueVal},
-	}
-}
-
-func newManager(cfg *contrail.Config) *contrail.Manager {
-	return &contrail.Manager{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "config1",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "config1"},
-		},
-		Spec: contrail.ManagerSpec{
-			Services: contrail.Services{
-				Config: cfg,
-			},
-		},
-		Status: contrail.ManagerStatus{},
 	}
 }
 
@@ -410,38 +280,6 @@ func contrailmonitor() *contrail.Contrailmonitor {
 var trueVal = true
 var falseVal = false
 var replicas int32 = 1
-
-var controlName = types.NamespacedName{
-	Namespace: "default",
-	Name:      "test-control",
-}
-
-var controlCR = &contrail.Control{
-		ObjectMeta: meta.ObjectMeta{
-			Namespace: controlName.Namespace,
-			Name:      controlName.Name,
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Spec: contrail.ControlSpec{
-			ServiceConfiguration: contrail.ControlConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "image1"},
-					{Name: "nodemanager", Image: "image1"},
-					{Name: "control", Image: "image1"},
-					{Name: "statusmonitor", Image: "image1"},
-					{Name: "named", Image: "image1"},
-					{Name: "dns", Image: "image1"},
-				},
-				CassandraInstance: "cassandra1",
-			},
-			CommonConfiguration: contrail.PodConfiguration{
-				NodeSelector: map[string]string{"node-role.opencontrail.org": "control"},
-				Replicas:     &replicas,
-			},
-		},
-	}
 
 func newKeystone() *contrail.Keystone {
 	trueVal := true
@@ -515,8 +353,6 @@ var postgresCR = &contrail.Postgres{
 			},
 		},
 	}
-
-var name = types.NamespacedName{Namespace: "default", Name: "psql_instance"}
 
 var contrailmonitorName = types.NamespacedName{
 	Namespace: "default",
