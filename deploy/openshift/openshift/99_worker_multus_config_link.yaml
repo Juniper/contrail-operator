@@ -1,0 +1,38 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 10-worker-multus-config-link
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: multus-config-link.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Link multus config to CNI config file
+          After=syslog.target
+          AssertPathExists=/etc/contrail/link_multus_config.sh
+
+          [Service]
+          Type=simple
+          ExecStart=/etc/contrail/link_multus_config.sh
+          StandardOutput=syslog
+          StandardError=syslog
+
+          [Install]
+          WantedBy=multi-user.target
+    storage:
+      files:
+      - filesystem: root
+        path: /etc/contrail/link_multus_config.sh
+        mode: 0744
+        user:
+          name: root
+        contents:
+          # 'data:,' and URL encoded openshift-install/sources/link_multus_config.sh
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Amkdir%20-p%20%2Fvar%2Frun%2Fmultus%2Fcni%2Fnet.d%0Atouch%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%0Aln%20-s%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%2Fvar%2Frun%2Fmultus%2Fcni%2Fnet.d%2F80-openshift-network.conf%0A
