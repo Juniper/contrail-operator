@@ -3,6 +3,22 @@ kind: CustomResourceDefinition
 metadata:
   name: configs.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.replicas
+    name: Replicas
+    type: integer
+  - JSONPath: .status.readyReplicas
+    name: Ready_Replicas
+    type: integer
+  - JSONPath: .status.endpoint
+    name: Endpoint
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: Config
@@ -29,7 +45,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: ConfigSpec is the Spec for the cassandras API.
+          description: ConfigSpec is the Spec for the Config API.
           properties:
             commonConfiguration:
               description: PodConfiguration is the common services struct.
@@ -100,7 +116,7 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: ConfigConfiguration is the Spec for the cassandras API.
+              description: ConfigConfiguration is the Spec for the Config API.
               properties:
                 aaaMode:
                   enum:

@@ -27,6 +27,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 var log = logf.Log.WithName("controller_webui")
@@ -97,7 +98,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler.
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileWebui{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Manager: mgr}
+	return &ReconcileWebui{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Manager:    mgr,
+		Kubernetes: k8s.New(mgr.GetClient(), mgr.GetScheme()),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -119,6 +125,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	predInitStatus := utils.PodInitStatusChange(serviceMap)
 	predPodIPChange := utils.PodIPChange(serviceMap)
 	predInitRunning := utils.PodInitRunning(serviceMap)
+
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &v1alpha1.Webui{},
+	}); err != nil {
+		return err
+	}
 
 	if err = c.Watch(srcPod, podHandler, predPodIPChange); err != nil {
 		return err
@@ -164,9 +177,10 @@ var _ reconcile.Reconciler = &ReconcileWebui{}
 type ReconcileWebui struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client  client.Client
-	Scheme  *runtime.Scheme
-	Manager manager.Manager
+	Client     client.Client
+	Scheme     *runtime.Scheme
+	Manager    manager.Manager
+	Kubernetes *k8s.Kubernetes
 }
 
 // Reconcile reads that state of the cluster for a Webui object and makes changes based on the state read
@@ -189,6 +203,11 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 
 	if !instance.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
+	}
+
+	webuiService := r.Kubernetes.Service(request.Name, corev1.ServiceTypeClusterIP, map[int32]string{int32(v1alpha1.WebuiHttpsListenPort): ""}, instanceType, instance)
+	if err := webuiService.EnsureExists(); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
@@ -365,7 +384,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 					HTTPGet: &corev1.HTTPGetAction{
 						Scheme: corev1.URISchemeHTTPS,
 						Path:   "/",
-						Port:   intstr.IntOrString{IntVal: 8143},
+						Port:   intstr.IntOrString{IntVal: int32(v1alpha1.WebuiHttpsListenPort)},
 					},
 				},
 			}
@@ -490,14 +509,14 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		}
 	}
 
-	if err = r.updateStatus(instance, statefulSet); err != nil {
+	if err = r.updateStatus(instance, statefulSet, webuiService.ClusterIP()); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSet) error {
+func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSet, cip string) error {
 	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: sts.Namespace},
 		sts); err != nil {
 		return err
@@ -507,6 +526,7 @@ func (r *ReconcileWebui) updateStatus(cr *v1alpha1.Webui, sts *appsv1.StatefulSe
 	if err := r.updateServiceStatus(cr); err != nil {
 		return err
 	}
+	cr.Status.Endpoint = cip
 	return r.Client.Status().Update(context.Background(), cr)
 }
 

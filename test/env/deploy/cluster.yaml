@@ -166,6 +166,7 @@ spec:
           swiftInstance: swift
           swiftProxyPort: 5080
           keystoneInstance: keystone
+          webuiInstance: webui1
           contrailVersion: "master-latest"
           containers:
             - name: api

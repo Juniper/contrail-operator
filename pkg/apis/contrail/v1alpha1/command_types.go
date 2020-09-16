@@ -7,6 +7,7 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Command is the Schema for the commands API
+// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=commands,scope=Namespaced
 // +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
@@ -37,6 +38,7 @@ type CommandConfiguration struct {
 	SwiftInstance      string       `json:"swiftInstance,omitempty"`
 	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
 	ConfigInstance     string       `json:"configInstance,omitempty"`
+	WebUIInstance      string       `json:"webuiInstance,omitempty"`
 	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
 	ContrailVersion    string       `json:"contrailVersion,omitempty"`
 	Containers         []*Container `json:"containers,omitempty"`

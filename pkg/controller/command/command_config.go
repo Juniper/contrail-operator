@@ -29,6 +29,8 @@ type commandConf struct {
 	KeystoneAuthProtocol string
 	ContrailVersion      string
 	PostgresIP           string
+	WebUIAddress         string
+	WebUIPort            int
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
@@ -224,8 +226,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
-      private_url: https://{{ .HostIP }}:8143
-      public_url: https://{{ .HostIP }}:8143
+      private_url: https://{{ .WebUIAddress }}:{{ .WebUIPort }}
+      public_url: https://{{ .WebUIAddress }}:{{ .WebUIPort }}
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f

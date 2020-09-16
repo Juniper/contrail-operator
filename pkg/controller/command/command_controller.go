@@ -87,6 +87,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	// Watch for changes to secondary resource WebUI and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &contrail.Webui{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+	if err != nil {
+		return err
+	}
+
 	// Watch for changes to secondary resource Config and requeue the owner Command
 	err = c.Watch(&source.Kind{Type: &contrail.Config{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Command{},
@@ -241,6 +249,19 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
+	webUI, err := r.getWebUI(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(command).EnsureOwns(webUI); err != nil {
+		return reconcile.Result{}, err
+	}
+	if webUI.Status.Endpoint == "" {
+		return reconcile.Result{}, nil
+	}
+	webUIAddress := webUI.Status.Endpoint
+	webUIPort := webUI.Status.Ports.WebUIHttpsPort
+
 	podIPs := []string{"0.0.0.0"}
 	if len(commandPods.Items) > 0 {
 		err = contrail.SetPodsToReady(commandPods, r.client)
@@ -255,7 +276,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(swiftProxyPort, keystonePort, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -606,4 +627,14 @@ func (r *ReconcileCommand) getConfig(command *contrail.Command) (*contrail.Confi
 	}, config)
 
 	return config, err
+}
+
+func (r *ReconcileCommand) getWebUI(command *contrail.Command) (*contrail.Webui, error) {
+	webUI := &contrail.Webui{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.WebUIInstance,
+	}, webUI)
+
+	return webUI, err
 }

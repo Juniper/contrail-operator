@@ -405,6 +405,8 @@ spec:
                               type: string
                             swiftInstance:
                               type: string
+                            webuiInstance:
+                              type: string
                           type: object
                       required:
                       - serviceConfiguration
@@ -449,7 +451,7 @@ spec:
                     metadata:
                       type: object
                     spec:
-                      description: ConfigSpec is the Spec for the cassandras API.
+                      description: ConfigSpec is the Spec for the Config API.
                       properties:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
@@ -527,7 +529,7 @@ spec:
                               type: array
                           type: object
                         serviceConfiguration:
-                          description: ConfigConfiguration is the Spec for the cassandras
+                          description: ConfigConfiguration is the Spec for the Config
                             API.
                           properties:
                             aaaMode:
@@ -2350,6 +2352,8 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        endpoint:
+                          type: string
                         nodes:
                           additionalProperties:
                             type: string

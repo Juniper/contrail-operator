@@ -28,7 +28,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(swiftProxyPort, keystonePort int, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string, podIPs []string) error {
+func (c *configMaps) ensureCommandConfigExist(webUIPort, swiftProxyPort, keystonePort int, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string, podIPs []string) error {
 	for _, pod := range podIPs {
 		cc := &commandConf{
 			ClusterName:          "default",
@@ -51,6 +51,8 @@ func (c *configMaps) ensureCommandConfigExist(swiftProxyPort, keystonePort int, 
 			KeystoneAuthProtocol: keystoneAuthProtocol,
 			ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
 			PostgresIP:           postgresAddress,
+			WebUIAddress:         webUIAddress,
+			WebUIPort:            webUIPort,
 		}
 		if c.ccSpec.ServiceConfiguration.ClusterName != "" {
 			cc.ClusterName = c.ccSpec.ServiceConfiguration.ClusterName
