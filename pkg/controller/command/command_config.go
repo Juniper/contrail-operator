@@ -30,10 +30,10 @@ type commandConf struct {
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
-	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
-	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
-	cm.Data["command-app-server.yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
+	cm.Data["bootstrap"+c.HostIP+".sh"] = c.executeTemplate(commandInitBootstrapScript)
+	cm.Data["init_cluster"+c.HostIP+".yml"] = c.executeTemplate(commandInitCluster)
+	cm.Data["command-app-server"+c.HostIP+".yml"] = c.executeTemplate(commandConfig)
+	cm.Data["entrypoint"+c.HostIP+".sh"] = c.executeTemplate(commandEntrypoint)
 }
 
 func (c *commandConf) executeTemplate(t *template.Template) string {
@@ -49,7 +49,7 @@ var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
 cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
-/bin/commandappserver -c /etc/contrail/command-app-server.yml run
+/bin/commandappserver -c /etc/contrail/command-app-server{{ .HostIP }}.yml run
 `))
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
@@ -80,8 +80,8 @@ fi
 set -e
 psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/gen_init_psql.sql
 psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} -f /usr/share/contrail/init_psql.sql
-commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server.yml
-commandutil convert --intype yaml --in /etc/contrail/init_cluster.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
+commandutil convert --intype yaml --in /usr/share/contrail/init_data.yaml --outtype rdbms -c /etc/contrail/command-app-server{{ .HostIP }}.yml
+commandutil convert --intype yaml --in /etc/contrail/init_cluster{{ .HostIP }}.yml --outtype rdbms -c /etc/contrail/command-app-server{{ .HostIP }}.yml
 `))
 
 var funcMap = template.FuncMap{

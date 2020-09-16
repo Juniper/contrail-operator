@@ -234,7 +234,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(keystonePort, podIPs[0], keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(keystonePort, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -255,12 +255,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				LocalObjectReference: core.LocalObjectReference{
 					Name: commandConfigName,
 				},
-				Items: []core.KeyToPath{
-					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
-					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "command-app-server.yml", Path: "command-app-server.yml"},
-					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
-				},
+				DefaultMode: &executableMode,
 			},
 		},
 	}}
@@ -372,6 +367,14 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
+	var podIPEnv = core.EnvVar{
+		Name: "MY_POD_IP",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "status.podIP",
+			},
+		},
+	}
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -424,6 +427,9 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								MountPath: certificates.SignerCAMountPath,
 							},
 						},
+						Env: []core.EnvVar{
+							podIPEnv,
+						},
 					}},
 					InitContainers: []core.Container{
 						{
@@ -445,6 +451,9 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								Name:      configVolumeName,
 								MountPath: "/etc/contrail",
 							}},
+							Env: []core.EnvVar{
+								podIPEnv,
+							},
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
@@ -475,8 +484,8 @@ func getImage(containers []*contrail.Container, containerName string) string {
 
 func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
-		"api":                 {"bash", "-c", "/etc/contrail/entrypoint.sh"},
+		"init":                {"bash", "-c", "/etc/contrail/bootstrap${MY_POD_IP}.sh"},
+		"api":                 {"bash", "-c", "/etc/contrail/entrypoint${MY_POD_IP}.sh"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
