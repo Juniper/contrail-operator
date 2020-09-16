@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -256,7 +257,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err = r.kubernetes.Owner(command).EnsureOwns(webUI); err != nil {
 		return reconcile.Result{}, err
 	}
-	if webUI.Status.Endpoint == "" {
+	if !webUI.Status.Active {
 		return reconcile.Result{}, nil
 	}
 	webUIAddress := webUI.Status.Endpoint
@@ -276,7 +277,16 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	commandBootStrapConfigName := command.Name + "-bootstrap"
+	if err = r.configMap(commandBootStrapConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandInitConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, commandClusterIP); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.reconcileBootstrapJob(command, commandBootStrapConfigName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -419,7 +429,7 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
-	var podIPEnv = core.EnvVar{
+	podIPEnv := core.EnvVar{
 		Name: "MY_POD_IP",
 		ValueFrom: &core.EnvVarSource{
 			FieldRef: &core.ObjectFieldSelector{
@@ -494,19 +504,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								MountPath: "/tmp/podinfo",
 							}},
 						},
-						{
-							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
-							Image:           getImage(containers, "init"),
-							Command:         getCommand(containers, "init"),
-							VolumeMounts: []core.VolumeMount{{
-								Name:      configVolumeName,
-								MountPath: "/etc/contrail",
-							}},
-							Env: []core.EnvVar{
-								podIPEnv,
-							},
-						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
 					Tolerations: []core.Toleration{
@@ -536,7 +533,7 @@ func getImage(containers []*contrail.Container, containerName string) string {
 
 func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
-		"init":                {"bash", "-c", "/etc/contrail/bootstrap${MY_POD_IP}.sh"},
+		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
 		"api":                 {"bash", "-c", "/etc/contrail/entrypoint${MY_POD_IP}.sh"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
@@ -637,4 +634,72 @@ func (r *ReconcileCommand) getWebUI(command *contrail.Command) (*contrail.Webui,
 	}, webUI)
 
 	return webUI, err
+}
+
+func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, commandBootStrapConfigName string) error {
+	bootstrapJob := &batch.Job{}
+	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-bootstrap-job"}
+	err := r.client.Get(context.Background(), jobName, bootstrapJob)
+	alreadyExists := err == nil
+	if alreadyExists {
+		return nil
+	}
+
+	bootstrapJob = newBootStrapJob(command, jobName, commandBootStrapConfigName)
+	if err = controllerutil.SetControllerReference(command, bootstrapJob, r.scheme); err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), bootstrapJob)
+}
+
+func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBootStrapConfigName string) *batch.Job {
+	executableMode := int32(0744)
+	commandBootStrapConfigVolume := cr.Name + "-bootstrap-config-volume"
+	return &batch.Job{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+		},
+		Spec: batch.JobSpec{
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					HostNetwork:   true,
+					RestartPolicy: core.RestartPolicyNever,
+					NodeSelector:  cr.Spec.CommonConfiguration.NodeSelector,
+					Volumes: []core.Volume{
+						{
+							Name: commandBootStrapConfigVolume,
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: commandBootStrapConfigName,
+									},
+									DefaultMode: &executableMode,
+								},
+							},
+						},
+					},
+
+					Containers: []core.Container{
+						{
+							Name:            "command-init",
+							ImagePullPolicy: core.PullAlways,
+							Image:           getImage(cr.Spec.ServiceConfiguration.Containers, "init"),
+							Command:         getCommand(cr.Spec.ServiceConfiguration.Containers, "init"),
+							VolumeMounts: []core.VolumeMount{{
+								Name:      commandBootStrapConfigVolume,
+								MountPath: "/etc/contrail",
+							}},
+						},
+					},
+					DNSPolicy: core.DNSClusterFirst,
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
+				},
+			},
+			TTLSecondsAfterFinished: nil,
+		},
+	}
 }
