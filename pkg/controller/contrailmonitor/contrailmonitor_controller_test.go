@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
-	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 
+	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
@@ -250,74 +250,8 @@ func newZookeeper() *contrail.Zookeeper {
 	}
 }
 
-func contrailmonitor() *contrail.Contrailmonitor {
-	trueVal := true
-	return &contrail.Contrailmonitor{
-		ObjectMeta: meta.ObjectMeta{
-			Namespace: contrailmonitorName.Namespace,
-			Name:      contrailmonitorName.Name,
-			Labels: map[string]string{
-				"contrail_cluster": "test",
-			},
-		},
-		Spec: contrail.ContrailmonitorSpec{
-			ServiceConfiguration: contrail.ContrailmonitorConfiguration{
-				PostgresInstance:  "psql_instance",
-				MemcachedInstance: "memcached_instance",
-				KeystoneInstance:  "keystone_instance",
-				ZookeeperInstance: "zookeeper_instance",
-				CassandraInstance: "cassandra_instance",
-				RabbitmqInstance:  "rabbitmq_instance",
-				ControlInstance:   "control_instance",
-				ConfigInstance:    "config_instance",
-				WebuiInstance:     "webui_instance",
-			},
-		},
-		Status: contrail.ContrailmonitorStatus{Active: trueVal},
-	}
-}
-
 var trueVal = true
-var falseVal = false
 var replicas int32 = 1
-
-func newKeystone() *contrail.Keystone {
-	trueVal := true
-	oneVal := int32(1)
-	return &contrail.Keystone{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "keystone",
-			Namespace: "default",
-		},
-		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				Replicas:    &oneVal,
-				HostNetwork: &trueVal,
-				Tolerations: []core.Toleration{
-					{
-						Effect:   core.TaintEffectNoSchedule,
-						Operator: core.TolerationOpExists,
-					},
-					{
-						Effect:   core.TaintEffectNoExecute,
-						Operator: core.TolerationOpExists,
-					},
-				},
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: contrail.KeystoneConfiguration{
-				MemcachedInstance:  "memcached-instance",
-				PostgresInstance:   "psql",
-				ListenPort:         5555,
-				KeystoneSecretName: "keystone-adminpass-secret",
-				AuthProtocol:       "https",
-				Region:             "RegionOne",
-				UserDomainName:     "Default",
-				ProjectDomainName:  "Default",
-			},
-		},
-	}
-}
 
 func newMemcached() *contrail.Memcached {
 	return &contrail.Memcached{
@@ -331,28 +265,28 @@ func newMemcached() *contrail.Memcached {
 
 var pgnamespacedName = types.NamespacedName{Namespace: "default", Name: "postgres"}
 var postgresCR = &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
-			Namespace: pgnamespacedName.Namespace,
-			Name:      pgnamespacedName.Name,
-		},
-		Spec: contrail.PostgresSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				HostNetwork:  &trueVal,
-				Replicas:     &replicas,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-				Tolerations: []core.Toleration{
-					{
-						Effect:   core.TaintEffectNoSchedule,
-						Operator: core.TolerationOpExists,
-					},
-					{
-						Effect:   core.TaintEffectNoExecute,
-						Operator: core.TolerationOpExists,
-					},
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: pgnamespacedName.Namespace,
+		Name:      pgnamespacedName.Name,
+	},
+	Spec: contrail.PostgresSpec{
+		CommonConfiguration: contrail.PodConfiguration{
+			HostNetwork:  &trueVal,
+			Replicas:     &replicas,
+			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			Tolerations: []core.Toleration{
+				{
+					Effect:   core.TaintEffectNoSchedule,
+					Operator: core.TolerationOpExists,
+				},
+				{
+					Effect:   core.TaintEffectNoExecute,
+					Operator: core.TolerationOpExists,
 				},
 			},
 		},
-	}
+	},
+}
 
 var contrailmonitorName = types.NamespacedName{
 	Namespace: "default",
