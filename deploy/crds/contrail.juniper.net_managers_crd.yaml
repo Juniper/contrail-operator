@@ -811,6 +811,12 @@ spec:
                         properties:
                           active:
                             type: boolean
+                          readyReplicas:
+                            format: int32
+                            type: integer
+                          replicas:
+                            format: int32
+                            type: integer
                         type: object
                     type: object
                   type: array

@@ -164,10 +164,6 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	if instance.Status.Active == nil {
-		active := false
-		instance.Status.Active = &active
-	}
 	err := instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance)
 	return reconcile.Result{}, err
 }

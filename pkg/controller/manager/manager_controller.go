@@ -699,7 +699,7 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 		}
 		status := &v1alpha1.ServiceStatus{}
 		status.Name = &ContrailCNI.Name
-		status.Active = ContrailCNI.Status.Active
+		status.Active = &ContrailCNI.Status.Active
 		ContrailCNIServiceStatus = append(ContrailCNIServiceStatus, status)
 	}
 

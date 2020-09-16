@@ -19,6 +19,7 @@ import (
 // ContrailCNI is the Schema for the contrailcnis API
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=contrailcnis,scope=Namespaced
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type ContrailCNI struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -69,7 +70,7 @@ type CNIPodConfiguration struct {
 
 // ContrailCNIStatus defines the observed state of ContrailCNI
 type ContrailCNIStatus struct {
-	Active *bool `json:"active,omitempty"`
+	Status `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -144,7 +145,7 @@ func SetJobCommonConfiguration(job *batch.Job,
 }
 
 // SetInstanceActive sets the instance to active.
-func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus *bool, job *batch.Job, request reconcile.Request, object runtime.Object) error {
+func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus bool, job *batch.Job, request reconcile.Request, object runtime.Object) error {
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: request.Namespace},
 		job); err != nil {
 		return err
@@ -154,7 +155,7 @@ func (c *ContrailCNI) SetInstanceActive(client client.Client, activeStatus *bool
 		active = true
 	}
 
-	*activeStatus = active
+	activeStatus = active
 	return client.Status().Update(context.TODO(), object)
 }
 

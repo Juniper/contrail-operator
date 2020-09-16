@@ -3,6 +3,10 @@ kind: CustomResourceDefinition
 metadata:
   name: contrailcnis.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
     kind: ContrailCNI
@@ -139,6 +143,12 @@ spec:
           properties:
             active:
               type: boolean
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
           type: object
       type: object
   version: v1alpha1
