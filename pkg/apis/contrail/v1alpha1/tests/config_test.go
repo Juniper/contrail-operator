@@ -838,7 +838,6 @@ auth.user_domain_name = 'Default';
 module.exports = auth;
 `
 
-
 var cassandraConfig = `cluster_name: ContrailConfigDB
 num_tokens: 32
 hinted_handoff_enabled: true
@@ -1014,6 +1013,7 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.1.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.1.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_partition_handling = autoheal
 cluster_formation.peer_discovery_backend = classic_config
 cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
 cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
@@ -1029,6 +1029,7 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.2.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.2.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_partition_handling = autoheal
 cluster_formation.peer_discovery_backend = classic_config
 cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
 cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
@@ -1044,6 +1045,7 @@ ssl_options.keyfile = /etc/certificates/server-key-1.1.4.3.pem
 ssl_options.certfile = /etc/certificates/server-1.1.4.3.crt
 ssl_options.verify = verify_peer
 ssl_options.fail_if_no_peer_cert = true
+cluster_partition_handling = autoheal
 cluster_formation.peer_discovery_backend = classic_config
 cluster_formation.classic_config.nodes.1 = rabbit@1.1.4.1
 cluster_formation.classic_config.nodes.2 = rabbit@1.1.4.2
@@ -1086,7 +1088,6 @@ var rabbitmqDefinition = `{
   ],
 }
 `
-
 
 var controlConfig = `[DEFAULT]
 # bgp_config_file=bgp_config.xml
