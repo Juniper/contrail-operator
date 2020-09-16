@@ -16,6 +16,8 @@ type commandConf struct {
 	AdminPassword        string
 	SwiftUsername        string
 	SwiftPassword        string
+	SwiftProxyAddress    string
+	SwiftProxyPort       int
 	PostgresAddress      string
 	PostgresUser         string
 	PostgresDBName       string
@@ -274,8 +276,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "https://{{ .HostIP }}:5080"
-      public_url: "https://{{ .HostIP }}:5080"
+      private_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
+      public_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
     kind: endpoint
 `))
 

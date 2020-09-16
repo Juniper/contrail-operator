@@ -95,6 +95,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to secondary resource SwiftProxy and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &contrail.SwiftProxy{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Command{},
@@ -181,6 +189,19 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	swiftProxyService, err := r.getSwiftProxy(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(command).EnsureOwns(swiftProxyService); err != nil {
+		return reconcile.Result{}, err
+	}
+	if swiftProxyService.Status.ClusterIP == "" {
+		return reconcile.Result{}, nil
+	}
+	swiftProxyAddress := swiftProxyService.Status.ClusterIP
+	swiftProxyPort := swiftProxyService.Spec.ServiceConfiguration.ListenPort
+
 	keystone, err := r.getKeystone(command)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -234,7 +255,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(keystonePort, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(swiftProxyPort, keystonePort, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -354,6 +375,16 @@ func (r *ReconcileCommand) getSwift(command *contrail.Command) (*contrail.Swift,
 	}, swiftServ)
 
 	return swiftServ, err
+}
+
+func (r *ReconcileCommand) getSwiftProxy(command *contrail.Command) (*contrail.SwiftProxy, error) {
+	swiftProxyServ := &contrail.SwiftProxy{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.SwiftInstance + "-proxy",
+	}, swiftProxyServ)
+
+	return swiftProxyServ, err
 }
 
 func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Keystone, error) {

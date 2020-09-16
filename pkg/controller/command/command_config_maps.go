@@ -28,7 +28,7 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(keystonePort int, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string, podIPs []string) error {
+func (c *configMaps) ensureCommandConfigExist(swiftProxyPort, keystonePort int, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string, podIPs []string) error {
 	for _, pod := range podIPs {
 		cc := &commandConf{
 			ClusterName:          "default",
@@ -36,6 +36,8 @@ func (c *configMaps) ensureCommandConfigExist(keystonePort int, keystoneAddress,
 			AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
 			SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
 			SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
+			SwiftProxyAddress:    swiftProxyAddress,
+			SwiftProxyPort:       swiftProxyPort,
 			ConfigAPIURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.ConfigApiPort),
 			TelemetryURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.AnalyticsApiPort),
 			PostgresAddress:      postgresAddress,
