@@ -125,6 +125,7 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.certfile = /etc/certificates/server-"+pod.Status.PodIP+".crt\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.verify = verify_peer\n")
 		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.fail_if_no_peer_cert = true\n")
+		rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_partition_handling = autoheal\n")
 		//rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("ssl_options.versions.1 = tlsv1.2\n")
 		if len(podList.Items) > 1 {
 			rabbitmqConfigString = rabbitmqConfigString + fmt.Sprintf("cluster_formation.peer_discovery_backend = classic_config\n")
