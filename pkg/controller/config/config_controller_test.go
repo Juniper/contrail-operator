@@ -19,6 +19,7 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
 func TestConfigResourceHandler(t *testing.T) {
@@ -131,7 +132,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
-			r := &ReconcileConfig{Client: cl, Scheme: scheme}
+			r := &ReconcileConfig{Client: cl, Scheme: scheme, Manager: nil, Kubernetes: k8s.New(cl, scheme)}
 
 			req := reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -283,10 +284,32 @@ func newZookeeper() *contrail.Zookeeper {
 	}
 }
 
+func configService() *core.Service {
+	trueVal := true
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config-instance-config",
+			Namespace: "default",
+			Labels:    map[string]string{"service": "config-instance"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Config", "config-instance", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 8082, Protocol: "TCP", Name: "api"},
+				{Port: 8081, Protocol: "TCP", Name: "analytics"},
+			},
+			ClusterIP: "20.20.20.20",
+		},
+	}
+}
+
 func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.ConfigStatus) {
 	require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
 	require.NotNil(t, realStatus.Active, "realStatus.Active Should not be nil")
 	assert.Equal(t, *expectedStatus.Active, *realStatus.Active)
+	assert.Equal(t, expectedStatus.Endpoint, realStatus.Endpoint)
 }
 
 // ------------------------ TEST CASES ------------------------------------
@@ -301,11 +324,12 @@ func testcase1() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -322,6 +346,7 @@ func testcase2() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
@@ -373,11 +398,12 @@ func testcase3() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -395,6 +421,7 @@ func testcase4() *TestCase {
 			newManager(cfg),
 			zkp,
 			cfg,
+			configService(),
 			newCassandra(),
 			newRabbitmq(),
 		},
@@ -417,11 +444,12 @@ func testcase5() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -437,11 +465,12 @@ func testcase6() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -481,11 +510,12 @@ func testcase7() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -502,11 +532,12 @@ func testcase8() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(cfg),
 			cfg,
+			configService(),
 			newZookeeper(),
 			newCassandra(),
 			newRabbitmq(),
 		},
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }
@@ -527,9 +558,10 @@ func testcase9() *TestCase {
 			newCassandra(),
 			newRabbitmq(),
 			cfg,
+			configService(),
 		},
 		requeued:       trueVal,
-		expectedStatus: contrail.ConfigStatus{Active: &falseVal},
+		expectedStatus: contrail.ConfigStatus{Active: &falseVal, Endpoint: "20.20.20.20"},
 	}
 	return tc
 }

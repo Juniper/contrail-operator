@@ -42,6 +42,7 @@ func TestCommand(t *testing.T) {
 		"Swift secret name is empty": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -74,6 +75,7 @@ func TestCommand(t *testing.T) {
 		"no Postgres": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
@@ -83,6 +85,7 @@ func TestCommand(t *testing.T) {
 		"no Swift": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -92,6 +95,7 @@ func TestCommand(t *testing.T) {
 		"no Keystone": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -101,6 +105,7 @@ func TestCommand(t *testing.T) {
 		"no Swift secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwift(false),
@@ -110,6 +115,7 @@ func TestCommand(t *testing.T) {
 		"no admin secret": {
 			initObjs: []runtime.Object{
 				newCommand(),
+				newConfig(true),
 				newPostgres(true),
 				newSwiftSecret(),
 				newSwift(false),
@@ -117,6 +123,17 @@ func TestCommand(t *testing.T) {
 			},
 		},
 		"no Swift container exists": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newConfig(true),
+				newPostgres(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(true),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			},
+		},
+		"no Config container exists": {
 			initObjs: []runtime.Object{
 				newCommand(),
 				newPostgres(true),
@@ -148,6 +165,7 @@ func TestCommand(t *testing.T) {
 	t.Run("Swift secret name is empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
 			newCommand(),
+			newConfig(true),
 			newPostgres(true),
 			newAdminSecret(),
 			newSwiftSecret(),
@@ -169,6 +187,38 @@ func TestCommand(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("Config Endpoints should not be empty", func(t *testing.T) {
+		initObjs := []runtime.Object{
+			newCommand(),
+			newConfigWithoutEndpoint(true),
+			newPostgres(true),
+			newAdminSecret(),
+			newSwiftSecret(),
+			newSwift(false),
+			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		conf := &rest.Config{}
+		r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "command",
+				Namespace: "default",
+			},
+		}
+
+		_, err := r.Reconcile(req)
+		assert.NoError(t, err)
+
+		configMap := &core.ConfigMap{}
+		err = cl.Get(context.Background(), types.NamespacedName{
+			Name:      "command-command-configmap",
+			Namespace: "default",
+		}, configMap)
+		assert.Error(t, err)
+	})
+
 	tests := []struct {
 		name               string
 		initObjs           []runtime.Object
@@ -181,13 +231,15 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newCommandService(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -196,6 +248,8 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment and check swift containers existence",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newCommandService(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -203,7 +257,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(true),
@@ -212,6 +266,8 @@ func TestCommand(t *testing.T) {
 			name: "create a new deployment with inactive Keystone",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newCommandService(),
+				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -219,7 +275,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -228,14 +284,16 @@ func TestCommand(t *testing.T) {
 			name: "remove tolerations from deployment",
 			initObjs: []runtime.Object{
 				newCommandWithEmptyToleration(),
+				newCommandService(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -244,14 +302,16 @@ func TestCommand(t *testing.T) {
 			name: "update command status to false",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newCommandService(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(false),
@@ -260,7 +320,9 @@ func TestCommand(t *testing.T) {
 			name: "update command status to active",
 			initObjs: []runtime.Object{
 				newCommand(),
+				newCommandService(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(false),
 				newAdminSecret(),
@@ -268,8 +330,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       true,
+				Status:       contrail.Status{Active: true},
 				UpgradeState: contrail.CommandNotUpgrading,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedPostgres:   newPostgresWithOwner(true),
@@ -279,7 +342,9 @@ func TestCommand(t *testing.T) {
 			name: "when images are changed in 1-replica deployment, deployment is shut down before the upgrade",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
+				newCommandService(),
 				newDeployment(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -287,8 +352,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
@@ -300,7 +366,9 @@ func TestCommand(t *testing.T) {
 			name: "when images are changed in 0-replica deployment, upgrade is started immediately",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
+				newCommandService(),
 				newDeployment(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -308,8 +376,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -321,7 +390,9 @@ func TestCommand(t *testing.T) {
 			name: "when command is shutting down before upgrade and deployment is not scaled down yet, nothing changes",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0), ""),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -329,8 +400,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
@@ -342,7 +414,9 @@ func TestCommand(t *testing.T) {
 			name: "when command is shutting down before upgrade and deployment is scaled down to 0 replicas, upgrade is started",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ""),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -350,8 +424,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -363,7 +438,9 @@ func TestCommand(t *testing.T) {
 			name: "when command is starting upgraded deployment and it is not scaled up yet, nothing changes",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -371,8 +448,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -384,7 +462,9 @@ func TestCommand(t *testing.T) {
 			name: "when command is starting upgraded deployment and it is scaled up, upgrade ends with success",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -392,8 +472,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       true,
+				Status:       contrail.Status{Active: true},
 				UpgradeState: contrail.CommandNotUpgrading,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
@@ -405,7 +486,9 @@ func TestCommand(t *testing.T) {
 			name: "when command is starting upgraded deployment and images change again, deployment starts to shut down",
 			initObjs: []runtime.Object{
 				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new2"),
+				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 0}, nil, ":new"),
+				newConfig(true),
 				newPostgres(true),
 				newSwift(true),
 				newAdminSecret(),
@@ -413,8 +496,9 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Active:       false,
+				Status:       contrail.Status{Active: false},
 				UpgradeState: contrail.CommandShuttingDownBeforeUpgrade,
+				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 0,
@@ -538,6 +622,7 @@ func newCommand() *contrail.Command {
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
+				ConfigInstance:   "config",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-command"},
 					{Name: "api", Image: "registry:5000/contrail-command"},
@@ -565,6 +650,39 @@ func newPostgres(active bool) *contrail.Postgres {
 				Active: active,
 			},
 			Endpoint: "10.219.10.10",
+		},
+	}
+}
+
+func newConfig(active bool) *contrail.Config {
+	return &contrail.Config{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Config",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config",
+			Namespace: "default",
+		},
+		Status: contrail.ConfigStatus{
+			Active:   &active,
+			Endpoint: "10.10.10.10",
+		},
+	}
+}
+
+func newConfigWithoutEndpoint(active bool) *contrail.Config {
+	return &contrail.Config{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Config",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config",
+			Namespace: "default",
+		},
+		Status: contrail.ConfigStatus{
+			Active: &active,
 		},
 	}
 }
@@ -906,6 +1024,26 @@ func int32ToPtr(value int32) *int32 {
 	return &i
 }
 
+func newCommandService() *core.Service {
+	trueVal := true
+	return &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "command-command",
+			Namespace: "default",
+			Labels:    map[string]string{"service": "command"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: core.ServiceSpec{
+			Ports: []core.ServicePort{
+				{Port: 9091, Protocol: "TCP"},
+			},
+			ClusterIP: "20.20.20.20",
+		},
+	}
+}
+
 const expectedCommandConfig = `
 database:
   host: 10.219.10.10
@@ -943,7 +1081,7 @@ server:
   dynamic_proxy_path: proxy
   proxy:
     /contrail:
-    - https://0.0.0.0:8082
+    - https://10.10.10.10:8082
   notify_etcd: false
 
 no_auth: false
@@ -1204,8 +1342,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
-      private_url: http://0.0.0.0:8081
-      public_url: http://0.0.0.0:8081
+      private_url: https://10.10.10.10:8081
+      public_url: https://10.10.10.10:8081
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
@@ -1217,8 +1355,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
-      private_url: https://0.0.0.0:8082
-      public_url: https://0.0.0.0:8082
+      private_url: https://10.10.10.10:8082
+      public_url: https://10.10.10.10:8082
     kind: endpoint
   - data:
       uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291

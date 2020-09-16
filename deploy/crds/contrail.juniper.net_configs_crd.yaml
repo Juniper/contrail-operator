@@ -205,6 +205,8 @@ spec:
               type: boolean
             configChanged:
               type: boolean
+            endpoint:
+              type: string
             nodes:
               additionalProperties:
                 type: string

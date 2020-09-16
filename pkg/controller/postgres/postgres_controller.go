@@ -248,7 +248,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 	labels["role"] = "replica"
 
 	replicaSvc := r.kubernetes.Service(replicaServiceName, core.ServiceTypeClusterIP,
-		int32(postgres.Spec.ServiceConfiguration.ListenPort), contrail.PostgresInstanceType, postgres).WithLabels(labels)
+		map[int32]string{int32(postgres.Spec.ServiceConfiguration.ListenPort): ""}, contrail.PostgresInstanceType, postgres).WithLabels(labels)
 
 	return leaderIP, replicaSvc.EnsureExists()
 }

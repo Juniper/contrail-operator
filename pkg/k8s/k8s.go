@@ -48,6 +48,6 @@ func (k *Kubernetes) Secret(name, ownerType string, owner v1.Object) *Secret {
 }
 
 // Service is used to create Service object
-func (k *Kubernetes) Service(name string, servType core.ServiceType, port int32, ownerType string, owner v1.Object) *Service {
-	return &Service{name: name, servType: servType, port: port, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
+func (k *Kubernetes) Service(name string, servType core.ServiceType, ports map[int32]string, ownerType string, owner v1.Object) *Service {
+	return &Service{name: name, servType: servType, ports: ports, ownerType: ownerType, owner: owner, client: k.client, scheme: k.scheme}
 }

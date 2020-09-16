@@ -73,6 +73,79 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
+		rabbitmq := &contrail.Rabbitmq{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-rabbitmq",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.RabbitmqSpec{
+				ServiceConfiguration: contrail.RabbitmqConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7.16"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
+				},
+			},
+		}
+		zookeeper := []*contrail.Zookeeper{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-zookeeper",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ZookeeperSpec{
+				ServiceConfiguration: contrail.ZookeeperConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					},
+				},
+			},
+		}}
+		cassandra := []*contrail.Cassandra{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-cassandra",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.CassandraSpec{
+				ServiceConfiguration: contrail.CassandraConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "cassandra", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/cassandra:3.11.4"},
+					},
+				},
+			},
+		}}
+		config := &contrail.Config{
+			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-config", Labels: map[string]string{"contrail_cluster": "cluster1"}},
+			Spec: contrail.ConfigSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					HostNetwork: &trueVal,
+				},
+				ServiceConfiguration: contrail.ConfigConfiguration{
+					CassandraInstance: "commandtest-cassandra",
+					ZookeeperInstance: "commandtest-zookeeper",
+
+					Containers: []*contrail.Container{
+						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-controller-config-api:" + cemRelease},
+						{Name: "devicemanager", Image: "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + cemRelease},
+						{Name: "dnsmasq", Image: "registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:" + cemRelease},
+						{Name: "schematransformer", Image: "registry:5000/contrail-nightly/contrail-controller-config-schema:" + cemRelease},
+						{Name: "servicemonitor", Image: "registry:5000/contrail-nightly/contrail-controller-config-svcmonitor:" + cemRelease},
+						{Name: "analyticsapi", Image: "registry:5000/contrail-nightly/contrail-analytics-api:" + cemRelease},
+						{Name: "collector", Image: "registry:5000/contrail-nightly/contrail-analytics-collector:" + cemRelease},
+						{Name: "queryengine", Image: "registry:5000/contrail-nightly/contrail-analytics-query-engine:" + cemRelease},
+						{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+						{Name: "init2", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + buildTag},
+					},
+				},
+			},
+		}
 
 		memcached := &contrail.Memcached{
 			ObjectMeta: meta.ObjectMeta{
@@ -163,8 +236,7 @@ func TestCommandServices(t *testing.T) {
 				ServiceConfiguration: contrail.CommandConfiguration{
 					PostgresInstance:   "commandtest-psql",
 					KeystoneSecretName: "commandtest-keystone-adminpass-secret",
-					ConfigAPIURL:       "https://kind-control-plane:8082",
-					TelemetryURL:       "https://kind-control-plane:8081",
+					ConfigInstance:     "commandtest-config",
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
 					Containers: []*contrail.Container{
@@ -191,11 +263,15 @@ func TestCommandServices(t *testing.T) {
 					},
 				},
 				Services: contrail.Services{
-					Postgres:  psql,
-					Keystone:  keystoneResource,
-					Memcached: memcached,
-					Command:   command,
-					Swift:     swiftInstance,
+					Postgres:   psql,
+					Keystone:   keystoneResource,
+					Memcached:  memcached,
+					Command:    command,
+					Swift:      swiftInstance,
+					Config:     config,
+					Cassandras: cassandra,
+					Zookeepers: zookeeper,
+					Rabbitmq:   rabbitmq,
 				},
 				KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 			},
@@ -242,6 +318,9 @@ func TestCommandServices(t *testing.T) {
 
 			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
 				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))
+			})
+			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+				assert.NoError(t, w.ForReadyStatefulSet("commandtest-config-config-statefulset", 1))
 			})
 
 			t.Run("then Swift should become active", func(t *testing.T) {
@@ -336,7 +415,7 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 		}, keystoneCR)
 	require.NoError(t, err)
 
-	commandProxy := proxy.NewSecureClientWithPath("contrail", commandPods.Items[0].Name, 9091, "/keystone")
+	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "commandtest-command", 9091, "/keystone")
 	proxiedKeystoneClient := &keystone.Client{
 		Connector:    commandProxy,
 		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
