@@ -17,7 +17,6 @@ import (
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
-	
 )
 
 type TestCase struct {
