@@ -50,23 +50,6 @@ fabric_snat_hash_table_size = 4096
 slo_destination = collector
 sample_destination = collector`))
 
-var ContrailCNIConfig = template.Must(template.New("").Parse(`{
-  "cniVersion": "0.3.1",
-  "contrail" : {
-      "cluster-name"  : "{{ .KubernetesClusterName }}",
-      "meta-plugin"   : "{{ .CniMetaPlugin }}",
-      "vrouter-ip"    : "127.0.0.1",
-      "vrouter-port"  : 9091,
-      "config-dir"    : "/var/lib/contrail/ports/vm",
-      "poll-timeout"  : 5,
-      "poll-retries"  : 15,
-      "log-file"      : "/var/log/contrail/cni/opencontrail.log",
-      "log-level"     : "4"
-  },
-  "name": "contrail-k8s-cni",
-  "type": "contrail-k8s-cni"
-}`))
-
 //VrouterNodemanagerConfig is the template of the Vrouter Nodemanager service configuration
 var VrouterNodemanagerConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 http_server_ip=0.0.0.0

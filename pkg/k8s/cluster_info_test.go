@@ -16,7 +16,7 @@ import (
 type ClusterInfoSuite struct {
 	suite.Suite
 	KubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
-	VrouterClusterInfo     v1alpha1.VrouterClusterInfo
+	CNIClusterInfo         v1alpha1.CNIClusterInfo
 	CoreV1Interface        typedCorev1.CoreV1Interface
 }
 
@@ -52,7 +52,7 @@ scheduler: {}`
 func (suite *ClusterInfoSuite) SetupTest() {
 	coreV1Interface := getClientWithConfigMap(kubeadmConfig)
 	suite.KubemanagerClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
-	suite.VrouterClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
+	suite.CNIClusterInfo = k8s.ClusterConfig{Client: coreV1Interface}
 
 }
 
@@ -86,18 +86,18 @@ func (suite *ClusterInfoSuite) TestServiceSubnets() {
 	suite.Assert().Equal(serviceSubnets, "10.96.0.0/12", "Service subnets should be 10.96.0.0/12")
 }
 
-func (suite *ClusterInfoSuite) TestKubernetesClusterNameInVrouterClusterInfo() {
-	clusterName, err := suite.VrouterClusterInfo.KubernetesClusterName()
+func (suite *ClusterInfoSuite) TestKubernetesClusterNameInCNIClusterInfo() {
+	clusterName, err := suite.CNIClusterInfo.KubernetesClusterName()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(clusterName, "test", "Cluster name should be test")
 }
 
 func (suite *ClusterInfoSuite) TestCNIBinariesDirectory() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.CNIBinariesDirectory(), "/opt/cni/bin", "Path should be /opt/cni/bin")
+	suite.Assert().Equal(suite.CNIClusterInfo.CNIBinariesDirectory(), "/opt/cni/bin", "Path should be /opt/cni/bin")
 }
 
 func (suite *ClusterInfoSuite) TestDeploymentType() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.DeploymentType(), "k8s", "Path should be k8si")
+	suite.Assert().Equal(suite.CNIClusterInfo.DeploymentType(), "k8s", "Path should be k8si")
 }
 
 func (suite *ClusterInfoSuite) TestMissingEndpointPort() {

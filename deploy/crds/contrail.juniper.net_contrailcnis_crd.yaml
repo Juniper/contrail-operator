@@ -1,20 +1,24 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: vrouters.contrail.juniper.net
+  name: contrailcnis.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.active
+    name: Active
+    type: boolean
   group: contrail.juniper.net
   names:
-    kind: Vrouter
-    listKind: VrouterList
-    plural: vrouters
-    singular: vrouter
+    kind: ContrailCNI
+    listKind: ContrailCNIList
+    plural: contrailcnis
+    singular: contrailcni
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: Vrouter is the Schema for the vrouters API.
+      description: ContrailCNI is the Schema for the contrailcnis API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,10 +33,10 @@ spec:
         metadata:
           type: object
         spec:
-          description: VrouterSpec is the Spec for the cassandras API.
+          description: ContrailCNISpec defines the desired state of ContrailCNI
           properties:
             commonConfiguration:
-              description: PodConfiguration is the common services struct.
+              description: CNIPodConfiguration is the Common Configuration for ContrailCNI
               properties:
                 hostNetwork:
                   description: Host networking requested for this pod. Use the host's
@@ -53,11 +57,6 @@ spec:
                     the pod to fit on a node. Selector which must match a node''s
                     labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/.'
                   type: object
-                replicas:
-                  description: Number of desired pods. This is a pointer to distinguish
-                    between explicit zero and not specified. Defaults to 1.
-                  format: int32
-                  type: integer
                 tolerations:
                   description: If specified, the pod's tolerations.
                   items:
@@ -100,13 +99,10 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: VrouterConfiguration is the Spec for the cassandras API.
+              description: ContrailCNIConfiguration is the Service Configuration for
+                ContrailCNI
               properties:
-                cassandraInstance:
-                  type: string
-                clusterRole:
-                  type: string
-                clusterRoleBinding:
+                cniMetaPlugin:
                   type: string
                 containers:
                   items:
@@ -122,51 +118,37 @@ spec:
                         type: string
                     type: object
                   type: array
-                contrailStatusImage:
-                  type: string
                 controlInstance:
                   type: string
-                distribution:
+                logLevel:
+                  format: int32
+                  type: integer
+                pollRetries:
+                  format: int32
+                  type: integer
+                pollTimeout:
+                  format: int32
+                  type: integer
+                vrouterIP:
                   type: string
-                gateway:
-                  type: string
-                metaDataSecret:
-                  type: string
-                nodeManager:
-                  type: boolean
-                physicalInterface:
-                  type: string
-                serviceAccount:
-                  type: string
-                vrouterEncryption:
-                  type: boolean
+                vrouterPort:
+                  format: int32
+                  type: integer
               type: object
           required:
           - serviceConfiguration
           type: object
         status:
+          description: ContrailCNIStatus defines the observed state of ContrailCNI
           properties:
             active:
               type: boolean
-            nodes:
-              additionalProperties:
-                type: string
-              type: object
-            ports:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
-              properties:
-                analyticsPort:
-                  type: string
-                apiPort:
-                  type: string
-                collectorPort:
-                  type: string
-                redisPort:
-                  type: string
-              type: object
+            readyReplicas:
+              format: int32
+              type: integer
+            replicas:
+              format: int32
+              type: integer
           type: object
       type: object
   version: v1alpha1

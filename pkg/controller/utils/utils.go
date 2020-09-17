@@ -25,6 +25,7 @@ const (
 	VROUTER     = "Vrouter.contrail.juniper.net"
 	KUBEMANAGER = "Kubemanager.contrail.juniper.net"
 	MANAGER     = "Manager.contrail.juniper.net"
+	CONTRAILCNI = "ContrailCNI.contrail.juniper.net"
 	REPLICASET  = "ReplicaSet.apps"
 	DEPLOYMENT  = "Deployment.apps"
 )

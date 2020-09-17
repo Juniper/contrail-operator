@@ -91,19 +91,19 @@ func resourceHandler(myclient client.Client) handler.Funcs {
 
 // Add creates a new Vrouter Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) error {
-	return add(mgr, newReconciler(mgr, clusterInfo))
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler.
-func newReconciler(mgr manager.Manager, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
-	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), clusterInfo)
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	return NewReconciler(mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig())
 }
 
 // NewReconciler returns a new reconcile.Reconciler.
-func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config, clusterInfo v1alpha1.VrouterClusterInfo) reconcile.Reconciler {
+func NewReconciler(client client.Client, scheme *runtime.Scheme, cfg *rest.Config) reconcile.Reconciler {
 	return &ReconcileVrouter{Client: client, Scheme: scheme,
-		Config: cfg, ClusterInfo: clusterInfo}
+		Config: cfg}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler.
@@ -171,10 +171,9 @@ var _ reconcile.Reconciler = &ReconcileVrouter{}
 type ReconcileVrouter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver.
-	Client      client.Client
-	Scheme      *runtime.Scheme
-	Config      *rest.Config
-	ClusterInfo v1alpha1.VrouterClusterInfo
+	Client client.Client
+	Scheme *runtime.Scheme
+	Config *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Vrouter object and makes changes based on the state read
@@ -220,12 +219,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	cniDirs := CniDirs{
-		BinariesDirectory: r.ClusterInfo.CNIBinariesDirectory(),
-		DeploymentType:    r.ClusterInfo.DeploymentType(),
-	}
-
-	daemonSet := GetDaemonset(cniDirs)
+	daemonSet := GetDaemonset()
 	if err = instance.PrepareDaemonSet(daemonSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -537,7 +531,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 	if len(podIPMap) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client, r.ClusterInfo); err != nil {
+		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 

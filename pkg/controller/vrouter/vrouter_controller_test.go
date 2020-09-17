@@ -20,23 +20,6 @@ import (
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
-type vrouterClusterInfoFake struct {
-	clusterName          string
-	cniBinariesDirectory string
-	deploymentType       string
-}
-
-func (c vrouterClusterInfoFake) KubernetesClusterName() (string, error) {
-	return c.clusterName, nil
-}
-
-func (c vrouterClusterInfoFake) CNIBinariesDirectory() string {
-	return c.cniBinariesDirectory
-}
-func (c vrouterClusterInfoFake) DeploymentType() string {
-	return c.deploymentType
-}
-
 func TestVrouterController(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err)
@@ -115,8 +98,7 @@ func TestVrouterController(t *testing.T) {
 	}
 
 	fakeClient := fake.NewFakeClientWithScheme(scheme, vrouterCR, controlCR, cassandraCR, configCR)
-	fakeClusterInfo := vrouterClusterInfoFake{"test-cluster", "/cni/bin", "k8s"}
-	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{}, fakeClusterInfo)
+	reconciler := NewReconciler(fakeClient, scheme, &rest.Config{})
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: vrouterName})
 	// then

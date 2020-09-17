@@ -19,7 +19,7 @@ import (
 type ClusterInfoSuite struct {
 	suite.Suite
 	KubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
-	VrouterClusterInfo     v1alpha1.VrouterClusterInfo
+	CNIClusterInfo         v1alpha1.CNIClusterInfo
 }
 
 var clusterConfigV1 = `---
@@ -88,7 +88,7 @@ func (suite *ClusterInfoSuite) SetupTest() {
 		Client:        coreV1Interface,
 		DynamicClient: dynamicClient,
 	}
-	suite.VrouterClusterInfo = openshift.ClusterConfig{Client: coreV1Interface}
+	suite.CNIClusterInfo = openshift.ClusterConfig{Client: coreV1Interface}
 }
 
 func (suite *ClusterInfoSuite) TestKubernetesAPISSLPort() {
@@ -121,17 +121,17 @@ func (suite *ClusterInfoSuite) TestServiceSubnets() {
 	suite.Assert().Equal(serviceSubnets, "172.30.0.0/16", "Service subnets should be 172.30.0.0/16")
 }
 
-func (suite *ClusterInfoSuite) TestKubernetesClusterNameInVrouterClusterInfo() {
-	clusterName, err := suite.VrouterClusterInfo.KubernetesClusterName()
+func (suite *ClusterInfoSuite) TestKubernetesClusterNameInCNIClusterInfo() {
+	clusterName, err := suite.CNIClusterInfo.KubernetesClusterName()
 	suite.Assert().NoError(err)
 	suite.Assert().Equal(clusterName, "test", "Cluster name should be test")
 }
 func (suite *ClusterInfoSuite) TestCNIBinariesDirectory() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.CNIBinariesDirectory(), "/var/lib/cni/bin", "Path should be /var/lib/cni/bin")
+	suite.Assert().Equal(suite.CNIClusterInfo.CNIBinariesDirectory(), "/var/lib/cni/bin", "Path should be /var/lib/cni/bin")
 }
 
 func (suite *ClusterInfoSuite) TestDeploymentType() {
-	suite.Assert().Equal(suite.VrouterClusterInfo.DeploymentType(), "openshift", "Path should be openshift")
+	suite.Assert().Equal(suite.CNIClusterInfo.DeploymentType(), "openshift", "Path should be openshift")
 }
 
 func (suite *ClusterInfoSuite) TestMissingConfigMap() {

@@ -1,0 +1,38 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 10-master-multus-config-link
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: multus-config-link.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Link multus config to CNI config file
+          After=syslog.target
+          AssertPathExists=/etc/contrail/link_multus_config.sh
+
+          [Service]
+          Type=oneshot
+          ExecStart=/etc/contrail/link_multus_config.sh
+          StandardOutput=syslog
+          StandardError=syslog
+
+          [Install]
+          WantedBy=multi-user.target
+    storage:
+      files:
+      - filesystem: root
+        path: /etc/contrail/link_multus_config.sh
+        mode: 0744
+        user:
+          name: root
+        contents:
+          # 'data:,' and URL encoded openshift-install/sources/link_multus_config.sh
+          source: data:,%23%21%2Fbin%2Fbash%0A%0A%23%20In%20case%20of%20CoreOS%20reboot%20%2Fvar%2Frun%20directory%20is%20wiped%20out.%0A%23%20Since%20ContrailCNI%20Job%20will%20not%20be%20run%20again%20then%20it%27s%20necessary%20to%0A%23%20copy%20multus%20config%20with%20oneshot%20service%20triggering%20this%20script%0Awhile%20%5B%20%21%20-f%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%5D%0Ado%0A%20%20sleep%202%0Adone%0Acp%20-f%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%2Fvar%2Frun%2Fmultus%2Fcni%2Fnet.d%2F80-openshift-network.conf%0A

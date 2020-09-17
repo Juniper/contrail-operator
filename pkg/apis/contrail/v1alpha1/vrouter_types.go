@@ -68,7 +68,6 @@ type VrouterConfiguration struct {
 	ClusterRole         string        `json:"clusterRole,omitempty"`
 	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
 	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
-	CniMetaPlugin       string        `json:"cniMetaPlugin,omitempty"`
 	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
 }
 
@@ -89,12 +88,11 @@ const (
 	UBUNTU Distribution = "ubuntu"
 )
 
-const DefaultCniMetaPlugin = "multus"
-
 func init() {
 	SchemeBuilder.Register(&Vrouter{}, &VrouterList{})
 }
 
+// CreateConfigMap creates configMap with specified name
 func (c *Vrouter) CreateConfigMap(configMapName string,
 	client client.Client,
 	scheme *runtime.Scheme,
@@ -275,10 +273,10 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, getPhysicalInterface, getPhysicalInterfaceMac, getPrefixLength, getGateway)
 }
 
+// InstanceConfiguration creates vRouter configMaps with rendered values
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
-	client client.Client,
-	clusterInfo VrouterClusterInfo) error {
+	client client.Client) error {
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(),
@@ -308,11 +306,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
 		request.Namespace, client)
-	if err != nil {
-		return err
-	}
-
-	clusterName, err := clusterInfo.KubernetesClusterName()
 	if err != nil {
 		return err
 	}
@@ -391,16 +384,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CAFilePath:          certificates.SignerCAFilepath,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
-
-		var contrailCNIBuffer bytes.Buffer
-		configtemplates.ContrailCNIConfig.Execute(&contrailCNIBuffer, struct {
-			KubernetesClusterName string
-			CniMetaPlugin         string
-		}{
-			KubernetesClusterName: clusterName,
-			CniMetaPlugin:         vrouterConfig.CniMetaPlugin,
-		})
-		data["10-contrail.conf"] = contrailCNIBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
@@ -420,6 +403,7 @@ func (c *Vrouter) SetPodsToReady(podIPList *corev1.PodList, client client.Client
 	return SetPodsToReady(podIPList, client)
 }
 
+// ManageNodeStatus manages nodes status
 func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
@@ -430,6 +414,7 @@ func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 	return nil
 }
 
+// ConfigurationParameters is a method for gathering data used in rendering vRouter configuration
 func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration := VrouterConfiguration{}
 	var physicalInterface string
@@ -456,22 +441,10 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 		vrouterConfiguration.NodeManager = &nodeManager
 	}
 
-	if c.Spec.ServiceConfiguration.CniMetaPlugin != "" {
-		vrouterConfiguration.CniMetaPlugin = c.Spec.ServiceConfiguration.CniMetaPlugin
-	} else {
-		vrouterConfiguration.CniMetaPlugin = DefaultCniMetaPlugin
-	}
-
 	vrouterConfiguration.VrouterEncryption = c.Spec.ServiceConfiguration.VrouterEncryption
 	vrouterConfiguration.PhysicalInterface = physicalInterface
 	vrouterConfiguration.Gateway = gateway
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
 
 	return vrouterConfiguration
-}
-
-type VrouterClusterInfo interface {
-	KubernetesClusterName() (string, error)
-	CNIBinariesDirectory() string
-	DeploymentType() string
 }

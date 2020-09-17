@@ -1,0 +1,13 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: ContrailCNI
+metadata:
+  name: example-contrailcni
+  namespace: contrail
+spec:
+    serviceConfiguration:
+      containers:
+        - name: vroutercni
+          image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:master.latest
+    commonConfiguration:
+      create: true
+
