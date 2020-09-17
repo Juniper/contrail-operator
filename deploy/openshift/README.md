@@ -50,7 +50,7 @@ Copy output of the script and paste into config used to install-manifests script
 
 If you use pod/service network CIDRs other then the default values open the  **deploy/openshift/manifests/cluster-network-02-config.yml** in text editor and update CIDR values.
 
-If you deploy more/less master nodes than the default 3, modify the **deploy/openshift/manifests/0000000-contrail-09-manager.yaml** in text editor and set the
+If you deploy more/less master nodes than the default 3, modify the **deploy/openshift/manifests/00-contrail-09-manager.yaml** in text editor and set the
 spec.commonConfiguration.replicas field to the number of master nodes (modify only the top-level replicas field in the file).
 
 5. Install manifest
