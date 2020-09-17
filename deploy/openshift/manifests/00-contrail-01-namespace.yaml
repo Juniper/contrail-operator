@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: contrail
+  labels:
+    name: contrail
+    # run-level 0 label enables scheduling of pods in this namespace, before the SecurityContextConstraints CRD is created
+    openshift.io/run-level: "0"

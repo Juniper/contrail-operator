@@ -1,0 +1,267 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Manager
+metadata:
+  name: cluster1
+  namespace: contrail
+spec:
+  commonConfiguration:
+    hostNetwork: true
+    nodeSelector:
+      node-role.kubernetes.io/master: ""
+    keystoneSecretInstance : cluster1-admin-password
+    imagePullSecrets:
+      - contrail-registry
+  services:
+    cassandras:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cassandra1
+      spec:
+        serviceConfiguration:
+          containers:
+            - name: cassandra
+              image: cassandra:3.11.4
+            - name: init
+              image: python:3.8.2-alpine
+            - name: init2
+              image: cassandra:3.11.4
+    config:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: config1
+      spec:
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          analyticsDataTTL: 2
+          analyticsConfigAuditTTL: 2160
+          analyticsFlowTTL: 1
+          analyticsStatisticsTTL: 2
+          containers:
+            - name: analyticsapi
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-rhel
+            - name: api
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>-rhel
+            - name: collector
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-rhel
+            - name: devicemanager
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-rhel
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "tail -f /dev/null"
+            - name: dnsmasq
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-rhel
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "tail -f /dev/null"
+            - name: init
+              image: python:3.8.2-alpine
+            - name: init2
+              image: busybox:1.31
+            - name: redis
+              image: redis:4.0.2
+            - name: schematransformer
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>-rhel
+            - name: servicemonitor
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-rhel
+            - name: queryengine
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>-rhel
+            - name: statusmonitor
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+          logLevel: SYS_DEBUG
+          zookeeperInstance: zookeeper1
+    controls:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+          control_role: master
+        name: control1
+      spec:
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            - name: control
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-control:<CONTRAIL_VERSION>-rhel
+            - name: dns
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-dns:<CONTRAIL_VERSION>-rhel
+            - name: init
+              image: python:3.8.2-alpine
+            - name: named
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>-rhel
+            - name: statusmonitor
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+          zookeeperInstance: zookeeper1
+    provisionManager:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: provmanager1
+      spec:
+        commonConfiguration:
+          replicas: 1
+        serviceConfiguration:
+          containers:
+          - name: init
+            image: python:3.8.2-alpine
+          - name: provisioner
+            image: <CONTRAIL_REGISTRY>/contrail-operator-provisioner:<CONTRAIL_VERSION>
+    rabbitmq:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: rabbitmq1
+      spec:
+        serviceConfiguration:
+          containers:
+          - name: init
+            image: python:3.8.2-alpine
+          - name: rabbitmq
+            image: rabbitmq:3.7
+    webui:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: webui1
+      spec:
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          containers:
+            - name: init
+              image: python:3.8.2-alpine
+            - name: redis
+              image: redis:4.0.2
+            - name: webuijob
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-job:<CONTRAIL_VERSION>-rhel
+            - name: webuiweb
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-web:<CONTRAIL_VERSION>-rhel
+    zookeepers:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: zookeeper1
+      spec:
+        serviceConfiguration:
+          containers:
+            - name: init
+              image: python:3.8.2-alpine
+            - name: zookeeper
+              image: docker.io/zookeeper:3.5.5
+    kubemanagers:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: kubemanager1
+      spec:
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          zookeeperInstance: zookeeper1
+          containers:
+            - name: init
+              image: python:3.8.2-alpine
+            - name: kubemanager
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-rhel
+            - name: statusmonitor
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+          ipFabricForwarding: false
+          ipFabricSnat: true
+          kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+          useKubeadmConfig: true
+          hostNetworkService: true
+    vrouters:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: vroutermasternodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          controlInstance: control1
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
+          containers:
+            - name: init
+              image: python:3.8.2-alpine
+            - name: nodeinit
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouteragent
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouterkernelbuildinit
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouterkernelinit
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: vrouterworkernodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/worker: ""
+        serviceConfiguration:
+          cassandraInstance: cassandra1
+          controlInstance: control1
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
+          containers:
+            - name: init
+              image: python:3.8.2-alpine
+            - name: nodeinit
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouteragent
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-rhel
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouterkernelbuildinit
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-rhel
+            - name: vrouterkernelinit
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31
+
+    contrailCNIs:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cnimasternodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          controlInstance: control1
+          containers:
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cniworkernodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/worker: ""
+        serviceConfiguration:
+          controlInstance: control1
+          containers:
+            - name: vroutercni
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-rhel
+            - name: multusconfig
+              image: busybox:1.31
