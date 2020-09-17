@@ -134,6 +134,19 @@ func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 		instanceType: request.Name}
 	ds.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
+	ds.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "Exists",
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 	err := controllerutil.SetControllerReference(c, ds, scheme)
 	if err != nil {
 		return err
