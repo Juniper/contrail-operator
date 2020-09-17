@@ -2153,8 +2153,8 @@ func (in *ManagerStatus) DeepCopyInto(out *ManagerStatus) {
 		*out = new(ServiceStatus)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ContrailCNI != nil {
-		in, out := &in.ContrailCNI, &out.ContrailCNI
+	if in.ContrailCNIs != nil {
+		in, out := &in.ContrailCNIs, &out.ContrailCNIs
 		*out = make([]*ServiceStatus, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
@@ -2990,8 +2990,8 @@ func (in *Services) DeepCopyInto(out *Services) {
 		*out = new(Contrailmonitor)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ContrailCNI != nil {
-		in, out := &in.ContrailCNI, &out.ContrailCNI
+	if in.ContrailCNIs != nil {
+		in, out := &in.ContrailCNIs, &out.ContrailCNIs
 		*out = make([]*ContrailCNI, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {

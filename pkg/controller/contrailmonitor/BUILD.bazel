@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/Juniper/contrail-operator/pkg/controller/contrailmonitor",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/k8s:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
@@ -27,6 +28,7 @@ go_test(
     srcs = ["contrailmonitor_controller_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/controller/mock:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",

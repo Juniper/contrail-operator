@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/Juniper/contrail-operator/pkg/controller/control",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "//pkg/certificates:go_default_library",
         "//pkg/controller/utils:go_default_library",
         "@com_github_ghodss//:go_default_library",
@@ -38,6 +39,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/apis/contrail/v1alpha1:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
