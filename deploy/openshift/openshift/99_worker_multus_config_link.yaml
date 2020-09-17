@@ -35,4 +35,4 @@ spec:
           name: root
         contents:
           # 'data:,' and URL encoded openshift-install/sources/link_multus_config.sh
-          source: data:,%23%21%2Fbin%2Fbash%0A%0Awhile%20%5B%20%21%20-f%20%2Ftmp%2Flist.txt%20%5D%0Ado%0A%20%20sleep%202%0Adone%0Aln%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%2Fvar%2Frun%2Fmultus%2Fcni%2Fnet.d%2F80-openshift-network.conf%0A
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Awhile%20%5B%20%21%20-f%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%5D%0Ado%0A%20%20sleep%202%0Adone%0Acp%20-f%20%2Fetc%2Fcni%2Fnet.d%2F10-contrail.conf%20%2Fvar%2Frun%2Fmultus%2Fcni%2Fnet.d%2F80-openshift-network.conf%0A
