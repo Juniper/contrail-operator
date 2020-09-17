@@ -670,7 +670,7 @@ spec:
                           type: object
                       type: object
                   type: object
-                contrailCNI:
+                contrailCNIs:
                   items:
                     description: ContrailCNI is the Schema for the contrailcnis API
                     properties:
@@ -2819,7 +2819,7 @@ spec:
                 name:
                   type: string
               type: object
-            contrailCNI:
+            contrailCNIs:
               items:
                 description: ServiceStatus provides information on the current status
                   of the service.

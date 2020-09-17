@@ -38,7 +38,7 @@ type Services struct {
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
 	Contrailmonitor  *Contrailmonitor  `json:"contrailmonitor,omitempty"`
-	ContrailCNIs     []*ContrailCNI    `json:"contrailCNI,omitempty"`
+	ContrailCNIs     []*ContrailCNI    `json:"contrailCNIs,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -84,7 +84,7 @@ type ManagerStatus struct {
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
 	Contrailmonitor  *ServiceStatus   `json:"contrailmonitor,omitempty"`
-	ContrailCNIs     []*ServiceStatus `json:"contrailCNI,omitempty"`
+	ContrailCNIs     []*ServiceStatus `json:"contrailCNIs,omitempty"`
 	Replicas         int32            `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
