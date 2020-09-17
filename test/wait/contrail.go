@@ -73,6 +73,26 @@ func (c Contrail) ForSwiftActive(name string) error {
 	return err
 }
 
+// ForWebuiActive is used to wait until Webui is active
+func (c Contrail) ForWebUIActive(name string) error {
+	w := &contrail.Webui{}
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+		err = c.Client.Get(context.Background(), types.NamespacedName{
+			Namespace: c.Namespace,
+			Name:      name,
+		}, w)
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		if w.Status.Active {
+			return true, nil
+		}
+		return false, err
+	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
 // ForPostgresActive is used to wait until Postgres is active
 func (c Contrail) ForPostgresActive(name string) error {
 	s := &contrail.Postgres{}
