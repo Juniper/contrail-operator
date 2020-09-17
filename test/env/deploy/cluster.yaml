@@ -218,6 +218,23 @@ spec:
           containers:
             - name: memcached
               image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"
+    contrailmonitor:
+      metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: contrailmonitor
+      spec:
+        serviceConfiguration:
+          memcachedInstance: "memcached"
+          postgresInstance: "postgres"
+          keystoneInstance: "keystone"
+          cassandraInstance: "cassandra1"
+          rabbitmqInstance: "rabbitmq1"
+          zookeeperInstance: "zookeeper1"
+          webuiInstance: "webui1"
+          configInstance: "config1"
+          controlInstance: "control1"
+          provisionmanagerInstance: "provmanager1"
     swift:
       metadata:
         name: swift

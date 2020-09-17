@@ -37,6 +37,7 @@ type Services struct {
 	Keystone         *Keystone         `json:"keystone,omitempty"`
 	Swift            *Swift            `json:"swift,omitempty"`
 	Memcached        *Memcached        `json:"memcached,omitempty"`
+	Contrailmonitor  *Contrailmonitor  `json:"contrailmonitor,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -81,6 +82,7 @@ type ManagerStatus struct {
 	Swift            *ServiceStatus   `json:"swift,omitempty"`
 	Command          *ServiceStatus   `json:"command,omitempty"`
 	Memcached        *ServiceStatus   `json:"memcached,omitempty"`
+	Contrailmonitor  *ServiceStatus   `json:"contrailmonitor,omitempty"`
 	Replicas         int32            `json:"replicas,omitempty"`
 	// +optional
 	// +patchMergeKey=type
@@ -229,6 +231,9 @@ func (m Manager) IsClusterReady() bool {
 		return false
 	}
 	if m.Spec.Services.Memcached != nil && !m.Status.Memcached.ready() {
+		return false
+	}
+	if m.Spec.Services.Contrailmonitor != nil && !m.Status.Contrailmonitor.ready() {
 		return false
 	}
 	return true

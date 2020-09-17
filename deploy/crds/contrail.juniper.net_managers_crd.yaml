@@ -670,6 +670,76 @@ spec:
                           type: object
                       type: object
                   type: object
+                contrailmonitor:
+                  description: Contrailmonitor is the Schema for the contrailmonitors
+                    API
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    metadata:
+                      type: object
+                    spec:
+                      description: ContrailmonitorSpec defines the desired state of
+                        Contrailmonitor
+                      properties:
+                        serviceConfiguration:
+                          description: 'INSERT ADDITIONAL SPEC FIELDS - desired state
+                            of cluster Important: Run "operator-sdk generate k8s"
+                            to regenerate code after modifying this file Add custom
+                            validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                          properties:
+                            cassandraInstance:
+                              type: string
+                            commandInstance:
+                              type: string
+                            configInstance:
+                              type: string
+                            controlInstance:
+                              type: string
+                            keystoneInstance:
+                              type: string
+                            memcachedInstance:
+                              type: string
+                            postgresInstance:
+                              type: string
+                            provisionmanagerInstance:
+                              type: string
+                            rabbitmqInstance:
+                              type: string
+                            webuiInstance:
+                              type: string
+                            zookeeperInstance:
+                              type: string
+                          type: object
+                      required:
+                      - serviceConfiguration
+                      type: object
+                    status:
+                      description: ContrailmonitorStatus defines the observed state
+                        of Contrailmonitor
+                      properties:
+                        active:
+                          description: 'INSERT ADDITIONAL STATUS FIELD - define observed
+                            state of cluster Important: Run "operator-sdk generate
+                            k8s" to regenerate code after modifying this file Add
+                            custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                          type: boolean
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  type: object
                 controls:
                   items:
                     description: Control is the Schema for the controls API.
@@ -2593,6 +2663,17 @@ spec:
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
+              properties:
+                active:
+                  type: boolean
+                created:
+                  type: boolean
+                name:
+                  type: string
+              type: object
+            contrailmonitor:
+              description: ServiceStatus provides information on the current status
+                of the service.
               properties:
                 active:
                   type: boolean
