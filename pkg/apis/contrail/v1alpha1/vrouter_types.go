@@ -325,7 +325,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
 	for idx := range podList.Items {
-		// GENERATE configmaps peor pod (at least the one with ENV vars)
 		hostname := podList.Items[idx].Annotations["hostname"]
 		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
 		prefixLength := podList.Items[idx].Annotations["prefixLength"]
