@@ -9,5 +9,5 @@ kubectl delete pv $(kubectl get pv -o=jsonpath='{.items[?(@.spec.storageClassNam
 
 for p in $(docker ps --filter name=kind-control --filter name=kind-worker -q)
 do
-    docker exec $p rm -rf /mnt/storage
+    docker exec $p sh -c 'rm -rf /mnt/*'
 done
