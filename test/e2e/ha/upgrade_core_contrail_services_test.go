@@ -98,9 +98,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then Zookeeper StatefulSet should be ready", func(t *testing.T) {
-				// TODO: Scaling of zookeeper service in not working correctly therefore it is not testested in e2e tests.
-				// It should be tested once fixed.
-				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", 1))
+				assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", replicas))
 			})
 		})
 
