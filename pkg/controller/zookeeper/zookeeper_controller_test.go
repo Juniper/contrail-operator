@@ -125,7 +125,6 @@ func TestZookeeper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// scheme.AddKnownTypes(contrail.SchemeGroupVersion, tt.initObjs...)
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := &ReconcileZookeeper{Client: cl, Scheme: scheme}
@@ -191,6 +190,7 @@ func newZookeeper() *contrail.Zookeeper {
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "python:alpine"},
+					{Name: "conf-init", Image: "python:alpine"},
 					{Name: "zookeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},

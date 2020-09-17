@@ -171,9 +171,8 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	currentZookeeperInstance := *instance
-
-	_, err := instance.CreateConfigMap("correct-zookeeper-conf", r.Client, r.Scheme, request)
+	configMapName := instance.Name + "-zookeeper-conf"
+	_, err := instance.CreateConfigMap(configMapName, r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -182,7 +181,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{"correct-zookeeper-conf": "correct-zookeeper-conf"})
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMapName: configMapName})
 
 	zookeeperDefaultConfigurationInterface := instance.ConfigurationParameters()
 	zookeeperDefaultConfiguration := zookeeperDefaultConfigurationInterface.(v1alpha1.ZookeeperConfiguration)
@@ -284,7 +283,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 			volumeMount = corev1.VolumeMount{
-				Name:      "correct-zookeeper-conf",
+				Name:      configMapName,
 				MountPath: "/zookeeper-conf",
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
@@ -370,11 +369,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	strategy := "rolling"
-	if currentZookeeperInstance.Spec.CommonConfiguration.Replicas != nil {
-		if int(*currentZookeeperInstance.Spec.CommonConfiguration.Replicas) == 1 && int(*instance.Spec.CommonConfiguration.Replicas) > 1 {
-			strategy = "deleteFirst"
-		}
-	}
 	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
