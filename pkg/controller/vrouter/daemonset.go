@@ -25,6 +25,15 @@ func GetDaemonset() *apps.DaemonSet {
 		},
 	}
 
+	var physicalInterfaceEnv = core.EnvVar{
+		Name: "PHYSICAL_INTERFACE",
+		ValueFrom: &core.EnvVarSource{
+			FieldRef: &core.ObjectFieldSelector{
+				FieldPath: "metadata.annotations['physicalInterface']",
+			},
+		},
+	}
+
 	var podInitContainers = []core.Container{
 		{
 			Name:  "init",
@@ -103,6 +112,7 @@ func GetDaemonset() *apps.DaemonSet {
 			Name:  "vrouteragent",
 			Image: "docker.io/michaelhenkel/contrail-vrouter-agent:5.2.0-dev1",
 			Env: []core.EnvVar{
+				physicalInterfaceEnv,
 				podIPEnv,
 			},
 			VolumeMounts: []core.VolumeMount{

@@ -134,6 +134,19 @@ func (c *Vrouter) PrepareDaemonSet(ds *appsv1.DaemonSet,
 		instanceType: request.Name}
 	ds.Spec.Template.SetLabels(map[string]string{"contrail_manager": instanceType,
 		instanceType: request.Name})
+	ds.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{{
+						Key:      instanceType,
+						Operator: "Exists",
+					}},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 	err := controllerutil.SetControllerReference(c, ds, scheme)
 	if err != nil {
 		return err
@@ -286,14 +299,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
-	envVariablesConfigMap := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
-		envVariablesConfigMap)
-	if err != nil {
-		return err
-	}
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
 	if err != nil {
@@ -319,26 +324,19 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
-	var envVariables = make(map[string]string)
 	for idx := range podList.Items {
 		hostname := podList.Items[idx].Annotations["hostname"]
 		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
 		prefixLength := podList.Items[idx].Annotations["prefixLength"]
-		var physicalInterface string
+		physicalInterface := podList.Items[idx].Annotations["physicalInterface"]
+		gateway := podList.Items[idx].Annotations["gateway"]
 		if vrouterConfig.PhysicalInterface != "" {
 			physicalInterface = vrouterConfig.PhysicalInterface
-		} else {
-			physicalInterface = podList.Items[idx].Annotations["physicalInterface"]
 		}
-		var gateway string
 		if vrouterConfig.Gateway != "" {
 			gateway = vrouterConfig.Gateway
-		} else {
-			gateway = podList.Items[idx].Annotations["gateway"]
 		}
-		envVariables["PHYSICAL_INTERFACE"] = physicalInterface
-		envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
-		envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
@@ -389,6 +387,24 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
 	if err != nil {
 		return err
+	}
+
+	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
+	envVariablesConfigMap := &corev1.ConfigMap{}
+	err = client.Get(context.TODO(),
+		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
+		envVariablesConfigMap)
+	if err != nil {
+		return err
+	}
+
+	var envVariables = make(map[string]string)
+	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
+	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+	// If PhysicalInterface is set, environment variable from the config map will
+	// override the value from the annotations.
+	if vrouterConfig.PhysicalInterface != "" {
+		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
 	}
 	envVariablesConfigMap.Data = envVariables
 	err = client.Update(context.TODO(), envVariablesConfigMap)

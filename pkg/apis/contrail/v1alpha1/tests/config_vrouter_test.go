@@ -96,7 +96,6 @@ func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
 	}
 
 	expectedVrouterEnvVariables := map[string]string{
-		"PHYSICAL_INTERFACE": "eth0",
 		"CLOUD_ORCHESTRATOR": "kubernetes",
 		"VROUTER_ENCRYPTION": "false",
 	}
@@ -110,6 +109,7 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 	cl := *environment.client
 
 	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
+	environment.vrouterResource.Spec.ServiceConfiguration.PhysicalInterface = "eth0"
 
 	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
 		&environment.vrouterPodList, cl); err != nil {
