@@ -273,7 +273,6 @@ func SetupEnv() Environment {
 	rabbitmqConfigMap2.Name = "rabbitmq1-rabbitmq-configmap-runner"
 	rabbitmqConfigMap2.Namespace = "default"
 
-
 	cassandraConfigMap.Name = "cassandra1-cassandra-configmap"
 	cassandraConfigMap.Namespace = "default"
 
@@ -953,26 +952,6 @@ transparent_data_encryption_options:
       store_type: JCEKS
       key_password: cassandra
 auto_bootstrap: true
-`
-
-var zookeeperConfig = `clientPort=2181
-clientPortAddress=
-dataDir=/var/lib/zookeeper
-tickTime=2000
-initLimit=5
-syncLimit=2
-maxClientCnxns=60
-maxSessionTimeout=120000
-admin.enableServer=false
-standaloneEnabled=false
-4lw.commands.whitelist=stat,ruok,conf,isro
-reconfigEnabled=true
-dynamicConfigFile=/mydata/zoo.cfg.dynamic.100000000
-`
-
-var zookeeperDynamicConfig = `server.1=1.1.3.1:2888:3888:participant
-server.2=1.1.3.2:2888:3888:participant
-server.3=1.1.3.3:2888:3888:participant
 `
 
 var rabbitmqConfigRunner = `#!/bin/bash

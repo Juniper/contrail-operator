@@ -240,6 +240,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 							Containers: []*v1alpha1.Container{
 								{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:" + versionMap["zookeeper"]},
 								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+								{Name: "conf-init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 							},
 						},
 					},
