@@ -281,7 +281,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	commandBootStrapConfigName := command.Name + "-bootstrap"
+	commandBootStrapConfigName := command.Name + "-bootstrap-configmap"
 	if err = r.configMap(commandBootStrapConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandInitConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}

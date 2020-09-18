@@ -259,6 +259,10 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", r))
 	})
+	t.Run(fmt.Sprintf("then a WebUI StatefulSet has %d ready replicas", r), func(t *testing.T) {
+		t.Parallel()
+		assert.NoError(t, w.ForReadyStatefulSet("webui-webui-statefulset", r))
+	})
 }
 
 func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
@@ -278,6 +282,52 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}
+
+	webui := &contrail.Webui{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "webui",
+			Namespace: namespace,
+			Labels:    map[string]string{"contrail_cluster": "command-ha"},
+		},
+		Spec: contrail.WebuiSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				HostNetwork: &trueVal,
+			},
+			ServiceConfiguration: contrail.WebuiConfiguration{
+				CassandraInstance: "cassandra",
+				KeystoneInstance:  "keystone",
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+					{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
+					{Name: "webuijob", Image: "registry:5000/contrail-nightly/contrail-controller-webui-job:" + cemRelease},
+					{Name: "webuiweb", Image: "registry:5000/contrail-nightly/contrail-controller-webui-web:" + cemRelease},
+				},
+			},
+		},
+	}
+
+	controls := []*contrail.Control{{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "control",
+			Namespace: namespace,
+			Labels:    map[string]string{"contrail_cluster": "command-ha", "control_role": "master"},
+		},
+		Spec: contrail.ControlSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				HostNetwork: &trueVal,
+			},
+			ServiceConfiguration: contrail.ControlConfiguration{
+				CassandraInstance: "cassandra",
+				Containers: []*contrail.Container{
+					{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + cemRelease},
+					{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + cemRelease},
+					{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + cemRelease},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+					{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest"},
+				},
+			},
+		},
+	}}
 
 	postgres := &contrail.Postgres{
 		ObjectMeta: meta.ObjectMeta{
@@ -462,6 +512,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 				KeystoneInstance:   "keystone",
 				SwiftInstance:      "swift",
 				ConfigInstance:     "config",
+				WebUIInstance:      "webui",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
 					{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
@@ -498,6 +549,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 				Cassandras: cassandra,
 				Zookeepers: zookeeper,
 				Config:     config,
+				Controls:   controls,
+				Webui:      webui,
 			},
 		},
 	}

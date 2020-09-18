@@ -652,6 +652,15 @@ func TestCommand(t *testing.T) {
 			configMap.SetResourceVersion("")
 			assertConfigMap(t, configMap)
 
+			bootstrapconfigMap := &core.ConfigMap{}
+			err = cl.Get(context.Background(), types.NamespacedName{
+				Name:      "command-bootstrap-configmap",
+				Namespace: "default",
+			}, bootstrapconfigMap)
+			assert.NoError(t, err)
+			bootstrapconfigMap.SetResourceVersion("")
+			assertBootstrapConfigMap(t, bootstrapconfigMap)
+
 			if tt.expectedBootstrapJob != nil {
 				bJob := &batch.Job{}
 				err = cl.Get(context.Background(), types.NamespacedName{
@@ -801,6 +810,11 @@ func newSwiftProxy(active bool) *contrail.SwiftProxy {
 			Name:      "swift-proxy",
 			Namespace: "default",
 		},
+		Spec: contrail.SwiftProxySpec{
+			ServiceConfiguration: contrail.SwiftProxyConfiguration{
+				ListenPort: 5080,
+			},
+		},
 		Status: contrail.SwiftProxyStatus{
 			Status: contrail.Status{
 				Active: active,
@@ -824,9 +838,9 @@ func newWebUI(active bool) *contrail.Webui {
 			Status: contrail.Status{
 				Active: active,
 			},
-			Ports: contrail.WebUIStatusPorts{contrail.RedisServerPortWebui,
-				contrail.WebuiHttpListenPort,
-				contrail.WebuiHttpsListenPort},
+			Ports: contrail.WebUIStatusPorts{contrail.WebuiHttpListenPort,
+				contrail.WebuiHttpsListenPort,
+				contrail.RedisServerPortWebui},
 			Endpoint: "30.30.30.30",
 		},
 	}
@@ -1116,8 +1130,28 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 	}, actual.ObjectMeta)
 
 	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server0.0.0.0.yml"])
-	//assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
-	//assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
+}
+
+func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
+	trueVal := true
+	assert.Equal(t, meta.ObjectMeta{
+		Name:      "command-bootstrap-configmap",
+		Namespace: "default",
+		Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
+		OwnerReferences: []meta.OwnerReference{
+			{
+				APIVersion:         "contrail.juniper.net/v1alpha1",
+				Kind:               "Command",
+				Name:               "command",
+				UID:                "",
+				Controller:         &trueVal,
+				BlockOwnerDeletion: &trueVal,
+			},
+		},
+	}, actual.ObjectMeta)
+
+	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
+	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
 
 func newAdminSecret() *core.Secret {
@@ -1198,7 +1232,7 @@ func newBootstrapJob() *batch.Job {
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
-										Name: "command-bootstrap",
+										Name: "command-bootstrap-configmap",
 									},
 									DefaultMode: &executableMode,
 								},
@@ -1350,7 +1384,7 @@ replication:
     enabled: false
 `
 
-/*const expectedBootstrapScript = `
+const expectedBootstrapScript = `
 #!/bin/bash
 
 export PGPASSWORD=test123
@@ -1390,7 +1424,7 @@ resources:
         - default-global-system-config
         - 534965b0-f40c-11e9-8de6-38c986460fd4
       hostname: cluster1
-      ip_address: 0.0.0.0
+      ip_address: 20.20.20.20
       isNode: 'false'
       name: 5349662b-f40c-11e9-a57d-38c986460fd4
       node_type: private
@@ -1516,8 +1550,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
-      private_url: https://0.0.0.0:8143
-      public_url: https://0.0.0.0:8143
+      private_url: https://30.30.30.30:8143
+      public_url: https://30.30.30.30:8143
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
@@ -1568,8 +1602,7 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "https://0.0.0.0:5080"
-      public_url: "https://0.0.0.0:5080"
+      private_url: https://40.40.40.40:5080
+      public_url: https://40.40.40.40:5080
     kind: endpoint
 `
-*/
