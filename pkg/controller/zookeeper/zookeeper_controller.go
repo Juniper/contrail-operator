@@ -8,6 +8,8 @@ import (
 
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/kubernetes/pkg/apis/policy"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -287,7 +289,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = []string{
-				"sh", "-c", " if [ -f /mnt/zookeeper/zoo.cfg ]; then echo 'not empty'; else cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && cp /mnt/zookeeper/myid.$POD_IP /mnt/zookeeper/myid; fi;"}
+				"sh", "-c", "if [ ! -f /mnt/zookeeper/zoo.cfg ]; then cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && cp /mnt/zookeeper/myid.$POD_IP /mnt/zookeeper/myid; fi;"}
 		}
 	}
 
@@ -397,15 +399,28 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		for _, pod := range pods {
 			ip, ok := instance.Status.Nodes[pod.Name]
 			if !ok || ip != pod.Status.PodIP {
-				found = &pod
-				break
+				for _, c := range pod.Status.Conditions {
+					if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+						found = &pod
+						break
+					}
+				}
 			}
 		}
 
-		if found != nil && len(pods) > 1 && instance.Status.Reconfigs < len(pods)-1 {
-			runScript := fmt.Sprintf("zkCli.sh -server %s reconfig --file /var/lib/zookeeper/zoo.cfg.dynamic.%s", found.Status.PodIP, found.Status.PodIP)
-			command := []string{"bash", "-c", runScript}
-			_, _, err := v1alpha1.ExecToPodThroughAPI(command, "zookeeper", found.Name, found.Namespace, nil)
+		if found != nil && len(pods) > 1 {
+			myidString := found.Name[len(found.Name)-1:]
+			myidInt, err := strconv.Atoi(myidString)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			serverDef := fmt.Sprintf("server.%d=%s:%s;%s:2181",
+				myidInt+1, found.Status.PodIP,
+				strconv.Itoa(*zookeeperDefaultConfiguration.ElectionPort)+":"+strconv.Itoa(*zookeeperDefaultConfiguration.ServerPort), found.Status.PodIP)
+			runScript := fmt.Sprintf("zkCli.sh -server %s reconfig -add \"%s\"", found.Status.PodIP, serverDef)
+			reqLogger.Info(serverDef)
+			command := []string{"bash", "-c", runScript, serverDef}
+			_, _, err = v1alpha1.ExecToPodThroughAPI(command, "zookeeper", found.Name, found.Namespace, nil)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -432,6 +447,11 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 		}
 	}
+
+	if err = r.ensurePodDisruptionBudgetExists(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if instance.Status.Active == nil {
 		active := false
 		instance.Status.Active = &active
@@ -440,4 +460,22 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+func (r *ReconcileZookeeper) ensurePodDisruptionBudgetExists(zookeeper *v1alpha1.Zookeeper) error {
+	pdb := &policy.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      zookeeper.Name + "-zookeeper",
+			Namespace: zookeeper.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, pdb, func() error {
+		oneVal := intstr.FromInt(1)
+		pdb.ObjectMeta.Labels = zookeeper.Labels
+		pdb.Spec.MaxUnavailable = &oneVal
+		pdb.Spec.Selector = metav1.SetAsLabelSelector(zookeeper.Labels)
+		return controllerutil.SetControllerReference(zookeeper, pdb, r.Scheme)
+	})
+
+	return err
 }

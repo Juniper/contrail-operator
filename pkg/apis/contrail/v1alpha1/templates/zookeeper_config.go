@@ -31,16 +31,22 @@ func CorrectDynamicZooConf(podList *core.PodList, electionPort, serverPort strin
 	copy(pods, podList.Items)
 	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
 	dynamicConf := make(map[string]string, 0)
-	var serverDef string
+	if len(pods) == 0 {
+		return dynamicConf, nil
+	}
+	var firstServerDef string
 	for _, pod := range pods {
 		myidString := pod.Name[len(pod.Name)-1:]
 		myidInt, err := strconv.Atoi(myidString)
 		if err != nil {
 			return nil, err
 		}
-		serverDef = serverDef + fmt.Sprintf("server.%d=%s:%s:participant\n",
+		serverDef := firstServerDef + fmt.Sprintf("server.%d=%s:%s:participant\n",
 			myidInt+1, pod.Status.PodIP,
 			electionPort+":"+serverPort)
+		if myidInt == 0 {
+			firstServerDef = serverDef
+		}
 		dynamicConf["myid."+pod.Status.PodIP] = strconv.Itoa(myidInt + 1)
 		dynamicConf["zoo.cfg.dynamic."+pod.Status.PodIP] = serverDef
 	}
