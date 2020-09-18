@@ -1,6 +1,6 @@
 ## Contrail with OpenShift 4.x installation on VMs running on KVM
 
-The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](bare-metal-prerequisites.md) and jump to [Create Ignition Configs](Openshift-KVM.md#create-ignition-configs)j.
+The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](bare-metal-prerequisites.md) and jump to [Create Ignition Configs](Openshift-KVM.md#create-ignition-configs).
 
 The procedure follows [helper node installation guide line](https://github.com/RedHatOfficial/ocp4-helpernode/blob/master/docs/quickstart.md). Some modifications occurs when applying Contrail manifests
 
@@ -158,7 +158,7 @@ compute:
   name: worker
   replicas: 0
 controlPlane:
-- hyperthreading: Disabled
+  hyperthreading: Disabled
   name: master
   replicas: 3
 metadata:
@@ -224,11 +224,11 @@ EOF
 
 Install Contrail manifests
 
-**NOTE**: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
-
 ```
 # ./contrail-operator/deploy/openshift/install-manifests.sh --dir ./ --config ./config_contrail_operator.yaml
 ```
+
+**NOTE**: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
 
 Generate the ignition configs
 
