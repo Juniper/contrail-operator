@@ -9,7 +9,6 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/kubernetes/pkg/apis/policy"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -31,6 +30,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policy "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -427,6 +427,14 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			instance.Status.Reconfigs = instance.Status.Reconfigs + 1
 		}
 
+		for _, pod := range podIPList.Items {
+			for _, c := range pod.Status.Conditions {
+				if c.Type == corev1.PodReady && c.Status == corev1.ConditionFalse {
+					delete(podIPMap, pod.Name)
+				}
+			}
+		}
+
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -471,9 +479,9 @@ func (r *ReconcileZookeeper) ensurePodDisruptionBudgetExists(zookeeper *v1alpha1
 
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, pdb, func() error {
 		oneVal := intstr.FromInt(1)
-		pdb.ObjectMeta.Labels = zookeeper.Labels
+		pdb.ObjectMeta.Labels = label.New("zookeeper", zookeeper.Name)
 		pdb.Spec.MaxUnavailable = &oneVal
-		pdb.Spec.Selector = metav1.SetAsLabelSelector(zookeeper.Labels)
+		pdb.Spec.Selector = metav1.SetAsLabelSelector(label.New("zookeeper", zookeeper.Name))
 		return controllerutil.SetControllerReference(zookeeper, pdb, r.Scheme)
 	})
 
