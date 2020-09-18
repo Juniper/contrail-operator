@@ -51,7 +51,7 @@ copy_and_rename_crds() {
 	for f in ${OPERATOR_DIR}/deploy/crds/*_crd.yaml;
 	do
 		f_filename=$(basename $f)
-		cp -v ${f} "${DIRECTORY}/manifests/0000000-contrail-07-${f_filename}"
+		cp -v ${f} "${DIRECTORY}/manifests/00-contrail-07-${f_filename}"
 	done
 	echo '[INFO] Manifests CRDs have been properly renamed'
 }
@@ -84,11 +84,11 @@ read_config() {
 }
 
 apply_config() {
-    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml.bak
-    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml.bak
-    sed -i.bak 's|<CONTRAIL_REGISTRY>|'$CONTRAIL_REGISTRY'|g' ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-08-operator.yaml.bak
-    sed -i.bak 's|<CONTRAIL_REGISTRY>|'$CONTRAIL_REGISTRY'|g' ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-09-manager.yaml.bak
-    sed -i.bak 's|<DOCKER_CONFIG>|'$DOCKER_CONFIG'|g' ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml && rm ${DIRECTORY}/manifests/0000000-contrail-02-registry-secret.yaml.bak
+    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/00-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/00-contrail-08-operator.yaml.bak
+    sed -i.bak 's|<CONTRAIL_VERSION>|'$CONTRAIL_VERSION'|g' ${DIRECTORY}/manifests/00-contrail-09-manager.yaml && rm ${DIRECTORY}/manifests/00-contrail-09-manager.yaml.bak
+    sed -i.bak 's|<CONTRAIL_REGISTRY>|'$CONTRAIL_REGISTRY'|g' ${DIRECTORY}/manifests/00-contrail-08-operator.yaml && rm ${DIRECTORY}/manifests/00-contrail-08-operator.yaml.bak
+    sed -i.bak 's|<CONTRAIL_REGISTRY>|'$CONTRAIL_REGISTRY'|g' ${DIRECTORY}/manifests/00-contrail-09-manager.yaml && rm ${DIRECTORY}/manifests/00-contrail-09-manager.yaml.bak
+    sed -i.bak 's|<DOCKER_CONFIG>|'$DOCKER_CONFIG'|g' ${DIRECTORY}/manifests/00-contrail-02-registry-secret.yaml && rm ${DIRECTORY}/manifests/00-contrail-02-registry-secret.yaml.bak
     echo '[INFO] Set proper parameters from config in manifests'
 }
 

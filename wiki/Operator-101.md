@@ -52,7 +52,7 @@ Controller components may also have more than one replica spread across multiple
 In order to deploy such infrastructure on Kubernetes cluster it's necessary to create manifest which defines the Manager custom resource.<br/>
 Manager is a single resource which defines Contrail cluster.<br/>
 In its definition user defines which components should be created and with what configuration.
-For reference on example Manager manifest which implements infrastructure showed above refer to [this](https://github.com/Juniper/contrail-operator/blob/master/deploy/openshift/manifests/0000000-contrail-09-manager.yaml) file.
+For reference on example Manager manifest which implements infrastructure showed above refer to [this](https://github.com/Juniper/contrail-operator/blob/master/deploy/openshift/manifests/00-contrail-09-manager.yaml) file.
 
 However, Kubernetes cluster by default does not know what is Manager resource how to implement it's deployment.<br/>
 Because of that it's necessary to beforewards apply all CRDs (Custom Resource Definitions) to cluster which in this repository are located under [*deploy/crds*](https://github.com/Juniper/contrail-operator/tree/master/deploy/crds) directory.<br/>
@@ -61,7 +61,7 @@ While Kubernetes cluster will now properly read manifests for Contrail custom re
 
 
 To fix that problem, operator itself has to be deployed on cluster.<br/>
-Example manifest may be found [here](https://github.com/Juniper/contrail-operator/blob/master/deploy/openshift/manifests/0000000-contrail-08-operator.yaml).
+Example manifest may be found [here](https://github.com/Juniper/contrail-operator/blob/master/deploy/openshift/manifests/00-contrail-08-operator.yaml).
 Applied operator will create separate Pod which will act as controller of custom resources in cluster.
 
 Afterwards, when manifest is applied on cluster in namespace *contrail* (*contrail* namespace has to be created beforehand), status of all pods created by Contrail may be observed.<br/>
