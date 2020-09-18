@@ -1,6 +1,6 @@
 ## Contrail with OpenShift 4.x installation on VMs running on KVM
 
-The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](bare-metal-prerequisites.md) and jump to [Create Ignition Configs](Openshift-KVM.md#create-ignition-configs).
+The following procedure works also if bare metal servers are used. If there are existing DNS, DHCP, HTTP, PXE servers, update services following examples [here](bare-metal-prerequisites.md) and jump to [Create Ignition Configs](Openshift-KVM.md#create-ignition-configs)j.
 
 The procedure follows [helper node installation guide line](https://github.com/RedHatOfficial/ocp4-helpernode/blob/master/docs/quickstart.md). Some modifications occurs when applying Contrail manifests
 
@@ -154,11 +154,11 @@ Next, create an `install-config.yaml` file.
 apiVersion: v1
 baseDomain: example.com
 compute:
-- hyperthreading: Enabled
+- hyperthreading: Disabled
   name: worker
   replicas: 0
 controlPlane:
-  hyperthreading: Enabled
+- hyperthreading: Disabled
   name: master
   replicas: 3
 metadata:
@@ -213,22 +213,22 @@ Create Contrail operator configuration file
 
 ```
 # cat <<EOF > config_contrail_operator.yaml
-CONTRAIL_VERSION=2008.20
+CONTRAIL_VERSION=2008.119
 CONTRAIL_REGISTRY=hub.juniper.net/contrail-nightly
 DOCKER_CONFIG=<this_needs_to_be_generated>
 EOF
 ```
 `DOCKER_CONFIG` is configuration for registry secret to closed container registry (if registry is wide open then no credentials are required) Set `DOCKER_CONFIG` to registry secret with proper data in base64.
 
-**NOTE**: You may create base64 encoded value for config with script provided [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate). Copy output of the script and paste into config used to install-manifests script._
+-**NOTE**: You may create base64 encoded value for config with script provided [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate). Copy output of the script and paste into config used to install-manifests script._
 
 Install Contrail manifests
+
+**NOTE**: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
 
 ```
 # ./contrail-operator/deploy/openshift/install-manifests.sh --dir ./ --config ./config_contrail_operator.yaml
 ```
-
-**NOTE**: If your environment has to use a specific NTP server, follow [these](./chrony-ntp-configuration.md) instructions before executing next steps.
 
 Generate the ignition configs
 
@@ -241,6 +241,7 @@ Copy the ignition files in the `ignition` directory for the websever
 ```
 # cp ~/ocp4/*.ign /var/www/html/ignition/
 # restorecon -vR /var/www/html/
+# restorecon -vR /var/lib/tftpboot/
 # chmod o+r /var/www/html/ignition/*.ign
 ```
 
@@ -279,9 +280,9 @@ ca56bbf2708f7       1ac19399249cf839f48e246869b6932ce1273afb6a11a25e0eccb01092ea
 it is time to launch the Masters VMs
 
 ```
-# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:e7:9d:67 --name ocp4-master0 --ram=32288 --vcpus=10 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master0.qcow2,size=250 --vnc
-# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:80:16:23 --name ocp4-master1 --ram=32288 --vcpus=10 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master1.qcow2,size=250 --vnc
-# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:d5:1c:39 --name ocp4-master2 --ram=32288 --vcpus=10 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master2.qcow2,size=250 --vnc
+# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:e7:9d:67 --name ocp4-master0 --ram=40960 --vcpus=8 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master0.qcow2,size=250 --vnc
+# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:80:16:23 --name ocp4-master1 --ram=40960 --vcpus=8 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master1.qcow2,size=250 --vnc
+# virt-install --pxe --network bridge=openshift4 --mac=52:54:00:d5:1c:39 --name ocp4-master2 --ram=40960 --vcpus=8 --os-variant rhel8.0 --disk path=/var/lib/libvirt/images/ocp4-master2.qcow2,size=250 --vnc
 ```
 
 You can login to the Master from Helper Node
@@ -376,5 +377,64 @@ INFO To access the cluster as the system:admin user when using 'oc', run 'export
 INFO Access the OpenShift web-console here: https://console-openshift-console.apps.ocp4.example.com
 INFO Login to the console with user: kubeadmin, password: XXX-XXXX-XXXX-XXXX
 ```
+
+### Adding a user
+
+By default, OpenShift4 ships with a single kubeadmin user, that could be used during initial cluster configuration. You will create a Custom Resource (CR) to define a HTTPasswd identity provider.
+
+To use the HTPasswd identity provider, you must generate a flat file that contains the user names and passwords for your cluster by using [htpasswd](https://httpd.apache.org/docs/2.4/programs/htpasswd.html).
+```
+$ htpasswd -c -B -b users.htpasswd ovaleanu MyPassword
+```
+
+You should get a file like this
+```
+$ cat users.htpasswd
+ovaleanu:$2y$05$M7lvBvh7X1ElpYBGO2ZObOfLE8z2NHNUq2yzhC./AbXOxXVFKNMK6
+```
+
+Next we need to define a secret that contains the HTPasswd user file
+```
+$ oc create secret generic htpass-secret --from-file=htpasswd=/root/ocp4/users.htpasswd -n openshift-config
+```
+
+This Custom Resource shows the parameters and acceptable values for an HTPasswd identity provider.
+
+```
+$ cat htpasswdCR.yaml
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: ovaleanu
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpass-secret
+```
+
+Apply the defined CR
+```
+$ oc create -f htpasswdCR.yaml
+```
+
+Add the user to `cluster-amdin` role
+```
+$ oc adm policy add-cluster-role-to-user cluster-admin ovaleanu
+```
+
+Login using the user
+```
+oc login -u ovaleanu
+Authentication required for https://api.ocp4.example.com:6443 (openshift)
+Username: ovaleanu
+Password:
+Login successful.
+```
+
+Now it is safe to remove kubeadmin user. Details [here](https://docs.openshift.com/container-platform/4.5/authentication/remove-kubeadmin.html).
 
 ### Credits: [Ovidiu Valeanu](https://github.com/ovaleanujnpr)
