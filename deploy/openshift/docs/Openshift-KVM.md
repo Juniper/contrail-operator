@@ -433,4 +433,4 @@ Login successful.
 
 Now it is safe to remove kubeadmin user. Details [here](https://docs.openshift.com/container-platform/4.5/authentication/remove-kubeadmin.html).
 
-### Credits: [Ovidiu Valeanu](https://github.com/testuserjnpr)
+### Credits: [Ovidiu Valeanu](https://github.com/ovaleanu)
