@@ -290,14 +290,6 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
-	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
-	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
 
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
@@ -315,9 +307,43 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	vrouterConfigInstance := c.ConfigurationParameters()
-	vrouterConfig := vrouterConfigInstance.(VrouterConfiguration)
+	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
+	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
+	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
+		return err
+	}
+	configMapInstanceDynamicConfig.Data = c.getVrouterDynamicConfigData(podList, controlNodesInformation, configNodesInformation, cassandraNodesInformation)
+	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
+		return err
+	}
 
+	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
+	envVariablesConfigMap := &corev1.ConfigMap{}
+	if err = client.Get(context.TODO(), types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace}, envVariablesConfigMap); err != nil {
+		return err
+	}
+	envVariablesConfigMap.Data = c.getVrouterEnvironmentData()
+	return client.Update(context.TODO(), envVariablesConfigMap)
+}
+
+func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
+	vrouterConfig := c.ConfigurationParameters()
+	envVariables := make(map[string]string)
+	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
+	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+	// If PhysicalInterface is set, environment variable from the config map will
+	// override the value from the annotations.
+	if vrouterConfig.PhysicalInterface != "" {
+		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
+	}
+	return envVariables
+}
+
+func (c *Vrouter) getVrouterDynamicConfigData(podList *corev1.PodList,
+	controlNodesInformation *ControlClusterConfiguration,
+	configNodesInformation *ConfigClusterConfiguration,
+	cassandraNodesInformation *CassandraClusterConfiguration) map[string]string {
+	vrouterConfig := c.ConfigurationParameters()
 	var podIPList []string
 	for _, pod := range podList.Items {
 		podIPList = append(podIPList, pod.Status.PodIP)
@@ -364,7 +390,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			CAFilePath:           certificates.SignerCAFilepath,
 		})
 		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
-
 		var vrouterNodemanagerBuffer bytes.Buffer
 		configtemplates.VrouterNodemanagerConfig.Execute(&vrouterNodemanagerBuffer, struct {
 			ListenAddress       string
@@ -383,35 +408,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		})
 		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 	}
-	configMapInstanceDynamicConfig.Data = data
-	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
-
-	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
-	envVariablesConfigMap := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
-		envVariablesConfigMap)
-	if err != nil {
-		return err
-	}
-
-	var envVariables = make(map[string]string)
-	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
-	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
-	// If PhysicalInterface is set, environment variable from the config map will
-	// override the value from the annotations.
-	if vrouterConfig.PhysicalInterface != "" {
-		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
-	}
-	envVariablesConfigMap.Data = envVariables
-	err = client.Update(context.TODO(), envVariablesConfigMap)
-	if err != nil {
-		return err
-	}
-	return nil
+	return data
 }
 
 // SetPodsToReady sets Kubemanager PODs to ready.
@@ -431,7 +428,7 @@ func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 }
 
 // ConfigurationParameters is a method for gathering data used in rendering vRouter configuration
-func (c *Vrouter) ConfigurationParameters() interface{} {
+func (c *Vrouter) ConfigurationParameters() VrouterConfiguration {
 	vrouterConfiguration := VrouterConfiguration{}
 	var physicalInterface string
 	var gateway string
