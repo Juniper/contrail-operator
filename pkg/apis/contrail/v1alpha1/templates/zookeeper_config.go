@@ -9,8 +9,8 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-// ZookeeperConfig is the template of the Zookeeper service configuration.
-var CorrectZooConf = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
+// ZookeeperStaticConfig is the template of the Zookeeper service configuration.
+var ZookeeperStaticConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
 clientPortAddress={{ .ListenAddress }}
 dataDir=/var/lib/zookeeper
 tickTime=2000
@@ -26,7 +26,7 @@ skipACL=yes
 dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic.{{ .ListenAddress }}
 `))
 
-func CorrectDynamicZooConf(podList *core.PodList, electionPort, serverPort string) (map[string]string, error) {
+func DynamicZookeeperConfig(podList *core.PodList, electionPort, serverPort string) (map[string]string, error) {
 	pods := make([]core.Pod, len(podList.Items))
 	copy(pods, podList.Items)
 	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })

@@ -144,6 +144,12 @@ spec:
             contrail_cluster: cluster1
           name: zookeeper1
         spec:
+          commonConfiguration:
+            tolerations:
+              - effect: NoSchedule
+                operator: Exists
+              - effect: NoExecute
+                operator: Exists
           serviceConfiguration:
             containers:
               - name: init

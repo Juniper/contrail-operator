@@ -83,7 +83,7 @@ func init() {
 }
 
 // InstanceConfiguration creates the zookeeper instance configuration.
-func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
+func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName string,
 	podList *corev1.PodList,
 	client client.Client) error {
 	zookeeperConfigInterface := c.ConfigurationParameters()
@@ -91,9 +91,8 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
 	pods := make([]corev1.Pod, len(podList.Items))
 	copy(pods, podList.Items)
 	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
-	confCMName := "correct-zookeeper-conf"
 
-	confCMData, err := configtemplates.CorrectDynamicZooConf(podList, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
+	confCMData, err := configtemplates.DynamicZookeeperConfig(podList, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
 	confCMData["configuration.xsl"] = zookeeperXslBuffer.String()
 	for _, pod := range pods {
 		var configBuff bytes.Buffer
-		err = configtemplates.CorrectZooConf.Execute(&configBuff, struct {
+		err = configtemplates.ZookeeperStaticConfig.Execute(&configBuff, struct {
 			ClientPort    string
 			ListenAddress string
 		}{

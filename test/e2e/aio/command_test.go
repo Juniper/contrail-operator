@@ -121,6 +121,7 @@ func TestCommandServices(t *testing.T) {
 					Containers: []*contrail.Container{
 						{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
 						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+						{Name: "conf-init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					},
 				},
 			},
