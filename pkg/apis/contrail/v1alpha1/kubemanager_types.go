@@ -87,6 +87,7 @@ type KubemanagerStaticConfiguration struct {
 	RabbbitmqNodes ServerNodes `json:"rabbitmqNodes,omitempty"`
 	CassandraNodes ServerNodes `json:"cassandraNodes,omitempty"`
 	ZookeeperNodes ServerNodes `json:"zookeeperNodes,omitempty"`
+	RabbitMQSecret string      `json:"rabbitmqSecret,omitempty"`
 }
 
 // ServerNodes is the server nodes configuration for deployment with static controller.
@@ -168,6 +169,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		rabbitmqNodesInformation = &RabbitmqClusterConfiguration{
 			ServerListCommaSeparatedWithoutPort: joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerList, nil, ","),
 			SSLPort:                             strconv.Itoa(*c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerPort),
+			Secret:                              c.Spec.ServiceConfiguration.StaticConfiguration.RabbitMQSecret,
 		}
 	} else {
 		rabbitmqNodesInformation, err = NewRabbitmqClusterConfiguration(c.Labels["contrail_cluster"], request.Namespace, client)
