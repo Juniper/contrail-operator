@@ -24,7 +24,7 @@ type commandConf struct {
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["command-app-server"+c.HostIP+".yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint"+c.HostIP+".sh"] = c.executeTemplate(commandEntrypoint)
+	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
 func (c *commandConf) executeTemplate(t *template.Template) string {

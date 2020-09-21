@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"time"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -286,12 +285,8 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err = r.configMap(commandBootStrapConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandInitConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
-	var res reconcile.Result
-	if res, err = r.reconcileBootstrapJob(command, commandBootStrapConfigName); err != nil {
+	if err = r.reconcileBootstrapJob(command, commandBootStrapConfigName); err != nil {
 		return reconcile.Result{}, err
-	}
-	if res.Requeue {
-		return res, err
 	}
 
 	configVolumeName := request.Name + "-" + instanceType + "-volume"
@@ -433,14 +428,6 @@ func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Key
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
-	podIPEnv := core.EnvVar{
-		Name: "MY_POD_IP",
-		ValueFrom: &core.EnvVarSource{
-			FieldRef: &core.ObjectFieldSelector{
-				FieldPath: "status.podIP",
-			},
-		},
-	}
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      name + "-command-deployment",
@@ -493,9 +480,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								MountPath: certificates.SignerCAMountPath,
 							},
 						},
-						Env: []core.EnvVar{
-							podIPEnv,
-						},
 					}},
 					InitContainers: []core.Container{
 						{
@@ -538,7 +522,7 @@ func getImage(containers []*contrail.Container, containerName string) string {
 func getCommand(containers []*contrail.Container, containerName string) []string {
 	var defaultContainersCommand = map[string][]string{
 		"init":                {"bash", "-c", "/etc/contrail/bootstrap.sh"},
-		"api":                 {"bash", "-c", "/etc/contrail/entrypoint${MY_POD_IP}.sh"},
+		"api":                 {"bash", "-c", "/etc/contrail/entrypoint.sh"},
 		"wait-for-ready-conf": {"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 	}
 
@@ -640,30 +624,22 @@ func (r *ReconcileCommand) getWebUI(command *contrail.Command) (*contrail.Webui,
 	return webUI, err
 }
 
-func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, commandBootStrapConfigName string) (reconcile.Result, error) {
+func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, commandBootStrapConfigName string) error {
 	bootstrapJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-bootstrap-job"}
 	err := r.client.Get(context.Background(), jobName, bootstrapJob)
 	alreadyExists := err == nil
 	if alreadyExists {
-		if bootstrapJob.Status.CompletionTime.IsZero() {
-			log.Info(fmt.Sprintf("job %v in progress", jobName))
-			return reconcile.Result{}, nil
-		}
-		// We have to wait for some time until job gets finished.
-		return reconcile.Result{
-			Requeue:      true,
-			RequeueAfter: time.Second * 5,
-		}, nil
+		return nil
 	}
 	if !errors.IsNotFound(err) {
-		return reconcile.Result{}, err
+		return err
 	}
 	bootstrapJob = newBootStrapJob(command, jobName, commandBootStrapConfigName)
 	if err = controllerutil.SetControllerReference(command, bootstrapJob, r.scheme); err != nil {
-		return reconcile.Result{}, err
+		return err
 	}
-	return reconcile.Result{}, r.client.Create(context.Background(), bootstrapJob)
+	return r.client.Create(context.Background(), bootstrapJob)
 }
 
 func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBootStrapConfigName string) *batch.Job {

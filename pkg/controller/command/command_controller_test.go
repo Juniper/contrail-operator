@@ -939,14 +939,6 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 	trueVal := true
 	executableMode := int32(0744)
 	var labelsMountPermission int32 = 0644
-	podIPEnv := core.EnvVar{
-		Name: "MY_POD_IP",
-		ValueFrom: &core.EnvVarSource{
-			FieldRef: &core.ObjectFieldSelector{
-				FieldPath: "status.podIP",
-			},
-		},
-	}
 	return &apps.Deployment{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command-command-deployment",
@@ -1001,7 +993,7 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 									HTTPGet: &core.HTTPGetAction{Scheme: core.URISchemeHTTPS, Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
 								},
 							},
-							Command:    []string{"bash", "-c", "/etc/contrail/entrypoint${MY_POD_IP}.sh"},
+							Command:    []string{"bash", "-c", "/etc/contrail/entrypoint.sh"},
 							WorkingDir: "/home/contrail/",
 							VolumeMounts: []core.VolumeMount{
 								{
@@ -1016,9 +1008,6 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 									Name:      "command-csr-signer-ca",
 									MountPath: certificates.SignerCAMountPath,
 								},
-							},
-							Env: []core.EnvVar{
-								podIPEnv,
 							},
 						},
 					},
