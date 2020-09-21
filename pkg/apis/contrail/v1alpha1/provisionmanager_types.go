@@ -202,6 +202,18 @@ func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace 
 	return hostname, nil
 }
 
+func (c *ProvisionManager) getDataIPFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
+	pod := &corev1.Pod{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	if err != nil {
+		return "", err
+	}
+	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+		return dataIP, nil
+	}
+	return "", nil
+}
+
 func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration, error) {
 	g := &GlobalVrouterConfiguration{}
 	g.EncapsulationPriorities = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EncapsulationPriorities
@@ -410,12 +422,22 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				if err != nil {
 					return err
 				}
+				dataIP, err := c.getDataIPFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				var address string
+				if dataIP != "" {
+					address = dataIP
+				} else {
+					address = ipAddress
+				}
 				asn, err := strconv.Atoi(controlService.Status.Ports.ASNNumber)
 				if err != nil {
 					return err
 				}
 				n := &ControlNode{
-					IPAddress: ipAddress,
+					IPAddress: address,
 					Hostname:  hostname,
 					ASN:       asn,
 				}

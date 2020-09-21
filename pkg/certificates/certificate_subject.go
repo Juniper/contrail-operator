@@ -13,9 +13,10 @@ import (
 )
 
 type certificateSubject struct {
-	name     string
-	hostname string
-	ip       string
+	name         string
+	hostname     string
+	ip           string
+	secondaryIPs []string
 }
 
 type certificateSubjects struct {
@@ -32,7 +33,11 @@ func (cs certificateSubjects) createCertificateSubjects() []certificateSubject {
 		} else {
 			hostname = pod.Spec.Hostname
 		}
-		subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP})
+		if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+			subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP, secondaryIPs: []string{dataIP}})
+		} else {
+			subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP})
+		}
 	}
 	return subjects
 
@@ -57,6 +62,9 @@ func (c certificateSubject) generateCertificateTemplate(alternativeIP string) (x
 	ips = append(ips, net.ParseIP(c.ip))
 	if alternativeIP != "" {
 		ips = append(ips, net.ParseIP(alternativeIP))
+	}
+	for _, ip := range c.secondaryIPs {
+		ips = append(ips, net.ParseIP(ip))
 	}
 
 	certificateTemplate := x509.Certificate{

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
@@ -622,7 +623,10 @@ func getPodInitStatus(reconcileClient client.Client,
 				if initStatus.Name == "init" {
 					if initStatus.State.Terminated == nil {
 						if initStatus.State.Running != nil {
-							var annotationMap = make(map[string]string)
+							annotationMap := podList.Items[idx].GetAnnotations()
+							if annotationMap == nil {
+								annotationMap = make(map[string]string)
+							}
 							if getHostname {
 								var hostname string
 								if pod.Spec.HostNetwork {
@@ -664,6 +668,23 @@ func getPodInitStatus(reconcileClient client.Client,
 								}
 								annotationMap["prefixLength"] = strings.Trim(prefixLength, "\n")
 							}
+
+							if cidr, ok := pod.Annotations["dataSubnet"]; ok {
+								if cidr != "" {
+									command := []string{"/bin/sh", "-c", "ip r | grep " + cidr + " | awk -F' ' '{print $NF}'"}
+									addr, _, err := ExecToPodThroughAPI(command, "init", pod.Name, pod.Namespace, nil)
+									if err != nil {
+										return map[string]string{}, fmt.Errorf("failed getting ip address from data subnet")
+									}
+									ip := strings.Trim(addr, "\n")
+									if net.ParseIP(ip) != nil {
+										annotationMap["dataSubnetIP"] = ip
+									} else {
+										return map[string]string{}, fmt.Errorf("no valid ip from data subnet")
+									}
+								}
+							}
+
 							podList.Items[idx].SetAnnotations(annotationMap)
 							(&podList.Items[idx]).SetAnnotations(annotationMap)
 							foundPod := &corev1.Pod{}

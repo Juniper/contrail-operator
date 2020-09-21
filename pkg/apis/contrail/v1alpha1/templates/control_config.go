@@ -9,7 +9,7 @@ bgp_port=179
 collectors={{ .CollectorServerList }}
 # gr_helper_bgp_disable=0
 # gr_helper_xmpp_disable=0
-hostip={{ .ListenAddress }}
+hostip={{ .DataIP }}
 hostname={{ .Hostname }}
 http_server_ip=0.0.0.0
 http_server_port=8083
@@ -99,7 +99,7 @@ rndc_config_file = contrail-rndc.conf
 named_max_cache_size=32M # max-cache-size (bytes) per view, can be in K or M
 named_max_retransmissions=12
 named_retransmission_interval=1000 # msec
-hostip={{ .ListenAddress }}
+hostip={{ .DataIP }}
 hostname={{ .Hostname }}
 http_server_port=8092
 http_server_ip=0.0.0.0
@@ -147,7 +147,7 @@ http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-control-nodemgr.log
 log_level=SYS_NOTICE
 log_local=1
-hostip={{ .ListenAddress }}
+hostip={{ .DataIP }}
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
 db_use_ssl=True
@@ -163,12 +163,11 @@ sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
-sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
   --api_server_use_ssl true \
-  --host_ip {{ .ListenAddress }} \
+  --host_ip {{ .DataIP }} \
   --router_asn {{ .ASNNumber }} \
   --bgp_server_port {{ .BGPPort }} \
   --api_server_ip $server \

@@ -47,7 +47,27 @@ func TestCreateCertificateSubject(t *testing.T) {
 		},
 	}
 
-	pods := &core.PodList{Items: []core.Pod{firstPod, secondPod}}
+	thirdPodName := "third"
+	thirdPodNodeName := "nodeName3"
+	thirdPodHostname := "hostName3"
+	thirdPodDataIP := "ipData"
+	thirdPodAnnotations := map[string]string{"dataSubnetIP": thirdPodDataIP}
+	thirdPodIP := "ip3"
+	thirdPod := core.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        thirdPodName,
+			Annotations: thirdPodAnnotations,
+		},
+		Spec: core.PodSpec{
+			NodeName: thirdPodNodeName,
+			Hostname: thirdPodHostname,
+		},
+		Status: core.PodStatus{
+			PodIP: thirdPodIP,
+		},
+	}
+
+	pods := &core.PodList{Items: []core.Pod{firstPod, secondPod, thirdPod}}
 
 	tests := []struct {
 		name             string
@@ -69,6 +89,12 @@ func TestCreateCertificateSubject(t *testing.T) {
 					hostname: secondPodHostname,
 					ip:       secondPodIp,
 				},
+				{
+					name:         thirdPodName,
+					hostname:     thirdPodHostname,
+					ip:           thirdPodIP,
+					secondaryIPs: []string{thirdPodDataIP},
+				},
 			},
 		},
 		{
@@ -86,6 +112,12 @@ func TestCreateCertificateSubject(t *testing.T) {
 					hostname: secondPodNodeName,
 					ip:       secondPodIp,
 				},
+				{
+					name:         thirdPodName,
+					hostname:     thirdPodNodeName,
+					ip:           thirdPodIP,
+					secondaryIPs: []string{thirdPodDataIP},
+				},
 			},
 		},
 	}
@@ -100,6 +132,7 @@ func TestSubjectGenerateCertificateTemplate(t *testing.T) {
 	testPodName := "first"
 	testPodNodeName := "nodeName1"
 	testPodIP := "1.1.1.1"
+	testPodDataIP := "172.17.90.15"
 
 	tests := []struct {
 		name         string
@@ -148,6 +181,29 @@ func TestSubjectGenerateCertificateTemplate(t *testing.T) {
 				},
 				DNSNames:    []string{testPodNodeName},
 				IPAddresses: []net.IP{net.ParseIP(testPodIP), net.ParseIP("2.2.2.2")},
+				KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+				ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+			},
+		},
+		{
+			name: "should create Certificate with PodIP and dataIP",
+			subject: certificateSubject{
+				name:         testPodName,
+				hostname:     testPodNodeName,
+				ip:           testPodIP,
+				secondaryIPs: []string{testPodDataIP},
+			},
+			expectedCert: x509.Certificate{
+				Subject: pkix.Name{
+					CommonName:         testPodIP,
+					Country:            []string{"US"},
+					Province:           []string{"CA"},
+					Locality:           []string{"Sunnyvale"},
+					Organization:       []string{"Juniper Networks"},
+					OrganizationalUnit: []string{"Contrail"},
+				},
+				DNSNames:    []string{testPodNodeName},
+				IPAddresses: []net.IP{net.ParseIP(testPodIP), net.ParseIP(testPodDataIP)},
 				KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 				ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 			},

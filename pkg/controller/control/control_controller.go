@@ -236,6 +236,13 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	statefulSet.Spec.Template.Spec.ServiceAccountName = "serviceaccount-statusmonitor-control"
+	if instance.Spec.ServiceConfiguration.DataSubnet != "" {
+		if statefulSet.Spec.Template.ObjectMeta.Annotations == nil {
+			statefulSet.Spec.Template.ObjectMeta.Annotations = map[string]string{"dataSubnet": instance.Spec.ServiceConfiguration.DataSubnet}
+		} else {
+			statefulSet.Spec.Template.ObjectMeta.Annotations["dataSubnet"] = instance.Spec.ServiceConfiguration.DataSubnet
+		}
+	}
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
