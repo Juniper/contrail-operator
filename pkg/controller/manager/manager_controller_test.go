@@ -220,6 +220,7 @@ func TestManagerController(t *testing.T) {
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionmanager,
 					Webui:            webui,
+					Contrailmonitor:  contrailmonitorCR,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.Vrouter{vrouter},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
@@ -238,6 +239,7 @@ func TestManagerController(t *testing.T) {
 			provisionmanager,
 			kubemanager,
 			webui,
+			contrailmonitorCR,
 			control,
 			vrouter,
 			contrailcni,
@@ -2270,4 +2272,35 @@ func TestAddManager(t *testing.T) {
 		err := Add(mgr)
 		assert.NoError(t, err)
 	})
+}
+
+var contrailmonitorName = types.NamespacedName{
+	Namespace: "default",
+	Name:      "contrailmonitor-instance",
+}
+
+var contrailmonitorCR = &contrail.Contrailmonitor{
+	ObjectMeta: meta.ObjectMeta{
+		Namespace: contrailmonitorName.Namespace,
+		Name:      contrailmonitorName.Name,
+		Labels: map[string]string{
+			"contrail_cluster": "test",
+		},
+	},
+	Spec: contrail.ContrailmonitorSpec{
+		ServiceConfiguration: contrail.ContrailmonitorConfiguration{
+			PostgresInstance:  "psql_instance",
+			MemcachedInstance: "memcached_instance",
+			KeystoneInstance:  "keystone_instance",
+			ZookeeperInstance: "zookeeper_instance",
+			CassandraInstance: "cassandra_instance",
+			RabbitmqInstance:  "rabbitmq_instance",
+			ControlInstance:   "control_instance",
+			ConfigInstance:    "config_instance",
+			WebuiInstance:     "webui_instance",
+		},
+	},
+	Status: contrail.ContrailmonitorStatus{
+		Active: trueVal,
+	},
 }
