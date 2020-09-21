@@ -88,6 +88,28 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
+		webui := &contrail.Webui{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-webui",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.WebuiSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					HostNetwork: &trueVal,
+				},
+				ServiceConfiguration: contrail.WebuiConfiguration{
+					CassandraInstance: "commandtest-cassandra",
+					KeystoneInstance:  "commandtest-keystone",
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+						{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
+						{Name: "webuijob", Image: "registry:5000/contrail-nightly/contrail-controller-webui-job:" + cemRelease},
+						{Name: "webuiweb", Image: "registry:5000/contrail-nightly/contrail-controller-webui-web:" + cemRelease},
+					},
+				},
+			},
+		}
 		zookeeper := []*contrail.Zookeeper{{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "commandtest-zookeeper",
@@ -146,6 +168,29 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
+
+		controls := []*contrail.Control{{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "commandtest-control",
+				Namespace: namespace,
+				Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
+			},
+			Spec: contrail.ControlSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					HostNetwork: &trueVal,
+				},
+				ServiceConfiguration: contrail.ControlConfiguration{
+					CassandraInstance: "commandtest-cassandra",
+					Containers: []*contrail.Container{
+						{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + cemRelease},
+						{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + cemRelease},
+						{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + cemRelease},
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+						{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest"},
+					},
+				},
+			},
+		}}
 
 		memcached := &contrail.Memcached{
 			ObjectMeta: meta.ObjectMeta{
@@ -239,6 +284,7 @@ func TestCommandServices(t *testing.T) {
 					ConfigInstance:     "commandtest-config",
 					KeystoneInstance:   "commandtest-keystone",
 					SwiftInstance:      "commandtest-swift",
+					WebUIInstance:      "commandtest-webui",
 					Containers: []*contrail.Container{
 						{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
 						{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
@@ -272,6 +318,8 @@ func TestCommandServices(t *testing.T) {
 					Cassandras: cassandra,
 					Zookeepers: zookeeper,
 					Rabbitmq:   rabbitmq,
+					Webui:      webui,
+					Controls:   controls,
 				},
 				KeystoneSecretName: "commandtest-keystone-adminpass-secret",
 			},
@@ -316,22 +364,8 @@ func TestCommandServices(t *testing.T) {
 				Logger:        log,
 			}
 
-			t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))
-			})
-			t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
-				assert.NoError(t, w.ForReadyStatefulSet("commandtest-config-config-statefulset", 1))
-			})
-
-			t.Run("then Swift should become active", func(t *testing.T) {
-				err := wait.Contrail{
-					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
-					RetryInterval: retryInterval,
-					Client:        f.Client,
-					Logger:        log,
-				}.ForSwiftActive(command.Spec.ServiceConfiguration.SwiftInstance)
-				require.NoError(t, err)
+			t.Run("then command dependencies are ready ", func(t *testing.T) {
+				assertCommandDepenciesReady(t, f, namespace, command, log, w)
 			})
 
 			t.Run("then a ready Command Deployment should be created", func(t *testing.T) {
@@ -479,5 +513,40 @@ func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPPro
 			require.NoError(t, err)
 			assert.Equal(t, "payload", string(contents))
 		})
+	})
+}
+
+func assertCommandDepenciesReady(t *testing.T, f *test.Framework, namespace string, cr *contrail.Command, log logger.Logger, w wait.Wait) {
+
+	t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))
+	})
+	t.Run("then a ready Config StatefulSet should be created", func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("commandtest-config-config-statefulset", 1))
+	})
+	t.Run("then a ready WebUI StatefulSet should be created", func(t *testing.T) {
+		assert.NoError(t, w.ForReadyStatefulSet("commandtest-webui-webui-statefulset", 1))
+	})
+
+	t.Run("then Swift should become active", func(t *testing.T) {
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForSwiftActive(cr.Spec.ServiceConfiguration.SwiftInstance)
+		require.NoError(t, err)
+	})
+
+	t.Run("then WebUI should become active", func(t *testing.T) {
+		err := wait.Contrail{
+			Namespace:     namespace,
+			Timeout:       5 * time.Minute,
+			RetryInterval: retryInterval,
+			Client:        f.Client,
+			Logger:        log,
+		}.ForWebUIActive(cr.Spec.ServiceConfiguration.WebUIInstance)
+		require.NoError(t, err)
 	})
 }

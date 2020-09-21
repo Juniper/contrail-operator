@@ -10,6 +10,9 @@ spec:
   - JSONPath: .status.readyReplicas
     name: Ready_Replicas
     type: integer
+  - JSONPath: .status.endpoint
+    name: Endpoint
+    type: string
   - JSONPath: .metadata.creationTimestamp
     name: Age
     type: date
@@ -149,6 +152,8 @@ spec:
           properties:
             active:
               type: boolean
+            endpoint:
+              type: string
             nodes:
               additionalProperties:
                 type: string

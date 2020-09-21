@@ -146,6 +146,8 @@ spec:
                   type: string
                 swiftInstance:
                   type: string
+                webuiInstance:
+                  type: string
               type: object
           required:
           - serviceConfiguration

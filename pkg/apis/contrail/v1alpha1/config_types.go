@@ -45,6 +45,12 @@ const (
 // Config is the Schema for the configs API.
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:path=configs,scope=Namespaced
+// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready_Replicas",type=integer,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="Endpoint",type=string,JSONPath=`.status.endpoint`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Active",type=boolean,JSONPath=`.status.active`
 type Config struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -53,14 +59,14 @@ type Config struct {
 	Status ConfigStatus `json:"status,omitempty"`
 }
 
-// ConfigSpec is the Spec for the cassandras API.
+// ConfigSpec is the Spec for the Config API.
 // +k8s:openapi-gen=true
 type ConfigSpec struct {
 	CommonConfiguration  PodConfiguration    `json:"commonConfiguration,omitempty"`
 	ServiceConfiguration ConfigConfiguration `json:"serviceConfiguration"`
 }
 
-// ConfigConfiguration is the Spec for the cassandras API.
+// ConfigConfiguration is the Spec for the Config API.
 // +k8s:openapi-gen=true
 type ConfigConfiguration struct {
 	Containers                  []*Container       `json:"containers,omitempty"`

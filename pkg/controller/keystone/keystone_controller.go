@@ -648,7 +648,9 @@ func (r *ReconcileKeystone) reconcileBootstrapJob(keystone *contrail.Keystone, k
 	if alreadyExists {
 		return nil
 	}
-
+	if !errors.IsNotFound(err) {
+		return err
+	}
 	bootstrapJob = newBootStrapJob(keystone, jobName, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPassSecretName, psqlIP)
 	if err = controllerutil.SetControllerReference(keystone, bootstrapJob, r.scheme); err != nil {
 		return err

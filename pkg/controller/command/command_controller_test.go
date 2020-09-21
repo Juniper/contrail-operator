@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +33,7 @@ func TestCommand(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
 	assert.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	assert.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
 
 	missingInitObjectAndCheckNoErrorCases := map[string]struct {
 		initObjs []runtime.Object
@@ -48,6 +50,8 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwiftWithEmptyCredentialsSecretName(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 	}
@@ -80,6 +84,8 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no Swift": {
@@ -90,6 +96,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no Keystone": {
@@ -100,6 +108,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newSwift(false),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no Swift secret": {
@@ -110,6 +120,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no admin secret": {
@@ -120,6 +132,8 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no Swift container exists": {
@@ -131,6 +145,8 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 		},
 		"no Config container exists": {
@@ -141,6 +157,32 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
+			},
+		},
+		"no WebUI": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newConfig(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newSwiftProxy(true),
+			},
+		},
+		"no SwiftProxy": {
+			initObjs: []runtime.Object{
+				newCommand(),
+				newPostgres(true),
+				newConfig(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newSwift(false),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
 			},
 		},
 	}
@@ -171,6 +213,8 @@ func TestCommand(t *testing.T) {
 			newSwiftSecret(),
 			newSwiftWithEmptyCredentialsSecretName(false),
 			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			newWebUI(true),
+			newSwiftProxy(true),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		conf := &rest.Config{}
@@ -196,6 +240,8 @@ func TestCommand(t *testing.T) {
 			newSwiftSecret(),
 			newSwift(false),
 			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			newWebUI(true),
+			newSwiftProxy(true),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		conf := &rest.Config{}
@@ -220,12 +266,13 @@ func TestCommand(t *testing.T) {
 	})
 
 	tests := []struct {
-		name               string
-		initObjs           []runtime.Object
-		expectedStatus     contrail.CommandStatus
-		expectedDeployment *apps.Deployment
-		expectedPostgres   *contrail.Postgres
-		expectedSwift      *contrail.Swift
+		name                 string
+		initObjs             []runtime.Object
+		expectedStatus       contrail.CommandStatus
+		expectedDeployment   *apps.Deployment
+		expectedPostgres     *contrail.Postgres
+		expectedSwift        *contrail.Swift
+		expectedBootstrapJob *batch.Job
 	}{
 		{
 			name: "create a new deployment",
@@ -238,11 +285,14 @@ func TestCommand(t *testing.T) {
 				newSwiftSecret(),
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
-			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
-			expectedPostgres:   newPostgresWithOwner(true),
-			expectedSwift:      newSwiftWithOwner(false),
+			expectedStatus:       contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
+			expectedDeployment:   newDeployment(apps.DeploymentStatus{}),
+			expectedPostgres:     newPostgresWithOwner(true),
+			expectedSwift:        newSwiftWithOwner(false),
+			expectedBootstrapJob: newBootstrapJob(),
 		},
 		{
 			name: "create a new deployment and check swift containers existence",
@@ -256,6 +306,8 @@ func TestCommand(t *testing.T) {
 				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -274,6 +326,8 @@ func TestCommand(t *testing.T) {
 				newSwift(false),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
@@ -292,6 +346,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
@@ -310,6 +366,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
@@ -328,6 +386,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: true},
@@ -350,6 +410,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -374,6 +436,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -398,6 +462,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -422,6 +488,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -446,6 +514,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -470,6 +540,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: true},
@@ -494,6 +566,8 @@ func TestCommand(t *testing.T) {
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+				newSwiftProxy(true),
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
@@ -577,6 +651,27 @@ func TestCommand(t *testing.T) {
 			assert.NoError(t, err)
 			configMap.SetResourceVersion("")
 			assertConfigMap(t, configMap)
+
+			bootstrapconfigMap := &core.ConfigMap{}
+			err = cl.Get(context.Background(), types.NamespacedName{
+				Name:      "command-bootstrap-configmap",
+				Namespace: "default",
+			}, bootstrapconfigMap)
+			assert.NoError(t, err)
+			bootstrapconfigMap.SetResourceVersion("")
+			assertBootstrapConfigMap(t, bootstrapconfigMap)
+
+			if tt.expectedBootstrapJob != nil {
+				bJob := &batch.Job{}
+				err = cl.Get(context.Background(), types.NamespacedName{
+					Name:      tt.expectedBootstrapJob.Name,
+					Namespace: tt.expectedBootstrapJob.Namespace,
+				}, bJob)
+				assert.NoError(t, err)
+				bJob.SetResourceVersion("")
+				assert.Equal(t, tt.expectedBootstrapJob, bJob)
+			}
+
 			// Check if postgres has been updated
 			psql := &contrail.Postgres{}
 			err = cl.Get(context.Background(), types.NamespacedName{
@@ -623,6 +718,7 @@ func newCommand() *contrail.Command {
 				KeystoneInstance: "keystone",
 				SwiftInstance:    "swift",
 				ConfigInstance:   "config",
+				WebUIInstance:    "webUI",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-command"},
 					{Name: "api", Image: "registry:5000/contrail-command"},
@@ -700,6 +796,52 @@ func newSwift(active bool) *contrail.Swift {
 		Status: contrail.SwiftStatus{
 			Active:                active,
 			CredentialsSecretName: "swift-credentials-secret",
+		},
+	}
+}
+
+func newSwiftProxy(active bool) *contrail.SwiftProxy {
+	return &contrail.SwiftProxy{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "SwiftProxy",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "swift-proxy",
+			Namespace: "default",
+		},
+		Spec: contrail.SwiftProxySpec{
+			ServiceConfiguration: contrail.SwiftProxyConfiguration{
+				ListenPort: 5080,
+			},
+		},
+		Status: contrail.SwiftProxyStatus{
+			Status: contrail.Status{
+				Active: active,
+			},
+			ClusterIP: "40.40.40.40",
+		},
+	}
+}
+
+func newWebUI(active bool) *contrail.Webui {
+	return &contrail.Webui{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "WebUI",
+			APIVersion: "contrail.juniper.net/v1alpha1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "webUI",
+			Namespace: "default",
+		},
+		Status: contrail.WebuiStatus{
+			Status: contrail.Status{
+				Active: active,
+			},
+			Ports: contrail.WebUIStatusPorts{contrail.WebuiHttpListenPort,
+				contrail.WebuiHttpsListenPort,
+				contrail.RedisServerPortWebui},
+			Endpoint: "30.30.30.30",
 		},
 	}
 }
@@ -879,16 +1021,8 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 								Name:      "status",
 								MountPath: "/tmp/podinfo",
 							}},
-						}, {
-							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
-							Image:           "registry:5000/contrail-command" + fakeImageTag,
-							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
-							VolumeMounts: []core.VolumeMount{{
-								Name:      "command-command-volume",
-								MountPath: "/etc/contrail",
-							}},
-						}},
+						},
+					},
 					Volumes: []core.Volume{
 						{
 							Name: "command-command-volume",
@@ -897,12 +1031,7 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 									LocalObjectReference: core.LocalObjectReference{
 										Name: "command-command-configmap",
 									},
-									Items: []core.KeyToPath{
-										{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
-										{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-										{Key: "command-app-server.yml", Path: "command-app-server.yml"},
-										{Key: "init_cluster.yml", Path: "init_cluster.yml"},
-									},
+									DefaultMode: &executableMode,
 								},
 							},
 						},
@@ -989,7 +1118,27 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		},
 	}, actual.ObjectMeta)
 
-	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server.yml"])
+	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server0.0.0.0.yml"])
+}
+
+func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
+	trueVal := true
+	assert.Equal(t, meta.ObjectMeta{
+		Name:      "command-bootstrap-configmap",
+		Namespace: "default",
+		Labels:    map[string]string{"contrail_manager": "command", "command": "command"},
+		OwnerReferences: []meta.OwnerReference{
+			{
+				APIVersion:         "contrail.juniper.net/v1alpha1",
+				Kind:               "Command",
+				Name:               "command",
+				UID:                "",
+				Controller:         &trueVal,
+				BlockOwnerDeletion: &trueVal,
+			},
+		},
+	}, actual.ObjectMeta)
+
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
 }
@@ -1040,6 +1189,66 @@ func newCommandService() *core.Service {
 				{Port: 9091, Protocol: "TCP"},
 			},
 			ClusterIP: "20.20.20.20",
+		},
+	}
+}
+
+func newBootstrapJob() *batch.Job {
+	executableMode := int32(0744)
+	trueVal := true
+	commandBootStrapConfigVolume := "command-bootstrap-config-volume"
+	return &batch.Job{
+		TypeMeta: meta.TypeMeta{
+			Kind:       "Job",
+			APIVersion: "batch/v1",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "command-bootstrap-job",
+			Namespace: "default",
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Command", "command", "", &trueVal, &trueVal},
+			},
+		},
+		Spec: batch.JobSpec{
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					HostNetwork:   true,
+					RestartPolicy: core.RestartPolicyNever,
+					NodeSelector:  map[string]string{"node-role.kubernetes.io/master": ""},
+					Volumes: []core.Volume{
+						{
+							Name: commandBootStrapConfigVolume,
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: "command-bootstrap-configmap",
+									},
+									DefaultMode: &executableMode,
+								},
+							},
+						},
+					},
+
+					Containers: []core.Container{
+						{
+							Name:            "command-init",
+							ImagePullPolicy: core.PullAlways,
+							Image:           "registry:5000/contrail-command",
+							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
+							VolumeMounts: []core.VolumeMount{{
+								Name:      commandBootStrapConfigVolume,
+								MountPath: "/etc/contrail",
+							}},
+						},
+					},
+					DNSPolicy: core.DNSClusterFirst,
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
+				},
+			},
+			TTLSecondsAfterFinished: nil,
 		},
 	}
 }
@@ -1163,6 +1372,7 @@ replication:
   amqp:
     enabled: false
 `
+
 const expectedBootstrapScript = `
 #!/bin/bash
 
@@ -1203,7 +1413,7 @@ resources:
         - default-global-system-config
         - 534965b0-f40c-11e9-8de6-38c986460fd4
       hostname: cluster1
-      ip_address: 0.0.0.0
+      ip_address: 20.20.20.20
       isNode: 'false'
       name: 5349662b-f40c-11e9-a57d-38c986460fd4
       node_type: private
@@ -1329,8 +1539,8 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
-      private_url: https://0.0.0.0:8143
-      public_url: https://0.0.0.0:8143
+      private_url: https://30.30.30.30:8143
+      public_url: https://30.30.30.30:8143
     kind: endpoint
   - data:
       uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
@@ -1381,7 +1591,7 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
-      private_url: "https://0.0.0.0:5080"
-      public_url: "https://0.0.0.0:5080"
+      private_url: https://40.40.40.40:5080
+      public_url: https://40.40.40.40:5080
     kind: endpoint
 `

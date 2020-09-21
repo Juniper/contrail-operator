@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,8 +88,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	// Watch for changes to secondary resource WebUI and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &contrail.Webui{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+	if err != nil {
+		return err
+	}
+
 	// Watch for changes to secondary resource Config and requeue the owner Command
 	err = c.Watch(&source.Kind{Type: &contrail.Config{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to secondary resource SwiftProxy and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &contrail.SwiftProxy{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Command{},
 	})
 	if err != nil {
@@ -181,6 +198,19 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	swiftProxyService, err := r.getSwiftProxy(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(command).EnsureOwns(swiftProxyService); err != nil {
+		return reconcile.Result{}, err
+	}
+	if swiftProxyService.Status.ClusterIP == "" {
+		return reconcile.Result{}, nil
+	}
+	swiftProxyAddress := swiftProxyService.Status.ClusterIP
+	swiftProxyPort := swiftProxyService.Spec.ServiceConfiguration.ListenPort
+
 	keystone, err := r.getKeystone(command)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -220,6 +250,19 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
+	webUI, err := r.getWebUI(command)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(command).EnsureOwns(webUI); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !webUI.Status.Active {
+		return reconcile.Result{}, nil
+	}
+	webUIAddress := webUI.Status.Endpoint
+	webUIPort := webUI.Status.Ports.WebUIHttpsPort
+
 	podIPs := []string{"0.0.0.0"}
 	if len(commandPods.Items) > 0 {
 		err = contrail.SetPodsToReady(commandPods, r.client)
@@ -234,7 +277,15 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(keystonePort, podIPs[0], keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	commandBootStrapConfigName := command.Name + "-bootstrap-configmap"
+	if err = r.configMap(commandBootStrapConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandInitConfigExist(webUIPort, swiftProxyPort, keystonePort, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, psql.Status.Endpoint, config.Status.Endpoint, commandClusterIP); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.reconcileBootstrapJob(command, commandBootStrapConfigName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -255,12 +306,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 				LocalObjectReference: core.LocalObjectReference{
 					Name: commandConfigName,
 				},
-				Items: []core.KeyToPath{
-					{Key: "bootstrap.sh", Path: "bootstrap.sh", Mode: &executableMode},
-					{Key: "entrypoint.sh", Path: "entrypoint.sh", Mode: &executableMode},
-					{Key: "command-app-server.yml", Path: "command-app-server.yml"},
-					{Key: "init_cluster.yml", Path: "init_cluster.yml"},
-				},
+				DefaultMode: &executableMode,
 			},
 		},
 	}}
@@ -361,6 +407,16 @@ func (r *ReconcileCommand) getSwift(command *contrail.Command) (*contrail.Swift,
 	return swiftServ, err
 }
 
+func (r *ReconcileCommand) getSwiftProxy(command *contrail.Command) (*contrail.SwiftProxy, error) {
+	swiftProxyServ := &contrail.SwiftProxy{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.SwiftInstance + "-proxy",
+	}, swiftProxyServ)
+
+	return swiftProxyServ, err
+}
+
 func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Keystone, error) {
 	keystoneServ := &contrail.Keystone{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{
@@ -434,16 +490,6 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 							VolumeMounts: []core.VolumeMount{{
 								Name:      "status",
 								MountPath: "/tmp/podinfo",
-							}},
-						},
-						{
-							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
-							Image:           getImage(containers, "init"),
-							Command:         getCommand(containers, "init"),
-							VolumeMounts: []core.VolumeMount{{
-								Name:      configVolumeName,
-								MountPath: "/etc/contrail",
 							}},
 						},
 					},
@@ -566,4 +612,84 @@ func (r *ReconcileCommand) getConfig(command *contrail.Command) (*contrail.Confi
 	}, config)
 
 	return config, err
+}
+
+func (r *ReconcileCommand) getWebUI(command *contrail.Command) (*contrail.Webui, error) {
+	webUI := &contrail.Webui{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.WebUIInstance,
+	}, webUI)
+
+	return webUI, err
+}
+
+func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, commandBootStrapConfigName string) error {
+	bootstrapJob := &batch.Job{}
+	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-bootstrap-job"}
+	err := r.client.Get(context.Background(), jobName, bootstrapJob)
+	alreadyExists := err == nil
+	if alreadyExists {
+		return nil
+	}
+	if !errors.IsNotFound(err) {
+		return err
+	}
+	bootstrapJob = newBootStrapJob(command, jobName, commandBootStrapConfigName)
+	if err = controllerutil.SetControllerReference(command, bootstrapJob, r.scheme); err != nil {
+		return err
+	}
+	return r.client.Create(context.Background(), bootstrapJob)
+}
+
+func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBootStrapConfigName string) *batch.Job {
+	executableMode := int32(0744)
+	commandBootStrapConfigVolume := cr.Name + "-bootstrap-config-volume"
+	return &batch.Job{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+		},
+		Spec: batch.JobSpec{
+			Template: core.PodTemplateSpec{
+				Spec: core.PodSpec{
+					HostNetwork:   true,
+					RestartPolicy: core.RestartPolicyNever,
+					NodeSelector:  cr.Spec.CommonConfiguration.NodeSelector,
+					Volumes: []core.Volume{
+						{
+							Name: commandBootStrapConfigVolume,
+							VolumeSource: core.VolumeSource{
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: commandBootStrapConfigName,
+									},
+									DefaultMode: &executableMode,
+								},
+							},
+						},
+					},
+
+					Containers: []core.Container{
+						{
+							Name:            "command-init",
+							ImagePullPolicy: core.PullAlways,
+							Image:           getImage(cr.Spec.ServiceConfiguration.Containers, "init"),
+							Command:         getCommand(cr.Spec.ServiceConfiguration.Containers, "init"),
+							VolumeMounts: []core.VolumeMount{{
+								Name:      commandBootStrapConfigVolume,
+								MountPath: "/etc/contrail",
+							}},
+						},
+					},
+					DNSPolicy: core.DNSClusterFirst,
+					Tolerations: []core.Toleration{
+						{Operator: "Exists", Effect: "NoSchedule"},
+						{Operator: "Exists", Effect: "NoExecute"},
+					},
+				},
+			},
+			TTLSecondsAfterFinished: nil,
+		},
+	}
 }
