@@ -69,6 +69,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "contrail_test.go",
+        "kubemanager_types_test.go",
         "manager_types_test.go",
     ],
     embed = [":go_default_library"],

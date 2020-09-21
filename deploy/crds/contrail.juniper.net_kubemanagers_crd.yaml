@@ -155,6 +155,55 @@ spec:
                   type: string
                 serviceSubnets:
                   type: string
+                staticConfiguration:
+                  description: KubemanagerStaticConfiguration is the configuration
+                    for deployment with static controller.
+                  properties:
+                    cassandraNodes:
+                      description: ServerNodes is the server nodes configuration for
+                        deployment with static controller.
+                      properties:
+                        ServerList:
+                          items:
+                            type: string
+                          type: array
+                        ServerPort:
+                          type: integer
+                      type: object
+                    configNodes:
+                      description: ServerNodes is the server nodes configuration for
+                        deployment with static controller.
+                      properties:
+                        ServerList:
+                          items:
+                            type: string
+                          type: array
+                        ServerPort:
+                          type: integer
+                      type: object
+                    rabbitmqNodes:
+                      description: ServerNodes is the server nodes configuration for
+                        deployment with static controller.
+                      properties:
+                        ServerList:
+                          items:
+                            type: string
+                          type: array
+                        ServerPort:
+                          type: integer
+                      type: object
+                    zookeeperNodes:
+                      description: ServerNodes is the server nodes configuration for
+                        deployment with static controller.
+                      properties:
+                        ServerList:
+                          items:
+                            type: string
+                          type: array
+                        ServerPort:
+                          type: integer
+                      type: object
+                  type: object
                 useKubeadmConfig:
                   type: boolean
                 zookeeperInstance:
