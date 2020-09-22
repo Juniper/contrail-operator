@@ -587,8 +587,16 @@ func newSwiftProxyService() *core.Service {
 			Namespace: "default",
 		},
 		Spec: core.ServiceSpec{
-			ClusterIP:      "10.10.10.10",
-			LoadBalancerIP: "10.255.254.4",
+			ClusterIP: "10.10.10.10",
+		},
+		Status: core.ServiceStatus{
+			LoadBalancer: core.LoadBalancerStatus{
+				Ingress: []core.LoadBalancerIngress{
+					{
+						IP: "10.255.254.4",
+					},
+				},
+			},
 		},
 	}
 }

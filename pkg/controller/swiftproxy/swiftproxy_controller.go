@@ -143,7 +143,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, nil
 	}
 	swiftProxy.Status.ClusterIP = svc.Spec.ClusterIP
-	swiftProxy.Status.LoadBalancerIP = svc.Spec.LoadBalancerIP
+	swiftProxy.Status.LoadBalancerIP = getLoadBalancerIP(svc)
 
 	swiftProxyPods, err := r.listSwiftProxyPods(swiftProxy.Name)
 	if err != nil {
@@ -346,6 +346,13 @@ func (r *ReconcileSwiftProxy) updateStatus(
 ) error {
 	sp.Status.FromDeployment(deployment)
 	return r.client.Status().Update(context.Background(), sp)
+}
+
+func getLoadBalancerIP(svc *core.Service) string {
+	if len(svc.Status.LoadBalancer.Ingress) == 0 {
+		return ""
+	}
+	return svc.Status.LoadBalancer.Ingress[0].IP
 }
 
 func updatePodTemplate(
