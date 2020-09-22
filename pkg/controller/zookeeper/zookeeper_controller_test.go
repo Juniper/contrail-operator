@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	policy "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -113,6 +114,7 @@ func TestZookeeper(t *testing.T) {
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 	require.NoError(t, storagev1.SchemeBuilder.AddToScheme(scheme), "Failed storagev1.SchemeBuilder.AddToScheme()")
+	require.NoError(t, policy.SchemeBuilder.AddToScheme(scheme), "Failed policy.SchemeBuilder.AddToScheme()")
 
 	tests := []*TestCase{
 		testcase1(),
@@ -125,7 +127,6 @@ func TestZookeeper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// scheme.AddKnownTypes(contrail.SchemeGroupVersion, tt.initObjs...)
 			cl := fake.NewFakeClientWithScheme(scheme, tt.initObjs...)
 
 			r := &ReconcileZookeeper{Client: cl, Scheme: scheme}
@@ -191,6 +192,7 @@ func newZookeeper() *contrail.Zookeeper {
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "python:alpine"},
+					{Name: "conf-init", Image: "python:alpine"},
 					{Name: "zookeeper", Image: "contrail-controller-zookeeper"},
 				},
 			},

@@ -346,11 +346,9 @@ func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
 }
 
 func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
-	t.Run("then a Zookeeper StatefulSet has 1 ready replicas", func(t *testing.T) {
+	t.Run(fmt.Sprintf("then a Zookeeper StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
-		// TODO: Scaling of zookeeper service in not working correctly therefore it is not testested in e2e tests.
-		// It should be tested once fixed.
-		assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("hatest-zookeeper-zookeeper-statefulset", r))
 	})
 
 	t.Run(fmt.Sprintf("then a Cassandra StatefulSet has %d ready replicas", r), func(t *testing.T) {
@@ -453,12 +451,7 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 						Effect:   core.TaintEffectNoSchedule,
 						Operator: core.TolerationOpExists,
 					},
-					{
-						Effect:   core.TaintEffectNoExecute,
-						Operator: core.TolerationOpExists,
-					},
 				},
-				Replicas: &oneVal,
 			},
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Storage: contrail.Storage{
@@ -467,6 +460,7 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 				Containers: []*contrail.Container{
 					{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:" + versionMap["zookeeper"]},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+					{Name: "conf-init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
 				},
 			},
 		},

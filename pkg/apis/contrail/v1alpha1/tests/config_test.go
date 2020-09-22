@@ -224,8 +224,6 @@ func SetupEnv() Environment {
 	configConfigMap := *configMap
 	rabbitmqConfigMap := *configMap
 	rabbitmqConfigMap2 := *configMap
-	zookeeperConfigMap := *configMap
-	zookeeperConfigMap2 := *configMap
 	cassandraConfigMap := *configMap
 	controlConfigMap := *configMap
 	kubemanagerConfigMap := *configMap
@@ -274,12 +272,6 @@ func SetupEnv() Environment {
 
 	rabbitmqConfigMap2.Name = "rabbitmq1-rabbitmq-configmap-runner"
 	rabbitmqConfigMap2.Namespace = "default"
-
-	zookeeperConfigMap.Name = "zookeeper1-zookeeper-configmap-1"
-	zookeeperConfigMap.Namespace = "default"
-
-	zookeeperConfigMap2.Name = "zookeeper1-zookeeper-configmap"
-	zookeeperConfigMap2.Namespace = "default"
 
 	cassandraConfigMap.Name = "cassandra1-cassandra-configmap"
 	cassandraConfigMap.Namespace = "default"
@@ -338,8 +330,6 @@ func SetupEnv() Environment {
 		&configConfigMap,
 		&controlConfigMap,
 		&cassandraConfigMap,
-		&zookeeperConfigMap,
-		&zookeeperConfigMap2,
 		&rabbitmqConfigMap,
 		&rabbitmqConfigMap2,
 		&kubemanagerConfigMap,
@@ -523,8 +513,6 @@ func SetupEnv() Environment {
 		configConfigMap:      configConfigMap,
 		controlConfigMap:     controlConfigMap,
 		cassandraConfigMap:   cassandraConfigMap,
-		zookeeperConfigMap:   zookeeperConfigMap,
-		zookeeperConfigMap2:  zookeeperConfigMap2,
 		rabbitmqConfigMap:    rabbitmqConfigMap,
 		rabbitmqConfigMap2:   rabbitmqConfigMap2,
 		kubemanagerConfigMap: kubemanagerConfigMap,
@@ -606,39 +594,6 @@ func TestKubemanagerConfig(t *testing.T) {
 	if environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"] != kubemanagerConfig {
 		diff := diff.Diff(environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"], kubemanagerConfig)
 		t.Fatalf("get kubemanager config: \n%v\n", diff)
-	}
-}
-
-func TestZookeeperConfig(t *testing.T) {
-	logf.SetLogger(logf.ZapLogger(true))
-
-	environment := SetupEnv()
-	cl := *environment.client
-	err := environment.zookeeperResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "zookeeper1", Namespace: "default"}}, &environment.zookeeperPodList, cl)
-	if err != nil {
-		t.Fatalf("create config for zookeeper failed: (%v)", err)
-	}
-
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "zookeeper1-zookeeper-configmap-1", Namespace: "default"},
-		&environment.zookeeperConfigMap)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if environment.zookeeperConfigMap.Data["zoo.cfg"] != zookeeperConfig {
-		configDiff := diff.Diff(environment.zookeeperConfigMap.Data["zoo.cfg"], zookeeperConfig)
-		t.Fatalf("get zoo.cfg config: \n%v\n", configDiff)
-	}
-
-	err = cl.Get(context.TODO(),
-		types.NamespacedName{Name: "zookeeper1-zookeeper-configmap", Namespace: "default"},
-		&environment.zookeeperConfigMap2)
-	if err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if environment.zookeeperConfigMap2.Data["zoo.cfg.dynamic.100000000"] != zookeeperDynamicConfig {
-		configDiff := diff.Diff(environment.zookeeperConfigMap2.Data["zoo.cfg.dynamic.100000000"], zookeeperDynamicConfig)
-		t.Fatalf("get zoo.cfg.dynamic.100000000 config: \n%v\n", configDiff)
 	}
 }
 
@@ -997,26 +952,6 @@ transparent_data_encryption_options:
       store_type: JCEKS
       key_password: cassandra
 auto_bootstrap: true
-`
-
-var zookeeperConfig = `clientPort=2181
-clientPortAddress=
-dataDir=/var/lib/zookeeper
-tickTime=2000
-initLimit=5
-syncLimit=2
-maxClientCnxns=60
-maxSessionTimeout=120000
-admin.enableServer=false
-standaloneEnabled=false
-4lw.commands.whitelist=stat,ruok,conf,isro
-reconfigEnabled=true
-dynamicConfigFile=/mydata/zoo.cfg.dynamic.100000000
-`
-
-var zookeeperDynamicConfig = `server.1=1.1.3.1:2888:3888:participant
-server.2=1.1.3.2:2888:3888:participant
-server.3=1.1.3.3:2888:3888:participant
 `
 
 var rabbitmqConfigRunner = `#!/bin/bash

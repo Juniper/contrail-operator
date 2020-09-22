@@ -2,10 +2,13 @@ package zookeeper
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strconv"
 
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -27,6 +30,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policy "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -167,22 +171,16 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	currentZookeeperInstance := *instance
-
-	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	configMap2, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-1", r.Client, r.Scheme, request)
-	if err != nil {
+	configMapName := instance.Name + "-zookeeper-conf"
+	if _, err := instance.CreateConfigMap(configMapName, r.Client, r.Scheme, request); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	statefulSet := GetSTS()
-	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	if err := instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
-	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMap.Name: request.Name + "-" + instanceType + "-volume", configMap2.Name: request.Name + "-" + instanceType + "-volume-1"})
+	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMapName: configMapName})
 
 	zookeeperDefaultConfigurationInterface := instance.ConfigurationParameters()
 	zookeeperDefaultConfiguration := zookeeperDefaultConfigurationInterface.(v1alpha1.ZookeeperConfiguration)
@@ -216,12 +214,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 
 		if container.Name == "zookeeper" {
 			command := []string{
-				"bash", "-c", "grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000|" +
-					"sed -e 's/.*server.\\(.*\\)=.*/\\1/' > /var/lib/zookeeper/myid && " +
-					"cp /conf-1/* /conf/ && " +
-					"sed -i \"s/clientPortAddress=.*/clientPortAddress=${POD_IP}/g\" /conf/zoo.cfg && " +
-					"zkServer.sh --config /conf start-foreground"}
-			//command = []string{"sh", "-c", "while true; do echo hello; sleep 10;done"}
+				"bash", "-c", "zkServer.sh --config /var/lib/zookeeper start-foreground"}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
 			if instanceContainer.Command == nil {
 				(&statefulSet.Spec.Template.Spec.Containers[idx]).Command = command
@@ -230,16 +223,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			volumeMountList := []corev1.VolumeMount{}
 			volumeMount := corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume-1",
-				MountPath: "/conf-1",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			volumeMount = corev1.VolumeMount{
-				Name:      request.Name + "-" + instanceType + "-volume",
-				MountPath: "/mydata",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
-			volumeMount = corev1.VolumeMount{
 				Name:      "pvc",
 				MountPath: "/var/lib/zookeeper",
 			}
@@ -262,6 +245,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		},
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, initVolume)
+	statefulSet.Spec.PodManagementPolicy = appsv1.OrderedReadyPodManagement
 	// Configure InitContainers.
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
@@ -289,6 +273,20 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 				MountPath: zookeeperDefaultConfiguration.Storage.Path,
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+		}
+		if container.Name == "conf-init" {
+			volumeMount := corev1.VolumeMount{
+				Name:      request.Name + "-" + instanceType + "-init",
+				MountPath: "/mnt/zookeeper",
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      configMapName,
+				MountPath: "/zookeeper-conf",
+			}
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
+			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = []string{
+				"sh", "-c", "if [ ! -f /mnt/zookeeper/zoo.cfg ]; then cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && cp /mnt/zookeeper/myid.$POD_IP /mnt/zookeeper/myid; fi;"}
 		}
 	}
 
@@ -369,11 +367,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	strategy := "rolling"
-	if currentZookeeperInstance.Spec.CommonConfiguration.Replicas != nil {
-		if int(*currentZookeeperInstance.Spec.CommonConfiguration.Replicas) == 1 && int(*instance.Spec.CommonConfiguration.Replicas) > 1 {
-			strategy = "deleteFirst"
-		}
-	}
 	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -382,16 +375,64 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	if len(podIPList.Items) > 0 {
-		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+		if err = instance.InstanceConfiguration(request, configMapName, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
 			//return reconcile.Result{}, err
 			return reconcile.Result{Requeue: true}, nil
 		}
+
+		pods := make([]corev1.Pod, len(podIPList.Items))
+		copy(pods, podIPList.Items)
+		sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+
+		var found *corev1.Pod
+		for _, pod := range pods {
+			ip, ok := instance.Status.Nodes[pod.Name]
+			if !ok || ip != pod.Status.PodIP {
+				for _, c := range pod.Status.Conditions {
+					if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+						found = &pod
+						break
+					}
+				}
+			}
+			if found != nil {
+				break
+			}
+		}
+
+		if found != nil && len(pods) > 1 {
+			myidString := found.Name[len(found.Name)-1:]
+			myidInt, err := strconv.Atoi(myidString)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			serverDef := fmt.Sprintf("server.%d=%s:%s;%s:2181",
+				myidInt+1, found.Status.PodIP,
+				strconv.Itoa(*zookeeperDefaultConfiguration.ElectionPort)+":"+strconv.Itoa(*zookeeperDefaultConfiguration.ServerPort), found.Status.PodIP)
+			runScript := fmt.Sprintf("zkCli.sh -server %s reconfig -add \"%s\"", found.Status.PodIP, serverDef)
+			command := []string{"bash", "-c", runScript, serverDef}
+			_, _, err = v1alpha1.ExecToPodThroughAPI(command, "zookeeper", found.Name, found.Namespace, nil)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+
+		for _, pod := range podIPList.Items {
+			for _, c := range pod.Status.Conditions {
+				if c.Type == corev1.PodReady && c.Status == corev1.ConditionFalse {
+					delete(podIPMap, pod.Name)
+				}
+			}
+		}
+
 		if err = instance.ManageNodeStatus(podIPMap, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
+
 		labelSelector := labels.SelectorFromSet(label.New(instanceType, request.Name))
 		listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 		pvcList := &corev1.PersistentVolumeClaimList{}
@@ -408,6 +449,11 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 		}
 	}
+
+	if err = r.ensurePodDisruptionBudgetExists(instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if instance.Status.Active == nil {
 		active := false
 		instance.Status.Active = &active
@@ -416,4 +462,22 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+func (r *ReconcileZookeeper) ensurePodDisruptionBudgetExists(zookeeper *v1alpha1.Zookeeper) error {
+	pdb := &policy.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      zookeeper.Name + "-zookeeper",
+			Namespace: zookeeper.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.Background(), r.Client, pdb, func() error {
+		oneVal := intstr.FromInt(1)
+		pdb.ObjectMeta.Labels = label.New("zookeeper", zookeeper.Name)
+		pdb.Spec.MaxUnavailable = &oneVal
+		pdb.Spec.Selector = metav1.SetAsLabelSelector(label.New("zookeeper", zookeeper.Name))
+		return controllerutil.SetControllerReference(zookeeper, pdb, r.Scheme)
+	})
+
+	return err
 }

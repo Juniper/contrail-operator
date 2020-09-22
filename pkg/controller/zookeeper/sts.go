@@ -48,6 +48,24 @@ spec:
         volumeMounts:
         - mountPath: /tmp/podinfo
           name: status
+      - image: busybox
+        command:
+          - sh
+          - -c
+          - cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && sleep 120
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: Always
+        name: conf-init
+        resources: {}
+        securityContext:
+          privileged: false
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       containers:
       - name: zookeeper
         env:
@@ -77,9 +95,10 @@ spec:
             command:
             - /bin/bash
             - -c
-            - "state=$(echo stats |nc ${POD_IP} 2181); if [[ ${state} == \"This ZooKeeper instance is not currently serving requests\" ]]; then exit 1; else exit 0; fi"
+            - "OK=$(echo ruok | nc ${POD_IP} 2181); if [[ ${OK} == \"imok\" ]]; then exit 0; else exit 1;fi"
           initialDelaySeconds: 30
           timeoutSeconds: 5
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /tmp/conf
           name: conf

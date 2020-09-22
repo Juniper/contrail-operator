@@ -1,10 +1,16 @@
 package templates
 
-import "text/template"
+import (
+	"fmt"
+	"strconv"
+	"text/template"
 
-// ZookeeperConfig is the template of the Zookeeper service configuration.
-var ZookeeperConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
-clientPortAddress=
+	core "k8s.io/api/core/v1"
+)
+
+// ZookeeperStaticConfig is the template of the Zookeeper service configuration.
+var ZookeeperStaticConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
+clientPortAddress={{ .ListenAddress }}
 dataDir=/var/lib/zookeeper
 tickTime=2000
 initLimit=5
@@ -15,8 +21,33 @@ admin.enableServer=false
 standaloneEnabled=false
 4lw.commands.whitelist=stat,ruok,conf,isro
 reconfigEnabled=true
-dynamicConfigFile=/mydata/zoo.cfg.dynamic.100000000
+skipACL=yes
+dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic.{{ .ListenAddress }}
 `))
+
+func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort string) (map[string]string, error) {
+	dynamicConf := make(map[string]string, 0)
+	if len(pods) == 0 {
+		return dynamicConf, nil
+	}
+	var firstServerDef string
+	for _, pod := range pods {
+		myidString := pod.Name[len(pod.Name)-1:]
+		myidInt, err := strconv.Atoi(myidString)
+		if err != nil {
+			return nil, err
+		}
+		serverDef := firstServerDef + fmt.Sprintf("server.%d=%s:%s:participant\n",
+			myidInt+1, pod.Status.PodIP,
+			electionPort+":"+serverPort)
+		if myidInt == 0 {
+			firstServerDef = serverDef
+		}
+		dynamicConf["myid."+pod.Status.PodIP] = strconv.Itoa(myidInt + 1)
+		dynamicConf["zoo.cfg.dynamic."+pod.Status.PodIP] = serverDef
+	}
+	return dynamicConf, nil
+}
 
 // ZookeeperLogConfig is the template of the Zookeeper Log configuration.
 var ZookeeperLogConfig = template.Must(template.New("").Parse(`zookeeper.root.logger=INFO, CONSOLE
@@ -73,13 +104,3 @@ var ZookeeperXslConfig = template.Must(template.New("").Parse(`<?xml version="1.
 </xsl:template>
 </xsl:stylesheet>
 `))
-
-// ZookeeperRunnerConfig is the script to start zookeeper service.
-var ZookeeperRunnerConfig = template.Must(template.New("").Parse(`#!/bin/bash
-grep ${POD_IP} /mydata/zoo.cfg.dynamic.100000000 |sed -e 's/.*server.\(.*\)=.*/\1/' > /var/lib/zookeeper/myid
-sed -i "s/clientPortAddress=.*/clientPortAddress=${POD_IP}/g" /conf/zoo.cfg
-cat /mydata/zoo.cfg.dynamic.100000000 | grep -v ${POD_IP} | sed -e 's/.*server.\(.*\)=.*/\1/' > /var/lib/zookeeper/myid
-zkServer.sh --config /conf start-foreground
-`))
-
-//    server.1=172.17.0.4:3888:2888:participant

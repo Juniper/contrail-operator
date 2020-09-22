@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sort"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
@@ -42,9 +42,6 @@ type ZookeeperConfiguration struct {
 // ZookeeperStatus defines the status of the zookeeper object.
 // +k8s:openapi-gen=true
 type ZookeeperStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Active *bool                `json:"active,omitempty"`
 	Nodes  map[string]string    `json:"nodes,omitempty"`
 	Ports  ZookeeperStatusPorts `json:"ports,omitempty"`
@@ -82,88 +79,59 @@ func init() {
 }
 
 // InstanceConfiguration creates the zookeeper instance configuration.
-func (c *Zookeeper) InstanceConfiguration(request reconcile.Request,
+func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName string,
 	podList *corev1.PodList,
 	client client.Client) error {
-	instanceConfigMapName := request.Name + "-" + "zookeeper" + "-configmap"
-	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
-	configMapInstancConfig := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName + "-1", Namespace: request.Namespace},
-		configMapInstancConfig)
-	if err != nil {
-		return err
-	}
-
 	zookeeperConfigInterface := c.ConfigurationParameters()
 	zookeeperConfig := zookeeperConfigInterface.(ZookeeperConfiguration)
-	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
-	for _, pod := range podList.Items {
-		myidString := pod.Name[len(pod.Name)-1:]
-		myidInt, err := strconv.Atoi(myidString)
-		if err != nil {
-			return err
-		}
-		if configMapInstanceDynamicConfig.Data == nil {
-			data := map[string]string{pod.Status.PodIP: strconv.Itoa(myidInt + 1)}
-			configMapInstanceDynamicConfig.Data = data
-		} else {
-			configMapInstanceDynamicConfig.Data[pod.Status.PodIP] = strconv.Itoa(myidInt + 1)
-		}
-		var zkServerString string
-		for _, pod := range podList.Items {
-			myidString := pod.Name[len(pod.Name)-1:]
-			myidInt, err := strconv.Atoi(myidString)
-			if err != nil {
-				return err
-			}
-			zkServerString = zkServerString + fmt.Sprintf("server.%d=%s:%s:participant\n",
-				myidInt+1, pod.Status.PodIP,
-				strconv.Itoa(*zookeeperConfig.ElectionPort)+":"+strconv.Itoa(*zookeeperConfig.ServerPort))
-		}
-		configMapInstanceDynamicConfig.Data["zoo.cfg.dynamic.100000000"] = zkServerString
-		err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
-		if err != nil {
-			return err
-		}
-		var zookeeperConfigBuffer, zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
+	pods := make([]corev1.Pod, len(podList.Items))
+	copy(pods, podList.Items)
+	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
 
-		err = configtemplates.ZookeeperConfig.Execute(&zookeeperConfigBuffer, struct {
-			ClientPort string
+	confCMData, err := configtemplates.DynamicZookeeperConfig(pods, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
+	if err != nil {
+		return err
+	}
+
+	var zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
+	err = configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
+	if err != nil {
+		return err
+	}
+	err = configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
+	if err != nil {
+		return err
+	}
+	confCMData["log4j.properties"] = zookeeperLogBuffer.String()
+	confCMData["configuration.xsl"] = zookeeperXslBuffer.String()
+	for _, pod := range pods {
+		var configBuff bytes.Buffer
+		err = configtemplates.ZookeeperStaticConfig.Execute(&configBuff, struct {
+			ClientPort    string
+			ListenAddress string
 		}{
-			ClientPort: strconv.Itoa(*zookeeperConfig.ClientPort),
+			ClientPort:    strconv.Itoa(*zookeeperConfig.ClientPort),
+			ListenAddress: pod.Status.PodIP,
 		})
 		if err != nil {
 			return err
 		}
+		confCMData["zoo.cfg."+pod.Status.PodIP] = configBuff.String()
 
-		err = configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
-		if err != nil {
-			return err
-		}
-		err = configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
-		if err != nil {
-			return err
-		}
-		data := map[string]string{
-			"zoo.cfg":           zookeeperConfigBuffer.String(),
-			"log4j.properties":  zookeeperLogBuffer.String(),
-			"configuration.xsl": zookeeperXslBuffer.String(),
-		}
-		configMapInstancConfig.Data = data
-
-		err = client.Update(context.TODO(), configMapInstancConfig)
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+
+	zookeeperConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      confCMName,
+			Namespace: request.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), client, zookeeperConfigMap, func() error {
+		zookeeperConfigMap.Data = confCMData
+		return nil
+	})
+	return err
+
 }
 
 // CreateConfigMap creates a configmap for zookeeper service.
