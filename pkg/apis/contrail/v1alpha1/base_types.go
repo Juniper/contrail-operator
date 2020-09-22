@@ -1011,6 +1011,10 @@ type ConfigClusterConfiguration struct {
 	AuthMode                                AuthenticationMode
 }
 
+func (c *ConfigClusterConfiguration) APIServerListSpaceSeparated() string {
+	return c.APIServerListSpaceSeparated
+}
+
 // ControlClusterConfiguration defines all configuration knobs used to write the config file.
 type ControlClusterConfiguration struct {
 	BGPPort                         string
@@ -1021,6 +1025,10 @@ type ControlClusterConfiguration struct {
 	ServerListDNSCommaSeparated     string
 	ServerListDNSSpaceSeparated     string
 	ServerListCommanSeparatedQuoted string
+}
+
+func (c *ControlClusterConfiguration) ServerListXMPPSpaceSeparated() string {
+	return c.ServerListXMPPSpaceSeparated
 }
 
 // ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.

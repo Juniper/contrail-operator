@@ -71,6 +71,12 @@ type VrouterConfiguration struct {
 	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
 }
 
+type VrouterStaticConfiguration struct {
+	ControlNodesIPs   []string `json:"controlNodesIPs,omitempty`
+	ConfigNodesIPs    []string `json:"configNodesIPs,omitempty`
+	CassandraNodesIPs []string `json:"cassandraNodesIPs,omitempty`
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // VrouterList contains a list of Vrouter.
@@ -301,18 +307,14 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
-	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, client)
-	if err != nil {
-		return err
-	}
 
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	configMapInstanceDynamicConfig.Data = c.getVrouterDynamicConfigData(podList, controlNodesInformation, configNodesInformation, cassandraNodesInformation)
+	// TODO - getVrouterDynamicConfigData should accept interfaces of nodes information 
+	configMapInstanceDynamicConfig.Data = c.getVrouterDynamicConfigData(podList, controlNodesInformation, configNodesInformation)
 	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
@@ -341,8 +343,7 @@ func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
 
 func (c *Vrouter) getVrouterDynamicConfigData(podList *corev1.PodList,
 	controlNodesInformation *ControlClusterConfiguration,
-	configNodesInformation *ConfigClusterConfiguration,
-	cassandraNodesInformation *CassandraClusterConfiguration) map[string]string {
+	configNodesInformation *ConfigClusterConfiguration) map[string]string {
 	vrouterConfig := c.ConfigurationParameters()
 	var podIPList []string
 	for _, pod := range podList.Items {
@@ -390,23 +391,6 @@ func (c *Vrouter) getVrouterDynamicConfigData(podList *corev1.PodList,
 			CAFilePath:           certificates.SignerCAFilepath,
 		})
 		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
-		var vrouterNodemanagerBuffer bytes.Buffer
-		configtemplates.VrouterNodemanagerConfig.Execute(&vrouterNodemanagerBuffer, struct {
-			ListenAddress       string
-			Hostname            string
-			CollectorServerList string
-			CassandraPort       string
-			CassandraJmxPort    string
-			CAFilePath          string
-		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
-			Hostname:            hostname,
-			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
-			CassandraPort:       cassandraNodesInformation.CQLPort,
-			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          certificates.SignerCAFilepath,
-		})
-		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
 	}
 	return data
 }
