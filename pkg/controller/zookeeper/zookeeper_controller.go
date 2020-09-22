@@ -399,6 +399,9 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 					}
 				}
 			}
+			if found != nil {
+				break
+			}
 		}
 
 		if found != nil && len(pods) > 1 {
@@ -407,11 +410,11 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+
 			serverDef := fmt.Sprintf("server.%d=%s:%s;%s:2181",
 				myidInt+1, found.Status.PodIP,
 				strconv.Itoa(*zookeeperDefaultConfiguration.ElectionPort)+":"+strconv.Itoa(*zookeeperDefaultConfiguration.ServerPort), found.Status.PodIP)
 			runScript := fmt.Sprintf("zkCli.sh -server %s reconfig -add \"%s\"", found.Status.PodIP, serverDef)
-			reqLogger.Info(serverDef)
 			command := []string{"bash", "-c", runScript, serverDef}
 			_, _, err = v1alpha1.ExecToPodThroughAPI(command, "zookeeper", found.Name, found.Namespace, nil)
 			if err != nil {
