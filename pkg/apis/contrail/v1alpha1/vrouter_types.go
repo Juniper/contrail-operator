@@ -72,6 +72,7 @@ type VrouterConfiguration struct {
 	StaticConfiguration *VrouterStaticConfiguration `json:"staticConfiguration,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type VrouterStaticConfiguration struct {
 	ControlNodesIPs   []string `json:"controlNodesIPs,omitempty"`
 	ConfigNodesIPs    []string `json:"configNodesIPs,omitempty"`
@@ -298,11 +299,13 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
 
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
 	if err != nil {
 		return err
 	}
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	controlNodesInformation, err := NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance,
 		"", request.Namespace, client)
 	if err != nil {
@@ -314,7 +317,6 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	// TODO - getVrouterDynamicConfigData should accept interfaces of nodes information
 	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, controlNodesInformation, configNodesInformation)
 	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
