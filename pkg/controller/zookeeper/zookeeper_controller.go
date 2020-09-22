@@ -420,7 +420,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			if err != nil {
 				return reconcile.Result{}, err
 			}
-			instance.Status.Reconfigs = instance.Status.Reconfigs + 1
 		}
 
 		for _, pod := range podIPList.Items {

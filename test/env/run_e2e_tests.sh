@@ -24,9 +24,9 @@ cat deploy/1-create-operator.yaml | \
     kubectl apply -f -
 
 if [[ "$LONG_TEST" == "yes" ]]; then
-    TEST_CONFIGURATION="-timeout=90m"
+    TEST_CONFIGURATION="-timeout=60m"
 else
-    TEST_CONFIGURATION="-timeout=60m -test.short"
+    TEST_CONFIGURATION="-timeout=45m -test.short"
 fi
 
 ## Operator-sdk e2e test framework requires namespacedMan and globalMan to be defined, however in our case

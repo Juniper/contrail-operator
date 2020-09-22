@@ -39,16 +39,12 @@ type ZookeeperConfiguration struct {
 	Storage      Storage      `json:"storage,omitempty"`
 }
 
-//TODO introduce common Status field
 // ZookeeperStatus defines the status of the zookeeper object.
 // +k8s:openapi-gen=true
 type ZookeeperStatus struct {
-	Active        *bool                `json:"active,omitempty"`
-	Nodes         map[string]string    `json:"nodes,omitempty"`
-	Ports         ZookeeperStatusPorts `json:"ports,omitempty"`
-	Replicas      int32                `json:"replicas,omitempty"`
-	ReadyReplicas int32                `json:"readyReplicas,omitempty"`
-	Reconfigs     int                  `json:"reconfigs,omitempty"`
+	Active *bool                `json:"active,omitempty"`
+	Nodes  map[string]string    `json:"nodes,omitempty"`
+	Ports  ZookeeperStatusPorts `json:"ports,omitempty"`
 }
 
 // ZookeeperStatusPorts defines the status of the ports of the zookeeper object.
@@ -220,28 +216,7 @@ func (c *Zookeeper) PodIPListAndIPMapFromInstance(instanceType string, request r
 
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Zookeeper) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: sts.Name, Namespace: request.Namespace},
-		sts); err != nil {
-		return err
-	}
-	expectedReplicas := int32(1)
-	if sts.Spec.Replicas != nil {
-		expectedReplicas = *sts.Spec.Replicas
-	}
-	c.Status.Replicas = expectedReplicas
-	c.Status.ReadyReplicas = sts.Status.ReadyReplicas
-	var active bool
-	if sts.Status.ReadyReplicas == expectedReplicas {
-		active = true
-	} else {
-		active = false
-	}
-	c.Status.Active = &active
-
-	if err := client.Status().Update(context.TODO(), c); err != nil {
-		return err
-	}
-	return nil
+	return SetInstanceActive(client, activeStatus, sts, request, c)
 }
 
 // ManageNodeStatus manages the status of the Cassandra nodes.

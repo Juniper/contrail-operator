@@ -2743,8 +2743,8 @@ spec:
                         - serviceConfiguration
                         type: object
                       status:
-                        description: TODO introduce common Status field ZookeeperStatus
-                          defines the status of the zookeeper object.
+                        description: ZookeeperStatus defines the status of the zookeeper
+                          object.
                         properties:
                           active:
                             type: boolean
@@ -2759,14 +2759,6 @@ spec:
                               clientPort:
                                 type: string
                             type: object
-                          readyReplicas:
-                            format: int32
-                            type: integer
-                          reconfigs:
-                            type: integer
-                          replicas:
-                            format: int32
-                            type: integer
                         type: object
                     type: object
                   type: array
