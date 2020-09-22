@@ -88,7 +88,7 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName 
 	copy(pods, podList.Items)
 	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
 
-	confCMData, err := configtemplates.DynamicZookeeperConfig(podList, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
+	confCMData, err := configtemplates.DynamicZookeeperConfig(pods, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
 	if err != nil {
 		return err
 	}

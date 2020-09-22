@@ -2,7 +2,6 @@ package templates
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"text/template"
 
@@ -26,10 +25,7 @@ skipACL=yes
 dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic.{{ .ListenAddress }}
 `))
 
-func DynamicZookeeperConfig(podList *core.PodList, electionPort, serverPort string) (map[string]string, error) {
-	pods := make([]core.Pod, len(podList.Items))
-	copy(pods, podList.Items)
-	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort string) (map[string]string, error) {
 	dynamicConf := make(map[string]string, 0)
 	if len(pods) == 0 {
 		return dynamicConf, nil

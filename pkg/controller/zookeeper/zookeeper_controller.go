@@ -172,13 +172,12 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	configMapName := instance.Name + "-zookeeper-conf"
-	_, err := instance.CreateConfigMap(configMapName, r.Client, r.Scheme, request)
-	if err != nil {
+	if _, err := instance.CreateConfigMap(configMapName, r.Client, r.Scheme, request); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	statefulSet := GetSTS()
-	if err = instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
+	if err := instance.PrepareSTS(statefulSet, &instance.Spec.CommonConfiguration, request, r.Scheme, r.Client); err != nil {
 		return reconcile.Result{}, err
 	}
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMapName: configMapName})
