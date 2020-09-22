@@ -337,6 +337,9 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			gateway = vrouterConfig.Gateway
 		}
 
+		controlXMPPEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(controlNodesInformation.ControlServerIPList, controlNodesInformation.XMPPPort)
+		controlDNSEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(controlNodesInformation.ControlServerIPList, controlNodesInformation.DNSPort)
+		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string
@@ -353,9 +356,9 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		}{
 			Hostname:             hostname,
 			ListenAddress:        podList.Items[idx].Status.PodIP,
-			ControlServerList:    controlNodesInformation.ServerListXMPPSpaceSeparated,
-			DNSServerList:        controlNodesInformation.ServerListDNSSpaceSeparated,
-			CollectorServerList:  configNodesInformation.CollectorServerListSpaceSeparated,
+			ControlServerList:    controlXMPPEndpointListSpaceSeparated,
+			DNSServerList:        controlDNSEndpointListSpaceSeparated,
+			CollectorServerList:  configCollectorEndpointListSpaceSeparated,
 			PrefixLength:         prefixLength,
 			PhysicalInterface:    physicalInterface,
 			PhysicalInterfaceMac: physicalInterfaceMac,
@@ -376,7 +379,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
-			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
 			CAFilePath:          certificates.SignerCAFilepath,
