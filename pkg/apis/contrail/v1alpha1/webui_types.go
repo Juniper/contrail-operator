@@ -149,10 +149,9 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		}
 	}
 
-	var podIPList []string
-	for _, pod := range podList.Items {
-		podIPList = append(podIPList, pod.Status.PodIP)
-	}
+	configApiIPListCommeSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
+	analyticsIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.AnalyticsServerIPList)
+	controlXMPPIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(controlNodesInformation.ControlServerIPList)
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
 	for idx := range podList.Items {
@@ -182,12 +181,12 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		}{
 			HostIP:                 podList.Items[idx].Status.PodIP,
 			Hostname:               podList.Items[idx].Name,
-			APIServerList:          configNodesInformation.APIServerListQuotedCommaSeparated,
-			APIServerPort:          configNodesInformation.APIServerPort,
-			AnalyticsServerList:    configNodesInformation.AnalyticsServerListQuotedCommaSeparated,
-			AnalyticsServerPort:    configNodesInformation.AnalyticsServerPort,
-			ControlNodeList:        controlNodesInformation.ServerListCommanSeparatedQuoted,
-			DnsNodePort:            controlNodesInformation.DNSIntrospectPort,
+			APIServerList:          configApiIPListCommeSeparatedQuoted,
+			APIServerPort:          strconv.Itoa(configNodesInformation.APIServerPort),
+			AnalyticsServerList:    analyticsIPListCommaSeparatedQuoted,
+			AnalyticsServerPort:    strconv.Itoa(configNodesInformation.AnalyticsServerPort),
+			ControlNodeList:        controlXMPPIPListCommaSeparatedQuoted,
+			DnsNodePort:            strconv.Itoa(controlNodesInformation.DNSIntrospectPort),
 			CassandraServerList:    cassandraNodesInformation.ServerListCommanSeparatedQuoted,
 			CassandraPort:          cassandraNodesInformation.CQLPort,
 			RedisServerList:        "127.0.0.1",

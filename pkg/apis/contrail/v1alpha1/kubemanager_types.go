@@ -5,7 +5,6 @@ import (
 	"context"
 	"sort"
 	"strconv"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -186,14 +185,16 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	var data = map[string]string{}
 	for idx := range podList.Items {
 		hostname := podList.Items[idx].Annotations["hostname"]
-		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
-		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP,
+		configAnalyticsEndpoints := configtemplates.EndpointList(configNodesInformation.AnalyticsServerIPList, configNodesInformation.AnalyticsServerPort)
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configAnalyticsEndpoints, podList.Items[idx].Status.PodIP,
 			"kubemanager", request.Name, request.Namespace, podList.Items[idx].Name)
 		if err != nil {
 			return err
 		}
 		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 
+		configApiIPListCommaSeparated := configtemplates.IPListCommaSeparated(configNodesInformation.APIServerIPList)
+		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
 		if err = client.Get(context.TODO(), types.NamespacedName{Name: "kubemanagersecret", Namespace: request.Namespace}, secret); err != nil {
@@ -238,13 +239,13 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			ServiceSubnet:         kubemanagerConfig.ServiceSubnets,
 			IPFabricForwarding:    strconv.FormatBool(*kubemanagerConfig.IPFabricForwarding),
 			IPFabricSnat:          strconv.FormatBool(*kubemanagerConfig.IPFabricSnat),
-			APIServerList:         configNodesInformation.APIServerListCommaSeparated,
-			APIServerPort:         configNodesInformation.APIServerPort,
+			APIServerList:         configApiIPListCommaSeparated,
+			APIServerPort:         strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList:   cassandraNodesInformation.Endpoint,
 			ZookeeperServerList:   zookeeperNodesInformation.ServerListCommaSeparated,
 			RabbitmqServerList:    rabbitmqNodesInformation.ServerListCommaSeparatedWithoutPort,
 			RabbitmqServerPort:    rabbitmqNodesInformation.SSLPort,
-			CollectorServerList:   configNodesInformation.CollectorServerListSpaceSeparated,
+			CollectorServerList:   configCollectorEndpointListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),
 			RabbitmqUser:          rabbitmqSecretUser,
 			RabbitmqPassword:      rabbitmqSecretPassword,
@@ -260,7 +261,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			CAFilePath    string
 		}{
 			ListenAddress: podList.Items[idx].Status.PodIP,
-			ListenPort:    configNodesInformation.APIServerPort,
+			ListenPort:    strconv.Itoa(configNodesInformation.APIServerPort),
 			CAFilePath:    certificates.SignerCAFilepath,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()

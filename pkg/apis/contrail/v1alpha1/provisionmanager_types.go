@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -456,7 +455,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	}
 	for _, pod := range podList.Items {
 		apiServer := &APIServer{
-			APIServerList: strings.Split(configNodesInformation.APIServerListSpaceSeparated, " "),
+			APIServerList: configNodesInformation.APIServerIPList,
 			APIPort:       apiPort,
 			Encryption: Encryption{
 				CA:       certificates.SignerCAFilepath,

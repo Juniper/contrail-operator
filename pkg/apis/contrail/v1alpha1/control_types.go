@@ -5,7 +5,6 @@ import (
 	"context"
 	"sort"
 	"strconv"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -184,18 +183,17 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 	var data = make(map[string]string)
 	for idx := range podList.Items {
 		hostname := podList.Items[idx].Annotations["hostname"]
-		configNodesList := strings.Split(configNodesInformation.AnalyticsServerListSpaceSeparated, " ")
-		for idx, configNode := range configNodesList {
-			configNodeIP := strings.Split(configNode, ":")
-			configNodesList[idx] = configNodeIP[0] + ":" + strconv.Itoa(ControlIntrospectPort)
-		}
-		statusMonitorConfig, err := StatusMonitorConfig(hostname, configNodesList, podList.Items[idx].Status.PodIP,
+		configIntrospectEndpointsList := configtemplates.EndpointList(configNodesInformation.APIServerIPList, ControlIntrospectPort)
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectEndpointsList, podList.Items[idx].Status.PodIP,
 			"control", request.Name, request.Namespace, podList.Items[idx].Name)
 		if err != nil {
 			return err
 		}
 		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 
+		configApiIPListCommaSeparated := configtemplates.IPListCommaSeparated(configNodesInformation.APIServerIPList)
+		configApiIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
+		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
 			ListenAddress       string
@@ -217,12 +215,12 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			Hostname:            hostname,
 			BGPPort:             strconv.Itoa(*controlConfig.BGPPort),
 			ASNNumber:           strconv.Itoa(*controlConfig.ASNNumber),
-			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
-			APIServerPort:       configNodesInformation.APIServerPort,
+			APIServerList:       configApiIPListCommaSeparated,
+			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
-			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
@@ -252,12 +250,12 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
-			APIServerList:       configNodesInformation.APIServerListSpaceSeparated,
-			APIServerPort:       configNodesInformation.APIServerPort,
+			APIServerList:       configApiIPListCommaSeparated,
+			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
 			RabbitmqServerPort:  rabbitmqNodesInformation.SSLPort,
-			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
 			RabbitmqVhost:       rabbitmqSecretVhost,
@@ -274,7 +272,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			CAFilePath          string
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
-			CollectorServerList: configNodesInformation.CollectorServerListSpaceSeparated,
+			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
 			CAFilePath:          certificates.SignerCAFilepath,
@@ -291,10 +289,10 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			Hostname      string
 		}{
 			ListenAddress: podList.Items[idx].Status.PodIP,
-			APIServerList: configNodesInformation.APIServerListCommaSeparated,
+			APIServerList: configApiIPListCommaSeparated,
+			APIServerPort: strconv.Itoa(configNodesInformation.APIServerPort),
 			ASNNumber:     strconv.Itoa(*controlConfig.ASNNumber),
 			BGPPort:       strconv.Itoa(*controlConfig.BGPPort),
-			APIServerPort: configNodesInformation.APIServerPort,
 			Hostname:      hostname,
 		})
 		data["provision.sh."+podList.Items[idx].Status.PodIP] = controlProvisionBuffer.String()
@@ -311,8 +309,8 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			User:          KeystoneAuthAdminUser,
 			Password:      KeystoneAuthAdminPassword,
 			Tenant:        KeystoneAuthAdminTenant,
-			APIServerList: configNodesInformation.APIServerListQuotedCommaSeparated,
-			APIServerPort: configNodesInformation.APIServerPort,
+			APIServerList: configApiIPListCommaSeparatedQuoted,
+			APIServerPort: strconv.Itoa(configNodesInformation.APIServerPort),
 			Hostname:      hostname,
 		})
 		data["deprovision.py."+podList.Items[idx].Status.PodIP] = controlDeProvisionBuffer.String()
