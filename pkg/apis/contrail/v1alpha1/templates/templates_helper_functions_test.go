@@ -75,17 +75,20 @@ func TestEndpointList(t *testing.T) {
 		{
 			name:           "Should return empty string for empty list.",
 			inputIpList:    []string{},
+			inputPort:      1234,
 			expectedOutput: []string{},
 		},
 		{
 			name:           "Shouldn't add commas to single ip and should add quotes",
 			inputIpList:    []string{"1.1.1.1"},
-			expectedOutput: []string{},
+			inputPort:      1234,
+			expectedOutput: []string{"1.1.1.1:1234"},
 		},
 		{
 			name:           "Should add commas between multiple ips",
 			inputIpList:    []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
-			expectedOutput: "'1.1.1.1','2.2.2.2','3.3.3.3'",
+			inputPort:      1234,
+			expectedOutput: []string{"1.1.1.1:1234", "2.2.2.2:1234", "3.3.3.3:1234"},
 		},
 	}
 	for _, test := range tests {
