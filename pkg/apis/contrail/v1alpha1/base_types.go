@@ -857,8 +857,7 @@ func NewZookeeperClusterConfiguration(name string, namespace string, client clie
 		zookeeperNodes = append(zookeeperNodes, ip)
 
 	}
-	zookeeperConfigInterface := zookeeperInstance.ConfigurationParameters()
-	zookeeperConfig := zookeeperConfigInterface.(ZookeeperConfiguration)
+	zookeeperConfig := zookeeperInstance.ConfigurationParameters()
 	port = strconv.Itoa(*zookeeperConfig.ClientPort)
 	sort.SliceStable(zookeeperNodes, func(i, j int) bool { return zookeeperNodes[i] < zookeeperNodes[j] })
 	serverListCommaSeparated := strings.Join(zookeeperNodes, ":"+port+",")

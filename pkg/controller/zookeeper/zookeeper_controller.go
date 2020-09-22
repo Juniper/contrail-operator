@@ -182,8 +182,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{configMapName: configMapName})
 
-	zookeeperDefaultConfigurationInterface := instance.ConfigurationParameters()
-	zookeeperDefaultConfiguration := zookeeperDefaultConfigurationInterface.(v1alpha1.ZookeeperConfiguration)
+	zookeeperDefaultConfiguration := instance.ConfigurationParameters()
 
 	storageResource := corev1.ResourceStorage
 	diskSize, err := resource.ParseQuantity(zookeeperDefaultConfiguration.Storage.Size)
@@ -286,7 +285,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			}
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts = append((&statefulSet.Spec.Template.Spec.InitContainers[idx]).VolumeMounts, volumeMount)
 			(&statefulSet.Spec.Template.Spec.InitContainers[idx]).Command = []string{
-				"sh", "-c", "if [ ! -f /mnt/zookeeper/zoo.cfg ]; then cp /zookeeper-conf/* /mnt/zookeeper/ && cp /mnt/zookeeper/zoo.cfg.$POD_IP /mnt/zookeeper/zoo.cfg && cp /mnt/zookeeper/myid.$POD_IP /mnt/zookeeper/myid; fi;"}
+				"sh", "-c", configurationInitCommand}
 		}
 	}
 
@@ -481,3 +480,13 @@ func (r *ReconcileZookeeper) ensurePodDisruptionBudgetExists(zookeeper *v1alpha1
 
 	return err
 }
+
+const configurationInitCommand = `#!/bin/sh
+if ! [[ -f /mnt/zookeeper/zoo.cfg && -f /mnt/zookeeper/zoo.cfg.dynamic ]]; then
+	cp /zookeeper-conf/log4j.properties /mnt/zookeeper/
+	cp /zookeeper-conf/configuration.xsl /mnt/zookeeper/
+	cp /zookeeper-conf/zoo.cfg /mnt/zookeeper/
+	cp /zookeeper-conf/zoo.cfg.dynamic.$POD_IP /mnt/zookeeper/zoo.cfg.dynamic
+	cp /zookeeper-conf/myid.$POD_IP /mnt/zookeeper/myid
+fi
+`
