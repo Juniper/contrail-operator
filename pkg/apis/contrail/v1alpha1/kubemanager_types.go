@@ -197,8 +197,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		podIPList = append(podIPList, pod.Status.PodIP)
 	}
 
-	kubemanagerConfigInstance := c.ConfigurationParameters()
-	kubemanagerConfig := kubemanagerConfigInstance.(KubemanagerConfiguration)
+	kubemanagerConfig := c.ConfigurationParameters()
 	if rabbitmqSecretUser == "" {
 		rabbitmqSecretUser = kubemanagerConfig.RabbitmqUser
 	}
@@ -414,7 +413,7 @@ func (c *Kubemanager) ManageNodeStatus(podNameIPMap map[string]string, client cl
 	return client.Status().Update(context.TODO(), c)
 }
 
-func (c *Kubemanager) ConfigurationParameters() interface{} {
+func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 	kubemanagerConfiguration := KubemanagerConfiguration{}
 	var cloudOrchestrator string
 	var kubernetesApiServer string
