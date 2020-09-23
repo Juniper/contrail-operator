@@ -1,18 +1,20 @@
 package v1alpha1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"gopkg.in/ini.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	fakeCInfo "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/fake"
+	fakeCInfo "github.com/Juniper/contrail-operator/pkg/k8s/fake"
 )
 
 func TestKubemanagerJoinServerList(t *testing.T) {
@@ -112,9 +114,9 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 			Namespace: "default",
 		},
 		Data: map[string][]byte{
-			"user":     []byte("dXNlcgo="),     // User: 'user'
-			"password": []byte("cGFzcwo="),     // Password: 'pass'
-			"vhost":    []byte("dmhvc3QwCg=="), // Vhost: 'vhost0'
+			"user":     []byte("user"),
+			"password": []byte("pass"),
+			"vhost":    []byte("vhost0"),
 		},
 	}
 
@@ -124,7 +126,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 			Namespace: "default",
 		},
 		Data: map[string][]byte{
-			"token": []byte("dGVzdF90b2tlbgo="), // Token: 'test_token'
+			"token": []byte("test_token"),
 		},
 	}
 
@@ -192,5 +194,41 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 
 	type fakeClusterInfo struct{}
 
-	require.NoError(t, kubemanager.InstanceConfiguration(request, &podList, cl, fakeCInfo.FakeClusterInfo{}))
+	require.NoError(t, kubemanager.InstanceConfiguration(request, &podList, cl, fakeCInfo.FakeClusterInfo{}), "Error while configuring instance")
+
+	var kubeConfigMap = &corev1.ConfigMap{}
+	require.NoError(t, cl.Get(context.Background(), types.NamespacedName{Name: "kubemanager1-kubemanager-configmap", Namespace: "default"}, kubeConfigMap), "Error while gathering kubemanager config map")
+
+	kubemanagerPod1, err := ini.Load([]byte(kubeConfigMap.Data["kubemanager.1.1.1.1"]))
+	require.NoError(t, err)
+	assert.Equal(t, kubemanagerPod1.Section("DEFAULTS").Key("host_ip").String(), "1.1.1.1")
+	assert.Equal(t, kubemanagerPod1.Section("DEFAULTS").Key("token").String(), "test_token")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("vnc_endpoint_ip").String(), "3.3.3.3,4.4.4.4")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("vnc_endpoint_port").String(), "2222")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_server").String(), "5.5.5.5,6.6.6.6")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_port").String(), "3333")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_port").String(), "3333")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "1.1.1.1:1111,2.2.2.2:1111")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.3:2222 4.4.4.4:2222")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
+
+	kubemanagerPod2, err := ini.Load([]byte(kubeConfigMap.Data["kubemanager.2.2.2.2"]))
+	require.NoError(t, err)
+	assert.Equal(t, kubemanagerPod2.Section("DEFAULTS").Key("host_ip").String(), "2.2.2.2")
+	assert.Equal(t, kubemanagerPod2.Section("DEFAULTS").Key("token").String(), "test_token")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("vnc_endpoint_ip").String(), "3.3.3.3,4.4.4.4")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("vnc_endpoint_port").String(), "2222")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_server").String(), "5.5.5.5,6.6.6.6")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_port").String(), "3333")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_port").String(), "3333")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "1.1.1.1:1111,2.2.2.2:1111")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.3:2222 4.4.4.4:2222")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
+
 }
