@@ -133,17 +133,19 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	svc, err := r.ensureServiceExists(swiftProxy)
-	if err != nil {
+	servicePortsMap := map[int32]string{int32(swiftProxy.Spec.ServiceConfiguration.ListenPort): ""}
+	svc := r.kubernetes.Service(request.Name, core.ServiceTypeLoadBalancer, servicePortsMap, "swiftproxy", swiftProxy)
+	if err := svc.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if svc.Spec.ClusterIP == "" {
+	if svc.ClusterIP() == "" {
 		log.Info(fmt.Sprintf("swift proxy service is not ready, clusterIP is empty"))
 		return reconcile.Result{}, nil
 	}
-	swiftProxy.Status.ClusterIP = svc.Spec.ClusterIP
-	swiftProxy.Status.LoadBalancerIP = getLoadBalancerIP(svc)
+
+	swiftProxy.Status.ClusterIP = svc.ClusterIP()
+	swiftProxy.Status.LoadBalancerIP = svc.ExternalIP()
 
 	swiftProxyPods, err := r.listSwiftProxyPods(swiftProxy.Name)
 	if err != nil {
@@ -269,7 +271,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment, svc)
+	return reconcile.Result{}, r.updateStatus(swiftProxy, deployment)
 }
 
 func (r *ReconcileSwiftProxy) ensureLabelExists(sp *contrail.SwiftProxy) error {
@@ -279,31 +281,6 @@ func (r *ReconcileSwiftProxy) ensureLabelExists(sp *contrail.SwiftProxy) error {
 
 	sp.Labels = label.New(contrail.SwiftProxyInstanceType, sp.Name)
 	return r.client.Update(context.Background(), sp)
-}
-
-func (r *ReconcileSwiftProxy) ensureServiceExists(swiftProxy *contrail.SwiftProxy) (*core.Service, error) {
-	svc := &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      swiftProxy.Name + "-swift-proxy",
-			Namespace: swiftProxy.Namespace,
-		},
-	}
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, svc, func() error {
-		listenPort := int32(swiftProxy.Spec.ServiceConfiguration.ListenPort)
-		nodePort := int32(0)
-		for i, p := range svc.Spec.Ports {
-			if p.Port == listenPort {
-				nodePort = svc.Spec.Ports[i].NodePort
-			}
-		}
-		svc.Spec.Ports = []core.ServicePort{
-			{Port: listenPort, Protocol: "TCP", NodePort: nodePort},
-		}
-		svc.Spec.Selector = swiftProxy.Labels
-		svc.Spec.Type = core.ServiceTypeLoadBalancer
-		return controllerutil.SetControllerReference(swiftProxy, svc, r.scheme)
-	})
-	return svc, err
 }
 
 func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.PodList, error) {
@@ -342,17 +319,9 @@ func (r *ReconcileSwiftProxy) getMemcached(cr *contrail.SwiftProxy) (*contrail.M
 func (r *ReconcileSwiftProxy) updateStatus(
 	sp *contrail.SwiftProxy,
 	deployment *apps.Deployment,
-	svc *core.Service,
 ) error {
 	sp.Status.FromDeployment(deployment)
 	return r.client.Status().Update(context.Background(), sp)
-}
-
-func getLoadBalancerIP(svc *core.Service) string {
-	if len(svc.Status.LoadBalancer.Ingress) == 0 {
-		return ""
-	}
-	return svc.Status.LoadBalancer.Ingress[0].IP
 }
 
 func updatePodTemplate(

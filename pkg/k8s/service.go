@@ -69,6 +69,14 @@ func (s *Service) ClusterIP() string {
 	return s.svc.Spec.ClusterIP
 }
 
+// ExternalIP is used to read externalIP of service
+func (s *Service) ExternalIP() string {
+	if len(s.svc.Status.LoadBalancer.Ingress) == 0 {
+		return ""
+	}
+	return s.svc.Status.LoadBalancer.Ingress[0].IP
+}
+
 // WithLabels is used to set labels on Service
 func (s *Service) WithLabels(labels map[string]string) *Service {
 	s.labels = labels

@@ -140,3 +140,30 @@ func TestClusterIP(t *testing.T) {
 		assert.Equal(t, "10.0.0.10", sc.ClusterIP())
 	})
 }
+
+func TestExternalIP(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := core.SchemeBuilder.AddToScheme(scheme)
+	require.NoError(t, err)
+	owner := &core.Pod{ObjectMeta: meta.ObjectMeta{Name: "owner"}}
+
+	t.Run("Get ExternalIP()", func(t *testing.T) {
+		initService := &core.Service{
+			ObjectMeta: meta.ObjectMeta{Name: "test-pod"},
+			Status: core.ServiceStatus{
+				LoadBalancer: core.LoadBalancerStatus{
+					Ingress: []core.LoadBalancerIngress{
+						{
+							IP: "10.255.254.4",
+						},
+					},
+				},
+			},
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initService)
+		sc := k8s.New(cl, scheme).Service("test", core.ServiceTypeLoadBalancer, map[int32]string{5555: "service"}, "pod", owner)
+		err := sc.EnsureExists()
+		assert.NoError(t, err)
+		assert.Equal(t, "10.255.254.4", sc.ExternalIP())
+	})
+}
