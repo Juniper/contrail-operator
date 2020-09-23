@@ -56,19 +56,27 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers          []*Container  `json:"containers,omitempty"`
-	ControlInstance     string        `json:"controlInstance,omitempty"`
-	CassandraInstance   string        `json:"cassandraInstance,omitempty"`
-	Gateway             string        `json:"gateway,omitempty"`
-	PhysicalInterface   string        `json:"physicalInterface,omitempty"`
-	MetaDataSecret      string        `json:"metaDataSecret,omitempty"`
-	NodeManager         *bool         `json:"nodeManager,omitempty"`
-	Distribution        *Distribution `json:"distribution,omitempty"`
-	ServiceAccount      string        `json:"serviceAccount,omitempty"`
-	ClusterRole         string        `json:"clusterRole,omitempty"`
-	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
-	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
+	Containers          []*Container                `json:"containers,omitempty"`
+	ControlInstance     string                      `json:"controlInstance,omitempty"`
+	CassandraInstance   string                      `json:"cassandraInstance,omitempty"`
+	Gateway             string                      `json:"gateway,omitempty"`
+	PhysicalInterface   string                      `json:"physicalInterface,omitempty"`
+	MetaDataSecret      string                      `json:"metaDataSecret,omitempty"`
+	NodeManager         *bool                       `json:"nodeManager,omitempty"`
+	Distribution        *Distribution               `json:"distribution,omitempty"`
+	ServiceAccount      string                      `json:"serviceAccount,omitempty"`
+	ClusterRole         string                      `json:"clusterRole,omitempty"`
+	ClusterRoleBinding  string                      `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption   bool                        `json:"vrouterEncryption,omitempty"`
+	ContrailStatusImage string                      `json:"contrailStatusImage,omitempty"`
+	StaticConfiguration *VrouterStaticConfiguration `json:"staticConfiguration,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type VrouterStaticConfiguration struct {
+	ControlNodesIPs   []string `json:"controlNodesIPs,omitempty"`
+	ConfigNodesIPs    []string `json:"configNodesIPs,omitempty"`
+	CassandraNodesIPs []string `json:"cassandraNodesIPs,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -290,134 +298,37 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
-	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
-	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(),
-		types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace},
-		configMapInstanceDynamicConfig)
-	if err != nil {
-		return err
-	}
 
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
 		request.Namespace, client)
 	if err != nil {
 		return err
 	}
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	controlNodesInformation, err := NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance,
 		"", request.Namespace, client)
 	if err != nil {
 		return err
 	}
-	cassandraNodesInformation, err := NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, client)
-	if err != nil {
+
+	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
+	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
+	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-
-	vrouterConfigInstance := c.ConfigurationParameters()
-	vrouterConfig := vrouterConfigInstance.(VrouterConfiguration)
-
-	var podIPList []string
-	for _, pod := range podList.Items {
-		podIPList = append(podIPList, pod.Status.PodIP)
-	}
-	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
-	var data = make(map[string]string)
-	for idx := range podList.Items {
-		hostname := podList.Items[idx].Annotations["hostname"]
-		physicalInterfaceMac := podList.Items[idx].Annotations["physicalInterfaceMac"]
-		prefixLength := podList.Items[idx].Annotations["prefixLength"]
-		physicalInterface := podList.Items[idx].Annotations["physicalInterface"]
-		gateway := podList.Items[idx].Annotations["gateway"]
-		if vrouterConfig.PhysicalInterface != "" {
-			physicalInterface = vrouterConfig.PhysicalInterface
-		}
-		if vrouterConfig.Gateway != "" {
-			gateway = vrouterConfig.Gateway
-		}
-
-		controlXMPPEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.XMPPPort)
-		controlXMPPEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlXMPPEndpointList, " ")
-		controlDNSEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.DNSPort)
-		controlDNSEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlDNSEndpointList, " ")
-		configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
-		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
-		var vrouterConfigBuffer bytes.Buffer
-		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
-			Hostname             string
-			ListenAddress        string
-			ControlServerList    string
-			DNSServerList        string
-			CollectorServerList  string
-			PrefixLength         string
-			PhysicalInterface    string
-			PhysicalInterfaceMac string
-			Gateway              string
-			MetaDataSecret       string
-			CAFilePath           string
-		}{
-			Hostname:             hostname,
-			ListenAddress:        podList.Items[idx].Status.PodIP,
-			ControlServerList:    controlXMPPEndpointListSpaceSeparated,
-			DNSServerList:        controlDNSEndpointListSpaceSeparated,
-			CollectorServerList:  configCollectorEndpointListSpaceSeparated,
-			PrefixLength:         prefixLength,
-			PhysicalInterface:    physicalInterface,
-			PhysicalInterfaceMac: physicalInterfaceMac,
-			Gateway:              gateway,
-			MetaDataSecret:       vrouterConfig.MetaDataSecret,
-			CAFilePath:           certificates.SignerCAFilepath,
-		})
-		data["vrouter."+podList.Items[idx].Status.PodIP] = vrouterConfigBuffer.String()
-
-		var vrouterNodemanagerBuffer bytes.Buffer
-		configtemplates.VrouterNodemanagerConfig.Execute(&vrouterNodemanagerBuffer, struct {
-			ListenAddress       string
-			Hostname            string
-			CollectorServerList string
-			CassandraPort       string
-			CassandraJmxPort    string
-			CAFilePath          string
-		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
-			Hostname:            hostname,
-			CollectorServerList: configCollectorEndpointListSpaceSeparated,
-			CassandraPort:       cassandraNodesInformation.CQLPort,
-			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
-			CAFilePath:          certificates.SignerCAFilepath,
-		})
-		data["nodemanager."+podList.Items[idx].Status.PodIP] = vrouterNodemanagerBuffer.String()
-	}
-	configMapInstanceDynamicConfig.Data = data
-	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
-	if err != nil {
+	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, controlNodesInformation, configNodesInformation)
+	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
 
 	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
 	envVariablesConfigMap := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(),
-		types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace},
-		envVariablesConfigMap)
-	if err != nil {
+	if err = client.Get(context.TODO(), types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace}, envVariablesConfigMap); err != nil {
 		return err
 	}
-
-	var envVariables = make(map[string]string)
-	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
-	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
-	// If PhysicalInterface is set, environment variable from the config map will
-	// override the value from the annotations.
-	if vrouterConfig.PhysicalInterface != "" {
-		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
-	}
-	envVariablesConfigMap.Data = envVariables
-	err = client.Update(context.TODO(), envVariablesConfigMap)
-	if err != nil {
-		return err
-	}
-	return nil
+	envVariablesConfigMap.Data = c.getVrouterEnvironmentData()
+	return client.Update(context.TODO(), envVariablesConfigMap)
 }
 
 // SetPodsToReady sets Kubemanager PODs to ready.
@@ -437,7 +348,7 @@ func (c *Vrouter) ManageNodeStatus(podNameIPMap map[string]string,
 }
 
 // ConfigurationParameters is a method for gathering data used in rendering vRouter configuration
-func (c *Vrouter) ConfigurationParameters() interface{} {
+func (c *Vrouter) ConfigurationParameters() VrouterConfiguration {
 	vrouterConfiguration := VrouterConfiguration{}
 	var physicalInterface string
 	var gateway string
@@ -469,4 +380,76 @@ func (c *Vrouter) ConfigurationParameters() interface{} {
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
 
 	return vrouterConfiguration
+}
+
+func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
+	vrouterConfig := c.ConfigurationParameters()
+	envVariables := make(map[string]string)
+	envVariables["CLOUD_ORCHESTRATOR"] = "kubernetes"
+	envVariables["VROUTER_ENCRYPTION"] = strconv.FormatBool(vrouterConfig.VrouterEncryption)
+	// If PhysicalInterface is set, environment variable from the config map will
+	// override the value from the annotations.
+	if vrouterConfig.PhysicalInterface != "" {
+		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
+	}
+	return envVariables
+}
+
+func (c *Vrouter) createVrouterDynamicConfig(podList *corev1.PodList,
+	controlNodesInformation *ControlClusterConfiguration,
+	configNodesInformation *ConfigClusterConfiguration) map[string]string {
+	vrouterConfig := c.ConfigurationParameters()
+	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
+	data := map[string]string{}
+	for _, vrouterPod := range podList.Items {
+		data["vrouter."+vrouterPod.Status.PodIP] = createVrouterConfigForPod(&vrouterPod, vrouterConfig, controlNodesInformation, configNodesInformation)
+	}
+	return data
+}
+
+func createVrouterConfigForPod(vrouterPod *corev1.Pod, vrouterConfig VrouterConfiguration, controlNodesInformation *ControlClusterConfiguration, configNodesInformation *ConfigClusterConfiguration) string {
+	hostname := vrouterPod.Annotations["hostname"]
+	physicalInterfaceMac := vrouterPod.Annotations["physicalInterfaceMac"]
+	prefixLength := vrouterPod.Annotations["prefixLength"]
+	physicalInterface := vrouterPod.Annotations["physicalInterface"]
+	gateway := vrouterPod.Annotations["gateway"]
+	if vrouterConfig.PhysicalInterface != "" {
+		physicalInterface = vrouterConfig.PhysicalInterface
+	}
+	if vrouterConfig.Gateway != "" {
+		gateway = vrouterConfig.Gateway
+	}
+	controlXMPPEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.XMPPPort)
+	controlXMPPEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlXMPPEndpointList, " ")
+	controlDNSEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.DNSPort)
+	controlDNSEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlDNSEndpointList, " ")
+	configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
+	configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
+	var vrouterConfigBuffer bytes.Buffer
+	configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
+		Hostname             string
+		ListenAddress        string
+		ControlServerList    string
+		DNSServerList        string
+		CollectorServerList  string
+		PrefixLength         string
+		PhysicalInterface    string
+		PhysicalInterfaceMac string
+		Gateway              string
+		MetaDataSecret       string
+		CAFilePath           string
+	}{
+		Hostname:             hostname,
+		ListenAddress:        vrouterPod.Status.PodIP,
+		ControlServerList:    controlXMPPEndpointListSpaceSeparated,
+		DNSServerList:        controlDNSEndpointListSpaceSeparated,
+		CollectorServerList:  configCollectorEndpointListSpaceSeparated,
+		PrefixLength:         prefixLength,
+		PhysicalInterface:    physicalInterface,
+		PhysicalInterfaceMac: physicalInterfaceMac,
+		Gateway:              gateway,
+		MetaDataSecret:       vrouterConfig.MetaDataSecret,
+		CAFilePath:           certificates.SignerCAFilepath,
+	})
+	return vrouterConfigBuffer.String()
 }
