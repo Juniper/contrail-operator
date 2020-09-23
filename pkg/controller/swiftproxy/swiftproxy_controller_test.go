@@ -583,7 +583,7 @@ func newMemcached() *contrail.Memcached {
 func newSwiftProxyService() *core.Service {
 	return &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "swiftproxy-swiftproxy",
+			Name:      "swiftproxy-swift-proxy",
 			Namespace: "default",
 		},
 		Spec: core.ServiceSpec{
