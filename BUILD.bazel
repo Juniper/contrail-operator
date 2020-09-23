@@ -1,5 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@io_bazel_rules_go//go:def.bzl", "nogo")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "nogo")
 
 #gazelle:prefix github.com/Juniper/contrail-operator
 # gazelle:proto disable_global
@@ -39,4 +39,17 @@ nogo(
         "@org_golang_x_tools//go/analysis/passes/unsafeptr:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/unusedresult:go_tool_library",
     ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["test-main.go"],
+    importpath = "github.com/Juniper/contrail-operator",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "contrail-operator",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
 )
