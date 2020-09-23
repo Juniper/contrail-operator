@@ -17,6 +17,7 @@ import (
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
@@ -455,7 +456,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 	}
 	for _, pod := range podList.Items {
 		apiServer := &APIServer{
-			APIServerList: configNodesInformation.APIServerIPList,
+			APIServerList: configtemplates.EndpointList(configNodesInformation.APIServerIPList, configNodesInformation.APIServerPort),
 			APIPort:       apiPort,
 			Encryption: Encryption{
 				CA:       certificates.SignerCAFilepath,
