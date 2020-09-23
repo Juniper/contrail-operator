@@ -382,6 +382,14 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			return reconcile.Result{Requeue: true}, nil
 		}
 
+		for _, pod := range podIPList.Items {
+			for _, c := range pod.Status.Conditions {
+				if c.Type == corev1.PodReady && c.Status == corev1.ConditionFalse {
+					delete(podIPMap, pod.Name)
+				}
+			}
+		}
+
 		pods := make([]corev1.Pod, len(podIPList.Items))
 		copy(pods, podIPList.Items)
 		sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
@@ -390,12 +398,7 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 		for _, pod := range pods {
 			ip, ok := instance.Status.Nodes[pod.Name]
 			if !ok || ip != pod.Status.PodIP {
-				for _, c := range pod.Status.Conditions {
-					if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
-						found = &pod
-						break
-					}
-				}
+				found = &pod
 			}
 			if found != nil {
 				break
@@ -417,14 +420,6 @@ func (r *ReconcileZookeeper) Reconcile(request reconcile.Request) (reconcile.Res
 			_, _, err = v1alpha1.ExecToPodThroughAPI(command, "zookeeper", found.Name, found.Namespace, nil)
 			if err != nil {
 				return reconcile.Result{}, err
-			}
-		}
-
-		for _, pod := range podIPList.Items {
-			for _, c := range pod.Status.Conditions {
-				if c.Type == corev1.PodReady && c.Status == corev1.ConditionFalse {
-					delete(podIPMap, pod.Name)
-				}
 			}
 		}
 
