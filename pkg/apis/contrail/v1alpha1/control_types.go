@@ -191,6 +191,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		}
 		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 
+		configApiIPListSpaceSeparated := configtemplates.IPListSpaceSeparated(configNodesInformation.APIServerIPList)
 		configApiIPListCommaSeparated := configtemplates.IPListCommaSeparated(configNodesInformation.APIServerIPList)
 		configApiIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
 		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
@@ -215,7 +216,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			Hostname:            hostname,
 			BGPPort:             strconv.Itoa(*controlConfig.BGPPort),
 			ASNNumber:           strconv.Itoa(*controlConfig.ASNNumber),
-			APIServerList:       configApiIPListCommaSeparated,
+			APIServerList:       configApiIPListSpaceSeparated,
 			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,
@@ -250,7 +251,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		}{
 			ListenAddress:       podList.Items[idx].Status.PodIP,
 			Hostname:            hostname,
-			APIServerList:       configApiIPListCommaSeparated,
+			APIServerList:       configApiIPListSpaceSeparated,
 			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList: cassandraNodesInformation.ServerListCQLSpaceSeparated,
 			RabbitmqServerList:  rabbitmqNodesInformation.ServerListSpaceSeparatedSSL,

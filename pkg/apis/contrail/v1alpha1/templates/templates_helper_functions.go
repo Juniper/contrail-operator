@@ -9,6 +9,10 @@ func IPListCommaSeparated(ips []string) string {
 	return strings.Join(ips, ",")
 }
 
+func IPListSpaceSeparated(ips []string) string {
+	return strings.Join(ips, " ")
+}
+
 func IPListCommaSeparatedQuoted(ips []string) string {
 	if len(ips) == 0 {
 		return ""

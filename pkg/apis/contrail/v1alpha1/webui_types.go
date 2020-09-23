@@ -149,7 +149,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		}
 	}
 
-	configApiIPListCommeSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
+	configApiIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
 	analyticsIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.AnalyticsServerIPList)
 	controlXMPPIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(controlNodesInformation.ControlServerIPList)
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
@@ -181,7 +181,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 		}{
 			HostIP:                 podList.Items[idx].Status.PodIP,
 			Hostname:               podList.Items[idx].Name,
-			APIServerList:          configApiIPListCommeSeparatedQuoted,
+			APIServerList:          configApiIPListCommaSeparatedQuoted,
 			APIServerPort:          strconv.Itoa(configNodesInformation.APIServerPort),
 			AnalyticsServerList:    analyticsIPListCommaSeparatedQuoted,
 			AnalyticsServerPort:    strconv.Itoa(configNodesInformation.AnalyticsServerPort),
