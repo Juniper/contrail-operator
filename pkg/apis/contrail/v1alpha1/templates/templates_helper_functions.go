@@ -28,6 +28,9 @@ func EndpointList(ips []string, port int) []string {
 }
 
 func EndpointListCommaSeparated(ips []string, port int) string {
+	if len(ips) == 0 {
+		return ""
+	}
 	portStr := strconv.Itoa(port)
 	endpointList := strings.Join(ips, ":"+portStr+",")
 	endpointList = endpointList + ":" + portStr
@@ -35,6 +38,9 @@ func EndpointListCommaSeparated(ips []string, port int) string {
 }
 
 func EndpointListCommaSeparatedQuoted(ips []string, port int) string {
+	if len(ips) == 0 {
+		return ""
+	}
 	portStr := strconv.Itoa(port)
 	endpointList := strings.Join(ips, ":"+portStr+"','")
 	endpointList = "'" + endpointList + ":" + portStr + "'"
@@ -42,6 +48,9 @@ func EndpointListCommaSeparatedQuoted(ips []string, port int) string {
 }
 
 func EndpointListSpaceSeparated(ips []string, port int) string {
+	if len(ips) == 0 {
+		return ""
+	}
 	portStr := strconv.Itoa(port)
 	endpointList := strings.Join(ips, ":"+portStr+" ")
 	endpointList = endpointList + ":" + portStr
