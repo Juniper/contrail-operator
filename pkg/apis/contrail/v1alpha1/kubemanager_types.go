@@ -129,7 +129,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	var cassandraNodesInformation *CassandraClusterConfiguration
 	if !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration, emptyKubemanagerStaticConfiguration)) && !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes, emptyServerNodes)) {
 		cassandraNodesInformation = &CassandraClusterConfiguration{
-			Endpoint: joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerList, c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerPort, ","),
+			Endpoint: configtemplates.JoinListWithSeparator(configtemplates.EndpointList(c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerList, *c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerPort), ","),
 		}
 	} else {
 		cassandraNodesInformation, err = NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance, request.Namespace, client)
@@ -141,9 +141,10 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	var configNodesInformation *ConfigClusterConfiguration
 	if !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration, emptyKubemanagerStaticConfiguration)) && !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes, emptyServerNodes)) {
 		configNodesInformation = &ConfigClusterConfiguration{
-			APIServerListCommaSeparated:       joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList, nil, ","),
-			APIServerPort:                     strconv.Itoa(*c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort),
-			CollectorServerListSpaceSeparated: joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList, c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort, " "),
+			APIServerIPList:       c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList,
+			APIServerPort:         *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort,
+			CollectorServerIPList: c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList,
+			CollectorPort:         *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort,
 		}
 	} else {
 		configNodesInformation, err = NewConfigClusterConfiguration(c.Labels["contrail_cluster"], request.Namespace, client)
@@ -155,7 +156,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	var zookeeperNodesInformation *ZookeeperClusterConfiguration
 	if !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration, emptyKubemanagerStaticConfiguration)) && !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes, emptyServerNodes)) {
 		zookeeperNodesInformation = &ZookeeperClusterConfiguration{
-			ServerListCommaSeparated: joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerList, c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerPort, ","),
+			ServerListCommaSeparated: configtemplates.JoinListWithSeparator(configtemplates.EndpointList(c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerList, *c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerPort), ","),
 		}
 	} else {
 		zookeeperNodesInformation, err = NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance, request.Namespace, client)
@@ -167,7 +168,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	var rabbitmqNodesInformation *RabbitmqClusterConfiguration
 	if !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration, emptyKubemanagerStaticConfiguration)) && !(reflect.DeepEqual(c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes, emptyServerNodes)) {
 		rabbitmqNodesInformation = &RabbitmqClusterConfiguration{
-			ServerListCommaSeparatedWithoutPort: joinServerList(c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerList, nil, ","),
+			ServerListCommaSeparatedWithoutPort: configtemplates.JoinListWithSeparator(c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerList, ","),
 			SSLPort:                             strconv.Itoa(*c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerPort),
 			Secret:                              c.Spec.ServiceConfiguration.StaticConfiguration.RabbitMQSecret,
 		}
@@ -514,14 +515,6 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 	kubemanagerConfiguration.IPFabricSnat = &ipFabricSnat
 
 	return kubemanagerConfiguration
-}
-
-func joinServerList(servers []string, port *int, sep string) string {
-	if port != nil {
-		strPort := strconv.Itoa(*port)
-		return strings.Join(servers, ":"+strPort+sep) + ":" + strPort
-	}
-	return strings.Join(servers, sep)
 }
 
 //KubemanagerClusterInfo is interface for gathering information about cluster
