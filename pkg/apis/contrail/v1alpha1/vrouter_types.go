@@ -306,10 +306,12 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
 
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	configNodesInformation, err := c.getConfigNodesInformation(request.Namespace, client)
 	if err != nil {
 		return err
 	}
+	// TODO(psykulsk) - create an intermediary function that will check if there is static config
 	controlNodesInformation, err := c.getControlNodesInformation(request.Namespace, client)
 	if err != nil {
 		return err
