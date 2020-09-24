@@ -3,14 +3,12 @@ package templates
 import (
 	"fmt"
 	"strconv"
-	"text/template"
 
 	core "k8s.io/api/core/v1"
 )
 
 // ZookeeperStaticConfig is the template of the Zookeeper service configuration.
-var ZookeeperStaticConfig = template.Must(template.New("").Parse(`clientPort={{ .ClientPort }}
-clientPortAddress={{ .ListenAddress }}
+var ZookeeperStaticConfig = `
 dataDir=/var/lib/zookeeper
 tickTime=2000
 initLimit=5
@@ -22,14 +20,11 @@ standaloneEnabled=false
 4lw.commands.whitelist=stat,ruok,conf,isro
 reconfigEnabled=true
 skipACL=yes
-dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic.{{ .ListenAddress }}
-`))
+dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
+`
 
-func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort string) (map[string]string, error) {
+func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort, clientPort string) (map[string]string, error) {
 	dynamicConf := make(map[string]string, 0)
-	if len(pods) == 0 {
-		return dynamicConf, nil
-	}
 	var firstServerDef string
 	for _, pod := range pods {
 		myidString := pod.Name[len(pod.Name)-1:]
@@ -37,9 +32,9 @@ func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort string) (m
 		if err != nil {
 			return nil, err
 		}
-		serverDef := firstServerDef + fmt.Sprintf("server.%d=%s:%s:participant\n",
+		serverDef := firstServerDef + fmt.Sprintf("server.%d=%s:%s:participant;%s:%s\n",
 			myidInt+1, pod.Status.PodIP,
-			electionPort+":"+serverPort)
+			electionPort+":"+serverPort, pod.Status.PodIP, clientPort)
 		if myidInt == 0 {
 			firstServerDef = serverDef
 		}
@@ -50,7 +45,7 @@ func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort string) (m
 }
 
 // ZookeeperLogConfig is the template of the Zookeeper Log configuration.
-var ZookeeperLogConfig = template.Must(template.New("").Parse(`zookeeper.root.logger=INFO, CONSOLE
+var ZookeeperLogConfig = `zookeeper.root.logger=INFO, CONSOLE
 zookeeper.console.threshold=INFO
 zookeeper.log.dir=.
 zookeeper.log.file=zookeeper.log
@@ -76,10 +71,10 @@ log4j.appender.TRACEFILE.Threshold=TRACE
 log4j.appender.TRACEFILE.File=${zookeeper.tracelog.dir}/${zookeeper.tracelog.file}
 log4j.appender.TRACEFILE.layout=org.apache.log4j.PatternLayout
 log4j.appender.TRACEFILE.layout.ConversionPattern=%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L][%x] - %m%n
-`))
+`
 
 // ZookeeperXslConfig is the template of the Zookeeper XSL configuration.
-var ZookeeperXslConfig = template.Must(template.New("").Parse(`<?xml version="1.0"?>
+var ZookeeperXslConfig = `<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 <xsl:output method="html"/>
 <xsl:template match="configuration">
@@ -103,4 +98,4 @@ var ZookeeperXslConfig = template.Must(template.New("").Parse(`<?xml version="1.
 </html>
 </xsl:template>
 </xsl:stylesheet>
-`))
+`

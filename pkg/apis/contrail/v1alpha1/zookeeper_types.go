@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"bytes"
 	"context"
 	"sort"
 	"strconv"
@@ -82,43 +81,18 @@ func init() {
 func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName string,
 	podList *corev1.PodList,
 	client client.Client) error {
-	zookeeperConfigInterface := c.ConfigurationParameters()
-	zookeeperConfig := zookeeperConfigInterface.(ZookeeperConfiguration)
+	zookeeperConfig := c.ConfigurationParameters()
 	pods := make([]corev1.Pod, len(podList.Items))
 	copy(pods, podList.Items)
 	sort.SliceStable(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
 
-	confCMData, err := configtemplates.DynamicZookeeperConfig(pods, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort))
+	confCMData, err := configtemplates.DynamicZookeeperConfig(pods, strconv.Itoa(*zookeeperConfig.ElectionPort), strconv.Itoa(*zookeeperConfig.ServerPort), strconv.Itoa(*zookeeperConfig.ClientPort))
 	if err != nil {
 		return err
 	}
-
-	var zookeeperLogBuffer, zookeeperXslBuffer bytes.Buffer
-	err = configtemplates.ZookeeperLogConfig.Execute(&zookeeperLogBuffer, struct{}{})
-	if err != nil {
-		return err
-	}
-	err = configtemplates.ZookeeperXslConfig.Execute(&zookeeperXslBuffer, struct{}{})
-	if err != nil {
-		return err
-	}
-	confCMData["log4j.properties"] = zookeeperLogBuffer.String()
-	confCMData["configuration.xsl"] = zookeeperXslBuffer.String()
-	for _, pod := range pods {
-		var configBuff bytes.Buffer
-		err = configtemplates.ZookeeperStaticConfig.Execute(&configBuff, struct {
-			ClientPort    string
-			ListenAddress string
-		}{
-			ClientPort:    strconv.Itoa(*zookeeperConfig.ClientPort),
-			ListenAddress: pod.Status.PodIP,
-		})
-		if err != nil {
-			return err
-		}
-		confCMData["zoo.cfg."+pod.Status.PodIP] = configBuff.String()
-
-	}
+	confCMData["log4j.properties"] = configtemplates.ZookeeperLogConfig
+	confCMData["configuration.xsl"] = configtemplates.ZookeeperXslConfig
+	confCMData["zoo.cfg"] = configtemplates.ZookeeperStaticConfig
 
 	zookeeperConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -223,8 +197,7 @@ func (c *Zookeeper) SetInstanceActive(client client.Client, activeStatus *bool, 
 func (c *Zookeeper) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	zookeeperConfigInterface := c.ConfigurationParameters()
-	zookeeperConfig := zookeeperConfigInterface.(ZookeeperConfiguration)
+	zookeeperConfig := c.ConfigurationParameters()
 	c.Status.Ports.ClientPort = strconv.Itoa(*zookeeperConfig.ClientPort)
 	err := client.Status().Update(context.TODO(), c)
 	if err != nil {
@@ -234,7 +207,7 @@ func (c *Zookeeper) ManageNodeStatus(podNameIPMap map[string]string,
 }
 
 // ConfigurationParameters sets the default for the configuration parameters.
-func (c *Zookeeper) ConfigurationParameters() interface{} {
+func (c *Zookeeper) ConfigurationParameters() ZookeeperConfiguration {
 	zookeeperConfiguration := ZookeeperConfiguration{}
 	var clientPort int
 	var electionPort int
