@@ -212,7 +212,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		int32(v1alpha1.ConfigApiPort):    "api",
 		int32(v1alpha1.AnalyticsApiPort): "analytics",
 	}
-	configService := r.Kubernetes.Service(request.Name, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config)
+	configService := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config)
 
 	if err := configService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err

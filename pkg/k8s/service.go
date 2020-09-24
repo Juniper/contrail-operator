@@ -34,7 +34,7 @@ func (s *Service) EnsureExists() error {
 	}
 	s.svc = core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      s.name + "-" + s.ownerType,
+			Name:      s.name,
 			Namespace: s.owner.GetNamespace(),
 			Labels:    labels,
 		},

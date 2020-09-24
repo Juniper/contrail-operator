@@ -158,7 +158,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if !command.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-	commandService := r.kubernetes.Service(request.Name, core.ServiceTypeClusterIP, map[int32]string{9091: ""}, instanceType, command)
+	commandService := r.kubernetes.Service(request.Name+"-"+instanceType, core.ServiceTypeClusterIP, map[int32]string{9091: ""}, instanceType, command)
 
 	if err := commandService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
