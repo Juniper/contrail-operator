@@ -76,7 +76,7 @@ container_push(
     format = "Docker",
     image = ":contrail-operator-image-debug",
     registry = "{LOCAL_REGISTRY}",
-    repository = "contrail-operator/engprod-269421/contrail-operator",
+    repository = "contrail-operator",
     tag = "master.latest",
 )
 

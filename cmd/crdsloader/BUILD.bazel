@@ -29,7 +29,7 @@ container_push(
     format = "Docker",
     image = ":crdsloader-image",
     registry = "{LOCAL_REGISTRY}",
-    repository = "contrail-operator/engprod-269421/crdsloader",
+    repository = "crdsloader",
     tag = "master.latest",
 )
 

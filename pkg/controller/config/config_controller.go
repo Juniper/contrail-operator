@@ -360,6 +360,11 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 					Name:      "dnsmasq",
 					MountPath: "/var/lib/dnsmasq",
 				},
+				corev1.VolumeMount{
+					Name:      request.Name + "-" + instanceType + "-volume",
+					SubPath:   "predef.json",
+					MountPath: "/opt/contrail/fabric_ansible_playbooks/conf/predef_payloads.json",
+				},
 			)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
