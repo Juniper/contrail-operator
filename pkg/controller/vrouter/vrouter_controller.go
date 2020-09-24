@@ -188,15 +188,11 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	if !r.vrouterDependenciesReady(instance, request.Namespace) {
-		return reconcile.Result{}, nil
-	}
-
-	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
-		return reconcile.Result{}, nil
-	}
-
 	if !instance.GetDeletionTimestamp().IsZero() {
+		return reconcile.Result{}, nil
+	}
+
+	if !r.vrouterDependenciesReady(instance, request.Namespace) {
 		return reconcile.Result{}, nil
 	}
 
