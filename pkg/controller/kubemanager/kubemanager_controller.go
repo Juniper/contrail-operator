@@ -9,6 +9,7 @@ import (
 
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -204,28 +205,20 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	reqLogger.Info("Reconciling Kubemanager")
 	instanceType := "kubemanager"
 	instance := &v1alpha1.Kubemanager{}
-	cassandraInstance := v1alpha1.Cassandra{}
-	zookeeperInstance := v1alpha1.Zookeeper{}
-	rabbitmqInstance := v1alpha1.Rabbitmq{}
-	configInstance := v1alpha1.Config{}
 
 	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("exit on get")
 		return reconcile.Result{}, nil
 	}
 
 	if !instance.GetDeletionTimestamp().IsZero() {
+		reqLogger.Info("exit on deletion timestamp")
 		return reconcile.Result{}, nil
 	}
 
-	cassandraActive := cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	zookeeperActive := zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
-		request.Namespace, r.Client)
-	rabbitmqActive := rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
-		request.Namespace, r.Client)
-	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
-		request.Namespace, r.Client)
-	if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive {
+	active := areDependenciesActive(instance, request, r, log)
+	if !active {
+		reqLogger.Info("exit on active check")
 		return reconcile.Result{}, nil
 	}
 
@@ -233,6 +226,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
+		reqLogger.Info("exit on create config map")
 		return reconcile.Result{}, err
 	}
 
@@ -550,4 +544,45 @@ func (r *ReconcileKubemanager) ensureCertificatesExist(config *v1alpha1.Kubemana
 	subjects := config.PodsCertSubjects(pods)
 	crt := certificates.NewCertificate(r.Client, r.Scheme, config, subjects, instanceType)
 	return crt.EnsureExistsAndIsSigned()
+}
+
+func areDependenciesActive(instance *v1alpha1.Kubemanager, request reconcile.Request, r *ReconcileKubemanager, log logr.Logger) bool {
+	cassandraInstance := v1alpha1.Cassandra{}
+	zookeeperInstance := v1alpha1.Zookeeper{}
+	rabbitmqInstance := v1alpha1.Rabbitmq{}
+	configInstance := v1alpha1.Config{}
+	var cassandraActive, zookeeperActive, rabbitmqActive, configActive = true, true, true, true
+	var emptyServerNodes = v1alpha1.ServerNodes{}
+	var emptyKubemanagerStaticConfiguration = v1alpha1.KubemanagerStaticConfiguration{}
+
+	if reflect.DeepEqual(instance.Spec.ServiceConfiguration.StaticConfiguration, emptyKubemanagerStaticConfiguration) {
+		log.Info("entered with empty static config")
+		if reflect.DeepEqual(instance.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes, emptyServerNodes) {
+			cassandraActive = cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
+				request.Namespace, r.Client)
+			log.Info("cassandra staus set", "status", cassandraActive)
+		}
+		if reflect.DeepEqual(instance.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes, emptyServerNodes) {
+			zookeeperActive = zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
+				request.Namespace, r.Client)
+			log.Info("zookeeper staus set", "status", zookeeperActive)
+		}
+		if reflect.DeepEqual(instance.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes, emptyServerNodes) || instance.Spec.ServiceConfiguration.StaticConfiguration.RabbitMQSecret == "" {
+			rabbitmqActive = rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
+				request.Namespace, r.Client)
+			log.Info("rabbit staus set", "status", rabbitmqActive)
+		}
+		if reflect.DeepEqual(instance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes, emptyServerNodes) {
+			configActive = configInstance.IsActive(instance.Labels["contrail_cluster"],
+				request.Namespace, r.Client)
+			log.Info("config staus set", "status", configActive)
+
+		}
+		if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive {
+			log.Info("Not active all of them so exit with false")
+			return false
+		}
+	}
+	log.Info("Exit with true from active status")
+	return true
 }

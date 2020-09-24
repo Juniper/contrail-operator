@@ -122,8 +122,8 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	var emptyServerNodes ServerNodes
-	var emptyKubemanagerStaticConfiguration KubemanagerStaticConfiguration
+	var emptyServerNodes = ServerNodes{}
+	var emptyKubemanagerStaticConfiguration = KubemanagerStaticConfiguration{}
 	var err error
 
 	var cassandraNodesInformation *CassandraClusterConfiguration

@@ -9,6 +9,7 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-pg/pg/v10 v10.0.0-beta.2
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
