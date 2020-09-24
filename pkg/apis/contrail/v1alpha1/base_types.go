@@ -954,25 +954,27 @@ type CommandClusterConfiguration struct {
 	AdminPassword string
 }
 
-// ConfigClusterConfiguration defines all configuration knobs used to write the config file.
+// ConfigClusterConfiguration  stores all information about service's endpoints
+// under the Contrail Config
 type ConfigClusterConfiguration struct {
-	APIServerPort         int
-	APIServerIPList       []string
-	AnalyticsServerPort   int
-	AnalyticsServerIPList []string
-	CollectorPort         int
-	CollectorServerIPList []string
-	RedisPort             int
-	AuthMode              AuthenticationMode
+	APIServerPort         int                `json:"apiServerPort,omitempty"`
+	APIServerIPList       []string           `json:"apiServerIPList,omitempty"`
+	AnalyticsServerPort   int                `json:"analyticsServerPort,omitempty"`
+	AnalyticsServerIPList []string           `json:"analyticsServerIPList,omitempty"`
+	CollectorPort         int                `json:"collectorPort,omitempty"`
+	CollectorServerIPList []string           `json:"collectorServerIPList,omitempty"`
+	RedisPort             int                `json:"redistPort,omitempty"`
+	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
 }
 
-// ControlClusterConfiguration defines all configuration knobs used to write the config file.
+// ControlClusterConfiguration stores all information about services' endpoints
+// under the Contrail Control
 type ControlClusterConfiguration struct {
-	XMPPPort            int
-	BGPPort             int
-	DNSPort             int
-	DNSIntrospectPort   int
-	ControlServerIPList []string
+	XMPPPort            int      `json:"xmppPort,omitempty"`
+	BGPPort             int      `json:"bgpPort,omitempty"`
+	DNSPort             int      `json:"dnsPort,omitempty"`
+	DNSIntrospectPort   int      `json:"dnsIntrospectPort,omitempty"`
+	ControlServerIPList []string `json:"controlServerIPList,omitempty"`
 }
 
 // ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.

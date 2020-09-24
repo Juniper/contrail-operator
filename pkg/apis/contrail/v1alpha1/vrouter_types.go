@@ -72,11 +72,12 @@ type VrouterConfiguration struct {
 	StaticConfiguration *VrouterStaticConfiguration `json:"staticConfiguration,omitempty"`
 }
 
+// VrouterStaticConfiguration stores static configuration of services
+// required by Vrouter
 // +k8s:openapi-gen=true
 type VrouterStaticConfiguration struct {
-	ControlNodesIPs   []string `json:"controlNodesIPs,omitempty"`
-	ConfigNodesIPs    []string `json:"configNodesIPs,omitempty"`
-	CassandraNodesIPs []string `json:"cassandraNodesIPs,omitempty"`
+	ControlNodesConfiguration *ControlClusterConfiguration `json:"controlNodesConfiguration,omitempty"`
+	ConfigNodesConfiguration  *ConfigClusterConfiguration  `json:"configNodesConfiguration,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -300,14 +301,12 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	client client.Client) error {
 
 	// TODO(psykulsk) - create an intermediary function that will check if there is static config
-	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
-		request.Namespace, client)
+	configNodesInformation, err := c.getConfigNodesInformation(request.Namespace, client)
 	if err != nil {
 		return err
 	}
 	// TODO(psykulsk) - create an intermediary function that will check if there is static config
-	controlNodesInformation, err := NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance,
-		"", request.Namespace, client)
+	controlNodesInformation, err := c.getControlNodesInformation(request.Namespace, client)
 	if err != nil {
 		return err
 	}
@@ -329,6 +328,20 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	}
 	envVariablesConfigMap.Data = c.getVrouterEnvironmentData()
 	return client.Update(context.TODO(), envVariablesConfigMap)
+}
+
+func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Client) (*ConfigClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
+		return c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration, nil
+	}
+	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
+}
+
+func (c *Vrouter) getControlNodesInformation(namespace string, client client.Client) (*ControlClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil {
+		return c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration, nil
+	}
+	return NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance, "", namespace, client)
 }
 
 // SetPodsToReady sets Kubemanager PODs to ready.
