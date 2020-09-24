@@ -559,7 +559,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
-	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)
+	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swiftproxy", sPort)
 	swiftURL := token.EndpointURL(serviceName, "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {
