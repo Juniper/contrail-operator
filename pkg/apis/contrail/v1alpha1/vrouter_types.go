@@ -330,6 +330,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 
 func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Client) (*ConfigClusterConfiguration, error) {
 	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
+		// TODO(psykulsk) add function that will fill default values
 		return c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration, nil
 	}
 	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
@@ -337,6 +338,7 @@ func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Clie
 
 func (c *Vrouter) getControlNodesInformation(namespace string, client client.Client) (*ControlClusterConfiguration, error) {
 	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil {
+		// TODO(psykulsk) add function that will fill default values
 		return c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration, nil
 	}
 	return NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance, "", namespace, client)

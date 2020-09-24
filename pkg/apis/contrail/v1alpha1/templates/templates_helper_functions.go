@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// TODO(psykulsk) add docstrings
+
 func JoinListWithSeparator(items []string, separator string) string {
 	return strings.Join(items, separator)
 }
