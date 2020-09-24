@@ -780,10 +780,6 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 func NewControlClusterConfiguration(name string, role string, namespace string, myclient client.Client) (*ControlClusterConfiguration, error) {
 	var controlNodes []string
 	var controlCluster ControlClusterConfiguration
-	var bgpPort string
-	var dnsPort string
-	var xmppPort string
-	var dnsIntrospectPort string
 	var controlConfigInterface interface{}
 	if name != "" {
 		controlInstance := &Control{}
@@ -814,30 +810,13 @@ func NewControlClusterConfiguration(name string, role string, namespace string, 
 		controlConfigInterface = controlList.Items[0].ConfigurationParameters()
 	}
 	controlConfig := controlConfigInterface.(ControlConfiguration)
-	bgpPort = strconv.Itoa(*controlConfig.BGPPort)
-	dnsPort = strconv.Itoa(*controlConfig.DNSPort)
-	xmppPort = strconv.Itoa(*controlConfig.XMPPPort)
-	dnsIntrospectPort = strconv.Itoa(*controlConfig.DNSIntrospectPort)
 	sort.SliceStable(controlNodes, func(i, j int) bool { return controlNodes[i] < controlNodes[j] })
-	serverListXMPPCommaSeparated := strings.Join(controlNodes, ":"+xmppPort+",")
-	serverListXMPPCommaSeparated = serverListXMPPCommaSeparated + ":" + xmppPort
-	serverListXMPPSpaceSeparated := strings.Join(controlNodes, ":"+xmppPort+" ")
-	serverListXMPPSpaceSeparated = serverListXMPPSpaceSeparated + ":" + xmppPort
-	serverListDNSCommaSeparated := strings.Join(controlNodes, ":"+dnsPort+",")
-	serverListDNSCommaSeparated = serverListDNSCommaSeparated + ":" + dnsPort
-	serverListDNSSpaceSeparated := strings.Join(controlNodes, ":"+dnsPort+" ")
-	serverListDNSSpaceSeparated = serverListDNSSpaceSeparated + ":" + dnsPort
-	serverListCommanSeparatedQuoted := strings.Join(controlNodes, "','")
-	serverListCommanSeparatedQuoted = "'" + serverListCommanSeparatedQuoted + "'"
 	controlCluster = ControlClusterConfiguration{
-		BGPPort:                         bgpPort,
-		DNSPort:                         dnsPort,
-		DNSIntrospectPort:               dnsIntrospectPort,
-		ServerListXMPPCommaSeparated:    serverListXMPPCommaSeparated,
-		ServerListXMPPSpaceSeparated:    serverListXMPPSpaceSeparated,
-		ServerListDNSCommaSeparated:     serverListDNSCommaSeparated,
-		ServerListDNSSpaceSeparated:     serverListDNSSpaceSeparated,
-		ServerListCommanSeparatedQuoted: serverListCommanSeparatedQuoted,
+		XMPPPort:            *controlConfig.XMPPPort,
+		BGPPort:             *controlConfig.BGPPort,
+		DNSPort:             *controlConfig.DNSPort,
+		DNSIntrospectPort:   *controlConfig.DNSIntrospectPort,
+		ControlServerIPList: controlNodes,
 	}
 
 	return &controlCluster, nil
@@ -935,11 +914,8 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		return &configCluster, err
 	}
 
-	var apiServerPort string
-	var collectorServerPort string
-	var analyticsServerPort string
-	var redisServerPort string
 	var authMode AuthenticationMode
+	var apiServerPort, analyticsPort, collectorPort, redisPort int
 
 	if len(configList.Items) > 0 {
 		for _, ip := range configList.Items[0].Status.Nodes {
@@ -948,37 +924,21 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		configConfigInterface := configList.Items[0].ConfigurationParameters()
 		configConfig := configConfigInterface.(ConfigConfiguration)
 		authMode = configConfig.AuthMode
-		apiServerPort = strconv.Itoa(*configConfig.APIPort)
-		analyticsServerPort = strconv.Itoa(*configConfig.AnalyticsPort)
-		collectorServerPort = strconv.Itoa(*configConfig.CollectorPort)
-		redisServerPort = strconv.Itoa(*configConfig.RedisPort)
+		apiServerPort = *configConfig.APIPort
+		analyticsPort = *configConfig.AnalyticsPort
+		collectorPort = *configConfig.CollectorPort
+		redisPort = *configConfig.RedisPort
 	}
 	sort.SliceStable(configNodes, func(i, j int) bool { return configNodes[i] < configNodes[j] })
-	apiServerListQuotedCommaSeparated := strings.Join(configNodes, "','")
-	firstAPIServer := configNodes[0]
-	apiServerListQuotedCommaSeparated = "'" + apiServerListQuotedCommaSeparated + "'"
-	analyticsServerListQuotedCommaSeparated := strings.Join(configNodes, "','")
-	analyticsServerListQuotedCommaSeparated = "'" + analyticsServerListQuotedCommaSeparated + "'"
-	apiServerListCommaSeparated := strings.Join(configNodes, ",")
-	apiServerListSpaceSeparated := strings.Join(configNodes, ":"+apiServerPort+" ")
-	apiServerListSpaceSeparated = apiServerListSpaceSeparated + ":" + apiServerPort
-	analyticsServerListSpaceSeparated := strings.Join(configNodes, ":"+analyticsServerPort+" ")
-	analyticsServerListSpaceSeparated = analyticsServerListSpaceSeparated + ":" + analyticsServerPort
-	collectorServerListSpaceSeparated := strings.Join(configNodes, ":"+collectorServerPort+" ")
-	collectorServerListSpaceSeparated = collectorServerListSpaceSeparated + ":" + collectorServerPort
 	configCluster = ConfigClusterConfiguration{
-		APIServerPort:                           apiServerPort,
-		APIServerListQuotedCommaSeparated:       apiServerListQuotedCommaSeparated,
-		APIServerListCommaSeparated:             apiServerListCommaSeparated,
-		APIServerListSpaceSeparated:             apiServerListSpaceSeparated,
-		AnalyticsServerPort:                     analyticsServerPort,
-		AnalyticsServerListSpaceSeparated:       analyticsServerListSpaceSeparated,
-		AnalyticsServerListQuotedCommaSeparated: analyticsServerListQuotedCommaSeparated,
-		CollectorPort:                           collectorServerPort,
-		CollectorServerListSpaceSeparated:       collectorServerListSpaceSeparated,
-		FirstAPIServer:                          firstAPIServer,
-		RedisPort:                               redisServerPort,
-		AuthMode:                                authMode,
+		APIServerPort:         apiServerPort,
+		APIServerIPList:       configNodes,
+		AnalyticsServerPort:   analyticsPort,
+		AnalyticsServerIPList: configNodes,
+		CollectorPort:         collectorPort,
+		CollectorServerIPList: configNodes,
+		RedisPort:             redisPort,
+		AuthMode:              authMode,
 	}
 	return &configCluster, nil
 }
@@ -997,30 +957,23 @@ type CommandClusterConfiguration struct {
 
 // ConfigClusterConfiguration defines all configuration knobs used to write the config file.
 type ConfigClusterConfiguration struct {
-	APIServerPort                           string
-	APIServerListSpaceSeparated             string
-	APIServerListQuotedCommaSeparated       string
-	APIServerListCommaSeparated             string
-	AnalyticsServerPort                     string
-	AnalyticsServerListSpaceSeparated       string
-	AnalyticsServerListQuotedCommaSeparated string
-	CollectorServerListSpaceSeparated       string
-	CollectorPort                           string
-	FirstAPIServer                          string
-	RedisPort                               string
-	AuthMode                                AuthenticationMode
+	APIServerPort         int
+	APIServerIPList       []string
+	AnalyticsServerPort   int
+	AnalyticsServerIPList []string
+	CollectorPort         int
+	CollectorServerIPList []string
+	RedisPort             int
+	AuthMode              AuthenticationMode
 }
 
 // ControlClusterConfiguration defines all configuration knobs used to write the config file.
 type ControlClusterConfiguration struct {
-	BGPPort                         string
-	DNSPort                         string
-	DNSIntrospectPort               string
-	ServerListXMPPCommaSeparated    string
-	ServerListXMPPSpaceSeparated    string
-	ServerListDNSCommaSeparated     string
-	ServerListDNSSpaceSeparated     string
-	ServerListCommanSeparatedQuoted string
+	XMPPPort            int
+	BGPPort             int
+	DNSPort             int
+	DNSIntrospectPort   int
+	ControlServerIPList []string
 }
 
 // ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.
