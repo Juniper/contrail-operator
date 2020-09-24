@@ -337,9 +337,12 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 			gateway = vrouterConfig.Gateway
 		}
 
-		controlXMPPEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(controlNodesInformation.ControlServerIPList, controlNodesInformation.XMPPPort)
-		controlDNSEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(controlNodesInformation.ControlServerIPList, controlNodesInformation.DNSPort)
-		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
+		controlXMPPEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.XMPPPort)
+		controlXMPPEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlXMPPEndpointList, " ")
+		controlDNSEndpointList := configtemplates.EndpointList(controlNodesInformation.ControlServerIPList, controlNodesInformation.DNSPort)
+		controlDNSEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(controlDNSEndpointList, " ")
+		configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
+		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
 		var vrouterConfigBuffer bytes.Buffer
 		configtemplates.VRouterConfig.Execute(&vrouterConfigBuffer, struct {
 			Hostname             string

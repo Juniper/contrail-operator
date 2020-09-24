@@ -191,10 +191,11 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		}
 		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
 
-		configApiIPListSpaceSeparated := configtemplates.IPListSpaceSeparated(configNodesInformation.APIServerIPList)
-		configApiIPListCommaSeparated := configtemplates.IPListCommaSeparated(configNodesInformation.APIServerIPList)
-		configApiIPListCommaSeparatedQuoted := configtemplates.IPListCommaSeparatedQuoted(configNodesInformation.APIServerIPList)
-		configCollectorEndpointListSpaceSeparated := configtemplates.EndpointListSpaceSeparated(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
+		configApiIPListSpaceSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, " ")
+		configApiIPListCommaSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, ",")
+		configApiIPListCommaSeparatedQuoted := configtemplates.JoinListWithSeparatorAndSingleQuotes(configNodesInformation.APIServerIPList, ",")
+		configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
+		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
 			ListenAddress       string
