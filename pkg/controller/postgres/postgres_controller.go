@@ -195,11 +195,12 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 }
 
 func (r *ReconcilePostgres) ensureLabelExists(p *contrail.Postgres) error {
-	if len(p.Labels) != 0 {
-		return nil
+	if len(p.Labels) == 0 {
+		p.Labels = make(map[string]string, 0)
 	}
-
-	p.Labels = contraillabel.New(contrail.PostgresInstanceType, p.Name)
+	for k, v := range contraillabel.New(contrail.PostgresInstanceType, p.Name) {
+		p.Labels[k] = v
+	}
 	return r.client.Update(context.Background(), p)
 }
 
