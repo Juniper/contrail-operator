@@ -963,7 +963,7 @@ type ConfigClusterConfiguration struct {
 	AnalyticsServerIPList []string           `json:"analyticsServerIPList,omitempty"`
 	CollectorPort         int                `json:"collectorPort,omitempty"`
 	CollectorServerIPList []string           `json:"collectorServerIPList,omitempty"`
-	RedisPort             int                `json:"redistPort,omitempty"`
+	RedisPort             int                `json:"redisPort,omitempty"`
 	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
 }
 
