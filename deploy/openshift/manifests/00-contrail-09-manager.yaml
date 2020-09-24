@@ -143,9 +143,17 @@ spec:
           contrail_cluster: cluster1
         name: zookeeper1
       spec:
+        commonConfiguration:
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
         serviceConfiguration:
           containers:
             - name: init
+              image: python:3.8.2-alpine
+            - name: conf-init
               image: python:3.8.2-alpine
             - name: zookeeper
               image: docker.io/zookeeper:3.5.5
