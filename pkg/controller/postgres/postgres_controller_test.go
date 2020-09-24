@@ -201,7 +201,7 @@ func TestPostgresController(t *testing.T) {
 
 	})
 
-	t.Run("when Postgres CR exist and sts has ready replicas", func(t *testing.T) {
+	t.Run("when Postgres CR exists and sts has ready replicas", func(t *testing.T) {
 		replica := int32(1)
 		readySTS := newSTSWithStatus(apps.StatefulSetStatus{ReadyReplicas: replica}, stsName.Name)
 		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, &readySTS, rootPassSecret)
@@ -213,6 +213,21 @@ func TestPostgresController(t *testing.T) {
 			assertPostgresStatusActive(t, fakeClient, namespacedName, true)
 		})
 	})
+
+	t.Run("when Postgres CR exists and is labeled", func(t *testing.T) {
+		postgresCR.Labels = map[string]string{"test": "test"}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, postgresCR, rootPassSecret)
+		reconcilePostgres := NewReconciler(fakeClient, scheme)
+		_, err = reconcilePostgres.Reconcile(reconcile.Request{NamespacedName: namespacedName})
+		assert.NoError(t, err)
+
+		t.Run("old labels should be preserved and new Contrail specific labels should be added", func(t *testing.T) {
+			expectedLabels := contraillabel.New("postgres", postgresCR.Name)
+			expectedLabels["test"] = "test"
+			assertPostgresLabelsValid(t, fakeClient, namespacedName, expectedLabels)
+		})
+	})
+
 }
 
 type mockManager struct {
@@ -639,4 +654,11 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
 	assert.Equal(t, active, postgres.Status.Active)
+}
+
+func assertPostgresLabelsValid(t *testing.T, c client.Client, name types.NamespacedName, expectedLabels map[string]string) {
+	postgres := contrail.Postgres{}
+	err := c.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedLabels, postgres.Labels)
 }
