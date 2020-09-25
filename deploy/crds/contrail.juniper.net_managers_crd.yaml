@@ -2437,7 +2437,7 @@ spec:
                                         items:
                                           type: string
                                         type: array
-                                      redistPort:
+                                      redisPort:
                                         type: integer
                                     type: object
                                   controlNodesConfiguration:
