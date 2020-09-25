@@ -163,44 +163,46 @@ spec:
                       description: ServerNodes is the server nodes configuration for
                         deployment with static controller.
                       properties:
-                        ServerList:
+                        serverList:
                           items:
                             type: string
                           type: array
-                        ServerPort:
+                        serverPort:
                           type: integer
                       type: object
                     configNodes:
                       description: ServerNodes is the server nodes configuration for
                         deployment with static controller.
                       properties:
-                        ServerList:
+                        serverList:
                           items:
                             type: string
                           type: array
-                        ServerPort:
+                        serverPort:
                           type: integer
                       type: object
                     rabbitmqNodes:
                       description: ServerNodes is the server nodes configuration for
                         deployment with static controller.
                       properties:
-                        ServerList:
+                        serverList:
                           items:
                             type: string
                           type: array
-                        ServerPort:
+                        serverPort:
                           type: integer
                       type: object
+                    rabbitmqSecret:
+                      type: string
                     zookeeperNodes:
                       description: ServerNodes is the server nodes configuration for
                         deployment with static controller.
                       properties:
-                        ServerList:
+                        serverList:
                           items:
                             type: string
                           type: array
-                        ServerPort:
+                        serverPort:
                           type: integer
                       type: object
                   type: object

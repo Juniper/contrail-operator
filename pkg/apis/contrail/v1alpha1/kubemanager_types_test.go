@@ -115,20 +115,20 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
 			ServiceConfiguration: KubemanagerConfiguration{
-				StaticConfiguration: KubemanagerStaticConfiguration{
-					CassandraNodes: ServerNodes{
+				StaticConfiguration: &KubemanagerStaticConfiguration{
+					CassandraNodes: &ServerNodes{
 						ServerList: []string{"1.1.1.1", "2.2.2.2"},
 						ServerPort: &cassadraPort,
 					},
-					ConfigNodes: ServerNodes{
+					ConfigNodes: &ServerNodes{
 						ServerList: []string{"3.3.3.3", "4.4.4.4"},
 						ServerPort: &configPort,
 					},
-					RabbbitmqNodes: ServerNodes{
+					RabbbitmqNodes: &ServerNodes{
 						ServerList: []string{"5.5.5.5", "6.6.6.6"},
 						ServerPort: &rabbitPort,
 					},
-					ZookeeperNodes: ServerNodes{
+					ZookeeperNodes: &ServerNodes{
 						ServerList: []string{"7.7.7.7", "8.8.8.8"},
 						ServerPort: &zookeeperPort,
 					},
