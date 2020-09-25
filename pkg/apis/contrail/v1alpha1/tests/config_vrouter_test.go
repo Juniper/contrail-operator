@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type vrouterClusterInfoFake struct {
