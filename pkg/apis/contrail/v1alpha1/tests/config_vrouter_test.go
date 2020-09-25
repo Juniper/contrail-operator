@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
