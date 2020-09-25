@@ -158,7 +158,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	if !command.GetDeletionTimestamp().IsZero() {
 		return reconcile.Result{}, nil
 	}
-	commandService := r.kubernetes.Service(request.Name, core.ServiceTypeClusterIP, map[int32]string{9091: ""}, instanceType, command)
+	commandService := r.kubernetes.Service(request.Name+"-"+instanceType, core.ServiceTypeClusterIP, map[int32]string{9091: ""}, instanceType, command)
 
 	if err := commandService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
@@ -559,7 +559,7 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 		return fmt.Errorf("failed to create kubeproxy: %v", err)
 	}
 	swiftName := command.Spec.ServiceConfiguration.SwiftInstance
-	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swift-proxy", sPort)
+	swiftProxy := proxy.NewSecureClientForService(command.Namespace, swiftName+"-proxy-swiftproxy", sPort)
 	swiftURL := token.EndpointURL(serviceName, "public")
 	swiftClient, err := swift.NewClient(swiftProxy, token.XAuthTokenHeader, swiftURL)
 	if err != nil {

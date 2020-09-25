@@ -63,7 +63,7 @@ func TestEnsureServiceExists(t *testing.T) {
 			},
 			initDBState: []runtime.Object{
 				&core.Service{
-					ObjectMeta: meta.ObjectMeta{Name: "test-pod"},
+					ObjectMeta: meta.ObjectMeta{Name: "test"},
 					Spec:       core.ServiceSpec{Ports: []core.ServicePort{{Port: 5555, NodePort: 30000}}},
 				},
 			},
@@ -81,7 +81,7 @@ func TestEnsureServiceExists(t *testing.T) {
 			},
 			initDBState: []runtime.Object{
 				&core.Service{
-					ObjectMeta: meta.ObjectMeta{Name: "test-pod"},
+					ObjectMeta: meta.ObjectMeta{Name: "test"},
 					Spec:       core.ServiceSpec{Ports: []core.ServicePort{{Port: 5555, NodePort: 30000}}},
 				},
 			},
@@ -105,7 +105,7 @@ func TestEnsureServiceExists(t *testing.T) {
 			// And
 			service := &core.Service{}
 			err = cl.Get(context.Background(), types.NamespacedName{
-				Name: "test-pod",
+				Name: "test",
 			}, service)
 
 			assert.NoError(t, err)
@@ -130,7 +130,7 @@ func TestClusterIP(t *testing.T) {
 
 	t.Run("Get ClusterIP", func(t *testing.T) {
 		initService := &core.Service{
-			ObjectMeta: meta.ObjectMeta{Name: "test-pod"},
+			ObjectMeta: meta.ObjectMeta{Name: "test"},
 			Spec:       core.ServiceSpec{ClusterIP: "10.0.0.10"},
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initService)
@@ -138,5 +138,32 @@ func TestClusterIP(t *testing.T) {
 		err := sc.EnsureExists()
 		assert.NoError(t, err)
 		assert.Equal(t, "10.0.0.10", sc.ClusterIP())
+	})
+}
+
+func TestExternalIP(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := core.SchemeBuilder.AddToScheme(scheme)
+	require.NoError(t, err)
+	owner := &core.Pod{ObjectMeta: meta.ObjectMeta{Name: "owner"}}
+
+	t.Run("Get ExternalIP()", func(t *testing.T) {
+		initService := &core.Service{
+			ObjectMeta: meta.ObjectMeta{Name: "test"},
+			Status: core.ServiceStatus{
+				LoadBalancer: core.LoadBalancerStatus{
+					Ingress: []core.LoadBalancerIngress{
+						{
+							IP: "10.255.254.4",
+						},
+					},
+				},
+			},
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initService)
+		sc := k8s.New(cl, scheme).Service("test", core.ServiceTypeLoadBalancer, map[int32]string{5555: "service"}, "pod", owner)
+		err := sc.EnsureExists()
+		assert.NoError(t, err)
+		assert.Equal(t, "10.255.254.4", sc.ExternalIP())
 	})
 }

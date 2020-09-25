@@ -583,12 +583,20 @@ func newMemcached() *contrail.Memcached {
 func newSwiftProxyService() *core.Service {
 	return &core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "swiftproxy-swift-proxy",
+			Name:      "swiftproxy-" + "swiftproxy",
 			Namespace: "default",
 		},
 		Spec: core.ServiceSpec{
-			ClusterIP:      "10.10.10.10",
-			LoadBalancerIP: "10.255.254.4",
+			ClusterIP: "10.10.10.10",
+		},
+		Status: core.ServiceStatus{
+			LoadBalancer: core.LoadBalancerStatus{
+				Ingress: []core.LoadBalancerIngress{
+					{
+						IP: "10.255.254.4",
+					},
+				},
+			},
 		},
 	}
 }

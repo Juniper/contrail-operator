@@ -263,7 +263,7 @@ func assertServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *te
 		})
 		require.NoError(t, err)
 
-		swiftProxy := proxy.NewSecureClientForService("contrail", "swift-proxy-swift-proxy", 5070)
+		swiftProxy := proxy.NewSecureClientForService("contrail", "swift-proxy-swiftproxy", 5070)
 		swiftURL := tokens.EndpointURL("swift", "internal")
 		swiftClient, err := swift.NewClient(swiftProxy, tokens.XAuthTokenHeader, swiftURL)
 		require.NoError(t, err)

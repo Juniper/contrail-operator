@@ -34,7 +34,7 @@ func (s *Service) EnsureExists() error {
 	}
 	s.svc = core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      s.name + "-" + s.ownerType,
+			Name:      s.name,
 			Namespace: s.owner.GetNamespace(),
 			Labels:    labels,
 		},
@@ -67,6 +67,14 @@ func (s *Service) EnsureExists() error {
 // ClusterIP is used to read clusterIP of service
 func (s *Service) ClusterIP() string {
 	return s.svc.Spec.ClusterIP
+}
+
+// ExternalIP is used to read externalIP of service
+func (s *Service) ExternalIP() string {
+	if len(s.svc.Status.LoadBalancer.Ingress) == 0 {
+		return ""
+	}
+	return s.svc.Status.LoadBalancer.Ingress[0].IP
 }
 
 // WithLabels is used to set labels on Service
