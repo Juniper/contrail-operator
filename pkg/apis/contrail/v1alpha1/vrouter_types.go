@@ -314,7 +314,7 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, controlNodesInformation, configNodesInformation)
+	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, &controlNodesInformation, &configNodesInformation)
 	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
@@ -328,18 +328,20 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	return client.Update(context.TODO(), envVariablesConfigMap)
 }
 
-func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Client) (*ConfigClusterConfiguration, error) {
+func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Client) (ConfigClusterConfiguration, error) {
 	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
-		// TODO(psykulsk) add function that will fill default values
-		return c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration, nil
+		configNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration
+		configNodesInformation.FillWithDefaultValues()
+		return configNodesInformation, nil
 	}
 	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
 }
 
-func (c *Vrouter) getControlNodesInformation(namespace string, client client.Client) (*ControlClusterConfiguration, error) {
+func (c *Vrouter) getControlNodesInformation(namespace string, client client.Client) (ControlClusterConfiguration, error) {
 	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil {
-		// TODO(psykulsk) add function that will fill default values
-		return c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration, nil
+		controlNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration
+		controlNodesInformation.FillWithDefaultValues()
+		return controlNodesInformation, nil
 	}
 	return NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance, "", namespace, client)
 }

@@ -167,8 +167,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		podIPList = append(podIPList, pod.Status.PodIP)
 	}
 
-	controlConfigInterface := c.ConfigurationParameters()
-	controlConfig := controlConfigInterface.(ControlConfiguration)
+	controlConfig := c.ConfigurationParameters()
 	if rabbitmqSecretUser == "" {
 		rabbitmqSecretUser = controlConfig.RabbitmqUser
 	}
@@ -408,8 +407,7 @@ func (c *Control) SetInstanceActive(client client.Client, activeStatus *bool, st
 func (c *Control) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	controlConfigInterface := c.ConfigurationParameters()
-	controlConfig := controlConfigInterface.(ControlConfiguration)
+	controlConfig := c.ConfigurationParameters()
 	c.Status.Ports.BGPPort = strconv.Itoa(*controlConfig.BGPPort)
 	c.Status.Ports.ASNNumber = strconv.Itoa(*controlConfig.ASNNumber)
 	c.Status.Ports.XMPPPort = strconv.Itoa(*controlConfig.XMPPPort)
@@ -422,7 +420,7 @@ func (c *Control) ManageNodeStatus(podNameIPMap map[string]string,
 	return nil
 }
 
-func (c *Control) ConfigurationParameters() interface{} {
+func (c *Control) ConfigurationParameters() ControlConfiguration {
 	controlConfiguration := ControlConfiguration{}
 	var bgpPort int
 	var asnNumber int
