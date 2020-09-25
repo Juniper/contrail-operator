@@ -480,6 +480,16 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 								MountPath: certificates.SignerCAMountPath,
 							},
 						},
+						Env: []core.EnvVar{
+							{
+								Name: "POD_IP",
+								ValueFrom: &core.EnvVarSource{
+									FieldRef: &core.ObjectFieldSelector{
+										FieldPath: "status.podIP",
+									},
+								},
+							},
+						},
 					}},
 					InitContainers: []core.Container{
 						{

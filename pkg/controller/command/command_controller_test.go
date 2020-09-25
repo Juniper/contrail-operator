@@ -1009,6 +1009,16 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 									MountPath: certificates.SignerCAMountPath,
 								},
 							},
+							Env: []core.EnvVar{
+								{
+									Name: "POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
+								},
+							},
 						},
 					},
 					InitContainers: []core.Container{

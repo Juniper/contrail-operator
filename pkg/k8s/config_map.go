@@ -33,7 +33,9 @@ func (c *ConfigMap) EnsureExists(dataSetter configMapFiller) error {
 		return err
 	}
 	_, err = controllerutil.CreateOrUpdate(context.Background(), c.client, cm, func() error {
-		cm.Data = map[string]string{}
+		if len(cm.Data) == 0 {
+			cm.Data = map[string]string{}
+		}
 		dataSetter.FillConfigMap(cm)
 		return nil
 	})

@@ -40,7 +40,7 @@ var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
 cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
-/bin/commandappserver -c /etc/contrail/command-app-server{{ .HostIP }}.yml run
+/bin/commandappserver -c /etc/contrail/command-app-server$POD_IP.yml run
 `))
 
 var funcMap = template.FuncMap{
