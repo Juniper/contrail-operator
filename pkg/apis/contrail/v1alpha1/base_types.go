@@ -623,7 +623,7 @@ func getPodInitStatus(reconcileClient client.Client,
 				if initStatus.Name == "init" {
 					if initStatus.State.Terminated == nil {
 						if initStatus.State.Running != nil {
-							annotationMap := podList.Items[idx].GetAnnotations()
+							annotationMap := pod.GetAnnotations()
 							if annotationMap == nil {
 								annotationMap = make(map[string]string)
 							}
@@ -688,7 +688,7 @@ func getPodInitStatus(reconcileClient client.Client,
 							podList.Items[idx].SetAnnotations(annotationMap)
 							(&podList.Items[idx]).SetAnnotations(annotationMap)
 							foundPod := &corev1.Pod{}
-							err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: podList.Items[idx].Name, Namespace: podList.Items[idx].Namespace}, foundPod)
+							err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, foundPod)
 							if err != nil {
 								return map[string]string{}, err
 							}

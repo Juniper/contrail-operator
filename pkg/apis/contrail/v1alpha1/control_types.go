@@ -185,13 +185,13 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
-	for idx := range podList.Items {
-		hostname := podList.Items[idx].Annotations["hostname"]
-		dataIP := getDataIP(&podList.Items[idx])
-		podIP := podList.Items[idx].Status.PodIP
+	for _, pod := range podList.Items {
+		hostname := pod.Annotations["hostname"]
+		dataIP := getDataIP(&pod)
+		podIP := pod.Status.PodIP
 		configIntrospectEndpointsList := configtemplates.EndpointList(configNodesInformation.APIServerIPList, ControlIntrospectPort)
 		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectEndpointsList, podIP,
-			"control", request.Name, request.Namespace, podList.Items[idx].Name)
+			"control", request.Name, request.Namespace, pod.Name)
 		if err != nil {
 			return err
 		}
