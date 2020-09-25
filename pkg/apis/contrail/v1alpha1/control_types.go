@@ -59,6 +59,7 @@ type ControlConfiguration struct {
 	// and dns services will listen. Local pod address from this subnet will be
 	// discovered and used both in configuration for hostip directive and provision
 	// script.
+	// +kubebuilder:validation:Pattern=`^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))$`
 	DataSubnet string `json:"dataSubnet,omitempty"`
 }
 
