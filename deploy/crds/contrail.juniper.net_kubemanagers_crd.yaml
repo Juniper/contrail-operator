@@ -159,46 +159,77 @@ spec:
                   description: KubemanagerStaticConfiguration is the configuration
                     for deployment with static controller.
                   properties:
-                    cassandraNodes:
-                      description: ServerNodes is the server nodes configuration for
-                        deployment with static controller.
+                    cassandraNodesConfiguration:
+                      description: CassandraClusterConfiguration defines all configuration
+                        knobs used to write the config file.
                       properties:
+                        cqlPort:
+                          type: integer
+                        jmxPort:
+                          type: integer
+                        port:
+                          type: integer
                         serverList:
                           items:
                             type: string
                           type: array
-                        serverPort:
+                      type: object
+                    configNodesConfiguration:
+                      description: ConfigClusterConfiguration  stores all information
+                        about service's endpoints under the Contrail Config
+                      properties:
+                        analyticsServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        analyticsServerPort:
+                          type: integer
+                        apiServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        apiServerPort:
+                          type: integer
+                        authMode:
+                          enum:
+                          - noauth
+                          - keystone
+                          type: string
+                        collectorPort:
+                          type: integer
+                        collectorServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        redisPort:
                           type: integer
                       type: object
-                    configNodes:
-                      description: ServerNodes is the server nodes configuration for
-                        deployment with static controller.
+                    rabbitmqNodesConfiguration:
+                      description: RabbitmqClusterConfiguration defines all configuration
+                        knobs used to write the config file.
                       properties:
+                        port:
+                          type: integer
+                        secret:
+                          type: string
                         serverList:
                           items:
                             type: string
                           type: array
-                        serverPort:
+                        sslPort:
                           type: integer
+                      required:
+                      - serverList
                       type: object
-                    rabbitmqNodes:
-                      description: ServerNodes is the server nodes configuration for
-                        deployment with static controller.
+                    zookeeperNodesConfiguration:
+                      description: ZookeeperClusterConfiguration defines all configuration
+                        knobs used to write the config file.
                       properties:
-                        serverList:
-                          items:
-                            type: string
-                          type: array
-                        serverPort:
+                        clientPort:
                           type: integer
-                      type: object
-                    rabbitmqSecret:
-                      type: string
-                    zookeeperNodes:
-                      description: ServerNodes is the server nodes configuration for
-                        deployment with static controller.
-                      properties:
-                        serverList:
+                        electionPort:
+                          type: integer
+                        serverIPList:
                           items:
                             type: string
                           type: array

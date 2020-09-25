@@ -82,18 +82,10 @@ type KubemanagerConfiguration struct {
 // KubemanagerStaticConfiguration is the configuration for deployment with static controller.
 // +k8s:openapi-gen=true
 type KubemanagerStaticConfiguration struct {
-	ConfigNodes    *ServerNodes `json:"configNodes,omitempty"`
-	RabbbitmqNodes *ServerNodes `json:"rabbitmqNodes,omitempty"`
-	CassandraNodes *ServerNodes `json:"cassandraNodes,omitempty"`
-	ZookeeperNodes *ServerNodes `json:"zookeeperNodes,omitempty"`
-	RabbitMQSecret string       `json:"rabbitmqSecret,omitempty"`
-}
-
-// ServerNodes is the server nodes configuration for deployment with static controller.
-// +k8s:openapi-gen=true
-type ServerNodes struct {
-	ServerList []string `json:"serverList,omitempty"`
-	ServerPort *int     `json:"serverPort,omitempty"`
+	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration,omitempty"`
+	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
+	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
+	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.
@@ -121,59 +113,10 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	var err error
-	var cassandraNodesInformation *CassandraClusterConfiguration
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes != nil {
-		cassandraNodesInformation = &CassandraClusterConfiguration{
-			Endpoint: configtemplates.JoinListWithSeparator(configtemplates.EndpointList(c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerList, *c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes.ServerPort), ","),
-		}
-	} else {
-		cassandraNodesInformation, err = NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance, request.Namespace, client)
-		if err != nil {
-			return err
-		}
-	}
-
-	var configNodesInformation *ConfigClusterConfiguration
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes != nil {
-		configNodesInformation = &ConfigClusterConfiguration{
-			APIServerIPList:       c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList,
-			APIServerPort:         *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort,
-			CollectorServerIPList: c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerList,
-			CollectorPort:         *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes.ServerPort,
-		}
-	} else {
-		configNodesInformation, err = NewConfigClusterConfiguration(c.Labels["contrail_cluster"], request.Namespace, client)
-		if err != nil {
-			return err
-		}
-	}
-
-	var zookeeperNodesInformation *ZookeeperClusterConfiguration
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes != nil {
-		zookeeperNodesInformation = &ZookeeperClusterConfiguration{
-			ServerListCommaSeparated: configtemplates.JoinListWithSeparator(configtemplates.EndpointList(c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerList, *c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes.ServerPort), ","),
-		}
-	} else {
-		zookeeperNodesInformation, err = NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance, request.Namespace, client)
-		if err != nil {
-			return err
-		}
-	}
-
-	var rabbitmqNodesInformation *RabbitmqClusterConfiguration
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes != nil {
-		rabbitmqNodesInformation = &RabbitmqClusterConfiguration{
-			ServerListCommaSeparatedWithoutPort: configtemplates.JoinListWithSeparator(c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerList, ","),
-			SSLPort:                             strconv.Itoa(*c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes.ServerPort),
-			Secret:                              c.Spec.ServiceConfiguration.StaticConfiguration.RabbitMQSecret,
-		}
-	} else {
-		rabbitmqNodesInformation, err = NewRabbitmqClusterConfiguration(c.Labels["contrail_cluster"], request.Namespace, client)
-		if err != nil {
-			return err
-		}
-	}
+	cassandraNodesInformation, err := c.getCassandraNodesInformation(request.Namespace, client)
+	configNodesInformation, err := c.getConfigNodesInformation(request.Namespace, client)
+	rabbitmqNodesInformation, err := c.getRabbitmqNodesInformation(request.Namespace, client)
+	zookeeperNodesInformation, err := c.getZookeeperNodesInformation(request.Namespace, client)
 
 	var rabbitmqSecretUser string
 	var rabbitmqSecretPassword string
@@ -511,6 +454,42 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 	kubemanagerConfiguration.IPFabricSnat = &ipFabricSnat
 
 	return kubemanagerConfiguration
+}
+
+func (c *Kubemanager) getCassandraNodesInformation(namespace string, client client.Client) (CassandraClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration != nil {
+		cassandraNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration
+		cassandraNodesInformation.FillWithDefaultValues()
+		return cassandraNodesInformation, nil
+	}
+	return NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance, namespace, client)
+}
+
+func (c *Kubemanager) getConfigNodesInformation(namespace string, client client.Client) (ConfigClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
+		configNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration
+		configNodesInformation.FillWithDefaultValues()
+		return configNodesInformation, nil
+	}
+	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
+}
+
+func (c *Kubemanager) getRabbitmqNodesInformation(namespace string, client client.Client) (RabbitmqClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration != nil {
+		rabbitmqNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration
+		rabbitmqNodesInformation.FillWithDefaultValues()
+		return rabbitmqNodesInformation, nil
+	}
+	return NewRabbitmqClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
+}
+
+func (c *Kubemanager) getZookeeperNodesInformation(namespace string, client client.Client) (ZookeeperClusterConfiguration, error) {
+	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration != nil {
+		zookeeperNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration
+		zookeeperNodesInformation.FillWithDefaultValues()
+		return zookeeperNodesInformation, nil
+	}
+	return NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance, namespace, client)
 }
 
 //KubemanagerClusterInfo is interface for gathering information about cluster
