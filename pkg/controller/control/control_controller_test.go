@@ -2,7 +2,6 @@ package control
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -154,12 +153,6 @@ func TestControlController(t *testing.T) {
 		}, sts)
 		assert.NoError(t, err)
 		expectedAnnotation := map[string]string{"dataSubnet": "172.17.90.0/24"}
-		assert.Truef(
-			t,
-			reflect.DeepEqual(sts.Spec.Template.Annotations, expectedAnnotation),
-			"expected annotation not applied, expected: %v, got: %v",
-			expectedAnnotation,
-			sts.Spec.Template.Annotations,
-		)
+		assert.Equal(t, expectedAnnotation, sts.Spec.Template.Annotations)
 	})
 }
