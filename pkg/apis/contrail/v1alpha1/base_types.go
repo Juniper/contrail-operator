@@ -966,6 +966,8 @@ type ConfigClusterConfiguration struct {
 	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
 }
 
+// FillWithDefaultValues sets the default port values if they are set to the
+// zero value
 func (c *ConfigClusterConfiguration) FillWithDefaultValues() {
 	if c.APIServerPort == 0 {
 		c.APIServerPort = ConfigApiPort
@@ -994,6 +996,8 @@ type ControlClusterConfiguration struct {
 	ControlServerIPList []string `json:"controlServerIPList,omitempty"`
 }
 
+// FillWithDefaultValues sets the default port values if they are set to the
+// zero value
 func (c *ControlClusterConfiguration) FillWithDefaultValues() {
 	if c.XMPPPort == 0 {
 		c.XMPPPort = XmppServerPort
