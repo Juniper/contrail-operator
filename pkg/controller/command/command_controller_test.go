@@ -265,6 +265,50 @@ func TestCommand(t *testing.T) {
 		assert.Error(t, err)
 	})
 
+	t.Run("correct configmap is created according to available pods", func(t *testing.T) {
+
+		initObjs := []runtime.Object{
+			newCommand(),
+			newCommandService(),
+			newCommandPod("abc", "1.1.1.1"),
+			newCommandPod("def", "2.2.2.2"),
+			newCertSecret([]string{"2.2.2.2", "1.1.1.1"}),
+			newConfig(true),
+			newPostgres(true),
+			newAdminSecret(),
+			newSwiftSecret(),
+			newSwift(false),
+			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+			newWebUI(true),
+			newSwiftProxy(true),
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		conf := &rest.Config{}
+		r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "command",
+				Namespace: "default",
+			},
+		}
+
+		_, err := r.Reconcile(req)
+		assert.NoError(t, err)
+
+		configMap := &core.ConfigMap{}
+		err = cl.Get(context.Background(), types.NamespacedName{
+			Name:      "command-command-configmap",
+			Namespace: "default",
+		}, configMap)
+		assert.NoError(t, err)
+
+		_, found := configMap.Data["command-app-server1.1.1.1.yml"]
+		assert.True(t, found)
+		_, found = configMap.Data["command-app-server2.2.2.2.yml"]
+		assert.True(t, found)
+	})
+
 	tests := []struct {
 		name                 string
 		initObjs             []runtime.Object
@@ -700,6 +744,34 @@ func (m mockRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return m(r)
 }
 
+func newCommandPod(podHash string, ip string) *core.Pod {
+	return &core.Pod{
+		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "command-command-deployment" + podHash, Labels: map[string]string{
+			"contrail_manager": "command",
+			"command":          "command",
+		}},
+		Status: core.PodStatus{
+			PodIP: ip,
+		},
+	}
+}
+
+func newCertSecret(ips []string) *core.Secret {
+	certmap := make(map[string][]byte)
+	for _, ip := range ips {
+		certmap["server-key-"+ip+".pem"] = []byte("key")
+		certmap["server-"+ip+".crt"] = []byte("cert")
+	}
+	return &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "command-secret-certificates",
+			Namespace: "default",
+		},
+
+		Data: certmap,
+	}
+}
+
 func newCommand() *contrail.Command {
 	trueVal := true
 	return &contrail.Command{
@@ -1007,6 +1079,16 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 								{
 									Name:      "command-csr-signer-ca",
 									MountPath: certificates.SignerCAMountPath,
+								},
+							},
+							Env: []core.EnvVar{
+								{
+									Name: "POD_IP",
+									ValueFrom: &core.EnvVarSource{
+										FieldRef: &core.ObjectFieldSelector{
+											FieldPath: "status.podIP",
+										},
+									},
 								},
 							},
 						},

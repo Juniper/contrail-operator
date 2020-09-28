@@ -8,7 +8,25 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
+type CommandConfTemplate interface {
+	ExecuteTemplate(t *template.Template) string
+}
+
 type commandConf struct {
+	ConfigAPIURL    string
+	AdminUsername   string
+	AdminPassword   string
+	SwiftUsername   string
+	SwiftPassword   string
+	PostgresAddress string
+	PostgresUser    string
+	PostgresDBName  string
+	PodIPs          []string
+	CAFilePath      string
+	PGPassword      string
+}
+
+type commandPodConf struct {
 	ConfigAPIURL    string
 	AdminUsername   string
 	AdminPassword   string
@@ -23,11 +41,30 @@ type commandConf struct {
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
-	cm.Data["command-app-server"+c.HostIP+".yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
+	for _, pod := range c.PodIPs {
+		conf := &commandPodConf{
+			AdminUsername:   c.AdminUsername,
+			AdminPassword:   c.AdminPassword,
+			SwiftUsername:   c.SwiftUsername,
+			SwiftPassword:   c.SwiftPassword,
+			ConfigAPIURL:    c.ConfigAPIURL,
+			PostgresAddress: c.PostgresAddress,
+			PostgresUser:    c.PostgresUser,
+			PostgresDBName:  c.PostgresDBName,
+			HostIP:          pod,
+			CAFilePath:      c.CAFilePath,
+			PGPassword:      c.PGPassword,
+		}
+		conf.fillConfigMapForPod(cm)
+	}
+	cm.Data["entrypoint.sh"] = executeTemplate(c, commandEntrypoint)
 }
 
-func (c *commandConf) executeTemplate(t *template.Template) string {
+func (c *commandPodConf) fillConfigMapForPod(cm *core.ConfigMap) {
+	cm.Data["command-app-server"+c.HostIP+".yml"] = executeTemplate(c, commandConfig)
+}
+
+func (c *commandPodConf) ExecuteTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
@@ -35,12 +72,24 @@ func (c *commandConf) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
+func (c *commandConf) ExecuteTemplate(t *template.Template) string {
+	var buffer bytes.Buffer
+	if err := t.Execute(&buffer, c); err != nil {
+		panic(err)
+	}
+	return buffer.String()
+}
+
+func executeTemplate(c CommandConfTemplate, t *template.Template) string {
+	return c.ExecuteTemplate(t)
+}
+
 // TODO: Major HACK contrailgo doesn't support external CA certificates
 var commandEntrypoint = template.Must(template.New("").Parse(`
 #!/bin/bash
 cp {{ .CAFilePath }} /etc/pki/ca-trust/source/anchors/
 update-ca-trust
-/bin/commandappserver -c /etc/contrail/command-app-server{{ .HostIP }}.yml run
+/bin/commandappserver -c /etc/contrail/command-app-server$POD_IP.yml run
 `))
 
 var funcMap = template.FuncMap{
