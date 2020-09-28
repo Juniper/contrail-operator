@@ -8,8 +8,6 @@ require (
 	github.com/Juniper/contrail-go-api v1.1.1-0.20200414151206-7bb4264f1da4
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
-	github.com/emicklei/go-restful-openapi v1.4.1 // indirect
-	github.com/emicklei/go-restful-swagger12 v0.0.0-20170926063155-7524189396c6 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-pg/pg/v10 v10.0.0-beta.2
@@ -17,11 +15,9 @@ require (
 	github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/kylelemons/godebug v1.1.0
-	github.com/mjibson/appstats v0.0.0-20151004071057-0542d5f0e87e // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
@@ -32,7 +28,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/tools v0.0.0-20200913032122-97363e29fc9b
 	gopkg.in/fsnotify.v1 v1.4.7
-	gopkg.in/vmihailenco/msgpack.v2 v2.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver v0.17.4
