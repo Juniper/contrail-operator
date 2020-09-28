@@ -265,7 +265,7 @@ func TestCommand(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("correct config maps is created according to pods available", func(t *testing.T) {
+	t.Run("correct configmap is created according to available pods", func(t *testing.T) {
 
 		initObjs := []runtime.Object{
 			newCommand(),
@@ -301,8 +301,8 @@ func TestCommand(t *testing.T) {
 			Name:      "command-command-configmap",
 			Namespace: "default",
 		}, configMap)
-
 		assert.NoError(t, err)
+
 		_, found := configMap.Data["command-app-server1.1.1.1.yml"]
 		assert.True(t, found)
 		_, found = configMap.Data["command-app-server2.2.2.2.yml"]

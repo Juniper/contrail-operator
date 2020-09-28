@@ -17,17 +17,50 @@ type commandConf struct {
 	PostgresAddress string
 	PostgresUser    string
 	PostgresDBName  string
+	PodIPs          []string
+	CAFilePath      string
+	PGPassword      string
+}
+
+type commandPodConf struct {
+	ConfigAPIURL    string
+	AdminUsername   string
+	AdminPassword   string
+	SwiftUsername   string
+	SwiftPassword   string
+	PostgresAddress string
+	PostgresUser    string
+	PostgresDBName  string
 	HostIP          string
 	CAFilePath      string
 	PGPassword      string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
+	for _, pod := range c.PodIPs {
+		conf := &commandPodConf{
+			AdminUsername:   c.AdminUsername,
+			AdminPassword:   c.AdminPassword,
+			SwiftUsername:   c.SwiftUsername,
+			SwiftPassword:   c.SwiftPassword,
+			ConfigAPIURL:    c.ConfigAPIURL,
+			PostgresAddress: c.PostgresAddress,
+			PostgresUser:    c.PostgresUser,
+			PostgresDBName:  c.PostgresDBName,
+			HostIP:          pod,
+			CAFilePath:      c.CAFilePath,
+			PGPassword:      c.PGPassword,
+		}
+		conf.fillConfigMapForPod(cm)
+	}
+}
+
+func (c *commandPodConf) fillConfigMapForPod(cm *core.ConfigMap) {
 	cm.Data["command-app-server"+c.HostIP+".yml"] = c.executeTemplate(commandConfig)
 	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
 }
 
-func (c *commandConf) executeTemplate(t *template.Template) string {
+func (c *commandPodConf) executeTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
