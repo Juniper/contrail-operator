@@ -28,6 +28,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/tools v0.0.0-20200913032122-97363e29fc9b
 	gopkg.in/fsnotify.v1 v1.4.7
+	gopkg.in/ini.v1 v1.51.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver v0.17.4
