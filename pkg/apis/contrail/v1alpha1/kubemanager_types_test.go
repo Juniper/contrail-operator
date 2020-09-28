@@ -108,31 +108,29 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 
 	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret)
 
-	var cassadraPort = 1111
-	var configPort = 2222
-	var rabbitPort = 3333
-	var zookeeperPort = 4444
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
-					CassandraNodes: &ServerNodes{
+					CassandraNodesConfiguration: &CassandraClusterConfiguration{
 						ServerList: []string{"1.1.1.1", "2.2.2.2"},
-						ServerPort: &cassadraPort,
+						Port:       1111,
 					},
-					ConfigNodes: &ServerNodes{
-						ServerList: []string{"3.3.3.3", "4.4.4.4"},
-						ServerPort: &configPort,
+					ConfigNodesConfiguration: &ConfigClusterConfiguration{
+						APIServerIPList:       []string{"3.3.3.3", "4.4.4.4"},
+						APIServerPort:         2222,
+						CollectorServerIPList: []string{"3.3.3.4", "4.4.4.5"},
+						CollectorPort:         2223,
 					},
-					RabbbitmqNodes: &ServerNodes{
+					RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
 						ServerList: []string{"5.5.5.5", "6.6.6.6"},
-						ServerPort: &rabbitPort,
+						SSLPort:    3333,
+						Secret:     "rabbit-secret",
 					},
-					ZookeeperNodes: &ServerNodes{
-						ServerList: []string{"7.7.7.7", "8.8.8.8"},
-						ServerPort: &zookeeperPort,
+					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
+						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
+						ClientPort:   4444,
 					},
-					RabbitMQSecret: "rabbit-secret",
 				},
 			},
 		},
@@ -188,7 +186,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "1.1.1.1:1111,2.2.2.2:1111")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.3:2222 4.4.4.4:2222")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 
 	kubemanagerPod2, err := ini.Load([]byte(kubeConfigMap.Data["kubemanager.2.2.2.2"]))
@@ -204,7 +202,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "1.1.1.1:1111,2.2.2.2:1111")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.3:2222 4.4.4.4:2222")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 
 }

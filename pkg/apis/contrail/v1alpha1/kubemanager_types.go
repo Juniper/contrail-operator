@@ -191,6 +191,11 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		configApiIPListCommaSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, ",")
 		configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
 		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
+		rabbitmqServerListCommaSeparated := configtemplates.JoinListWithSeparator(rabbitmqNodesInformation.ServerList, ",")
+		zookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
+		zookeeperServerListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
+		cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerList, cassandraNodesInformation.Port)
+		cassandraServerListCommaSeparated := configtemplates.JoinListWithSeparator(cassandraEndpointList, ",")
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
 		if err = client.Get(context.TODO(), types.NamespacedName{Name: "kubemanagersecret", Namespace: request.Namespace}, secret); err != nil {
@@ -237,10 +242,10 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			IPFabricSnat:          strconv.FormatBool(*kubemanagerConfig.IPFabricSnat),
 			APIServerList:         configApiIPListCommaSeparated,
 			APIServerPort:         strconv.Itoa(configNodesInformation.APIServerPort),
-			CassandraServerList:   cassandraNodesInformation.Endpoint,
-			ZookeeperServerList:   zookeeperNodesInformation.ServerListCommaSeparated,
-			RabbitmqServerList:    rabbitmqNodesInformation.ServerListCommaSeparatedWithoutPort,
-			RabbitmqServerPort:    rabbitmqNodesInformation.SSLPort,
+			CassandraServerList:   cassandraServerListCommaSeparated,
+			ZookeeperServerList:   zookeeperServerListCommaSeparated,
+			RabbitmqServerList:    rabbitmqServerListCommaSeparated,
+			RabbitmqServerPort:    strconv.Itoa(rabbitmqNodesInformation.SSLPort),
 			CollectorServerList:   configCollectorEndpointListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),
 			RabbitmqUser:          rabbitmqSecretUser,
