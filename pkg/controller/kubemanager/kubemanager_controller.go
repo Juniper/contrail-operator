@@ -554,10 +554,10 @@ func (r *ReconcileKubemanager) kubemanagerDependenciesReady(instance *v1alpha1.K
 		return cassandraActive && zookeeperActive && rabbitmqActive && configActive
 	}
 
-	cassandraAvailable := cassandraActive || instance.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodes != nil
-	zookeeperAvailable := zookeeperActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodes != nil
-	rabbitmqAvailable := rabbitmqActive || instance.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodes != nil
-	configAvailable := configActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodes != nil
+	cassandraAvailable := cassandraActive || instance.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration != nil
+	zookeeperAvailable := zookeeperActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration != nil
+	rabbitmqAvailable := rabbitmqActive || instance.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration != nil
+	configAvailable := configActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil
 
 	return cassandraAvailable && zookeeperAvailable && rabbitmqAvailable && configAvailable
 }

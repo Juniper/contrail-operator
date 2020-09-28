@@ -800,12 +800,14 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 	}
 	cassandraConfigInterface := cassandraInstance.ConfigurationParameters()
 	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
+	endpoint := cassandraInstance.Status.ClusterIP + ":" + strconv.Itoa(*cassandraConfig.Port)
 	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
 	cassandraCluster = CassandraClusterConfiguration{
 		Port:       *cassandraConfig.Port,
 		CQLPort:    *cassandraConfig.CqlPort,
 		JMXPort:    *cassandraConfig.JmxLocalPort,
 		ServerList: cassandraNodes,
+		Endpoint:   endpoint,
 	}
 	return cassandraCluster, nil
 }
@@ -1068,6 +1070,7 @@ type CassandraClusterConfiguration struct {
 	CQLPort    int      `json:"cqlPort,omitempty"`
 	JMXPort    int      `json:"jmxPort,omitempty"`
 	ServerList []string `json:"serverList,omitempty"`
+	Endpoint   string   `json:"endpoint,omitempty"`
 }
 
 // FillWithDefaultValues fills Cassandra config with default values
