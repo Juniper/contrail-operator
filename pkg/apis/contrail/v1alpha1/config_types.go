@@ -310,6 +310,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
 			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
+		myidString := pod.Name[len(pod.Name)-1:]
+		myidInt, _ := strconv.Atoi(myidString)
+		dmrunMode := "Partial"
+		if myidInt == 0 {
+			dmrunMode = DMRunModeFull
+		}
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
 			HostIP                      string
@@ -342,7 +348,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			FabricMgmtIP:                fabricMgmtIP,
 			CAFilePath:                  certificates.SignerCAFilepath,
 			DeviceManagerIntrospectPort: strconv.Itoa(*configConfig.DeviceManagerIntrospectPort),
-			DMRunMode:                   DMRunModeFull,
+			DMRunMode:                   dmrunMode,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
