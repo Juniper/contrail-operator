@@ -165,6 +165,8 @@ spec:
                       properties:
                         cqlPort:
                           type: integer
+                        endpoint:
+                          type: string
                         jmxPort:
                           type: integer
                         port:
