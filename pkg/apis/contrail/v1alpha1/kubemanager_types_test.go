@@ -72,6 +72,120 @@ func TestKubemanagerConfigurationParametersWithSetValues(t *testing.T) {
 	assert.Equal(t, *configuration.IPFabricSnat, *kubemanager.Spec.ServiceConfiguration.IPFabricSnat)
 }
 
+func TestGetCassandraNodesInformationWithStaticConfiguration(t *testing.T) {
+	scheme, err := SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	kubemanagerCR := &Kubemanager{
+		Spec: KubemanagerSpec{
+			ServiceConfiguration: KubemanagerConfiguration{
+				StaticConfiguration: &KubemanagerStaticConfiguration{
+					CassandraNodesConfiguration: &CassandraClusterConfiguration{
+						Endpoint:   "1.2.3.4",
+						Port:       1234,
+						CQLPort:    2345,
+						JMXPort:    3456,
+						ServerList: []string{"1.1.1.1", "2.2.2.2"},
+					},
+				},
+			},
+		},
+	}
+
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCR)
+
+	cassandraConfig, err := kubemanagerCR.getCassandraNodesInformation("test-ns", cl)
+	require.NoError(t, err)
+	assert.Equal(t, cassandraConfig.Endpoint, "1.2.3.4")
+	assert.Equal(t, cassandraConfig.Port, 1234)
+	assert.Equal(t, cassandraConfig.CQLPort, 2345)
+	assert.Equal(t, cassandraConfig.JMXPort, 3456)
+	assert.Equal(t, cassandraConfig.ServerList, []string{"1.1.1.1", "2.2.2.2"})
+}
+
+func TestGetConfigNodesInformationWithStaticConfiguration(t *testing.T) {
+	scheme, err := SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	kubemanagerCR := &Kubemanager{
+		Spec: KubemanagerSpec{
+			ServiceConfiguration: KubemanagerConfiguration{
+				StaticConfiguration: &KubemanagerStaticConfiguration{
+					ConfigNodesConfiguration: &ConfigClusterConfiguration{
+						CollectorServerIPList: []string{"1.2.3.4", "5.6.7.8"},
+						APIServerPort:         1234,
+						CollectorPort:         2345,
+						APIServerIPList:       []string{"1.1.1.1", "2.2.2.2"},
+					},
+				},
+			},
+		},
+	}
+
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCR)
+
+	configConfig, err := kubemanagerCR.getConfigNodesInformation("test-ns", cl)
+	require.NoError(t, err)
+	assert.Equal(t, configConfig.CollectorServerIPList, []string{"1.2.3.4", "5.6.7.8"})
+	assert.Equal(t, configConfig.CollectorPort, 2345)
+	assert.Equal(t, configConfig.APIServerPort, 1234)
+	assert.Equal(t, configConfig.APIServerIPList, []string{"1.1.1.1", "2.2.2.2"})
+}
+
+func TestGetRabbitmqNodesInformationWithStaticConfiguration(t *testing.T) {
+	scheme, err := SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	kubemanagerCR := &Kubemanager{
+		Spec: KubemanagerSpec{
+			ServiceConfiguration: KubemanagerConfiguration{
+				StaticConfiguration: &KubemanagerStaticConfiguration{
+					RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
+						ServerList: []string{"1.2.3.4", "5.6.7.8"},
+						SSLPort:    1234,
+						Port:       2345,
+						Secret:     "secret-rabbit",
+					},
+				},
+			},
+		},
+	}
+
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCR)
+
+	rabbitmqConfig, err := kubemanagerCR.getRabbitmqNodesInformation("test-ns", cl)
+	require.NoError(t, err)
+	assert.Equal(t, rabbitmqConfig.ServerList, []string{"1.2.3.4", "5.6.7.8"})
+	assert.Equal(t, rabbitmqConfig.Port, 2345)
+	assert.Equal(t, rabbitmqConfig.SSLPort, 1234)
+	assert.Equal(t, rabbitmqConfig.Secret, "secret-rabbit")
+}
+
+func TestGetZookeeperNodesInformationWithStaticConfiguration(t *testing.T) {
+	scheme, err := SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	kubemanagerCR := &Kubemanager{
+		Spec: KubemanagerSpec{
+			ServiceConfiguration: KubemanagerConfiguration{
+				StaticConfiguration: &KubemanagerStaticConfiguration{
+					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
+						ServerIPList: []string{"1.2.3.4", "5.6.7.8"},
+						ClientPort:   1234,
+					},
+				},
+			},
+		},
+	}
+
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCR)
+
+	zookeeperConfig, err := kubemanagerCR.getZookeeperNodesInformation("test-ns", cl)
+	require.NoError(t, err)
+	assert.Equal(t, zookeeperConfig.ServerIPList, []string{"1.2.3.4", "5.6.7.8"})
+	assert.Equal(t, zookeeperConfig.ClientPort, 1234)
+}
+
 func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	scheme, err := SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
