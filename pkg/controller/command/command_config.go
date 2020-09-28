@@ -8,6 +8,10 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
+type CommandConfTemplate interface {
+	ExecuteTemplate(t *template.Template) string
+}
+
 type commandConf struct {
 	ConfigAPIURL    string
 	AdminUsername   string
@@ -53,19 +57,31 @@ func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 		}
 		conf.fillConfigMapForPod(cm)
 	}
+	cm.Data["entrypoint.sh"] = executeTemplate(c, commandEntrypoint)
 }
 
 func (c *commandPodConf) fillConfigMapForPod(cm *core.ConfigMap) {
-	cm.Data["command-app-server"+c.HostIP+".yml"] = c.executeTemplate(commandConfig)
-	cm.Data["entrypoint.sh"] = c.executeTemplate(commandEntrypoint)
+	cm.Data["command-app-server"+c.HostIP+".yml"] = executeTemplate(c, commandConfig)
 }
 
-func (c *commandPodConf) executeTemplate(t *template.Template) string {
+func (c *commandPodConf) ExecuteTemplate(t *template.Template) string {
 	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, c); err != nil {
 		panic(err)
 	}
 	return buffer.String()
+}
+
+func (c *commandConf) ExecuteTemplate(t *template.Template) string {
+	var buffer bytes.Buffer
+	if err := t.Execute(&buffer, c); err != nil {
+		panic(err)
+	}
+	return buffer.String()
+}
+
+func executeTemplate(c CommandConfTemplate, t *template.Template) string {
+	return c.ExecuteTemplate(t)
 }
 
 // TODO: Major HACK contrailgo doesn't support external CA certificates
