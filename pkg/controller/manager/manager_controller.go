@@ -674,9 +674,6 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 			oldContrailCNI.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingContrailCNI.Name,
-				Labels: map[string]string{
-					"contrail_cluster": "cluster1",
-				},
 			}
 			err := r.client.Delete(context.TODO(), oldContrailCNI)
 			if err != nil && !errors.IsNotFound(err) {

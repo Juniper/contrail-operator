@@ -164,6 +164,6 @@ func (r *ReconcileContrailCNI) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	err := instance.SetInstanceActive(r.Client, instance.Status.Active, job, request, instance)
+	err := instance.SetInstanceActive(r.Client, &instance.Status.Active, job, request)
 	return reconcile.Result{}, err
 }
