@@ -289,6 +289,9 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 			oldZookeeper.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingZookeeper.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldZookeeper)
 			if err != nil && !errors.IsNotFound(err) {
@@ -337,6 +340,9 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 			oldCassandra.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingCassandra.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldCassandra)
 			if err != nil && !errors.IsNotFound(err) {
@@ -381,6 +387,9 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int
 			oldWebUI.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Webui.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldWebUI)
 			if err != nil && !errors.IsNotFound(err) {
@@ -417,6 +426,9 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 			oldPM.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.ProvisionManager.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldPM)
 			if err != nil && !errors.IsNotFound(err) {
@@ -453,6 +465,9 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 			oldConfig.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Config.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldConfig)
 			if err != nil && !errors.IsNotFound(err) {
@@ -496,6 +511,9 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			oldKubemanager.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingKubemanager.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldKubemanager)
 			if err != nil && !errors.IsNotFound(err) {
@@ -544,6 +562,9 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 			oldControl.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingControl.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldControl)
 			if err != nil && !errors.IsNotFound(err) {
@@ -585,6 +606,9 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 			oldRabbitMQ.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Rabbitmq.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldRabbitMQ)
 			if err != nil && !errors.IsNotFound(err) {
@@ -626,6 +650,9 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 			oldVRouter.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingVRouter.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldVRouter)
 			if err != nil && !errors.IsNotFound(err) {
@@ -674,6 +701,9 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 			oldContrailCNI.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *existingContrailCNI.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldContrailCNI)
 			if err != nil && !errors.IsNotFound(err) {
@@ -711,6 +741,9 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 			oldCommand.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Command.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldCommand)
 			if err != nil && !errors.IsNotFound(err) {
@@ -750,6 +783,9 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 			oldKeystone.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Keystone.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldKeystone)
 			if err != nil && !errors.IsNotFound(err) {
@@ -787,6 +823,9 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 			oldPostgres.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Postgres.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldPostgres)
 			if err != nil && !errors.IsNotFound(err) {
@@ -826,6 +865,9 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 			oldSwift.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Swift.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldSwift)
 			if err != nil && !errors.IsNotFound(err) {
@@ -863,6 +905,9 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas 
 			oldMemcached.ObjectMeta = v1.ObjectMeta{
 				Namespace: manager.Namespace,
 				Name:      *manager.Status.Memcached.Name,
+				Labels: map[string]string{
+					"contrail_cluster": manager.Name,
+				},
 			}
 			err := r.client.Delete(context.TODO(), oldMemcached)
 			if err != nil && !errors.IsNotFound(err) {
