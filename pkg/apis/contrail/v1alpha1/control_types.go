@@ -205,8 +205,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
-			ListenAddress       string
-			DataIP              string
+			PodIP               string
 			Hostname            string
 			BGPPort             string
 			ASNNumber           string
@@ -221,8 +220,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			CAFilePath          string
 		}{
-			ListenAddress:       podIP,
-			DataIP:              dataIP,
+			PodIP:               podIP,
 			Hostname:            hostname,
 			BGPPort:             strconv.Itoa(*controlConfig.BGPPort),
 			ASNNumber:           strconv.Itoa(*controlConfig.ASNNumber),
@@ -246,8 +244,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 		var controlDNSConfigBuffer bytes.Buffer
 		configtemplates.ControlDNSConfig.Execute(&controlDNSConfigBuffer, struct {
-			ListenAddress       string
-			DataIP              string
+			PodIP               string
 			Hostname            string
 			APIServerList       string
 			APIServerPort       string
@@ -260,8 +257,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			CAFilePath          string
 		}{
-			ListenAddress:       podIP,
-			DataIP:              dataIP,
+			PodIP:               podIP,
 			Hostname:            hostname,
 			APIServerList:       configApiIPListSpaceSeparated,
 			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
@@ -278,15 +274,13 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 		var controlNodemanagerBuffer bytes.Buffer
 		configtemplates.ControlNodemanagerConfig.Execute(&controlNodemanagerBuffer, struct {
-			ListenAddress       string
-			DataIP              string
+			PodIP               string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 			CAFilePath          string
 		}{
-			ListenAddress:       podIP,
-			DataIP:              dataIP,
+			PodIP:               podIP,
 			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
@@ -296,7 +290,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 		var controlProvisionBuffer bytes.Buffer
 		configtemplates.ControlProvisionConfig.Execute(&controlProvisionBuffer, struct {
-			ListenAddress string
 			DataIP        string
 			APIServerList string
 			ASNNumber     string
@@ -304,7 +297,6 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort string
 			Hostname      string
 		}{
-			ListenAddress: podIP,
 			DataIP:        dataIP,
 			APIServerList: configApiIPListCommaSeparated,
 			APIServerPort: strconv.Itoa(configNodesInformation.APIServerPort),

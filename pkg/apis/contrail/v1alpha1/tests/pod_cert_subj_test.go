@@ -38,8 +38,8 @@ func TestUtils(t *testing.T) {
 	var noAltIPs v1alpha1.PodAlternativeIPs
 	var emptyList []string
 	var hostNetwork *bool
-	trueValue := true
-	falseValue := false
+	hostNetworkEnabled := true
+	hostNetworkDisabled := false
 
 	t.Run("should return subject with nodename", func(t *testing.T) {
 		expected := []crt.CertificateSubject{
@@ -54,7 +54,7 @@ func TestUtils(t *testing.T) {
 			crt.NewSubject("pod1", "host1", "1.5.5.5", emptyList),
 			crt.NewSubject("pod2", "host2", "1.5.5.6", emptyList),
 		}
-		got := v1alpha1.PodsCertSubjects(&podList, &falseValue, noAltIPs)
+		got := v1alpha1.PodsCertSubjects(&podList, &hostNetworkDisabled, noAltIPs)
 		assert.Equal(t, expected, got)
 	})
 	t.Run("should return subject with serviceIP", func(t *testing.T) {
@@ -62,7 +62,7 @@ func TestUtils(t *testing.T) {
 			crt.NewSubject("pod1", "node1", "1.5.5.5", []string{"2.2.2.2"}),
 			crt.NewSubject("pod2", "node2", "1.5.5.6", []string{"2.2.2.2"}),
 		}
-		got := v1alpha1.PodsCertSubjects(&podList, &trueValue, withService)
+		got := v1alpha1.PodsCertSubjects(&podList, &hostNetworkEnabled, withService)
 		assert.Equal(t, expected, got)
 	})
 	t.Run("should return subject with serviceIP and dataIP", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestUtils(t *testing.T) {
 			crt.NewSubject("pod1", "node1", "1.5.5.5", []string{"2.2.2.2"}),
 			crt.NewSubject("pod2", "node2", "1.5.5.6", []string{"2.2.2.2", "172.17.90.2"}),
 		}
-		got := v1alpha1.PodsCertSubjects(&podList, &trueValue, withServiceAndRetriver)
+		got := v1alpha1.PodsCertSubjects(&podList, &hostNetworkEnabled, withServiceAndRetriver)
 		assert.Equal(t, expected, got)
 	})
 

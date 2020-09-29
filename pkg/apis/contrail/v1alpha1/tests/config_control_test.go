@@ -43,7 +43,7 @@ func TestControlConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("control services listen on dataSubnetIP if set", func(t *testing.T) {
+	t.Run("control services provisioned with dataSubnetIP if set", func(t *testing.T) {
 		environment := SetupEnv()
 		cl := *environment.client
 		dataIPs, err := getUsableIPsFromIPv4Subnet("172.17.90.0/24", len(environment.controlPodList.Items))
@@ -148,7 +148,7 @@ bgp_port=179
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 # gr_helper_bgp_disable=0
 # gr_helper_xmpp_disable=0
-hostip={{ .ExpectedListenAddress }}
+hostip=0.0.0.0
 hostname=host1
 http_server_ip=0.0.0.0
 http_server_port=8083
@@ -200,7 +200,7 @@ rndc_config_file = contrail-rndc.conf
 named_max_cache_size=32M # max-cache-size (bytes) per view, can be in K or M
 named_max_retransmissions=12
 named_retransmission_interval=1000 # msec
-hostip={{ .ExpectedListenAddress }}
+hostip=0.0.0.0
 hostname=host1
 http_server_port=8092
 http_server_ip=0.0.0.0
@@ -247,7 +247,7 @@ http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-control-nodemgr.log
 log_level=SYS_NOTICE
 log_local=1
-hostip={{ .ExpectedListenAddress }}
+hostip=0.0.0.0
 db_port=9042
 db_jmx_port=7200
 db_use_ssl=True
