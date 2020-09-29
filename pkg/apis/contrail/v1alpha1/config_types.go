@@ -194,8 +194,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		rabbitmqSecretVhost = string(rabbitmqSecret.Data["vhost"])
 	}
 
-	configConfigInterface := c.ConfigurationParameters()
-	configConfig := configConfigInterface.(ConfigConfiguration)
+	configConfig := c.ConfigurationParameters()
 	if rabbitmqSecretUser == "" {
 		rabbitmqSecretUser = configConfig.RabbitmqUser
 	}
@@ -791,8 +790,7 @@ func (c *Config) WaitForPeerPods(request reconcile.Request, reconcileClient clie
 
 func (c *Config) ManageNodeStatus(podNameIPMap map[string]string, client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	configConfigInterface := c.ConfigurationParameters()
-	configConfig := configConfigInterface.(ConfigConfiguration)
+	configConfig := c.ConfigurationParameters()
 	c.Status.Ports.APIPort = strconv.Itoa(*configConfig.APIPort)
 	c.Status.Ports.AnalyticsPort = strconv.Itoa(*configConfig.AnalyticsPort)
 	c.Status.Ports.CollectorPort = strconv.Itoa(*configConfig.CollectorPort)
@@ -823,7 +821,7 @@ func (c *Config) IsActive(name string, namespace string, myclient client.Client)
 	return false
 }
 
-func (c *Config) ConfigurationParameters() interface{} {
+func (c *Config) ConfigurationParameters() ConfigConfiguration {
 	configConfiguration := ConfigConfiguration{}
 	var apiPort int
 	var analyticsPort int

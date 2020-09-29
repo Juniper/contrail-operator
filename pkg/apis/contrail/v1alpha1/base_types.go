@@ -798,8 +798,7 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 	for _, ip := range cassandraInstance.Status.Nodes {
 		cassandraNodes = append(cassandraNodes, ip)
 	}
-	cassandraConfigInterface := cassandraInstance.ConfigurationParameters()
-	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
+	cassandraConfig := cassandraInstance.ConfigurationParameters()
 	endpoint := cassandraInstance.Status.ClusterIP + ":" + strconv.Itoa(*cassandraConfig.Port)
 	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
 	cassandraCluster = CassandraClusterConfiguration{
@@ -897,8 +896,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 		for _, ip := range rabbitmqList.Items[0].Status.Nodes {
 			rabbitmqNodes = append(rabbitmqNodes, ip)
 		}
-		rabbitmqConfigInterface := rabbitmqList.Items[0].ConfigurationParameters()
-		rabbitmqConfig = rabbitmqConfigInterface.(RabbitmqConfiguration)
+		rabbitmqConfig = rabbitmqList.Items[0].ConfigurationParameters()
 		secret = rabbitmqList.Items[0].Status.Secret
 	}
 	sort.SliceStable(rabbitmqNodes, func(i, j int) bool { return rabbitmqNodes[i] < rabbitmqNodes[j] })
@@ -930,8 +928,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		for _, ip := range configList.Items[0].Status.Nodes {
 			configNodes = append(configNodes, ip)
 		}
-		configConfigInterface := configList.Items[0].ConfigurationParameters()
-		configConfig := configConfigInterface.(ConfigConfiguration)
+		configConfig := configList.Items[0].ConfigurationParameters()
 		authMode = configConfig.AuthMode
 		apiServerPort = *configConfig.APIPort
 		analyticsPort = *configConfig.AnalyticsPort

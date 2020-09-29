@@ -109,8 +109,7 @@ func (c *Rabbitmq) InstanceConfiguration(request reconcile.Request,
 	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 
-	rabbitmqConfigInterface := c.ConfigurationParameters()
-	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
+	rabbitmqConfig := c.ConfigurationParameters()
 
 	var data = make(map[string]string)
 	for _, pod := range podList.Items {
@@ -329,8 +328,7 @@ func (c *Rabbitmq) SetInstanceActive(client client.Client, activeStatus *bool, s
 func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	rabbitmqConfigInterface := c.ConfigurationParameters()
-	rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
+	rabbitmqConfig := c.ConfigurationParameters()
 	c.Status.Ports.Port = strconv.Itoa(*rabbitmqConfig.Port)
 	c.Status.Ports.SSLPort = strconv.Itoa(*rabbitmqConfig.SSLPort)
 	c.Status.Secret = rabbitmqConfig.Secret
@@ -341,7 +339,7 @@ func (c *Rabbitmq) ManageNodeStatus(podNameIPMap map[string]string,
 	return nil
 }
 
-func (c *Rabbitmq) ConfigurationParameters() interface{} {
+func (c *Rabbitmq) ConfigurationParameters() RabbitmqConfiguration {
 	rabbitmqConfiguration := RabbitmqConfiguration{}
 	var port int
 	var sslPort int

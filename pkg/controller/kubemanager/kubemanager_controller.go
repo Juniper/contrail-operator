@@ -213,9 +213,8 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	active := r.kubemanagerDependenciesReady(instance, request.Namespace)
-	if !active {
-		return reconcile.Result{RequeueAfter: 5}, nil
+	if !r.kubemanagerDependenciesReady(instance, request.Namespace) {
+		return reconcile.Result{}, nil
 	}
 
 	currentConfigMap, currentConfigExists := instance.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
