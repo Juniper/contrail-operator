@@ -8,42 +8,20 @@ import (
 	"fmt"
 	"net"
 	"time"
-
-	core "k8s.io/api/core/v1"
 )
 
-type certificateSubject struct {
-	name         string
-	hostname     string
-	ip           string
-	secondaryIPs []string
+type CertificateSubject struct {
+	name           string
+	hostname       string
+	ip             string
+	alternativeIPs []string
 }
 
-type certificateSubjects struct {
-	pods        *core.PodList
-	hostNetwork bool
+func NewSubject(name string, hostname string, ip string, alternativeIPs []string) CertificateSubject {
+	return CertificateSubject{name: name, hostname: hostname, ip: ip, alternativeIPs: alternativeIPs}
 }
 
-func (cs certificateSubjects) createCertificateSubjects() []certificateSubject {
-	subjects := []certificateSubject{}
-	for _, pod := range cs.pods.Items {
-		var hostname string
-		if cs.hostNetwork {
-			hostname = pod.Spec.NodeName
-		} else {
-			hostname = pod.Spec.Hostname
-		}
-		if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
-			subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP, secondaryIPs: []string{dataIP}})
-		} else {
-			subjects = append(subjects, certificateSubject{name: pod.Name, hostname: hostname, ip: pod.Status.PodIP})
-		}
-	}
-	return subjects
-
-}
-
-func (c certificateSubject) generateCertificateTemplate(alternativeIP string) (x509.Certificate, *rsa.PrivateKey, error) {
+func (c CertificateSubject) generateCertificateTemplate() (x509.Certificate, *rsa.PrivateKey, error) {
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, certKeyLength)
 
 	if err != nil {
@@ -60,10 +38,7 @@ func (c certificateSubject) generateCertificateTemplate(alternativeIP string) (x
 
 	var ips []net.IP
 	ips = append(ips, net.ParseIP(c.ip))
-	if alternativeIP != "" {
-		ips = append(ips, net.ParseIP(alternativeIP))
-	}
-	for _, ip := range c.secondaryIPs {
+	for _, ip := range c.alternativeIPs {
 		ips = append(ips, net.ParseIP(ip))
 	}
 

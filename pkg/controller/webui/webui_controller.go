@@ -492,11 +492,8 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+
+		if err := r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -565,4 +562,10 @@ func (r *ReconcileWebui) listWebUIPods(webUIName string) (*corev1.PodList, error
 		return &corev1.PodList{}, err
 	}
 	return pods, nil
+}
+
+func (r *ReconcileWebui) ensureCertificatesExist(webUI *v1alpha1.Webui, pods *corev1.PodList, instanceType string) error {
+	subjects := webUI.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, webUI, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

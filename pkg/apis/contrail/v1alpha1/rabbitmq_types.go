@@ -315,6 +315,12 @@ func (c *Rabbitmq) PodIPListAndIPMapFromInstance(instanceType string, request re
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, false, false, false, false, false)
 }
 
+//PodsCertSubjects gets list of Rabbitmq pods certificate subjets which can be passed to the certificate API
+func (c *Rabbitmq) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Rabbitmq) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)

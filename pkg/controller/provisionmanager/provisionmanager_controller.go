@@ -374,12 +374,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		if err := r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -395,4 +390,10 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileProvisionManager) ensureCertificatesExist(provision *v1alpha1.ProvisionManager, pods *corev1.PodList, instanceType string) error {
+	subjects := provision.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, provision, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

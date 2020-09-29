@@ -8,7 +8,6 @@ go_library(
         "certificate_subject.go",
         "certificate_templates.go",
         "pem.go",
-        "sign_csr.go",
         "signer_ca.go",
     ],
     importpath = "github.com/Juniper/contrail-operator/pkg/certificates",

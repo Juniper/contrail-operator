@@ -583,11 +583,9 @@ func (r *ReconcileCommand) ensureContrailSwiftContainerExists(command *contrail.
 }
 
 func (r *ReconcileCommand) ensureCertificatesExist(command *contrail.Command, pods *core.PodList, instanceType, serviceIP string) error {
-	hostNetwork := true
-	if command.Spec.CommonConfiguration.HostNetwork != nil {
-		hostNetwork = *command.Spec.CommonConfiguration.HostNetwork
-	}
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, command, pods, serviceIP, instanceType, hostNetwork).EnsureExistsAndIsSigned()
+	subjects := command.PodsCertSubjects(pods, serviceIP)
+	crt := certificates.NewCertificate(r.client, r.scheme, command, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, error) {

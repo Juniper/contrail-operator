@@ -415,6 +415,20 @@ func (c *Control) PodIPListAndIPMapFromInstance(instanceType string, request rec
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
+func retrieveDataIPs(pod corev1.Pod) []string {
+	var altIPs []string
+	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+		altIPs = append(altIPs, dataIP)
+	}
+	return altIPs
+}
+
+//PodsCertSubjects gets list of Control pods certificate subjects which can be passed to the certificate API
+func (c *Control) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	altIPs := PodAlternativeIPs{Retriever: retrieveDataIPs}
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Control) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)

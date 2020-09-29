@@ -152,7 +152,7 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, fmt.Errorf("failed to list swift proxy pods: %v", err)
 	}
 
-	if err := r.ensureCertificatesExist(swiftProxy, swiftProxyPods); err != nil {
+	if err := r.ensureCertificatesExist(swiftProxy, swiftProxyPods, swiftProxy.Status.ClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -293,9 +293,10 @@ func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.P
 	return pods, nil
 }
 
-func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList) error {
-	clusterIP := swiftProxy.Status.ClusterIP
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, swiftProxy, pods, clusterIP, "swiftproxy", true).EnsureExistsAndIsSigned()
+func (r *ReconcileSwiftProxy) ensureCertificatesExist(swiftProxy *contrail.SwiftProxy, pods *core.PodList, serviceIP string) error {
+	subjects := swiftProxy.PodsCertSubjects(pods, serviceIP)
+	crt := certificates.NewCertificate(r.client, r.scheme, swiftProxy, subjects, "swiftproxy")
+	return crt.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileSwiftProxy) getKeystone(cr *contrail.SwiftProxy) (*contrail.Keystone, error) {

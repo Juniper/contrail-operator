@@ -19,14 +19,12 @@ type Certificate struct {
 	owner               v1.Object
 	sc                  *k8s.Secret
 	signer              certificateSigner
-	certificateSubjects []certificateSubject
-	serviceIP           string
+	certificateSubjects []CertificateSubject
 }
 
-func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, ownerType string, hostNetwork bool) *Certificate {
+func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, subjects []CertificateSubject, ownerType string) *Certificate {
 	secretName := owner.GetName() + "-secret-certificates"
 	kubernetes := k8s.New(cl, scheme)
-	subjects := certificateSubjects{pods, hostNetwork}
 	return &Certificate{
 		client: cl,
 		scheme: scheme,
@@ -36,14 +34,8 @@ func NewCertificate(cl client.Client, scheme *runtime.Scheme, owner v1.Object, p
 			client: cl,
 			owner:  owner,
 		},
-		certificateSubjects: subjects.createCertificateSubjects(),
+		certificateSubjects: subjects,
 	}
-}
-
-func NewCertificateWithServiceIP(cl client.Client, scheme *runtime.Scheme, owner v1.Object, pods *core.PodList, serviceIP string, ownerType string, hostNetwork bool) *Certificate {
-	certificate := NewCertificate(cl, scheme, owner, pods, ownerType, hostNetwork)
-	certificate.serviceIP = serviceIP
-	return certificate
 }
 
 func (r *Certificate) EnsureExistsAndIsSigned() error {
@@ -70,11 +62,11 @@ func (r *Certificate) FillSecret(secret *core.Secret) error {
 	return nil
 }
 
-func (r *Certificate) createCertificateForPod(subject certificateSubject, secret *core.Secret) error {
+func (r *Certificate) createCertificateForPod(subject CertificateSubject, secret *core.Secret) error {
 	if certInSecret(secret, subject.ip) {
 		return nil
 	}
-	certificateTemplate, privateKey, err := subject.generateCertificateTemplate(r.serviceIP)
+	certificateTemplate, privateKey, err := subject.generateCertificateTemplate()
 	if err != nil {
 		return fmt.Errorf("failed to generate certificate template for %s, %s: %w", subject.hostname, subject.name, err)
 	}

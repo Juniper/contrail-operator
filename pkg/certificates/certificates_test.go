@@ -49,26 +49,26 @@ func TestCertificate(t *testing.T) {
 		},
 	}
 
-	subject := certificateSubject{
+	subject := CertificateSubject{
 		name:     "subject1",
 		hostname: "hostname1",
 		ip:       "ip1",
 	}
-	subject2 := certificateSubject{
+	subject2 := CertificateSubject{
 		name:     "kubject2",
 		hostname: "hostname2",
 		ip:       "ip2",
 	}
 
-	subjectWithoutIP := certificateSubject{
+	subjectWithoutIP := CertificateSubject{
 		name:     "subject1",
 		hostname: "hostname1",
 	}
 
 	tests := []struct {
 		name                string
-		certificateSubjects []certificateSubject
-		expectedSubjects    []certificateSubject
+		certificateSubjects []CertificateSubject
+		expectedSubjects    []CertificateSubject
 		errorExpected       bool
 		signerError         error
 	}{
@@ -77,24 +77,24 @@ func TestCertificate(t *testing.T) {
 		},
 		{
 			name:                "Should create Secret and certificate for subject",
-			certificateSubjects: []certificateSubject{subject},
-			expectedSubjects:    []certificateSubject{subject},
+			certificateSubjects: []CertificateSubject{subject},
+			expectedSubjects:    []CertificateSubject{subject},
 		},
 		{
 			name:                "Should create Secret and certificate for all subjects",
-			certificateSubjects: []certificateSubject{subject, subject2},
-			expectedSubjects:    []certificateSubject{subject, subject2},
+			certificateSubjects: []CertificateSubject{subject, subject2},
+			expectedSubjects:    []CertificateSubject{subject, subject2},
 		},
 		{
 			name:                "Should return error when subject has no ip",
-			certificateSubjects: []certificateSubject{subject, subjectWithoutIP},
-			expectedSubjects:    []certificateSubject{},
+			certificateSubjects: []CertificateSubject{subject, subjectWithoutIP},
+			expectedSubjects:    []CertificateSubject{},
 			errorExpected:       true,
 		},
 		{
 			name:                "Should return error when signer fail",
-			certificateSubjects: []certificateSubject{subject},
-			expectedSubjects:    []certificateSubject{},
+			certificateSubjects: []CertificateSubject{subject},
+			expectedSubjects:    []CertificateSubject{},
 			errorExpected:       true,
 			signerError:         errors.New("signer error"),
 		},
@@ -132,7 +132,7 @@ func assertSecretDataEqual(t *testing.T, secretData map[string][]byte, expected 
 	return ((secretData == nil || len(secretData) == 0) && len(expected) == 0) || assert.Equal(t, secretData, expected)
 }
 
-func getExpectedCertificates(t *testing.T, spy *signerSpy, expectedSubjects []certificateSubject) map[string][]byte {
+func getExpectedCertificates(t *testing.T, spy *signerSpy, expectedSubjects []CertificateSubject) map[string][]byte {
 	expectedCerts := map[string][]byte{}
 	for _, sub := range expectedSubjects {
 		privateKey, ok := spy.data[sub.ip]

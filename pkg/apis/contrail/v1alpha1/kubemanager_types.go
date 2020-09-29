@@ -342,6 +342,12 @@ func (c *Kubemanager) PodIPListAndIPMapFromInstance(instanceType string, request
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, false, false, false, false, false)
 }
 
+//PodsCertSubjects gets list of Kubemanager pods certificate subjets which can be passed to the certificate API
+func (c *Kubemanager) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 // SetInstanceActive sets the Kubemanager instance to active.
 func (c *Kubemanager) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)

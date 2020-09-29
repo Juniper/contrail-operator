@@ -8,9 +8,11 @@ go_test(
         "config_customized_test.go",
         "config_test.go",
         "config_vrouter_test.go",
+        "pod_cert_subj_test.go",
     ],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/certificates:go_default_library",
         "//pkg/k8s:go_default_library",
         "@com_github_kylelemons_godebug//diff:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",

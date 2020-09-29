@@ -9,22 +9,21 @@ import (
 	"strings"
 	"time"
 
+	mRand "math/rand"
+
 	yaml "gopkg.in/yaml.v2"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	mRand "math/rand"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
@@ -292,6 +291,49 @@ func SetPodsToReady(podList *corev1.PodList, client client.Client) error {
 		}
 	}
 	return nil
+}
+
+// +k8s:deepcopy-gen=false
+type podAltIPsRetriver func(pod corev1.Pod) []string
+
+// +k8s:deepcopy-gen=false
+type PodAlternativeIPs struct {
+	// Function which operate over pod object
+	// to retrieve additional IP addresses used
+	// by this pod.
+	Retriever podAltIPsRetriver
+	// ServiceIP through which pod can be reached.
+	ServiceIP string
+}
+
+// PodsCertSubjects iterates over passed list of pods and for every pod prepares certificate subject
+// which can be later used for generating certificate for given pod.
+func PodsCertSubjects(podList *corev1.PodList, hostNetwork *bool, podAltIPs PodAlternativeIPs) []certificates.CertificateSubject {
+	var pods []certificates.CertificateSubject
+	useNodeName := true
+	if hostNetwork != nil {
+		useNodeName = *hostNetwork
+	}
+	for _, pod := range podList.Items {
+		var hostname string
+		if useNodeName {
+			hostname = pod.Spec.NodeName
+		} else {
+			hostname = pod.Spec.Hostname
+		}
+		var alternativeIPs []string
+		if podAltIPs.ServiceIP != "" {
+			alternativeIPs = append(alternativeIPs, podAltIPs.ServiceIP)
+		}
+		if podAltIPs.Retriever != nil {
+			if altIPs := podAltIPs.Retriever(pod); len(altIPs) > 0 {
+				alternativeIPs = append(alternativeIPs, altIPs...)
+			}
+		}
+		podInfo := certificates.NewSubject(pod.Name, hostname, pod.Status.PodIP, alternativeIPs)
+		pods = append(pods, podInfo)
+	}
+	return pods
 }
 
 type errorString struct {

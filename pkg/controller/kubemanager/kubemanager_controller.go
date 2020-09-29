@@ -515,11 +515,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			return reconcile.Result{}, err
 		}
 
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		if err := r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -556,4 +552,10 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		}
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileKubemanager) ensureCertificatesExist(config *v1alpha1.Kubemanager, pods *corev1.PodList, instanceType string) error {
+	subjects := config.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, config, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

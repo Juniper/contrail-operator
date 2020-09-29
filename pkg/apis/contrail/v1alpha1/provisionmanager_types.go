@@ -576,6 +576,12 @@ func (c *ProvisionManager) PodIPListAndIPMapFromInstance(request reconcile.Reque
 	return PodIPListAndIPMapFromInstance("provisionmanager", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
+//PodsCertSubjects gets list of ProvisionManager pods certificate subjets which can be passed to the certificate API
+func (c *ProvisionManager) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)
 }
