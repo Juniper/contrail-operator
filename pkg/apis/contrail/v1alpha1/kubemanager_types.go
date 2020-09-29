@@ -191,16 +191,11 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		configApiIPListCommaSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, ",")
 		configCollectorEndpointList := configtemplates.EndpointList(configNodesInformation.CollectorServerIPList, configNodesInformation.CollectorPort)
 		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
-		rabbitmqServerListCommaSeparated := configtemplates.JoinListWithSeparator(rabbitmqNodesInformation.ServerList, ",")
-		zookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
-		zookeeperServerListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
-		var cassandraEndpoint string
-		if cassandraNodesInformation.Endpoint == "" {
-			cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerList, cassandraNodesInformation.Port)
-			cassandraEndpoint = configtemplates.JoinListWithSeparator(cassandraEndpointList, ",")
-		} else {
-			cassandraEndpoint = cassandraNodesInformation.Endpoint
-		}
+		rabbitmqSSLEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(rabbitmqNodesInformation.ServerIPList, ",")
+		SSLzookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
+		zookeeperSSLServerListCommaSeparated := configtemplates.JoinListWithSeparator(SSLzookeeperEndpointList, ",")
+		cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.Port)
+		cassandraEndpoint := configtemplates.JoinListWithSeparator(cassandraEndpointList, ",")
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
 		if err = client.Get(context.TODO(), types.NamespacedName{Name: "kubemanagersecret", Namespace: request.Namespace}, secret); err != nil {
@@ -248,8 +243,8 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			APIServerList:         configApiIPListCommaSeparated,
 			APIServerPort:         strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraServerList:   cassandraEndpoint,
-			ZookeeperServerList:   zookeeperServerListCommaSeparated,
-			RabbitmqServerList:    rabbitmqServerListCommaSeparated,
+			ZookeeperServerList:   zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:    rabbitmqSSLEndpointListCommaSeparated,
 			RabbitmqServerPort:    strconv.Itoa(rabbitmqNodesInformation.SSLPort),
 			CollectorServerList:   configCollectorEndpointListSpaceSeparated,
 			HostNetworkService:    strconv.FormatBool(*kubemanagerConfig.HostNetworkService),

@@ -81,11 +81,10 @@ func TestGetCassandraNodesInformationWithStaticConfiguration(t *testing.T) {
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
-						Endpoint:   "1.2.3.4",
-						Port:       1234,
-						CQLPort:    2345,
-						JMXPort:    3456,
-						ServerList: []string{"1.1.1.1", "2.2.2.2"},
+						Port:         1234,
+						CQLPort:      2345,
+						JMXPort:      3456,
+						ServerIPList: []string{"1.1.1.1", "2.2.2.2"},
 					},
 				},
 			},
@@ -96,11 +95,10 @@ func TestGetCassandraNodesInformationWithStaticConfiguration(t *testing.T) {
 
 	cassandraConfig, err := kubemanagerCR.getCassandraNodesInformation("test-ns", cl)
 	require.NoError(t, err)
-	assert.Equal(t, cassandraConfig.Endpoint, "1.2.3.4")
 	assert.Equal(t, cassandraConfig.Port, 1234)
 	assert.Equal(t, cassandraConfig.CQLPort, 2345)
 	assert.Equal(t, cassandraConfig.JMXPort, 3456)
-	assert.Equal(t, cassandraConfig.ServerList, []string{"1.1.1.1", "2.2.2.2"})
+	assert.Equal(t, cassandraConfig.ServerIPList, []string{"1.1.1.1", "2.2.2.2"})
 }
 
 func TestGetConfigNodesInformationWithStaticConfiguration(t *testing.T) {
@@ -141,10 +139,10 @@ func TestGetRabbitmqNodesInformationWithStaticConfiguration(t *testing.T) {
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
 					RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
-						ServerList: []string{"1.2.3.4", "5.6.7.8"},
-						SSLPort:    1234,
-						Port:       2345,
-						Secret:     "secret-rabbit",
+						ServerIPList: []string{"1.2.3.4", "5.6.7.8"},
+						SSLPort:      1234,
+						Port:         2345,
+						Secret:       "secret-rabbit",
 					},
 				},
 			},
@@ -155,7 +153,7 @@ func TestGetRabbitmqNodesInformationWithStaticConfiguration(t *testing.T) {
 
 	rabbitmqConfig, err := kubemanagerCR.getRabbitmqNodesInformation("test-ns", cl)
 	require.NoError(t, err)
-	assert.Equal(t, rabbitmqConfig.ServerList, []string{"1.2.3.4", "5.6.7.8"})
+	assert.Equal(t, rabbitmqConfig.ServerIPList, []string{"1.2.3.4", "5.6.7.8"})
 	assert.Equal(t, rabbitmqConfig.Port, 2345)
 	assert.Equal(t, rabbitmqConfig.SSLPort, 1234)
 	assert.Equal(t, rabbitmqConfig.Secret, "secret-rabbit")
@@ -216,11 +214,10 @@ func TestGetCassandraNodesInformationWithDynamicConfiguration(t *testing.T) {
 
 	cassandraConfig, err := kubemanagerCR.getCassandraNodesInformation("test-ns", cl)
 	require.NoError(t, err)
-	assert.Equal(t, cassandraConfig.Endpoint, "1.2.3.4:9160")
 	assert.Equal(t, cassandraConfig.Port, 9160)
 	assert.Equal(t, cassandraConfig.CQLPort, 9042)
 	assert.Equal(t, cassandraConfig.JMXPort, 7200)
-	assert.Equal(t, cassandraConfig.ServerList, []string{"4.4.4.4", "5.5.5.5"})
+	assert.Equal(t, cassandraConfig.ServerIPList, []string{"1.2.3.4"})
 }
 
 func TestGetZookeeperNodesInformationWithDynamicConfiguration(t *testing.T) {
@@ -289,7 +286,7 @@ func TestGetRabbitmqNodesInformationWithDynamicConfiguration(t *testing.T) {
 
 	rabbitmqConfig, err := kubemanagerCR.getRabbitmqNodesInformation("test-ns", cl)
 	require.NoError(t, err)
-	assert.Equal(t, rabbitmqConfig.ServerList, []string{"1.1.1.1", "2.2.2.2"})
+	assert.Equal(t, rabbitmqConfig.ServerIPList, []string{"1.1.1.1", "2.2.2.2"})
 	assert.Equal(t, rabbitmqConfig.Port, 5673)
 	assert.Equal(t, rabbitmqConfig.SSLPort, 15673)
 	assert.Equal(t, rabbitmqConfig.Secret, "rabbit-secret")
@@ -374,8 +371,8 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
-						ServerList: []string{"1.1.1.1", "2.2.2.2"},
-						Port:       1111,
+						ServerIPList: []string{"1.1.1.1", "2.2.2.2"},
+						Port:         1111,
 					},
 					ConfigNodesConfiguration: &ConfigClusterConfiguration{
 						APIServerIPList:       []string{"3.3.3.3", "4.4.4.4"},
@@ -384,9 +381,9 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 						CollectorPort:         2223,
 					},
 					RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
-						ServerList: []string{"5.5.5.5", "6.6.6.6"},
-						SSLPort:    3333,
-						Secret:     "rabbit-secret",
+						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
+						SSLPort:      3333,
+						Secret:       "rabbit-secret",
 					},
 					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
 						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},

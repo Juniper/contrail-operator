@@ -160,13 +160,11 @@ spec:
                     for deployment with static controller.
                   properties:
                     cassandraNodesConfiguration:
-                      description: CassandraClusterConfiguration defines all configuration
-                        knobs used to write the config file.
+                      description: CassandraClusterConfiguration  stores all information
+                        about Cassandra's endpoints.
                       properties:
                         cqlPort:
                           type: integer
-                        endpoint:
-                          type: string
                         jmxPort:
                           type: integer
                         port:
@@ -207,8 +205,8 @@ spec:
                           type: integer
                       type: object
                     rabbitmqNodesConfiguration:
-                      description: RabbitmqClusterConfiguration defines all configuration
-                        knobs used to write the config file.
+                      description: RabbitmqClusterConfiguration defines stores all
+                        information about Rabbitmq's endpoints.
                       properties:
                         port:
                           type: integer
@@ -220,12 +218,10 @@ spec:
                           type: array
                         sslPort:
                           type: integer
-                      required:
-                      - serverList
                       type: object
                     zookeeperNodesConfiguration:
-                      description: ZookeeperClusterConfiguration defines all configuration
-                        knobs used to write the config file.
+                      description: ZookeeperClusterConfiguration stores all information
+                        about Zookeeper's endpoints.
                       properties:
                         clientPort:
                           type: integer

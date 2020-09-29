@@ -785,7 +785,7 @@ config.jobServer.server_port = '3000';
 config.files = {};
 config.files.download_path = '/tmp';
 config.cassandra = {};
-config.cassandra.server_ips = ['1.1.2.1','1.1.2.2','1.1.2.3'];
+config.cassandra.server_ips = ['10.0.0.1'];
 config.cassandra.server_port = '9042';
 config.cassandra.enable_edit = false;
 config.cassandra.use_ssl = true;
@@ -1104,6 +1104,192 @@ var rabbitmqDefinition = `{
     }
   ],
 }
+`
+
+var controlConfig = `[DEFAULT]
+# bgp_config_file=bgp_config.xml
+bgp_port=179
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+# gr_helper_bgp_disable=0
+# gr_helper_xmpp_disable=0
+hostip=1.1.5.1
+hostname=host1
+http_server_ip=0.0.0.0
+http_server_port=8083
+log_file=/var/log/contrail/contrail-control.log
+log_level=SYS_NOTICE
+log_local=1
+# log_files_count=10
+# log_file_size=10485760 # 10MB
+# log_category=
+# log_disable=0
+xmpp_server_port=5269
+xmpp_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-1.1.5.1.crt
+xmpp_server_key=/etc/certificates/server-key-1.1.5.1.pem
+xmpp_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt
+
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+[CONFIGDB]
+config_db_server_list=10.0.0.1:9042
+# config_db_username=
+# config_db_password=
+config_db_use_ssl=True
+config_db_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
+rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
+rabbitmq_vhost=vhost
+rabbitmq_user=user
+rabbitmq_password=password
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-1.1.5.1.crt
+rabbitmq_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
+rabbitmq_ssl_version=tlsv1_2
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
+
+var dnsConfig = `[DEFAULT]
+collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+named_config_file = /etc/contrailconfigmaps/named.1.1.5.1
+named_config_directory = /etc/contrail/dns
+named_log_file = /var/log/contrail/contrail-named.log
+rndc_config_file = contrail-rndc.conf
+named_max_cache_size=32M # max-cache-size (bytes) per view, can be in K or M
+named_max_retransmissions=12
+named_retransmission_interval=1000 # msec
+hostip=1.1.5.1
+hostname=host1
+http_server_port=8092
+http_server_ip=0.0.0.0
+dns_server_port=53
+log_file=/var/log/contrail/contrail-dns.log
+log_level=SYS_NOTICE
+log_local=1
+# log_files_count=10
+# log_file_size=10485760 # 10MB
+# log_category=
+# log_disable=0
+xmpp_dns_auth_enable=True
+xmpp_server_cert=/etc/certificates/server-1.1.5.1.crt
+xmpp_server_key=/etc/certificates/server-key-1.1.5.1.pem
+xmpp_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt
+# Sandesh send rate limit can be used to throttle system logs transmitted per
+# second. System logs are dropped if the sending rate is exceeded
+# sandesh_send_rate_limit=
+[CONFIGDB]
+config_db_server_list=10.0.0.1:9042
+# config_db_username=
+# config_db_password=
+config_db_use_ssl=True
+config_db_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
+rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
+rabbitmq_vhost=vhost
+rabbitmq_user=user
+rabbitmq_password=password
+rabbitmq_use_ssl=True
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-1.1.5.1.crt
+rabbitmq_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
+rabbitmq_ssl_version=tlsv1_2
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
+
+var controlNodemanagerConfig = `[DEFAULTS]
+http_server_ip=0.0.0.0
+log_file=/var/log/contrail/contrail-control-nodemgr.log
+log_level=SYS_NOTICE
+log_local=1
+hostip=1.1.5.1
+db_port=9042
+db_jmx_port=7200
+db_use_ssl=True
+[COLLECTOR]
+server_list=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
+[SANDESH]
+introspect_ssl_enable=True
+introspect_ssl_insecure=True
+sandesh_ssl_enable=True
+sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
+sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
+sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
+
+var namedConfig = `options {
+    directory "/etc/contrail/dns";
+    managed-keys-directory "/etc/contrail/dns";
+    empty-zones-enable no;
+    pid-file "/etc/contrail/dns/contrail-named.pid";
+    session-keyfile "/etc/contrail/dns/session.key";
+    listen-on port 53 { any; };
+    allow-query { any; };
+    allow-recursion { any; };
+    allow-query-cache { any; };
+    max-cache-size 32M;
+};
+key "rndc-key" {
+    algorithm hmac-md5;
+    secret "xvysmOR8lnUQRBcunkC6vg==";
+};
+controls {
+    inet 127.0.0.1 port 8094
+    allow { 127.0.0.1; }  keys { "rndc-key"; };
+};
+logging {
+    channel debug_log {
+        file "/var/log/contrail/contrail-named.log" versions 3 size 5m;
+        severity debug;
+        print-time yes;
+        print-severity yes;
+        print-category yes;
+    };
+    category default {
+        debug_log;
+    };
+    category queries {
+        debug_log;
+    };
+};`
+
+var controlProvisioningConfig = `#!/bin/bash
+sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
+servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
+for server in $servers ; do
+  python /opt/contrail/utils/provision_control.py --oper $1 \
+  --api_server_use_ssl true \
+  --host_ip 1.1.5.1 \
+  --router_asn 64512 \
+  --bgp_server_port 179 \
+  --api_server_ip $server \
+  --api_server_port 8082 \
+  --host_name host1
+  if [[ $? -eq 0 ]]; then
+	break
+  fi
+done
+`
+
+var controlDeProvisioningConfig = `#!/usr/bin/python
+from vnc_api import vnc_api
+import socket
+vncServerList = ['1.1.1.1','1.1.1.2','1.1.1.3']
+vnc_client = vnc_api.VncApi(
+            username = 'admin',
+            password = 'contrail123',
+            tenant_name = 'admin',
+            api_server_host= vncServerList[0],
+            api_server_port=8082)
+vnc_client.bgp_router_delete(fq_name=['default-domain','default-project','ip-fabric','__default__', 'host1' ])
 `
 
 var kubemanagerConfig = `[DEFAULTS]

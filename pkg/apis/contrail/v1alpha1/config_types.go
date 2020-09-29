@@ -223,21 +223,16 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	apiServerSpaceSeparatedList = apiServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.APIPort)
 	redisServerSpaceSeparatedList = strings.Join(podIPList, ":"+strconv.Itoa(*configConfig.RedisPort)+" ")
 	redisServerSpaceSeparatedList = redisServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.RedisPort)
-	var cassandraEndpoint string
-	if cassandraNodesInformation.Endpoint == "" {
-		cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerList, cassandraNodesInformation.Port)
-		cassandraEndpoint = configtemplates.JoinListWithSeparator(cassandraEndpointList, " ")
-	} else {
-		cassandraEndpoint = cassandraNodesInformation.Endpoint
-	}
-	cassandraCQLEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerList, cassandraNodesInformation.CQLPort)
-	cassandraCQLServerListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraCQLEndpointList, " ")
-	rabbitmqEndpointList := configtemplates.EndpointList(rabbitmqNodesInformation.ServerList, rabbitmqNodesInformation.SSLPort)
-	rabbitmqServerListSpaceSeparated := configtemplates.JoinListWithSeparator(rabbitmqEndpointList, " ")
-	rabbitmqServerListCommaSeparated := configtemplates.JoinListWithSeparator(rabbitmqEndpointList, ",")
-	zookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
-	zookeeperServerListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
-	zookeeperServerListSpaceSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, " ")
+	cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.Port)
+	cassandraEndpoint := configtemplates.JoinListWithSeparator(cassandraEndpointList, " ")
+	cassandraCQLEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.CQLPort)
+	cassandraCQLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraCQLEndpointList, " ")
+	SSLEndpointList := configtemplates.EndpointList(rabbitmqNodesInformation.ServerIPList, rabbitmqNodesInformation.SSLPort)
+	rabbitmqSSLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(SSLEndpointList, " ")
+	rabbitmqSSLEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(SSLEndpointList, ",")
+	SSLzookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
+	zookeeperSSLServerListCommaSeparated := configtemplates.JoinListWithSeparator(SSLzookeeperEndpointList, ",")
+	zookeeperSSLServerListSpaceSeparated := configtemplates.JoinListWithSeparator(SSLzookeeperEndpointList, " ")
 
 	var data = make(map[string]string)
 	for idx, pod := range podList.Items {
@@ -285,8 +280,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
 			CassandraServerList: cassandraEndpoint,
-			ZookeeperServerList: zookeeperServerListCommaSeparated,
-			RabbitmqServerList:  rabbitmqServerListCommaSeparated,
+			ZookeeperServerList: zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:  rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList: collectorServerList,
 			RabbitmqUser:        rabbitmqSecretUser,
 			RabbitmqPassword:    rabbitmqSecretPassword,
@@ -353,8 +348,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ApiServerList:               apiServerList,
 			AnalyticsServerList:         analyticsServerList,
 			CassandraServerList:         cassandraEndpoint,
-			ZookeeperServerList:         zookeeperServerListCommaSeparated,
-			RabbitmqServerList:          rabbitmqServerListCommaSeparated,
+			ZookeeperServerList:         zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:          rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:         collectorServerList,
 			RabbitmqUser:                rabbitmqSecretUser,
 			RabbitmqPassword:            rabbitmqSecretPassword,
@@ -427,8 +422,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ApiServerList:        apiServerList,
 			AnalyticsServerList:  analyticsServerList,
 			CassandraServerList:  cassandraEndpoint,
-			ZookeeperServerList:  zookeeperServerListCommaSeparated,
-			RabbitmqServerList:   rabbitmqServerListCommaSeparated,
+			ZookeeperServerList:  zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:   rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:  collectorServerList,
 			RabbitmqUser:         rabbitmqSecretUser,
 			RabbitmqPassword:     rabbitmqSecretPassword,
@@ -460,8 +455,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ApiServerList:            apiServerList,
 			AnalyticsServerList:      analyticsServerSpaceSeparatedList,
 			CassandraServerList:      cassandraEndpoint,
-			ZookeeperServerList:      zookeeperServerListCommaSeparated,
-			RabbitmqServerList:       rabbitmqServerListCommaSeparated,
+			ZookeeperServerList:      zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:       rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:      collectorServerList,
 			RabbitmqUser:             rabbitmqSecretUser,
 			RabbitmqPassword:         rabbitmqSecretPassword,
@@ -495,8 +490,8 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			ApiServerList:              apiServerSpaceSeparatedList,
 			AnalyticsServerList:        analyticsServerSpaceSeparatedList,
 			CassandraServerList:        cassandraEndpoint,
-			ZookeeperServerList:        zookeeperServerListSpaceSeparated,
-			RabbitmqServerList:         rabbitmqServerListCommaSeparated,
+			ZookeeperServerList:        zookeeperSSLServerListSpaceSeparated,
+			RabbitmqServerList:         rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:        collectorServerList,
 			RedisServerList:            redisServerSpaceSeparatedList,
 			RabbitmqUser:               rabbitmqSecretUser,
@@ -536,9 +531,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			Hostname:                hostname,
 			HostIP:                  podList.Items[idx].Status.PodIP,
 			ApiServerList:           apiServerSpaceSeparatedList,
-			CassandraServerList:     cassandraCQLServerListSpaceSeparated,
-			ZookeeperServerList:     zookeeperServerListCommaSeparated,
-			RabbitmqServerList:      rabbitmqServerListSpaceSeparated,
+			CassandraServerList:     cassandraCQLEndpointListSpaceSeparated,
+			ZookeeperServerList:     zookeeperSSLServerListCommaSeparated,
+			RabbitmqServerList:      rabbitmqSSLEndpointListSpaceSeparated,
 			RabbitmqUser:            rabbitmqSecretUser,
 			RabbitmqPassword:        rabbitmqSecretPassword,
 			RabbitmqVhost:           rabbitmqSecretVhost,
@@ -564,7 +559,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		}{
 			Hostname:            hostname,
 			HostIP:              podList.Items[idx].Status.PodIP,
-			CassandraServerList: cassandraCQLServerListSpaceSeparated,
+			CassandraServerList: cassandraCQLEndpointListSpaceSeparated,
 			CollectorServerList: collectorServerList,
 			RedisServerList:     redisServerSpaceSeparatedList,
 			CAFilePath:          certificates.SignerCAFilepath,

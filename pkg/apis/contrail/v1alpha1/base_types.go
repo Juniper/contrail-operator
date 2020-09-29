@@ -788,25 +788,19 @@ func PodIPListAndIPMapFromInstance(instanceType string,
 
 // NewCassandraClusterConfiguration gets a struct containing various representations of Cassandra nodes string.
 func NewCassandraClusterConfiguration(name string, namespace string, client client.Client) (CassandraClusterConfiguration, error) {
-	var cassandraNodes []string
 	var cassandraCluster CassandraClusterConfiguration
 	cassandraInstance := &Cassandra{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cassandraInstance)
 	if err != nil {
 		return cassandraCluster, err
 	}
-	for _, ip := range cassandraInstance.Status.Nodes {
-		cassandraNodes = append(cassandraNodes, ip)
-	}
 	cassandraConfig := cassandraInstance.ConfigurationParameters()
-	endpoint := cassandraInstance.Status.ClusterIP + ":" + strconv.Itoa(*cassandraConfig.Port)
-	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
+	serverIPList := []string{cassandraInstance.Status.ClusterIP}
 	cassandraCluster = CassandraClusterConfiguration{
-		Port:       *cassandraConfig.Port,
-		CQLPort:    *cassandraConfig.CqlPort,
-		JMXPort:    *cassandraConfig.JmxLocalPort,
-		ServerList: cassandraNodes,
-		Endpoint:   endpoint,
+		Port:         *cassandraConfig.Port,
+		CQLPort:      *cassandraConfig.CqlPort,
+		JMXPort:      *cassandraConfig.JmxLocalPort,
+		ServerIPList: serverIPList,
 	}
 	return cassandraCluster, nil
 }
@@ -901,10 +895,10 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 	}
 	sort.SliceStable(rabbitmqNodes, func(i, j int) bool { return rabbitmqNodes[i] < rabbitmqNodes[j] })
 	rabbitmqCluster = RabbitmqClusterConfiguration{
-		Port:       *rabbitmqConfig.Port,
-		SSLPort:    *rabbitmqConfig.SSLPort,
-		ServerList: rabbitmqNodes,
-		Secret:     secret,
+		Port:         *rabbitmqConfig.Port,
+		SSLPort:      *rabbitmqConfig.SSLPort,
+		ServerIPList: rabbitmqNodes,
+		Secret:       secret,
 	}
 	return rabbitmqCluster, nil
 }
@@ -1021,7 +1015,7 @@ func (c *ControlClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.
+// ZookeeperClusterConfiguration stores all information about Zookeeper's endpoints.
 type ZookeeperClusterConfiguration struct {
 	ClientPort   int      `json:"clientPort,omitempty"`
 	ServerPort   int      `json:"serverPort,omitempty"`
@@ -1042,12 +1036,12 @@ func (c *ZookeeperClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// RabbitmqClusterConfiguration defines all configuration knobs used to write the config file.
+// RabbitmqClusterConfiguration defines stores all information about Rabbitmq's endpoints.
 type RabbitmqClusterConfiguration struct {
-	Port       int      `json:"port,omitempty"`
-	SSLPort    int      `json:"sslPort,omitempty"`
-	ServerList []string `json:"serverList"`
-	Secret     string   `json:"secret,omitempty"`
+	Port         int      `json:"port,omitempty"`
+	SSLPort      int      `json:"sslPort,omitempty"`
+	ServerIPList []string `json:"serverList,omitempty"`
+	Secret       string   `json:"secret,omitempty"`
 }
 
 // FillWithDefaultValues fills Rabbitmq config with default values
@@ -1060,13 +1054,12 @@ func (c *RabbitmqClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// CassandraClusterConfiguration defines all configuration knobs used to write the config file.
+// CassandraClusterConfiguration  stores all information about Cassandra's endpoints.
 type CassandraClusterConfiguration struct {
-	Port       int      `json:"port,omitempty"`
-	CQLPort    int      `json:"cqlPort,omitempty"`
-	JMXPort    int      `json:"jmxPort,omitempty"`
-	ServerList []string `json:"serverList,omitempty"`
-	Endpoint   string   `json:"endpoint,omitempty"`
+	Port         int      `json:"port,omitempty"`
+	CQLPort      int      `json:"cqlPort,omitempty"`
+	JMXPort      int      `json:"jmxPort,omitempty"`
+	ServerIPList []string `json:"serverList,omitempty"`
 }
 
 // FillWithDefaultValues fills Cassandra config with default values

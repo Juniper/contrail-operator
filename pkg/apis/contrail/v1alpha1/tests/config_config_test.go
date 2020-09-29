@@ -349,7 +349,7 @@ start_time=0
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
-cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+cassandra_server_list=10.0.0.1:9042
 collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
 [CASSANDRA]
 cassandra_use_ssl=true
@@ -419,7 +419,7 @@ log_file_size=1048576
 log_level=SYS_NOTICE
 log_local=1
 # sandesh_send_rate_limit=
-cassandra_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+cassandra_server_list=10.0.0.1:9042
 zookeeper_server_list=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
 [CASSANDRA]
 cassandra_use_ssl=true
@@ -442,7 +442,7 @@ port=6379
 server=127.0.0.1
 password=
 [CONFIGDB]
-config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
+config_db_server_list=10.0.0.1:9042
 config_db_use_ssl=true
 config_db_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
 rabbitmq_server_list=1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673
