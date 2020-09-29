@@ -777,20 +777,20 @@ func NewCassandraClusterConfiguration(name string, namespace string, client clie
 }
 
 // NewControlClusterConfiguration gets a struct containing various representations of Control nodes string.
-func NewControlClusterConfiguration(name string, role string, namespace string, myclient client.Client) (*ControlClusterConfiguration, error) {
+func NewControlClusterConfiguration(name string, role string, namespace string, myclient client.Client) (ControlClusterConfiguration, error) {
 	var controlNodes []string
 	var controlCluster ControlClusterConfiguration
-	var controlConfigInterface interface{}
+	var controlConfig ControlConfiguration
 	if name != "" {
 		controlInstance := &Control{}
 		err := myclient.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, controlInstance)
 		if err != nil {
-			return &controlCluster, err
+			return controlCluster, err
 		}
 		for _, ip := range controlInstance.Status.Nodes {
 			controlNodes = append(controlNodes, ip)
 		}
-		controlConfigInterface = controlInstance.ConfigurationParameters()
+		controlConfig = controlInstance.ConfigurationParameters()
 	}
 	if role != "" {
 		labelSelector := labels.SelectorFromSet(map[string]string{"control_role": role})
@@ -798,18 +798,17 @@ func NewControlClusterConfiguration(name string, role string, namespace string, 
 		controlList := &ControlList{}
 		err := myclient.List(context.TODO(), controlList, listOps)
 		if err != nil {
-			return &controlCluster, err
+			return controlCluster, err
 		}
 		if len(controlList.Items) > 0 {
 			for _, ip := range controlList.Items[0].Status.Nodes {
 				controlNodes = append(controlNodes, ip)
 			}
 		} else {
-			return &controlCluster, err
+			return controlCluster, err
 		}
-		controlConfigInterface = controlList.Items[0].ConfigurationParameters()
+		controlConfig = controlList.Items[0].ConfigurationParameters()
 	}
-	controlConfig := controlConfigInterface.(ControlConfiguration)
 	sort.SliceStable(controlNodes, func(i, j int) bool { return controlNodes[i] < controlNodes[j] })
 	controlCluster = ControlClusterConfiguration{
 		XMPPPort:            *controlConfig.XMPPPort,
@@ -819,7 +818,7 @@ func NewControlClusterConfiguration(name string, role string, namespace string, 
 		ControlServerIPList: controlNodes,
 	}
 
-	return &controlCluster, nil
+	return controlCluster, nil
 }
 
 // NewZookeeperClusterConfiguration gets a struct containing various representations of Zookeeper nodes string.
@@ -902,7 +901,7 @@ func NewRabbitmqClusterConfiguration(name string, namespace string, myclient cli
 }
 
 // NewConfigClusterConfiguration gets a struct containing various representations of Config nodes string.
-func NewConfigClusterConfiguration(name string, namespace string, myclient client.Client) (*ConfigClusterConfiguration, error) {
+func NewConfigClusterConfiguration(name string, namespace string, myclient client.Client) (ConfigClusterConfiguration, error) {
 	var configNodes []string
 	var configCluster ConfigClusterConfiguration
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
@@ -910,7 +909,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	configList := &ConfigList{}
 	err := myclient.List(context.TODO(), configList, listOps)
 	if err != nil {
-		return &configCluster, err
+		return configCluster, err
 	}
 
 	var authMode AuthenticationMode
@@ -939,7 +938,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		RedisPort:             redisPort,
 		AuthMode:              authMode,
 	}
-	return &configCluster, nil
+	return configCluster, nil
 }
 
 // WebUIClusterConfiguration defines all configuration knobs used to write the config file.
@@ -954,25 +953,64 @@ type CommandClusterConfiguration struct {
 	AdminPassword string
 }
 
-// ConfigClusterConfiguration defines all configuration knobs used to write the config file.
+// ConfigClusterConfiguration  stores all information about service's endpoints
+// under the Contrail Config
 type ConfigClusterConfiguration struct {
-	APIServerPort         int
-	APIServerIPList       []string
-	AnalyticsServerPort   int
-	AnalyticsServerIPList []string
-	CollectorPort         int
-	CollectorServerIPList []string
-	RedisPort             int
-	AuthMode              AuthenticationMode
+	APIServerPort         int                `json:"apiServerPort,omitempty"`
+	APIServerIPList       []string           `json:"apiServerIPList,omitempty"`
+	AnalyticsServerPort   int                `json:"analyticsServerPort,omitempty"`
+	AnalyticsServerIPList []string           `json:"analyticsServerIPList,omitempty"`
+	CollectorPort         int                `json:"collectorPort,omitempty"`
+	CollectorServerIPList []string           `json:"collectorServerIPList,omitempty"`
+	RedisPort             int                `json:"redisPort,omitempty"`
+	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
 }
 
-// ControlClusterConfiguration defines all configuration knobs used to write the config file.
+// FillWithDefaultValues sets the default port values if they are set to the
+// zero value
+func (c *ConfigClusterConfiguration) FillWithDefaultValues() {
+	if c.APIServerPort == 0 {
+		c.APIServerPort = ConfigApiPort
+	}
+	if c.AnalyticsServerPort == 0 {
+		c.AnalyticsServerPort = AnalyticsApiPort
+	}
+	if c.CollectorPort == 0 {
+		c.CollectorPort = CollectorPort
+	}
+	if c.RedisPort == 0 {
+		c.RedisPort = RedisServerPort
+	}
+	if c.AuthMode == "" {
+		c.AuthMode = AuthenticationModeNoAuth
+	}
+}
+
+// ControlClusterConfiguration stores all information about services' endpoints
+// under the Contrail Control
 type ControlClusterConfiguration struct {
-	XMPPPort            int
-	BGPPort             int
-	DNSPort             int
-	DNSIntrospectPort   int
-	ControlServerIPList []string
+	XMPPPort            int      `json:"xmppPort,omitempty"`
+	BGPPort             int      `json:"bgpPort,omitempty"`
+	DNSPort             int      `json:"dnsPort,omitempty"`
+	DNSIntrospectPort   int      `json:"dnsIntrospectPort,omitempty"`
+	ControlServerIPList []string `json:"controlServerIPList,omitempty"`
+}
+
+// FillWithDefaultValues sets the default port values if they are set to the
+// zero value
+func (c *ControlClusterConfiguration) FillWithDefaultValues() {
+	if c.XMPPPort == 0 {
+		c.XMPPPort = XmppServerPort
+	}
+	if c.BGPPort == 0 {
+		c.BGPPort = BgpPort
+	}
+	if c.DNSPort == 0 {
+		c.DNSPort = DnsServerPort
+	}
+	if c.DNSIntrospectPort == 0 {
+		c.DNSIntrospectPort = DnsIntrospectPort
+	}
 }
 
 // ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.

@@ -2405,6 +2405,60 @@ spec:
                                 type: string
                               serviceAccount:
                                 type: string
+                              staticConfiguration:
+                                description: VrouterStaticConfiguration stores static
+                                  configuration of services required by Vrouter
+                                properties:
+                                  configNodesConfiguration:
+                                    description: ConfigClusterConfiguration  stores
+                                      all information about service's endpoints under
+                                      the Contrail Config
+                                    properties:
+                                      analyticsServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      analyticsServerPort:
+                                        type: integer
+                                      apiServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      apiServerPort:
+                                        type: integer
+                                      authMode:
+                                        enum:
+                                        - noauth
+                                        - keystone
+                                        type: string
+                                      collectorPort:
+                                        type: integer
+                                      collectorServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      redisPort:
+                                        type: integer
+                                    type: object
+                                  controlNodesConfiguration:
+                                    description: ControlClusterConfiguration stores
+                                      all information about services' endpoints under
+                                      the Contrail Control
+                                    properties:
+                                      bgpPort:
+                                        type: integer
+                                      controlServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      dnsIntrospectPort:
+                                        type: integer
+                                      dnsPort:
+                                        type: integer
+                                      xmppPort:
+                                        type: integer
+                                    type: object
+                                type: object
                               vrouterEncryption:
                                 type: boolean
                             type: object

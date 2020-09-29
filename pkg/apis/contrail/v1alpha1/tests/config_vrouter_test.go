@@ -6,10 +6,13 @@ import (
 
 	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+
+	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type vrouterClusterInfoFake struct {
@@ -125,6 +128,142 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 		"VROUTER_ENCRYPTION": "true",
 	}
 	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+}
+
+func TestVrouterConfigStaticConfiguration(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+	t.Run("given mock environment", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		t.Run("when Vrouter has StaticConfiguration filled for both config and control", func(t *testing.T) {
+			environment.vrouterResource.Spec.ServiceConfiguration.StaticConfiguration = &v1alpha1.VrouterStaticConfiguration{
+				ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+					APIServerIPList:       []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					AnalyticsServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					CollectorServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+				ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
+					ControlServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+			}
+
+			t.Run("then vrouter configmap has data with config and control ip's specified in the StaticConfiguration", func(t *testing.T) {
+				if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{NamespacedName: types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+					&environment.vrouterPodList, cl); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				vrouterConfig, err := ini.Load([]byte(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"]))
+				if err != nil {
+					t.Fatalf("failed to read vrouter config as ini file: (%v)", err)
+				}
+				expectedControlXMPPEpointsList := "1.1.1.1:5269 2.2.2.2:5269 3.3.3.3:5269"
+				assert.Equal(t, expectedControlXMPPEpointsList, vrouterConfig.Section("CONTROL-NODE").Key("servers").String())
+				expectedCollectorEndpointsList := "1.1.1.1:8086 2.2.2.2:8086 3.3.3.3:8086"
+				assert.Equal(t, expectedCollectorEndpointsList, vrouterConfig.Section("DEFAULT").Key("collectors").String())
+				expectedDNSEndpointsList := "1.1.1.1:53 2.2.2.2:53 3.3.3.3:53"
+				assert.Equal(t, expectedDNSEndpointsList, vrouterConfig.Section("DNS").Key("servers").String())
+			})
+		})
+		t.Run("when Vrouter has StaticConfiguration filled for both config and control with non default ports", func(t *testing.T) {
+			environment.vrouterResource.Spec.ServiceConfiguration.StaticConfiguration = &v1alpha1.VrouterStaticConfiguration{
+				ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+					APIServerPort:         1,
+					AnalyticsServerPort:   2,
+					CollectorPort:         3,
+					RedisPort:             4,
+					APIServerIPList:       []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					AnalyticsServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					CollectorServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+				ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
+					XMPPPort:            5,
+					BGPPort:             6,
+					DNSPort:             7,
+					DNSIntrospectPort:   8,
+					ControlServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+			}
+
+			t.Run("then vrouter configmap has data with config and control ip's and ports specified in the StaticConfiguration", func(t *testing.T) {
+				if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{NamespacedName: types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+					&environment.vrouterPodList, cl); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				vrouterConfig, err := ini.Load([]byte(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"]))
+				if err != nil {
+					t.Fatalf("failed to read vrouter config as ini file: (%v)", err)
+				}
+				expectedControlXMPPEpointsList := "1.1.1.1:5 2.2.2.2:5 3.3.3.3:5"
+				assert.Equal(t, expectedControlXMPPEpointsList, vrouterConfig.Section("CONTROL-NODE").Key("servers").String())
+				expectedCollectorEndpointsList := "1.1.1.1:3 2.2.2.2:3 3.3.3.3:3"
+				assert.Equal(t, expectedCollectorEndpointsList, vrouterConfig.Section("DEFAULT").Key("collectors").String())
+				expectedDNSEndpointsList := "1.1.1.1:7 2.2.2.2:7 3.3.3.3:7"
+				assert.Equal(t, expectedDNSEndpointsList, vrouterConfig.Section("DNS").Key("servers").String())
+			})
+		})
+		t.Run("when Vrouter has StaticConfiguration filled for only the config", func(t *testing.T) {
+			environment.vrouterResource.Spec.ServiceConfiguration.StaticConfiguration = &v1alpha1.VrouterStaticConfiguration{
+				ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+					APIServerIPList:       []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					AnalyticsServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					CollectorServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+			}
+
+			t.Run("then vrouter configmap has data with config endpoints specified in the StaticConfiguration and control endpoints from the mock environment", func(t *testing.T) {
+				if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{NamespacedName: types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+					&environment.vrouterPodList, cl); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				vrouterConfig, err := ini.Load([]byte(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"]))
+				if err != nil {
+					t.Fatalf("failed to read vrouter config as ini file: (%v)", err)
+				}
+				expectedControlXMPPEpointsList := "1.1.5.1:5269 1.1.5.2:5269 1.1.5.3:5269"
+				assert.Equal(t, expectedControlXMPPEpointsList, vrouterConfig.Section("CONTROL-NODE").Key("servers").String())
+				expectedCollectorEndpointsList := "1.1.1.1:8086 2.2.2.2:8086 3.3.3.3:8086"
+				assert.Equal(t, expectedCollectorEndpointsList, vrouterConfig.Section("DEFAULT").Key("collectors").String())
+				expectedDNSEndpointsList := "1.1.5.1:53 1.1.5.2:53 1.1.5.3:53"
+				assert.Equal(t, expectedDNSEndpointsList, vrouterConfig.Section("DNS").Key("servers").String())
+			})
+		})
+		t.Run("when Vrouter has StaticConfiguration filled for only control", func(t *testing.T) {
+			environment.vrouterResource.Spec.ServiceConfiguration.StaticConfiguration = &v1alpha1.VrouterStaticConfiguration{
+				ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
+					ControlServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+				},
+			}
+
+			t.Run("then vrouter configmap has data with control ip's specified in the StaticConfiguration and config ip's from the mock environment", func(t *testing.T) {
+				if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{NamespacedName: types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+					&environment.vrouterPodList, cl); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+					t.Fatalf("get configmap: (%v)", err)
+				}
+				vrouterConfig, err := ini.Load([]byte(environment.vrouterConfigMap.Data["vrouter.1.1.8.1"]))
+				if err != nil {
+					t.Fatalf("failed to read vrouter config as ini file: (%v)", err)
+				}
+				expectedControlXMPPEpointsList := "1.1.1.1:5269 2.2.2.2:5269 3.3.3.3:5269"
+				assert.Equal(t, expectedControlXMPPEpointsList, vrouterConfig.Section("CONTROL-NODE").Key("servers").String())
+				expectedCollectorEndpointsList := "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"
+				assert.Equal(t, expectedCollectorEndpointsList, vrouterConfig.Section("DEFAULT").Key("collectors").String())
+				expectedDNSEndpointsList := "1.1.1.1:53 2.2.2.2:53 3.3.3.3:53"
+				assert.Equal(t, expectedDNSEndpointsList, vrouterConfig.Section("DNS").Key("servers").String())
+			})
+		})
+	})
 }
 
 var vrouterConfig = `[CONTROL-NODE]

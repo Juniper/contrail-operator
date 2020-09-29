@@ -183,8 +183,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	reqLogger.Info("Reconciling Vrouter")
 	instanceType := "vrouter"
 	instance := &v1alpha1.Vrouter{}
-	controlInstance := v1alpha1.Control{}
-	configInstance := v1alpha1.Config{}
 
 	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
@@ -194,13 +192,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
-		request.Namespace, r.Client)
-
-	controlActive := controlInstance.IsActive(instance.Spec.ServiceConfiguration.ControlInstance,
-		request.Namespace, r.Client)
-
-	if !configActive || !controlActive {
+	if !r.vrouterDependenciesReady(instance, request.Namespace) {
 		return reconcile.Result{}, nil
 	}
 
@@ -562,4 +554,19 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileVrouter) vrouterDependenciesReady(vrouterInstance *v1alpha1.Vrouter, namespace string) bool {
+	controlInstance := v1alpha1.Control{}
+	configInstance := v1alpha1.Config{}
+	configInstanceActive := configInstance.IsActive(vrouterInstance.Labels["contrail_cluster"], namespace, r.Client)
+	controlInstanceActive := controlInstance.IsActive(vrouterInstance.Spec.ServiceConfiguration.ControlInstance, namespace, r.Client)
+
+	if vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration == nil {
+		return configInstanceActive && controlInstanceActive
+	}
+
+	configAvailable := configInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil
+	controlAvailable := controlInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil
+	return configAvailable && controlAvailable
 }
