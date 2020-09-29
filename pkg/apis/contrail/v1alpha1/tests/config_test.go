@@ -380,7 +380,7 @@ func SetupEnv() Environment {
 		vrouterPods     map[string]string
 	}
 	podMap := PodMap{
-		configPods:      map[string]string{"pod1": "1.1.1.1", "pod2": "1.1.1.2", "pod3": "1.1.1.3"},
+		configPods:      map[string]string{"pod-0": "1.1.1.1", "pod-1": "1.1.1.2", "pod-2": "1.1.1.3"},
 		rabbitmqPods:    map[string]string{"pod-0": "1.1.4.1", "pod-1": "1.1.4.2", "pod-2": "1.1.4.3"},
 		cassandraPods:   map[string]string{"pod-0": "1.1.2.1", "pod-1": "1.1.2.2", "pod-2": "1.1.2.3"},
 		zookeeperPods:   map[string]string{"pod-0": "1.1.3.1", "pod-1": "1.1.3.2", "pod-2": "1.1.3.3"},

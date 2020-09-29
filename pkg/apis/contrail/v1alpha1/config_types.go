@@ -151,6 +151,7 @@ func init() {
 }
 
 const DMRunModeFull = "Full"
+const DMRunModePartial = "Partial"
 
 func (c *Config) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
@@ -310,6 +311,12 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
 			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
+
+		dmRunMode := DMRunModePartial
+		if strings.HasSuffix(pod.Name, "-0") {
+			dmRunMode = DMRunModeFull
+		}
+
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
 			HostIP                      string
@@ -342,7 +349,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			FabricMgmtIP:                fabricMgmtIP,
 			CAFilePath:                  certificates.SignerCAFilepath,
 			DeviceManagerIntrospectPort: strconv.Itoa(*configConfig.DeviceManagerIntrospectPort),
-			DMRunMode:                   DMRunModeFull,
+			DMRunMode:                   dmRunMode,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
