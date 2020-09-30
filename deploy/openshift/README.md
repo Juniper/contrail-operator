@@ -29,7 +29,7 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 
 3. Install Contrail manifests and configs
 
-Change directory to openshift install directory and download additional Contrail manifests andconfigs and add them to the generated manifests directory:
+Change directory to openshift install directory and download additional Contrail manifests and configs and add them to the generated manifests directory:
 ```
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/manifests/0000000-contrail-01-namespace.yaml -o manifests/00-contrail-01-namespace.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/manifests/0000000-contrail-02-admin-password.yaml -o manifests/00-contrail-02-admin-password.yaml
@@ -58,8 +58,8 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/cr
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/crds/contrail.juniper.net_vrouters_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_vrouters_crd.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/crds/contrail.juniper.net_webuis_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_webuis_crd.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/crds/contrail.juniper.net_zookeepers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_zookeepers_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2008/manifests/0000000-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2008/manifests/0000000-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2008/manifests/00-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2008/manifests/00-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/manifests/cluster-network-02-config.yml -o manifests/cluster-network-02-config.yml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/openshift/99_master-iptables-machine-config.yaml -o openshift/99_master-iptables-machine-config.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/openshift/99_master-kernel-modules-overlay.yaml -o openshift/99_master-kernel-modules-overlay.yaml
@@ -72,7 +72,7 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/op
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2008/deploy/openshift/openshift/99_worker_network_manager_stop_service.yaml -o openshift/99_worker_network_manager_stop_service.yaml
 ```
 
-Modify `manifests/0000000-contrail-02-registry-secret.yaml` file providing proper configuration with credentials to *hub.juniper.net* registry.
+Modify `manifests/00-contrail-02-registry-secret.yaml` file providing proper configuration with credentials to *hub.juniper.net* registry.
 
 **NOTE:** You may create base64 encoded value for config with script provided in [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate) directory.
 Copy output of the script and paste into contrail registry secret manifest.
