@@ -184,8 +184,8 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		rabbitmqSecretVhost = controlConfig.RabbitmqVhost
 	}
 
-	SSLEndpointList := configtemplates.EndpointList(rabbitmqNodesInformation.ServerIPList, rabbitmqNodesInformation.SSLPort)
-	rabbitmqSSLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(SSLEndpointList, " ")
+	rabbitMqSSLEndpointList := configtemplates.EndpointList(rabbitmqNodesInformation.ServerIPList, rabbitmqNodesInformation.SSLPort)
+	rabbitmqSSLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(rabbitMqSSLEndpointList, " ")
 	cassandraCQLEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.CQLPort)
 	cassandraCQLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraCQLEndpointList, " ")
 

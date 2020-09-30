@@ -1440,7 +1440,7 @@ spec:
                                         type: integer
                                       port:
                                         type: integer
-                                      serverList:
+                                      serverIPList:
                                         items:
                                           type: string
                                         type: array
@@ -1484,7 +1484,7 @@ spec:
                                         type: integer
                                       secret:
                                         type: string
-                                      serverList:
+                                      serverIPList:
                                         items:
                                           type: string
                                         type: array

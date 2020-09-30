@@ -1040,7 +1040,7 @@ func (c *ZookeeperClusterConfiguration) FillWithDefaultValues() {
 type RabbitmqClusterConfiguration struct {
 	Port         int      `json:"port,omitempty"`
 	SSLPort      int      `json:"sslPort,omitempty"`
-	ServerIPList []string `json:"serverList,omitempty"`
+	ServerIPList []string `json:"serverIPList,omitempty"`
 	Secret       string   `json:"secret,omitempty"`
 }
 
@@ -1059,7 +1059,7 @@ type CassandraClusterConfiguration struct {
 	Port         int      `json:"port,omitempty"`
 	CQLPort      int      `json:"cqlPort,omitempty"`
 	JMXPort      int      `json:"jmxPort,omitempty"`
-	ServerIPList []string `json:"serverList,omitempty"`
+	ServerIPList []string `json:"serverIPList,omitempty"`
 }
 
 // FillWithDefaultValues fills Cassandra config with default values
