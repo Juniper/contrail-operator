@@ -206,10 +206,6 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				},
 			}},
 		}
-		err = controllerutil.SetControllerReference(owner, clusterRole, scheme)
-		if err != nil {
-			return err
-		}
 		if err = client.Create(context.TODO(), clusterRole); err != nil {
 			return err
 		}
@@ -237,10 +233,6 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Kind:     "ClusterRole",
 				Name:     clusterRoleName,
 			},
-		}
-		err = controllerutil.SetControllerReference(owner, clusterRoleBinding, scheme)
-		if err != nil {
-			return err
 		}
 		if err = client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return err

@@ -290,10 +290,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				},
 			}},
 		}
-		err = controllerutil.SetControllerReference(instance, clusterRole, r.Scheme)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 		if err = r.Client.Create(context.TODO(), clusterRole); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -321,10 +317,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 				Kind:     "ClusterRole",
 				Name:     clusterRoleName,
 			},
-		}
-		err = controllerutil.SetControllerReference(instance, clusterRoleBinding, r.Scheme)
-		if err != nil {
-			return reconcile.Result{}, err
 		}
 		if err = r.Client.Create(context.TODO(), clusterRoleBinding); err != nil {
 			return reconcile.Result{}, err
