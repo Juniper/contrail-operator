@@ -109,6 +109,8 @@ const (
 	ZookeeperPort                               int    = 2181
 	ZookeeperElectionPort                       int    = 2888
 	ZookeeperServerPort                         int    = 3888
+	ZookeeperAdminEnableServer                  bool   = true
+	ZookeeperAdminPort                          int    = 2182
 	ZookeeperPorts                              string = "2888:3888"
 	ZookeeperServers                            string = ""
 	ZookeeperServersSpaceDelim                  string = ""

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"context"
 	"sort"
 	"strconv"
@@ -31,11 +32,13 @@ type ZookeeperSpec struct {
 // ZookeeperConfiguration is the Spec for the zookeepers API.
 // +k8s:openapi-gen=true
 type ZookeeperConfiguration struct {
-	Containers   []*Container `json:"containers,omitempty"`
-	ClientPort   *int         `json:"clientPort,omitempty"`
-	ElectionPort *int         `json:"electionPort,omitempty"`
-	ServerPort   *int         `json:"serverPort,omitempty"`
-	Storage      Storage      `json:"storage,omitempty"`
+	Containers        []*Container `json:"containers,omitempty"`
+	ClientPort        *int         `json:"clientPort,omitempty"`
+	ElectionPort      *int         `json:"electionPort,omitempty"`
+	ServerPort        *int         `json:"serverPort,omitempty"`
+	AdminEnableServer *bool        `json:"adminEnabled,omitempty"`
+	AdminPort         *int         `json:"adminPort,omitempty"`
+	Storage           Storage      `json:"storage,omitempty"`
 }
 
 // ZookeeperStatus defines the status of the zookeeper object.
@@ -92,7 +95,19 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName 
 	}
 	confCMData["log4j.properties"] = configtemplates.ZookeeperLogConfig
 	confCMData["configuration.xsl"] = configtemplates.ZookeeperXslConfig
-	confCMData["zoo.cfg"] = configtemplates.ZookeeperStaticConfig
+	var zookeeperConfigBuffer bytes.Buffer
+	err = configtemplates.ZookeeperStaticConfig.Execute(&zookeeperConfigBuffer, struct {
+		AdminEnableServer string
+		AdminSeverPort    string
+	}{
+		AdminEnableServer: strconv.FormatBool(*zookeeperConfig.AdminEnableServer),
+		AdminSeverPort:    strconv.Itoa(*zookeeperConfig.AdminPort),
+	})
+	if err != nil {
+		return err
+	}
+	zookeeperStaticConfigString := zookeeperConfigBuffer.String()
+	confCMData["zoo.cfg"] = zookeeperStaticConfigString
 
 	zookeeperConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -212,6 +227,8 @@ func (c *Zookeeper) ConfigurationParameters() ZookeeperConfiguration {
 	var clientPort int
 	var electionPort int
 	var serverPort int
+	var adminEnableServer bool
+	var adminPort int
 	if c.Spec.ServiceConfiguration.Storage.Path == "" {
 		zookeeperConfiguration.Storage.Path = "/mnt/zookeeper"
 	} else {
@@ -238,9 +255,21 @@ func (c *Zookeeper) ConfigurationParameters() ZookeeperConfiguration {
 	} else {
 		serverPort = ZookeeperServerPort
 	}
+	if c.Spec.ServiceConfiguration.AdminEnableServer != nil {
+		adminEnableServer = *c.Spec.ServiceConfiguration.AdminEnableServer
+	} else {
+		adminEnableServer = ZookeeperAdminEnableServer
+	}
+	if c.Spec.ServiceConfiguration.AdminPort != nil {
+		adminPort = *c.Spec.ServiceConfiguration.AdminPort
+	} else {
+		adminPort = ZookeeperAdminPort
+	}
 	zookeeperConfiguration.ClientPort = &clientPort
 	zookeeperConfiguration.ElectionPort = &electionPort
 	zookeeperConfiguration.ServerPort = &serverPort
+	zookeeperConfiguration.AdminEnableServer = &adminEnableServer
+	zookeeperConfiguration.AdminPort = &adminPort
 
 	return zookeeperConfiguration
 }
