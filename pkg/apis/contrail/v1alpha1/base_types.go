@@ -3,27 +3,27 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	mRand "math/rand"
+
 	yaml "gopkg.in/yaml.v2"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	mRand "math/rand"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
@@ -283,6 +283,49 @@ func SetPodsToReady(podList *corev1.PodList, client client.Client) error {
 		}
 	}
 	return nil
+}
+
+// +k8s:deepcopy-gen=false
+type podAltIPsRetriver func(pod corev1.Pod) []string
+
+// +k8s:deepcopy-gen=false
+type PodAlternativeIPs struct {
+	// Function which operate over pod object
+	// to retrieve additional IP addresses used
+	// by this pod.
+	Retriever podAltIPsRetriver
+	// ServiceIP through which pod can be reached.
+	ServiceIP string
+}
+
+// PodsCertSubjects iterates over passed list of pods and for every pod prepares certificate subject
+// which can be later used for generating certificate for given pod.
+func PodsCertSubjects(podList *corev1.PodList, hostNetwork *bool, podAltIPs PodAlternativeIPs) []certificates.CertificateSubject {
+	var pods []certificates.CertificateSubject
+	useNodeName := true
+	if hostNetwork != nil {
+		useNodeName = *hostNetwork
+	}
+	for _, pod := range podList.Items {
+		var hostname string
+		if useNodeName {
+			hostname = pod.Spec.NodeName
+		} else {
+			hostname = pod.Spec.Hostname
+		}
+		var alternativeIPs []string
+		if podAltIPs.ServiceIP != "" {
+			alternativeIPs = append(alternativeIPs, podAltIPs.ServiceIP)
+		}
+		if podAltIPs.Retriever != nil {
+			if altIPs := podAltIPs.Retriever(pod); len(altIPs) > 0 {
+				alternativeIPs = append(alternativeIPs, altIPs...)
+			}
+		}
+		podInfo := certificates.NewSubject(pod.Name, hostname, pod.Status.PodIP, alternativeIPs)
+		pods = append(pods, podInfo)
+	}
+	return pods
 }
 
 type errorString struct {
@@ -614,7 +657,10 @@ func getPodInitStatus(reconcileClient client.Client,
 				if initStatus.Name == "init" {
 					if initStatus.State.Terminated == nil {
 						if initStatus.State.Running != nil {
-							var annotationMap = make(map[string]string)
+							annotationMap := pod.GetAnnotations()
+							if annotationMap == nil {
+								annotationMap = make(map[string]string)
+							}
 							if getHostname {
 								var hostname string
 								if pod.Spec.HostNetwork {
@@ -656,10 +702,27 @@ func getPodInitStatus(reconcileClient client.Client,
 								}
 								annotationMap["prefixLength"] = strings.Trim(prefixLength, "\n")
 							}
+
+							if cidr, ok := pod.Annotations["dataSubnet"]; ok {
+								if cidr != "" {
+									command := []string{"/bin/sh", "-c", "ip r | grep " + cidr + " | awk -F' ' '{print $NF}'"}
+									addr, _, err := ExecToPodThroughAPI(command, "init", pod.Name, pod.Namespace, nil)
+									if err != nil {
+										return map[string]string{}, fmt.Errorf("failed getting ip address from data subnet")
+									}
+									ip := strings.Trim(addr, "\n")
+									if net.ParseIP(ip) != nil {
+										annotationMap["dataSubnetIP"] = ip
+									} else {
+										return map[string]string{}, fmt.Errorf("no valid ip from data subnet")
+									}
+								}
+							}
+
 							podList.Items[idx].SetAnnotations(annotationMap)
 							(&podList.Items[idx]).SetAnnotations(annotationMap)
 							foundPod := &corev1.Pod{}
-							err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: podList.Items[idx].Name, Namespace: podList.Items[idx].Namespace}, foundPod)
+							err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, foundPod)
 							if err != nil {
 								return map[string]string{}, err
 							}

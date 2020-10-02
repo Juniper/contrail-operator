@@ -52,6 +52,7 @@ func TestControlController(t *testing.T) {
 					{Name: "dns", Image: "image1"},
 				},
 				CassandraInstance: "cassandra1",
+				DataSubnet:        "172.17.90.0/24",
 			},
 			CommonConfiguration: contrail.PodConfiguration{
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "control"},
@@ -96,17 +97,7 @@ func TestControlController(t *testing.T) {
 		},
 	}
 
-	stsCD := &apps.StatefulSet{
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test-control-control-statefulset",
-		},
-		Spec: apps.StatefulSetSpec{
-			Replicas: &replicas,
-		},
-	}
-
-	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, rabbitmqCR, configCR, stsCD)
+	Cl := fake.NewFakeClientWithScheme(scheme, controlCR, cassandraCR, rabbitmqCR, configCR)
 	reconciler := &ReconcileControl{Client: Cl, Scheme: scheme}
 	// when
 	_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: controlName})
@@ -116,8 +107,8 @@ func TestControlController(t *testing.T) {
 	t.Run("should create configMap for control", func(t *testing.T) {
 		cm := &core.ConfigMap{}
 		err = Cl.Get(context.Background(), types.NamespacedName{
-			Name:      "test-control-control-configmap",
-			Namespace: "default",
+			Name:      controlName.Name + "-control-configmap",
+			Namespace: controlName.Namespace,
 		}, cm)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cm)
@@ -131,30 +122,37 @@ func TestControlController(t *testing.T) {
 	t.Run("should create secret for control certificates", func(t *testing.T) {
 		secret := &core.Secret{}
 		err = Cl.Get(context.Background(), types.NamespacedName{
-			Name:      "test-control-secret-certificates",
-			Namespace: "default",
+			Name:      controlName.Name + "-secret-certificates",
+			Namespace: controlName.Namespace,
 		}, secret)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, secret)
 		expectedOwnerRefs := []v1.OwnerReference{{
-			APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Control", Name: "test-control",
+			APIVersion: "contrail.juniper.net/v1alpha1", Kind: "Control", Name: controlName.Name,
 			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 		}}
 		assert.Equal(t, expectedOwnerRefs, secret.OwnerReferences)
 	})
 
-	t.Run("should create and check for StatefulSet", func(t *testing.T) {
-		sts := &contrail.Control{}
+	t.Run("should create control resource", func(t *testing.T) {
+		control := &contrail.Control{}
 		falseVal := false
-		err = Cl.Get(context.Background(), types.NamespacedName{
-			Name:      "test-control",
-			Namespace: "default",
-		}, sts)
+		err = Cl.Get(context.Background(), controlName, control)
 		assert.NoError(t, err)
 		expectedStatus := contrail.ControlStatus{Active: &falseVal}
 		require.NotNil(t, expectedStatus.Active, "expectedStatus.Active should not be nil")
-		require.NotNil(t, sts.Status.Active, "sts.Status.Active Should not be nil")
-		assert.Equal(t, *expectedStatus.Active, *sts.Status.Active)
+		require.NotNil(t, control.Status.Active, "sts.Status.Active Should not be nil")
+		assert.Equal(t, *expectedStatus.Active, *control.Status.Active)
 	})
 
+	t.Run("should create StatefulSet with dataSubnet annotation in pod template", func(t *testing.T) {
+		sts := &apps.StatefulSet{}
+		err = Cl.Get(context.Background(), types.NamespacedName{
+			Name:      controlName.Name + "-control-statefulset",
+			Namespace: controlName.Namespace,
+		}, sts)
+		assert.NoError(t, err)
+		expectedAnnotation := map[string]string{"dataSubnet": "172.17.90.0/24"}
+		assert.Equal(t, expectedAnnotation, sts.Spec.Template.Annotations)
+	})
 }

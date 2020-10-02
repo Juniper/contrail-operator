@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -68,6 +71,12 @@ type CommandList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Command `json:"items"`
+}
+
+//PodsCertSubjects gets list of Command pods certificate subjets which can be passed to the certificate API
+func (c *Command) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
+	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
 }
 
 func init() {

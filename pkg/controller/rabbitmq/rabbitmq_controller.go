@@ -328,11 +328,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		if err = instance.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		if err := r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
@@ -352,4 +348,10 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileRabbitmq) ensureCertificatesExist(rabbitmq *v1alpha1.Rabbitmq, pods *corev1.PodList, instanceType string) error {
+	subjects := rabbitmq.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, rabbitmq, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

@@ -55,6 +55,12 @@ type ControlConfiguration struct {
 	RabbitmqUser      string       `json:"rabbitmqUser,omitempty"`
 	RabbitmqPassword  string       `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost     string       `json:"rabbitmqVhost,omitempty"`
+	// DataSubnet allow to set alternative network in which control, nodemanager
+	// and dns services will listen. Local pod address from this subnet will be
+	// discovered and used both in configuration for hostip directive and provision
+	// script.
+	// +kubebuilder:validation:Pattern=`^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\/(3[0-2]|2[0-9]|1[0-9]|[0-9]))$`
+	DataSubnet string `json:"dataSubnet,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -180,15 +186,17 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
-	for idx := range podList.Items {
-		hostname := podList.Items[idx].Annotations["hostname"]
+	for _, pod := range podList.Items {
+		hostname := pod.Annotations["hostname"]
+		dataIP := getDataIP(&pod)
+		podIP := pod.Status.PodIP
 		configIntrospectEndpointsList := configtemplates.EndpointList(configNodesInformation.APIServerIPList, ControlIntrospectPort)
-		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectEndpointsList, podList.Items[idx].Status.PodIP,
-			"control", request.Name, request.Namespace, podList.Items[idx].Name)
+		statusMonitorConfig, err := StatusMonitorConfig(hostname, configIntrospectEndpointsList, podIP,
+			"control", request.Name, request.Namespace, pod.Name)
 		if err != nil {
 			return err
 		}
-		data["monitorconfig."+podList.Items[idx].Status.PodIP+".yaml"] = statusMonitorConfig
+		data["monitorconfig."+podIP+".yaml"] = statusMonitorConfig
 
 		configApiIPListSpaceSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, " ")
 		configApiIPListCommaSeparated := configtemplates.JoinListWithSeparator(configNodesInformation.APIServerIPList, ",")
@@ -197,7 +205,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
 		var controlControlConfigBuffer bytes.Buffer
 		configtemplates.ControlControlConfig.Execute(&controlControlConfigBuffer, struct {
-			ListenAddress       string
+			PodIP               string
 			Hostname            string
 			BGPPort             string
 			ASNNumber           string
@@ -212,7 +220,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			CAFilePath          string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			PodIP:               podIP,
 			Hostname:            hostname,
 			BGPPort:             strconv.Itoa(*controlConfig.BGPPort),
 			ASNNumber:           strconv.Itoa(*controlConfig.ASNNumber),
@@ -227,16 +235,16 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			CAFilePath:          certificates.SignerCAFilepath,
 		})
-		data["control."+podList.Items[idx].Status.PodIP] = controlControlConfigBuffer.String()
+		data["control."+podIP] = controlControlConfigBuffer.String()
 
 		var controlNamedConfigBuffer bytes.Buffer
 		configtemplates.ControlNamedConfig.Execute(&controlNamedConfigBuffer, struct {
 		}{})
-		data["named."+podList.Items[idx].Status.PodIP] = controlNamedConfigBuffer.String()
+		data["named."+podIP] = controlNamedConfigBuffer.String()
 
 		var controlDNSConfigBuffer bytes.Buffer
 		configtemplates.ControlDNSConfig.Execute(&controlDNSConfigBuffer, struct {
-			ListenAddress       string
+			PodIP               string
 			Hostname            string
 			APIServerList       string
 			APIServerPort       string
@@ -249,7 +257,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost       string
 			CAFilePath          string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			PodIP:               podIP,
 			Hostname:            hostname,
 			APIServerList:       configApiIPListSpaceSeparated,
 			APIServerPort:       strconv.Itoa(configNodesInformation.APIServerPort),
@@ -262,41 +270,41 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			RabbitmqVhost:       rabbitmqSecretVhost,
 			CAFilePath:          certificates.SignerCAFilepath,
 		})
-		data["dns."+podList.Items[idx].Status.PodIP] = controlDNSConfigBuffer.String()
+		data["dns."+podIP] = controlDNSConfigBuffer.String()
 
 		var controlNodemanagerBuffer bytes.Buffer
 		configtemplates.ControlNodemanagerConfig.Execute(&controlNodemanagerBuffer, struct {
-			ListenAddress       string
+			PodIP               string
 			CollectorServerList string
 			CassandraPort       string
 			CassandraJmxPort    string
 			CAFilePath          string
 		}{
-			ListenAddress:       podList.Items[idx].Status.PodIP,
+			PodIP:               podIP,
 			CollectorServerList: configCollectorEndpointListSpaceSeparated,
 			CassandraPort:       cassandraNodesInformation.CQLPort,
 			CassandraJmxPort:    cassandraNodesInformation.JMXPort,
 			CAFilePath:          certificates.SignerCAFilepath,
 		})
-		data["nodemanager."+podList.Items[idx].Status.PodIP] = controlNodemanagerBuffer.String()
+		data["nodemanager."+podIP] = controlNodemanagerBuffer.String()
 
 		var controlProvisionBuffer bytes.Buffer
 		configtemplates.ControlProvisionConfig.Execute(&controlProvisionBuffer, struct {
-			ListenAddress string
+			DataIP        string
 			APIServerList string
 			ASNNumber     string
 			BGPPort       string
 			APIServerPort string
 			Hostname      string
 		}{
-			ListenAddress: podList.Items[idx].Status.PodIP,
+			DataIP:        dataIP,
 			APIServerList: configApiIPListCommaSeparated,
 			APIServerPort: strconv.Itoa(configNodesInformation.APIServerPort),
 			ASNNumber:     strconv.Itoa(*controlConfig.ASNNumber),
 			BGPPort:       strconv.Itoa(*controlConfig.BGPPort),
 			Hostname:      hostname,
 		})
-		data["provision.sh."+podList.Items[idx].Status.PodIP] = controlProvisionBuffer.String()
+		data["provision.sh."+podIP] = controlProvisionBuffer.String()
 
 		var controlDeProvisionBuffer bytes.Buffer
 		configtemplates.ControlDeProvisionConfig.Execute(&controlDeProvisionBuffer, struct {
@@ -314,7 +322,7 @@ func (c *Control) InstanceConfiguration(request reconcile.Request,
 			APIServerPort: strconv.Itoa(configNodesInformation.APIServerPort),
 			Hostname:      hostname,
 		})
-		data["deprovision.py."+podList.Items[idx].Status.PodIP] = controlDeProvisionBuffer.String()
+		data["deprovision.py."+podIP] = controlDeProvisionBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
 	err = client.Update(context.TODO(), configMapInstanceDynamicConfig)
@@ -399,6 +407,20 @@ func (c *Control) PodIPListAndIPMapFromInstance(instanceType string, request rec
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
+func retrieveDataIPs(pod corev1.Pod) []string {
+	var altIPs []string
+	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+		altIPs = append(altIPs, dataIP)
+	}
+	return altIPs
+}
+
+//PodsCertSubjects gets list of Control pods certificate subjects which can be passed to the certificate API
+func (c *Control) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	altIPs := PodAlternativeIPs{Retriever: retrieveDataIPs}
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Control) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)
@@ -471,4 +493,11 @@ func (c *Control) ConfigurationParameters() ControlConfiguration {
 	controlConfiguration.DNSIntrospectPort = &dnsIntrospectPort
 
 	return controlConfiguration
+}
+
+func getDataIP(pod *corev1.Pod) string {
+	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+		return dataIP
+	}
+	return pod.Status.PodIP
 }

@@ -205,11 +205,9 @@ func (r *ReconcilePostgres) ensureLabelExists(p *contrail.Postgres) error {
 }
 
 func (r *ReconcilePostgres) ensureCertificatesExist(postgres *contrail.Postgres, pods *core.PodList, serviceIP string) error {
-	hostNetwork := true
-	if postgres.Spec.CommonConfiguration.HostNetwork != nil {
-		hostNetwork = *postgres.Spec.CommonConfiguration.HostNetwork
-	}
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, postgres, pods, serviceIP, "postgres", hostNetwork).EnsureExistsAndIsSigned()
+	subjects := postgres.PodsCertSubjects(pods, serviceIP)
+	crt := certificates.NewCertificate(r.client, r.scheme, postgres, subjects, "postgres")
+	return crt.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcilePostgres) listPostgresPods(postgres *contrail.Postgres) (*core.PodList, error) {

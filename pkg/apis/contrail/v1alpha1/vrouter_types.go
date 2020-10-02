@@ -295,6 +295,12 @@ func (c *Vrouter) PodIPListAndIPMapFromInstance(instanceType string, request rec
 	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, true, getPhysicalInterface, getPhysicalInterfaceMac, getPrefixLength, getGateway)
 }
 
+//PodsCertSubjects gets list of Vrouter pods certificate subjets which can be passed to the certificate API
+func (c *Vrouter) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 // InstanceConfiguration creates vRouter configMaps with rendered values
 func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,

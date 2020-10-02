@@ -236,6 +236,13 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	statefulSet.Spec.Template.Spec.ServiceAccountName = "serviceaccount-statusmonitor-control"
+	if instance.Spec.ServiceConfiguration.DataSubnet != "" {
+		if statefulSet.Spec.Template.ObjectMeta.Annotations == nil {
+			statefulSet.Spec.Template.ObjectMeta.Annotations = map[string]string{"dataSubnet": instance.Spec.ServiceConfiguration.DataSubnet}
+		} else {
+			statefulSet.Spec.Template.ObjectMeta.Annotations["dataSubnet"] = instance.Spec.ServiceConfiguration.DataSubnet
+		}
+	}
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
@@ -451,11 +458,7 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		if err = r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -477,4 +480,10 @@ func (r *ReconcileControl) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileControl) ensureCertificatesExist(control *v1alpha1.Control, pods *corev1.PodList, instanceType string) error {
+	subjects := control.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, control, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

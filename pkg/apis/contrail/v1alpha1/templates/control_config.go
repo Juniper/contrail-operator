@@ -9,7 +9,7 @@ bgp_port=179
 collectors={{ .CollectorServerList }}
 # gr_helper_bgp_disable=0
 # gr_helper_xmpp_disable=0
-hostip={{ .ListenAddress }}
+hostip=0.0.0.0
 hostname={{ .Hostname }}
 http_server_ip=0.0.0.0
 http_server_port=8083
@@ -22,8 +22,8 @@ log_local=1
 # log_disable=0
 xmpp_server_port=5269
 xmpp_auth_enable=True
-xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
-xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_server_cert=/etc/certificates/server-{{ .PodIP }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .PodIP }}.pem
 xmpp_ca_cert={{ .CAFilePath }}
 
 # Sandesh send rate limit can be used to throttle system logs transmitted per
@@ -40,16 +40,16 @@ rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
 rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=True
-rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .PodIP }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .PodIP }}.crt
 rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=True
 sandesh_ssl_enable=True
-sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_keyfile=/etc/certificates/server-key-{{ .PodIP }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .PodIP }}.crt
 sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlNamedConfig is the template of the Named service configuration.
@@ -92,14 +92,14 @@ logging {
 // ControlDNSConfig is the template of the Dns service configuration.
 var ControlDNSConfig = template.Must(template.New("").Parse(`[DEFAULT]
 collectors={{ .CollectorServerList }}
-named_config_file = /etc/contrailconfigmaps/named.{{ .ListenAddress }}
+named_config_file = /etc/contrailconfigmaps/named.{{ .PodIP }}
 named_config_directory = /etc/contrail/dns
 named_log_file = /var/log/contrail/contrail-named.log
 rndc_config_file = contrail-rndc.conf
 named_max_cache_size=32M # max-cache-size (bytes) per view, can be in K or M
 named_max_retransmissions=12
 named_retransmission_interval=1000 # msec
-hostip={{ .ListenAddress }}
+hostip=0.0.0.0
 hostname={{ .Hostname }}
 http_server_port=8092
 http_server_ip=0.0.0.0
@@ -112,8 +112,8 @@ log_local=1
 # log_category=
 # log_disable=0
 xmpp_dns_auth_enable=True
-xmpp_server_cert=/etc/certificates/server-{{ .ListenAddress }}.crt
-xmpp_server_key=/etc/certificates/server-key-{{ .ListenAddress }}.pem
+xmpp_server_cert=/etc/certificates/server-{{ .PodIP }}.crt
+xmpp_server_key=/etc/certificates/server-key-{{ .PodIP }}.pem
 xmpp_ca_cert={{ .CAFilePath }}
 # Sandesh send rate limit can be used to throttle system logs transmitted per
 # second. System logs are dropped if the sending rate is exceeded
@@ -129,16 +129,16 @@ rabbitmq_vhost={{ .RabbitmqVhost }}
 rabbitmq_user={{ .RabbitmqUser }}
 rabbitmq_password={{ .RabbitmqPassword }}
 rabbitmq_use_ssl=True
-rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-rabbitmq_ssl_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+rabbitmq_ssl_keyfile=/etc/certificates/server-key-{{ .PodIP }}.pem
+rabbitmq_ssl_certfile=/etc/certificates/server-{{ .PodIP }}.crt
 rabbitmq_ssl_ca_certs={{ .CAFilePath }}
 rabbitmq_ssl_version=tlsv1_2
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=True
 sandesh_ssl_enable=True
-sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_keyfile=/etc/certificates/server-key-{{ .PodIP }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .PodIP }}.crt
 sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlNodemanagerConfig is the template of the Control Nodemanager service configuration.
@@ -147,7 +147,7 @@ http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-control-nodemgr.log
 log_level=SYS_NOTICE
 log_local=1
-hostip={{ .ListenAddress }}
+hostip=0.0.0.0
 db_port={{ .CassandraPort }}
 db_jmx_port={{ .CassandraJmxPort }}
 db_use_ssl=True
@@ -157,18 +157,17 @@ server_list={{ .CollectorServerList }}
 introspect_ssl_enable=True
 introspect_ssl_insecure=True
 sandesh_ssl_enable=True
-sandesh_keyfile=/etc/certificates/server-key-{{ .ListenAddress }}.pem
-sandesh_certfile=/etc/certificates/server-{{ .ListenAddress }}.crt
+sandesh_keyfile=/etc/certificates/server-key-{{ .PodIP }}.pem
+sandesh_certfile=/etc/certificates/server-{{ .PodIP }}.crt
 sandesh_ca_cert={{ .CAFilePath }}`))
 
 // ControlProvisionConfig is the template of the Control provision script.
 var ControlProvisionConfig = template.Must(template.New("").Parse(`#!/bin/bash
-sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
 servers=$(echo {{ .APIServerList }} | tr ',' ' ')
 for server in $servers ; do
   python /opt/contrail/utils/provision_control.py --oper $1 \
   --api_server_use_ssl true \
-  --host_ip {{ .ListenAddress }} \
+  --host_ip {{ .DataIP }} \
   --router_asn {{ .ASNNumber }} \
   --bgp_server_port {{ .BGPPort }} \
   --api_server_ip $server \

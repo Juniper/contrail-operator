@@ -518,14 +518,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 			r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-		crt := certificates.NewCertificateWithServiceIP(r.Client, r.Scheme, instance, podIPList, clusterIP, instanceType, hostNetwork)
-		if err = crt.EnsureExistsAndIsSigned(); err != nil {
+		if err := r.ensureCertificatesExist(instance, podIPList, clusterIP, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
+
 		if err = instance.SetPodsToReady(podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -559,4 +555,10 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileCassandra) ensureCertificatesExist(cassandra *v1alpha1.Cassandra, pods *corev1.PodList, serviceIP string, instanceType string) error {
+	subjects := cassandra.PodsCertSubjects(pods, serviceIP)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, cassandra, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

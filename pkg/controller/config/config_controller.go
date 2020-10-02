@@ -686,11 +686,8 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		if err = config.InstanceConfiguration(request, podIPList, r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
-		hostNetwork := true
-		if config.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *config.Spec.CommonConfiguration.HostNetwork
-		}
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, config, podIPList, hostNetwork, instanceType); err != nil {
+
+		if err := r.ensureCertificatesExist(config, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -735,4 +732,10 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileConfig) ensureCertificatesExist(config *v1alpha1.Config, pods *corev1.PodList, instanceType string) error {
+	subjects := config.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, config, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

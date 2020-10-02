@@ -730,6 +730,12 @@ func (c *Config) PodIPListAndIPMapFromInstance(request reconcile.Request, reconc
 	return PodIPListAndIPMapFromInstance("config", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
+//PodsCertSubjects gets list of Config pods certificate subjets which can be passed to the certificate API
+func (c *Config) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
 func (c *Config) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {
 	return SetPodsToReady(podIPList, client)
 }

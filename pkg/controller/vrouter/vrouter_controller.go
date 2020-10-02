@@ -519,12 +519,7 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 
-		hostNetwork := true
-		if instance.Spec.CommonConfiguration.HostNetwork != nil {
-			hostNetwork = *instance.Spec.CommonConfiguration.HostNetwork
-		}
-
-		if err = certificates.CreateAndSignCsr(r.Client, r.Scheme, instance, podIPList, hostNetwork, instanceType); err != nil {
+		if err := r.ensureCertificatesExist(instance, podIPList, instanceType); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -561,4 +556,10 @@ func (r *ReconcileVrouter) vrouterDependenciesReady(vrouterInstance *v1alpha1.Vr
 	configAvailable := configInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil
 	controlAvailable := controlInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil
 	return configAvailable && controlAvailable
+}
+
+func (r *ReconcileVrouter) ensureCertificatesExist(vrouter *v1alpha1.Vrouter, pods *corev1.PodList, instanceType string) error {
+	subjects := vrouter.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, vrouter, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
 }

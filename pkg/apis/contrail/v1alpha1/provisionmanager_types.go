@@ -202,6 +202,18 @@ func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace 
 	return hostname, nil
 }
 
+func (c *ProvisionManager) getDataIPFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
+	pod := &corev1.Pod{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	if err != nil {
+		return "", err
+	}
+	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {
+		return dataIP, nil
+	}
+	return "", nil
+}
+
 func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration, error) {
 	g := &GlobalVrouterConfiguration{}
 	g.EncapsulationPriorities = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EncapsulationPriorities
@@ -410,12 +422,22 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				if err != nil {
 					return err
 				}
+				dataIP, err := c.getDataIPFromAnnotations(podName, request.Namespace, client)
+				if err != nil {
+					return err
+				}
+				var address string
+				if dataIP != "" {
+					address = dataIP
+				} else {
+					address = ipAddress
+				}
 				asn, err := strconv.Atoi(controlService.Status.Ports.ASNNumber)
 				if err != nil {
 					return err
 				}
 				n := &ControlNode{
-					IPAddress: ipAddress,
+					IPAddress: address,
 					Hostname:  hostname,
 					ASN:       asn,
 				}
@@ -552,6 +574,12 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
 func (c *ProvisionManager) PodIPListAndIPMapFromInstance(request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
 	return PodIPListAndIPMapFromInstance("provisionmanager", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
+}
+
+//PodsCertSubjects gets list of ProvisionManager pods certificate subjets which can be passed to the certificate API
+func (c *ProvisionManager) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
+	var altIPs PodAlternativeIPs
+	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
 }
 
 func (c *ProvisionManager) SetPodsToReady(podIPList *corev1.PodList, client client.Client) error {

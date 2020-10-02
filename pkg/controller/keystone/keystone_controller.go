@@ -492,11 +492,9 @@ createdb -h ${PSQL_ENDPOINT} -U $DB_USER $KEYSTONE
 psql -h ${PSQL_ENDPOINT} -U $DB_USER -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $KEYSTONE TO $KEYSTONE"`
 
 func (r *ReconcileKeystone) ensureCertificatesExist(keystone *contrail.Keystone, pods *core.PodList, serviceIP string) error {
-	hostNetwork := true
-	if keystone.Spec.CommonConfiguration.HostNetwork != nil {
-		hostNetwork = *keystone.Spec.CommonConfiguration.HostNetwork
-	}
-	return certificates.NewCertificateWithServiceIP(r.client, r.scheme, keystone, pods, serviceIP, "keystone", hostNetwork).EnsureExistsAndIsSigned()
+	subjects := keystone.PodsCertSubjects(pods, serviceIP)
+	crt := certificates.NewCertificate(r.client, r.scheme, keystone, subjects, "keystone")
+	return crt.EnsureExistsAndIsSigned()
 }
 
 func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList, error) {

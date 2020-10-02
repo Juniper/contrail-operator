@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
 
 // +k8s:openapi-gen=true
@@ -52,6 +55,12 @@ type PostgresList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Postgres `json:"items"`
+}
+
+//PodsCertSubjects gets list of Postgres pods certificate subjets which can be passed to the certificate API
+func (p *Postgres) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
+	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
+	return PodsCertSubjects(podList, p.Spec.CommonConfiguration.HostNetwork, altIPs)
 }
 
 // PostgresInstanceType is type unique name used for labels
