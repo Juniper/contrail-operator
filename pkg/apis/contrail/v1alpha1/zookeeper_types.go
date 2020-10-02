@@ -98,10 +98,10 @@ func (c *Zookeeper) InstanceConfiguration(request reconcile.Request, confCMName 
 	var zookeeperConfigBuffer bytes.Buffer
 	err = configtemplates.ZookeeperStaticConfig.Execute(&zookeeperConfigBuffer, struct {
 		AdminEnableServer string
-		AdminSeverPort    string
+		AdminServerPort   string
 	}{
 		AdminEnableServer: strconv.FormatBool(*zookeeperConfig.AdminEnableServer),
-		AdminSeverPort:    strconv.Itoa(*zookeeperConfig.AdminPort),
+		AdminServerPort:   strconv.Itoa(*zookeeperConfig.AdminPort),
 	})
 	if err != nil {
 		return err

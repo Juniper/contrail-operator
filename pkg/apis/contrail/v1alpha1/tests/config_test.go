@@ -225,6 +225,7 @@ func SetupEnv() Environment {
 	rabbitmqConfigMap := *configMap
 	rabbitmqConfigMap2 := *configMap
 	cassandraConfigMap := *configMap
+	zookeeperConfigMap := *configMap
 	controlConfigMap := *configMap
 	kubemanagerConfigMap := *configMap
 	webuiConfigMap := *configMap
@@ -275,6 +276,9 @@ func SetupEnv() Environment {
 
 	cassandraConfigMap.Name = "cassandra1-cassandra-configmap"
 	cassandraConfigMap.Namespace = "default"
+
+	zookeeperConfigMap.Name = "zookeeper1-zookeeper-configmap"
+	zookeeperConfigMap.Namespace = "default"
 
 	controlConfigMap.Name = "control1-control-configmap"
 	controlConfigMap.Namespace = "default"
@@ -330,6 +334,7 @@ func SetupEnv() Environment {
 		&configConfigMap,
 		&controlConfigMap,
 		&cassandraConfigMap,
+		&zookeeperConfigMap,
 		&rabbitmqConfigMap,
 		&rabbitmqConfigMap2,
 		&kubemanagerConfigMap,
@@ -513,6 +518,7 @@ func SetupEnv() Environment {
 		configConfigMap:      configConfigMap,
 		controlConfigMap:     controlConfigMap,
 		cassandraConfigMap:   cassandraConfigMap,
+		zookeeperConfigMap:   zookeeperConfigMap,
 		rabbitmqConfigMap:    rabbitmqConfigMap,
 		rabbitmqConfigMap2:   rabbitmqConfigMap2,
 		kubemanagerConfigMap: kubemanagerConfigMap,
@@ -641,6 +647,55 @@ func TestCassandraConfig(t *testing.T) {
 	if environment.cassandraConfigMap.Data["1.1.2.1.yaml"] != cassandraConfig {
 		configDiff := diff.Diff(environment.cassandraConfigMap.Data["1.1.2.1.yaml"], cassandraConfig)
 		t.Fatalf("get cassandra config: \n%v\n", configDiff)
+	}
+}
+
+func TestZookeeperConfig(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
+	environment := SetupEnv()
+	cl := *environment.client
+	err := environment.zookeeperResource.InstanceConfiguration(
+		reconcile.Request{types.NamespacedName{Name: "zookeeper1", Namespace: "default"}},
+		"zookeeper1-zookeeper-configmap",
+		&environment.zookeeperPodList,
+		cl)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	err = cl.Get(context.TODO(),
+		types.NamespacedName{Name: "zookeeper1-zookeeper-configmap", Namespace: "default"},
+		&environment.zookeeperConfigMap)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if environment.zookeeperConfigMap.Data["zoo.cfg"] != zookeeperConfig {
+		configDiff := diff.Diff(environment.zookeeperConfigMap.Data["zoo.cfg"], zookeeperConfig)
+		t.Fatalf("get zookeeper config: \n%v\n", configDiff)
+	}
+
+	adminEnableServer := false
+	environment.zookeeperResource.Spec.ServiceConfiguration.AdminEnableServer = &adminEnableServer
+	adminPort := 21833
+	environment.zookeeperResource.Spec.ServiceConfiguration.AdminPort = &adminPort
+
+	err = environment.zookeeperResource.InstanceConfiguration(
+		reconcile.Request{types.NamespacedName{Name: "zookeeper1", Namespace: "default"}},
+		"zookeeper1-zookeeper-configmap",
+		&environment.zookeeperPodList,
+		cl)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	err = cl.Get(context.TODO(),
+		types.NamespacedName{Name: "zookeeper1-zookeeper-configmap", Namespace: "default"},
+		&environment.zookeeperConfigMap)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if environment.zookeeperConfigMap.Data["zoo.cfg"] != zookeeperConfig2 {
+		configDiff := diff.Diff(environment.zookeeperConfigMap.Data["zoo.cfg"], zookeeperConfig2)
+		t.Fatalf("get zookeeper config: \n%v\n", configDiff)
 	}
 }
 
@@ -952,6 +1007,36 @@ transparent_data_encryption_options:
       store_type: JCEKS
       key_password: cassandra
 auto_bootstrap: true
+`
+
+var zookeeperConfig = `dataDir=/var/lib/zookeeper
+tickTime=2000
+initLimit=5
+syncLimit=2
+maxClientCnxns=60
+maxSessionTimeout=120000
+admin.enableServer=true
+admin.serverPort=2182
+standaloneEnabled=false
+4lw.commands.whitelist=stat,ruok,conf,isro
+reconfigEnabled=true
+skipACL=yes
+dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
+`
+
+var zookeeperConfig2 = `dataDir=/var/lib/zookeeper
+tickTime=2000
+initLimit=5
+syncLimit=2
+maxClientCnxns=60
+maxSessionTimeout=120000
+admin.enableServer=false
+admin.serverPort=21833
+standaloneEnabled=false
+4lw.commands.whitelist=stat,ruok,conf,isro
+reconfigEnabled=true
+skipACL=yes
+dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
 `
 
 var rabbitmqConfigRunner = `#!/bin/bash
