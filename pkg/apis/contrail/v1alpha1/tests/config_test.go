@@ -1225,42 +1225,6 @@ sandesh_keyfile=/etc/certificates/server-key-1.1.5.1.pem
 sandesh_certfile=/etc/certificates/server-1.1.5.1.crt
 sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`
 
-var namedConfig = `options {
-    directory "/etc/contrail/dns";
-    managed-keys-directory "/etc/contrail/dns";
-    empty-zones-enable no;
-    pid-file "/etc/contrail/dns/contrail-named.pid";
-    session-keyfile "/etc/contrail/dns/session.key";
-    listen-on port 53 { any; };
-    allow-query { any; };
-    allow-recursion { any; };
-    allow-query-cache { any; };
-    max-cache-size 32M;
-};
-key "rndc-key" {
-    algorithm hmac-md5;
-    secret "xvysmOR8lnUQRBcunkC6vg==";
-};
-controls {
-    inet 127.0.0.1 port 8094
-    allow { 127.0.0.1; }  keys { "rndc-key"; };
-};
-logging {
-    channel debug_log {
-        file "/var/log/contrail/contrail-named.log" versions 3 size 5m;
-        severity debug;
-        print-time yes;
-        print-severity yes;
-        print-category yes;
-    };
-    category default {
-        debug_log;
-    };
-    category queries {
-        debug_log;
-    };
-};`
-
 var controlProvisioningConfig = `#!/bin/bash
 sed "s/hostip=.*/hostip=${POD_IP}/g" /etc/contrailconfigmaps/nodemanager.${POD_IP} > /etc/contrail/contrail-control-nodemgr.conf
 servers=$(echo 1.1.1.1,1.1.1.2,1.1.1.3 | tr ',' ' ')
@@ -1277,19 +1241,6 @@ for server in $servers ; do
 	break
   fi
 done
-`
-
-var controlDeProvisioningConfig = `#!/usr/bin/python
-from vnc_api import vnc_api
-import socket
-vncServerList = ['1.1.1.1','1.1.1.2','1.1.1.3']
-vnc_client = vnc_api.VncApi(
-            username = 'admin',
-            password = 'contrail123',
-            tenant_name = 'admin',
-            api_server_host= vncServerList[0],
-            api_server_port=8082)
-vnc_client.bgp_router_delete(fq_name=['default-domain','default-project','ip-fabric','__default__', 'host1' ])
 `
 
 var kubemanagerConfig = `[DEFAULTS]

@@ -163,6 +163,8 @@ spec:
                       description: CassandraClusterConfiguration  stores all information
                         about Cassandra's endpoints.
                       properties:
+                        Endpoint:
+                          type: string
                         cqlPort:
                           type: integer
                         jmxPort:

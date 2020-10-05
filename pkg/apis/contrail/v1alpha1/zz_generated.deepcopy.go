@@ -4013,6 +4013,16 @@ func (in *ZookeeperConfiguration) DeepCopyInto(out *ZookeeperConfiguration) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.AdminEnableServer != nil {
+		in, out := &in.AdminEnableServer, &out.AdminEnableServer
+		*out = new(bool)
+		**out = **in
+	}
+	if in.AdminPort != nil {
+		in, out := &in.AdminPort, &out.AdminPort
+		*out = new(int)
+		**out = **in
+	}
 	out.Storage = in.Storage
 	return
 }

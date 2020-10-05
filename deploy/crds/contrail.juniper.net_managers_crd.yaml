@@ -1434,6 +1434,8 @@ spec:
                                     description: CassandraClusterConfiguration  stores
                                       all information about Cassandra's endpoints.
                                     properties:
+                                      Endpoint:
+                                        type: string
                                       cqlPort:
                                         type: integer
                                       jmxPort:
@@ -2853,6 +2855,10 @@ spec:
                             description: ZookeeperConfiguration is the Spec for the
                               zookeepers API.
                             properties:
+                              adminEnabled:
+                                type: boolean
+                              adminPort:
+                                type: integer
                               clientPort:
                                 type: integer
                               containers:

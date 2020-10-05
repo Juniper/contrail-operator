@@ -534,6 +534,12 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	return reconcile.Result{}, nil
 }
 
+func (r *ReconcileKubemanager) ensureCertificatesExist(config *v1alpha1.Kubemanager, pods *corev1.PodList, instanceType string) error {
+	subjects := config.PodsCertSubjects(pods)
+	crt := certificates.NewCertificate(r.Client, r.Scheme, config, subjects, instanceType)
+	return crt.EnsureExistsAndIsSigned()
+}
+
 func (r *ReconcileKubemanager) kubemanagerDependenciesReady(instance *v1alpha1.Kubemanager, namespace string) bool {
 	cassandraInstance := v1alpha1.Cassandra{}
 	zookeeperInstance := v1alpha1.Zookeeper{}
