@@ -59,6 +59,8 @@ func (s *Service) EnsureExists() error {
 		s.svc.Spec.Ports = servicePortList
 		s.svc.Spec.Selector = labels
 		s.svc.Spec.Type = s.servType
+		// Some of the services are not working well with default (Cluster) ExternalTrafficPolicy
+		s.svc.Spec.ExternalTrafficPolicy = core.ServiceExternalTrafficPolicyTypeLocal
 		return controllerutil.SetControllerReference(s.owner, &s.svc, s.scheme)
 	})
 	return err
