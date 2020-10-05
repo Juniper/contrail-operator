@@ -785,7 +785,7 @@ config.jobServer.server_port = '3000';
 config.files = {};
 config.files.download_path = '/tmp';
 config.cassandra = {};
-config.cassandra.server_ips = ['10.0.0.1'];
+config.cassandra.server_ips = ['1.1.2.1','1.1.2.2','1.1.2.3'];
 config.cassandra.server_port = '9042';
 config.cassandra.enable_edit = false;
 config.cassandra.use_ssl = true;
@@ -1133,7 +1133,7 @@ xmpp_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
 [CONFIGDB]
-config_db_server_list=10.0.0.1:9042
+config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 # config_db_username=
 # config_db_password=
 config_db_use_ssl=True
@@ -1184,7 +1184,7 @@ xmpp_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt
 # second. System logs are dropped if the sending rate is exceeded
 # sandesh_send_rate_limit=
 [CONFIGDB]
-config_db_server_list=10.0.0.1:9042
+config_db_server_list=1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042
 # config_db_username=
 # config_db_password=
 config_db_use_ssl=True

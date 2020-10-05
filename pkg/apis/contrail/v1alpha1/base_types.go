@@ -789,18 +789,24 @@ func PodIPListAndIPMapFromInstance(instanceType string,
 // NewCassandraClusterConfiguration gets a struct containing various representations of Cassandra nodes string.
 func NewCassandraClusterConfiguration(name string, namespace string, client client.Client) (CassandraClusterConfiguration, error) {
 	var cassandraCluster CassandraClusterConfiguration
+	var cassandraNodes []string
 	cassandraInstance := &Cassandra{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cassandraInstance)
 	if err != nil {
 		return cassandraCluster, err
 	}
+	for _, ip := range cassandraInstance.Status.Nodes {
+		cassandraNodes = append(cassandraNodes, ip)
+	}
+	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
 	cassandraConfig := cassandraInstance.ConfigurationParameters()
-	serverIPList := []string{cassandraInstance.Status.ClusterIP}
+	endpoint := cassandraInstance.Status.ClusterIP + ":" + strconv.Itoa(*cassandraConfig.Port)
 	cassandraCluster = CassandraClusterConfiguration{
 		Port:         *cassandraConfig.Port,
 		CQLPort:      *cassandraConfig.CqlPort,
 		JMXPort:      *cassandraConfig.JmxLocalPort,
-		ServerIPList: serverIPList,
+		ServerIPList: cassandraNodes,
+		Endpoint:     endpoint,
 	}
 	return cassandraCluster, nil
 }
@@ -1060,6 +1066,7 @@ type CassandraClusterConfiguration struct {
 	CQLPort      int      `json:"cqlPort,omitempty"`
 	JMXPort      int      `json:"jmxPort,omitempty"`
 	ServerIPList []string `json:"serverIPList,omitempty"`
+	Endpoint     string   `json:"Endpoint,omitempty"`
 }
 
 // FillWithDefaultValues fills Cassandra config with default values
