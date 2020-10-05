@@ -4,24 +4,26 @@ import (
 	"fmt"
 	"strconv"
 
+	"text/template"
+
 	core "k8s.io/api/core/v1"
 )
 
 // ZookeeperStaticConfig is the template of the Zookeeper service configuration.
-var ZookeeperStaticConfig = `
-dataDir=/var/lib/zookeeper
+var ZookeeperStaticConfig = template.Must(template.New("").Parse(`dataDir=/var/lib/zookeeper
 tickTime=2000
 initLimit=5
 syncLimit=2
 maxClientCnxns=60
 maxSessionTimeout=120000
-admin.enableServer=false
+admin.enableServer={{ .AdminEnableServer }}
+admin.serverPort={{ .AdminServerPort }}
 standaloneEnabled=false
 4lw.commands.whitelist=stat,ruok,conf,isro
 reconfigEnabled=true
 skipACL=yes
 dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
-`
+`))
 
 func DynamicZookeeperConfig(pods []core.Pod, electionPort, serverPort, clientPort string) (map[string]string, error) {
 	dynamicConf := make(map[string]string, 0)
