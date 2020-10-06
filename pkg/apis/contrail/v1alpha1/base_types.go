@@ -1042,7 +1042,7 @@ func (c *ZookeeperClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// RabbitmqClusterConfiguration defines stores all information about Rabbitmq's endpoints.
+// RabbitmqClusterConfiguration stores all information about Rabbitmq's endpoints.
 type RabbitmqClusterConfiguration struct {
 	Port         int      `json:"port,omitempty"`
 	SSLPort      int      `json:"sslPort,omitempty"`
@@ -1060,13 +1060,13 @@ func (c *RabbitmqClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// CassandraClusterConfiguration  stores all information about Cassandra's endpoints.
+// CassandraClusterConfiguration stores all information about Cassandra's endpoints.
 type CassandraClusterConfiguration struct {
 	Port         int      `json:"port,omitempty"`
 	CQLPort      int      `json:"cqlPort,omitempty"`
 	JMXPort      int      `json:"jmxPort,omitempty"`
 	ServerIPList []string `json:"serverIPList,omitempty"`
-	Endpoint     string   `json:"Endpoint,omitempty"`
+	Endpoint     string   `json:"endpoint,omitempty"`
 }
 
 // FillWithDefaultValues fills Cassandra config with default values

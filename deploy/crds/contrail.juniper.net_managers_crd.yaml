@@ -1431,13 +1431,13 @@ spec:
                                   configuration for deployment with static controller.
                                 properties:
                                   cassandraNodesConfiguration:
-                                    description: CassandraClusterConfiguration  stores
+                                    description: CassandraClusterConfiguration stores
                                       all information about Cassandra's endpoints.
                                     properties:
-                                      Endpoint:
-                                        type: string
                                       cqlPort:
                                         type: integer
+                                      endpoint:
+                                        type: string
                                       jmxPort:
                                         type: integer
                                       port:
@@ -1479,8 +1479,8 @@ spec:
                                         type: integer
                                     type: object
                                   rabbitmqNodesConfiguration:
-                                    description: RabbitmqClusterConfiguration defines
-                                      stores all information about Rabbitmq's endpoints.
+                                    description: RabbitmqClusterConfiguration stores
+                                      all information about Rabbitmq's endpoints.
                                     properties:
                                       port:
                                         type: integer

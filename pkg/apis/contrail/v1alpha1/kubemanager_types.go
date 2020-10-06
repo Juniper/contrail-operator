@@ -193,7 +193,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		configCollectorEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(configCollectorEndpointList, " ")
 		rabbitmqSSLEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(rabbitmqNodesInformation.ServerIPList, ",")
 		zookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
-		zookeeperServerListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
+		zookeeperEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
 		if err = client.Get(context.TODO(), types.NamespacedName{Name: "kubemanagersecret", Namespace: request.Namespace}, secret); err != nil {
@@ -241,7 +241,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			APIServerList:         configApiIPListCommaSeparated,
 			APIServerPort:         strconv.Itoa(configNodesInformation.APIServerPort),
 			CassandraEndpoint:     cassandraNodesInformation.Endpoint,
-			ZookeeperServerList:   zookeeperServerListCommaSeparated,
+			ZookeeperServerList:   zookeeperEndpointListCommaSeparated,
 			RabbitmqServerList:    rabbitmqSSLEndpointListCommaSeparated,
 			RabbitmqServerPort:    strconv.Itoa(rabbitmqNodesInformation.SSLPort),
 			CollectorServerList:   configCollectorEndpointListSpaceSeparated,
