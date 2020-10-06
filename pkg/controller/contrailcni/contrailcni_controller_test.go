@@ -141,7 +141,16 @@ func TestContrailCNIController(t *testing.T) {
 		}}
 		assert.Equal(t, expectedOwnerRefs, job.OwnerReferences)
 		var expectedCompletions int32 = 0
-		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
+		assert.Equal(t, expectedCompletions, *job.Spec.Completions)
+	})
+
+	t.Run("Should set ContrailCNI to Active state", func(t *testing.T) {
+		cni := &contrail.ContrailCNI{}
+		require.NoError(t, fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni",
+			Namespace: "default",
+		}, cni))
+		assert.Equal(t, cni.Status.Active, true)
 	})
 }
 
@@ -193,6 +202,15 @@ func TestContrailCNIControllerUpdate(t *testing.T) {
 		assert.NotEmpty(t, job)
 		var expectedCompletions int32 = 0
 		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
+	})
+
+	t.Run("Should set ContrailCNI to Active state", func(t *testing.T) {
+		cni := &contrail.ContrailCNI{}
+		require.NoError(t, fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni",
+			Namespace: "default",
+		}, cni))
+		assert.Equal(t, cni.Status.Active, true)
 	})
 }
 
@@ -319,6 +337,14 @@ func TestContrailCNIControllerWithControl(t *testing.T) {
 		assert.Equal(t, &expectedCompletions, job.Spec.Completions)
 	})
 
+	t.Run("Should set ContrailCNI to Active state", func(t *testing.T) {
+		cni := &contrail.ContrailCNI{}
+		require.NoError(t, fakeClient.Get(context.Background(), types.NamespacedName{
+			Name:      "test-contrailcni",
+			Namespace: "default",
+		}, cni))
+		assert.Equal(t, cni.Status.Active, true)
+	})
 }
 
 type mockManager struct {
