@@ -96,9 +96,11 @@ server_encryption_options:
   store_type: JKS
 client_encryption_options:
   enabled: true
-  optional: false
+  optional: true
   keystore: /etc/keystore/server-keystore.jks
   keystore_password: {{ .KeystorePassword }}
+  truststore: /etc/keystore/server-truststore.jks
+  truststore_password: {{ .TruststorePassword }}
 internode_compression: all
 inter_dc_tcp_nodelay: false
 tracetype_query_ttl: 86400
