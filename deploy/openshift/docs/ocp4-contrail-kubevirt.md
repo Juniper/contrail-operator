@@ -45,6 +45,7 @@ zookeeper1-zookeeper-statefulset-1            1/1     Running     0          27h
 zookeeper1-zookeeper-statefulset-2            1/1     Running     0          27h
 ```
 
+
 ### Installing OpenShift Virtualisation operator
 
 Login as a user with `cluster-admin` privileges
