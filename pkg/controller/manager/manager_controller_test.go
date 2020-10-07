@@ -1858,7 +1858,7 @@ func TestManagerController(t *testing.T) {
 						HostAliases: []core.HostAlias{
 							{
 								IP:        "1.1.1.1",
-								Hostnames: []string{"hostname"},
+								Hostnames: []string{"hostname-1"},
 							},
 						},
 					},
@@ -1881,7 +1881,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.CassandraSpec{
 				CommonConfiguration: contrail.PodConfiguration{
 					Replicas:    &replicas,
-					HostAliases: []core.HostAlias{{IP: "1.1.1.1", Hostnames: []string{"hostname"}}},
+					HostAliases: []core.HostAlias{{IP: "1.1.1.1", Hostnames: []string{"hostname-1"}}},
 				},
 			},
 		}
@@ -1945,9 +1945,9 @@ func TestManagerController(t *testing.T) {
 						CommonConfiguration: contrail.PodConfiguration{
 							Replicas: &replicas,
 							HostAliases: []core.HostAlias{
-								{IP: "1.1.1.1", Hostnames: []string{"hostname"}},
-								{IP: "1.1.1.2", Hostnames: []string{"hostname"}},
-								{IP: "1.1.1.3", Hostnames: []string{"hostname"}},
+								{IP: "1.1.1.1", Hostnames: []string{"hostname-1"}},
+								{IP: "1.1.1.2", Hostnames: []string{"hostname-2"}},
+								{IP: "1.1.1.3", Hostnames: []string{"hostname-3"}},
 							},
 						},
 						ServiceConfiguration: contrail.CassandraConfiguration{
@@ -2189,7 +2189,7 @@ func newNode(number int) *core.Node {
 		Status: core.NodeStatus{
 			Addresses: []core.NodeAddress{
 				{Type: core.NodeInternalIP, Address: "1.1.1." + nStr},
-				{Type: core.NodeHostName, Address: "hostname"},
+				{Type: core.NodeHostName, Address: "hostname-" + nStr},
 			},
 		},
 	}
