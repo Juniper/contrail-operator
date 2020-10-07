@@ -102,6 +102,10 @@ spec:
             serviceConfiguration:
               description: ZookeeperConfiguration is the Spec for the zookeepers API.
               properties:
+                adminEnabled:
+                  type: boolean
+                adminPort:
+                  type: integer
                 clientPort:
                   type: integer
                 containers:

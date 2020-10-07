@@ -152,6 +152,7 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 	configApiIPListCommaSeparatedQuoted := configtemplates.JoinListWithSeparatorAndSingleQuotes(configNodesInformation.APIServerIPList, ",")
 	analyticsIPListCommaSeparatedQuoted := configtemplates.JoinListWithSeparatorAndSingleQuotes(configNodesInformation.AnalyticsServerIPList, ",")
 	controlXMPPIPListCommaSeparatedQuoted := configtemplates.JoinListWithSeparatorAndSingleQuotes(controlNodesInformation.ControlServerIPList, ",")
+	cassandraIPListCommaSeparatedQuoted := configtemplates.JoinListWithSeparatorAndSingleQuotes(cassandraNodesInformation.ServerIPList, ",")
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = make(map[string]string)
 	for idx := range podList.Items {
@@ -187,8 +188,8 @@ func (c *Webui) InstanceConfiguration(request reconcile.Request,
 			AnalyticsServerPort:    strconv.Itoa(configNodesInformation.AnalyticsServerPort),
 			ControlNodeList:        controlXMPPIPListCommaSeparatedQuoted,
 			DnsNodePort:            strconv.Itoa(controlNodesInformation.DNSIntrospectPort),
-			CassandraServerList:    cassandraNodesInformation.ServerListCommanSeparatedQuoted,
-			CassandraPort:          cassandraNodesInformation.CQLPort,
+			CassandraServerList:    cassandraIPListCommaSeparatedQuoted,
+			CassandraPort:          strconv.Itoa(cassandraNodesInformation.CQLPort),
 			RedisServerList:        "127.0.0.1",
 			RedisServerPort:        "6380",
 			AdminUsername:          webUIConfig.AdminUsername,

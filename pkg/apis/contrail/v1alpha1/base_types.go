@@ -787,48 +787,28 @@ func PodIPListAndIPMapFromInstance(instanceType string,
 }
 
 // NewCassandraClusterConfiguration gets a struct containing various representations of Cassandra nodes string.
-func NewCassandraClusterConfiguration(name string, namespace string, client client.Client) (*CassandraClusterConfiguration, error) {
-	var cassandraNodes []string
+func NewCassandraClusterConfiguration(name string, namespace string, client client.Client) (CassandraClusterConfiguration, error) {
 	var cassandraCluster CassandraClusterConfiguration
-	var port string
-	var cqlPort string
-	var jmxPort string
+	var cassandraNodes []string
 	cassandraInstance := &Cassandra{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cassandraInstance)
 	if err != nil {
-		return &cassandraCluster, err
+		return cassandraCluster, err
 	}
 	for _, ip := range cassandraInstance.Status.Nodes {
 		cassandraNodes = append(cassandraNodes, ip)
 	}
-	cassandraConfigInterface := cassandraInstance.ConfigurationParameters()
-	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
-	port = strconv.Itoa(*cassandraConfig.Port)
-	cqlPort = strconv.Itoa(*cassandraConfig.CqlPort)
-	jmxPort = strconv.Itoa(*cassandraConfig.JmxLocalPort)
 	sort.SliceStable(cassandraNodes, func(i, j int) bool { return cassandraNodes[i] < cassandraNodes[j] })
-	serverListCommaSeparated := strings.Join(cassandraNodes, ":"+port+",")
-	serverListCommaSeparated = serverListCommaSeparated + ":" + port
-	endpoint := cassandraInstance.Status.ClusterIP + ":" + port
-	serverListCQLSpaceSeparated := strings.Join(cassandraNodes, ":"+cqlPort+" ")
-	serverListCQLSpaceSeparated = serverListCQLSpaceSeparated + ":" + cqlPort
-	serverListJMXCommaSeparated := strings.Join(cassandraNodes, ":"+jmxPort+",")
-	serverListJMXCommaSeparated = serverListJMXCommaSeparated + ":" + jmxPort
-	serverListJMXSpaceSeparated := strings.Join(cassandraNodes, ":"+jmxPort+" ")
-	serverListJMXSpaceSeparated = serverListJMXSpaceSeparated + ":" + jmxPort
-	serverListCommanSeparatedQuoted := strings.Join(cassandraNodes, "','")
-	serverListCommanSeparatedQuoted = "'" + serverListCommanSeparatedQuoted + "'"
+	cassandraConfig := cassandraInstance.ConfigurationParameters()
+	endpoint := cassandraInstance.Status.ClusterIP + ":" + strconv.Itoa(*cassandraConfig.Port)
 	cassandraCluster = CassandraClusterConfiguration{
-		Port:                            port,
-		CQLPort:                         cqlPort,
-		JMXPort:                         jmxPort,
-		Endpoint:                        endpoint,
-		ServerListCQLSpaceSeparated:     serverListCQLSpaceSeparated,
-		ServerListJMXCommaSeparated:     serverListJMXCommaSeparated,
-		ServerListJMXSpaceSeparated:     serverListJMXSpaceSeparated,
-		ServerListCommanSeparatedQuoted: serverListCommanSeparatedQuoted,
+		Port:         *cassandraConfig.Port,
+		CQLPort:      *cassandraConfig.CqlPort,
+		JMXPort:      *cassandraConfig.JmxLocalPort,
+		ServerIPList: cassandraNodes,
+		Endpoint:     endpoint,
 	}
-	return &cassandraCluster, nil
+	return cassandraCluster, nil
 }
 
 // NewControlClusterConfiguration gets a struct containing various representations of Control nodes string.
@@ -877,82 +857,56 @@ func NewControlClusterConfiguration(name string, role string, namespace string, 
 }
 
 // NewZookeeperClusterConfiguration gets a struct containing various representations of Zookeeper nodes string.
-func NewZookeeperClusterConfiguration(name string, namespace string, client client.Client) (*ZookeeperClusterConfiguration, error) {
+func NewZookeeperClusterConfiguration(name string, namespace string, client client.Client) (ZookeeperClusterConfiguration, error) {
 	var zookeeperNodes []string
 	var zookeeperCluster ZookeeperClusterConfiguration
-	var port string
 	zookeeperInstance := &Zookeeper{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, zookeeperInstance)
 	if err != nil {
-		return &zookeeperCluster, err
+		return zookeeperCluster, err
 	}
 	for _, ip := range zookeeperInstance.Status.Nodes {
 		zookeeperNodes = append(zookeeperNodes, ip)
 
 	}
 	zookeeperConfig := zookeeperInstance.ConfigurationParameters()
-	port = strconv.Itoa(*zookeeperConfig.ClientPort)
 	sort.SliceStable(zookeeperNodes, func(i, j int) bool { return zookeeperNodes[i] < zookeeperNodes[j] })
-	serverListCommaSeparated := strings.Join(zookeeperNodes, ":"+port+",")
-	serverListCommaSeparated = serverListCommaSeparated + ":" + port
-	serverListSpaceSeparated := strings.Join(zookeeperNodes, ":"+port+" ")
-	serverListSpaceSeparated = serverListSpaceSeparated + ":" + port
 	zookeeperCluster = ZookeeperClusterConfiguration{
-		ClientPort:               port,
-		ServerListCommaSeparated: serverListCommaSeparated,
-		ServerListSpaceSeparated: serverListSpaceSeparated,
+		ClientPort:   *zookeeperConfig.ClientPort,
+		ServerIPList: zookeeperNodes,
 	}
 
-	return &zookeeperCluster, nil
+	return zookeeperCluster, nil
 }
 
 // NewRabbitmqClusterConfiguration gets a struct containing various representations of Rabbitmq nodes string.
-func NewRabbitmqClusterConfiguration(name string, namespace string, myclient client.Client) (*RabbitmqClusterConfiguration, error) {
+func NewRabbitmqClusterConfiguration(name string, namespace string, myclient client.Client) (RabbitmqClusterConfiguration, error) {
 	var rabbitmqNodes []string
 	var rabbitmqCluster RabbitmqClusterConfiguration
-	var port string
-	var sslPort string
 	secret := ""
 	labelSelector := labels.SelectorFromSet(map[string]string{"contrail_cluster": name})
 	listOps := &client.ListOptions{Namespace: namespace, LabelSelector: labelSelector}
 	rabbitmqList := &RabbitmqList{}
 	err := myclient.List(context.TODO(), rabbitmqList, listOps)
 	if err != nil {
-		return &rabbitmqCluster, err
+		return rabbitmqCluster, err
 	}
+	var rabbitmqConfig RabbitmqConfiguration
 	if len(rabbitmqList.Items) > 0 {
 		for _, ip := range rabbitmqList.Items[0].Status.Nodes {
 			rabbitmqNodes = append(rabbitmqNodes, ip)
 		}
-		rabbitmqConfigInterface := rabbitmqList.Items[0].ConfigurationParameters()
-		rabbitmqConfig := rabbitmqConfigInterface.(RabbitmqConfiguration)
-		port = strconv.Itoa(*rabbitmqConfig.Port)
-		sslPort = strconv.Itoa(*rabbitmqConfig.SSLPort)
+		rabbitmqConfig = rabbitmqList.Items[0].ConfigurationParameters()
 		secret = rabbitmqList.Items[0].Status.Secret
 	}
 	sort.SliceStable(rabbitmqNodes, func(i, j int) bool { return rabbitmqNodes[i] < rabbitmqNodes[j] })
-	serverListCommaSeparated := strings.Join(rabbitmqNodes, ":"+port+",")
-	serverListCommaSeparated = serverListCommaSeparated + ":" + port
-	serverListSpaceSeparated := strings.Join(rabbitmqNodes, ":"+port+" ")
-	serverListSpaceSeparated = serverListSpaceSeparated + ":" + port
-	serverListCommaSeparatedWithoutPort := strings.Join(rabbitmqNodes, ",")
-
-	serverListCommaSeparatedSSL := strings.Join(rabbitmqNodes, ":"+sslPort+",")
-	serverListCommaSeparatedSSL = serverListCommaSeparatedSSL + ":" + sslPort
-	serverListSpaceSeparatedSSL := strings.Join(rabbitmqNodes, ":"+sslPort+" ")
-	serverListSpaceSeparatedSSL = serverListSpaceSeparatedSSL + ":" + sslPort
-
 	rabbitmqCluster = RabbitmqClusterConfiguration{
-		Port:                                port,
-		SSLPort:                             sslPort,
-		ServerListCommaSeparated:            serverListCommaSeparated,
-		ServerListSpaceSeparated:            serverListSpaceSeparated,
-		ServerListCommaSeparatedSSL:         serverListCommaSeparatedSSL,
-		ServerListSpaceSeparatedSSL:         serverListSpaceSeparatedSSL,
-		ServerListCommaSeparatedWithoutPort: serverListCommaSeparatedWithoutPort,
-		Secret:                              secret,
+		Port:         *rabbitmqConfig.Port,
+		SSLPort:      *rabbitmqConfig.SSLPort,
+		ServerIPList: rabbitmqNodes,
+		Secret:       secret,
 	}
-	return &rabbitmqCluster, nil
+	return rabbitmqCluster, nil
 }
 
 // NewConfigClusterConfiguration gets a struct containing various representations of Config nodes string.
@@ -974,8 +928,7 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 		for _, ip := range configList.Items[0].Status.Nodes {
 			configNodes = append(configNodes, ip)
 		}
-		configConfigInterface := configList.Items[0].ConfigurationParameters()
-		configConfig := configConfigInterface.(ConfigConfiguration)
+		configConfig := configList.Items[0].ConfigurationParameters()
 		authMode = configConfig.AuthMode
 		apiServerPort = *configConfig.APIPort
 		analyticsPort = *configConfig.AnalyticsPort
@@ -1068,37 +1021,65 @@ func (c *ControlClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
-// ZookeeperClusterConfiguration defines all configuration knobs used to write the config file.
+// ZookeeperClusterConfiguration stores all information about Zookeeper's endpoints.
 type ZookeeperClusterConfiguration struct {
-	ClientPort               string
-	ServerPort               string
-	ElectionPort             string
-	ServerListCommaSeparated string
-	ServerListSpaceSeparated string
+	ClientPort   int      `json:"clientPort,omitempty"`
+	ServerPort   int      `json:"serverPort,omitempty"`
+	ElectionPort int      `json:"electionPort,omitempty"`
+	ServerIPList []string `json:"serverIPList,omitempty"`
 }
 
-// RabbitmqClusterConfiguration defines all configuration knobs used to write the config file.
+// FillWithDefaultValues fills Zookeeper config with default values
+func (c *ZookeeperClusterConfiguration) FillWithDefaultValues() {
+	if c.ClientPort == 0 {
+		c.ClientPort = ZookeeperPort
+	}
+	if c.ElectionPort == 0 {
+		c.ElectionPort = ZookeeperElectionPort
+	}
+	if c.ServerPort == 0 {
+		c.ServerPort = ZookeeperServerPort
+	}
+}
+
+// RabbitmqClusterConfiguration stores all information about Rabbitmq's endpoints.
 type RabbitmqClusterConfiguration struct {
-	Port                                string
-	SSLPort                             string
-	ServerListCommaSeparated            string
-	ServerListSpaceSeparated            string
-	ServerListCommaSeparatedSSL         string
-	ServerListSpaceSeparatedSSL         string
-	ServerListCommaSeparatedWithoutPort string
-	Secret                              string
+	Port         int      `json:"port,omitempty"`
+	SSLPort      int      `json:"sslPort,omitempty"`
+	ServerIPList []string `json:"serverIPList,omitempty"`
+	Secret       string   `json:"secret,omitempty"`
 }
 
-// CassandraClusterConfiguration defines all configuration knobs used to write the config file.
+// FillWithDefaultValues fills Rabbitmq config with default values
+func (c *RabbitmqClusterConfiguration) FillWithDefaultValues() {
+	if c.Port == 0 {
+		c.Port = RabbitmqNodePort
+	}
+	if c.SSLPort == 0 {
+		c.SSLPort = RabbitmqNodePortSSL
+	}
+}
+
+// CassandraClusterConfiguration stores all information about Cassandra's endpoints.
 type CassandraClusterConfiguration struct {
-	Port                            string
-	CQLPort                         string
-	JMXPort                         string
-	Endpoint                        string
-	ServerListCQLSpaceSeparated     string
-	ServerListJMXCommaSeparated     string
-	ServerListJMXSpaceSeparated     string
-	ServerListCommanSeparatedQuoted string
+	Port         int      `json:"port,omitempty"`
+	CQLPort      int      `json:"cqlPort,omitempty"`
+	JMXPort      int      `json:"jmxPort,omitempty"`
+	ServerIPList []string `json:"serverIPList,omitempty"`
+	Endpoint     string   `json:"endpoint,omitempty"`
+}
+
+// FillWithDefaultValues fills Cassandra config with default values
+func (c *CassandraClusterConfiguration) FillWithDefaultValues() {
+	if c.CQLPort == 0 {
+		c.CQLPort = CassandraCqlPort
+	}
+	if c.JMXPort == 0 {
+		c.JMXPort = CassandraJmxLocalPort
+	}
+	if c.Port == 0 {
+		c.Port = CassandraPort
+	}
 }
 
 // VrouterClusterConfiguration defines all configuration knobs used to write the config file.

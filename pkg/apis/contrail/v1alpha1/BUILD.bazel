@@ -69,12 +69,17 @@ go_test(
     name = "go_default_test",
     srcs = [
         "contrail_test.go",
+        "kubemanager_types_test.go",
         "manager_types_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
         # "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/k8s/fake:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@in_gopkg_ini_v1//:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/runtime:go_default_library",
         "@io_k8s_apimachinery//pkg/types:go_default_library",

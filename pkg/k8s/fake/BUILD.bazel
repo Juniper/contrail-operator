@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["cluster_info.go"],
+    importpath = "github.com/Juniper/contrail-operator/pkg/k8s/fake",
+    visibility = ["//visibility:public"],
+    deps = ["@io_k8s_client_go//kubernetes/typed/core/v1:go_default_library"],
+)

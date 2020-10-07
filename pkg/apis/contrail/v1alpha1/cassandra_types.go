@@ -98,8 +98,7 @@ func (c *Cassandra) InstanceConfiguration(request reconcile.Request,
 	if err != nil {
 		return err
 	}
-	cassandraConfigInterface := c.ConfigurationParameters()
-	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
+	cassandraConfig := c.ConfigurationParameters()
 	cassandraSecret := &corev1.Secret{}
 	if err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-secret", Namespace: request.Namespace}, cassandraSecret); err != nil {
 		return err
@@ -240,8 +239,7 @@ func (c *Cassandra) SetInstanceActive(client client.Client, activeStatus *bool, 
 func (c *Cassandra) ManageNodeStatus(podNameIPMap map[string]string,
 	client client.Client) error {
 	c.Status.Nodes = podNameIPMap
-	cassandraConfigInterface := c.ConfigurationParameters()
-	cassandraConfig := cassandraConfigInterface.(CassandraConfiguration)
+	cassandraConfig := c.ConfigurationParameters()
 	c.Status.Ports.Port = strconv.Itoa(*cassandraConfig.Port)
 	c.Status.Ports.CqlPort = strconv.Itoa(*cassandraConfig.CqlPort)
 	c.Status.Ports.JmxPort = strconv.Itoa(*cassandraConfig.JmxLocalPort)
@@ -286,7 +284,7 @@ func (c *Cassandra) IsUpgrading(name string, namespace string, client client.Cli
 }
 
 // ConfigurationParameters sets the default for the configuration parameters.
-func (c *Cassandra) ConfigurationParameters() interface{} {
+func (c *Cassandra) ConfigurationParameters() CassandraConfiguration {
 	cassandraConfiguration := CassandraConfiguration{}
 	var port int
 	var cqlPort int

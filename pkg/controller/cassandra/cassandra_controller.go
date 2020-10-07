@@ -202,8 +202,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	cci := instance.ConfigurationParameters()
-	cc := cci.(v1alpha1.CassandraConfiguration)
+	cc := instance.ConfigurationParameters()
 	svc := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, map[int32]string{int32(*cc.Port): ""}, instanceType, instance)
 
 	if err := svc.EnsureExists(); err != nil {
@@ -229,8 +228,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
-	cassandraDefaultConfigurationInterface := instance.ConfigurationParameters()
-	cassandraDefaultConfiguration := cassandraDefaultConfigurationInterface.(v1alpha1.CassandraConfiguration)
+	cassandraDefaultConfiguration := instance.ConfigurationParameters()
 
 	storageResource := corev1.ResourceStorage
 	diskSize, err := resource.ParseQuantity(cassandraDefaultConfiguration.Storage.Size)

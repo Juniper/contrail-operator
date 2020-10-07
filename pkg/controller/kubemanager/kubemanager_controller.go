@@ -204,10 +204,6 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 	reqLogger.Info("Reconciling Kubemanager")
 	instanceType := "kubemanager"
 	instance := &v1alpha1.Kubemanager{}
-	cassandraInstance := v1alpha1.Cassandra{}
-	zookeeperInstance := v1alpha1.Zookeeper{}
-	rabbitmqInstance := v1alpha1.Rabbitmq{}
-	configInstance := v1alpha1.Config{}
 
 	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil && errors.IsNotFound(err) {
 		return reconcile.Result{}, nil
@@ -217,15 +213,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	cassandraActive := cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
-		request.Namespace, r.Client)
-	zookeeperActive := zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
-		request.Namespace, r.Client)
-	rabbitmqActive := rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
-		request.Namespace, r.Client)
-	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
-		request.Namespace, r.Client)
-	if !configActive || !cassandraActive || !rabbitmqActive || !zookeeperActive {
+	if !r.kubemanagerDependenciesReady(instance, request.Namespace) {
 		return reconcile.Result{}, nil
 	}
 
@@ -550,4 +538,31 @@ func (r *ReconcileKubemanager) ensureCertificatesExist(config *v1alpha1.Kubemana
 	subjects := config.PodsCertSubjects(pods)
 	crt := certificates.NewCertificate(r.Client, r.Scheme, config, subjects, instanceType)
 	return crt.EnsureExistsAndIsSigned()
+}
+
+func (r *ReconcileKubemanager) kubemanagerDependenciesReady(instance *v1alpha1.Kubemanager, namespace string) bool {
+	cassandraInstance := v1alpha1.Cassandra{}
+	zookeeperInstance := v1alpha1.Zookeeper{}
+	rabbitmqInstance := v1alpha1.Rabbitmq{}
+	configInstance := v1alpha1.Config{}
+
+	cassandraActive := cassandraInstance.IsActive(instance.Spec.ServiceConfiguration.CassandraInstance,
+		namespace, r.Client)
+	zookeeperActive := zookeeperInstance.IsActive(instance.Spec.ServiceConfiguration.ZookeeperInstance,
+		namespace, r.Client)
+	rabbitmqActive := rabbitmqInstance.IsActive(instance.Labels["contrail_cluster"],
+		namespace, r.Client)
+	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"],
+		namespace, r.Client)
+
+	if instance.Spec.ServiceConfiguration.StaticConfiguration == nil {
+		return cassandraActive && zookeeperActive && rabbitmqActive && configActive
+	}
+
+	cassandraAvailable := cassandraActive || instance.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration != nil
+	zookeeperAvailable := zookeeperActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration != nil
+	rabbitmqAvailable := rabbitmqActive || instance.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration != nil
+	configAvailable := configActive || instance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil
+
+	return cassandraAvailable && zookeeperAvailable && rabbitmqAvailable && configAvailable
 }

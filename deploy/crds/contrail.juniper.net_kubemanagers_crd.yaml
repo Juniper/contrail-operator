@@ -155,6 +155,88 @@ spec:
                   type: string
                 serviceSubnets:
                   type: string
+                staticConfiguration:
+                  description: KubemanagerStaticConfiguration is the configuration
+                    for deployment with static controller.
+                  properties:
+                    cassandraNodesConfiguration:
+                      description: CassandraClusterConfiguration stores all information
+                        about Cassandra's endpoints.
+                      properties:
+                        cqlPort:
+                          type: integer
+                        endpoint:
+                          type: string
+                        jmxPort:
+                          type: integer
+                        port:
+                          type: integer
+                        serverIPList:
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    configNodesConfiguration:
+                      description: ConfigClusterConfiguration  stores all information
+                        about service's endpoints under the Contrail Config
+                      properties:
+                        analyticsServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        analyticsServerPort:
+                          type: integer
+                        apiServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        apiServerPort:
+                          type: integer
+                        authMode:
+                          enum:
+                          - noauth
+                          - keystone
+                          type: string
+                        collectorPort:
+                          type: integer
+                        collectorServerIPList:
+                          items:
+                            type: string
+                          type: array
+                        redisPort:
+                          type: integer
+                      type: object
+                    rabbitmqNodesConfiguration:
+                      description: RabbitmqClusterConfiguration stores all information
+                        about Rabbitmq's endpoints.
+                      properties:
+                        port:
+                          type: integer
+                        secret:
+                          type: string
+                        serverIPList:
+                          items:
+                            type: string
+                          type: array
+                        sslPort:
+                          type: integer
+                      type: object
+                    zookeeperNodesConfiguration:
+                      description: ZookeeperClusterConfiguration stores all information
+                        about Zookeeper's endpoints.
+                      properties:
+                        clientPort:
+                          type: integer
+                        electionPort:
+                          type: integer
+                        serverIPList:
+                          items:
+                            type: string
+                          type: array
+                        serverPort:
+                          type: integer
+                      type: object
+                  type: object
                 useKubeadmConfig:
                   type: boolean
                 zookeeperInstance:
