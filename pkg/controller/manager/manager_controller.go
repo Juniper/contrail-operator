@@ -164,23 +164,17 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err = r.client.Update(context.TODO(), instance); err != nil {
 		return reconcile.Result{}, err
 	}
-
-	nodeNumber, err := r.getNodesNumber(instance)
+	nodes, err := r.getNodes(labels.SelectorFromSet(instance.Spec.CommonConfiguration.NodeSelector))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	nodesHostAliases, err := r.getNodesHostAliases(instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if nodeNumber == 0 {
+	replicas := r.getReplicas(nodes)
+	if replicas == 0 {
 		return reconcile.Result{}, nil
 	}
-	replicas := &nodeNumber
-	instance.Status.Replicas = nodeNumber
 
+	nodesHostAliases := r.getNodesHostAliases(nodes)
 	if err := r.processCassandras(instance, replicas, nodesHostAliases); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -266,30 +260,26 @@ func (r *ReconcileManager) setConditions(manager *v1alpha1.Manager) {
 	}}
 }
 
-func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int32, error) {
+func (r *ReconcileManager) getNodes(selector labels.Selector) ([]corev1.Node, error) {
 	nodes := &corev1.NodeList{}
-	labelSelector := labels.SelectorFromSet(manager.Spec.CommonConfiguration.NodeSelector)
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	if err := r.client.List(context.TODO(), nodes, &listOpts); err != nil {
-		return 0, err
+	listOpts := client.ListOptions{LabelSelector: selector}
+	if err := r.client.List(context.Background(), nodes, &listOpts); err != nil {
+		return nil, err
 	}
-	nodesNumber := len(nodes.Items)
-	if nodesNumber%2 == 0 && nodesNumber != 0 {
-		return int32(nodesNumber - 1), nil
-	}
-	return int32(nodesNumber), nil
+	return nodes.Items, nil
 }
 
-func (r *ReconcileManager) getNodesHostAliases(manager *v1alpha1.Manager) ([]corev1.HostAlias, error) {
-	nodes := &corev1.NodeList{}
-	labelSelector := labels.SelectorFromSet(manager.Spec.CommonConfiguration.NodeSelector)
-	listOpts := client.ListOptions{LabelSelector: labelSelector}
-	hostAliases := []corev1.HostAlias{}
-	if err := r.client.List(context.TODO(), nodes, &listOpts); err != nil {
-		return hostAliases, err
+func (r *ReconcileManager) getReplicas(nodes []corev1.Node) int32 {
+	nodesNumber := len(nodes)
+	if nodesNumber%2 == 0 && nodesNumber != 0 {
+		return int32(nodesNumber - 1)
 	}
+	return int32(nodesNumber)
+}
 
-	for _, n := range nodes.Items {
+func (r *ReconcileManager) getNodesHostAliases(nodes []corev1.Node) []corev1.HostAlias {
+	hostAliases := []corev1.HostAlias{}
+	for _, n := range nodes {
 		ip := ""
 		hostname := ""
 		for _, a := range n.Status.Addresses {
@@ -300,16 +290,19 @@ func (r *ReconcileManager) getNodesHostAliases(manager *v1alpha1.Manager) ([]cor
 				hostname = a.Address
 			}
 		}
+		if ip == "" || hostname == "" {
+			continue
+		}
 		hostAliases = append(hostAliases, corev1.HostAlias{
 			IP:        ip,
 			Hostnames: []string{hostname},
 		})
 	}
 
-	return hostAliases, nil
+	return hostAliases
 }
 
-func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas int32) error {
 	for _, existingZookeeper := range manager.Status.Zookeepers {
 		found := false
 		for _, intendedZookeeper := range manager.Spec.Services.Zookeepers {
@@ -343,7 +336,7 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 			zookeeper.Spec = zookeeperService.Spec
 			zookeeper.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, zookeeper.Spec.CommonConfiguration)
 			if zookeeper.Spec.CommonConfiguration.Replicas == nil {
-				zookeeper.Spec.CommonConfiguration.Replicas = replicas
+				zookeeper.Spec.CommonConfiguration.Replicas = &replicas
 			}
 			return controllerutil.SetControllerReference(manager, zookeeper, r.scheme)
 		})
@@ -360,7 +353,7 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 	return nil
 }
 
-func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas *int32, hostAliases []corev1.HostAlias) error {
+func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas int32, hostAliases []corev1.HostAlias) error {
 	for _, existingCassandra := range manager.Status.Cassandras {
 		found := false
 		for _, intendedCassandra := range manager.Spec.Services.Cassandras {
@@ -397,7 +390,7 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 			}
 			cassandra.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, cassandra.Spec.CommonConfiguration)
 			if cassandra.Spec.CommonConfiguration.Replicas == nil {
-				cassandra.Spec.CommonConfiguration.Replicas = replicas
+				cassandra.Spec.CommonConfiguration.Replicas = &replicas
 			}
 			if len(cassandra.Spec.CommonConfiguration.HostAliases) == 0 {
 				cassandra.Spec.CommonConfiguration.HostAliases = hostAliases
@@ -417,7 +410,7 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 	return nil
 }
 
-func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Webui == nil {
 		if manager.Status.Webui != nil {
 			oldWebUI := &v1alpha1.Webui{}
@@ -445,7 +438,7 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int
 		webui.Spec = manager.Spec.Services.Webui.Spec
 		webui.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, webui.Spec.CommonConfiguration)
 		if webui.Spec.CommonConfiguration.Replicas == nil {
-			webui.Spec.CommonConfiguration.Replicas = replicas
+			webui.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, webui, r.scheme)
 	})
@@ -456,7 +449,7 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas *int
 	return err
 }
 
-func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.ProvisionManager == nil {
 		if manager.Status.ProvisionManager != nil {
 			oldPM := &v1alpha1.ProvisionManager{}
@@ -484,7 +477,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 		pm.Spec = manager.Spec.Services.ProvisionManager.Spec
 		pm.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, pm.Spec.CommonConfiguration)
 		if pm.Spec.CommonConfiguration.Replicas == nil {
-			pm.Spec.CommonConfiguration.Replicas = replicas
+			pm.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, pm, r.scheme)
 	})
@@ -495,7 +488,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 	return err
 }
 
-func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *int32, hostAliases []corev1.HostAlias) error {
+func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas int32, hostAliases []corev1.HostAlias) error {
 	if manager.Spec.Services.Config == nil {
 		if manager.Status.Config != nil {
 			oldConfig := &v1alpha1.Config{}
@@ -523,7 +516,7 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 		config.Spec = manager.Spec.Services.Config.Spec
 		config.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, config.Spec.CommonConfiguration)
 		if config.Spec.CommonConfiguration.Replicas == nil {
-			config.Spec.CommonConfiguration.Replicas = replicas
+			config.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		if len(config.Spec.CommonConfiguration.HostAliases) == 0 {
 			config.Spec.CommonConfiguration.HostAliases = hostAliases
@@ -537,7 +530,7 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 	return err
 }
 
-func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replicas int32) error {
 	for _, existingKubemanager := range manager.Status.Kubemanagers {
 		found := false
 		for _, intendedKubemanager := range manager.Spec.Services.Kubemanagers {
@@ -571,7 +564,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			kubemanager.Spec = kubemanagerService.Spec
 			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanager.Spec.CommonConfiguration)
 			if kubemanager.Spec.CommonConfiguration.Replicas == nil {
-				kubemanager.Spec.CommonConfiguration.Replicas = replicas
+				kubemanager.Spec.CommonConfiguration.Replicas = &replicas
 			}
 			return controllerutil.SetControllerReference(manager, kubemanager, r.scheme)
 		})
@@ -588,7 +581,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 	return nil
 }
 
-func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas int32) error {
 	for _, existingControl := range manager.Status.Controls {
 		found := false
 		for _, intendedControl := range manager.Spec.Services.Controls {
@@ -622,7 +615,7 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 			control.Spec = controlService.Spec
 			control.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, control.Spec.CommonConfiguration)
 			if control.Spec.CommonConfiguration.Replicas == nil {
-				control.Spec.CommonConfiguration.Replicas = replicas
+				control.Spec.CommonConfiguration.Replicas = &replicas
 			}
 			return controllerutil.SetControllerReference(manager, control, r.scheme)
 		})
@@ -639,7 +632,7 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas *
 	return nil
 }
 
-func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Rabbitmq == nil {
 		if manager.Status.Rabbitmq != nil {
 			oldRabbitMQ := &v1alpha1.Rabbitmq{}
@@ -665,7 +658,7 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 		rabbitMQ.Spec = manager.Spec.Services.Rabbitmq.Spec
 		rabbitMQ.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, rabbitMQ.Spec.CommonConfiguration)
 		if rabbitMQ.Spec.CommonConfiguration.Replicas == nil {
-			rabbitMQ.Spec.CommonConfiguration.Replicas = replicas
+			rabbitMQ.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, rabbitMQ, r.scheme)
 	})
@@ -676,7 +669,7 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas *
 	return err
 }
 
-func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas int32) error {
 	for _, existingVRouter := range manager.Status.Vrouters {
 		found := false
 		for _, intendedVRouter := range manager.Spec.Services.Vrouters {
@@ -710,7 +703,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas *
 			vRouter.Spec = vRouterService.Spec
 			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouter.Spec.CommonConfiguration)
 			if vRouter.Spec.CommonConfiguration.Replicas == nil {
-				vRouter.Spec.CommonConfiguration.Replicas = replicas
+				vRouter.Spec.CommonConfiguration.Replicas = &replicas
 			}
 			return controllerutil.SetControllerReference(manager, vRouter, r.scheme)
 		})
@@ -774,7 +767,7 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 	return nil
 }
 
-func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Command == nil {
 		if manager.Status.Command != nil {
 			oldCommand := &v1alpha1.Command{}
@@ -805,7 +798,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 			command.Spec.ServiceConfiguration.ClusterName = manager.GetName()
 		}
 		if command.Spec.CommonConfiguration.Replicas == nil {
-			command.Spec.CommonConfiguration.Replicas = replicas
+			command.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, command, r.scheme)
 	})
@@ -816,7 +809,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas *i
 	return err
 }
 
-func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Keystone == nil {
 		if manager.Status.Keystone != nil {
 			oldKeystone := &v1alpha1.Keystone{}
@@ -845,7 +838,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 		keystone.SetDefaultValues()
 		keystone.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, keystone.Spec.CommonConfiguration)
 		if keystone.Spec.CommonConfiguration.Replicas == nil {
-			keystone.Spec.CommonConfiguration.Replicas = replicas
+			keystone.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, keystone, r.scheme)
 	})
@@ -856,7 +849,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas *
 	return err
 }
 
-func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Postgres == nil {
 		if manager.Status.Postgres != nil {
 			oldPostgres := &v1alpha1.Postgres{}
@@ -887,7 +880,7 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 		}
 		psql.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, psql.Spec.CommonConfiguration)
 		if psql.Spec.CommonConfiguration.Replicas == nil {
-			psql.Spec.CommonConfiguration.Replicas = replicas
+			psql.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, psql, r.scheme)
 	})
@@ -898,7 +891,7 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas *
 	return err
 }
 
-func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Swift == nil {
 		if manager.Status.Swift != nil {
 			oldSwift := &v1alpha1.Swift{}
@@ -927,7 +920,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 		swift.SetDefaultValues()
 		swift.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, swift.Spec.CommonConfiguration)
 		if swift.Spec.CommonConfiguration.Replicas == nil {
-			swift.Spec.CommonConfiguration.Replicas = replicas
+			swift.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, swift, r.scheme)
 	})
@@ -938,7 +931,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas *int
 	return err
 }
 
-func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas int32) error {
 	if manager.Spec.Services.Memcached == nil {
 		if manager.Status.Memcached != nil {
 			oldMemcached := &v1alpha1.Memcached{}
@@ -965,7 +958,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas 
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
 		memcached.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, memcached.Spec.CommonConfiguration)
 		if memcached.Spec.CommonConfiguration.Replicas == nil {
-			memcached.Spec.CommonConfiguration.Replicas = replicas
+			memcached.Spec.CommonConfiguration.Replicas = &replicas
 		}
 		return controllerutil.SetControllerReference(manager, memcached, r.scheme)
 	})

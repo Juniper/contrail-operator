@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -244,7 +245,7 @@ func TestManagerController(t *testing.T) {
 			vrouter,
 			contrailcni,
 			config,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -519,7 +520,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		initObjs := []runtime.Object{
-			newNode(),
+			newNode(1),
 			managerCR,
 			newAdminSecret(),
 			cassandra,
@@ -794,7 +795,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		initObjs := []runtime.Object{
-			newNode(),
+			newNode(1),
 			managerCR,
 			newAdminSecret(),
 			cassandra,
@@ -882,7 +883,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -980,7 +981,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&command,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1055,7 +1056,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
-			newNode(),
+			newNode(1),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1146,7 +1147,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			managerCR,
 			newAdminSecret(),
-			newNode(),
+			newNode(1),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1268,7 +1269,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&keystoneDefaults,
-			newNode(),
+			newNode(1),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1393,7 +1394,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			newAdminSecret(),
 			&keystoneCustom,
-			newNode(),
+			newNode(1),
 		}
 
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
@@ -1554,7 +1555,7 @@ func TestManagerController(t *testing.T) {
 			managerCR,
 			swift,
 			memcached,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1683,7 +1684,7 @@ func TestManagerController(t *testing.T) {
 		}
 		initObjs := []runtime.Object{
 			manager,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1775,7 +1776,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			existingMemcached,
 			manager,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1820,7 +1821,7 @@ func TestManagerController(t *testing.T) {
 		}
 		initObjs := []runtime.Object{
 			manager,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -1870,6 +1871,95 @@ func TestManagerController(t *testing.T) {
 		})
 	})
 
+	t.Run("given 3 nodes, manager with one replica of cassandra exist", func(t *testing.T) {
+		replicas := int32(1)
+		cassandra := &contrail.Cassandra{
+			ObjectMeta: meta.ObjectMeta{
+				Namespace: "default",
+				Name:      "test-cassandra",
+			},
+			Spec: contrail.CassandraSpec{
+				CommonConfiguration: contrail.PodConfiguration{
+					Replicas:    &replicas,
+					HostAliases: []core.HostAlias{{IP: "1.1.1.1", Hostnames: []string{"hostname"}}},
+				},
+			},
+		}
+		manager := &contrail.Manager{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "test-manager",
+				Namespace: "default",
+			},
+			Spec: contrail.ManagerSpec{
+				Services: contrail.Services{
+					Cassandras: []*contrail.Cassandra{
+						{
+							ObjectMeta: meta.ObjectMeta{
+								Namespace: "default",
+								Name:      "test-cassandra",
+							},
+						}},
+				},
+				KeystoneSecretName: "keystone-adminpass-secret",
+			},
+		}
+		initObjs := []runtime.Object{
+			manager,
+			cassandra,
+			newNode(1),
+			newNode(2),
+			newNode(3),
+		}
+		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		reconciler := ReconcileManager{
+			client:     fakeClient,
+			scheme:     scheme,
+			kubernetes: k8s.New(fakeClient, scheme),
+		}
+		t.Run("when manager is reconciled", func(t *testing.T) {
+			result, err := reconciler.Reconcile(reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "test-manager",
+					Namespace: "default",
+				},
+			})
+			assert.NoError(t, err)
+			assert.False(t, result.Requeue)
+
+			t.Run("then Cassandra CR is updated", func(t *testing.T) {
+				var replicas int32
+				replicas = 3
+				expectedCassandra := &contrail.Cassandra{
+					ObjectMeta: meta.ObjectMeta{
+						Namespace: "default",
+						Name:      "test-cassandra",
+						OwnerReferences: []meta.OwnerReference{
+							{"contrail.juniper.net/v1alpha1", "Manager", "test-manager", "", &trueVal, &trueVal},
+						},
+					},
+					TypeMeta: meta.TypeMeta{
+						Kind:       "Cassandra",
+						APIVersion: "contrail.juniper.net/v1alpha1",
+					},
+					Spec: contrail.CassandraSpec{
+						CommonConfiguration: contrail.PodConfiguration{
+							Replicas: &replicas,
+							HostAliases: []core.HostAlias{
+								{IP: "1.1.1.1", Hostnames: []string{"hostname"}},
+								{IP: "1.1.1.2", Hostnames: []string{"hostname"}},
+								{IP: "1.1.1.3", Hostnames: []string{"hostname"}},
+							},
+						},
+						ServiceConfiguration: contrail.CassandraConfiguration{
+							ClusterName: manager.Name,
+						},
+					},
+				}
+				assertCassandraExists(t, fakeClient, expectedCassandra)
+			})
+		})
+	})
+
 	t.Run("when a Manager and Cassandra CR exist and manager does not contain Cassandra in Services field", func(t *testing.T) {
 		var replicas int32
 		replicas = 1
@@ -1912,7 +2002,7 @@ func TestManagerController(t *testing.T) {
 		initObjs := []runtime.Object{
 			cassandra,
 			manager,
-			newNode(),
+			newNode(1),
 		}
 		fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 		reconciler := ReconcileManager{
@@ -2090,14 +2180,15 @@ func newAdminSecret() *core.Secret {
 	}
 }
 
-func newNode() *core.Node {
+func newNode(number int) *core.Node {
+	nStr := strconv.Itoa(number)
 	return &core.Node{
 		ObjectMeta: meta.ObjectMeta{
-			Name: "node1",
+			Name: "node" + nStr,
 		},
 		Status: core.NodeStatus{
 			Addresses: []core.NodeAddress{
-				{Type: core.NodeInternalIP, Address: "1.1.1.1"},
+				{Type: core.NodeInternalIP, Address: "1.1.1." + nStr},
 				{Type: core.NodeHostName, Address: "hostname"},
 			},
 		},
