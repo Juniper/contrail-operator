@@ -79,7 +79,7 @@ rules:
 - apiGroups:
   - contrail
   resources:
-  - '*'
+  - contrailcnis
   verbs:
   - '*'
 ---

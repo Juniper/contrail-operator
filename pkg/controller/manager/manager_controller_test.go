@@ -1854,6 +1854,12 @@ func TestManagerController(t *testing.T) {
 				Spec: contrail.CassandraSpec{
 					CommonConfiguration: contrail.PodConfiguration{
 						Replicas: &replicas,
+						HostAliases: []core.HostAlias{
+							{
+								IP:        "1.1.1.1",
+								Hostnames: []string{"hostname"},
+							},
+						},
 					},
 					ServiceConfiguration: contrail.CassandraConfiguration{
 						ClusterName: manager.Name,
@@ -2088,7 +2094,14 @@ func newNode() *core.Node {
 	return &core.Node{
 		ObjectMeta: meta.ObjectMeta{
 			Name: "node1",
-		}}
+		},
+		Status: core.NodeStatus{
+			Addresses: []core.NodeAddress{
+				{Type: core.NodeInternalIP, Address: "1.1.1.1"},
+				{Type: core.NodeHostName, Address: "hostname"},
+			},
+		},
+	}
 }
 
 var (

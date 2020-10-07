@@ -100,6 +100,12 @@ type PodConfiguration struct {
 	// +k8s:conversion-gen=false
 	// +optional
 	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts
+	// file if specified. This is only valid for non-hostNetwork pods.
+	// +optional
+	// +patchMergeKey=ip
+	// +patchStrategy=merge
+	HostAliases []corev1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,23,rep,name=hostAliases"`
 	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec.
 	ImagePullSecrets []string `json:"imagePullSecrets,omitempty"`
 	// If specified, the pod's tolerations.
@@ -452,6 +458,11 @@ func SetDeploymentCommonConfiguration(deployment *appsv1.Deployment,
 	} else {
 		deployment.Spec.Template.Spec.HostNetwork = false
 	}
+
+	if len(commonConfiguration.HostAliases) > 0 {
+		deployment.Spec.Template.Spec.HostAliases = commonConfiguration.HostAliases
+	}
+
 	if len(commonConfiguration.ImagePullSecrets) > 0 {
 		imagePullSecretList := []corev1.LocalObjectReference{}
 		for _, imagePullSecretName := range commonConfiguration.ImagePullSecrets {
@@ -481,6 +492,11 @@ func SetSTSCommonConfiguration(sts *appsv1.StatefulSet,
 	} else {
 		sts.Spec.Template.Spec.HostNetwork = false
 	}
+
+	if len(commonConfiguration.HostAliases) > 0 {
+		sts.Spec.Template.Spec.HostAliases = commonConfiguration.HostAliases
+	}
+
 	if len(commonConfiguration.ImagePullSecrets) > 0 {
 		imagePullSecretList := []corev1.LocalObjectReference{}
 		for _, imagePullSecretName := range commonConfiguration.ImagePullSecrets {

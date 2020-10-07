@@ -170,13 +170,18 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	nodesHostAliases, err := r.getNodesHostAliases(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if nodeNumber == 0 {
 		return reconcile.Result{}, nil
 	}
 	replicas := &nodeNumber
 	instance.Status.Replicas = nodeNumber
 
-	if err := r.processCassandras(instance, replicas); err != nil {
+	if err := r.processCassandras(instance, replicas, nodesHostAliases); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -192,7 +197,7 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.processConfig(instance, replicas); err != nil {
+	if err := r.processConfig(instance, replicas, nodesHostAliases); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -275,6 +280,35 @@ func (r *ReconcileManager) getNodesNumber(manager *v1alpha1.Manager) (int32, err
 	return int32(nodesNumber), nil
 }
 
+func (r *ReconcileManager) getNodesHostAliases(manager *v1alpha1.Manager) ([]corev1.HostAlias, error) {
+	nodes := &corev1.NodeList{}
+	labelSelector := labels.SelectorFromSet(manager.Spec.CommonConfiguration.NodeSelector)
+	listOpts := client.ListOptions{LabelSelector: labelSelector}
+	hostAliases := []corev1.HostAlias{}
+	if err := r.client.List(context.TODO(), nodes, &listOpts); err != nil {
+		return hostAliases, err
+	}
+
+	for _, n := range nodes.Items {
+		ip := ""
+		hostname := ""
+		for _, a := range n.Status.Addresses {
+			if a.Type == corev1.NodeInternalIP {
+				ip = a.Address
+			}
+			if a.Type == corev1.NodeHostName {
+				hostname = a.Address
+			}
+		}
+		hostAliases = append(hostAliases, corev1.HostAlias{
+			IP:        ip,
+			Hostnames: []string{hostname},
+		})
+	}
+
+	return hostAliases, nil
+}
+
 func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas *int32) error {
 	for _, existingZookeeper := range manager.Status.Zookeepers {
 		found := false
@@ -326,7 +360,7 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 	return nil
 }
 
-func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas *int32, hostAliases []corev1.HostAlias) error {
 	for _, existingCassandra := range manager.Status.Cassandras {
 		found := false
 		for _, intendedCassandra := range manager.Spec.Services.Cassandras {
@@ -364,6 +398,9 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 			cassandra.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, cassandra.Spec.CommonConfiguration)
 			if cassandra.Spec.CommonConfiguration.Replicas == nil {
 				cassandra.Spec.CommonConfiguration.Replicas = replicas
+			}
+			if len(cassandra.Spec.CommonConfiguration.HostAliases) == 0 {
+				cassandra.Spec.CommonConfiguration.HostAliases = hostAliases
 			}
 			return controllerutil.SetControllerReference(manager, cassandra, r.scheme)
 		})
@@ -458,7 +495,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 	return err
 }
 
-func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *int32) error {
+func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *int32, hostAliases []corev1.HostAlias) error {
 	if manager.Spec.Services.Config == nil {
 		if manager.Status.Config != nil {
 			oldConfig := &v1alpha1.Config{}
@@ -487,6 +524,9 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas *in
 		config.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, config.Spec.CommonConfiguration)
 		if config.Spec.CommonConfiguration.Replicas == nil {
 			config.Spec.CommonConfiguration.Replicas = replicas
+		}
+		if len(config.Spec.CommonConfiguration.HostAliases) == 0 {
+			config.Spec.CommonConfiguration.HostAliases = hostAliases
 		}
 		return controllerutil.SetControllerReference(manager, config, r.scheme)
 	})
