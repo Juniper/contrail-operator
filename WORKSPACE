@@ -92,12 +92,12 @@ load(
 pip_repositories()
 
 pip3_import(
-    name = "ringcontroller",
+    name = "contrail-operator-ringcontroller",
     extra_pip_args = ["--no-deps"],
     requirements = "//ringcontroller:requirements.txt",
 )
 
-load("@ringcontroller//:requirements.bzl", ringbuilder_pip_install = "pip_install")
+load("@contrail-operator-ringcontroller//:requirements.bzl", ringbuilder_pip_install = "pip_install")
 
 ringbuilder_pip_install()
 

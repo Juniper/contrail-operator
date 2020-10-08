@@ -231,7 +231,7 @@ func TestCommandServices(t *testing.T) {
 			Spec: contrail.SwiftSpec{
 				ServiceConfiguration: contrail.SwiftConfiguration{
 					Containers: []*contrail.Container{
-						{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + buildTag},
+						{Name: "contrail-operator-ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:" + buildTag},
 					},
 					CredentialsSecretName: "commandtest-swift-credentials-secret",
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{

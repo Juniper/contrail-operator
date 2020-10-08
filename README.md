@@ -145,8 +145,8 @@ In order to run Contrail-Operator in the Kubernetes cluster we have to build Doc
     # local registry address
     export LOCAL_REGISTRY=localhost:5000
 
-    # it builds and pushes image: {LOCAL_REGISTRY}/contrail-operator/engprod-269421/crdsloader:master.latest
-    bazel run //cmd/crdsloader:crdsloader-push-local
+    # it builds and pushes image: {LOCAL_REGISTRY}/contrail-operator/engprod-269421/contrail-operator-crdsloader:master.latest
+    bazel run //cmd/crdsloader:contrail-operator-crdsloader-push-local
 
     # it builds and pushes image: {LOCAL_REGISTRY}/contrail-operator/engprod-269421/contrail-operator:master.latest
     bazel run //cmd/manager:contrail-operator-push-local-debug
