@@ -28,19 +28,22 @@ func (r *ReconcileCommand) configMap(
 	}
 }
 
-func (c *configMaps) ensureCommandConfigExist(postgresAddress, ConfigEndpoint string, podIPs []string) error {
+func (c *configMaps) ensureCommandConfigExist(postgresAddress, ConfigEndpoint string, podIPs []string, keystoneAuthProtocol string, keystoneAddress string, keystonePort int) error {
 	cc := &commandConf{
-		AdminUsername:   "admin",
-		AdminPassword:   string(c.keystoneAdminPassSecret.Data["password"]),
-		SwiftUsername:   string(c.swiftCredentialsSecret.Data["user"]),
-		SwiftPassword:   string(c.swiftCredentialsSecret.Data["password"]),
-		ConfigAPIURL:    "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.ConfigApiPort),
-		PostgresAddress: postgresAddress,
-		PostgresUser:    "root",
-		PostgresDBName:  "contrail_test",
-		PodIPs:          podIPs,
-		CAFilePath:      certificates.SignerCAFilepath,
-		PGPassword:      string(c.keystoneAdminPassSecret.Data["password"]),
+		AdminUsername:        "admin",
+		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
+		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
+		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
+		ConfigAPIURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.ConfigApiPort),
+		PostgresAddress:      postgresAddress,
+		PostgresUser:         "root",
+		PostgresDBName:       "contrail_test",
+		PodIPs:               podIPs,
+		CAFilePath:           certificates.SignerCAFilepath,
+		PGPassword:           string(c.keystoneAdminPassSecret.Data["password"]),
+		KeystoneAddress:      keystoneAddress,
+		KeystoneAuthProtocol: keystoneAuthProtocol,
+		KeystonePort:         keystonePort,
 	}
 	return c.cm.EnsureExists(cc)
 }
