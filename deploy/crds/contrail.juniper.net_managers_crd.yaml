@@ -127,6 +127,26 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
+                              hostAliases:
+                                description: HostAliases is an optional list of hosts
+                                  and IPs that will be injected into the pod's hosts
+                                  file if specified. This is only valid for non-hostNetwork
+                                  pods.
+                                items:
+                                  description: HostAlias holds the mapping between
+                                    IP and hostnames that will be injected as an entry
+                                    in the pod's hosts file.
+                                  properties:
+                                    hostnames:
+                                      description: Hostnames for the above IP address.
+                                      items:
+                                        type: string
+                                      type: array
+                                    ip:
+                                      description: IP address of the host file entry.
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -301,6 +321,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -456,6 +496,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -916,6 +976,26 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
+                              hostAliases:
+                                description: HostAliases is an optional list of hosts
+                                  and IPs that will be injected into the pod's hosts
+                                  file if specified. This is only valid for non-hostNetwork
+                                  pods.
+                                items:
+                                  description: HostAlias holds the mapping between
+                                    IP and hostnames that will be injected as an entry
+                                    in the pod's hosts file.
+                                  properties:
+                                    hostnames:
+                                      description: Hostnames for the above IP address.
+                                      items:
+                                        type: string
+                                      type: array
+                                    ip:
+                                      description: IP address of the host file entry.
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -1128,6 +1208,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1295,6 +1395,26 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
+                              hostAliases:
+                                description: HostAliases is an optional list of hosts
+                                  and IPs that will be injected into the pod's hosts
+                                  file if specified. This is only valid for non-hostNetwork
+                                  pods.
+                                items:
+                                  description: HostAlias holds the mapping between
+                                    IP and hostnames that will be injected as an entry
+                                    in the pod's hosts file.
+                                  properties:
+                                    hostnames:
+                                      description: Hostnames for the above IP address.
+                                      items:
+                                        type: string
+                                      type: array
+                                    ip:
+                                      description: IP address of the host file entry.
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -1557,6 +1677,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1698,6 +1838,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -1844,6 +2004,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2007,6 +2187,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2161,6 +2361,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2381,6 +2601,26 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
+                              hostAliases:
+                                description: HostAliases is an optional list of hosts
+                                  and IPs that will be injected into the pod's hosts
+                                  file if specified. This is only valid for non-hostNetwork
+                                  pods.
+                                items:
+                                  description: HostAlias holds the mapping between
+                                    IP and hostnames that will be injected as an entry
+                                    in the pod's hosts file.
+                                  properties:
+                                    hostnames:
+                                      description: Hostnames for the above IP address.
+                                      items:
+                                        type: string
+                                      type: array
+                                    ip:
+                                      description: IP address of the host file entry.
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
@@ -2605,6 +2845,26 @@ spec:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
                           properties:
+                            hostAliases:
+                              description: HostAliases is an optional list of hosts
+                                and IPs that will be injected into the pod's hosts
+                                file if specified. This is only valid for non-hostNetwork
+                                pods.
+                              items:
+                                description: HostAlias holds the mapping between IP
+                                  and hostnames that will be injected as an entry
+                                  in the pod's hosts file.
+                                properties:
+                                  hostnames:
+                                    description: Hostnames for the above IP address.
+                                    items:
+                                      type: string
+                                    type: array
+                                  ip:
+                                    description: IP address of the host file entry.
+                                    type: string
+                                type: object
+                              type: array
                             hostNetwork:
                               description: Host networking requested for this pod.
                                 Use the host's network namespace. If this option is
@@ -2776,6 +3036,26 @@ spec:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
                             properties:
+                              hostAliases:
+                                description: HostAliases is an optional list of hosts
+                                  and IPs that will be injected into the pod's hosts
+                                  file if specified. This is only valid for non-hostNetwork
+                                  pods.
+                                items:
+                                  description: HostAlias holds the mapping between
+                                    IP and hostnames that will be injected as an entry
+                                    in the pod's hosts file.
+                                  properties:
+                                    hostnames:
+                                      description: Hostnames for the above IP address.
+                                      items:
+                                        type: string
+                                      type: array
+                                    ip:
+                                      description: IP address of the host file entry.
+                                      type: string
+                                  type: object
+                                type: array
                               hostNetwork:
                                 description: Host networking requested for this pod.
                                   Use the host's network namespace. If this option
