@@ -467,6 +467,7 @@ spec:
                         upgradeState:
                           enum:
                           - ""
+                          - upgrading
                           - not upgrading
                           - shutting down before upgrade
                           - starting upgraded deployment

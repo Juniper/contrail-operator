@@ -112,6 +112,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to secondary resource Job and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
+		OwnerType:    &contrail.Command{},
+		IsController: true,
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Command{},
@@ -357,8 +366,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err := r.prepareIntendedDeployment(deployment, command); err != nil {
 			return err
 		}
-		performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
-		return nil
+		return r.performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec, commandBootStrapConfigName)
 	})
 	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {

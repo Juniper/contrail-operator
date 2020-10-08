@@ -485,7 +485,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
-				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+				UpgradeState: contrail.CommandUpgrading,
 				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
@@ -537,7 +537,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedStatus: contrail.CommandStatus{
 				Status:       contrail.Status{Active: false},
-				UpgradeState: contrail.CommandStartingUpgradedDeployment,
+				UpgradeState: contrail.CommandUpgrading,
 				Endpoint:     "20.20.20.20",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
