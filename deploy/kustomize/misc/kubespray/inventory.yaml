@@ -1,0 +1,38 @@
+all:
+  hosts:
+    server1.cluster.local:
+      ansible_host: 192.168.1.201
+      ansible_become: yes
+    server2.cluster.local:
+      ansible_host: 192.168.1.202
+      ansible_become: yes
+    server3.cluster.local:
+      ansible_host: 192.168.1.203
+      ansible_become: yes
+    server4.cluster.local:
+      ansible_host: 192.168.1.204
+      ansible_become: yes
+  vars:
+    kube_version: v1.18.0
+    kubectl.cluster.localhost: true
+    kubeconfig.cluster.localhost: true
+kube-master:
+  hosts:
+    server1.cluster.local:
+    server2.cluster.local:
+    server3.cluster.local:
+kube-node:
+  hosts:
+    server4.cluster.local:
+  vars:
+    node_labels:
+      node-role.opencontrail.org: vrouter
+etcd:
+  hosts:
+    server1.cluster.local:
+    server2.cluster.local:
+    server3.cluster.local:
+k8s-cluster:
+  children:
+    kube-master:
+    kube-node:

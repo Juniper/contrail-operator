@@ -1,0 +1,133 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "centos/7"
+  config.vm.provision "file", source: "C:\\Users\\toxicer\\wslssh\\id_rsa.pub", destination: "~/.ssh/me.pub"
+  config.vm.provision "shell", inline: <<-SHELL
+    cat /home/vagrant/.ssh/me.pub >> /home/vagrant/.ssh/authorized_keys
+    cp -r /home/vagrant/.ssh /root
+    cat << EOF > /etc/hosts
+127.0.0.1 localhost
+192.168.1.201 server1.cluster.local server1
+192.168.1.202 server2.cluster.local server2
+192.168.1.203 server3.cluster.local server3
+192.168.1.204 server4.cluster.local server4
+EOF
+    yum update
+    yum upgrade -y
+  SHELL
+  
+  
+  config.vm.define "server1" do |server1|
+  	server1.vm.network "public_network", bridge: "WSL", auto_config: false, mac: "de:ad:be:ef:01:01"
+  	server1.vm.hostname = "server1"
+  	server1.vm.provider "hyperv" do |h|
+        h.cpus = 4
+        h.memory = 20000
+        h.vmname = "server1"
+    end
+    server1.vm.provision "shell", inline: <<-SHELL
+      cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPADDR="192.168.1.201"
+NETMASK="255.255.255.0"
+GATEWAY="192.168.1.254"
+DNS1="192.168.1.254"
+ONBOOT="yes"
+TYPE="Ethernet"
+EOF
+    SHELL
+    server1.vm.provision :shell do |shell|
+      shell.privileged = true
+      shell.inline = 'echo rebooting'
+      shell.reboot = true
+    end
+
+  end
+
+  config.vm.define "server2" do |server2|
+  	server2.vm.network "public_network", bridge: "WSL", auto_config: false, mac: "de:ad:be:ef:01:02"
+  	server2.vm.hostname = "server2"
+  	server2.vm.provider "hyperv" do |h|
+        h.cpus = 4
+        h.memory = 20000
+        h.vmname = "server2"
+    end
+    server2.vm.provision "shell", inline: <<-SHELL
+      cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPADDR="192.168.1.202"
+NETMASK="255.255.255.0"
+GATEWAY="192.168.1.254"
+DNS1="192.168.1.254"
+ONBOOT="yes"
+TYPE="Ethernet"
+EOF
+    SHELL
+    server2.vm.provision :shell do |shell|
+      shell.privileged = true
+      shell.inline = 'echo rebooting'
+      shell.reboot = true
+    end
+  end
+
+  config.vm.define "server3" do |server3|
+  	server3.vm.network "public_network", bridge: "WSL", auto_config: false, mac: "de:ad:be:ef:01:03"
+  	server3.vm.hostname = "server3"
+  	server3.vm.provider "hyperv" do |h|
+        h.cpus = 4
+        h.memory = 20000
+        h.vmname = "server3"
+    end
+    server3.vm.provision "shell", inline: <<-SHELL
+      cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPADDR="192.168.1.203"
+NETMASK="255.255.255.0"
+GATEWAY="192.168.1.254"
+DNS1="192.168.1.254"
+ONBOOT="yes"
+TYPE="Ethernet"
+EOF
+    SHELL
+    server3.vm.provision :shell do |shell|
+      shell.privileged = true
+      shell.inline = 'echo rebooting'
+      shell.reboot = true
+    end
+  end
+
+  config.vm.define "server4" do |server4|
+  	server4.vm.network "public_network", bridge: "WSL", auto_config: false, mac: "de:ad:be:ef:01:04"
+  	server4.vm.hostname = "server4"
+  	server4.vm.provider "hyperv" do |h|
+        h.cpus = 4
+        h.memory = 20000
+        h.vmname = "server4"
+    end
+    server4.vm.provision "shell", inline: <<-SHELL
+      cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPADDR="192.168.1.204"
+NETMASK="255.255.255.0"
+GATEWAY="192.168.1.254"
+DNS1="192.168.1.254"
+ONBOOT="yes"
+TYPE="Ethernet"
+EOF
+    SHELL
+    server4.vm.provision :shell do |shell|
+      shell.privileged = true
+      shell.inline = 'echo rebooting'
+      shell.reboot = true
+    end
+  end
+
+
+end

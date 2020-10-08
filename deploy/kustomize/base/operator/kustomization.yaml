@@ -1,0 +1,10 @@
+resources:
+- operator.yaml
+
+images:
+- name: contrail-operator
+  newTag: R2008
+  newName: michaelhenkel/contrail-operator
+- name: crdsloader
+  newTag: R2008
+  newName: michaelhenkel/crdsloader

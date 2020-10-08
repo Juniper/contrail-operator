@@ -1,0 +1,215 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: contrail
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: contrail-operator
+  namespace: contrail
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - apps
+  resourceNames:
+  - contrail-operator
+  resources:
+  - deployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - contrail.juniper.net
+  resources:
+  - '*'
+  - managers
+  - cassandras
+  - zookeepers
+  - rabbitmqs
+  - controls
+  - kubemanagers
+  - webuis
+  - vrouters
+  - provisionmanagers
+  - contrailcommands
+  - swiftstorages
+  - keystones
+  - swifts
+  - memcacheds
+  - fernetkeymanagers
+  - contrailmonitors
+  - contrailstatusmonitors
+  verbs:
+  - '*'
+- apiGroups:
+  - storage
+  resources:
+  - storageclasses
+  verbs:
+  - '*'
+- apiGroups:
+  - contrail
+  resources:
+  - contrailcnis
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: contrail-operator
+  namespace: contrail
+rules:
+  - apiGroups:
+    - "*"
+    resources:
+    - "*"
+    verbs:
+    - "*"
+#- apiGroups:
+#  - ""
+#  resources:
+#  - pods
+#  - services
+#  - endpoints
+#  - events
+#  - configmaps
+#  verbs:
+#  - get
+#  - list
+#  - update
+#  - watch
+#  - patch
+#- apiGroups:
+#  - apiextensions.k8s.io
+#  - extensions
+#  resources:
+#  - customresourcedefinitions
+#  verbs:
+#  - get
+#  - create
+#  - list
+#  - update
+#  - watch
+#  - delete
+#  - patch
+#- apiGroups:
+#  - rbac
+#  - rbac.authorization.k8s.io
+#  resources:
+#  - clusterroles
+#  - clusterrolebindings
+#  verbs:
+#  - get
+#  - create
+#  - list
+#  - update
+#  - watch
+#  - delete
+#  - patch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: contrail-operator
+  namespace: contrail
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: contrail-operator
+  namespace: contrail
+subjects:
+- kind: ServiceAccount
+  name: contrail-operator
+  namespace: contrail
+roleRef:
+  kind: Role
+  name: contrail-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: contrail-operator
+  namespace: contrail
+subjects:
+- kind: ServiceAccount
+  name: contrail-operator
+  namespace: contrail
+roleRef:
+  kind: ClusterRole
+  name: contrail-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contrail-operator
+  namespace: contrail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: contrail-operator
+  template:
+    metadata:
+      labels:
+        name: contrail-operator
+    spec:
+      serviceAccountName: contrail-operator
+      hostNetwork: true
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          operator: "Exists"
+          effect: "NoSchedule"
+      initContainers:
+      - name: init
+        image: crdsloader:latest
+        imagePullPolicy: Always
+
+      containers:
+        - name: contrail-operator
+          # Replace this with the built image name
+          image: contrail-operator:latest
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "contrail-operator"
