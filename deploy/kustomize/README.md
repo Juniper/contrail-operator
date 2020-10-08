@@ -76,8 +76,8 @@ kubectl -n contrail get secret cluster1-admin-password -ojson |jq .data.password
 ```
 ## Cleanup
 ```
-kubectl delete -k github.com/michaelhenkel/contrailkustomize/contrail/${REPLICA}node/${RELEASE}
-kubectl delete -k github.com/michaelhenkel/contrailkustomize/operator/R2008
+kubectl delete -k github.com/Juniper/contrail-operator/deploy/kustomize/contrail/${REPLICA}node/${RELEASE}
+kubectl delete -k github.com/Juniper/contrail-operator/deploy/kustomize/operator/R2008
 kubectl delete crds --all
 kubectl delete pv --all
 ```
