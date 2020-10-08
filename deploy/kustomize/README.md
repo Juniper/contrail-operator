@@ -31,7 +31,7 @@ REPLICA=3
 ### Deploy Contrail
 ```
 kubectl apply -k \
-  github.com/michaelhenkel/contrailkustomize/contrail/${REPLICA}node/${RELEASE}
+  github.com/Juniper/contrail-operator/deploy/kustomize/contrail/${REPLICA}node/${RELEASE}
 ```
 ## Wait for Contrail to come up
 ```
