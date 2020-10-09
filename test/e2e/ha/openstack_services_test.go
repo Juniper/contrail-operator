@@ -491,7 +491,7 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		Spec: contrail.SwiftSpec{
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
-					{Name: "ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/ringcontroller:" + scmBranch + "." + scmRevision},
+					{Name: "contrail-operator-ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:" + scmBranch + "." + scmRevision},
 				},
 				CredentialsSecretName: "swift-pass-secret",
 				SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{

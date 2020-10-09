@@ -1624,7 +1624,7 @@ func TestManagerController(t *testing.T) {
 				},
 				ServiceConfiguration: contrail.SwiftConfiguration{
 					Containers: []*contrail.Container{
-						{Name: "ringcontroller", Image: "ringcontroller"},
+						{Name: "contrail-operator-ringcontroller", Image: "contrail-operator-ringcontroller"},
 					},
 					SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 						AccountBindPort:   6001,
@@ -2338,7 +2338,7 @@ var swift = &contrail.Swift{
 	Spec: contrail.SwiftSpec{
 		ServiceConfiguration: contrail.SwiftConfiguration{
 			Containers: []*contrail.Container{
-				{Name: "ringcontroller", Image: "ringcontroller"},
+				{Name: "contrail-operator-ringcontroller", Image: "contrail-operator-ringcontroller"},
 			},
 			SwiftStorageConfiguration: contrail.SwiftStorageConfiguration{
 				AccountBindPort:   6001,

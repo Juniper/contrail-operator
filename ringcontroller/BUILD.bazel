@@ -2,7 +2,7 @@ load("@io_bazel_rules_docker//python3:image.bzl", "py3_image")
 load("@io_bazel_rules_docker//python:image.bzl", "py_layer")
 load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@ringcontroller//:requirements.bzl", "all_requirements")
+load("@contrail-operator-ringcontroller//:requirements.bzl", "all_requirements")
 
 py_layer(
     name = "external_deps",
@@ -21,7 +21,7 @@ py_test(
 )
 
 py3_image(
-    name = "ringcontroller",
+    name = "contrail-operator-ringcontroller",
     srcs = [
         "main.py",
         "ring_controller.py",
@@ -34,28 +34,28 @@ py3_image(
 )
 
 container_push(
-    name = "ringcontroller-push",
-    image = ":ringcontroller",
+    name = "contrail-operator-ringcontroller-push",
+    image = ":contrail-operator-ringcontroller",
     format = "Docker",
     registry = "gcr.io",
-    repository = "engprod-269421/ringcontroller",
+    repository = "engprod-269421/contrail-operator-ringcontroller",
     tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
 )
 
 container_push(
-    name = "ringcontroller-push-latest",
-    image = ":ringcontroller",
+    name = "contrail-operator-ringcontroller-push-latest",
+    image = ":contrail-operator-ringcontroller",
     format = "Docker",
     registry = "gcr.io",
-    repository = "engprod-269421/ringcontroller",
+    repository = "engprod-269421/contrail-operator-ringcontroller",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
 
 container_push(
-    name = "ringcontroller-push-local",
-    image = ":ringcontroller",
+    name = "contrail-operator-ringcontroller-push-local",
+    image = ":contrail-operator-ringcontroller",
     format = "Docker",
     registry = "localhost:5000",
-    repository = "contrail-operator/engprod-269421/ringcontroller",
+    repository = "contrail-operator/engprod-269421/contrail-operator-ringcontroller",
     tag = "master.latest",
 )

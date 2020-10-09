@@ -101,8 +101,8 @@ func (r *Ring) BuildJob(name types.NamespacedName, nodeSelector map[string]strin
 					ServiceAccountName: r.serviceAccountName,
 					Containers: []core.Container{
 						{
-							Name:            "ringcontroller",
-							Image:           "localhost:5000/contrail-operator/engprod-269421/ringcontroller:master.latest",
+							Name:            "contrail-operator-ringcontroller",
+							Image:           "localhost:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:master.latest",
 							ImagePullPolicy: core.PullAlways,
 							Args:            r.args(),
 						},
