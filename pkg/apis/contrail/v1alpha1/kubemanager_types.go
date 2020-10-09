@@ -195,7 +195,6 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		zookeeperEndpointList := configtemplates.EndpointList(zookeeperNodesInformation.ServerIPList, zookeeperNodesInformation.ClientPort)
 		zookeeperEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(zookeeperEndpointList, ",")
 		cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.Port)
-		cassandraEndpointListCommaSeparated := configtemplates.JoinListWithSeparator(cassandraEndpointList, ",")
 		cassandraEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraEndpointList, " ")
 		var kubemanagerConfigBuffer bytes.Buffer
 		secret := &corev1.Secret{}
