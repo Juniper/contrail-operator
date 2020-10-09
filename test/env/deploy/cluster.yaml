@@ -257,8 +257,8 @@ spec:
         serviceConfiguration:
           credentialsSecretName: "swift-credentials-secret"
           containers:
-            - name: ringcontroller
-              image: registry:5000/contrail-operator/engprod-269421/ringcontroller:master.latest
+            - name: contrail-operator-ringcontroller
+              image: registry:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:master.latest
           swiftProxyConfiguration:
             memcachedInstance: "memcached"
             keystoneInstance: "keystone"

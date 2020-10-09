@@ -1,7 +1,7 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 
 container_image(
-    name = "crdsloader-crds-layer",
+    name = "contrail-operator-crdsloader-crds-layer",
     base = "@go_debug_image_base//image:image",
     directory = "/crds",
     files = [
@@ -10,8 +10,8 @@ container_image(
 )
 
 container_image(
-    name = "crdsloader-image",
-    base = ":crdsloader-crds-layer",
+    name = "contrail-operator-crdsloader-image",
+    base = ":contrail-operator-crdsloader-crds-layer",
     directory = "/app",
     entrypoint = [
         "sh",
@@ -25,28 +25,28 @@ container_image(
 )
 
 container_push(
-    name = "crdsloader-push-local",
+    name = "contrail-operator-crdsloader-push-local",
     format = "Docker",
-    image = ":crdsloader-image",
+    image = ":contrail-operator-crdsloader-image",
     registry = "{LOCAL_REGISTRY}",
-    repository = "contrail-operator/engprod-269421/crdsloader",
+    repository = "contrail-operator/engprod-269421/contrail-operator-crdsloader",
     tag = "master.latest",
 )
 
 container_push(
-    name = "crdsloader-push",
+    name = "contrail-operator-crdsloader-push",
     format = "Docker",
-    image = ":crdsloader-image",
+    image = ":contrail-operator-crdsloader-image",
     registry = "gcr.io",
-    repository = "engprod-269421/crdsloader",
+    repository = "engprod-269421/contrail-operator-crdsloader",
     tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
 )
 
 container_push(
-    name = "crdsloader-push-latest",
+    name = "contrail-operator-crdsloader-push-latest",
     format = "Docker",
-    image = ":crdsloader-image",
+    image = ":contrail-operator-crdsloader-image",
     registry = "gcr.io",
-    repository = "engprod-269421/crdsloader",
+    repository = "engprod-269421/contrail-operator-crdsloader",
     tag = "{BUILD_SCM_BRANCH}.latest",
 )
