@@ -403,6 +403,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
 						Port:     1111,
 						Endpoint: "9.9.9.9:9595",
+						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
 					},
 					ConfigNodesConfiguration: &ConfigClusterConfiguration{
 						APIServerIPList:       []string{"3.3.3.3", "4.4.4.4"},
@@ -440,7 +441,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "5.5.5.5:1111 6.6.6.6:1111")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 
@@ -455,7 +456,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "5.5.5.5:1111 6.6.6.6:1111")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 }
@@ -497,7 +498,7 @@ func TestInstanceConfigurationWithDynamicConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 
@@ -512,7 +513,7 @@ func TestInstanceConfigurationWithDynamicConfiguration(t *testing.T) {
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 }
@@ -567,7 +568,7 @@ func TestInstanceConfigurationWithDynamicCassandraZookeeperConfiguration(t *test
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 
@@ -582,7 +583,7 @@ func TestInstanceConfigurationWithDynamicCassandraZookeeperConfiguration(t *test
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 }
@@ -606,6 +607,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqConfigConfiguration(t *testing.
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
 						Port:     1111,
 						Endpoint: "9.9.9.9:9595",
+						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
 					},
 					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
 						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
@@ -632,7 +634,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqConfigConfiguration(t *testing.
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "7.7.7.7:1111 8.8.8.8:1111")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 
@@ -647,7 +649,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqConfigConfiguration(t *testing.
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "7.7.7.7:1111 8.8.8.8:1111")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 }
@@ -677,6 +679,7 @@ func TestInstanceConfigurationWithDynamicConfigZookeeperConfiguration(t *testing
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
 						Port:     1111,
 						Endpoint: "9.9.9.9:9595",
+						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
 					},
 				},
 			},
@@ -699,7 +702,7 @@ func TestInstanceConfigurationWithDynamicConfigZookeeperConfiguration(t *testing
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "5.5.5.5:1111 6.6.6.6:1111")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 
@@ -714,7 +717,7 @@ func TestInstanceConfigurationWithDynamicConfigZookeeperConfiguration(t *testing
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "9.9.9.9:9595")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "5.5.5.5:1111 6.6.6.6:1111")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "1.1.1.1:8086 2.2.2.2:8086")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "4.4.4.4:2181,5.5.5.5:2181")
 }
@@ -767,7 +770,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqCassandraConfiguration(t *testi
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod1.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 
@@ -782,7 +785,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqCassandraConfiguration(t *testi
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_vhost").String(), "vhost0")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_user").String(), "user")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("rabbit_password").String(), "pass")
-	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "1.2.3.4:9160")
+	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("cassandra_server_list").String(), "4.4.4.4:9160 5.5.5.5:9160")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("collectors").String(), "3.3.3.4:2223 4.4.4.5:2223")
 	assert.Equal(t, kubemanagerPod2.Section("VNC").Key("zk_server_ip").String(), "7.7.7.7:4444,8.8.8.8:4444")
 }
