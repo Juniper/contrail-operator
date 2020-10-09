@@ -401,8 +401,8 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
-						Port:     1111,
-						Endpoint: "9.9.9.9:9595",
+						Port:         1111,
+						Endpoint:     "9.9.9.9:9595",
 						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
 					},
 					ConfigNodesConfiguration: &ConfigClusterConfiguration{
@@ -605,8 +605,8 @@ func TestInstanceConfigurationWithDynamicRabbitmqConfigConfiguration(t *testing.
 			ServiceConfiguration: KubemanagerConfiguration{
 				StaticConfiguration: &KubemanagerStaticConfiguration{
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
-						Port:     1111,
-						Endpoint: "9.9.9.9:9595",
+						Port:         1111,
+						Endpoint:     "9.9.9.9:9595",
 						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
 					},
 					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
@@ -677,8 +677,8 @@ func TestInstanceConfigurationWithDynamicConfigZookeeperConfiguration(t *testing
 						Secret:       "rabbit-secret",
 					},
 					CassandraNodesConfiguration: &CassandraClusterConfiguration{
-						Port:     1111,
-						Endpoint: "9.9.9.9:9595",
+						Port:         1111,
+						Endpoint:     "9.9.9.9:9595",
 						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
 					},
 				},
