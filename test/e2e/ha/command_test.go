@@ -26,7 +26,10 @@ import (
 )
 
 func TestHACommand(t *testing.T) {
-	t.Skip()
+	if testing.Short() {
+		t.Skip("it is a long test")
+	}
+
 	ctx := test.NewContext(t)
 	f := test.Global
 	defer ctx.Cleanup()
@@ -142,7 +145,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       time.Minute * 10,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -161,7 +164,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       time.Minute * 10,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -185,7 +188,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then cluster is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       time.Minute * 10,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
@@ -323,7 +326,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 					{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + cemRelease},
 					{Name: "named", Image: "registry:5000/contrail-nightly/contrail-controller-control-named:" + cemRelease},
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
-					{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest"},
+					{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + scmBranch + "." + scmRevision},
 				},
 			},
 		},
@@ -445,7 +448,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 				},
 				Containers: []*contrail.Container{
 					{Name: "zookeeper", Image: "registry:5000/common-docker-third-party/contrail/zookeeper:3.5.5"},
-					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+					{Name: "conf-init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
 				},
 			},
 		},
