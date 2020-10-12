@@ -192,10 +192,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	if !r.vrouterDependenciesReady(instance, request.Namespace) {
-		return reconcile.Result{}, nil
-	}
-
 	configMap, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -541,21 +537,6 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileVrouter) vrouterDependenciesReady(vrouterInstance *v1alpha1.Vrouter, namespace string) bool {
-	controlInstance := v1alpha1.Control{}
-	configInstance := v1alpha1.Config{}
-	configInstanceActive := configInstance.IsActive(vrouterInstance.Labels["contrail_cluster"], namespace, r.Client)
-	controlInstanceActive := controlInstance.IsActive(vrouterInstance.Spec.ServiceConfiguration.ControlInstance, namespace, r.Client)
-
-	if vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration == nil {
-		return configInstanceActive && controlInstanceActive
-	}
-
-	configAvailable := configInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil
-	controlAvailable := controlInstanceActive || vrouterInstance.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil
-	return configAvailable && controlAvailable
 }
 
 func (r *ReconcileVrouter) ensureCertificatesExist(vrouter *v1alpha1.Vrouter, pods *corev1.PodList, instanceType string) error {

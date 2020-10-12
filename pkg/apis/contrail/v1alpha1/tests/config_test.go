@@ -163,6 +163,14 @@ var vrouter = &v1alpha1.Vrouter{
 	},
 	Spec: v1alpha1.VrouterSpec{
 		ServiceConfiguration: v1alpha1.VrouterConfiguration{
+			ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+				APIServerIPList:       []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+				AnalyticsServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+				CollectorServerIPList: []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+			},
+			ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
+				ControlServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+			},
 			ControlInstance:   "control1",
 			Gateway:           "1.1.8.254",
 			CassandraInstance: "cassandra1",

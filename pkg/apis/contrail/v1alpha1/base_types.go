@@ -101,7 +101,7 @@ type PodConfiguration struct {
 	// +optional
 	HostNetwork *bool `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts
-	// file if specified.
+	// file if specified. This is only valid for non-hostNetwork pods.
 	// +optional
 	// +patchMergeKey=ip
 	// +patchStrategy=merge

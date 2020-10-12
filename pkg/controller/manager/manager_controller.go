@@ -701,6 +701,9 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 	var vRouterServiceStatus []*v1alpha1.ServiceStatus
 	for _, vRouterService := range manager.Spec.Services.Vrouters {
 		vRouter := &v1alpha1.Vrouter{}
+		if !vrouterDependenciesReady(vRouterService, r.client, manager.Namespace) {
+
+		}
 		vRouter.ObjectMeta = vRouterService.ObjectMeta
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
@@ -1067,5 +1070,28 @@ func fillKubemanagerConfiguration(kubemanager, kubemanagerService *v1alpha1.Kube
 		return err
 	}
 	kubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration = &configConfig
+	return nil
+}
+
+func vrouterDependenciesReady(vrouterInstance *v1alpha1.Vrouter, client client.Client, managerName string) bool {
+	controlInstance := v1alpha1.Control{}
+	configInstance := v1alpha1.Config{}
+	configInstanceActive := configInstance.IsActive(managerName, vrouterInstance.Namespace, client)
+	controlInstanceActive := controlInstance.IsActive(vrouterInstance.Spec.ServiceConfiguration.ControlInstance, vrouterInstance.Namespace, client)
+
+	return configInstanceActive && controlInstanceActive
+}
+
+func fillVrouterConfiguration(vrouter, vrouterService *v1alpha1.Vrouter, client client.Client, managerName, managerNamespace string) error {
+	controlConfig, err := v1alpha1.NewControlClusterConfiguration(vrouterService.Spec.ServiceConfiguration.ControlInstance, "", managerNamespace, client)
+	if err != nil {
+		return err
+	}
+	vrouter.Spec.ServiceConfiguration.ControlNodesConfiguration = &controlConfig
+	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerName, managerNamespace, client)
+	if err != nil {
+		return err
+	}
+	vrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration = &configConfig
 	return nil
 }

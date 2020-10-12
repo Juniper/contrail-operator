@@ -56,26 +56,19 @@ type VrouterSpec struct {
 // VrouterConfiguration is the Spec for the cassandras API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers          []*Container                `json:"containers,omitempty"`
-	ControlInstance     string                      `json:"controlInstance,omitempty"`
-	CassandraInstance   string                      `json:"cassandraInstance,omitempty"`
-	Gateway             string                      `json:"gateway,omitempty"`
-	PhysicalInterface   string                      `json:"physicalInterface,omitempty"`
-	MetaDataSecret      string                      `json:"metaDataSecret,omitempty"`
-	NodeManager         *bool                       `json:"nodeManager,omitempty"`
-	Distribution        *Distribution               `json:"distribution,omitempty"`
-	ServiceAccount      string                      `json:"serviceAccount,omitempty"`
-	ClusterRole         string                      `json:"clusterRole,omitempty"`
-	ClusterRoleBinding  string                      `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption   bool                        `json:"vrouterEncryption,omitempty"`
-	ContrailStatusImage string                      `json:"contrailStatusImage,omitempty"`
-	StaticConfiguration *VrouterStaticConfiguration `json:"staticConfiguration,omitempty"`
-}
-
-// VrouterStaticConfiguration stores static configuration of services
-// required by Vrouter
-// +k8s:openapi-gen=true
-type VrouterStaticConfiguration struct {
+	Containers                []*Container                 `json:"containers,omitempty"`
+	ControlInstance           string                       `json:"controlInstance,omitempty"`
+	CassandraInstance         string                       `json:"cassandraInstance,omitempty"`
+	Gateway                   string                       `json:"gateway,omitempty"`
+	PhysicalInterface         string                       `json:"physicalInterface,omitempty"`
+	MetaDataSecret            string                       `json:"metaDataSecret,omitempty"`
+	NodeManager               *bool                        `json:"nodeManager,omitempty"`
+	Distribution              *Distribution                `json:"distribution,omitempty"`
+	ServiceAccount            string                       `json:"serviceAccount,omitempty"`
+	ClusterRole               string                       `json:"clusterRole,omitempty"`
+	ClusterRoleBinding        string                       `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption         bool                         `json:"vrouterEncryption,omitempty"`
+	ContrailStatusImage       string                       `json:"contrailStatusImage,omitempty"`
 	ControlNodesConfiguration *ControlClusterConfiguration `json:"controlNodesConfiguration,omitempty"`
 	ConfigNodesConfiguration  *ConfigClusterConfiguration  `json:"configNodesConfiguration,omitempty"`
 }
@@ -306,50 +299,28 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
 
-	configNodesInformation, err := c.getConfigNodesInformation(request.Namespace, client)
-	if err != nil {
-		return err
-	}
-	controlNodesInformation, err := c.getControlNodesInformation(request.Namespace, client)
-	if err != nil {
-		return err
-	}
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation.FillWithDefaultValues()
+	controlNodesInformation := c.Spec.ServiceConfiguration.ControlNodesConfiguration
+	controlNodesInformation.FillWithDefaultValues()
 
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
-	if err = client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: instanceConfigMapName, Namespace: request.Namespace}, configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, &controlNodesInformation, &configNodesInformation)
-	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
+	configMapInstanceDynamicConfig.Data = c.createVrouterDynamicConfig(podList, controlNodesInformation, configNodesInformation)
+	if err := client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
 
 	envVariablesConfigMapName := request.Name + "-" + "vrouter" + "-configmap-1"
 	envVariablesConfigMap := &corev1.ConfigMap{}
-	if err = client.Get(context.TODO(), types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace}, envVariablesConfigMap); err != nil {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace}, envVariablesConfigMap); err != nil {
 		return err
 	}
 	envVariablesConfigMap.Data = c.getVrouterEnvironmentData()
 	return client.Update(context.TODO(), envVariablesConfigMap)
-}
-
-func (c *Vrouter) getConfigNodesInformation(namespace string, client client.Client) (ConfigClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
-		configNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration
-		configNodesInformation.FillWithDefaultValues()
-		return configNodesInformation, nil
-	}
-	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
-}
-
-func (c *Vrouter) getControlNodesInformation(namespace string, client client.Client) (ControlClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration != nil {
-		controlNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ControlNodesConfiguration
-		controlNodesInformation.FillWithDefaultValues()
-		return controlNodesInformation, nil
-	}
-	return NewControlClusterConfiguration(c.Spec.ServiceConfiguration.ControlInstance, "", namespace, client)
 }
 
 // SetPodsToReady sets Kubemanager PODs to ready.
