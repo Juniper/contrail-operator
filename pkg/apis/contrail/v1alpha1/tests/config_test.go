@@ -82,8 +82,25 @@ var kubemanager = &v1alpha1.Kubemanager{
 	},
 	Spec: v1alpha1.KubemanagerSpec{
 		ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
-			CassandraInstance: "cassandra1",
-			ZookeeperInstance: "zookeeper1",
+			CassandraNodesConfiguration: &v1alpha1.CassandraClusterConfiguration{
+				Port:         9160,
+				ServerIPList: []string{"1.1.2.1", "1.1.2.2", "1.1.2.3"},
+			},
+			ZookeeperNodesConfiguration: &v1alpha1.ZookeeperClusterConfiguration{
+				ClientPort:   2181,
+				ServerIPList: []string{"1.1.3.1", "1.1.3.2", "1.1.3.3"},
+			},
+			RabbbitmqNodesConfiguration: &v1alpha1.RabbitmqClusterConfiguration{
+				SSLPort:      15673,
+				ServerIPList: []string{"1.1.4.1", "1.1.4.2", "1.1.4.3"},
+				Secret:       "rabbitmq-secret",
+			},
+			ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+				APIServerPort:         8082,
+				CollectorPort:         8086,
+				APIServerIPList:       []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+				CollectorServerIPList: []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+			},
 		},
 	},
 }

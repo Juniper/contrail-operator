@@ -54,38 +54,32 @@ type KubemanagerStatus struct {
 // KubemanagerConfiguration is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
-	Containers            []*Container                    `json:"containers,omitempty"`
-	CassandraInstance     string                          `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance     string                          `json:"zookeeperInstance,omitempty"`
-	UseKubeadmConfig      *bool                           `json:"useKubeadmConfig,omitempty"`
-	ServiceAccount        string                          `json:"serviceAccount,omitempty"`
-	ClusterRole           string                          `json:"clusterRole,omitempty"`
-	ClusterRoleBinding    string                          `json:"clusterRoleBinding,omitempty"`
-	CloudOrchestrator     string                          `json:"cloudOrchestrator,omitempty"`
-	KubernetesAPIServer   string                          `json:"kubernetesAPIServer,omitempty"`
-	KubernetesAPIPort     *int                            `json:"kubernetesAPIPort,omitempty"`
-	KubernetesAPISSLPort  *int                            `json:"kubernetesAPISSLPort,omitempty"`
-	PodSubnets            string                          `json:"podSubnets,omitempty"`
-	ServiceSubnets        string                          `json:"serviceSubnets,omitempty"`
-	KubernetesClusterName string                          `json:"kubernetesClusterName,omitempty"`
-	IPFabricSubnets       string                          `json:"ipFabricSubnets,omitempty"`
-	IPFabricForwarding    *bool                           `json:"ipFabricForwarding,omitempty"`
-	IPFabricSnat          *bool                           `json:"ipFabricSnat,omitempty"`
-	KubernetesTokenFile   string                          `json:"kubernetesTokenFile,omitempty"`
-	HostNetworkService    *bool                           `json:"hostNetworkService,omitempty"`
-	RabbitmqUser          string                          `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword      string                          `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost         string                          `json:"rabbitmqVhost,omitempty"`
-	StaticConfiguration   *KubemanagerStaticConfiguration `json:"staticConfiguration,omitempty"`
-}
-
-// KubemanagerStaticConfiguration is the configuration for deployment with static controller.
-// +k8s:openapi-gen=true
-type KubemanagerStaticConfiguration struct {
-	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration,omitempty"`
-	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
-	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
-	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration,omitempty"`
+	Containers                  []*Container                   `json:"containers,omitempty"`
+	CassandraInstance           string                         `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance           string                         `json:"zookeeperInstance,omitempty"`
+	UseKubeadmConfig            *bool                          `json:"useKubeadmConfig,omitempty"`
+	ServiceAccount              string                         `json:"serviceAccount,omitempty"`
+	ClusterRole                 string                         `json:"clusterRole,omitempty"`
+	ClusterRoleBinding          string                         `json:"clusterRoleBinding,omitempty"`
+	CloudOrchestrator           string                         `json:"cloudOrchestrator,omitempty"`
+	KubernetesAPIServer         string                         `json:"kubernetesAPIServer,omitempty"`
+	KubernetesAPIPort           *int                           `json:"kubernetesAPIPort,omitempty"`
+	KubernetesAPISSLPort        *int                           `json:"kubernetesAPISSLPort,omitempty"`
+	PodSubnets                  string                         `json:"podSubnets,omitempty"`
+	ServiceSubnets              string                         `json:"serviceSubnets,omitempty"`
+	KubernetesClusterName       string                         `json:"kubernetesClusterName,omitempty"`
+	IPFabricSubnets             string                         `json:"ipFabricSubnets,omitempty"`
+	IPFabricForwarding          *bool                          `json:"ipFabricForwarding,omitempty"`
+	IPFabricSnat                *bool                          `json:"ipFabricSnat,omitempty"`
+	KubernetesTokenFile         string                         `json:"kubernetesTokenFile,omitempty"`
+	HostNetworkService          *bool                          `json:"hostNetworkService,omitempty"`
+	RabbitmqUser                string                         `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword            string                         `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost               string                         `json:"rabbitmqVhost,omitempty"`
+	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration"`
+	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration"`
+	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration"`
+	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration"`
 }
 
 // KubemanagerList contains a list of Kubemanager.
@@ -113,17 +107,21 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	cassandraNodesInformation, err := c.getCassandraNodesInformation(request.Namespace, client)
-	configNodesInformation, err := c.getConfigNodesInformation(request.Namespace, client)
-	rabbitmqNodesInformation, err := c.getRabbitmqNodesInformation(request.Namespace, client)
-	zookeeperNodesInformation, err := c.getZookeeperNodesInformation(request.Namespace, client)
+	cassandraNodesInformation := c.Spec.ServiceConfiguration.CassandraNodesConfiguration
+	cassandraNodesInformation.FillWithDefaultValues()
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation.FillWithDefaultValues()
+	rabbitmqNodesInformation := c.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration
+	rabbitmqNodesInformation.FillWithDefaultValues()
+	zookeeperNodesInformation := c.Spec.ServiceConfiguration.ZookeeperNodesConfiguration
+	zookeeperNodesInformation.FillWithDefaultValues()
 
 	var rabbitmqSecretUser string
 	var rabbitmqSecretPassword string
 	var rabbitmqSecretVhost string
 	if rabbitmqNodesInformation.Secret != "" {
 		rabbitmqSecret := &corev1.Secret{}
-		err = client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
+		err := client.Get(context.TODO(), types.NamespacedName{Name: rabbitmqNodesInformation.Secret, Namespace: request.Namespace}, rabbitmqSecret)
 		if err != nil {
 			return err
 		}
@@ -268,7 +266,7 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}
 	configMapInstanceDynamicConfig.Data = data
-	if err = client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
+	if err := client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
 	return nil
@@ -459,42 +457,6 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 	kubemanagerConfiguration.IPFabricSnat = &ipFabricSnat
 
 	return kubemanagerConfiguration
-}
-
-func (c *Kubemanager) getCassandraNodesInformation(namespace string, client client.Client) (CassandraClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration != nil {
-		cassandraNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.CassandraNodesConfiguration
-		cassandraNodesInformation.FillWithDefaultValues()
-		return cassandraNodesInformation, nil
-	}
-	return NewCassandraClusterConfiguration(c.Spec.ServiceConfiguration.CassandraInstance, namespace, client)
-}
-
-func (c *Kubemanager) getConfigNodesInformation(namespace string, client client.Client) (ConfigClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration != nil {
-		configNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ConfigNodesConfiguration
-		configNodesInformation.FillWithDefaultValues()
-		return configNodesInformation, nil
-	}
-	return NewConfigClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
-}
-
-func (c *Kubemanager) getRabbitmqNodesInformation(namespace string, client client.Client) (RabbitmqClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration != nil {
-		rabbitmqNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.RabbbitmqNodesConfiguration
-		rabbitmqNodesInformation.FillWithDefaultValues()
-		return rabbitmqNodesInformation, nil
-	}
-	return NewRabbitmqClusterConfiguration(c.Labels["contrail_cluster"], namespace, client)
-}
-
-func (c *Kubemanager) getZookeeperNodesInformation(namespace string, client client.Client) (ZookeeperClusterConfiguration, error) {
-	if c.Spec.ServiceConfiguration.StaticConfiguration != nil && c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration != nil {
-		zookeeperNodesInformation := *c.Spec.ServiceConfiguration.StaticConfiguration.ZookeeperNodesConfiguration
-		zookeeperNodesInformation.FillWithDefaultValues()
-		return zookeeperNodesInformation, nil
-	}
-	return NewZookeeperClusterConfiguration(c.Spec.ServiceConfiguration.ZookeeperInstance, namespace, client)
 }
 
 //KubemanagerClusterInfo is interface for gathering information about cluster
