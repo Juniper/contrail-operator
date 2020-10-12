@@ -224,7 +224,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 	redisServerSpaceSeparatedList = strings.Join(podIPList, ":"+strconv.Itoa(*configConfig.RedisPort)+" ")
 	redisServerSpaceSeparatedList = redisServerSpaceSeparatedList + ":" + strconv.Itoa(*configConfig.RedisPort)
 	cassandraEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.Port)
-	cassandraEndpointSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraEndpointList, " ")
+	cassandraEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraEndpointList, " ")
 	cassandraCQLEndpointList := configtemplates.EndpointList(cassandraNodesInformation.ServerIPList, cassandraNodesInformation.CQLPort)
 	cassandraCQLEndpointListSpaceSeparated := configtemplates.JoinListWithSeparator(cassandraCQLEndpointList, " ")
 	rabbitMqSSLEndpointList := configtemplates.EndpointList(rabbitmqNodesInformation.ServerIPList, rabbitmqNodesInformation.SSLPort)
@@ -265,7 +265,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP              string
 			ListenPort          string
 			CassandraServerList string
-			CassandraEndpoint   string
 			ZookeeperServerList string
 			RabbitmqServerList  string
 			CollectorServerList string
@@ -280,7 +279,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
-			CassandraEndpoint:   cassandraNodesInformation.Endpoint,
+			CassandraServerList: cassandraEndpointListSpaceSeparated,
 			ZookeeperServerList: zookeeperEndpointListCommaSeparated,
 			RabbitmqServerList:  rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList: collectorServerList,
@@ -332,7 +331,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP                      string
 			ApiServerList               string
 			AnalyticsServerList         string
-			CassandraEndpoint           string
+			CassandraServerList         string
 			ZookeeperServerList         string
 			RabbitmqServerList          string
 			CollectorServerList         string
@@ -348,7 +347,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP:                      podList.Items[idx].Status.PodIP,
 			ApiServerList:               apiServerList,
 			AnalyticsServerList:         analyticsServerList,
-			CassandraEndpoint:           cassandraNodesInformation.Endpoint,
+			CassandraServerList:         cassandraEndpointListSpaceSeparated,
 			ZookeeperServerList:         zookeeperEndpointListCommaSeparated,
 			RabbitmqServerList:          rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:         collectorServerList,
@@ -408,7 +407,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP               string
 			ApiServerList        string
 			AnalyticsServerList  string
-			CassandraEndpoint    string
+			CassandraServerList  string
 			ZookeeperServerList  string
 			RabbitmqServerList   string
 			CollectorServerList  string
@@ -422,7 +421,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP:               podList.Items[idx].Status.PodIP,
 			ApiServerList:        apiServerList,
 			AnalyticsServerList:  analyticsServerList,
-			CassandraEndpoint:    cassandraNodesInformation.Endpoint,
+			CassandraServerList:  cassandraEndpointListSpaceSeparated,
 			ZookeeperServerList:  zookeeperEndpointListCommaSeparated,
 			RabbitmqServerList:   rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:  collectorServerList,
@@ -440,7 +439,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP                   string
 			ApiServerList            string
 			AnalyticsServerList      string
-			CassandraEndpoint        string
+			CassandraServerList      string
 			ZookeeperServerList      string
 			RabbitmqServerList       string
 			CollectorServerList      string
@@ -455,7 +454,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP:                   podList.Items[idx].Status.PodIP,
 			ApiServerList:            apiServerList,
 			AnalyticsServerList:      analyticsServerSpaceSeparatedList,
-			CassandraEndpoint:        cassandraNodesInformation.Endpoint,
+			CassandraServerList:      cassandraEndpointListSpaceSeparated,
 			ZookeeperServerList:      zookeeperEndpointListCommaSeparated,
 			RabbitmqServerList:       rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:      collectorServerList,
@@ -490,7 +489,7 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			HostIP:                     podList.Items[idx].Status.PodIP,
 			ApiServerList:              apiServerSpaceSeparatedList,
 			AnalyticsServerList:        analyticsServerSpaceSeparatedList,
-			CassandraServerList:        cassandraEndpointSpaceSeparated,
+			CassandraServerList:        cassandraEndpointListSpaceSeparated,
 			ZookeeperServerList:        zookeeperEndpointListSpaceSpearated,
 			RabbitmqServerList:         rabbitmqSSLEndpointListCommaSeparated,
 			CollectorServerList:        collectorServerList,
