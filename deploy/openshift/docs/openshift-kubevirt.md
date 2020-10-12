@@ -3,7 +3,7 @@
 This tutorial walks you through steps to install OpenShift Virtualisation 2.4 on OpenShift 4.5 with Contrail.
 
 ### Prerequisites
-A Red Hat OpenShift 4.5 with Contrail 2008 or later, running on BMS or VMs supporting nested virtualisation. For installation procedure please check [here](https://github.com/ovaleanujnpr/openshift4.x/blob/master/docs/ocp4-contrail-vm-bms.md).
+A Red Hat OpenShift 4.5 with Contrail 2008 or later, running on BMS or VMs supporting nested virtualisation. For installation procedure please check [here](Openshift-KVM).
 
 ```
 $ oc get pods -n contrail
