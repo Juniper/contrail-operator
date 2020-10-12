@@ -56,7 +56,7 @@ contrail-nightly/contrail-analytics-api:2008.10
 contrail-nightly/contrail-analytics-collector:2008.10
 contrail-nightly/contrail-analytics-query-engine:2008.10
 contrail-nightly/contrail-controller-config-devicemgr:2008.10
-contrail-nightly/contrail-command:2008.10
+contrail-nightly/contrail-command:2011.2
 common-docker-third-party/contrail/postgresql-client:1.0
 common-docker-third-party/contrail/busybox:1.31
 common-docker-third-party/contrail/cassandra:3.11.4

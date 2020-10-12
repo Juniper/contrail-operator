@@ -13,47 +13,56 @@ type CommandConfTemplate interface {
 }
 
 type commandConf struct {
-	ConfigAPIURL    string
-	AdminUsername   string
-	AdminPassword   string
-	SwiftUsername   string
-	SwiftPassword   string
-	PostgresAddress string
-	PostgresUser    string
-	PostgresDBName  string
-	PodIPs          []string
-	CAFilePath      string
-	PGPassword      string
+	ConfigAPIURL         string
+	AdminUsername        string
+	AdminPassword        string
+	SwiftUsername        string
+	SwiftPassword        string
+	PostgresAddress      string
+	PostgresUser         string
+	PostgresDBName       string
+	PodIPs               []string
+	CAFilePath           string
+	PGPassword           string
+	KeystoneAddress      string
+	KeystonePort         int
+	KeystoneAuthProtocol string
 }
 
 type commandPodConf struct {
-	ConfigAPIURL    string
-	AdminUsername   string
-	AdminPassword   string
-	SwiftUsername   string
-	SwiftPassword   string
-	PostgresAddress string
-	PostgresUser    string
-	PostgresDBName  string
-	HostIP          string
-	CAFilePath      string
-	PGPassword      string
+	ConfigAPIURL         string
+	AdminUsername        string
+	AdminPassword        string
+	SwiftUsername        string
+	SwiftPassword        string
+	PostgresAddress      string
+	PostgresUser         string
+	PostgresDBName       string
+	HostIP               string
+	CAFilePath           string
+	PGPassword           string
+	KeystoneAddress      string
+	KeystonePort         int
+	KeystoneAuthProtocol string
 }
 
 func (c *commandConf) FillConfigMap(cm *core.ConfigMap) {
 	for _, pod := range c.PodIPs {
 		conf := &commandPodConf{
-			AdminUsername:   c.AdminUsername,
-			AdminPassword:   c.AdminPassword,
-			SwiftUsername:   c.SwiftUsername,
-			SwiftPassword:   c.SwiftPassword,
-			ConfigAPIURL:    c.ConfigAPIURL,
-			PostgresAddress: c.PostgresAddress,
-			PostgresUser:    c.PostgresUser,
-			PostgresDBName:  c.PostgresDBName,
-			HostIP:          pod,
-			CAFilePath:      c.CAFilePath,
-			PGPassword:      c.PGPassword,
+			AdminUsername:        c.AdminUsername,
+			AdminPassword:        c.AdminPassword,
+			SwiftUsername:        c.SwiftUsername,
+			SwiftPassword:        c.SwiftPassword,
+			ConfigAPIURL:         c.ConfigAPIURL,
+			PostgresAddress:      c.PostgresAddress,
+			PostgresUser:         c.PostgresUser,
+			PostgresDBName:       c.PostgresDBName,
+			HostIP:               pod,
+			CAFilePath:           c.CAFilePath,
+			PGPassword:           c.PGPassword,
+			KeystoneAddress:      c.KeystoneAddress,
+			KeystonePort:         c.KeystonePort,
+			KeystoneAuthProtocol: c.KeystoneAuthProtocol,
 		}
 		conf.fillConfigMapForPod(cm)
 	}
@@ -140,49 +149,9 @@ no_auth: false
 insecure: true
 
 keystone:
-  local: true
-  assignment:
-    type: static
-    data:
-      domains:
-        default: &default
-          id: default
-          name: default
-      projects:
-        admin: &admin
-          id: admin
-          name: admin
-          domain: *default
-        demo: &demo
-          id: demo
-          name: demo
-          domain: *default
-      users:
-        {{ .AdminUsername }}:
-          id: {{ .AdminUsername }}
-          name: {{ .AdminUsername }}
-          domain: *default
-          password: {{ .AdminPassword }}
-          email: {{ .AdminUsername }}@juniper.nets
-          roles:
-          - id: admin
-            name: admin
-            project: *admin
-        bob:
-          id: bob
-          name: Bob
-          domain: *default
-          password: bob_password
-          email: bob@juniper.net
-          roles:
-          - id: Member
-            name: Member
-            project: *demo
-  store:
-    type: memory
-    expire: 36000
+  local: false
   insecure: true
-  authurl: https://localhost:9091/keystone/v3
+  authurl: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}/v3
   service_user:
     id: {{ .SwiftUsername }}
     password: {{ .SwiftPassword }}
@@ -195,7 +164,7 @@ sync:
 client:
   id: {{ .AdminUsername }}
   password: {{ .AdminPassword }}
-  project_id: admin
+  project_name: admin
   domain_id: default
   schema_root: /
   endpoint: https://localhost:9091

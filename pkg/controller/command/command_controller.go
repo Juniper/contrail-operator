@@ -277,7 +277,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
-	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(psql.Status.Endpoint, config.Status.Endpoint, podIPs); err != nil {
+	if err = r.configMap(commandConfigName, "command", command, adminPasswordSecret, swiftSecret).ensureCommandConfigExist(psql.Status.Endpoint, config.Status.Endpoint, podIPs, keystoneAuthProtocol, keystoneAddress, keystonePort); err != nil {
 		return reconcile.Result{}, err
 	}
 
