@@ -382,7 +382,7 @@ func TestCommandServices(t *testing.T) {
 			})
 
 			t.Run("when command image is upgraded", func(t *testing.T) {
-				newImage := "registry:5000/contrail-nightly/contrail-command:2008.10"
+				newImage := "registry:5000/contrail-nightly/contrail-command:2011.2"
 				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
 				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
 				utils.GetContainerFromList("init", containers).Image = newImage
@@ -457,14 +457,29 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 	}
 
 	t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-		_, err := proxiedKeystoneClient.PostAuthTokens("admin", "test123", "admin")
+		err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+			_, err = proxiedKeystoneClient.PostAuthTokens("admin", "test123", "admin")
+			if err == nil {
+				return true, nil
+			}
+			t.Log(err)
+			return false, nil
+		})
+
 		assert.NoError(t, err)
 	})
 
 	t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
-		headers := http.Header{}
-		headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-		_, err = proxiedKeystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
+		err := k8swait.Poll(retryInterval, waitTimeout, func() (done bool, err error) {
+			headers := http.Header{}
+			headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
+			_, err = proxiedKeystoneClient.PostAuthTokensWithHeaders("admin", "test123", "admin", headers)
+			if err == nil {
+				return true, nil
+			}
+			t.Log(err)
+			return false, nil
+		})
 		assert.NoError(t, err)
 	})
 }

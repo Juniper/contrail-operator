@@ -1379,49 +1379,9 @@ no_auth: false
 insecure: true
 
 keystone:
-  local: true
-  assignment:
-    type: static
-    data:
-      domains:
-        default: &default
-          id: default
-          name: default
-      projects:
-        admin: &admin
-          id: admin
-          name: admin
-          domain: *default
-        demo: &demo
-          id: demo
-          name: demo
-          domain: *default
-      users:
-        admin:
-          id: admin
-          name: admin
-          domain: *default
-          password: test123
-          email: admin@juniper.nets
-          roles:
-          - id: admin
-            name: admin
-            project: *admin
-        bob:
-          id: bob
-          name: Bob
-          domain: *default
-          password: bob_password
-          email: bob@juniper.net
-          roles:
-          - id: Member
-            name: Member
-            project: *demo
-  store:
-    type: memory
-    expire: 36000
+  local: false
   insecure: true
-  authurl: https://localhost:9091/keystone/v3
+  authurl: https://10.0.2.16:5555/v3
   service_user:
     id: username
     password: password123
@@ -1434,7 +1394,7 @@ sync:
 client:
   id: admin
   password: test123
-  project_id: admin
+  project_name: admin
   domain_id: default
   schema_root: /
   endpoint: https://localhost:9091
