@@ -197,6 +197,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if !swiftService.Status.Active {
+		return reconcile.Result{}, nil
+	}
+
 	swiftSecretName := swiftService.Status.CredentialsSecretName
 	if swiftSecretName == "" {
 		return reconcile.Result{}, nil
@@ -227,6 +231,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if !keystone.Status.Active {
+		return reconcile.Result{}, nil
 	}
 
 	if keystone.Status.Endpoint == "" {
@@ -375,14 +383,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if err = r.updateStatus(command, deployment, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
-	}
-
-	if !keystone.Status.Active {
-		return reconcile.Result{}, nil
-	}
-
-	if !swiftService.Status.Active {
-		return reconcile.Result{}, nil
 	}
 
 	sPort := swiftService.Status.SwiftProxyPort

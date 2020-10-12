@@ -21,12 +21,11 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 	}
 	switch commandCR.Status.UpgradeState {
 	case contrail.CommandShuttingDownBeforeUpgrade:
+		currentDeployment.Spec.Template.Spec.Containers = oldDeploymentSpec.Template.Spec.Containers
+		currentDeployment.Spec.Template.Spec.InitContainers = oldDeploymentSpec.Template.Spec.InitContainers
+		currentDeployment.Spec.Replicas = int32ToPtr(0)
 		if currentDeployment.Status.Replicas == 0 {
 			commandCR.Status.UpgradeState = contrail.CommandUpgrading
-		} else {
-			currentDeployment.Spec.Template.Spec.Containers = oldDeploymentSpec.Template.Spec.Containers
-			currentDeployment.Spec.Template.Spec.InitContainers = oldDeploymentSpec.Template.Spec.InitContainers
-			currentDeployment.Spec.Replicas = int32ToPtr(0)
 		}
 	case contrail.CommandUpgrading:
 		currentDeployment.Spec.Replicas = int32ToPtr(0)
@@ -37,6 +36,16 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 		}
 		return r.checkDataMigrationJobStatus(commandCR)
 	case contrail.CommandStartingUpgradedDeployment:
+		job := &batch.Job{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      commandCR.Name + "-upgrade-job",
+				Namespace: commandCR.Namespace,
+			},
+		}
+		err := r.client.Delete(context.Background(), job)
+		if !errors.IsNotFound(err) {
+			return err
+		}
 		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 		expectedReplicas := ptrToInt32(currentDeployment.Spec.Replicas, 1)
 		if currentDeployment.Status.ReadyReplicas == expectedReplicas {
