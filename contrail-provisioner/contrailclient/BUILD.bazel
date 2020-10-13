@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["contrailclient.go"],
+    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner/contrailclient",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//contrail-provisioner/contrail-go-types:go_default_library",
+        "@com_github_juniper_contrail_go_api//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["contrailclient_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//contrail-provisioner/contrail-go-types:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
