@@ -16,7 +16,7 @@ import (
 )
 
 func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec, configMapName string) error {
-	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) {
+	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) && (commandCR.Status.UpgradeState == "" || commandCR.Status.UpgradeState == contrail.CommandNotUpgrading) {
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
 	switch commandCR.Status.UpgradeState {
