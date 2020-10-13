@@ -82,7 +82,7 @@ func TestCommand(t *testing.T) {
 				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 				newSwiftProxy(true),
@@ -107,7 +107,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newWebUI(true),
 				newSwiftProxy(true),
 			},
@@ -118,7 +118,7 @@ func TestCommand(t *testing.T) {
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 				newSwiftProxy(true),
@@ -130,7 +130,7 @@ func TestCommand(t *testing.T) {
 				newConfig(true),
 				newPostgres(true),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 				newSwiftProxy(true),
@@ -168,7 +168,7 @@ func TestCommand(t *testing.T) {
 				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newSwiftProxy(true),
 			},
@@ -180,7 +180,7 @@ func TestCommand(t *testing.T) {
 				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 			},
@@ -238,7 +238,7 @@ func TestCommand(t *testing.T) {
 			newPostgres(true),
 			newAdminSecret(),
 			newSwiftSecret(),
-			newSwift(false),
+			newSwift(true),
 			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			newWebUI(true),
 			newSwiftProxy(true),
@@ -277,13 +277,36 @@ func TestCommand(t *testing.T) {
 			newPostgres(true),
 			newAdminSecret(),
 			newSwiftSecret(),
-			newSwift(false),
+			newSwift(true),
 			newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 			newWebUI(true),
-			newSwiftProxy(true),
+			newSwiftProxy(false),
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
-		conf := &rest.Config{}
+		conf := &rest.Config{
+			Host:    "localhost",
+			APIPath: "/",
+			Transport: mockRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+				requestBody := ioutil.NopCloser(strings.NewReader("everything fine"))
+
+				if strings.Contains(r.URL.Path, "keystone") {
+					jsonBytes, _ := json.Marshal(
+						keystone.AuthTokens{},
+					)
+
+					requestBody = ioutil.NopCloser(
+						bytes.NewReader(
+							jsonBytes,
+						),
+					)
+				}
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       requestBody,
+				}, nil
+			}),
+		}
 		r := command.NewReconciler(cl, scheme, k8s.New(cl, scheme), conf)
 
 		req := reconcile.Request{
@@ -309,6 +332,7 @@ func TestCommand(t *testing.T) {
 		assert.True(t, found)
 	})
 
+	zeroVal := int32(0)
 	tests := []struct {
 		name                 string
 		initObjs             []runtime.Object
@@ -327,7 +351,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 				newSwiftProxy(true),
@@ -335,7 +359,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:       contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment:   newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:     newPostgresWithOwner(true),
-			expectedSwift:        newSwiftWithOwner(false),
+			expectedSwift:        newSwiftWithOwner(true),
 			expectedBootstrapJob: newBootstrapJob(),
 		},
 		{
@@ -367,7 +391,7 @@ func TestCommand(t *testing.T) {
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
-				newSwift(false),
+				newSwift(true),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 				newWebUI(true),
@@ -376,7 +400,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
-			expectedSwift:      newSwiftWithOwner(false),
+			expectedSwift:      newSwiftWithOwner(true),
 		},
 		{
 			name: "remove tolerations from deployment",
@@ -386,7 +410,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 				newConfig(true),
 				newPostgres(true),
-				newSwift(false),
+				newSwift(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
@@ -396,7 +420,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeploymentWithEmptyToleration(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
-			expectedSwift:      newSwiftWithOwner(false),
+			expectedSwift:      newSwiftWithOwner(true),
 		},
 		{
 			name: "update command status to false",
@@ -406,7 +430,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 				newConfig(true),
 				newPostgres(true),
-				newSwift(false),
+				newSwift(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
@@ -416,7 +440,7 @@ func TestCommand(t *testing.T) {
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 			expectedPostgres:   newPostgresWithOwner(true),
-			expectedSwift:      newSwiftWithOwner(false),
+			expectedSwift:      newSwiftWithOwner(true),
 		},
 		{
 			name: "update command status to active",
@@ -426,7 +450,7 @@ func TestCommand(t *testing.T) {
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 				newConfig(true),
 				newPostgres(true),
-				newSwift(false),
+				newSwift(true),
 				newAdminSecret(),
 				newSwiftSecret(),
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
@@ -440,7 +464,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 			expectedPostgres:   newPostgresWithOwner(true),
-			expectedSwift:      newSwiftWithOwner(false),
+			expectedSwift:      newSwiftWithOwner(true),
 		},
 		{
 			name: "when images are changed in 1-replica deployment, deployment is shut down before the upgrade",
@@ -490,7 +514,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
-			}, nil, ":new"),
+			}, &zeroVal, ""),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
@@ -542,7 +566,7 @@ func TestCommand(t *testing.T) {
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
-			}, nil, ":new"),
+			}, int32ToPtr(0), ""),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},

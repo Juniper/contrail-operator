@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -16,7 +17,7 @@ import (
 )
 
 func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec, configMapName string) error {
-	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) && (commandCR.Status.UpgradeState == "" || commandCR.Status.UpgradeState == contrail.CommandNotUpgrading) {
+	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) && commandCR.Status.UpgradeState != contrail.CommandUpgrading {
 		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
 	switch commandCR.Status.UpgradeState {
@@ -42,7 +43,8 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 				Namespace: commandCR.Namespace,
 			},
 		}
-		err := r.client.Delete(context.Background(), job)
+		pp := meta.DeletePropagationForeground
+		err := r.client.Delete(context.Background(), job, &client.DeleteOptions{PropagationPolicy: &pp})
 		if !errors.IsNotFound(err) {
 			return err
 		}
