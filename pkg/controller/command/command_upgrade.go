@@ -37,15 +37,7 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 		}
 		return r.checkDataMigrationJobStatus(commandCR)
 	case contrail.CommandStartingUpgradedDeployment:
-		job := &batch.Job{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      commandCR.Name + "-upgrade-job",
-				Namespace: commandCR.Namespace,
-			},
-		}
-		pp := meta.DeletePropagationForeground
-		err := r.client.Delete(context.Background(), job, &client.DeleteOptions{PropagationPolicy: &pp})
-		if !errors.IsNotFound(err) {
+		if err := r.deleteMigrationJob(commandCR); err != nil {
 			return err
 		}
 		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
@@ -56,6 +48,21 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 	default: // case contrail.CommandNotUpgrading or UpgradeState is not set
 		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
 		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+	}
+	return nil
+}
+
+func (r *ReconcileCommand) deleteMigrationJob(commandCR *contrail.Command) error {
+	job := &batch.Job{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      commandCR.Name + "-upgrade-job",
+			Namespace: commandCR.Namespace,
+		},
+	}
+	pp := meta.DeletePropagationForeground
+	err := r.client.Delete(context.Background(), job, &client.DeleteOptions{PropagationPolicy: &pp})
+	if !errors.IsNotFound(err) {
+		return err
 	}
 	return nil
 }
@@ -112,6 +119,7 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 			Namespace: commandCR.Namespace,
 		},
 		Spec: batch.JobSpec{
+			BackoffLimit: int32ToPtr(5),
 			Template: core.PodTemplateSpec{
 				Spec: core.PodSpec{
 					HostNetwork:   true,
