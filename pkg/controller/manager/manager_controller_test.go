@@ -2408,3 +2408,209 @@ var contrailmonitorCR = &contrail.Contrailmonitor{
 		Active: trueVal,
 	},
 }
+
+func cassandraWithActiveState(state bool) *contrail.Cassandra {
+	return &contrail.Cassandra{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cassandra1",
+			Namespace: "test-ns",
+		},
+		Status: contrail.CassandraStatus{
+			Active: &state,
+		},
+	}
+}
+
+func zookeeperWithActiveState(state bool) *contrail.Zookeeper {
+	return &contrail.Zookeeper{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "zookeeper1",
+			Namespace: "test-ns",
+		},
+		Status: contrail.ZookeeperStatus{
+			Active: &state,
+		},
+	}
+}
+
+func rabbitmqWithActiveState(state bool) *contrail.Rabbitmq {
+	return &contrail.Rabbitmq{
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				"contrail_cluster": "cluster1",
+			},
+		},
+		Status: contrail.RabbitmqStatus{
+			Active: &state,
+		},
+	}
+}
+
+func configWithActiveState(state bool) *contrail.Config {
+	return &contrail.Config{
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				"contrail_cluster": "cluster1",
+			},
+		},
+		Status: contrail.ConfigStatus{
+			Active: &state,
+		},
+	}
+}
+
+func controlWithActiveState(state bool) *contrail.Control {
+	return &contrail.Control{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "control1",
+			Namespace: "test-ns",
+		},
+		Status: contrail.ControlStatus{
+			Active: &state,
+		},
+	}
+}
+
+func TestKubemanagerDependenciesReady(t *testing.T) {
+
+	tests := []struct {
+		cassandraActive bool
+		zookeeperActive bool
+		rabbitmqActive  bool
+		configActive    bool
+		expected        bool
+	}{
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: true, expected: true},
+		{cassandraActive: false, zookeeperActive: false, rabbitmqActive: false, configActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: false, configActive: false, expected: false},
+		{cassandraActive: false, zookeeperActive: false, rabbitmqActive: true, configActive: true, expected: false},
+		{cassandraActive: true, zookeeperActive: false, rabbitmqActive: true, configActive: false, expected: false},
+		{cassandraActive: false, zookeeperActive: true, rabbitmqActive: false, configActive: true, expected: false},
+		{cassandraActive: false, zookeeperActive: true, rabbitmqActive: true, configActive: true, expected: false},
+		{cassandraActive: true, zookeeperActive: false, rabbitmqActive: true, configActive: true, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: false, configActive: true, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: false, expected: false},
+	}
+
+	kubemanagerCR := &contrail.Kubemanager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "kubemanager1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.KubemanagerSpec{
+			ServiceConfiguration: contrail.KubemanagerConfiguration{
+				CassandraInstance: "cassandra1",
+				ZookeeperInstance: "zookeeper1",
+			},
+		},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	for _, tc := range tests {
+		cl := fake.NewFakeClientWithScheme(scheme,
+			cassandraWithActiveState(tc.cassandraActive),
+			configWithActiveState(tc.configActive),
+			rabbitmqWithActiveState(tc.rabbitmqActive),
+			zookeeperWithActiveState(tc.zookeeperActive))
+		got := kubemanagerDependenciesReady(kubemanagerCR, "cluster1", cl)
+		assert.Equal(t, tc.expected, got)
+	}
+}
+
+func TestVrouterDependenciesReady(t *testing.T) {
+
+	tests := []struct {
+		configActive  bool
+		controlActive bool
+		expected      bool
+	}{
+		{configActive: true, controlActive: true, expected: true},
+		{configActive: false, controlActive: false, expected: false},
+		{configActive: false, controlActive: true, expected: false},
+		{configActive: true, controlActive: false, expected: false},
+	}
+
+	vrouterCR := &contrail.Vrouter{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "vrouter1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.VrouterSpec{
+			ServiceConfiguration: contrail.VrouterConfiguration{
+				ControlInstance: "control1",
+			},
+		},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	for _, tc := range tests {
+		cl := fake.NewFakeClientWithScheme(scheme,
+			configWithActiveState(tc.configActive),
+			controlWithActiveState(tc.controlActive))
+		got := vrouterDependenciesReady(vrouterCR, "cluster1", cl)
+		assert.Equal(t, tc.expected, got)
+	}
+}
+
+func TestFillKubemanagerConfiguration(t *testing.T) {
+	kubemanagerCR := &contrail.Kubemanager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "kubemanager1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.KubemanagerSpec{
+			ServiceConfiguration: contrail.KubemanagerConfiguration{
+				CassandraInstance: "cassandra1",
+				ZookeeperInstance: "zookeeper1",
+			},
+		},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		cassandraWithActiveState(true),
+		configWithActiveState(true),
+		rabbitmqWithActiveState(true),
+		zookeeperWithActiveState(true))
+
+	newKubemanager := &contrail.Kubemanager{}
+	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, kubemanagerCR, cl, "cluster1"))
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+}
+
+func TestFillVrouterConfiguration(t *testing.T) {
+	vrouterCR := &contrail.Vrouter{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "vrouter1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.VrouterSpec{
+			ServiceConfiguration: contrail.VrouterConfiguration{
+				ControlInstance: "control1",
+			},
+		},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true),
+		controlWithActiveState(true))
+
+	newVrouter := &contrail.Vrouter{}
+	require.NoError(t, fillVrouterConfiguration(newVrouter, vrouterCR, cl, "cluster1"))
+	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+}

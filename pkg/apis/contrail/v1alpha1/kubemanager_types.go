@@ -76,10 +76,10 @@ type KubemanagerConfiguration struct {
 	RabbitmqUser                string                         `json:"rabbitmqUser,omitempty"`
 	RabbitmqPassword            string                         `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost               string                         `json:"rabbitmqVhost,omitempty"`
-	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration"`
-	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration"`
-	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration"`
-	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration"`
+	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration,omitempty"`
+	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
+	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
+	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.

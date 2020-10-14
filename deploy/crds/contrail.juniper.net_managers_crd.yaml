@@ -1629,11 +1629,6 @@ spec:
                                   serverPort:
                                     type: integer
                                 type: object
-                            required:
-                            - cassandraNodesConfiguration
-                            - configNodesConfiguration
-                            - rabbitmqNodesConfiguration
-                            - zookeeperNodesConfiguration
                             type: object
                         required:
                         - serviceConfiguration
