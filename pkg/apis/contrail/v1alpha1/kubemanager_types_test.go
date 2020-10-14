@@ -17,66 +17,6 @@ import (
 	fakeCInfo "github.com/Juniper/contrail-operator/pkg/k8s/fake"
 )
 
-var cassandraCR = &Cassandra{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "cassandra1",
-		Namespace: "test-ns",
-	},
-	Status: CassandraStatus{
-		ClusterIP: "1.2.3.4",
-		Nodes: map[string]string{
-			"node1": "4.4.4.4",
-			"node2": "5.5.5.5",
-		},
-	},
-}
-
-var zookeeperCR = &Zookeeper{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "zookeeper1",
-		Namespace: "test-ns",
-	},
-	Status: ZookeeperStatus{
-		Nodes: map[string]string{
-			"node1": "4.4.4.4",
-			"node2": "5.5.5.5",
-		},
-	},
-}
-
-var rabbitmqCR = &Rabbitmq{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "rabbitmq1",
-		Namespace: "test-ns",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-	Status: RabbitmqStatus{
-		Nodes: map[string]string{
-			"node1": "1.1.1.1",
-			"node2": "2.2.2.2",
-		},
-		Secret: "rabbit-secret",
-	},
-}
-
-var configCR = &Config{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "config1",
-		Namespace: "test-ns",
-		Labels: map[string]string{
-			"contrail_cluster": "cluster1",
-		},
-	},
-	Status: ConfigStatus{
-		Nodes: map[string]string{
-			"node1": "1.1.1.1",
-			"node2": "2.2.2.2",
-		},
-	},
-}
-
 var podList = corev1.PodList{
 	Items: []corev1.Pod{
 		{
