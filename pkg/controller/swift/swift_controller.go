@@ -170,7 +170,19 @@ func (r *ReconcileSwift) Reconcile(request reconcile.Request) (reconcile.Result,
 	}
 	swift.Status.Active = swiftProxyAndStorageActiveStatus
 	swift.Status.SwiftProxyPort = swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.ListenPort
+	err, swift.Status.SwiftProxyClusterIP = r.getSwiftProxyClusterIP(swift)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), swift)
+}
+
+func (r *ReconcileSwift) getSwiftProxyClusterIP(swift *contrail.Swift) (error, string) {
+	swiftProxy := &contrail.SwiftProxy{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: swift.Name + "-proxy", Namespace: swift.Namespace}, swiftProxy); err != nil {
+		return err, ""
+	}
+	return nil, swiftProxy.Status.ClusterIP
 }
 
 func (r *ReconcileSwift) checkSwiftProxyAndStorageActive(swift *contrail.Swift) (error, bool) {
