@@ -18,3 +18,15 @@ func (s Status) Pending() bool {
 	}
 	return true
 }
+
+func (s Status) Completed() bool {
+	if len(s.Conditions) == 0 {
+		return false
+	}
+	for _, condition := range s.Conditions {
+		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobComplete {
+			return true
+		}
+	}
+	return false
+}

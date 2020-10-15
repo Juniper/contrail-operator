@@ -55,12 +55,13 @@ type CommandStatus struct {
 	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
 }
 
-// +kubebuilder:validation:Enum={"","not upgrading","shutting down before upgrade","starting upgraded deployment"}
+// +kubebuilder:validation:Enum={"","upgrading","not upgrading","shutting down before upgrade","starting upgraded deployment"}
 type CommandUpgradeState string
 
 const (
 	CommandNotUpgrading               CommandUpgradeState = "not upgrading"
 	CommandShuttingDownBeforeUpgrade  CommandUpgradeState = "shutting down before upgrade"
+	CommandUpgrading                  CommandUpgradeState = "upgrading"
 	CommandStartingUpgradedDeployment CommandUpgradeState = "starting upgraded deployment"
 )
 

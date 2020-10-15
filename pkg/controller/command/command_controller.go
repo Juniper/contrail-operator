@@ -112,6 +112,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch for changes to secondary resource Job and requeue the owner Command
+	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
+		OwnerType:    &contrail.Command{},
+		IsController: true,
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Command{},
@@ -188,6 +197,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if !swiftService.Status.Active {
+		return reconcile.Result{}, nil
+	}
+
 	swiftSecretName := swiftService.Status.CredentialsSecretName
 	if swiftSecretName == "" {
 		return reconcile.Result{}, nil
@@ -218,6 +231,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if !keystone.Status.Active {
+		return reconcile.Result{}, nil
 	}
 
 	if keystone.Status.Endpoint == "" {
@@ -357,8 +374,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err := r.prepareIntendedDeployment(deployment, command); err != nil {
 			return err
 		}
-		performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec)
-		return nil
+		return r.performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec, commandBootStrapConfigName)
 	})
 	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
 	if err != nil {
@@ -367,14 +383,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if err = r.updateStatus(command, deployment, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
-	}
-
-	if !keystone.Status.Active {
-		return reconcile.Result{}, nil
-	}
-
-	if !swiftService.Status.Active {
-		return reconcile.Result{}, nil
 	}
 
 	sPort := swiftService.Status.SwiftProxyPort
@@ -452,7 +460,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						},
 					},
 					Containers: []core.Container{{
-						Name:            "command",
+						Name:            "api",
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "api"),
 						Command:         getCommand(containers, "api"),
