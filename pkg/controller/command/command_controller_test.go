@@ -1082,7 +1082,7 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 					Containers: []core.Container{
 						{
 							Image:           "registry:5000/contrail-command" + fakeImageTag,
-							Name:            "command",
+							Name:            "api",
 							ImagePullPolicy: core.PullAlways,
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{

@@ -396,7 +396,7 @@ func TestCommandServices(t *testing.T) {
 						RetryInterval: retryInterval,
 						Client:        f.Client,
 						Logger:        log,
-					}.ForPodImageChange(f.KubeClient, "command=commandtest", newImage, "command")
+					}.ForPodImageChange(f.KubeClient, "command=commandtest", newImage, "api")
 					assert.NoError(t, err)
 				})
 

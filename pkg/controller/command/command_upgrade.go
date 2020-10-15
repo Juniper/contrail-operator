@@ -30,7 +30,7 @@ func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Comman
 		}
 	case contrail.CommandUpgrading:
 		currentDeployment.Spec.Replicas = int32ToPtr(0)
-		oldImage := getOldCommandImage(oldDeploymentSpec.Template.Spec.Containers, "command")
+		oldImage := getContainerImage(oldDeploymentSpec.Template.Spec.Containers, "api")
 		newImage := getImage(commandCR.Spec.ServiceConfiguration.Containers, "api")
 		if err := r.reconcileDataMigrationJob(commandCR, oldImage, newImage, configMapName); err != nil {
 			return err
@@ -67,8 +67,8 @@ func (r *ReconcileCommand) deleteMigrationJob(commandCR *contrail.Command) error
 	return nil
 }
 
-func getOldCommandImage(list []core.Container, name string) string {
-	for _, container := range list {
+func getContainerImage(containers []core.Container, name string) string {
+	for _, container := range containers {
 		if name == container.Name {
 			return container.Image
 		}
@@ -112,6 +112,13 @@ func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, 
 }
 
 func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImage, newImage, configMapName string) *batch.Job {
+	volumeMounts := []core.VolumeMount{{
+		Name:      configMapName,
+		MountPath: "/etc/contrail",
+	}, {
+		Name:      "backup-volume",
+		MountPath: "/backups/",
+	}}
 	executableMode := int32(0744)
 	return &batch.Job{
 		ObjectMeta: meta.ObjectMeta{
@@ -146,38 +153,35 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 					},
 					InitContainers: []core.Container{
 						{
-							Name:            "command-upgrade-db-dump",
+							Name:            "db-dump",
 							ImagePullPolicy: core.PullAlways,
 							Image:           oldImage,
-							Command:         []string{"bash", "-c", dataDumpScript},
-							VolumeMounts: []core.VolumeMount{{
-								Name:      configMapName,
-								MountPath: "/etc/contrail",
-							}, {
-								Name:      "backup-volume",
-								MountPath: "/backups/",
-							}},
+							Command: []string{"bash", "-c",
+								"commandutil convert --intype rdbms --outtype yaml --out /backups/db.yml -c /etc/contrail/command-app-server.yml"},
+							VolumeMounts: volumeMounts,
+						},
+						{
+							Name:            "migrate-db-dump",
+							ImagePullPolicy: core.PullAlways,
+							Image:           newImage,
+							Command: []string{"bash", "-c",
+								"commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml"},
+							VolumeMounts: volumeMounts,
 						},
 					},
 					Containers: []core.Container{
 						{
-							Name:            "command-upgrade-migrate",
+							Name:            "restore-migrated-db-dump",
 							ImagePullPolicy: core.PullAlways,
 							Image:           newImage,
-							Command:         []string{"bash", "-c", dataMigrationScript},
-							VolumeMounts: []core.VolumeMount{{
-								Name:      configMapName,
-								MountPath: "/etc/contrail",
-							}, {
-								Name:      "backup-volume",
-								MountPath: "/backups/",
-							}},
+							Command: []string{"bash", "-c",
+								"commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/command-app-server.yml"},
+							VolumeMounts: volumeMounts,
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,
 					Tolerations: []core.Toleration{
 						{Operator: "Exists", Effect: "NoSchedule"},
-						{Operator: "Exists", Effect: "NoExecute"},
 					},
 				},
 			},
@@ -185,19 +189,6 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 		},
 	}
 }
-
-const dataDumpScript = `
-#!/bin/bash
-
-commandutil convert --intype rdbms --outtype yaml --out /backups/db.yml -c /etc/contrail/command-app-server.yml
-`
-
-const dataMigrationScript = `
-#!/bin/bash
-
-commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
-commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/command-app-server.yml
-`
 
 func imageIsUpgraded(currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) bool {
 	for i, container := range oldDeploymentSpec.Template.Spec.Containers {

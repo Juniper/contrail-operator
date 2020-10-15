@@ -460,7 +460,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 						},
 					},
 					Containers: []core.Container{{
-						Name:            "command",
+						Name:            "api",
 						ImagePullPolicy: core.PullAlways,
 						Image:           getImage(containers, "api"),
 						Command:         getCommand(containers, "api"),
