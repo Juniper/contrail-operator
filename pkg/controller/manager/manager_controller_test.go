@@ -2516,7 +2516,7 @@ func TestKubemanagerDependenciesReady(t *testing.T) {
 			configWithActiveState(tc.configActive),
 			rabbitmqWithActiveState(tc.rabbitmqActive),
 			zookeeperWithActiveState(tc.zookeeperActive))
-		got := kubemanagerDependenciesReady(kubemanagerCR, "cluster1", cl)
+		got := kubemanagerDependenciesReady(kubemanagerCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
 		assert.Equal(t, tc.expected, got)
 	}
 }
@@ -2553,7 +2553,7 @@ func TestVrouterDependenciesReady(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme,
 			configWithActiveState(tc.configActive),
 			controlWithActiveState(tc.controlActive))
-		got := vrouterDependenciesReady(vrouterCR, "cluster1", cl)
+		got := vrouterDependenciesReady(vrouterCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
 		assert.Equal(t, tc.expected, got)
 	}
 }
@@ -2582,7 +2582,7 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 		zookeeperWithActiveState(true))
 
 	newKubemanager := &contrail.Kubemanager{}
-	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, kubemanagerCR, cl, "cluster1"))
+	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, kubemanagerCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
@@ -2610,7 +2610,102 @@ func TestFillVrouterConfiguration(t *testing.T) {
 		controlWithActiveState(true))
 
 	newVrouter := &contrail.Vrouter{}
-	require.NoError(t, fillVrouterConfiguration(newVrouter, vrouterCR, cl, "cluster1"))
+	require.NoError(t, fillVrouterConfiguration(newVrouter, vrouterCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+}
+
+func TestProcessVrouters(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true),
+		controlWithActiveState(true))
+	reconciler := ReconcileManager{
+		client:     cl,
+		scheme:     scheme,
+		kubernetes: k8s.New(cl, scheme),
+	}
+	managerCR := &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cluster1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.ManagerSpec{
+			Services: contrail.Services{
+				Vrouters: []*contrail.Vrouter{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "test-vrouter",
+						},
+						Spec: contrail.VrouterSpec{
+							ServiceConfiguration: contrail.VrouterConfiguration{
+								ControlInstance: "control1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, reconciler.processVRouters(managerCR, 3))
+	createdVRouter := &contrail.Vrouter{}
+	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{
+		Name:      "test-vrouter",
+		Namespace: "test-ns",
+	}, createdVRouter))
+	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+}
+
+func TestProcessKubemanagers(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		cassandraWithActiveState(true),
+		configWithActiveState(true),
+		rabbitmqWithActiveState(true),
+		zookeeperWithActiveState(true))
+	reconciler := ReconcileManager{
+		client:     cl,
+		scheme:     scheme,
+		kubernetes: k8s.New(cl, scheme),
+	}
+	managerCR := &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cluster1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.ManagerSpec{
+			Services: contrail.Services{
+				Kubemanagers: []*contrail.Kubemanager{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "test-kubemanager",
+						},
+						Spec: contrail.KubemanagerSpec{
+							ServiceConfiguration: contrail.KubemanagerConfiguration{
+								CassandraInstance: "cassandra1",
+								ZookeeperInstance: "zookeeper1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, reconciler.processKubemanagers(managerCR, 3))
+	createdKubemanager := &contrail.Kubemanager{}
+	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{
+		Name:      "test-kubemanager",
+		Namespace: "test-ns",
+	}, createdKubemanager))
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
 }
