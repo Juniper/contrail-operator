@@ -221,6 +221,26 @@ func (r *ReconcilePostgres) listPostgresPods(postgres *contrail.Postgres) (*core
 }
 
 func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (leaderIP string, err error) {
+	// Headless postgres config service
+	svcc := &core.Service{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      postgres.Name + "-config",
+			Namespace: postgres.Namespace,
+			Labels: map[string]string{
+				"postgres": postgres.Name,
+			},
+		},
+		Spec: core.ServiceSpec{
+			ClusterIP: "None",
+		},
+	}
+	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, svcc, func() error {
+		return controllerutil.SetControllerReference(postgres, svcc, r.scheme)
+	}); err != nil {
+		return "", err
+	}
+
+	// Postgres service
 	svc := &core.Service{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      postgres.Name,
@@ -241,11 +261,11 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 	}
 
 	leaderIP = svc.Spec.ClusterIP
-
 	replicaServiceName := postgres.Name + "-replica"
 	labels := copyStringMap(postgres.Labels)
 	labels["role"] = "replica"
 
+	// Postgres replica service
 	replicaSvc := r.kubernetes.Service(replicaServiceName+"-"+contrail.PostgresInstanceType, core.ServiceTypeClusterIP,
 		map[int32]string{int32(postgres.Spec.ServiceConfiguration.ListenPort): ""}, contrail.PostgresInstanceType, postgres).WithLabels(labels)
 
