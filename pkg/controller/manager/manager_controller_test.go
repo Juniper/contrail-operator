@@ -98,6 +98,11 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		kubemanagerService := &contrail.KubemanagerService{
+			Kubemanager:       kubemanager,
+			CassandraInstance: "cassandra",
+			ZookeeperInstance: "zookeeper",
+		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "webui",
@@ -161,6 +166,10 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		vrouterService := &contrail.VrouterService{
+			Vrouter:         vrouter,
+			ControlInstance: "control",
+		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "contrailcni",
@@ -217,13 +226,13 @@ func TestManagerController(t *testing.T) {
 					Command:          command,
 					Cassandras:       []*contrail.Cassandra{cassandra},
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
-					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionmanager,
 					Webui:            webui,
 					Contrailmonitor:  contrailmonitorCR,
 					Controls:         []*contrail.Control{control},
-					Vrouters:         []*contrail.Vrouter{vrouter},
+					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
@@ -371,6 +380,11 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		kubemanagerService := &contrail.KubemanagerService{
+			Kubemanager:       kubemanager,
+			CassandraInstance: "cassandra",
+			ZookeeperInstance: "zookeeper",
+		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "webui",
@@ -439,6 +453,10 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		vrouterService := &contrail.VrouterService{
+			Vrouter:         vrouter,
+			ControlInstance: "control",
+		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "contrailcni",
@@ -495,12 +513,12 @@ func TestManagerController(t *testing.T) {
 					Command:          command,
 					Cassandras:       []*contrail.Cassandra{cassandra},
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
-					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionmanager,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
-					Vrouters:         []*contrail.Vrouter{vrouter},
+					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
@@ -651,6 +669,11 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		kubemanagerService := &contrail.KubemanagerService{
+			Kubemanager:       kubemanager,
+			CassandraInstance: "cassandra",
+			ZookeeperInstance: "zookeeper",
+		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "webui",
@@ -714,6 +737,10 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		vrouterService := &contrail.VrouterService{
+			Vrouter:         vrouter,
+			ControlInstance: "control",
+		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "contrailcni",
@@ -770,12 +797,12 @@ func TestManagerController(t *testing.T) {
 					Command:          command,
 					Cassandras:       []*contrail.Cassandra{cassandra},
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
-					Kubemanagers:     []*contrail.Kubemanager{kubemanager},
+					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
 					ProvisionManager: provisionmanager,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
-					Vrouters:         []*contrail.Vrouter{vrouter},
+					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
 					Config:           config,
 				},
@@ -2494,19 +2521,6 @@ func TestKubemanagerDependenciesReady(t *testing.T) {
 		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: false, expected: false},
 	}
 
-	kubemanagerCR := &contrail.Kubemanager{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "kubemanager1",
-			Namespace: "test-ns",
-		},
-		Spec: contrail.KubemanagerSpec{
-			ServiceConfiguration: contrail.KubemanagerConfiguration{
-				CassandraInstance: "cassandra1",
-				ZookeeperInstance: "zookeeper1",
-			},
-		},
-	}
-
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 
@@ -2516,7 +2530,7 @@ func TestKubemanagerDependenciesReady(t *testing.T) {
 			configWithActiveState(tc.configActive),
 			rabbitmqWithActiveState(tc.rabbitmqActive),
 			zookeeperWithActiveState(tc.zookeeperActive))
-		got := kubemanagerDependenciesReady(kubemanagerCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		got := kubemanagerDependenciesReady("cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
 		assert.Equal(t, tc.expected, got)
 	}
 }
@@ -2534,18 +2548,6 @@ func TestVrouterDependenciesReady(t *testing.T) {
 		{configActive: true, controlActive: false, expected: false},
 	}
 
-	vrouterCR := &contrail.Vrouter{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "vrouter1",
-			Namespace: "test-ns",
-		},
-		Spec: contrail.VrouterSpec{
-			ServiceConfiguration: contrail.VrouterConfiguration{
-				ControlInstance: "control1",
-			},
-		},
-	}
-
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 
@@ -2553,25 +2555,12 @@ func TestVrouterDependenciesReady(t *testing.T) {
 		cl := fake.NewFakeClientWithScheme(scheme,
 			configWithActiveState(tc.configActive),
 			controlWithActiveState(tc.controlActive))
-		got := vrouterDependenciesReady(vrouterCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		got := vrouterDependenciesReady("control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
 		assert.Equal(t, tc.expected, got)
 	}
 }
 
 func TestFillKubemanagerConfiguration(t *testing.T) {
-	kubemanagerCR := &contrail.Kubemanager{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "kubemanager1",
-			Namespace: "test-ns",
-		},
-		Spec: contrail.KubemanagerSpec{
-			ServiceConfiguration: contrail.KubemanagerConfiguration{
-				CassandraInstance: "cassandra1",
-				ZookeeperInstance: "zookeeper1",
-			},
-		},
-	}
-
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 
@@ -2582,7 +2571,7 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 		zookeeperWithActiveState(true))
 
 	newKubemanager := &contrail.Kubemanager{}
-	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, kubemanagerCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
+	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, "cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
@@ -2590,18 +2579,6 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 }
 
 func TestFillVrouterConfiguration(t *testing.T) {
-	vrouterCR := &contrail.Vrouter{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "vrouter1",
-			Namespace: "test-ns",
-		},
-		Spec: contrail.VrouterSpec{
-			ServiceConfiguration: contrail.VrouterConfiguration{
-				ControlInstance: "control1",
-			},
-		},
-	}
-
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
 
@@ -2610,7 +2587,7 @@ func TestFillVrouterConfiguration(t *testing.T) {
 		controlWithActiveState(true))
 
 	newVrouter := &contrail.Vrouter{}
-	require.NoError(t, fillVrouterConfiguration(newVrouter, vrouterCR, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
+	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
 }
@@ -2634,16 +2611,14 @@ func TestProcessVrouters(t *testing.T) {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Vrouters: []*contrail.Vrouter{
+				Vrouters: []*contrail.VrouterService{
 					{
-						ObjectMeta: meta.ObjectMeta{
-							Name: "test-vrouter",
-						},
-						Spec: contrail.VrouterSpec{
-							ServiceConfiguration: contrail.VrouterConfiguration{
-								ControlInstance: "control1",
+						Vrouter: &contrail.Vrouter{
+							ObjectMeta: meta.ObjectMeta{
+								Name: "test-vrouter",
 							},
 						},
+						ControlInstance: "control1",
 					},
 				},
 			},
@@ -2681,17 +2656,15 @@ func TestProcessKubemanagers(t *testing.T) {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Kubemanagers: []*contrail.Kubemanager{
+				Kubemanagers: []*contrail.KubemanagerService{
 					{
-						ObjectMeta: meta.ObjectMeta{
-							Name: "test-kubemanager",
-						},
-						Spec: contrail.KubemanagerSpec{
-							ServiceConfiguration: contrail.KubemanagerConfiguration{
-								CassandraInstance: "cassandra1",
-								ZookeeperInstance: "zookeeper1",
+						Kubemanager: &contrail.Kubemanager{
+							ObjectMeta: meta.ObjectMeta{
+								Name: "test-kubemanager",
 							},
 						},
+						CassandraInstance: "cassandra1",
+						ZookeeperInstance: "zookeeper1",
 					},
 				},
 			},

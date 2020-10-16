@@ -171,9 +171,7 @@ var vrouter = &v1alpha1.Vrouter{
 			ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
 				ControlServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
 			},
-			ControlInstance:   "control1",
-			Gateway:           "1.1.8.254",
-			CassandraInstance: "cassandra1",
+			Gateway: "1.1.8.254",
 		},
 	},
 }

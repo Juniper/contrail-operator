@@ -52,8 +52,6 @@ var kubemanagerCR = &contrail.Kubemanager{
 			IPFabricSnat:        &trueVal,
 			KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
 			UseKubeadmConfig:    &trueVal,
-			ZookeeperInstance:   "zookeeper1",
-			CassandraInstance:   "cassandra1",
 		},
 		CommonConfiguration: contrail.PodConfiguration{
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

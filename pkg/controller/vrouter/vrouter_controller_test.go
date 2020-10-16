@@ -54,8 +54,6 @@ func TestVrouterController(t *testing.T) {
 					{Name: "vrouterkernelinit", Image: "image6"},
 					{Name: "nodeinit", Image: "image7"},
 				},
-				ControlInstance:   "control1",
-				CassandraInstance: "cassandra1",
 			},
 			CommonConfiguration: contrail.PodConfiguration{
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "vrouter"},

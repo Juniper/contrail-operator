@@ -23,22 +23,37 @@ type ManagerSpec struct {
 // Services defines the desired state of Services.
 // +k8s:openapi-gen=true
 type Services struct {
-	Config           *Config           `json:"config,omitempty"`
-	Controls         []*Control        `json:"controls,omitempty"`
-	Kubemanagers     []*Kubemanager    `json:"kubemanagers,omitempty"`
-	Webui            *Webui            `json:"webui,omitempty"`
-	Vrouters         []*Vrouter        `json:"vrouters,omitempty"`
-	Cassandras       []*Cassandra      `json:"cassandras,omitempty"`
-	Zookeepers       []*Zookeeper      `json:"zookeepers,omitempty"`
-	Rabbitmq         *Rabbitmq         `json:"rabbitmq,omitempty"`
-	ProvisionManager *ProvisionManager `json:"provisionManager,omitempty"`
-	Command          *Command          `json:"command,omitempty"`
-	Postgres         *Postgres         `json:"postgres,omitempty"`
-	Keystone         *Keystone         `json:"keystone,omitempty"`
-	Swift            *Swift            `json:"swift,omitempty"`
-	Memcached        *Memcached        `json:"memcached,omitempty"`
-	Contrailmonitor  *Contrailmonitor  `json:"contrailmonitor,omitempty"`
-	ContrailCNIs     []*ContrailCNI    `json:"contrailCNIs,omitempty"`
+	Config           *Config               `json:"config,omitempty"`
+	Controls         []*Control            `json:"controls,omitempty"`
+	Kubemanagers     []*KubemanagerService `json:"kubemanagers,omitempty"`
+	Webui            *Webui                `json:"webui,omitempty"`
+	Vrouters         []*VrouterService     `json:"vrouters,omitempty"`
+	Cassandras       []*Cassandra          `json:"cassandras,omitempty"`
+	Zookeepers       []*Zookeeper          `json:"zookeepers,omitempty"`
+	Rabbitmq         *Rabbitmq             `json:"rabbitmq,omitempty"`
+	ProvisionManager *ProvisionManager     `json:"provisionManager,omitempty"`
+	Command          *Command              `json:"command,omitempty"`
+	Postgres         *Postgres             `json:"postgres,omitempty"`
+	Keystone         *Keystone             `json:"keystone,omitempty"`
+	Swift            *Swift                `json:"swift,omitempty"`
+	Memcached        *Memcached            `json:"memcached,omitempty"`
+	Contrailmonitor  *Contrailmonitor      `json:"contrailmonitor,omitempty"`
+	ContrailCNIs     []*ContrailCNI        `json:"contrailCNIs,omitempty"`
+}
+
+// VrouterService defines desired confgiuration of vRouter
+// +k8s:openapi-gen=true
+type VrouterService struct {
+	Vrouter         *Vrouter `json:"vrouter,omitempty"`
+	ControlInstance string   `json:"controlInstance,omitempty"`
+}
+
+// KubemanagerService defines desired confgiuration of vRouter
+// +k8s:openapi-gen=true
+type KubemanagerService struct {
+	Kubemanager       *Kubemanager `json:"kubemanager,omitempty"`
+	CassandraInstance string       `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance string       `json:"zookeeperInstance,omitempty"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -211,7 +226,7 @@ func (m Manager) IsClusterReady() bool {
 
 	for _, vrouterService := range m.Spec.Services.Vrouters {
 		for _, vrouterStatus := range m.Status.Vrouters {
-			if vrouterService.Name == *vrouterStatus.Name && !vrouterStatus.ready() {
+			if vrouterService.Vrouter.Name == *vrouterStatus.Name && !vrouterStatus.ready() {
 				return false
 			}
 		}
@@ -227,7 +242,7 @@ func (m Manager) IsClusterReady() bool {
 
 	for _, kubemanagerService := range m.Spec.Services.Kubemanagers {
 		for _, kubemanagerStatus := range m.Status.Kubemanagers {
-			if kubemanagerService.Name == *kubemanagerStatus.Name && !kubemanagerStatus.ready() {
+			if kubemanagerService.Kubemanager.Name == *kubemanagerStatus.Name && !kubemanagerStatus.ready() {
 				return false
 			}
 		}

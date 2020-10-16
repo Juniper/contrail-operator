@@ -55,8 +55,6 @@ type KubemanagerStatus struct {
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
 	Containers                  []*Container                   `json:"containers,omitempty"`
-	CassandraInstance           string                         `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance           string                         `json:"zookeeperInstance,omitempty"`
 	UseKubeadmConfig            *bool                          `json:"useKubeadmConfig,omitempty"`
 	ServiceAccount              string                         `json:"serviceAccount,omitempty"`
 	ClusterRole                 string                         `json:"clusterRole,omitempty"`

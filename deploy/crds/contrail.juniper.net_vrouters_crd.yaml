@@ -119,8 +119,6 @@ spec:
             serviceConfiguration:
               description: VrouterConfiguration is the Spec for the cassandras API.
               properties:
-                cassandraInstance:
-                  type: string
                 clusterRole:
                   type: string
                 clusterRoleBinding:
@@ -170,8 +168,6 @@ spec:
                     type: object
                   type: array
                 contrailStatusImage:
-                  type: string
-                controlInstance:
                   type: string
                 controlNodesConfiguration:
                   description: ControlClusterConfiguration stores all information

@@ -57,8 +57,6 @@ type VrouterSpec struct {
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
 	Containers                []*Container                 `json:"containers,omitempty"`
-	ControlInstance           string                       `json:"controlInstance,omitempty"`
-	CassandraInstance         string                       `json:"cassandraInstance,omitempty"`
 	Gateway                   string                       `json:"gateway,omitempty"`
 	PhysicalInterface         string                       `json:"physicalInterface,omitempty"`
 	MetaDataSecret            string                       `json:"metaDataSecret,omitempty"`

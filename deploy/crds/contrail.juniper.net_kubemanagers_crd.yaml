@@ -120,8 +120,6 @@ spec:
               description: KubemanagerConfiguration is the Spec for the kubemanagers
                 API.
               properties:
-                cassandraInstance:
-                  type: string
                 cassandraNodesConfiguration:
                   description: CassandraClusterConfiguration stores all information
                     about Cassandra's endpoints.
@@ -236,8 +234,6 @@ spec:
                   type: string
                 useKubeadmConfig:
                   type: boolean
-                zookeeperInstance:
-                  type: string
                 zookeeperNodesConfiguration:
                   description: ZookeeperClusterConfiguration stores all information
                     about Zookeeper's endpoints.
