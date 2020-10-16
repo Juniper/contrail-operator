@@ -182,18 +182,6 @@ var control = &contrail.Control{
 	},
 }
 
-var kubemanager = &contrail.Kubemanager{
-	ObjectMeta: meta.ObjectMeta{
-		Name:      "kubemanager",
-		Namespace: "default",
-		Labels:    map[string]string{"contrail_cluster": "cluster1"},
-	},
-	Spec: contrail.KubemanagerSpec{
-		CommonConfiguration: contrail.PodConfiguration{
-			Replicas: &replicas,
-		},
-	},
-}
 var kubemanagerService = &contrail.KubemanagerService{
 	ObjectMeta: meta.ObjectMeta{
 		Name:      "kubemanager",
@@ -208,6 +196,7 @@ var kubemanagerService = &contrail.KubemanagerService{
 	CassandraInstance: "cassandra",
 	ZookeeperInstance: "zookeeper",
 }
+
 var webui = &contrail.Webui{
 	ObjectMeta: meta.ObjectMeta{
 		Name:      "webui",

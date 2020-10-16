@@ -162,10 +162,10 @@ spec:
         labels:
           contrail_cluster: cluster1
         name: kubemanager1
+      cassandraInstance: cassandra1
+      zookeeperInstance: zookeeper1
       spec:
         serviceConfiguration:
-          cassandraInstance: cassandra1
-          zookeeperInstance: zookeeper1
           containers:
             - name: init
               image: python:3.8.2-alpine
@@ -183,6 +183,7 @@ spec:
         labels:
           contrail_cluster: cluster1
         name: vroutermasternodes
+      controlInstance: control1
       spec:
         commonConfiguration:
           imagePullSecrets:
@@ -190,8 +191,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
-          cassandraInstance: cassandra1
-          controlInstance: control1
           contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:
             - name: init
@@ -212,6 +211,7 @@ spec:
         labels:
           contrail_cluster: cluster1
         name: vrouterworkernodes
+      controlInstance: control1
       spec:
         commonConfiguration:
           imagePullSecrets:
@@ -219,8 +219,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/worker: ""
         serviceConfiguration:
-          cassandraInstance: cassandra1
-          controlInstance: control1
           contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:
             - name: init
