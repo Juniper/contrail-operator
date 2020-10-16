@@ -534,7 +534,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 	for _, existingKubemanager := range manager.Status.Kubemanagers {
 		found := false
 		for _, intendedKubemanager := range manager.Spec.Services.Kubemanagers {
-			if *existingKubemanager.Name == intendedKubemanager.Kubemanager.Name {
+			if *existingKubemanager.Name == intendedKubemanager.Name {
 				found = true
 				break
 			}
@@ -561,10 +561,10 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			continue
 		}
 		kubemanager := &v1alpha1.Kubemanager{}
-		kubemanager.ObjectMeta = kubemanagerService.Kubemanager.ObjectMeta
+		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
 		kubemanager.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
-			kubemanager.Spec = kubemanagerService.Kubemanager.Spec
+			kubemanager.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
 			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.CassandraInstance, kubemanagerService.ZookeeperInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
@@ -679,7 +679,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 	for _, existingVRouter := range manager.Status.Vrouters {
 		found := false
 		for _, intendedVRouter := range manager.Spec.Services.Vrouters {
-			if *existingVRouter.Name == intendedVRouter.Vrouter.Name {
+			if *existingVRouter.Name == intendedVRouter.Name {
 				found = true
 				break
 			}
@@ -706,10 +706,10 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 			continue
 		}
 		vRouter := &v1alpha1.Vrouter{}
-		vRouter.ObjectMeta = vRouterService.Vrouter.ObjectMeta
+		vRouter.ObjectMeta = vRouterService.ObjectMeta
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
-			vRouter.Spec = vRouterService.Vrouter.Spec
+			vRouter.Spec.ServiceConfiguration = vRouterService.Spec.ServiceConfiguration
 			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouter.Spec.CommonConfiguration)
 			if err := fillVrouterConfiguration(vRouter, vRouterService.ControlInstance, manager.ObjectMeta, r.client); err != nil {
 				return err

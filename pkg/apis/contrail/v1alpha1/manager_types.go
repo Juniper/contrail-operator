@@ -44,16 +44,32 @@ type Services struct {
 // VrouterService defines desired confgiuration of vRouter
 // +k8s:openapi-gen=true
 type VrouterService struct {
-	Vrouter         *Vrouter `json:"vrouter,omitempty"`
-	ControlInstance string   `json:"controlInstance,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              VrouterServiceSpec `json:"spec,omitempty"`
+	ControlInstance   string             `json:"controlInstance,omitempty"`
+}
+
+// VrouterServiceSpec defines desired spec confgiuration of vRouter
+// +k8s:openapi-gen=true
+type VrouterServiceSpec struct {
+	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
 }
 
 // KubemanagerService defines desired confgiuration of vRouter
 // +k8s:openapi-gen=true
 type KubemanagerService struct {
-	Kubemanager       *Kubemanager `json:"kubemanager,omitempty"`
-	CassandraInstance string       `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string       `json:"zookeeperInstance,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              KubemanagerServiceSpec `json:"spec,omitempty"`
+	CassandraInstance string                 `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance string                 `json:"zookeeperInstance,omitempty"`
+}
+
+// KubemanagerServiceSpec defines desired spec confgiuration of vRouter
+// +k8s:openapi-gen=true
+type KubemanagerServiceSpec struct {
+	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
 }
 
 // ManagerConfiguration is the common services struct.
@@ -226,7 +242,7 @@ func (m Manager) IsClusterReady() bool {
 
 	for _, vrouterService := range m.Spec.Services.Vrouters {
 		for _, vrouterStatus := range m.Status.Vrouters {
-			if vrouterService.Vrouter.Name == *vrouterStatus.Name && !vrouterStatus.ready() {
+			if vrouterService.Name == *vrouterStatus.Name && !vrouterStatus.ready() {
 				return false
 			}
 		}
@@ -242,7 +258,7 @@ func (m Manager) IsClusterReady() bool {
 
 	for _, kubemanagerService := range m.Spec.Services.Kubemanagers {
 		for _, kubemanagerStatus := range m.Status.Kubemanagers {
-			if kubemanagerService.Kubemanager.Name == *kubemanagerStatus.Name && !kubemanagerStatus.ready() {
+			if kubemanagerService.Name == *kubemanagerStatus.Name && !kubemanagerStatus.ready() {
 				return false
 			}
 		}
