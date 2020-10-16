@@ -77,6 +77,37 @@ func TestKeystone(t *testing.T) {
 			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
 		},
 		{
+			name: "reconcile keystone with public endpoint",
+			initObjs: []runtime.Object{
+				newKeystoneWithPublicEndpoint(),
+				&contrail.Postgres{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
+					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
+				},
+				&contrail.FernetKeyManager{
+					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "keystone-fernet-key-manager"},
+					Status:     contrail.FernetKeyManagerStatus{SecretName: "fernet-keys-repository"},
+				},
+				newMemcached(),
+				newAdminSecret(),
+				newFernetSecret(),
+				newKeystoneService(),
+			},
+			expectedSTS: newExpectedSTS(),
+			expectedConfigs: []*core.ConfigMap{
+				newExpectedKeystoneConfigMap(),
+				newExpectedPublicKeystoneInitConfigMap(),
+			},
+			expectedPostgres: &contrail.Postgres{
+				ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql",
+					OwnerReferences: []meta.OwnerReference{{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &falseVal, &falseVal}},
+				},
+				TypeMeta: meta.TypeMeta{Kind: "Postgres", APIVersion: "contrail.juniper.net/v1alpha1"},
+				Status:   contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.10.10.20:5432"},
+			},
+			expectedStatus: contrail.KeystoneStatus{Endpoint: "10.10.10.10"},
+		},
+		{
 			name: "set active status",
 			initObjs: []runtime.Object{
 				newKeystone(),
@@ -460,6 +491,12 @@ func newKeystone() *contrail.Keystone {
 	}
 }
 
+func newKeystoneWithPublicEndpoint() *contrail.Keystone {
+	k := newKeystone()
+	k.Spec.ServiceConfiguration.PublicEndpoint = "192.168.0.1"
+	return k
+}
+
 func newExtKeystone(protocol string, address string, port int) *contrail.Keystone {
 	return &contrail.Keystone{
 		ObjectMeta: meta.ObjectMeta{
@@ -720,7 +757,7 @@ func newKeystoneService() *core.Service {
 		},
 		Spec: core.ServiceSpec{
 			Ports: []core.ServicePort{
-				{Port: 5555, Protocol: "TCP"},
+				{Port: 5555, Protocol: "TCP", NodePort: 30020},
 			},
 			ClusterIP: "10.10.10.10",
 		},
@@ -769,6 +806,26 @@ func newExpectedKeystoneInitConfigMap() *core.ConfigMap {
 			"config.json":   expectedKeystoneInitKollaServiceConfig,
 			"keystone.conf": expectedKeystoneConfig,
 			"bootstrap.sh":  expectedkeystoneInitBootstrapScript,
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone-keystone-bootstrap",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_manager": "keystone", "keystone": "keystone"},
+			OwnerReferences: []meta.OwnerReference{
+				{"contrail.juniper.net/v1alpha1", "Keystone", "keystone", "", &trueVal, &trueVal},
+			},
+		},
+		TypeMeta: meta.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
+	}
+}
+
+func newExpectedPublicKeystoneInitConfigMap() *core.ConfigMap {
+	trueVal := true
+	return &core.ConfigMap{
+		Data: map[string]string{
+			"config.json":   expectedKeystoneInitKollaServiceConfig,
+			"keystone.conf": expectedKeystoneConfig,
+			"bootstrap.sh":  expectedPublicKeystoneInitBootstrapScript,
 		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone-keystone-bootstrap",

@@ -32,10 +32,18 @@ func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, po
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, podIP string) error {
+func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, podIP string, nodePort int32) error {
+	publicAddress := podIP
+	publicPort := int32(c.keystoneSpec.ServiceConfiguration.ListenPort)
+	if c.keystoneSpec.ServiceConfiguration.PublicEndpoint != "" {
+		publicAddress = c.keystoneSpec.ServiceConfiguration.PublicEndpoint
+		publicPort = nodePort
+	}
 	cc := &keystoneBootstrapConf{
 		ListenAddress:    podIP,
 		ListenPort:       c.keystoneSpec.ServiceConfiguration.ListenPort,
+		PublicAddress:    publicAddress,
+		NodePort:         publicPort,
 		RabbitMQServer:   "localhost:5672",
 		PostgreSQLServer: postgresNode,
 		MemcacheServer:   memcachedNode,

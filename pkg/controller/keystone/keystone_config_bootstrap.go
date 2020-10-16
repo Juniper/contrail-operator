@@ -10,6 +10,8 @@ import (
 type keystoneBootstrapConf struct {
 	ListenAddress    string
 	ListenPort       int
+	PublicAddress    string
+	NodePort         int32
 	RabbitMQServer   string
 	PostgreSQLServer string
 	MemcacheServer   string
@@ -68,5 +70,5 @@ keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
   --bootstrap-region-id {{ .Region }} \
   --bootstrap-admin-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
   --bootstrap-internal-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
-  --bootstrap-public-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/
+  --bootstrap-public-url https://{{ .PublicAddress }}:{{ .NodePort }}/v3/
 `))
