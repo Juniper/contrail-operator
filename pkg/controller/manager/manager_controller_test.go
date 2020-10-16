@@ -2572,10 +2572,10 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 
 	newKubemanager := &contrail.Kubemanager{}
 	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, "cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
-	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.RabbbitmqNodesConfiguration)
 }
 
 func TestFillVrouterConfiguration(t *testing.T) {
@@ -2588,8 +2588,8 @@ func TestFillVrouterConfiguration(t *testing.T) {
 
 	newVrouter := &contrail.Vrouter{}
 	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
-	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+	assert.NotNil(t, newVrouter.Spec.StaticConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newVrouter.Spec.StaticConfiguration.ControlNodesConfiguration)
 }
 
 func TestProcessVrouters(t *testing.T) {
@@ -2631,8 +2631,8 @@ func TestProcessVrouters(t *testing.T) {
 		Name:      "test-vrouter",
 		Namespace: "test-ns",
 	}, createdVRouter))
-	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+	assert.NotNil(t, createdVRouter.Spec.StaticConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdVRouter.Spec.StaticConfiguration.ControlNodesConfiguration)
 }
 
 func TestProcessKubemanagers(t *testing.T) {
@@ -2677,8 +2677,8 @@ func TestProcessKubemanagers(t *testing.T) {
 		Name:      "test-kubemanager",
 		Namespace: "test-ns",
 	}, createdKubemanager))
-	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.RabbbitmqNodesConfiguration)
 }

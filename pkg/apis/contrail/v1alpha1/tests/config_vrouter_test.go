@@ -136,12 +136,12 @@ func TestVrouterConfigStaticConfiguration(t *testing.T) {
 		environment := SetupEnv()
 		cl := *environment.client
 		t.Run("when Vrouter has StaticConfiguration filled for both config and control", func(t *testing.T) {
-			environment.vrouterResource.Spec.ServiceConfiguration.ConfigNodesConfiguration = &v1alpha1.ConfigClusterConfiguration{
+			environment.vrouterResource.Spec.StaticConfiguration.ConfigNodesConfiguration = &v1alpha1.ConfigClusterConfiguration{
 				APIServerIPList:       []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 				AnalyticsServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 				CollectorServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 			}
-			environment.vrouterResource.Spec.ServiceConfiguration.ControlNodesConfiguration = &v1alpha1.ControlClusterConfiguration{
+			environment.vrouterResource.Spec.StaticConfiguration.ControlNodesConfiguration = &v1alpha1.ControlClusterConfiguration{
 				ControlServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 			}
 
@@ -166,7 +166,7 @@ func TestVrouterConfigStaticConfiguration(t *testing.T) {
 			})
 		})
 		t.Run("when Vrouter has StaticConfiguration filled for both config and control with non default ports", func(t *testing.T) {
-			environment.vrouterResource.Spec.ServiceConfiguration.ConfigNodesConfiguration = &v1alpha1.ConfigClusterConfiguration{
+			environment.vrouterResource.Spec.StaticConfiguration.ConfigNodesConfiguration = &v1alpha1.ConfigClusterConfiguration{
 				APIServerPort:         1,
 				AnalyticsServerPort:   2,
 				CollectorPort:         3,
@@ -175,7 +175,7 @@ func TestVrouterConfigStaticConfiguration(t *testing.T) {
 				AnalyticsServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 				CollectorServerIPList: []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"},
 			}
-			environment.vrouterResource.Spec.ServiceConfiguration.ControlNodesConfiguration = &v1alpha1.ControlClusterConfiguration{
+			environment.vrouterResource.Spec.StaticConfiguration.ControlNodesConfiguration = &v1alpha1.ControlClusterConfiguration{
 				XMPPPort:            5,
 				BGPPort:             6,
 				DNSPort:             7,

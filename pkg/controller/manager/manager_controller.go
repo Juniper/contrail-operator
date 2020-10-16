@@ -1057,22 +1057,22 @@ func fillKubemanagerConfiguration(kubemanager *v1alpha1.Kubemanager, cassandraNa
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.ServiceConfiguration).CassandraNodesConfiguration = &cassandraConfig
+	(&kubemanager.Spec.StaticConfiguration).CassandraNodesConfiguration = &cassandraConfig
 	zookeeperConfig, err := v1alpha1.NewZookeeperClusterConfiguration(zookeeperName, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.ServiceConfiguration).ZookeeperNodesConfiguration = &zookeeperConfig
+	(&kubemanager.Spec.StaticConfiguration).ZookeeperNodesConfiguration = &zookeeperConfig
 	rabbitmqConfig, err := v1alpha1.NewRabbitmqClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.ServiceConfiguration).RabbbitmqNodesConfiguration = &rabbitmqConfig
+	(&kubemanager.Spec.StaticConfiguration).RabbbitmqNodesConfiguration = &rabbitmqConfig
 	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
+	(&kubemanager.Spec.StaticConfiguration).ConfigNodesConfiguration = &configConfig
 	return nil
 }
 
@@ -1090,11 +1090,11 @@ func fillVrouterConfiguration(vrouter *v1alpha1.Vrouter, controlName string, man
 	if err != nil {
 		return err
 	}
-	(&vrouter.Spec.ServiceConfiguration).ControlNodesConfiguration = &controlConfig
+	(&vrouter.Spec.StaticConfiguration).ControlNodesConfiguration = &controlConfig
 	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&vrouter.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
+	(&vrouter.Spec.StaticConfiguration).ConfigNodesConfiguration = &configConfig
 	return nil
 }

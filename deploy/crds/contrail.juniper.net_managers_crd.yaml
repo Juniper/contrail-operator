@@ -1502,60 +1502,12 @@ spec:
                                 description: KubemanagerConfiguration is the Spec
                                   for the kubemanagers API.
                                 properties:
-                                  cassandraNodesConfiguration:
-                                    description: CassandraClusterConfiguration stores
-                                      all information about Cassandra's endpoints.
-                                    properties:
-                                      cqlPort:
-                                        type: integer
-                                      endpoint:
-                                        type: string
-                                      jmxPort:
-                                        type: integer
-                                      port:
-                                        type: integer
-                                      serverIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                    type: object
                                   cloudOrchestrator:
                                     type: string
                                   clusterRole:
                                     type: string
                                   clusterRoleBinding:
                                     type: string
-                                  configNodesConfiguration:
-                                    description: ConfigClusterConfiguration  stores
-                                      all information about service's endpoints under
-                                      the Contrail Config
-                                    properties:
-                                      analyticsServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      analyticsServerPort:
-                                        type: integer
-                                      apiServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      apiServerPort:
-                                        type: integer
-                                      authMode:
-                                        enum:
-                                        - noauth
-                                        - keystone
-                                        type: string
-                                      collectorPort:
-                                        type: integer
-                                      collectorServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      redisPort:
-                                        type: integer
-                                    type: object
                                   containers:
                                     items:
                                       description: Container defines name, image and
@@ -1591,6 +1543,71 @@ spec:
                                     type: string
                                   podSubnets:
                                     type: string
+                                  rabbitmqPassword:
+                                    type: string
+                                  rabbitmqUser:
+                                    type: string
+                                  rabbitmqVhost:
+                                    type: string
+                                  serviceAccount:
+                                    type: string
+                                  serviceSubnets:
+                                    type: string
+                                  useKubeadmConfig:
+                                    type: boolean
+                                type: object
+                              staticConfiguration:
+                                description: KubemanagerConfiguration is the Spec
+                                  for the kubemanagers API.
+                                properties:
+                                  cassandraNodesConfiguration:
+                                    description: CassandraClusterConfiguration stores
+                                      all information about Cassandra's endpoints.
+                                    properties:
+                                      cqlPort:
+                                        type: integer
+                                      endpoint:
+                                        type: string
+                                      jmxPort:
+                                        type: integer
+                                      port:
+                                        type: integer
+                                      serverIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  configNodesConfiguration:
+                                    description: ConfigClusterConfiguration  stores
+                                      all information about service's endpoints under
+                                      the Contrail Config
+                                    properties:
+                                      analyticsServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      analyticsServerPort:
+                                        type: integer
+                                      apiServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      apiServerPort:
+                                        type: integer
+                                      authMode:
+                                        enum:
+                                        - noauth
+                                        - keystone
+                                        type: string
+                                      collectorPort:
+                                        type: integer
+                                      collectorServerIPList:
+                                        items:
+                                          type: string
+                                        type: array
+                                      redisPort:
+                                        type: integer
+                                    type: object
                                   rabbitmqNodesConfiguration:
                                     description: RabbitmqClusterConfiguration stores
                                       all information about Rabbitmq's endpoints.
@@ -1606,18 +1623,6 @@ spec:
                                       sslPort:
                                         type: integer
                                     type: object
-                                  rabbitmqPassword:
-                                    type: string
-                                  rabbitmqUser:
-                                    type: string
-                                  rabbitmqVhost:
-                                    type: string
-                                  serviceAccount:
-                                    type: string
-                                  serviceSubnets:
-                                    type: string
-                                  useKubeadmConfig:
-                                    type: boolean
                                   zookeeperNodesConfiguration:
                                     description: ZookeeperClusterConfiguration stores
                                       all information about Zookeeper's endpoints.
@@ -1636,6 +1641,7 @@ spec:
                                 type: object
                             required:
                             - serviceConfiguration
+                            - staticConfiguration
                             type: object
                           status:
                             properties:
@@ -2600,8 +2606,7 @@ spec:
                           metadata:
                             type: object
                           spec:
-                            description: VrouterSpec is the Spec for the cassandras
-                              API.
+                            description: VrouterSpec is the Spec for the vrouter API.
                             properties:
                               commonConfiguration:
                                 description: PodConfiguration is the common services
@@ -2708,12 +2713,48 @@ spec:
                                 type: object
                               serviceConfiguration:
                                 description: VrouterConfiguration is the Spec for
-                                  the cassandras API.
+                                  the vrouter API.
                                 properties:
                                   clusterRole:
                                     type: string
                                   clusterRoleBinding:
                                     type: string
+                                  containers:
+                                    items:
+                                      description: Container defines name, image and
+                                        command.
+                                      properties:
+                                        command:
+                                          items:
+                                            type: string
+                                          type: array
+                                        image:
+                                          type: string
+                                        name:
+                                          type: string
+                                      type: object
+                                    type: array
+                                  contrailStatusImage:
+                                    type: string
+                                  distribution:
+                                    type: string
+                                  gateway:
+                                    type: string
+                                  metaDataSecret:
+                                    type: string
+                                  nodeManager:
+                                    type: boolean
+                                  physicalInterface:
+                                    type: string
+                                  serviceAccount:
+                                    type: string
+                                  vrouterEncryption:
+                                    type: boolean
+                                type: object
+                              staticConfiguration:
+                                description: VrouterStaticConfiguration is the static
+                                  configuration for vrouter.
+                                properties:
                                   configNodesConfiguration:
                                     description: ConfigClusterConfiguration  stores
                                       all information about service's endpoints under
@@ -2745,23 +2786,6 @@ spec:
                                       redisPort:
                                         type: integer
                                     type: object
-                                  containers:
-                                    items:
-                                      description: Container defines name, image and
-                                        command.
-                                      properties:
-                                        command:
-                                          items:
-                                            type: string
-                                          type: array
-                                        image:
-                                          type: string
-                                        name:
-                                          type: string
-                                      type: object
-                                    type: array
-                                  contrailStatusImage:
-                                    type: string
                                   controlNodesConfiguration:
                                     description: ControlClusterConfiguration stores
                                       all information about services' endpoints under
@@ -2780,23 +2804,10 @@ spec:
                                       xmppPort:
                                         type: integer
                                     type: object
-                                  distribution:
-                                    type: string
-                                  gateway:
-                                    type: string
-                                  metaDataSecret:
-                                    type: string
-                                  nodeManager:
-                                    type: boolean
-                                  physicalInterface:
-                                    type: string
-                                  serviceAccount:
-                                    type: string
-                                  vrouterEncryption:
-                                    type: boolean
                                 type: object
                             required:
                             - serviceConfiguration
+                            - staticConfiguration
                             type: object
                           status:
                             properties:

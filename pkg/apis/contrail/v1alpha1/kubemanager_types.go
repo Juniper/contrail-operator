@@ -37,8 +37,9 @@ type Kubemanager struct {
 // KubemanagerSpec is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerSpec struct {
-	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration               `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration KubemanagerConfiguration       `json:"serviceConfiguration"`
+	StaticConfiguration  KubemanagerStaticConfiguration `json:"staticConfiguration"`
 }
 
 // +k8s:openapi-gen=true
@@ -54,26 +55,31 @@ type KubemanagerStatus struct {
 // KubemanagerConfiguration is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
-	Containers                  []*Container                   `json:"containers,omitempty"`
-	UseKubeadmConfig            *bool                          `json:"useKubeadmConfig,omitempty"`
-	ServiceAccount              string                         `json:"serviceAccount,omitempty"`
-	ClusterRole                 string                         `json:"clusterRole,omitempty"`
-	ClusterRoleBinding          string                         `json:"clusterRoleBinding,omitempty"`
-	CloudOrchestrator           string                         `json:"cloudOrchestrator,omitempty"`
-	KubernetesAPIServer         string                         `json:"kubernetesAPIServer,omitempty"`
-	KubernetesAPIPort           *int                           `json:"kubernetesAPIPort,omitempty"`
-	KubernetesAPISSLPort        *int                           `json:"kubernetesAPISSLPort,omitempty"`
-	PodSubnets                  string                         `json:"podSubnets,omitempty"`
-	ServiceSubnets              string                         `json:"serviceSubnets,omitempty"`
-	KubernetesClusterName       string                         `json:"kubernetesClusterName,omitempty"`
-	IPFabricSubnets             string                         `json:"ipFabricSubnets,omitempty"`
-	IPFabricForwarding          *bool                          `json:"ipFabricForwarding,omitempty"`
-	IPFabricSnat                *bool                          `json:"ipFabricSnat,omitempty"`
-	KubernetesTokenFile         string                         `json:"kubernetesTokenFile,omitempty"`
-	HostNetworkService          *bool                          `json:"hostNetworkService,omitempty"`
-	RabbitmqUser                string                         `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword            string                         `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost               string                         `json:"rabbitmqVhost,omitempty"`
+	Containers            []*Container `json:"containers,omitempty"`
+	UseKubeadmConfig      *bool        `json:"useKubeadmConfig,omitempty"`
+	ServiceAccount        string       `json:"serviceAccount,omitempty"`
+	ClusterRole           string       `json:"clusterRole,omitempty"`
+	ClusterRoleBinding    string       `json:"clusterRoleBinding,omitempty"`
+	CloudOrchestrator     string       `json:"cloudOrchestrator,omitempty"`
+	KubernetesAPIServer   string       `json:"kubernetesAPIServer,omitempty"`
+	KubernetesAPIPort     *int         `json:"kubernetesAPIPort,omitempty"`
+	KubernetesAPISSLPort  *int         `json:"kubernetesAPISSLPort,omitempty"`
+	PodSubnets            string       `json:"podSubnets,omitempty"`
+	ServiceSubnets        string       `json:"serviceSubnets,omitempty"`
+	KubernetesClusterName string       `json:"kubernetesClusterName,omitempty"`
+	IPFabricSubnets       string       `json:"ipFabricSubnets,omitempty"`
+	IPFabricForwarding    *bool        `json:"ipFabricForwarding,omitempty"`
+	IPFabricSnat          *bool        `json:"ipFabricSnat,omitempty"`
+	KubernetesTokenFile   string       `json:"kubernetesTokenFile,omitempty"`
+	HostNetworkService    *bool        `json:"hostNetworkService,omitempty"`
+	RabbitmqUser          string       `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword      string       `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost         string       `json:"rabbitmqVhost,omitempty"`
+}
+
+// KubemanagerConfiguration is the Spec for the kubemanagers API.
+// +k8s:openapi-gen=true
+type KubemanagerStaticConfiguration struct {
 	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration,omitempty"`
 	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
 	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
@@ -105,13 +111,13 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	cassandraNodesInformation := c.Spec.ServiceConfiguration.CassandraNodesConfiguration
+	cassandraNodesInformation := c.Spec.StaticConfiguration.CassandraNodesConfiguration
 	cassandraNodesInformation.FillWithDefaultValues()
-	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation := c.Spec.StaticConfiguration.ConfigNodesConfiguration
 	configNodesInformation.FillWithDefaultValues()
-	rabbitmqNodesInformation := c.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration
+	rabbitmqNodesInformation := c.Spec.StaticConfiguration.RabbbitmqNodesConfiguration
 	rabbitmqNodesInformation.FillWithDefaultValues()
-	zookeeperNodesInformation := c.Spec.ServiceConfiguration.ZookeeperNodesConfiguration
+	zookeeperNodesInformation := c.Spec.StaticConfiguration.ZookeeperNodesConfiguration
 	zookeeperNodesInformation.FillWithDefaultValues()
 
 	var rabbitmqSecretUser string

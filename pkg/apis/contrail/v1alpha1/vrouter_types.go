@@ -46,27 +46,33 @@ type VrouterStatus struct {
 	Active *bool             `json:"active,omitempty"`
 }
 
-// VrouterSpec is the Spec for the cassandras API.
+// VrouterSpec is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration           `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterConfiguration       `json:"serviceConfiguration"`
+	StaticConfiguration  VrouterStaticConfiguration `json:"staticConfiguration"`
 }
 
-// VrouterConfiguration is the Spec for the cassandras API.
+// VrouterConfiguration is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers                []*Container                 `json:"containers,omitempty"`
-	Gateway                   string                       `json:"gateway,omitempty"`
-	PhysicalInterface         string                       `json:"physicalInterface,omitempty"`
-	MetaDataSecret            string                       `json:"metaDataSecret,omitempty"`
-	NodeManager               *bool                        `json:"nodeManager,omitempty"`
-	Distribution              *Distribution                `json:"distribution,omitempty"`
-	ServiceAccount            string                       `json:"serviceAccount,omitempty"`
-	ClusterRole               string                       `json:"clusterRole,omitempty"`
-	ClusterRoleBinding        string                       `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption         bool                         `json:"vrouterEncryption,omitempty"`
-	ContrailStatusImage       string                       `json:"contrailStatusImage,omitempty"`
+	Containers          []*Container  `json:"containers,omitempty"`
+	Gateway             string        `json:"gateway,omitempty"`
+	PhysicalInterface   string        `json:"physicalInterface,omitempty"`
+	MetaDataSecret      string        `json:"metaDataSecret,omitempty"`
+	NodeManager         *bool         `json:"nodeManager,omitempty"`
+	Distribution        *Distribution `json:"distribution,omitempty"`
+	ServiceAccount      string        `json:"serviceAccount,omitempty"`
+	ClusterRole         string        `json:"clusterRole,omitempty"`
+	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
+	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
+}
+
+// VrouterStaticConfiguration is the static configuration for vrouter.
+// +k8s:openapi-gen=true
+type VrouterStaticConfiguration struct {
 	ControlNodesConfiguration *ControlClusterConfiguration `json:"controlNodesConfiguration,omitempty"`
 	ConfigNodesConfiguration  *ConfigClusterConfiguration  `json:"configNodesConfiguration,omitempty"`
 }
@@ -297,9 +303,9 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
 
-	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation := c.Spec.StaticConfiguration.ConfigNodesConfiguration
 	configNodesInformation.FillWithDefaultValues()
-	controlNodesInformation := c.Spec.ServiceConfiguration.ControlNodesConfiguration
+	controlNodesInformation := c.Spec.StaticConfiguration.ControlNodesConfiguration
 	controlNodesInformation.FillWithDefaultValues()
 
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"

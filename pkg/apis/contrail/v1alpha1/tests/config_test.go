@@ -81,7 +81,7 @@ var kubemanager = &v1alpha1.Kubemanager{
 		},
 	},
 	Spec: v1alpha1.KubemanagerSpec{
-		ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
+		StaticConfiguration: v1alpha1.KubemanagerStaticConfiguration{
 			CassandraNodesConfiguration: &v1alpha1.CassandraClusterConfiguration{
 				Port:         9160,
 				ServerIPList: []string{"1.1.2.1", "1.1.2.2", "1.1.2.3"},
@@ -162,7 +162,7 @@ var vrouter = &v1alpha1.Vrouter{
 		},
 	},
 	Spec: v1alpha1.VrouterSpec{
-		ServiceConfiguration: v1alpha1.VrouterConfiguration{
+		StaticConfiguration: v1alpha1.VrouterStaticConfiguration{
 			ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
 				APIServerIPList:       []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
 				AnalyticsServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
@@ -171,6 +171,8 @@ var vrouter = &v1alpha1.Vrouter{
 			ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
 				ControlServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
 			},
+		},
+		ServiceConfiguration: v1alpha1.VrouterConfiguration{
 			Gateway: "1.1.8.254",
 		},
 	},

@@ -140,7 +140,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
-			ServiceConfiguration: KubemanagerConfiguration{
+			StaticConfiguration: KubemanagerStaticConfiguration{
 				CassandraNodesConfiguration: &CassandraClusterConfiguration{
 					Port:         1111,
 					Endpoint:     "9.9.9.9:9595",
