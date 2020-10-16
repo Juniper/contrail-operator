@@ -146,6 +146,10 @@ func TestPostgresController(t *testing.T) {
 			assertPostgresStatusActive(t, fakeClient, namespacedName, false)
 		})
 
+		t.Run("Postgres status endpoint should be empty", func(t *testing.T) {
+			assertPostgresStatusEndpoint(t, fakeClient, namespacedName, "")
+		})
+
 		t.Run("services and endpoint should be created", func(t *testing.T) {
 			name := types.NamespacedName{
 				Name:      namespacedName.Name,
@@ -157,6 +161,11 @@ func TestPostgresController(t *testing.T) {
 				Namespace: namespacedName.Namespace,
 			}
 
+			nameConfig := types.NamespacedName{
+				Name:      namespacedName.Name + "-config",
+				Namespace: namespacedName.Namespace,
+			}
+
 			service := core.Service{}
 			err = fakeClient.Get(context.Background(), name, &service)
 			assert.NoError(t, err)
@@ -164,6 +173,11 @@ func TestPostgresController(t *testing.T) {
 			serviceRepl := core.Service{}
 			err = fakeClient.Get(context.Background(), nameRepl, &serviceRepl)
 			assert.NoError(t, err)
+
+			serviceConfig := core.Service{}
+			err = fakeClient.Get(context.Background(), nameConfig, &serviceConfig)
+			assert.NoError(t, err)
+			assert.Equal(t, "None", serviceConfig.Spec.ClusterIP)
 
 		})
 
@@ -654,6 +668,13 @@ func assertPostgresStatusActive(t *testing.T, c client.Client, name types.Namesp
 	err := c.Get(context.TODO(), name, &postgres)
 	assert.NoError(t, err)
 	assert.Equal(t, active, postgres.Status.Active)
+}
+
+func assertPostgresStatusEndpoint(t *testing.T, c client.Client, name types.NamespacedName, endpoint string) {
+	postgres := contrail.Postgres{}
+	err := c.Get(context.TODO(), name, &postgres)
+	assert.NoError(t, err)
+	assert.Equal(t, endpoint, postgres.Status.Endpoint)
 }
 
 func assertPostgresLabelsValid(t *testing.T, c client.Client, name types.NamespacedName, expectedLabels map[string]string) {
