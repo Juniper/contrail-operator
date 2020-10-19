@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -24,7 +27,8 @@ func TestCustomizedConfigConfig(t *testing.T) {
 		environment.configResource.Spec.ServiceConfiguration.AnalyticsFlowTTL = makeIntPointer(333)
 		environment.configResource.Spec.ServiceConfiguration.AnalyticsStatisticsTTL = makeIntPointer(444)
 
-		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
+		err := environment.configResource.InstanceConfiguration(reconcile.Request{
+			types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
 		if err != nil {
 			t.Errorf("get configmap: (%v)", err)
 		}
@@ -45,6 +49,65 @@ func TestCustomizedConfigConfig(t *testing.T) {
 			t.Errorf("get queryengine config: \n%v\n", diff)
 		}
 
+	})
+}
+
+func TestCustomizedConfigConfigRedesign(t *testing.T) {
+	environment := SetupEnv()
+	cl := *environment.client
+	environment.configResource.Spec.ServiceConfiguration.AnalyticsConfigAuditTTL = makeIntPointer(111)
+	environment.configResource.Spec.ServiceConfiguration.AnalyticsDataTTL = makeIntPointer(222)
+	environment.configResource.Spec.ServiceConfiguration.AnalyticsFlowTTL = makeIntPointer(333)
+	environment.configResource.Spec.ServiceConfiguration.AnalyticsStatisticsTTL = makeIntPointer(444)
+
+	require.NoError(t, environment.configResource.InstanceConfiguration(reconcile.Request{
+		types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl), "Error while configuring instance")
+
+	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
+		&environment.configConfigMap))
+
+	t.Run("Query Engine custom config settings", func(t *testing.T) {
+		queryEngine, err := ini.Load([]byte(environment.configConfigMap.Data["queryengine.1.1.1.1"]))
+		require.NoError(t, err, "Error while reading config")
+		assert.Equal(t, "222", queryEngine.Section("DEFAULT").Key("analytics_data_ttl").String(), "Invalid analytics_data_ttl")
+		assert.Equal(t, "1.1.1.1", queryEngine.Section("DEFAULT").Key("hostip").String(), "Invalid hostip")
+		assert.Equal(t, "host1", queryEngine.Section("DEFAULT").Key("hostname").String(), "Invalid hostname")
+		assert.Equal(t, "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042", queryEngine.Section("DEFAULT").Key("cassandra_server_list").String(), "Invalid cassandra_server_list")
+		assert.Equal(t, "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086", queryEngine.Section("DEFAULT").Key("collectors").String(), "Invalid collectors")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", queryEngine.Section("CASSANDRA").Key("cassandra_ca_certs").String(), "Invalid cassandra_ca_certs")
+		assert.Equal(t, "1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379", queryEngine.Section("REDIS").Key("server_list").String(), "Invalid server_list")
+		assert.Equal(t, "/etc/certificates/server-key-1.1.1.1.pem", queryEngine.Section("SANDESH").Key("sandesh_keyfile").String(), "Invalid sandesh_keyfile")
+		assert.Equal(t, "/etc/certificates/server-1.1.1.1.crt", queryEngine.Section("SANDESH").Key("sandesh_certfile").String(), "Invalid sandesh_certfile")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", queryEngine.Section("SANDESH").Key("sandesh_ca_cert").String(), "Invalid sandesh_ca_cert")
+	})
+
+	t.Run("Collector custom config settings", func(t *testing.T) {
+		collector, err := ini.Load([]byte(environment.configConfigMap.Data["collector.1.1.1.1"]))
+		require.NoError(t, err, "Error while reading config")
+		assert.Equal(t, "222", collector.Section("DEFAULT").Key("analytics_data_ttl").String(), "Invalid analytics_data_ttl")
+		assert.Equal(t, "111", collector.Section("DEFAULT").Key("analytics_config_audit_ttl").String(), "Invalid analytics_config_audit_ttl")
+		assert.Equal(t, "444", collector.Section("DEFAULT").Key("analytics_statistics_ttl").String(), "Invalid analytics_statistics_ttl")
+		assert.Equal(t, "333", collector.Section("DEFAULT").Key("analytics_flow_ttl").String(), "Invalid analytics_flow_ttl")
+		assert.Equal(t, "1.1.1.1", collector.Section("DEFAULT").Key("hostip").String(), "Invalid hostip")
+		assert.Equal(t, "host1", collector.Section("DEFAULT").Key("hostname").String(), "Invalid hostname")
+		assert.Equal(t, "8089", collector.Section("DEFAULT").Key("http_server_port").String(), "Invalid http_server_port")
+		assert.Equal(t, "SYS_NOTICE", collector.Section("DEFAULT").Key("log_level").String(), "Invalid log_level")
+		assert.Equal(t, "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042", collector.Section("DEFAULT").Key("cassandra_server_list").String(), "Invalid cassandra_server_list")
+		assert.Equal(t, "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181", collector.Section("DEFAULT").Key("zookeeper_server_list").String(), "Invalid zookeeper_server_list")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", collector.Section("CASSANDRA").Key("cassandra_ca_certs").String(), "Invalid cassandra_ca_certs")
+		assert.Equal(t, "1.1.1.1:8082 1.1.1.2:8082 1.1.1.3:8082", collector.Section("API_SERVER").Key("api_server_list").String(), "Invalid api_server_list")
+		assert.Equal(t, "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042", collector.Section("CONFIGDB").Key("config_db_server_list").String(), "Invalid config_db_server_list")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", collector.Section("CONFIGDB").Key("config_db_ca_certs").String(), "Invalid config_db_ca_certs")
+		assert.Equal(t, "1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673", collector.Section("CONFIGDB").Key("rabbitmq_server_list").String(), "Invalid rabbitmq_server_list")
+		assert.Equal(t, "vhost", collector.Section("CONFIGDB").Key("rabbitmq_vhost").String(), "Invalid rabbitmq_vhost")
+		assert.Equal(t, "user", collector.Section("CONFIGDB").Key("rabbitmq_user").String(), "Invalid rabbitmq_user")
+		assert.Equal(t, "password", collector.Section("CONFIGDB").Key("rabbitmq_password").String(), "Invalid rabbitmq_password")
+		assert.Equal(t, "/etc/certificates/server-key-1.1.1.1.pem", collector.Section("CONFIGDB").Key("rabbitmq_ssl_keyfile").String(), "Invalid rabbitmq_ssl_keyfile")
+		assert.Equal(t, "/etc/certificates/server-1.1.1.1.crt", collector.Section("CONFIGDB").Key("rabbitmq_ssl_certfile").String(), "Invalid rabbitmq_ssl_certfile")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", collector.Section("CONFIGDB").Key("rabbitmq_ssl_ca_certs").String(), "Invalid rabbitmq_ssl_ca_certs")
+		assert.Equal(t, "/etc/certificates/server-key-1.1.1.1.pem", collector.Section("SANDESH").Key("sandesh_keyfile").String(), "Invalid sandesh_keyfile")
+		assert.Equal(t, "/etc/certificates/server-1.1.1.1.crt", collector.Section("SANDESH").Key("sandesh_certfile").String(), "Invalid sandesh_certfile")
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", collector.Section("SANDESH").Key("sandesh_ca_cert").String(), "Invalid Sandesh ca cert")
 	})
 }
 
