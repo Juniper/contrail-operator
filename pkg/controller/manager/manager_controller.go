@@ -568,7 +568,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.CassandraInstance, kubemanagerService.ZookeeperInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
-			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanager.Spec.CommonConfiguration)
+			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanagerService.Spec.CommonConfiguration)
 			if kubemanager.Spec.CommonConfiguration.Replicas == nil {
 				kubemanager.Spec.CommonConfiguration.Replicas = &replicas
 			}
@@ -710,7 +710,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
 			vRouter.Spec.ServiceConfiguration = vRouterService.Spec.ServiceConfiguration
-			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouter.Spec.CommonConfiguration)
+			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouterService.Spec.CommonConfiguration)
 			if err := fillVrouterConfiguration(vRouter, vRouterService.ControlInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
