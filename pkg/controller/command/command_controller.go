@@ -285,30 +285,52 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	deployment := newDeploymentWithVolumes(command.Name, command.Namespace, instanceType, command.Spec.ServiceConfiguration.Containers)
-	expectedDeployment := deployment.DeepCopy()
-	performUpgrade := false
-	createOrUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		if imageIsUpgraded(expectedDeployment, &deployment.Spec) || command.Status.UpgradeState == contrail.CommandStartingUpgradedDeployment {
-			performUpgrade = true
-			return nil
-		}
-		expectedDeployment.Spec.DeepCopyInto(&deployment.Spec)
-		return r.prepareIntendedDeployment(deployment, command)
-	})
-	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
-	if err != nil {
+	d := &apps.Deployment{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Name + "-command-deployment",
+	}, d)
+
+	if err != nil && !errors.IsNotFound(err) {
 		return reconcile.Result{}, err
 	}
 
-	if performUpgrade {
-		deployment, err = r.performUpgradeStep(command, expectedDeployment, commandBootStrapConfigName)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
+	if err := r.performUpgradeIfNeeded(command, d); err != nil {
+		return reconcile.Result{}, err
 	}
 
-	if err = r.updateStatus(command, deployment, commandClusterIP); err != nil {
+	d = &apps.Deployment{
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: command.GetNamespace(),
+			Name:      command.Name + "-command-deployment",
+		},
+	}
+	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, d, func() error {
+		upgrading := true
+		if command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandShuttingDownBeforeUpgrade {
+			r.fillDeploymentSpec(command, d)
+			upgrading = false
+		}
+		if err := r.prepareIntendedDeployment(d, command); err != nil {
+			return err
+		}
+		if upgrading {
+			d.Spec.Replicas = int32ToPtr(0)
+		}
+		return nil
+	}); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	reqLogger.Info("VALUES", "replicas", d.Spec.Replicas)
+
+	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
+	oldImage := getContainerImage(d.Spec.Template.Spec.Containers, "api")
+	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.updateStatus(command, d, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -636,6 +658,11 @@ func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, comm
 		return err
 	}
 	return r.client.Create(context.Background(), bootstrapJob)
+}
+
+func (r *ReconcileCommand) fillDeploymentSpec(command *contrail.Command, d *apps.Deployment) {
+	deploy := newDeploymentWithVolumes(command.Name, command.Namespace, "command", command.Spec.ServiceConfiguration.Containers)
+	d.Spec = deploy.Spec
 }
 
 func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBootStrapConfigName string) *batch.Job {
