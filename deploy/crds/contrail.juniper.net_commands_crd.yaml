@@ -174,6 +174,8 @@ spec:
           properties:
             active:
               type: boolean
+            containerImage:
+              type: string
             endpoint:
               type: string
             readyReplicas:

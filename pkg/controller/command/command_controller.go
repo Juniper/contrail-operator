@@ -322,8 +322,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	reqLogger.Info("VALUES", "replicas", d.Spec.Replicas)
-
 	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
 	oldImage := getContainerImage(d.Spec.Template.Spec.Containers, "api")
 	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {

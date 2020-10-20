@@ -17,7 +17,8 @@ import (
 )
 
 func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, deployment *apps.Deployment) error {
-	if imageIsChanged(command, &deployment.Spec) && command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandStartingUpgradedDeployment {
+	command.Status.ContainerImage = getContainerImage(deployment.Spec.Template.Spec.Containers, "api")
+	if isImageChanged(command) && command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandStartingUpgradedDeployment {
 		command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
 	switch command.Status.UpgradeState {
@@ -34,10 +35,7 @@ func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, dep
 			command.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
 		}
 	case contrail.CommandStartingUpgradedDeployment:
-		upgradedAgain, err := r.checkIfImageChangedAgain(command)
-		if err != nil {
-			return err
-		}
+		upgradedAgain := isImageChanged(command)
 		if upgradedAgain {
 			command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 		}
@@ -75,17 +73,8 @@ func getContainerImage(containers []core.Container, name string) string {
 	return ""
 }
 
-func (r *ReconcileCommand) checkIfImageChangedAgain(command *contrail.Command) (bool, error) {
-	dataMigrationJob := &batch.Job{}
-	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-upgrade-job"}
-	err := r.client.Get(context.Background(), jobName, dataMigrationJob)
-	if errors.IsNotFound(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return dataMigrationJob.Spec.Template.Spec.Containers[0].Image != getImage(command.Spec.ServiceConfiguration.Containers, "api"), nil
+func isImageChanged(command *contrail.Command) bool {
+	return command.Status.ContainerImage != "" && command.Status.ContainerImage != getImage(command.Spec.ServiceConfiguration.Containers, "api")
 }
 
 func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command) (bool, error) {
@@ -203,12 +192,6 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 			TTLSecondsAfterFinished: nil,
 		},
 	}
-}
-
-func imageIsChanged(command *contrail.Command, oldDeploymentSpec *apps.DeploymentSpec) bool {
-	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
-	oldImage := getContainerImage(oldDeploymentSpec.Template.Spec.Containers, "api")
-	return oldImage != "" && newImage != oldImage
 }
 
 func int32ToPtr(value int32) *int32 {

@@ -50,9 +50,10 @@ type CommandConfiguration struct {
 // CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
 type CommandStatus struct {
-	Status       `json:",inline"`
-	Endpoint     string              `json:"endpoint,omitempty"`
-	UpgradeState CommandUpgradeState `json:"upgradeState,omitempty"`
+	Status         `json:",inline"`
+	Endpoint       string              `json:"endpoint,omitempty"`
+	UpgradeState   CommandUpgradeState `json:"upgradeState,omitempty"`
+	ContainerImage string              `json:"containerImage,omitempty"`
 }
 
 // +kubebuilder:validation:Enum={"","upgrading","not upgrading","shutting down before upgrade","starting upgraded deployment"}
