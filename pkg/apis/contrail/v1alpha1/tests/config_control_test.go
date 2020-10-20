@@ -10,9 +10,6 @@ import (
 	"text/template"
 
 	"github.com/kylelemons/godebug/diff"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/ini.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -42,7 +39,7 @@ func TestControlConfig(t *testing.T) {
 		}
 		for _, pod := range environment.controlPodList.Items {
 			testConfig := controlTestConfig{ExpectedListenAddress: pod.Status.PodIP, PodIP: pod.Status.PodIP}
-			verrifyConfigForPod(t, &testConfig, &environment.controlConfigMap)
+			verifyConfigForPod(t, &testConfig, &environment.controlConfigMap)
 		}
 	})
 
@@ -68,7 +65,7 @@ func TestControlConfig(t *testing.T) {
 		}
 		for _, pod := range environment.controlPodList.Items {
 			testConfig := controlTestConfig{ExpectedListenAddress: pod.Annotations["dataSubnetIP"], PodIP: pod.Status.PodIP}
-			verrifyConfigForPod(t, &testConfig, &environment.controlConfigMap)
+			verifyConfigForPod(t, &testConfig, &environment.controlConfigMap)
 		}
 	})
 }
@@ -81,64 +78,21 @@ func (c *controlTestConfig) executeTemplate(t *template.Template) string {
 	return buffer.String()
 }
 
-func verrifyConfigForPod(t *testing.T, ct *controlTestConfig, cm *corev1.ConfigMap) {
+func verifyConfigForPod(t *testing.T, ct *controlTestConfig, cm *corev1.ConfigMap) {
 	configurationMap := map[string]string{
+		"control":        ct.executeTemplate(controlConfigTemplate),
+		"dns":            ct.executeTemplate(dnsConfigTemplate),
+		"nodemanager":    ct.executeTemplate(controlNodemanagerConfigTemplate),
 		"provision.sh":   ct.executeTemplate(controlProvisioningConfigTemplate),
 		"named":          namedConfig,
 		"deprovision.py": controlDeProvisioningConfig,
 	}
-	type TestCases []struct {
-		section string
-		key     string
-		value   string
-	}
-	configurationTestCasesMap := map[string]TestCases{
-		"control": TestCases{
-			{"DEFAULT", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULT", "hostname", "host1"},
-			{"DEFAULT", "xmpp_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"CONFIGDB", "config_db_server_list", "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042"},
-			{"CONFIGDB", "config_db_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"CONFIGDB", "rabbitmq_server_list", "1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673"},
-			{"CONFIGDB", "rabbitmq_vhost", "vhost"},
-			{"CONFIGDB", "rabbitmq_user", "user"},
-			{"CONFIGDB", "rabbitmq_password", "password"},
-			{"CONFIGDB", "rabbitmq_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		},
-		"dns": TestCases{
-			{"DEFAULT", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULT", "hostname", "host1"},
-			{"DEFAULT", "xmpp_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"CONFIGDB", "config_db_server_list", "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042"},
-			{"CONFIGDB", "config_db_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"CONFIGDB", "rabbitmq_server_list", "1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673"},
-			{"CONFIGDB", "rabbitmq_vhost", "vhost"},
-			{"CONFIGDB", "rabbitmq_user", "user"},
-			{"CONFIGDB", "rabbitmq_password", "password"},
-			{"CONFIGDB", "rabbitmq_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		},
-		"nodemanager": TestCases{
-			{"DEFAULTS", "db_port", "9042"},
-			{"DEFAULTS", "db_jmx_port", "7200"},
-			{"COLLECTOR", "server_list", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		},
-	}
+
 	for confType, expectedContent := range configurationMap {
 		config := fmt.Sprintf("%s.%s", confType, ct.PodIP)
 		if cm.Data[config] != expectedContent {
 			diff := diff.Diff(cm.Data[config], expectedContent)
 			t.Fatalf("get %s config: \n%v\n", confType, diff)
-		}
-	}
-	for confType, testCase := range configurationTestCasesMap {
-		config := fmt.Sprintf("%s.%s", confType, ct.PodIP)
-		configTest, err := ini.Load([]byte(cm.Data[config]))
-		require.NoError(t, err, "Error while reading config")
-		for _, tc := range testCase {
-			assert.Equal(t, tc.value, configTest.Section(tc.section).Key(tc.key).String(), fmt.Sprintf("Invalid %s", tc.key))
 		}
 	}
 }

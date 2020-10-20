@@ -6,9 +6,6 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -218,12 +215,6 @@ var vrouterList = &v1alpha1.VrouterList{}
 
 var configMap = &corev1.ConfigMap{}
 var secret = &corev1.Secret{}
-
-type TestCases []struct {
-	section string
-	key     string
-	value   string
-}
 
 type Environment struct {
 	client               *client.Client
@@ -568,53 +559,31 @@ func SetupEnv() Environment {
 }
 
 func TestKubemanagerConfig(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
 	environment := SetupEnv()
 	cl := *environment.client
 	clientset := kubernetes.Clientset{}
-	require.NoError(t, environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}},
-		&environment.kubemanbagerPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()}), "Error while configuring instance")
-	require.NoError(t, cl.Get(context.TODO(),
-		types.NamespacedName{Name: "kubemanagersecret", Namespace: "default"},
-		&environment.kubemanagerSecret), "Error while getting secret")
-	require.NoError(t, cl.Get(context.TODO(),
-		types.NamespacedName{Name: "kubemanager1-kubemanager-configmap", Namespace: "default"},
-		&environment.kubemanagerConfigMap), "Error while getting configmap")
-	kubeManagerTestCases := TestCases{
-		{"DEFAULTS", "host_ip", "1.1.6.1"},
-		{"DEFAULTS", "orchestrator", "kubernetes"},
-		{"DEFAULTS", "token", "THISISATOKEN"},
-		{"KUBERNETES", "kubernetes_api_server", "10.96.0.1"},
-		{"KUBERNETES", "kubernetes_api_port", "8080"},
-		{"KUBERNETES", "kubernetes_api_secure_port", "6443"},
-		{"KUBERNETES", "cluster_name", "kubernetes"},
-		{"KUBERNETES", "pod_subnets", "10.32.0.0/12"},
-		{"KUBERNETES", "ip_fabric_subnets", "10.64.0.0/12"},
-		{"KUBERNETES", "service_subnets", "10.96.0.0/12"},
-		{"KUBERNETES", "ip_fabric_forwarding", "false"},
-		{"KUBERNETES", "ip_fabric_snat", "true"},
-		{"KUBERNETES", "host_network_service", "false"},
-		{"VNC", "vnc_endpoint_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-		{"VNC", "vnc_endpoint_port", "8082"},
-		{"VNC", "rabbit_server", "1.1.4.1,1.1.4.2,1.1.4.3"},
-		{"VNC", "rabbit_port", "15673"},
-		{"VNC", "rabbit_vhost", "vhost"},
-		{"VNC", "rabbit_user", "user"},
-		{"VNC", "rabbit_password", "password"},
-		{"VNC", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.6.1.pem"},
-		{"VNC", "kombu_ssl_certfile", "/etc/certificates/server-1.1.6.1.crt"},
-		{"VNC", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		{"VNC", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-		{"VNC", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		{"VNC", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-		{"VNC", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-		{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.6.1.pem"},
-		{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.6.1.crt"},
-		{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+	err := environment.kubemanagerResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "kubemanager1", Namespace: "default"}},
+		&environment.kubemanbagerPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()})
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
 	}
-	configTest, err := ini.Load([]byte(environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"]))
-	require.NoError(t, err, "Error while reading config")
-	for _, tc := range kubeManagerTestCases {
-		assert.Equal(t, tc.value, configTest.Section(tc.section).Key(tc.key).String(), fmt.Sprintf("Invalid %s", tc.key))
+	err = cl.Get(context.TODO(),
+		types.NamespacedName{Name: "kubemanagersecret", Namespace: "default"},
+		&environment.kubemanagerSecret)
+	if err != nil {
+		t.Fatalf("get secret: (%v)", err)
+	}
+	err = cl.Get(context.TODO(),
+		types.NamespacedName{Name: "kubemanager1-kubemanager-configmap", Namespace: "default"},
+		&environment.kubemanagerConfigMap)
+	if err != nil {
+		t.Fatalf("get configmap: (%v)", err)
+	}
+	if environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"] != kubemanagerConfig {
+		diff := diff.Diff(environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"], kubemanagerConfig)
+		t.Fatalf("get kubemanager config: \n%v\n", diff)
 	}
 }
 
@@ -664,22 +633,6 @@ func TestCassandraConfig(t *testing.T) {
 		configDiff := diff.Diff(environment.cassandraConfigMap.Data["1.1.2.1.yaml"], cassandraConfig)
 		t.Fatalf("get cassandra config: \n%v\n", configDiff)
 	}
-}
-
-func convert(i interface{}) interface{} {
-	switch x := i.(type) {
-	case map[interface{}]interface{}:
-		m2 := map[string]interface{}{}
-		for k, v := range x {
-			m2[k.(string)] = convert(v)
-		}
-		return m2
-	case []interface{}:
-		for i, v := range x {
-			x[i] = convert(v)
-		}
-	}
-	return i
 }
 
 func TestZookeeperConfig(t *testing.T) {
