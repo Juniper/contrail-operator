@@ -2,287 +2,98 @@ package contrailtest
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 func TestConfigConfig(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+
 	request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
 	configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
-	type TestCases []struct {
-		section string
-		key     string
-		value   string
-	}
-	t.Run("Default setup", func(t *testing.T) {
+	t.Run("default setup", func(t *testing.T) {
 		environment := SetupEnv()
-		t.Run("Instance configuration", func(t *testing.T) {
-			cl := *environment.client
-			require.NoError(t, environment.configResource.InstanceConfiguration(reconcile.Request{
-				types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl), "Error while configuring instance")
-			require.NoError(t, cl.Get(context.TODO(),
-				types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
-				&environment.configConfigMap))
-		})
-		configList := []string{
-			"api.1.1.1.1",
-			"vnc.1.1.1.1",
-			"contrail-keystone-auth.conf",
-			"devicemanager.1.1.1.1",
-			"devicemanager.1.1.1.2",
-			"schematransformer.1.1.1.1",
-			"servicemonitor.1.1.1.1",
-			"analyticsapi.1.1.1.1",
-			"queryengine.1.1.1.1",
-			"collector.1.1.1.1",
-			"nodemanagerconfig.1.1.1.1",
-			"nodemanageranalytics.1.1.1.1",
+		cl := *environment.client
+		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		err = cl.Get(context.TODO(),
+			types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
+			&environment.configConfigMap)
+		if err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
+			diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
+			t.Fatalf("get api config: \n%v\n", diff)
 		}
 
-		apiTestCases := TestCases{
-			{"DEFAULTS", "listen_port", "8082"},
-			{"DEFAULTS", "http_server_port", "8084"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "auth", "keystone"},
-			{"DEFAULTS", "aaa_mode", "rbac"},
-			{"DEFAULTS", "config_api_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "config_api_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "config_api_ssl_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+		if environment.configConfigMap.Data["vnc.1.1.1.1"] != vncApiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["vnc.1.1.1.1"], vncApiConfig)
+			t.Fatalf("get vncapi config: \n%v\n", diff)
 		}
-		vncTestCases := TestCases{
-			{"global", "WEB_SERVER", "1.1.1.1"},
-			{"global", "WEB_PORT", "8082"},
-			{"global", "cafile", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"auth", "AUTHN_TYPE", "keystone"},
-			{"auth", "AUTHN_PROTOCOL", "https"},
-			{"auth", "AUTHN_SERVER", "10.11.12.14"},
-			{"auth", "AUTHN_PORT", "5555"},
-			{"auth", "AUTHN_DOMAIN", "Default"},
-			{"auth", "cafile", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["contrail-keystone-auth.conf"] != configKeystoneAuthConf {
+			diff := diff.Diff(environment.configConfigMap.Data["contrail-keystone-auth.conf"], configKeystoneAuthConf)
+			t.Fatalf("get contrail-keystone-auth config: \n%v\n", diff)
 		}
-		keystoneAuthTestCases := TestCases{
-			{"KEYSTONE", "admin_password", "test123"},
-			{"KEYSTONE", "admin_tenant_name", "admin"},
-			{"KEYSTONE", "admin_user", "admin"},
-			{"KEYSTONE", "auth_host", "10.11.12.14"},
-			{"KEYSTONE", "auth_port", "5555"},
-			{"KEYSTONE", "auth_protocol", "https"},
-			{"KEYSTONE", "auth_url", "https://10.11.12.14:5555/v3"},
-			{"KEYSTONE", "cafile", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"KEYSTONE", "user_domain_name", "Default"},
-			{"KEYSTONE", "project_domain_name", "Default"},
-			{"KEYSTONE", "region_name", "RegionOne"},
+
+		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfigFull {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfigFull)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
 		}
-		deviceManagerTestCases := TestCases{
-			{"DEFAULTS", "host_ip", "1.1.1.1"},
-			{"DEFAULTS", "api_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "http_server_port", "8096"},
-			{"DEFAULTS", "analytics_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULTS", "dm_run_mode", "Full"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["devicemanager.1.1.1.2"] != devicemanagerConfigPartial {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.2"], devicemanagerConfigPartial)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
 		}
-		deviceManagerTestCases2 := TestCases{
-			{"DEFAULTS", "host_ip", "1.1.1.2"},
-			{"DEFAULTS", "api_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "http_server_port", "8096"},
-			{"DEFAULTS", "analytics_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.2.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.2.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULTS", "dm_run_mode", "Partial"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.2.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.2.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+			t.Fatalf("get dnsmasq config: \n%v\n", diff)
 		}
-		schemaTransformerTestCases := TestCases{
-			{"DEFAULTS", "host_ip", "1.1.1.1"},
-			{"DEFAULTS", "http_server_port", "8087"},
-			{"DEFAULTS", "api_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SECURITY", "ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SECURITY", "certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SECURITY", "keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
+
+		if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
+			t.Fatalf("get schematransformer config: \n%v\n", diff)
 		}
-		serviceMonitorTestCases := TestCases{
-			{"DEFAULTS", "host_ip", "1.1.1.1"},
-			{"DEFAULTS", "http_server_port", "8088"},
-			{"DEFAULTS", "api_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULTS", "analytics_api_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "analytics_api_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "analytics_api_ssl_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SECURITY", "keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SECURITY", "certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SECURITY", "ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SCHEDULER", "analytics_server_list", "1.1.1.1:8081 1.1.1.2:8081 1.1.1.3:8081"},
-			{"SCHEDULER", "aaa_mode", "rbac"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
+			t.Fatalf("get servicemonitor config: \n%v\n", diff)
 		}
-		analyticsapiTestCases := TestCases{
-			{"DEFAULTS", "host_ip", "1.1.1.1"},
-			{"DEFAULTS", "http_server_port", "8090"},
-			{"DEFAULTS", "aaa_mode", "rbac"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULTS", "api_server", "1.1.1.1:8082 1.1.1.2:8082 1.1.1.3:8082"},
-			{"DEFAULTS", "zk_list", "1.1.3.1:2181 1.1.3.2:2181 1.1.3.3:2181"},
-			{"DEFAULTS", "analytics_api_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "analytics_api_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "analytics_api_ssl_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"REDIS", "redis_uve_list", "1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
+			t.Fatalf("get analyticsapi config: \n%v\n", diff)
 		}
-		queryEngineTestCases := TestCases{
-			{"DEFAULT", "analytics_data_ttl", "48"},
-			{"DEFAULT", "hostip", "1.1.1.1"},
-			{"DEFAULT", "hostname", "host1"},
-			{"DEFAULT", "cassandra_server_list", "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042"},
-			{"DEFAULT", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"CASSANDRA", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"REDIS", "server_list", "1.1.1.1:6379 1.1.1.2:6379 1.1.1.3:6379"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+			t.Fatalf("get queryengine config: \n%v\n", diff)
 		}
-		collectorTestCases := TestCases{
-			{"DEFAULT", "analytics_data_ttl", "48"},
-			{"DEFAULT", "analytics_config_audit_ttl", "2160"},
-			{"DEFAULT", "analytics_statistics_ttl", "4"},
-			{"DEFAULT", "analytics_flow_ttl", "2"},
-			{"DEFAULT", "hostip", "1.1.1.1"},
-			{"DEFAULT", "hostname", "host1"},
-			{"DEFAULT", "http_server_port", "8089"},
-			{"DEFAULT", "log_level", "SYS_NOTICE"},
-			{"DEFAULT", "cassandra_server_list", "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042"},
-			{"DEFAULT", "zookeeper_server_list", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"CASSANDRA", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"API_SERVER", "api_server_list", "1.1.1.1:8082 1.1.1.2:8082 1.1.1.3:8082"},
-			{"CONFIGDB", "config_db_server_list", "1.1.2.1:9042 1.1.2.2:9042 1.1.2.3:9042"},
-			{"CONFIGDB", "config_db_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"CONFIGDB", "rabbitmq_server_list", "1.1.4.1:15673 1.1.4.2:15673 1.1.4.3:15673"},
-			{"CONFIGDB", "rabbitmq_vhost", "vhost"},
-			{"CONFIGDB", "rabbitmq_user", "user"},
-			{"CONFIGDB", "rabbitmq_password", "password"},
-			{"CONFIGDB", "rabbitmq_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"CONFIGDB", "rabbitmq_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"CONFIGDB", "rabbitmq_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
+
+		if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
+			t.Fatalf("get collector config: \n%v\n", diff)
 		}
-		nodeManagerTestCases := TestCases{
-			{"DEFAULTS", "log_level", ""},
-			{"DEFAULTS", "hostip", ""},
-			{"DEFAULTS", "db_port", ""},
-			{"DEFAULTS", "db_jmx_port", ""},
-			{"COLLECTOR", "server_list", ""},
-			{"SANDESH", "sandesh_keyfile", ""},
-			{"SANDESH", "sandesh_certfile", ""},
-			{"SANDESH", "sandesh_ca_cert", ""},
+
+		if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
+			t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
 		}
-		nodeManagerAnalyticsTestCases := TestCases{
-			{"DEFAULTS", "log_level", ""},
-			{"DEFAULTS", "hostip", ""},
-			{"DEFAULTS", "db_port", ""},
-			{"DEFAULTS", "db_jmx_port", ""},
-			{"COLLECTOR", "server_list", ""},
-			{"SANDESH", "sandesh_keyfile", ""},
-			{"SANDESH", "sandesh_certfile", ""},
-			{"SANDESH", "sandesh_ca_cert", ""},
-		}
-		var TestCasesMap = map[string]TestCases{
-			"api.1.1.1.1":                  apiTestCases,
-			"vnc.1.1.1.1":                  vncTestCases,
-			"contrail-keystone-auth.conf":  keystoneAuthTestCases,
-			"devicemanager.1.1.1.1":        deviceManagerTestCases,
-			"devicemanager.1.1.1.2":        deviceManagerTestCases2,
-			"schematransformer.1.1.1.1":    schemaTransformerTestCases,
-			"servicemonitor.1.1.1.1":       serviceMonitorTestCases,
-			"analyticsapi.1.1.1.1":         analyticsapiTestCases,
-			"queryengine.1.1.1.1":          queryEngineTestCases,
-			"collector.1.1.1.1":            collectorTestCases,
-			"nodemanagerconfig.1.1.1.1":    nodeManagerTestCases,
-			"nodemanageranalytics.1.1.1.1": nodeManagerAnalyticsTestCases,
-		}
-		for _, config := range configList {
-			t.Run(config, func(t *testing.T) {
-				configTest, err := ini.Load([]byte(environment.configConfigMap.Data[config]))
-				require.NoError(t, err, "Error while reading config")
-				for _, tc := range TestCasesMap[config] {
-					assert.Equal(t, tc.value, configTest.Section(tc.section).Key(tc.key).String(), fmt.Sprintf("Invalid %s", tc.key))
-				}
-			})
+
+		if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
+			t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
 		}
 	})
 
@@ -291,37 +102,127 @@ func TestConfigConfig(t *testing.T) {
 		cl := *environment.client
 		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
 
-		require.NoError(t, environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl), "Cannot configure instance")
+		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
+		assert.NoError(t, err, "cannot configure instance")
 
-		require.NoError(t, cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap), "Cannot get configmap")
+		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
+		assert.NoError(t, err, "cannot get configmap:")
 
-		deviceManagerTest, err := ini.Load([]byte(environment.configConfigMap.Data["devicemanager.1.1.1.1"]))
+		actual := environment.configConfigMap.Data["devicemanager.1.1.1.1"]
+		assert.Equal(t, actual, devicemanagerWithFabricConfig)
+	})
+}
+
+func TestDefaultConfig(t *testing.T) {
+	request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
+	configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
+
+	environment := SetupEnv()
+	t.Run("Instance configuration", func(t *testing.T) {
+		cl := *environment.client
+		require.NoError(t, environment.configResource.InstanceConfiguration(
+			request, &environment.configPodList, cl),
+			"Error while configuring instance")
+		require.NoError(t, cl.Get(context.TODO(),
+			configMapNamespacedName,
+			&environment.configConfigMap))
+	})
+	t.Run("default api config", func(t *testing.T) {
+		if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
+			diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
+			t.Fatalf("get api config: \n%v\n", diff)
+		}
+	})
+	t.Run("default vncapi config", func(t *testing.T) {
+		if environment.configConfigMap.Data["vnc.1.1.1.1"] != vncApiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["vnc.1.1.1.1"], vncApiConfig)
+			t.Fatalf("get vncapi config: \n%v\n", diff)
+		}
+	})
+	t.Run("default contrail-keystone-auth-config", func(t *testing.T) {
+		if environment.configConfigMap.Data["contrail-keystone-auth.conf"] != configKeystoneAuthConf {
+			diff := diff.Diff(environment.configConfigMap.Data["contrail-keystone-auth.conf"], configKeystoneAuthConf)
+			t.Fatalf("get contrail-keystone-auth config: \n%v\n", diff)
+		}
+	})
+	t.Run("defualt devicemanager full config", func(t *testing.T) {
+		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfigFull {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfigFull)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
+		}
+	})
+	t.Run("defualt devicemanager partial config", func(t *testing.T) {
+		if environment.configConfigMap.Data["devicemanager.1.1.1.2"] != devicemanagerConfigPartial {
+			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.2"], devicemanagerConfigPartial)
+			t.Fatalf("get devicemanager config: \n%v\n", diff)
+		}
+	})
+	t.Run("default schematransformer config", func(t *testing.T) {
+		if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
+			t.Fatalf("get schematransformer config: \n%v\n", diff)
+		}
+	})
+	t.Run("default servicemonitor config", func(t *testing.T) {
+		if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
+			t.Fatalf("get servicemonitor config: \n%v\n", diff)
+		}
+	})
+	t.Run("default analyticsapi config", func(t *testing.T) {
+		if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
+			t.Fatalf("get analyticsapi config: \n%v\n", diff)
+		}
+	})
+	t.Run("default queryengine config", func(t *testing.T) {
+		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
+			t.Fatalf("get queryengine config: \n%v\n", diff)
+		}
+	})
+	t.Run("default collector config", func(t *testing.T) {
+		if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
+			t.Fatalf("get collector config: \n%v\n", diff)
+		}
+	})
+	t.Run("default nodemanagerconfig config", func(t *testing.T) {
+		if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
+			t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
+		}
+	})
+	t.Run("default nodemanageranalytics config", func(t *testing.T) {
+		if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
+			diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
+			t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
+		}
+	})
+	t.Run("default dnsmasq config", func(t *testing.T) {
+		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+			t.Fatalf("get dnsmasq config: \n%v\n", diff)
+		}
+	})
+}
+func TestDeviceManagerConfig(t *testing.T) {
+	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
+		environment := SetupEnv()
+		request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
+		configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
+		cl := *environment.client
+		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
+
+		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
+		assert.NoError(t, err, "cannot configure instance")
+
+		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
+		assert.NoError(t, err, "cannot get configmap:")
+
+		devicemanagerTest, err := ini.Load([]byte(environment.configConfigMap.Data["devicemanager.1.1.1.1"]))
 		require.NoError(t, err, "Error while reading config")
-		deviceManagerTestCases := TestCases{
-			{"DEFAULTS", "host_ip", "2.2.2.2"},
-			{"DEFAULTS", "api_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "http_server_port", "8096"},
-			{"DEFAULTS", "analytics_server_ip", "1.1.1.1,1.1.1.2,1.1.1.3"},
-			{"DEFAULTS", "log_level", "SYS_NOTICE"},
-			{"DEFAULTS", "cassandra_server_list", "1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160"},
-			{"DEFAULTS", "cassandra_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "zk_server_ip", "1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181"},
-			{"DEFAULTS", "rabbit_server", "1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673"},
-			{"DEFAULTS", "rabbit_vhost", "vhost"},
-			{"DEFAULTS", "rabbit_user", "user"},
-			{"DEFAULTS", "rabbit_password", "password"},
-			{"DEFAULTS", "kombu_ssl_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"DEFAULTS", "kombu_ssl_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"DEFAULTS", "kombu_ssl_ca_certs", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-			{"DEFAULTS", "collectors", "1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086"},
-			{"DEFAULTS", "dm_run_mode", "Full"},
-			{"SANDESH", "sandesh_keyfile", "/etc/certificates/server-key-1.1.1.1.pem"},
-			{"SANDESH", "sandesh_certfile", "/etc/certificates/server-1.1.1.1.crt"},
-			{"SANDESH", "sandesh_ca_cert", "/etc/ssl/certs/kubernetes/ca-bundle.crt"},
-		}
-		for _, tc := range deviceManagerTestCases {
-			assert.Equal(t, tc.value, deviceManagerTest.Section(tc.section).Key(tc.key).String(), fmt.Sprintf("Invalid %s", tc.key))
-		}
+		assert.Equal(t, "2.2.2.2", devicemanagerTest.Section("DEFAULTS").Key("host_ip").String())
 	})
 }
 
