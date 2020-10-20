@@ -191,7 +191,7 @@ func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, instanceType strin
 
 func (c *ProvisionManager) getPodsHostname(podName string, namespace string, client client.Client) (string, error) {
 	pod := &corev1.Pod{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	err := client.Get(context.Background(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
 	if err != nil {
 		return "", err
 	}
@@ -379,6 +379,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			}
 			apiPort = configService.Status.Ports.APIPort
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -400,6 +401,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -441,6 +443,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -467,6 +470,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -510,6 +514,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				databaseNodeList = append(databaseNodeList, n)
 			}
 		}
+		sort.SliceStable(databaseNodeList, func(i, j int) bool { return databaseNodeList[i].IPAddress < databaseNodeList[j].IPAddress })
 		databaseNodeYaml, err := yaml.Marshal(databaseNodeList)
 		if err != nil {
 			return err
