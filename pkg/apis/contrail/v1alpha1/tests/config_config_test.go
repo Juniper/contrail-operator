@@ -16,7 +16,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 	request := reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "config1",
 			Namespace: "default",
 		},
@@ -116,7 +116,12 @@ func TestDefaultConfig(t *testing.T) {
 func TestDeviceManagerConfig(t *testing.T) {
 	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
 		environment := SetupEnv()
-		request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
+		request := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "config1",
+				Namespace: "default",
+			},
+		}
 		configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
 		cl := *environment.client
 		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"

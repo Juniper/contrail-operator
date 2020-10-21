@@ -14,7 +14,7 @@ import (
 func TestCassandraConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 	request := reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "cassandra1",
 			Namespace: "default",
 		},

@@ -26,13 +26,23 @@ func TestControlConfig(t *testing.T) {
 
 	t.Run("control services configuration", func(t *testing.T) {
 		environment := SetupEnv()
+		request := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "control1",
+				Namespace: "default",
+			},
+		}
+		configMapNamespacedName := types.NamespacedName{
+			Name:      "control1-control-configmap",
+			Namespace: "default",
+		}
 		cl := *environment.client
-		err := environment.controlResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "control1", Namespace: "default"}}, &environment.controlPodList, cl)
+		err := environment.controlResource.InstanceConfiguration(request, &environment.controlPodList, cl)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)
 		}
 		err = cl.Get(context.TODO(),
-			types.NamespacedName{Name: "control1-control-configmap", Namespace: "default"},
+			configMapNamespacedName,
 			&environment.controlConfigMap)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)
@@ -45,6 +55,16 @@ func TestControlConfig(t *testing.T) {
 
 	t.Run("control services provisioned with dataSubnetIP if set", func(t *testing.T) {
 		environment := SetupEnv()
+		request := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "control1",
+				Namespace: "default",
+			},
+		}
+		configMapNamespacedName := types.NamespacedName{
+			Name:      "control1-control-configmap",
+			Namespace: "default",
+		}
 		cl := *environment.client
 		dataIPs, err := getUsableIPsFromIPv4Subnet("172.17.90.0/24", len(environment.controlPodList.Items))
 		if err != nil {
@@ -53,12 +73,12 @@ func TestControlConfig(t *testing.T) {
 		for idx := range environment.controlPodList.Items {
 			environment.controlPodList.Items[idx].SetAnnotations(map[string]string{"hostname": "host1", "dataSubnetIP": dataIPs[idx]})
 		}
-		err = environment.controlResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "control1", Namespace: "default"}}, &environment.controlPodList, cl)
+		err = environment.controlResource.InstanceConfiguration(request, &environment.controlPodList, cl)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)
 		}
 		err = cl.Get(context.TODO(),
-			types.NamespacedName{Name: "control1-control-configmap", Namespace: "default"},
+			configMapNamespacedName,
 			&environment.controlConfigMap)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)

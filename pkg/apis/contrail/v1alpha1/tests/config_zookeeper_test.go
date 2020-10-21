@@ -17,7 +17,7 @@ func TestZookeeperConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 
 	request := reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "zookeeper1",
 			Namespace: "default",
 		},
@@ -47,7 +47,7 @@ func TestZookeeperConfig(t *testing.T) {
 	adminPort := 21833
 	environment.zookeeperResource.Spec.ServiceConfiguration.AdminPort = &adminPort
 	request = reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "zookeeper1",
 			Namespace: "default",
 		},

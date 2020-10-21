@@ -14,7 +14,7 @@ import (
 func TestWebuiConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 	request := reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "webui1",
 			Namespace: "default",
 		},

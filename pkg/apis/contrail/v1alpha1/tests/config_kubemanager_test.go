@@ -16,7 +16,7 @@ import (
 func TestKubemanagerConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 	request := reconcile.Request{
-		types.NamespacedName{
+		NamespacedName: types.NamespacedName{
 			Name:      "kubemanager1",
 			Namespace: "default",
 		},
