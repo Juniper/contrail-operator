@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/ini.v1"
@@ -16,42 +15,9 @@ import (
 func makeIntPointer(v int) *int {
 	return &v
 }
-func TestCustomizedConfigConfig(t *testing.T) {
-	logf.SetLogger(logf.ZapLogger(true))
-
-	t.Run("analytics ttl settings in the configmap data are the same as in the config spec", func(t *testing.T) {
-		environment := SetupEnv()
-		cl := *environment.client
-		environment.configResource.Spec.ServiceConfiguration.AnalyticsConfigAuditTTL = makeIntPointer(111)
-		environment.configResource.Spec.ServiceConfiguration.AnalyticsDataTTL = makeIntPointer(222)
-		environment.configResource.Spec.ServiceConfiguration.AnalyticsFlowTTL = makeIntPointer(333)
-		environment.configResource.Spec.ServiceConfiguration.AnalyticsStatisticsTTL = makeIntPointer(444)
-
-		err := environment.configResource.InstanceConfiguration(reconcile.Request{
-			types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
-		if err != nil {
-			t.Errorf("get configmap: (%v)", err)
-		}
-		err = cl.Get(context.TODO(),
-			types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
-			&environment.configConfigMap)
-		if err != nil {
-			t.Errorf("get configmap: (%v)", err)
-		}
-
-		if environment.configConfigMap.Data["collector.1.1.1.1"] != customizedCollectorConfig {
-			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], customizedCollectorConfig)
-			t.Errorf("get collector config: \n%v\n", diff)
-		}
-
-		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != customizedQueryEngineConfig {
-			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], customizedQueryEngineConfig)
-			t.Errorf("get queryengine config: \n%v\n", diff)
-		}
-	})
-}
 
 func TestCustomizedConfigConfigRedesign(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
 	environment := SetupEnv()
 	cl := *environment.client
 	environment.configResource.Spec.ServiceConfiguration.AnalyticsConfigAuditTTL = makeIntPointer(111)
