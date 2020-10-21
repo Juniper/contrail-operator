@@ -2,6 +2,7 @@ package provisionmanager
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/certificates"
 	mocking "github.com/Juniper/contrail-operator/pkg/controller/mock"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 )
@@ -190,6 +192,50 @@ func TestProvisionManagerController(t *testing.T) {
 			"Error message string is not as expected")
 	})
 
+	t.Run("Create correct config map with analytics nodes", func(t *testing.T) {
+		pmr := newProvisionManager()
+		initObjs := []runtime.Object{
+			newConfigInst(),
+			pmr,
+			newProvisionManagerPod(),
+			newNode(),
+		}
+		for _, p := range newConfigPodList() {
+			initObjs = append(initObjs, p)
+		}
+
+		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
+		caCertificate := certificates.NewCACertificate(cl, scheme, pmr, "provisionmanager")
+		assert.NoError(t, caCertificate.EnsureExists())
+
+		r := &ReconcileProvisionManager{Client: cl, Scheme: scheme}
+
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "provisionmanager",
+				Namespace: "default",
+			},
+		}
+		res, err := r.Reconcile(req)
+		require.NoError(t, err, "r.Reconcile failed")
+		require.False(t, res.Requeue, "Request was requeued when it should not be")
+		cm := core.ConfigMap{}
+		err = cl.Get(context.Background(), types.NamespacedName{
+			Name:      "provisionmanager-provisionmanager-configmap-analyticsnodes",
+			Namespace: "default",
+		}, &cm)
+		require.NoError(t, err)
+		analyticsnodes := `- ipAddress: 1.1.1.1
+  hostname: host-a
+- ipAddress: 1.1.1.2
+  hostname: host-a
+- ipAddress: 1.1.1.3
+  hostname: host-a
+`
+		assert.Equal(t, map[string]string{
+			"analyticsnodes.yaml": analyticsnodes,
+		}, cm.Data)
+	})
 }
 
 var falseVal = false
@@ -261,18 +307,58 @@ func newConfigInst() *contrail.Config {
 				},
 			},
 		},
-		Status: contrail.ConfigStatus{Active: &trueVal},
+		Status: contrail.ConfigStatus{
+			Active: &trueVal,
+			Nodes: map[string]string{
+				"pod-1": "1.1.1.1",
+				"pod-2": "1.1.1.2",
+				"pod-3": "1.1.1.3",
+			},
+		},
 	}
 }
 
-func newPodList() *core.PodList {
-	return &core.PodList{
-		Items: []core.Pod{
-			{
-				ObjectMeta: meta1.ObjectMeta{
-					Namespace: "default",
-					Labels:    map[string]string{"contrail_cluster": "config1"},
-				},
+func newProvisionManagerPod() *core.Pod {
+	return &core.Pod{
+		ObjectMeta: meta1.ObjectMeta{
+			Name:      "provision-a",
+			Namespace: "default",
+			Labels: map[string]string{
+				"contrail_manager": "provisionmanager",
+				"provisionmanager": "provisionmanager",
+			},
+		},
+		Status: core.PodStatus{PodIP: "1.1.1.1"},
+	}
+}
+
+func newConfigPodList() []*core.Pod {
+	pods := []*core.Pod{}
+
+	for i := 1; i <= 3; i++ {
+		pods = append(pods, &core.Pod{
+			ObjectMeta: meta1.ObjectMeta{
+				Name:      "pod-" + strconv.Itoa(i),
+				Namespace: "default",
+			},
+			Spec: core.PodSpec{
+				HostNetwork: true,
+				NodeName:    "node-a",
+			},
+		})
+	}
+
+	return pods
+}
+
+func newNode() *core.Node {
+	return &core.Node{
+		ObjectMeta: meta1.ObjectMeta{
+			Name: "node-a",
+		},
+		Status: core.NodeStatus{
+			Addresses: []core.NodeAddress{
+				{Type: core.NodeHostName, Address: "host-a"},
 			},
 		},
 	}
@@ -339,7 +425,6 @@ func testcase4() *TestCase {
 		initObjs: []runtime.Object{
 			newManager(pmr),
 			pmr,
-			newPodList(),
 		},
 		expectedStatus: contrail.ProvisionManagerStatus{Active: &trueVal},
 	}
