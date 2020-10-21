@@ -212,11 +212,18 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		int32(v1alpha1.ConfigApiPort):    "api",
 		int32(v1alpha1.AnalyticsApiPort): "analytics",
 	}
-	configService := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config)
+	configService := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, servicePortsMap, instanceType, config, corev1.ProtocolTCP)
 
 	if err := configService.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	tftpServicePortsMap := map[int32]string{int32(69): ""}
+	tftpSvc := r.Kubernetes.Service("tftp"+request.Name+"-"+instanceType, corev1.ServiceTypeLoadBalancer, tftpServicePortsMap, instanceType, config, corev1.ProtocolUDP)
+	if err := tftpSvc.EnsureExists(); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	currentConfigMap, currentConfigExists := config.CurrentConfigMapExists(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
 
 	configMap, err := config.CreateConfigMap(request.Name+"-"+instanceType+"-configmap", r.Client, r.Scheme, request)
@@ -683,7 +690,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 	if len(podIPMap) > 0 {
-		if err = config.InstanceConfiguration(request, podIPList, r.Client); err != nil {
+		if err = config.InstanceConfiguration(request, podIPList, tftpSvc.ExternalIP(), r.Client); err != nil {
 			return reconcile.Result{}, err
 		}
 

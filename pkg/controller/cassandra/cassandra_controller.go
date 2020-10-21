@@ -203,7 +203,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	cc := instance.ConfigurationParameters()
-	svc := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, map[int32]string{int32(*cc.Port): ""}, instanceType, instance)
+	svc := r.Kubernetes.Service(request.Name+"-"+instanceType, corev1.ServiceTypeClusterIP, map[int32]string{int32(*cc.Port): ""}, instanceType, instance, corev1.ProtocolTCP)
 
 	if err := svc.EnsureExists(); err != nil {
 		return reconcile.Result{}, err

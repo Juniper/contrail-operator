@@ -24,6 +24,7 @@ type Service struct {
 	scheme    *runtime.Scheme
 	client    client.Client
 	svc       core.Service
+	protocol  core.Protocol
 }
 
 // EnsureExists is used to make sure that kubernetes service exists and is correctly configured
@@ -39,6 +40,10 @@ func (s *Service) EnsureExists() error {
 			Labels:    labels,
 		},
 	}
+	protocol := s.protocol
+	if s.protocol == "" {
+		protocol = core.ProtocolTCP
+	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), s.client, &s.svc, func() error {
 		portToNodePortMap := make(map[int32]int32, 0)
 		for _, p := range s.svc.Spec.Ports {
@@ -50,7 +55,7 @@ func (s *Service) EnsureExists() error {
 		}
 		var servicePortList []core.ServicePort
 		for port, name := range s.ports {
-			svcPort := core.ServicePort{Port: port, Protocol: "TCP", NodePort: portToNodePortMap[port]}
+			svcPort := core.ServicePort{Port: port, Protocol: protocol, NodePort: portToNodePortMap[port]}
 			if name != "" {
 				svcPort.Name = name
 			}

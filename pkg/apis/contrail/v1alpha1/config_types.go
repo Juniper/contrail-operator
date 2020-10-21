@@ -155,6 +155,7 @@ const DMRunModePartial = "Partial"
 
 func (c *Config) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
+	tftpIP string,
 	client client.Client) error {
 	instanceConfigMapName := request.Name + "-" + "config" + "-configmap"
 	configMapInstanceDynamicConfig := &corev1.ConfigMap{}
@@ -317,7 +318,9 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 
 		fabricMgmtIP := podList.Items[idx].Status.PodIP
-		if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
+		if tftpIP != "" {
+			fabricMgmtIP = tftpIP
+		} else if c.Spec.ServiceConfiguration.FabricMgmtIP != "" {
 			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
 

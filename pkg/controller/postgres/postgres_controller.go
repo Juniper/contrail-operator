@@ -252,7 +252,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 		svc.Spec.Type = core.ServiceTypeClusterIP
 		listenPort := int32(postgres.Spec.ServiceConfiguration.ListenPort)
 		svc.Spec.Ports = []core.ServicePort{
-			{Port: listenPort, Protocol: "TCP"},
+			{Port: listenPort, Protocol: core.ProtocolTCP},
 		}
 		return controllerutil.SetControllerReference(postgres, svc, r.scheme)
 	})
@@ -267,7 +267,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 
 	// Postgres replica service
 	replicaSvc := r.kubernetes.Service(replicaServiceName+"-"+contrail.PostgresInstanceType, core.ServiceTypeClusterIP,
-		map[int32]string{int32(postgres.Spec.ServiceConfiguration.ListenPort): ""}, contrail.PostgresInstanceType, postgres).WithLabels(labels)
+		map[int32]string{int32(postgres.Spec.ServiceConfiguration.ListenPort): ""}, contrail.PostgresInstanceType, postgres, core.ProtocolTCP).WithLabels(labels)
 
 	return leaderIP, replicaSvc.EnsureExists()
 }

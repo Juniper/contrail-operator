@@ -19,7 +19,7 @@ func TestConfigConfig(t *testing.T) {
 	t.Run("default setup", func(t *testing.T) {
 		environment := SetupEnv()
 		cl := *environment.client
-		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
+		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, "", cl)
 		if err != nil {
 			t.Fatalf("get configmap: (%v)", err)
 		}
@@ -100,7 +100,7 @@ func TestConfigConfig(t *testing.T) {
 		cl := *environment.client
 		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
 
-		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, cl)
+		err := environment.configResource.InstanceConfiguration(request, &environment.configPodList, "", cl)
 		assert.NoError(t, err, "cannot configure instance")
 
 		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
