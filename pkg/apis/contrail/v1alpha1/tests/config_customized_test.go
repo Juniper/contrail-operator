@@ -16,7 +16,7 @@ func makeIntPointer(v int) *int {
 	return &v
 }
 
-func TestCustomizedConfigConfigRedesign(t *testing.T) {
+func TestCustomizedConfigConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
 	environment := SetupEnv()
 	cl := *environment.client

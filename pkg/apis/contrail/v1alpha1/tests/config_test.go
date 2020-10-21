@@ -207,12 +207,6 @@ var vrouterList = &v1alpha1.VrouterList{}
 var configMap = &corev1.ConfigMap{}
 var secret = &corev1.Secret{}
 
-type TestCases []struct {
-	section string
-	key     string
-	value   string
-}
-
 type Environment struct {
 	client               *client.Client
 	configPodList        corev1.PodList
@@ -554,46 +548,3 @@ func SetupEnv() Environment {
 	}
 	return environment
 }
-
-var devicemanagerWithFabricConfig = `[DEFAULTS]
-host_ip=2.2.2.2
-http_server_ip=0.0.0.0
-api_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
-api_server_port=8082
-http_server_port=8096
-api_server_use_ssl=True
-analytics_server_ip=1.1.1.1,1.1.1.2,1.1.1.3
-analytics_server_port=8081
-push_mode=1
-log_file=/var/log/contrail/config-device-manager/contrail-device-manager.log
-log_level=SYS_NOTICE
-log_local=1
-cassandra_server_list=1.1.2.1:9160 1.1.2.2:9160 1.1.2.3:9160
-cassandra_use_ssl=true
-cassandra_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
-zk_server_ip=1.1.3.1:2181,1.1.3.2:2181,1.1.3.3:2181
-# configure directories for job manager
-# the same directories must be mounted to dnsmasq and DM container
-dnsmasq_conf_dir=/var/lib/dnsmasq
-tftp_dir=/var/lib/tftp
-dhcp_leases_file=/var/lib/dnsmasq/dnsmasq.leases
-dnsmasq_reload_by_signal=True
-rabbit_server=1.1.4.1:15673,1.1.4.2:15673,1.1.4.3:15673
-rabbit_vhost=vhost
-rabbit_user=user
-rabbit_password=password
-rabbit_use_ssl=True
-kombu_ssl_keyfile=/etc/certificates/server-key-1.1.1.1.pem
-kombu_ssl_certfile=/etc/certificates/server-1.1.1.1.crt
-kombu_ssl_ca_certs=/etc/ssl/certs/kubernetes/ca-bundle.crt
-kombu_ssl_version=tlsv1_2
-rabbit_health_check_interval=10
-collectors=1.1.1.1:8086 1.1.1.2:8086 1.1.1.3:8086
-dm_run_mode=Full
-[SANDESH]
-introspect_ssl_enable=True
-introspect_ssl_insecure=True
-sandesh_ssl_enable=True
-sandesh_keyfile=/etc/certificates/server-key-1.1.1.1.pem
-sandesh_certfile=/etc/certificates/server-1.1.1.1.crt
-sandesh_ca_cert=/etc/ssl/certs/kubernetes/ca-bundle.crt`

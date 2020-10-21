@@ -52,13 +52,13 @@ func TestDefaultConfig(t *testing.T) {
 			t.Fatalf("get contrail-keystone-auth config: \n%v\n", diff)
 		}
 	})
-	t.Run("defualt devicemanager full config", func(t *testing.T) {
+	t.Run("default devicemanager full config", func(t *testing.T) {
 		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfigFull {
 			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfigFull)
 			t.Fatalf("get devicemanager config: \n%v\n", diff)
 		}
 	})
-	t.Run("defualt devicemanager partial config", func(t *testing.T) {
+	t.Run("default devicemanager partial config", func(t *testing.T) {
 		if environment.configConfigMap.Data["devicemanager.1.1.1.2"] != devicemanagerConfigPartial {
 			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.2"], devicemanagerConfigPartial)
 			t.Fatalf("get devicemanager config: \n%v\n", diff)
