@@ -26,6 +26,7 @@ type SwiftConfiguration struct {
 type SwiftStatus struct {
 	Active                bool   `json:"active,omitempty"`
 	SwiftProxyPort        int    `json:"swiftProxyPort,omitempty"`
+	SwiftProxyClusterIP   string `json:"swiftProxyClusterIP,omitempty"`
 	CredentialsSecretName string `json:"credentialsSecretName,omitempty"`
 }
 

@@ -130,8 +130,7 @@ spec:
                               hostAliases:
                                 description: HostAliases is an optional list of hosts
                                   and IPs that will be injected into the pod's hosts
-                                  file if specified. This is only valid for non-hostNetwork
-                                  pods.
+                                  file if specified.
                                 items:
                                   description: HostAlias holds the mapping between
                                     IP and hostnames that will be injected as an entry
@@ -324,8 +323,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -456,6 +454,8 @@ spec:
                       properties:
                         active:
                           type: boolean
+                        containerImage:
+                          type: string
                         endpoint:
                           type: string
                         readyReplicas:
@@ -500,8 +500,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -980,8 +979,7 @@ spec:
                               hostAliases:
                                 description: HostAliases is an optional list of hosts
                                   and IPs that will be injected into the pod's hosts
-                                  file if specified. This is only valid for non-hostNetwork
-                                  pods.
+                                  file if specified.
                                 items:
                                   description: HostAlias holds the mapping between
                                     IP and hostnames that will be injected as an entry
@@ -1212,8 +1210,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -1399,8 +1396,7 @@ spec:
                               hostAliases:
                                 description: HostAliases is an optional list of hosts
                                   and IPs that will be injected into the pod's hosts
-                                  file if specified. This is only valid for non-hostNetwork
-                                  pods.
+                                  file if specified.
                                 items:
                                   description: HostAlias holds the mapping between
                                     IP and hostnames that will be injected as an entry
@@ -1681,8 +1677,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -1842,8 +1837,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -2008,8 +2002,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -2191,8 +2184,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -2365,8 +2357,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -2574,6 +2565,8 @@ spec:
                           type: boolean
                         credentialsSecretName:
                           type: string
+                        swiftProxyClusterIP:
+                          type: string
                         swiftProxyPort:
                           type: integer
                       type: object
@@ -2605,8 +2598,7 @@ spec:
                               hostAliases:
                                 description: HostAliases is an optional list of hosts
                                   and IPs that will be injected into the pod's hosts
-                                  file if specified. This is only valid for non-hostNetwork
-                                  pods.
+                                  file if specified.
                                 items:
                                   description: HostAlias holds the mapping between
                                     IP and hostnames that will be injected as an entry
@@ -2849,8 +2841,7 @@ spec:
                             hostAliases:
                               description: HostAliases is an optional list of hosts
                                 and IPs that will be injected into the pod's hosts
-                                file if specified. This is only valid for non-hostNetwork
-                                pods.
+                                file if specified.
                               items:
                                 description: HostAlias holds the mapping between IP
                                   and hostnames that will be injected as an entry
@@ -3040,8 +3031,7 @@ spec:
                               hostAliases:
                                 description: HostAliases is an optional list of hosts
                                   and IPs that will be injected into the pod's hosts
-                                  file if specified. This is only valid for non-hostNetwork
-                                  pods.
+                                  file if specified.
                                 items:
                                   description: HostAlias holds the mapping between
                                     IP and hostnames that will be injected as an entry

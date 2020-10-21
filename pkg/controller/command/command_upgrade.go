@@ -16,38 +16,35 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/job"
 )
 
-func (r *ReconcileCommand) performUpgradeStepIfNeeded(commandCR *contrail.Command, currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec, configMapName string) error {
-	if imageIsUpgraded(currentDeployment, oldDeploymentSpec) && commandCR.Status.UpgradeState != contrail.CommandUpgrading {
-		commandCR.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
+func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, deployment *apps.Deployment) error {
+	command.Status.ContainerImage = getContainerImage(deployment.Spec.Template.Spec.Containers, "api")
+	if isImageChanged(command) && command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandStartingUpgradedDeployment {
+		command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 	}
-	switch commandCR.Status.UpgradeState {
+	switch command.Status.UpgradeState {
 	case contrail.CommandShuttingDownBeforeUpgrade:
-		currentDeployment.Spec.Template.Spec.Containers = oldDeploymentSpec.Template.Spec.Containers
-		currentDeployment.Spec.Template.Spec.InitContainers = oldDeploymentSpec.Template.Spec.InitContainers
-		currentDeployment.Spec.Replicas = int32ToPtr(0)
-		if currentDeployment.Status.Replicas == 0 {
-			commandCR.Status.UpgradeState = contrail.CommandUpgrading
+		if deployment.Status.Replicas == 0 {
+			command.Status.UpgradeState = contrail.CommandUpgrading
 		}
 	case contrail.CommandUpgrading:
-		currentDeployment.Spec.Replicas = int32ToPtr(0)
-		oldImage := getContainerImage(oldDeploymentSpec.Template.Spec.Containers, "api")
-		newImage := getImage(commandCR.Spec.ServiceConfiguration.Containers, "api")
-		if err := r.reconcileDataMigrationJob(commandCR, oldImage, newImage, configMapName); err != nil {
+		completed, err := r.checkDataMigrationCompleted(command)
+		if err != nil {
 			return err
 		}
-		return r.checkDataMigrationJobStatus(commandCR)
+		if completed {
+			command.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
+		}
 	case contrail.CommandStartingUpgradedDeployment:
-		if err := r.deleteMigrationJob(commandCR); err != nil {
-			return err
+		upgradedAgain := isImageChanged(command)
+		if upgradedAgain {
+			command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
 		}
-		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
-		expectedReplicas := ptrToInt32(currentDeployment.Spec.Replicas, 1)
-		if currentDeployment.Status.ReadyReplicas == expectedReplicas {
-			commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+		expectedReplicas := ptrToInt32(command.Spec.CommonConfiguration.Replicas, 1)
+		if deployment.Status.ReadyReplicas == expectedReplicas {
+			command.Status.UpgradeState = contrail.CommandNotUpgrading
 		}
 	default: // case contrail.CommandNotUpgrading or UpgradeState is not set
-		currentDeployment.Spec.Replicas = commandCR.Spec.CommonConfiguration.Replicas
-		commandCR.Status.UpgradeState = contrail.CommandNotUpgrading
+		command.Status.UpgradeState = contrail.CommandNotUpgrading
 	}
 	return nil
 }
@@ -76,24 +73,31 @@ func getContainerImage(containers []core.Container, name string) string {
 	return ""
 }
 
-func (r *ReconcileCommand) checkDataMigrationJobStatus(command *contrail.Command) error {
+func isImageChanged(command *contrail.Command) bool {
+	return command.Status.ContainerImage != "" && command.Status.ContainerImage != getImage(command.Spec.ServiceConfiguration.Containers, "api")
+}
+
+func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command) (bool, error) {
 	dataMigrationJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-upgrade-job"}
 	err := r.client.Get(context.Background(), jobName, dataMigrationJob)
-	alreadyExists := err == nil
-	if alreadyExists {
+	exists := err == nil
+	if exists {
 		if job.Status(dataMigrationJob.Status).Completed() {
-			command.Status.UpgradeState = contrail.CommandStartingUpgradedDeployment
+			return true, nil
 		}
 	}
 	if !errors.IsNotFound(err) {
-		return err
+		return false, err
 	}
 
-	return r.client.Create(context.Background(), dataMigrationJob)
+	return false, nil
 }
 
 func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, oldImage, newImage, configMapName string) error {
+	if command.Status.UpgradeState == contrail.CommandNotUpgrading || command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade {
+		return r.deleteMigrationJob(command)
+	}
 	dataMigrationJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-upgrade-job"}
 	err := r.client.Get(context.Background(), jobName, dataMigrationJob)
@@ -188,20 +192,6 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 			TTLSecondsAfterFinished: nil,
 		},
 	}
-}
-
-func imageIsUpgraded(currentDeployment *apps.Deployment, oldDeploymentSpec *apps.DeploymentSpec) bool {
-	for i, container := range oldDeploymentSpec.Template.Spec.Containers {
-		if currentDeployment.Spec.Template.Spec.Containers[i].Image != container.Image {
-			return true
-		}
-	}
-	for i, container := range oldDeploymentSpec.Template.Spec.InitContainers {
-		if currentDeployment.Spec.Template.Spec.InitContainers[i].Image != container.Image {
-			return true
-		}
-	}
-	return false
 }
 
 func int32ToPtr(value int32) *int32 {

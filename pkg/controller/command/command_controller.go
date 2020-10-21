@@ -104,14 +104,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to secondary resource SwiftProxy and requeue the owner Command
-	err = c.Watch(&source.Kind{Type: &contrail.SwiftProxy{}}, &handler.EnqueueRequestForOwner{
-		OwnerType: &contrail.Command{},
-	})
-	if err != nil {
-		return err
-	}
-
 	// Watch for changes to secondary resource Job and requeue the owner Command
 	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
 		OwnerType:    &contrail.Command{},
@@ -188,51 +180,24 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	swiftService, err := r.getSwift(command)
+	psql, err := r.getPostgres(command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
-	if err = r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
+	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
 		return reconcile.Result{}, err
 	}
-
-	if !swiftService.Status.Active {
+	if !psql.Status.Active {
 		return reconcile.Result{}, nil
 	}
-
-	swiftSecretName := swiftService.Status.CredentialsSecretName
-	if swiftSecretName == "" {
-		return reconcile.Result{}, nil
-	}
-
-	swiftSecret := &core.Secret{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	swiftProxyService, err := r.getSwiftProxy(command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if err = r.kubernetes.Owner(command).EnsureOwns(swiftProxyService); err != nil {
-		return reconcile.Result{}, err
-	}
-	if swiftProxyService.Status.ClusterIP == "" {
-		return reconcile.Result{}, nil
-	}
-	swiftProxyAddress := swiftProxyService.Status.ClusterIP
-	swiftProxyPort := swiftProxyService.Spec.ServiceConfiguration.ListenPort
 
 	keystone, err := r.getKeystone(command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if err := r.kubernetes.Owner(command).EnsureOwns(keystone); err != nil {
 		return reconcile.Result{}, err
 	}
-
 	if !keystone.Status.Active {
 		return reconcile.Result{}, nil
 	}
@@ -245,16 +210,31 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	keystonePort := keystone.Spec.ServiceConfiguration.ListenPort
 	keystoneAuthProtocol := keystone.Spec.ServiceConfiguration.AuthProtocol
 
-	psql, err := r.getPostgres(command)
+	swiftService, err := r.getSwift(command)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	if err = r.kubernetes.Owner(command).EnsureOwns(psql); err != nil {
+	if err = r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
 		return reconcile.Result{}, err
 	}
-	if !psql.Status.Active {
+	if !swiftService.Status.Active {
 		return reconcile.Result{}, nil
 	}
+
+	swiftSecretName := swiftService.Status.CredentialsSecretName
+	if swiftSecretName == "" {
+		return reconcile.Result{}, nil
+	}
+	swiftSecret := &core.Secret{}
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if swiftService.Status.SwiftProxyClusterIP == "" {
+		return reconcile.Result{}, nil
+	}
+	swiftProxyAddress := swiftService.Status.SwiftProxyClusterIP
+	swiftProxyPort := swiftService.Status.SwiftProxyPort
 
 	config, err := r.getConfig(command)
 	if err != nil {
@@ -290,7 +270,6 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	commandConfigName := command.Name + "-command-configmap"
-
 	for _, pod := range commandPods.Items {
 		podIPs = append(podIPs, pod.Status.PodIP)
 	}
@@ -306,14 +285,100 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	configVolumeName := request.Name + "-" + instanceType + "-volume"
-	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
+	d := &apps.Deployment{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Name + "-command-deployment",
+	}, d)
+
+	if err != nil && !errors.IsNotFound(err) {
+		return reconcile.Result{}, err
+	}
+
+	if err := r.performUpgradeIfNeeded(command, d); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	d = &apps.Deployment{
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: command.GetNamespace(),
+			Name:      command.Name + "-command-deployment",
+		},
+	}
+	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, d, func() error {
+		upgrading := true
+		if command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandShuttingDownBeforeUpgrade {
+			r.fillDeploymentSpec(command, d)
+			upgrading = false
+		}
+		if err := r.prepareIntendedDeployment(d, command); err != nil {
+			return err
+		}
+		if upgrading {
+			d.Spec.Replicas = int32ToPtr(0)
+		}
+		return nil
+	}); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
+	oldImage := getContainerImage(d.Spec.Template.Spec.Containers, "api")
+	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err = r.updateStatus(command, d, commandClusterIP); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	sPort := swiftService.Status.SwiftProxyPort
+	swiftServiceName := swiftService.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName
+	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret, swiftServiceName); err != nil {
+		return reconcile.Result{}, err
+	}
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileCommand) getPostgres(command *contrail.Command) (*contrail.Postgres, error) {
+	psql := &contrail.Postgres{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.PostgresInstance,
+	}, psql)
+
+	return psql, err
+}
+
+func (r *ReconcileCommand) getSwift(command *contrail.Command) (*contrail.Swift, error) {
+	swiftServ := &contrail.Swift{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.SwiftInstance,
+	}, swiftServ)
+
+	return swiftServ, err
+}
+
+func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Keystone, error) {
+	keystoneServ := &contrail.Keystone{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: command.GetNamespace(),
+		Name:      command.Spec.ServiceConfiguration.KeystoneInstance,
+	}, keystoneServ)
+
+	return keystoneServ, err
+}
+
+func newDeploymentWithVolumes(name, namespace, instanceType string, containers []*contrail.Container) *apps.Deployment {
+	configVolumeName := name + "-" + instanceType + "-volume"
+	csrSignerCaVolumeName := name + "-csr-signer-ca"
 	deployment := newDeployment(
-		request.Name,
-		request.Namespace,
+		name,
+		namespace,
 		configVolumeName,
 		csrSignerCaVolumeName,
-		command.Spec.ServiceConfiguration.Containers,
+		containers,
 	)
 	executableMode := int32(0744)
 	volumes := []core.Volume{{
@@ -321,7 +386,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		VolumeSource: core.VolumeSource{
 			ConfigMap: &core.ConfigMapVolumeSource{
 				LocalObjectReference: core.LocalObjectReference{
-					Name: commandConfigName,
+					Name: name + "-command-configmap",
 				},
 				DefaultMode: &executableMode,
 			},
@@ -329,10 +394,10 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	}}
 	volumes = append(volumes,
 		core.Volume{
-			Name: command.Name + "-secret-certificates",
+			Name: name + "-secret-certificates",
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					SecretName: command.Name + "-secret-certificates",
+					SecretName: name + "-secret-certificates",
 				},
 			},
 		},
@@ -367,72 +432,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	})
 	deployment.Spec.Template.Spec.Volumes = volumes
 
-	expectedDeployment := deployment.DeepCopy()
-	createOrUpdateResult, err := controllerutil.CreateOrUpdate(context.Background(), r.client, deployment, func() error {
-		oldDeploymentSpec := deployment.Spec.DeepCopy() // it is different than expectedDeployment.Spec, because CreateOrUpdate gets current object
-		expectedDeployment.Spec.DeepCopyInto(&deployment.Spec)
-		if err := r.prepareIntendedDeployment(deployment, command); err != nil {
-			return err
-		}
-		return r.performUpgradeStepIfNeeded(command, deployment, oldDeploymentSpec, commandBootStrapConfigName)
-	})
-	reqLogger.Info("Command deployment CreateOrUpdate: " + string(createOrUpdateResult) + ", state " + string(command.Status.UpgradeState))
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.updateStatus(command, deployment, commandClusterIP); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	sPort := swiftService.Status.SwiftProxyPort
-	swiftServiceName := swiftService.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName
-	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret, swiftServiceName); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	reqLogger.Info("Command - done")
-	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileCommand) getPostgres(command *contrail.Command) (*contrail.Postgres, error) {
-	psql := &contrail.Postgres{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Namespace: command.GetNamespace(),
-		Name:      command.Spec.ServiceConfiguration.PostgresInstance,
-	}, psql)
-
-	return psql, err
-}
-
-func (r *ReconcileCommand) getSwift(command *contrail.Command) (*contrail.Swift, error) {
-	swiftServ := &contrail.Swift{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Namespace: command.GetNamespace(),
-		Name:      command.Spec.ServiceConfiguration.SwiftInstance,
-	}, swiftServ)
-
-	return swiftServ, err
-}
-
-func (r *ReconcileCommand) getSwiftProxy(command *contrail.Command) (*contrail.SwiftProxy, error) {
-	swiftProxyServ := &contrail.SwiftProxy{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Namespace: command.GetNamespace(),
-		Name:      command.Spec.ServiceConfiguration.SwiftInstance + "-proxy",
-	}, swiftProxyServ)
-
-	return swiftProxyServ, err
-}
-
-func (r *ReconcileCommand) getKeystone(command *contrail.Command) (*contrail.Keystone, error) {
-	keystoneServ := &contrail.Keystone{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{
-		Namespace: command.GetNamespace(),
-		Name:      command.Spec.ServiceConfiguration.KeystoneInstance,
-	}, keystoneServ)
-
-	return keystoneServ, err
+	return deployment
 }
 
 func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeName string, containers []*contrail.Container) *apps.Deployment {
@@ -555,7 +555,7 @@ func getCommand(containers []*contrail.Container, containerName string) []string
 func (r *ReconcileCommand) updateStatus(command *contrail.Command, deployment *apps.Deployment, cip string) error {
 	command.Status.Endpoint = cip
 	expectedReplicas := ptrToInt32(deployment.Spec.Replicas, 1)
-	if deployment.Status.ReadyReplicas == expectedReplicas && command.Status.UpgradeState == contrail.CommandNotUpgrading {
+	if deployment.Status.ReadyReplicas == expectedReplicas && (command.Status.UpgradeState == contrail.CommandNotUpgrading || command.Status.UpgradeState == "") {
 		command.Status.Active = true
 	} else {
 		command.Status.Active = false
@@ -656,6 +656,11 @@ func (r *ReconcileCommand) reconcileBootstrapJob(command *contrail.Command, comm
 		return err
 	}
 	return r.client.Create(context.Background(), bootstrapJob)
+}
+
+func (r *ReconcileCommand) fillDeploymentSpec(command *contrail.Command, d *apps.Deployment) {
+	deploy := newDeploymentWithVolumes(command.Name, command.Namespace, "command", command.Spec.ServiceConfiguration.Containers)
+	d.Spec = deploy.Spec
 }
 
 func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBootStrapConfigName string) *batch.Job {
