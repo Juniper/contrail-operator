@@ -79,18 +79,3 @@ reconfigEnabled=true
 skipACL=yes
 dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
 `
-
-var zookeeperConfig2 = `dataDir=/var/lib/zookeeper
-tickTime=2000
-initLimit=5
-syncLimit=2
-maxClientCnxns=60
-maxSessionTimeout=120000
-admin.enableServer=false
-admin.serverPort=21833
-standaloneEnabled=false
-4lw.commands.whitelist=stat,ruok,conf,isro
-reconfigEnabled=true
-skipACL=yes
-dynamicConfigFile=/var/lib/zookeeper/zoo.cfg.dynamic
-`
