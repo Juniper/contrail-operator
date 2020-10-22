@@ -29,6 +29,7 @@ type KeystoneConfiguration struct {
 	ProjectDomainID   string `json:"projectDomainID,omitempty"`
 	UserDomainName    string `json:"userDomainName,omitempty"`
 	ProjectDomainName string `json:"projectDomainName,omitempty"`
+	PublicEndpoint    string `json:"publicEndpoint,omitempty"`
 	// IP address or domain name (withouth protocol prefix) of the external keystone.
 	// If defined no keystone releated resource will be created in cluster and other
 	// components will be configured to use this address as keystone endpoint.
@@ -75,6 +76,11 @@ type KeystoneList struct {
 //PodsCertSubjects gets list of Keystone pods certificate subjets which can be passed to the certificate API
 func (k *Keystone) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
 	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
+	if k.Spec.ServiceConfiguration.PublicEndpoint != "" {
+		altIPs.Retriever = func(pod corev1.Pod) []string {
+			return []string{k.Spec.ServiceConfiguration.PublicEndpoint}
+		}
+	}
 	return PodsCertSubjects(podList, k.Spec.CommonConfiguration.HostNetwork, altIPs)
 }
 

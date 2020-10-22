@@ -154,8 +154,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	keystoneClusterIP := "0.0.0.0"
-	keystoneService, err := r.ensureServiceExists(keystone)
+	svc, err := r.ensureServiceExists(keystone)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -164,9 +163,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
 	}
 
-	keystoneClusterIP = keystoneService.Spec.ClusterIP
-
-	if err := r.ensureCertificatesExist(keystone, keystonePods, keystoneClusterIP); err != nil {
+	if err := r.ensureCertificatesExist(keystone, keystonePods, svc.ClusterIP()); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -215,7 +212,8 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	kcbName := keystone.Name + "-keystone-bootstrap"
-	if err = r.configMap(kcbName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(psql.Status.Endpoint, memcached.Status.Endpoint, keystoneClusterIP); err != nil {
+	if err = r.configMap(kcbName, "keystone", keystone, adminPasswordSecret).ensureKeystoneInitExist(
+		psql.Status.Endpoint, memcached.Status.Endpoint, svc.ClusterIP(), svc.NodePort("api")); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -250,7 +248,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.updateStatus(keystone, sts, keystoneClusterIP)
+	return reconcile.Result{}, r.updateStatus(keystone, sts, svc.ClusterIP())
 }
 
 func (r *ReconcileKeystone) ensureFernetKeyManagerExists(name, namespace string) error {
@@ -507,29 +505,15 @@ func (r *ReconcileKeystone) listKeystonePods(keystoneName string) (*core.PodList
 	return pods, nil
 }
 
-func (r *ReconcileKeystone) ensureServiceExists(keystone *contrail.Keystone) (*core.Service, error) {
-	keystoneService := newKeystoneService(keystone)
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, keystoneService, func() error {
-		keystoneService.Spec.Ports = []core.ServicePort{
-			{Port: int32(keystone.Spec.ServiceConfiguration.ListenPort), Protocol: "TCP"},
-		}
-		keystoneService.Spec.Selector = map[string]string{"keystone": keystone.Name}
-		return controllerutil.SetControllerReference(keystone, keystoneService, r.scheme)
-	})
-	if err != nil {
+func (r *ReconcileKeystone) ensureServiceExists(k *contrail.Keystone) (*k8s.Service, error) {
+	servicePortsMap := map[int32]string{
+		int32(k.Spec.ServiceConfiguration.ListenPort): "api",
+	}
+	svc := r.kubernetes.Service(k.Name+"-service", core.ServiceTypeNodePort, servicePortsMap, "keystone", k)
+	if err := svc.EnsureExists(); err != nil {
 		return nil, err
 	}
-	return keystoneService, nil
-}
-
-func newKeystoneService(cr *contrail.Keystone) *core.Service {
-	return &core.Service{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      cr.Name + "-service",
-			Namespace: cr.Namespace,
-			Labels:    map[string]string{"service": cr.Name},
-		},
-	}
+	return svc, nil
 }
 
 func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, fernetKeysSecretName, credentialKeysSecretName, adminPassSecretName, psqlIP string) *batch.Job {
