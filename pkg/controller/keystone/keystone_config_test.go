@@ -153,7 +153,7 @@ const expectedPublicKeystoneInitBootstrapScript = `
 keystone-manage db_sync
 keystone-manage bootstrap --bootstrap-password test123 \
   --bootstrap-region-id RegionOne \
-  --bootstrap-admin-url https://10.10.10.10:5555/v3/ \
+  --bootstrap-admin-url https://192.168.0.1:30020/v3/ \
   --bootstrap-internal-url https://10.10.10.10:5555/v3/ \
   --bootstrap-public-url https://192.168.0.1:30020/v3/
 `

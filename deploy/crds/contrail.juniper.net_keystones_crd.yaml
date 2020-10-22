@@ -36,8 +36,7 @@ spec:
               properties:
                 hostAliases:
                   description: HostAliases is an optional list of hosts and IPs that
-                    will be injected into the pod's hosts file if specified. This
-                    is only valid for non-hostNetwork pods.
+                    will be injected into the pod's hosts file if specified.
                   items:
                     description: HostAlias holds the mapping between IP and hostnames
                       that will be injected as an entry in the pod's hosts file.
@@ -156,6 +155,8 @@ spec:
                 projectDomainID:
                   type: string
                 projectDomainName:
+                  type: string
+                publicEndpoint:
                   type: string
                 region:
                   type: string
