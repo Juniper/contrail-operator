@@ -44,15 +44,17 @@ func TestVrouterController(t *testing.T) {
 			},
 		},
 		Spec: contrail.VrouterSpec{
-			ServiceConfiguration: contrail.VrouterConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "image1"},
-					{Name: "nodemanager", Image: "image2"},
-					{Name: "vrouteragent", Image: "image3"},
-					{Name: "vroutercni", Image: "image4"},
-					{Name: "vrouterkernelbuildinit", Image: "image5"},
-					{Name: "vrouterkernelinit", Image: "image6"},
-					{Name: "nodeinit", Image: "image7"},
+			ServiceConfiguration: contrail.VrouterServiceConfiguration{
+				VrouterConfiguration: contrail.VrouterConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "image1"},
+						{Name: "nodemanager", Image: "image2"},
+						{Name: "vrouteragent", Image: "image3"},
+						{Name: "vroutercni", Image: "image4"},
+						{Name: "vrouterkernelbuildinit", Image: "image5"},
+						{Name: "vrouterkernelinit", Image: "image6"},
+						{Name: "nodeinit", Image: "image7"},
+					},
 				},
 			},
 			CommonConfiguration: contrail.PodConfiguration{

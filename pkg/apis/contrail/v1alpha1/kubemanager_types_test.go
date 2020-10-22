@@ -100,19 +100,21 @@ func TestKubemanagerConfigurationParametersWithSetValues(t *testing.T) {
 	var falseVal = false
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
-			ServiceConfiguration: KubemanagerConfiguration{
-				CloudOrchestrator:     "test_orchestrator",
-				KubernetesAPIServer:   "1.1.1.1",
-				KubernetesAPIPort:     &apiPort,
-				KubernetesAPISSLPort:  &apiSSLPort,
-				KubernetesClusterName: "test_cluster",
-				PodSubnets:            "2.2.2.2/22",
-				IPFabricSubnets:       "3.3.3.3/11",
-				ServiceSubnets:        "4.4.4.4/21",
-				IPFabricForwarding:    &trueVal,
-				HostNetworkService:    &trueVal,
-				UseKubeadmConfig:      &trueVal,
-				IPFabricSnat:          &falseVal,
+			ServiceConfiguration: KubemanagerServiceConfiguration{
+				KubemanagerConfiguration: KubemanagerConfiguration{
+					CloudOrchestrator:     "test_orchestrator",
+					KubernetesAPIServer:   "1.1.1.1",
+					KubernetesAPIPort:     &apiPort,
+					KubernetesAPISSLPort:  &apiSSLPort,
+					KubernetesClusterName: "test_cluster",
+					PodSubnets:            "2.2.2.2/22",
+					IPFabricSubnets:       "3.3.3.3/11",
+					ServiceSubnets:        "4.4.4.4/21",
+					IPFabricForwarding:    &trueVal,
+					HostNetworkService:    &trueVal,
+					UseKubeadmConfig:      &trueVal,
+					IPFabricSnat:          &falseVal,
+				},
 			},
 		},
 	}
@@ -140,26 +142,28 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
-			StaticConfiguration: KubemanagerStaticConfiguration{
-				CassandraNodesConfiguration: &CassandraClusterConfiguration{
-					Port:         1111,
-					Endpoint:     "9.9.9.9:9595",
-					ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
-				},
-				ConfigNodesConfiguration: &ConfigClusterConfiguration{
-					APIServerIPList:       []string{"3.3.3.3", "4.4.4.4"},
-					APIServerPort:         2222,
-					CollectorServerIPList: []string{"3.3.3.4", "4.4.4.5"},
-					CollectorPort:         2223,
-				},
-				RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
-					ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
-					SSLPort:      3333,
-					Secret:       "rabbit-secret",
-				},
-				ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
-					ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
-					ClientPort:   4444,
+			ServiceConfiguration: KubemanagerServiceConfiguration{
+				KubemanagerNodesConfiguration: KubemanagerNodesConfiguration{
+					CassandraNodesConfiguration: &CassandraClusterConfiguration{
+						Port:         1111,
+						Endpoint:     "9.9.9.9:9595",
+						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
+					},
+					ConfigNodesConfiguration: &ConfigClusterConfiguration{
+						APIServerIPList:       []string{"3.3.3.3", "4.4.4.4"},
+						APIServerPort:         2222,
+						CollectorServerIPList: []string{"3.3.3.4", "4.4.4.5"},
+						CollectorPort:         2223,
+					},
+					RabbbitmqNodesConfiguration: &RabbitmqClusterConfiguration{
+						ServerIPList: []string{"5.5.5.5", "6.6.6.6"},
+						SSLPort:      3333,
+						Secret:       "rabbit-secret",
+					},
+					ZookeeperNodesConfiguration: &ZookeeperClusterConfiguration{
+						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
+						ClientPort:   4444,
+					},
 				},
 			},
 		},

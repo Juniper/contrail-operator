@@ -37,11 +37,11 @@ type Kubemanager struct {
 // KubemanagerSpec is the Spec for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerSpec struct {
-	CommonConfiguration  PodConfiguration               `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration KubemanagerConfiguration       `json:"serviceConfiguration"`
-	StaticConfiguration  KubemanagerStaticConfiguration `json:"staticConfiguration"`
+	CommonConfiguration  PodConfiguration                `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration KubemanagerServiceConfiguration `json:"serviceConfiguration"`
 }
 
+// KubemanagerStatus is the Status for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -52,7 +52,14 @@ type KubemanagerStatus struct {
 	ConfigChanged *bool             `json:"configChanged,omitempty"`
 }
 
-// KubemanagerConfiguration is the Spec for the kubemanagers API.
+// KubemanagerServiceConfiguration is the Spec for the kubemanagers API.
+// +k8s:openapi-gen=true
+type KubemanagerServiceConfiguration struct {
+	KubemanagerConfiguration      `json:",inline"`
+	KubemanagerNodesConfiguration `json:",inline"`
+}
+
+// KubemanagerConfiguration is the configuration for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
 	Containers            []*Container `json:"containers,omitempty"`
@@ -77,9 +84,9 @@ type KubemanagerConfiguration struct {
 	RabbitmqVhost         string       `json:"rabbitmqVhost,omitempty"`
 }
 
-// KubemanagerConfiguration is the Spec for the kubemanagers API.
+// KubemanagerNodesConfiguration is the configuration for third party dependencies
 // +k8s:openapi-gen=true
-type KubemanagerStaticConfiguration struct {
+type KubemanagerNodesConfiguration struct {
 	ConfigNodesConfiguration    *ConfigClusterConfiguration    `json:"configNodesConfiguration,omitempty"`
 	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
 	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
@@ -111,13 +118,13 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	cassandraNodesInformation := c.Spec.StaticConfiguration.CassandraNodesConfiguration
+	cassandraNodesInformation := c.Spec.ServiceConfiguration.CassandraNodesConfiguration
 	cassandraNodesInformation.FillWithDefaultValues()
-	configNodesInformation := c.Spec.StaticConfiguration.ConfigNodesConfiguration
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
 	configNodesInformation.FillWithDefaultValues()
-	rabbitmqNodesInformation := c.Spec.StaticConfiguration.RabbbitmqNodesConfiguration
+	rabbitmqNodesInformation := c.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration
 	rabbitmqNodesInformation.FillWithDefaultValues()
-	zookeeperNodesInformation := c.Spec.StaticConfiguration.ZookeeperNodesConfiguration
+	zookeeperNodesInformation := c.Spec.ServiceConfiguration.ZookeeperNodesConfiguration
 	zookeeperNodesInformation.FillWithDefaultValues()
 
 	var rabbitmqSecretUser string

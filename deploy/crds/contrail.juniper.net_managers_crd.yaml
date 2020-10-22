@@ -1368,15 +1368,13 @@ spec:
                   type: object
                 kubemanagers:
                   items:
-                    description: KubemanagerService defines desired confgiuration
+                    description: KubemanagerService defines desired configuration
                       of vRouter
                     properties:
-                      cassandraInstance:
-                        type: string
                       metadata:
                         type: object
                       spec:
-                        description: KubemanagerServiceSpec defines desired spec confgiuration
+                        description: KubemanagerServiceSpec defines desired spec configuration
                           of vRouter
                         properties:
                           commonConfiguration:
@@ -1477,9 +1475,11 @@ spec:
                                 type: array
                             type: object
                           serviceConfiguration:
-                            description: KubemanagerConfiguration is the Spec for
-                              the kubemanagers API.
+                            description: KubemanagerManagerServiceConfiguration defines
+                              service configuration of Kubemanager
                             properties:
+                              cassandraInstance:
+                                type: string
                               cloudOrchestrator:
                                 type: string
                               clusterRole:
@@ -1532,12 +1532,12 @@ spec:
                                 type: string
                               useKubeadmConfig:
                                 type: boolean
+                              zookeeperInstance:
+                                type: string
                             type: object
                         required:
                         - serviceConfiguration
                         type: object
-                      zookeeperInstance:
-                        type: string
                     type: object
                   type: array
                 memcached:
@@ -2462,8 +2462,6 @@ spec:
                   items:
                     description: VrouterService defines desired confgiuration of vRouter
                     properties:
-                      controlInstance:
-                        type: string
                       metadata:
                         type: object
                       spec:
@@ -2568,28 +2566,45 @@ spec:
                                 type: array
                             type: object
                           serviceConfiguration:
-                            description: VrouterConfiguration is the Spec for the
-                              vrouter API.
+                            description: VrouterManagerServiceConfiguration defines
+                              service confgiuration for vRouter
                             properties:
                               clusterRole:
                                 type: string
                               clusterRoleBinding:
                                 type: string
                               containers:
-                                items:
-                                  description: Container defines name, image and command.
-                                  properties:
-                                    command:
-                                      items:
+                                allOf:
+                                - items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
                                         type: string
-                                      type: array
-                                    image:
-                                      type: string
-                                    name:
-                                      type: string
-                                  type: object
+                                      name:
+                                        type: string
+                                    type: object
+                                - items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    type: object
                                 type: array
                               contrailStatusImage:
+                                type: string
+                              controlInstance:
                                 type: string
                               distribution:
                                 type: string

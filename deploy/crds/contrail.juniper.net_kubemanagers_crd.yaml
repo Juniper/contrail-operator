@@ -117,15 +117,62 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: KubemanagerConfiguration is the Spec for the kubemanagers
+              description: KubemanagerServiceConfiguration is the Spec for the kubemanagers
                 API.
               properties:
+                cassandraNodesConfiguration:
+                  description: CassandraClusterConfiguration stores all information
+                    about Cassandra's endpoints.
+                  properties:
+                    cqlPort:
+                      type: integer
+                    endpoint:
+                      type: string
+                    jmxPort:
+                      type: integer
+                    port:
+                      type: integer
+                    serverIPList:
+                      items:
+                        type: string
+                      type: array
+                  type: object
                 cloudOrchestrator:
                   type: string
                 clusterRole:
                   type: string
                 clusterRoleBinding:
                   type: string
+                configNodesConfiguration:
+                  description: ConfigClusterConfiguration  stores all information
+                    about service's endpoints under the Contrail Config
+                  properties:
+                    analyticsServerIPList:
+                      items:
+                        type: string
+                      type: array
+                    analyticsServerPort:
+                      type: integer
+                    apiServerIPList:
+                      items:
+                        type: string
+                      type: array
+                    apiServerPort:
+                      type: integer
+                    authMode:
+                      enum:
+                      - noauth
+                      - keystone
+                      type: string
+                    collectorPort:
+                      type: integer
+                    collectorServerIPList:
+                      items:
+                        type: string
+                      type: array
+                    redisPort:
+                      type: integer
+                  type: object
                 containers:
                   items:
                     description: Container defines name, image and command.
@@ -160,70 +207,6 @@ spec:
                   type: string
                 podSubnets:
                   type: string
-                rabbitmqPassword:
-                  type: string
-                rabbitmqUser:
-                  type: string
-                rabbitmqVhost:
-                  type: string
-                serviceAccount:
-                  type: string
-                serviceSubnets:
-                  type: string
-                useKubeadmConfig:
-                  type: boolean
-              type: object
-            staticConfiguration:
-              description: KubemanagerConfiguration is the Spec for the kubemanagers
-                API.
-              properties:
-                cassandraNodesConfiguration:
-                  description: CassandraClusterConfiguration stores all information
-                    about Cassandra's endpoints.
-                  properties:
-                    cqlPort:
-                      type: integer
-                    endpoint:
-                      type: string
-                    jmxPort:
-                      type: integer
-                    port:
-                      type: integer
-                    serverIPList:
-                      items:
-                        type: string
-                      type: array
-                  type: object
-                configNodesConfiguration:
-                  description: ConfigClusterConfiguration  stores all information
-                    about service's endpoints under the Contrail Config
-                  properties:
-                    analyticsServerIPList:
-                      items:
-                        type: string
-                      type: array
-                    analyticsServerPort:
-                      type: integer
-                    apiServerIPList:
-                      items:
-                        type: string
-                      type: array
-                    apiServerPort:
-                      type: integer
-                    authMode:
-                      enum:
-                      - noauth
-                      - keystone
-                      type: string
-                    collectorPort:
-                      type: integer
-                    collectorServerIPList:
-                      items:
-                        type: string
-                      type: array
-                    redisPort:
-                      type: integer
-                  type: object
                 rabbitmqNodesConfiguration:
                   description: RabbitmqClusterConfiguration stores all information
                     about Rabbitmq's endpoints.
@@ -239,6 +222,18 @@ spec:
                     sslPort:
                       type: integer
                   type: object
+                rabbitmqPassword:
+                  type: string
+                rabbitmqUser:
+                  type: string
+                rabbitmqVhost:
+                  type: string
+                serviceAccount:
+                  type: string
+                serviceSubnets:
+                  type: string
+                useKubeadmConfig:
+                  type: boolean
                 zookeeperNodesConfiguration:
                   description: ZookeeperClusterConfiguration stores all information
                     about Zookeeper's endpoints.
@@ -257,9 +252,9 @@ spec:
               type: object
           required:
           - serviceConfiguration
-          - staticConfiguration
           type: object
         status:
+          description: KubemanagerStatus is the Status for the kubemanagers API.
           properties:
             active:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state

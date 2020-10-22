@@ -117,47 +117,13 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: VrouterConfiguration is the Spec for the vrouter API.
+              description: VrouterServiceConfiguration defines all vRouter service
+                configuration
               properties:
                 clusterRole:
                   type: string
                 clusterRoleBinding:
                   type: string
-                containers:
-                  items:
-                    description: Container defines name, image and command.
-                    properties:
-                      command:
-                        items:
-                          type: string
-                        type: array
-                      image:
-                        type: string
-                      name:
-                        type: string
-                    type: object
-                  type: array
-                contrailStatusImage:
-                  type: string
-                distribution:
-                  type: string
-                gateway:
-                  type: string
-                metaDataSecret:
-                  type: string
-                nodeManager:
-                  type: boolean
-                physicalInterface:
-                  type: string
-                serviceAccount:
-                  type: string
-                vrouterEncryption:
-                  type: boolean
-              type: object
-            staticConfiguration:
-              description: VrouterStaticConfiguration is the static configuration
-                for vrouter.
-              properties:
                 configNodesConfiguration:
                   description: ConfigClusterConfiguration  stores all information
                     about service's endpoints under the Contrail Config
@@ -188,6 +154,22 @@ spec:
                     redisPort:
                       type: integer
                   type: object
+                containers:
+                  items:
+                    description: Container defines name, image and command.
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      image:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: array
+                contrailStatusImage:
+                  type: string
                 controlNodesConfiguration:
                   description: ControlClusterConfiguration stores all information
                     about services' endpoints under the Contrail Control
@@ -205,12 +187,26 @@ spec:
                     xmppPort:
                       type: integer
                   type: object
+                distribution:
+                  type: string
+                gateway:
+                  type: string
+                metaDataSecret:
+                  type: string
+                nodeManager:
+                  type: boolean
+                physicalInterface:
+                  type: string
+                serviceAccount:
+                  type: string
+                vrouterEncryption:
+                  type: boolean
               type: object
           required:
           - serviceConfiguration
-          - staticConfiguration
           type: object
         status:
+          description: VrouterStatus is the Status for vrouter API.
           properties:
             active:
               type: boolean

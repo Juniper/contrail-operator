@@ -89,11 +89,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
@@ -105,16 +107,18 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerServiceSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+					CassandraInstance: "cassandra",
+					ZookeeperInstance: "zookeeper",
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
-			CassandraInstance: "cassandra",
-			ZookeeperInstance: "zookeeper",
 		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
@@ -170,11 +174,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+				ServiceConfiguration: contrail.VrouterServiceConfiguration{
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
@@ -186,7 +192,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterServiceSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
+				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
+					ControlInstance: "control",
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
 						{Name: "init", Image: "busybox"},
@@ -194,7 +201,6 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
-			ControlInstance: "control",
 		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
@@ -397,11 +403,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
@@ -413,16 +421,18 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerServiceSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+					CassandraInstance: "cassandra",
+					ZookeeperInstance: "zookeeper",
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
-			CassandraInstance: "cassandra",
-			ZookeeperInstance: "zookeeper",
 		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
@@ -483,11 +493,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+				ServiceConfiguration: contrail.VrouterServiceConfiguration{
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
@@ -499,7 +511,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterServiceSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
+				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
+					ControlInstance: "control",
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
 						{Name: "init", Image: "busybox"},
@@ -507,7 +520,6 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
-			ControlInstance: "control",
 		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
@@ -712,11 +724,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
@@ -728,16 +742,18 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.KubemanagerServiceSpec{
-				ServiceConfiguration: contrail.KubemanagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "kubemanager", Image: "kubemanager"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "kubemanager"},
+				ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+					CassandraInstance: "cassandra",
+					ZookeeperInstance: "zookeeper",
+					KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "kubemanager", Image: "kubemanager"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "kubemanager"},
+						},
 					},
 				},
 			},
-			CassandraInstance: "cassandra",
-			ZookeeperInstance: "zookeeper",
 		}
 		webui := &contrail.Webui{
 			ObjectMeta: meta.ObjectMeta{
@@ -793,11 +809,13 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+				ServiceConfiguration: contrail.VrouterServiceConfiguration{
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
@@ -809,7 +827,8 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.VrouterServiceSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
+				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
+					ControlInstance: "control",
 					Containers: []*contrail.Container{
 						{Name: "vrouter", Image: "vrouter:3.5"},
 						{Name: "init", Image: "busybox"},
@@ -817,7 +836,6 @@ func TestManagerController(t *testing.T) {
 					},
 				},
 			},
-			ControlInstance: "control",
 		}
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
@@ -2650,10 +2668,10 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 
 	newKubemanager := &contrail.Kubemanager{}
 	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, "cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
-	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.CassandraNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.ZookeeperNodesConfiguration)
-	assert.NotNil(t, newKubemanager.Spec.StaticConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
 }
 
 func TestFillVrouterConfiguration(t *testing.T) {
@@ -2666,8 +2684,8 @@ func TestFillVrouterConfiguration(t *testing.T) {
 
 	newVrouter := &contrail.Vrouter{}
 	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
-	assert.NotNil(t, newVrouter.Spec.StaticConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, newVrouter.Spec.StaticConfiguration.ControlNodesConfiguration)
+	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
 }
 
 func TestProcessVrouters(t *testing.T) {
@@ -2694,7 +2712,11 @@ func TestProcessVrouters(t *testing.T) {
 						ObjectMeta: meta.ObjectMeta{
 							Name: "test-vrouter",
 						},
-						ControlInstance: "control1",
+						Spec: contrail.VrouterServiceSpec{
+							ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
+								ControlInstance: "control1",
+							},
+						},
 					},
 				},
 			},
@@ -2707,8 +2729,8 @@ func TestProcessVrouters(t *testing.T) {
 		Name:      "test-vrouter",
 		Namespace: "test-ns",
 	}, createdVRouter))
-	assert.NotNil(t, createdVRouter.Spec.StaticConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, createdVRouter.Spec.StaticConfiguration.ControlNodesConfiguration)
+	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdVRouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
 }
 
 func TestProcessKubemanagers(t *testing.T) {
@@ -2737,8 +2759,12 @@ func TestProcessKubemanagers(t *testing.T) {
 						ObjectMeta: meta.ObjectMeta{
 							Name: "test-kubemanager",
 						},
-						CassandraInstance: "cassandra1",
-						ZookeeperInstance: "zookeeper1",
+						Spec: contrail.KubemanagerServiceSpec{
+							ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+								CassandraInstance: "cassandra1",
+								ZookeeperInstance: "zookeeper1",
+							},
+						},
 					},
 				},
 			},
@@ -2751,8 +2777,8 @@ func TestProcessKubemanagers(t *testing.T) {
 		Name:      "test-kubemanager",
 		Namespace: "test-ns",
 	}, createdKubemanager))
-	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.ConfigNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.ZookeeperNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.CassandraNodesConfiguration)
-	assert.NotNil(t, createdKubemanager.Spec.StaticConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
 }

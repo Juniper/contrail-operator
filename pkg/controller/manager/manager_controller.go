@@ -557,15 +557,15 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 
 	var kubemanagerServiceStatus []*v1alpha1.ServiceStatus
 	for _, kubemanagerService := range manager.Spec.Services.Kubemanagers {
-		if !kubemanagerDependenciesReady(kubemanagerService.CassandraInstance, kubemanagerService.ZookeeperInstance, manager.ObjectMeta, r.client) {
+		if !kubemanagerDependenciesReady(kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, manager.ObjectMeta, r.client) {
 			continue
 		}
 		kubemanager := &v1alpha1.Kubemanager{}
 		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
 		kubemanager.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
-			kubemanager.Spec.ServiceConfiguration = kubemanagerService.Spec.ServiceConfiguration
-			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.CassandraInstance, kubemanagerService.ZookeeperInstance, manager.ObjectMeta, r.client); err != nil {
+			kubemanager.Spec.ServiceConfiguration.KubemanagerConfiguration = kubemanagerService.Spec.ServiceConfiguration.KubemanagerConfiguration
+			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
 			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanagerService.Spec.CommonConfiguration)
@@ -702,16 +702,16 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 
 	var vRouterServiceStatus []*v1alpha1.ServiceStatus
 	for _, vRouterService := range manager.Spec.Services.Vrouters {
-		if !vrouterDependenciesReady(vRouterService.ControlInstance, manager.ObjectMeta, r.client) {
+		if !vrouterDependenciesReady(vRouterService.Spec.ServiceConfiguration.ControlInstance, manager.ObjectMeta, r.client) {
 			continue
 		}
 		vRouter := &v1alpha1.Vrouter{}
 		vRouter.ObjectMeta = vRouterService.ObjectMeta
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
-			vRouter.Spec.ServiceConfiguration = vRouterService.Spec.ServiceConfiguration
+			vRouter.Spec.ServiceConfiguration.VrouterConfiguration = vRouterService.Spec.ServiceConfiguration.VrouterConfiguration
 			vRouter.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, vRouterService.Spec.CommonConfiguration)
-			if err := fillVrouterConfiguration(vRouter, vRouterService.ControlInstance, manager.ObjectMeta, r.client); err != nil {
+			if err := fillVrouterConfiguration(vRouter, vRouterService.Spec.ServiceConfiguration.ControlInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
 			if vRouter.Spec.CommonConfiguration.Replicas == nil {
@@ -1057,22 +1057,22 @@ func fillKubemanagerConfiguration(kubemanager *v1alpha1.Kubemanager, cassandraNa
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.StaticConfiguration).CassandraNodesConfiguration = &cassandraConfig
+	(&kubemanager.Spec.ServiceConfiguration).CassandraNodesConfiguration = &cassandraConfig
 	zookeeperConfig, err := v1alpha1.NewZookeeperClusterConfiguration(zookeeperName, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.StaticConfiguration).ZookeeperNodesConfiguration = &zookeeperConfig
+	(&kubemanager.Spec.ServiceConfiguration).ZookeeperNodesConfiguration = &zookeeperConfig
 	rabbitmqConfig, err := v1alpha1.NewRabbitmqClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.StaticConfiguration).RabbbitmqNodesConfiguration = &rabbitmqConfig
+	(&kubemanager.Spec.ServiceConfiguration).RabbbitmqNodesConfiguration = &rabbitmqConfig
 	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&kubemanager.Spec.StaticConfiguration).ConfigNodesConfiguration = &configConfig
+	(&kubemanager.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
 	return nil
 }
 
@@ -1090,11 +1090,11 @@ func fillVrouterConfiguration(vrouter *v1alpha1.Vrouter, controlName string, man
 	if err != nil {
 		return err
 	}
-	(&vrouter.Spec.StaticConfiguration).ControlNodesConfiguration = &controlConfig
+	(&vrouter.Spec.ServiceConfiguration).ControlNodesConfiguration = &controlConfig
 	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
 	if err != nil {
 		return err
 	}
-	(&vrouter.Spec.StaticConfiguration).ConfigNodesConfiguration = &configConfig
+	(&vrouter.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
 	return nil
 }

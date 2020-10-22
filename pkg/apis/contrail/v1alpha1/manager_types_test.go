@@ -192,9 +192,11 @@ var kubemanagerService = &contrail.KubemanagerService{
 		CommonConfiguration: contrail.PodConfiguration{
 			Replicas: &replicas,
 		},
+		ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+			CassandraInstance: "cassandra",
+			ZookeeperInstance: "zookeeper",
+		},
 	},
-	CassandraInstance: "cassandra",
-	ZookeeperInstance: "zookeeper",
 }
 
 var webui = &contrail.Webui{

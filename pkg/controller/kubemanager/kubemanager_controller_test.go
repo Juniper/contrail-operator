@@ -42,16 +42,18 @@ var kubemanagerCR = &contrail.Kubemanager{
 		},
 	},
 	Spec: contrail.KubemanagerSpec{
-		ServiceConfiguration: contrail.KubemanagerConfiguration{
-			Containers: []*contrail.Container{
-				{Name: "init", Image: "image1"},
-				{Name: "kubemanager", Image: "image2"},
-				{Name: "statusmonitor", Image: "image4"},
+		ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+			KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+				Containers: []*contrail.Container{
+					{Name: "init", Image: "image1"},
+					{Name: "kubemanager", Image: "image2"},
+					{Name: "statusmonitor", Image: "image4"},
+				},
+				IPFabricForwarding:  &falseVal,
+				IPFabricSnat:        &trueVal,
+				KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+				UseKubeadmConfig:    &trueVal,
 			},
-			IPFabricForwarding:  &falseVal,
-			IPFabricSnat:        &trueVal,
-			KubernetesTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-			UseKubeadmConfig:    &trueVal,
 		},
 		CommonConfiguration: contrail.PodConfiguration{
 			NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},

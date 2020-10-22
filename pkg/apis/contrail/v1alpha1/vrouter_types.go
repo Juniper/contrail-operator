@@ -36,6 +36,7 @@ type Vrouter struct {
 	Status VrouterStatus `json:"status,omitempty"`
 }
 
+// VrouterStatus is the Status for vrouter API.
 // +k8s:openapi-gen=true
 type VrouterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -49,9 +50,15 @@ type VrouterStatus struct {
 // VrouterSpec is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration  PodConfiguration           `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration VrouterConfiguration       `json:"serviceConfiguration"`
-	StaticConfiguration  VrouterStaticConfiguration `json:"staticConfiguration"`
+	CommonConfiguration  PodConfiguration            `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// VrouterServiceConfiguration defines all vRouter service configuration
+// +k8s:openapi-gen=true
+type VrouterServiceConfiguration struct {
+	VrouterConfiguration      `json:",inline"`
+	VrouterNodesConfiguration `json:",inline"`
 }
 
 // VrouterConfiguration is the Spec for the vrouter API.
@@ -70,9 +77,9 @@ type VrouterConfiguration struct {
 	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
 }
 
-// VrouterStaticConfiguration is the static configuration for vrouter.
+// VrouterNodesConfiguration is the static configuration for vrouter.
 // +k8s:openapi-gen=true
-type VrouterStaticConfiguration struct {
+type VrouterNodesConfiguration struct {
 	ControlNodesConfiguration *ControlClusterConfiguration `json:"controlNodesConfiguration,omitempty"`
 	ConfigNodesConfiguration  *ConfigClusterConfiguration  `json:"configNodesConfiguration,omitempty"`
 }
@@ -303,9 +310,9 @@ func (c *Vrouter) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
 
-	configNodesInformation := c.Spec.StaticConfiguration.ConfigNodesConfiguration
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
 	configNodesInformation.FillWithDefaultValues()
-	controlNodesInformation := c.Spec.StaticConfiguration.ControlNodesConfiguration
+	controlNodesInformation := c.Spec.ServiceConfiguration.ControlNodesConfiguration
 	controlNodesInformation.FillWithDefaultValues()
 
 	instanceConfigMapName := request.Name + "-" + "vrouter" + "-configmap"

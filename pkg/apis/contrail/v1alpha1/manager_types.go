@@ -46,30 +46,43 @@ type Services struct {
 type VrouterService struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              VrouterServiceSpec `json:"spec,omitempty"`
-	ControlInstance   string             `json:"controlInstance,omitempty"`
 }
 
 // VrouterServiceSpec defines desired spec confgiuration of vRouter
 // +k8s:openapi-gen=true
 type VrouterServiceSpec struct {
-	CommonConfiguration  PodConfiguration     `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration VrouterConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration                   `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterManagerServiceConfiguration `json:"serviceConfiguration"`
 }
 
-// KubemanagerService defines desired confgiuration of vRouter
+// VrouterManagerServiceConfiguration defines service confgiuration for vRouter
+// +k8s:openapi-gen=true
+type VrouterManagerServiceConfiguration struct {
+	ControlInstance      string       `json:"controlInstance,omitempty"`
+	Containers           []*Container `json:"containers,omitempty"`
+	VrouterConfiguration `json:",inline"`
+}
+
+// KubemanagerService defines desired configuration of vRouter
 // +k8s:openapi-gen=true
 type KubemanagerService struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              KubemanagerServiceSpec `json:"spec,omitempty"`
-	CassandraInstance string                 `json:"cassandraInstance,omitempty"`
-	ZookeeperInstance string                 `json:"zookeeperInstance,omitempty"`
 }
 
-// KubemanagerServiceSpec defines desired spec confgiuration of vRouter
+// KubemanagerServiceSpec defines desired spec configuration of vRouter
 // +k8s:openapi-gen=true
 type KubemanagerServiceSpec struct {
-	CommonConfiguration  PodConfiguration         `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration KubemanagerConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration                       `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration KubemanagerManagerServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// KubemanagerManagerServiceConfiguration defines service configuration of Kubemanager
+// +k8s:openapi-gen=true
+type KubemanagerManagerServiceConfiguration struct {
+	CassandraInstance        string `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance        string `json:"zookeeperInstance,omitempty"`
+	KubemanagerConfiguration `json:",inline"`
 }
 
 // ManagerConfiguration is the common services struct.
