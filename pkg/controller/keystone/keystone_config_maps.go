@@ -32,15 +32,15 @@ func (c *configMaps) ensureKeystoneExists(postgresNode, memcachedNode string, po
 	return c.cm.EnsureExists(cc)
 }
 
-func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, podIP string, nodePort int32) error {
-	publicAddress := podIP
+func (c *configMaps) ensureKeystoneInitExist(postgresNode, memcachedNode string, clusterIP string, nodePort int32) error {
+	publicAddress := clusterIP
 	publicPort := int32(c.keystoneSpec.ServiceConfiguration.ListenPort)
 	if c.keystoneSpec.ServiceConfiguration.PublicEndpoint != "" {
 		publicAddress = c.keystoneSpec.ServiceConfiguration.PublicEndpoint
 		publicPort = nodePort
 	}
 	cc := &keystoneBootstrapConf{
-		InternalAddress:  podIP,
+		InternalAddress:  clusterIP,
 		InternalPort:     c.keystoneSpec.ServiceConfiguration.ListenPort,
 		PublicAddress:    publicAddress,
 		PublicPort:       publicPort,
