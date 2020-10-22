@@ -194,10 +194,12 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.VrouterServiceSpec{
 				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
 					ControlInstance: "control",
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
@@ -513,10 +515,12 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.VrouterServiceSpec{
 				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
 					ControlInstance: "control",
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
@@ -829,10 +833,12 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.VrouterServiceSpec{
 				ServiceConfiguration: contrail.VrouterManagerServiceConfiguration{
 					ControlInstance: "control",
-					Containers: []*contrail.Container{
-						{Name: "vrouter", Image: "vrouter:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "vrouter:3.5"},
+					VrouterConfiguration: contrail.VrouterConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "vrouter", Image: "vrouter:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "vrouter:3.5"},
+						},
 					},
 				},
 			},
