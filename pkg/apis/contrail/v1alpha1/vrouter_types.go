@@ -50,8 +50,9 @@ type VrouterStatus struct {
 // VrouterSpec is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration  PodConfiguration            `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration VrouterServiceConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration       PodConfiguration            `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration      VrouterServiceConfiguration `json:"serviceConfiguration"`
+	EnvVariablesConfiguration map[string]string           `json:"envVariablesConfiguration,omitempty"`
 }
 
 // VrouterServiceConfiguration defines all vRouter service configuration
@@ -394,6 +395,11 @@ func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
 	// override the value from the annotations.
 	if vrouterConfig.PhysicalInterface != "" {
 		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
+	}
+	if c.Spec.EnvVariablesConfiguration != nil {
+		for key, value := range c.Spec.EnvVariablesConfiguration {
+			envVariables[key] = value
+		}
 	}
 	return envVariables
 }
