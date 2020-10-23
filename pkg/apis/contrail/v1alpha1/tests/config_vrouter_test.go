@@ -165,8 +165,8 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 	environment := SetupEnv()
 	cl := *environment.client
 	customEnvVariables := map[string]string{
-		"HYPERVISOR_TYPE": "kvm",
-		"TSN_AGENT_MODE":  "tsn-no-forwarding",
+		"HYPERVISOR_TYPE": "none",
+		"TSN_AGENT_MODE":  "forwarding",
 	}
 	environment.vrouterResource.Spec.EnvVariablesConfiguration = customEnvVariables
 	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
@@ -184,8 +184,8 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 		"PHYSICAL_INTERFACE": "eth0",
 		"CLOUD_ORCHESTRATOR": "kubernetes",
 		"VROUTER_ENCRYPTION": "true",
-		"HYPERVISOR_TYPE":    "kvm",
-		"TSN_AGENT_MODE":     "tsn-no-forwarding",
+		"HYPERVISOR_TYPE":    "none",
+		"TSN_AGENT_MODE":     "forwarding",
 	}
 	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
 }
