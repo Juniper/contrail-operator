@@ -44,18 +44,18 @@ func TestVrouterController(t *testing.T) {
 			},
 		},
 		Spec: contrail.VrouterSpec{
-			ServiceConfiguration: contrail.VrouterConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "image1"},
-					{Name: "nodemanager", Image: "image2"},
-					{Name: "vrouteragent", Image: "image3"},
-					{Name: "vroutercni", Image: "image4"},
-					{Name: "vrouterkernelbuildinit", Image: "image5"},
-					{Name: "vrouterkernelinit", Image: "image6"},
-					{Name: "nodeinit", Image: "image7"},
+			ServiceConfiguration: contrail.VrouterServiceConfiguration{
+				VrouterConfiguration: contrail.VrouterConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "image1"},
+						{Name: "nodemanager", Image: "image2"},
+						{Name: "vrouteragent", Image: "image3"},
+						{Name: "vroutercni", Image: "image4"},
+						{Name: "vrouterkernelbuildinit", Image: "image5"},
+						{Name: "vrouterkernelinit", Image: "image6"},
+						{Name: "nodeinit", Image: "image7"},
+					},
 				},
-				ControlInstance:   "control1",
-				CassandraInstance: "cassandra1",
 			},
 			CommonConfiguration: contrail.PodConfiguration{
 				NodeSelector: map[string]string{"node-role.opencontrail.org": "vrouter"},
@@ -177,174 +177,5 @@ func TestVrouterController(t *testing.T) {
 			Controller: &trueVal, BlockOwnerDeletion: &trueVal,
 		}}
 		assert.Equal(t, expectedOwnerRefs, ds.OwnerReferences)
-	})
-}
-
-func TestVrouterDependenciesReady(t *testing.T) {
-	t.Run("given fake environment", func(t *testing.T) {
-		scheme, err := contrail.SchemeBuilder.Build()
-		require.NoError(t, err)
-		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
-		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
-		require.NoError(t, batch.SchemeBuilder.AddToScheme(scheme))
-
-		trueVal := true
-		falseVal := false
-		var replicas int32 = 3
-
-		vrouterName := types.NamespacedName{
-			Namespace: "default",
-			Name:      "test-vrouter",
-		}
-
-		vrouterCR := &contrail.Vrouter{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: vrouterName.Namespace,
-				Name:      vrouterName.Name,
-				Labels: map[string]string{
-					"contrail_cluster": "test",
-				},
-			},
-			Spec: contrail.VrouterSpec{
-				ServiceConfiguration: contrail.VrouterConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "init", Image: "image1"},
-						{Name: "nodemanager", Image: "image2"},
-						{Name: "vrouteragent", Image: "image3"},
-						{Name: "vroutercni", Image: "image4"},
-						{Name: "vrouterkernelbuildinit", Image: "image5"},
-						{Name: "vrouterkernelinit", Image: "image6"},
-						{Name: "nodeinit", Image: "image7"},
-					},
-					ControlInstance:   "control1",
-					CassandraInstance: "cassandra1",
-				},
-				CommonConfiguration: contrail.PodConfiguration{
-					NodeSelector: map[string]string{"node-role.opencontrail.org": "vrouter"},
-					Replicas:     &replicas,
-				},
-			},
-		}
-
-		controlCR := &contrail.Control{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: "default",
-				Name:      "control1",
-			},
-		}
-
-		configCR := &contrail.Config{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: "default",
-				Name:      "config1",
-				Labels: map[string]string{
-					"contrail_cluster": "test",
-				},
-			},
-		}
-		fakeClient := fake.NewFakeClientWithScheme(scheme, vrouterCR, controlCR, configCR)
-
-		t.Run("when control and config are not set as active and vrouter has no static configuration", func(t *testing.T) {
-			configCR.Status = contrail.ConfigStatus{Active: &falseVal}
-			controlCR.Status = contrail.ControlStatus{Active: &falseVal}
-			vrouterCR.Spec.ServiceConfiguration.StaticConfiguration = nil
-			if err := fakeClient.Update(context.TODO(), configCR); err != nil {
-				t.Fatalf("Config CR update failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), controlCR); err != nil {
-				t.Fatalf("Control CR updated failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), vrouterCR); err != nil {
-				t.Fatalf("Vrouter CR update failed: %v", err)
-			}
-
-			t.Run("then vrouterDependeciesReady should return false", func(t *testing.T) {
-				vrouterReconciler := NewReconciler(fakeClient, scheme, &rest.Config{}).(*ReconcileVrouter)
-				assert.Equal(t, false, vrouterReconciler.vrouterDependenciesReady(vrouterCR, "default"))
-			})
-		})
-		t.Run("when control and config are set as active and vrouter has no static configuration", func(t *testing.T) {
-			configCR.Status = contrail.ConfigStatus{Active: &trueVal}
-			controlCR.Status = contrail.ControlStatus{Active: &trueVal}
-			vrouterCR.Spec.ServiceConfiguration.StaticConfiguration = nil
-			if err := fakeClient.Update(context.TODO(), configCR); err != nil {
-				t.Fatalf("Config CR update failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), controlCR); err != nil {
-				t.Fatalf("Control CR updated failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), vrouterCR); err != nil {
-				t.Fatalf("Vrouter CR update failed: %v", err)
-			}
-
-			t.Run("then vrouterDependeciesReady should return true", func(t *testing.T) {
-				vrouterReconciler := NewReconciler(fakeClient, scheme, &rest.Config{}).(*ReconcileVrouter)
-				assert.Equal(t, true, vrouterReconciler.vrouterDependenciesReady(vrouterCR, "default"))
-			})
-		})
-		t.Run("when control and config are set as not active and vrouter has static configuration for both control and config", func(t *testing.T) {
-			configCR.Status = contrail.ConfigStatus{Active: &trueVal}
-			controlCR.Status = contrail.ControlStatus{Active: &trueVal}
-			vrouterCR.Spec.ServiceConfiguration.StaticConfiguration = &contrail.VrouterStaticConfiguration{
-				ControlNodesConfiguration: &contrail.ControlClusterConfiguration{},
-				ConfigNodesConfiguration:  &contrail.ConfigClusterConfiguration{},
-			}
-			if err := fakeClient.Update(context.TODO(), configCR); err != nil {
-				t.Fatalf("Config CR update failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), controlCR); err != nil {
-				t.Fatalf("Control CR updated failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), vrouterCR); err != nil {
-				t.Fatalf("Vrouter CR update failed: %v", err)
-			}
-
-			t.Run("then vrouterDependeciesReady should return true", func(t *testing.T) {
-				vrouterReconciler := NewReconciler(fakeClient, scheme, &rest.Config{}).(*ReconcileVrouter)
-				assert.Equal(t, true, vrouterReconciler.vrouterDependenciesReady(vrouterCR, "default"))
-			})
-		})
-		t.Run("when control is set as not active config as active and vrouter has static configuration for control", func(t *testing.T) {
-			configCR.Status = contrail.ConfigStatus{Active: &trueVal}
-			controlCR.Status = contrail.ControlStatus{Active: &falseVal}
-			vrouterCR.Spec.ServiceConfiguration.StaticConfiguration = &contrail.VrouterStaticConfiguration{
-				ControlNodesConfiguration: &contrail.ControlClusterConfiguration{},
-			}
-			if err := fakeClient.Update(context.TODO(), configCR); err != nil {
-				t.Fatalf("Config CR update failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), controlCR); err != nil {
-				t.Fatalf("Control CR updated failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), vrouterCR); err != nil {
-				t.Fatalf("Vrouter CR update failed: %v", err)
-			}
-
-			t.Run("then vrouterDependeciesReady should return true", func(t *testing.T) {
-				vrouterReconciler := NewReconciler(fakeClient, scheme, &rest.Config{}).(*ReconcileVrouter)
-				assert.Equal(t, true, vrouterReconciler.vrouterDependenciesReady(vrouterCR, "default"))
-			})
-		})
-		t.Run("when control is set as active config as not active and vrouter has static configuration for config", func(t *testing.T) {
-			configCR.Status = contrail.ConfigStatus{Active: &falseVal}
-			controlCR.Status = contrail.ControlStatus{Active: &trueVal}
-			vrouterCR.Spec.ServiceConfiguration.StaticConfiguration = &contrail.VrouterStaticConfiguration{
-				ConfigNodesConfiguration: &contrail.ConfigClusterConfiguration{},
-			}
-			if err := fakeClient.Update(context.TODO(), configCR); err != nil {
-				t.Fatalf("Config CR update failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), controlCR); err != nil {
-				t.Fatalf("Control CR updated failed: %v", err)
-			}
-			if err := fakeClient.Update(context.TODO(), vrouterCR); err != nil {
-				t.Fatalf("Vrouter CR update failed: %v", err)
-			}
-
-			t.Run("then vrouterDependeciesReady should return true", func(t *testing.T) {
-				vrouterReconciler := NewReconciler(fakeClient, scheme, &rest.Config{}).(*ReconcileVrouter)
-				assert.Equal(t, true, vrouterReconciler.vrouterDependenciesReady(vrouterCR, "default"))
-			})
-		})
 	})
 }

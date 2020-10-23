@@ -81,9 +81,28 @@ var kubemanager = &v1alpha1.Kubemanager{
 		},
 	},
 	Spec: v1alpha1.KubemanagerSpec{
-		ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
-			CassandraInstance: "cassandra1",
-			ZookeeperInstance: "zookeeper1",
+		ServiceConfiguration: v1alpha1.KubemanagerServiceConfiguration{
+			KubemanagerNodesConfiguration: v1alpha1.KubemanagerNodesConfiguration{
+				CassandraNodesConfiguration: &v1alpha1.CassandraClusterConfiguration{
+					Port:         9160,
+					ServerIPList: []string{"1.1.2.1", "1.1.2.2", "1.1.2.3"},
+				},
+				ZookeeperNodesConfiguration: &v1alpha1.ZookeeperClusterConfiguration{
+					ClientPort:   2181,
+					ServerIPList: []string{"1.1.3.1", "1.1.3.2", "1.1.3.3"},
+				},
+				RabbbitmqNodesConfiguration: &v1alpha1.RabbitmqClusterConfiguration{
+					SSLPort:      15673,
+					ServerIPList: []string{"1.1.4.1", "1.1.4.2", "1.1.4.3"},
+					Secret:       "rabbitmq-secret",
+				},
+				ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+					APIServerPort:         8082,
+					CollectorPort:         8086,
+					APIServerIPList:       []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+					CollectorServerIPList: []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+				},
+			},
 		},
 	},
 }
@@ -145,10 +164,20 @@ var vrouter = &v1alpha1.Vrouter{
 		},
 	},
 	Spec: v1alpha1.VrouterSpec{
-		ServiceConfiguration: v1alpha1.VrouterConfiguration{
-			ControlInstance:   "control1",
-			Gateway:           "1.1.8.254",
-			CassandraInstance: "cassandra1",
+		ServiceConfiguration: v1alpha1.VrouterServiceConfiguration{
+			VrouterConfiguration: v1alpha1.VrouterConfiguration{
+				Gateway: "1.1.8.254",
+			},
+			VrouterNodesConfiguration: v1alpha1.VrouterNodesConfiguration{
+				ConfigNodesConfiguration: &v1alpha1.ConfigClusterConfiguration{
+					APIServerIPList:       []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+					AnalyticsServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+					CollectorServerIPList: []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+				},
+				ControlNodesConfiguration: &v1alpha1.ControlClusterConfiguration{
+					ControlServerIPList: []string{"1.1.5.1", "1.1.5.2", "1.1.5.3"},
+				},
+			},
 		},
 	},
 }

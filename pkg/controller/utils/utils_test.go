@@ -443,9 +443,10 @@ var vrouter = &contrail.Vrouter{
 		},
 	},
 	Spec: contrail.VrouterSpec{
-		ServiceConfiguration: contrail.VrouterConfiguration{
-			ControlInstance: "control1",
-			Gateway:         "1.1.8.254",
+		ServiceConfiguration: contrail.VrouterServiceConfiguration{
+			VrouterConfiguration: contrail.VrouterConfiguration{
+				Gateway: "1.1.8.254",
+			},
 		},
 	},
 	Status: contrail.VrouterStatus{Active: &falseVal},

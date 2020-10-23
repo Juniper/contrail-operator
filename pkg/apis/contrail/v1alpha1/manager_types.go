@@ -23,22 +23,65 @@ type ManagerSpec struct {
 // Services defines the desired state of Services.
 // +k8s:openapi-gen=true
 type Services struct {
-	Config           *Config           `json:"config,omitempty"`
-	Controls         []*Control        `json:"controls,omitempty"`
-	Kubemanagers     []*Kubemanager    `json:"kubemanagers,omitempty"`
-	Webui            *Webui            `json:"webui,omitempty"`
-	Vrouters         []*Vrouter        `json:"vrouters,omitempty"`
-	Cassandras       []*Cassandra      `json:"cassandras,omitempty"`
-	Zookeepers       []*Zookeeper      `json:"zookeepers,omitempty"`
-	Rabbitmq         *Rabbitmq         `json:"rabbitmq,omitempty"`
-	ProvisionManager *ProvisionManager `json:"provisionManager,omitempty"`
-	Command          *Command          `json:"command,omitempty"`
-	Postgres         *Postgres         `json:"postgres,omitempty"`
-	Keystone         *Keystone         `json:"keystone,omitempty"`
-	Swift            *Swift            `json:"swift,omitempty"`
-	Memcached        *Memcached        `json:"memcached,omitempty"`
-	Contrailmonitor  *Contrailmonitor  `json:"contrailmonitor,omitempty"`
-	ContrailCNIs     []*ContrailCNI    `json:"contrailCNIs,omitempty"`
+	Config           *Config               `json:"config,omitempty"`
+	Controls         []*Control            `json:"controls,omitempty"`
+	Kubemanagers     []*KubemanagerService `json:"kubemanagers,omitempty"`
+	Webui            *Webui                `json:"webui,omitempty"`
+	Vrouters         []*VrouterService     `json:"vrouters,omitempty"`
+	Cassandras       []*Cassandra          `json:"cassandras,omitempty"`
+	Zookeepers       []*Zookeeper          `json:"zookeepers,omitempty"`
+	Rabbitmq         *Rabbitmq             `json:"rabbitmq,omitempty"`
+	ProvisionManager *ProvisionManager     `json:"provisionManager,omitempty"`
+	Command          *Command              `json:"command,omitempty"`
+	Postgres         *Postgres             `json:"postgres,omitempty"`
+	Keystone         *Keystone             `json:"keystone,omitempty"`
+	Swift            *Swift                `json:"swift,omitempty"`
+	Memcached        *Memcached            `json:"memcached,omitempty"`
+	Contrailmonitor  *Contrailmonitor      `json:"contrailmonitor,omitempty"`
+	ContrailCNIs     []*ContrailCNI        `json:"contrailCNIs,omitempty"`
+}
+
+// VrouterService defines desired confgiuration of vRouter
+// +k8s:openapi-gen=true
+type VrouterService struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              VrouterServiceSpec `json:"spec,omitempty"`
+}
+
+// VrouterServiceSpec defines desired spec confgiuration of vRouter
+// +k8s:openapi-gen=true
+type VrouterServiceSpec struct {
+	CommonConfiguration  PodConfiguration                   `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterManagerServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// VrouterManagerServiceConfiguration defines service confgiuration for vRouter
+// +k8s:openapi-gen=true
+type VrouterManagerServiceConfiguration struct {
+	ControlInstance      string `json:"controlInstance,omitempty"`
+	VrouterConfiguration `json:",inline"`
+}
+
+// KubemanagerService defines desired configuration of vRouter
+// +k8s:openapi-gen=true
+type KubemanagerService struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              KubemanagerServiceSpec `json:"spec,omitempty"`
+}
+
+// KubemanagerServiceSpec defines desired spec configuration of vRouter
+// +k8s:openapi-gen=true
+type KubemanagerServiceSpec struct {
+	CommonConfiguration  PodConfiguration                       `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration KubemanagerManagerServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// KubemanagerManagerServiceConfiguration defines service configuration of Kubemanager
+// +k8s:openapi-gen=true
+type KubemanagerManagerServiceConfiguration struct {
+	CassandraInstance        string `json:"cassandraInstance,omitempty"`
+	ZookeeperInstance        string `json:"zookeeperInstance,omitempty"`
+	KubemanagerConfiguration `json:",inline"`
 }
 
 // ManagerConfiguration is the common services struct.

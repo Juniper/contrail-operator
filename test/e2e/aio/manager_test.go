@@ -329,21 +329,23 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				},
-				Kubemanagers: []*v1alpha1.Kubemanager{{
+				Kubemanagers: []*v1alpha1.KubemanagerService{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "kubemanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
-					Spec: v1alpha1.KubemanagerSpec{
-						ServiceConfiguration: v1alpha1.KubemanagerConfiguration{
+
+					Spec: v1alpha1.KubemanagerServiceSpec{
+						ServiceConfiguration: v1alpha1.KubemanagerManagerServiceConfiguration{
 							CassandraInstance: "cassandra1",
 							ZookeeperInstance: "zookeeper1",
-
-							Containers: []*v1alpha1.Container{
-								{Name: "kubemanager", Image: "registry:5000/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
-								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
-								{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+							KubemanagerConfiguration: v1alpha1.KubemanagerConfiguration{
+								Containers: []*v1alpha1.Container{
+									{Name: "kubemanager", Image: "registry:5000/contrail-nightly/contrail-kubernetes-kube-manager:" + versionMap["kubemanager"]},
+									{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
+									{Name: "statusmonitor", Image: "registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:" + versionMap["contrail-statusmonitor"]},
+								},
 							},
 						},
 					},

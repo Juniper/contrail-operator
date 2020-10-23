@@ -190,7 +190,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
-          cassandraInstance: cassandra1
           controlInstance: control1
           contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:
@@ -219,7 +218,6 @@ spec:
           nodeSelector:
             node-role.kubernetes.io/worker: ""
         serviceConfiguration:
-          cassandraInstance: cassandra1
           controlInstance: control1
           contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-rhel
           containers:

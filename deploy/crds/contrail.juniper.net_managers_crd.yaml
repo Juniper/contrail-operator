@@ -1370,25 +1370,14 @@ spec:
                   type: object
                 kubemanagers:
                   items:
-                    description: Kubemanager is the Schema for the kubemanagers API.
+                    description: KubemanagerService defines desired configuration
+                      of vRouter
                     properties:
-                      apiVersion:
-                        description: 'APIVersion defines the versioned schema of this
-                          representation of an object. Servers should convert recognized
-                          schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                        type: string
-                      kind:
-                        description: 'Kind is a string value representing the REST
-                          resource this object represents. Servers may infer this
-                          from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                        type: string
                       metadata:
                         type: object
                       spec:
-                        description: KubemanagerSpec is the Spec for the kubemanagers
-                          API.
+                        description: KubemanagerServiceSpec defines desired spec configuration
+                          of vRouter
                         properties:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
@@ -1488,8 +1477,8 @@ spec:
                                 type: array
                             type: object
                           serviceConfiguration:
-                            description: KubemanagerConfiguration is the Spec for
-                              the kubemanagers API.
+                            description: KubemanagerManagerServiceConfiguration defines
+                              service configuration of Kubemanager
                             properties:
                               cassandraInstance:
                                 type: string
@@ -1543,89 +1532,6 @@ spec:
                                 type: string
                               serviceSubnets:
                                 type: string
-                              staticConfiguration:
-                                description: KubemanagerStaticConfiguration is the
-                                  configuration for deployment with static controller.
-                                properties:
-                                  cassandraNodesConfiguration:
-                                    description: CassandraClusterConfiguration stores
-                                      all information about Cassandra's endpoints.
-                                    properties:
-                                      cqlPort:
-                                        type: integer
-                                      endpoint:
-                                        type: string
-                                      jmxPort:
-                                        type: integer
-                                      port:
-                                        type: integer
-                                      serverIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                    type: object
-                                  configNodesConfiguration:
-                                    description: ConfigClusterConfiguration  stores
-                                      all information about service's endpoints under
-                                      the Contrail Config
-                                    properties:
-                                      analyticsServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      analyticsServerPort:
-                                        type: integer
-                                      apiServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      apiServerPort:
-                                        type: integer
-                                      authMode:
-                                        enum:
-                                        - noauth
-                                        - keystone
-                                        type: string
-                                      collectorPort:
-                                        type: integer
-                                      collectorServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      redisPort:
-                                        type: integer
-                                    type: object
-                                  rabbitmqNodesConfiguration:
-                                    description: RabbitmqClusterConfiguration stores
-                                      all information about Rabbitmq's endpoints.
-                                    properties:
-                                      port:
-                                        type: integer
-                                      secret:
-                                        type: string
-                                      serverIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      sslPort:
-                                        type: integer
-                                    type: object
-                                  zookeeperNodesConfiguration:
-                                    description: ZookeeperClusterConfiguration stores
-                                      all information about Zookeeper's endpoints.
-                                    properties:
-                                      clientPort:
-                                        type: integer
-                                      electionPort:
-                                        type: integer
-                                      serverIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      serverPort:
-                                        type: integer
-                                    type: object
-                                type: object
                               useKubeadmConfig:
                                 type: boolean
                               zookeeperInstance:
@@ -1633,21 +1539,6 @@ spec:
                             type: object
                         required:
                         - serviceConfiguration
-                        type: object
-                      status:
-                        properties:
-                          active:
-                            description: 'INSERT ADDITIONAL STATUS FIELD - define
-                              observed state of cluster Important: Run "operator-sdk
-                              generate k8s" to regenerate code after modifying this
-                              file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
-                            type: boolean
-                          configChanged:
-                            type: boolean
-                          nodes:
-                            additionalProperties:
-                              type: string
-                            type: object
                         type: object
                     type: object
                   type: array
@@ -2573,24 +2464,13 @@ spec:
                   type: object
                 vrouters:
                   items:
-                    description: Vrouter is the Schema for the vrouters API.
+                    description: VrouterService defines desired confgiuration of vRouter
                     properties:
-                      apiVersion:
-                        description: 'APIVersion defines the versioned schema of this
-                          representation of an object. Servers should convert recognized
-                          schemas to the latest internal value, and may reject unrecognized
-                          values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                        type: string
-                      kind:
-                        description: 'Kind is a string value representing the REST
-                          resource this object represents. Servers may infer this
-                          from the endpoint the client submits requests to. Cannot
-                          be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                        type: string
                       metadata:
                         type: object
                       spec:
-                        description: VrouterSpec is the Spec for the cassandras API.
+                        description: VrouterServiceSpec defines desired spec confgiuration
+                          of vRouter
                         properties:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
@@ -2690,28 +2570,41 @@ spec:
                                 type: array
                             type: object
                           serviceConfiguration:
-                            description: VrouterConfiguration is the Spec for the
-                              cassandras API.
+                            description: VrouterManagerServiceConfiguration defines
+                              service confgiuration for vRouter
                             properties:
-                              cassandraInstance:
-                                type: string
                               clusterRole:
                                 type: string
                               clusterRoleBinding:
                                 type: string
                               containers:
-                                items:
-                                  description: Container defines name, image and command.
-                                  properties:
-                                    command:
-                                      items:
+                                allOf:
+                                - items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
                                         type: string
-                                      type: array
-                                    image:
-                                      type: string
-                                    name:
-                                      type: string
-                                  type: object
+                                      name:
+                                        type: string
+                                    type: object
+                                - items:
+                                    description: Container defines name, image and
+                                      command.
+                                    properties:
+                                      command:
+                                        items:
+                                          type: string
+                                        type: array
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    type: object
                                 type: array
                               contrailStatusImage:
                                 type: string
@@ -2729,89 +2622,11 @@ spec:
                                 type: string
                               serviceAccount:
                                 type: string
-                              staticConfiguration:
-                                description: VrouterStaticConfiguration stores static
-                                  configuration of services required by Vrouter
-                                properties:
-                                  configNodesConfiguration:
-                                    description: ConfigClusterConfiguration  stores
-                                      all information about service's endpoints under
-                                      the Contrail Config
-                                    properties:
-                                      analyticsServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      analyticsServerPort:
-                                        type: integer
-                                      apiServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      apiServerPort:
-                                        type: integer
-                                      authMode:
-                                        enum:
-                                        - noauth
-                                        - keystone
-                                        type: string
-                                      collectorPort:
-                                        type: integer
-                                      collectorServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      redisPort:
-                                        type: integer
-                                    type: object
-                                  controlNodesConfiguration:
-                                    description: ControlClusterConfiguration stores
-                                      all information about services' endpoints under
-                                      the Contrail Control
-                                    properties:
-                                      bgpPort:
-                                        type: integer
-                                      controlServerIPList:
-                                        items:
-                                          type: string
-                                        type: array
-                                      dnsIntrospectPort:
-                                        type: integer
-                                      dnsPort:
-                                        type: integer
-                                      xmppPort:
-                                        type: integer
-                                    type: object
-                                type: object
                               vrouterEncryption:
                                 type: boolean
                             type: object
                         required:
                         - serviceConfiguration
-                        type: object
-                      status:
-                        properties:
-                          active:
-                            type: boolean
-                          nodes:
-                            additionalProperties:
-                              type: string
-                            type: object
-                          ports:
-                            description: 'INSERT ADDITIONAL STATUS FIELD - define
-                              observed state of cluster Important: Run "operator-sdk
-                              generate k8s" to regenerate code after modifying this
-                              file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
-                            properties:
-                              analyticsPort:
-                                type: string
-                              apiPort:
-                                type: string
-                              collectorPort:
-                                type: string
-                              redisPort:
-                                type: string
-                            type: object
                         type: object
                     type: object
                   type: array
