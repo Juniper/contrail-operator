@@ -166,15 +166,13 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 		environment := SetupEnv()
 		cl := *environment.client
 
-<<<<<<< HEAD
-	if err := environment.vrouterResource.InstanceConfiguration(request,
-		&environment.vrouterPodList, cl); err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-=======
+		if err := environment.vrouterResource.InstanceConfiguration(request,
+			&environment.vrouterPodList, cl); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
 		customEnvVariables := map[string]string{
 			"HYPERVISOR_TYPE": "none",
 			"TSN_AGENT_MODE":  "forwarding",
@@ -182,7 +180,6 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 		environment.vrouterResource.Spec.ServiceConfiguration.EnvVariablesConfig = customEnvVariables
 		environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
 		environment.vrouterResource.Spec.ServiceConfiguration.PhysicalInterface = "eth0"
->>>>>>> Add test case for empty and non-empty EnvVariablesConfig
 
 		if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
 			&environment.vrouterPodList, cl); err != nil {
