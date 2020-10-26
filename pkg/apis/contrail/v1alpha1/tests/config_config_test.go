@@ -6,97 +6,123 @@ import (
 
 	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-func TestConfigConfig(t *testing.T) {
+func TestDefaultConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "config1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "config1-config-configmap",
+		Namespace: "default",
+	}
 
-	request := reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}
-	configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
-	t.Run("default setup", func(t *testing.T) {
-		environment := SetupEnv()
+	environment := SetupEnv()
+	t.Run("Instance configuration", func(t *testing.T) {
 		cl := *environment.client
-		err := environment.configResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "config1", Namespace: "default"}}, &environment.configPodList, cl)
-		if err != nil {
-			t.Fatalf("get configmap: (%v)", err)
-		}
-		err = cl.Get(context.TODO(),
-			types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"},
-			&environment.configConfigMap)
-		if err != nil {
-			t.Fatalf("get configmap: (%v)", err)
-		}
+		require.NoError(t, environment.configResource.InstanceConfiguration(
+			request, &environment.configPodList, cl), "Error while configuring instance")
+		require.NoError(t, cl.Get(context.TODO(),
+			configMapNamespacedName, &environment.configConfigMap))
+	})
+	t.Run("default api config", func(t *testing.T) {
 		if environment.configConfigMap.Data["api.1.1.1.1"] != configConfigHa {
 			diff := diff.Diff(environment.configConfigMap.Data["api.1.1.1.1"], configConfigHa)
 			t.Fatalf("get api config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default vncapi config", func(t *testing.T) {
 		if environment.configConfigMap.Data["vnc.1.1.1.1"] != vncApiConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["vnc.1.1.1.1"], vncApiConfig)
 			t.Fatalf("get vncapi config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default contrail-keystone-auth-config", func(t *testing.T) {
 		if environment.configConfigMap.Data["contrail-keystone-auth.conf"] != configKeystoneAuthConf {
 			diff := diff.Diff(environment.configConfigMap.Data["contrail-keystone-auth.conf"], configKeystoneAuthConf)
 			t.Fatalf("get contrail-keystone-auth config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default devicemanager full config", func(t *testing.T) {
 		if environment.configConfigMap.Data["devicemanager.1.1.1.1"] != devicemanagerConfigFull {
 			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.1"], devicemanagerConfigFull)
 			t.Fatalf("get devicemanager config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default devicemanager partial config", func(t *testing.T) {
 		if environment.configConfigMap.Data["devicemanager.1.1.1.2"] != devicemanagerConfigPartial {
 			diff := diff.Diff(environment.configConfigMap.Data["devicemanager.1.1.1.2"], devicemanagerConfigPartial)
 			t.Fatalf("get devicemanager config: \n%v\n", diff)
 		}
-
-		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
-			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
-			t.Fatalf("get dnsmasq config: \n%v\n", diff)
-		}
-
+	})
+	t.Run("default schematransformer config", func(t *testing.T) {
 		if environment.configConfigMap.Data["schematransformer.1.1.1.1"] != schematransformerConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["schematransformer.1.1.1.1"], schematransformerConfig)
 			t.Fatalf("get schematransformer config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default servicemonitor config", func(t *testing.T) {
 		if environment.configConfigMap.Data["servicemonitor.1.1.1.1"] != servicemonitorConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["servicemonitor.1.1.1.1"], servicemonitorConfig)
 			t.Fatalf("get servicemonitor config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default analyticsapi config", func(t *testing.T) {
 		if environment.configConfigMap.Data["analyticsapi.1.1.1.1"] != analyticsapiConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["analyticsapi.1.1.1.1"], analyticsapiConfig)
 			t.Fatalf("get analyticsapi config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default queryengine config", func(t *testing.T) {
 		if environment.configConfigMap.Data["queryengine.1.1.1.1"] != queryengineConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["queryengine.1.1.1.1"], queryengineConfig)
 			t.Fatalf("get queryengine config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default collector config", func(t *testing.T) {
 		if environment.configConfigMap.Data["collector.1.1.1.1"] != collectorConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["collector.1.1.1.1"], collectorConfig)
 			t.Fatalf("get collector config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default nodemanagerconfig config", func(t *testing.T) {
 		if environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"] != confignodemanagerConfig {
 			diff := diff.Diff(environment.configConfigMap.Data["nodemanagerconfig.1.1.1.1"], confignodemanagerConfig)
 			t.Fatalf("get nodemanagerconfig config: \n%v\n", diff)
 		}
-
+	})
+	t.Run("default nodemanageranalytics config", func(t *testing.T) {
 		if environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"] != confignodemanagerAnalytics {
 			diff := diff.Diff(environment.configConfigMap.Data["nodemanageranalytics.1.1.1.1"], confignodemanagerAnalytics)
 			t.Fatalf("get nodemanageranalytics config: \n%v\n", diff)
 		}
 	})
-
+	t.Run("default dnsmasq config", func(t *testing.T) {
+		if environment.configConfigMap.Data["dnsmasq.1.1.1.1"] != dnsmasqConfig {
+			diff := diff.Diff(environment.configConfigMap.Data["dnsmasq.1.1.1.1"], dnsmasqConfig)
+			t.Fatalf("get dnsmasq config: \n%v\n", diff)
+		}
+	})
+}
+func TestDeviceManagerConfig(t *testing.T) {
 	t.Run("device manager host ip is the same as fabric IP stored in config spec", func(t *testing.T) {
 		environment := SetupEnv()
+		request := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      "config1",
+				Namespace: "default",
+			},
+		}
+		configMapNamespacedName := types.NamespacedName{Name: "config1-config-configmap", Namespace: "default"}
 		cl := *environment.client
 		environment.configResource.Spec.ServiceConfiguration.FabricMgmtIP = "2.2.2.2"
 
@@ -106,8 +132,9 @@ func TestConfigConfig(t *testing.T) {
 		err = cl.Get(context.TODO(), configMapNamespacedName, &environment.configConfigMap)
 		assert.NoError(t, err, "cannot get configmap:")
 
-		actual := environment.configConfigMap.Data["devicemanager.1.1.1.1"]
-		assert.Equal(t, actual, devicemanagerWithFabricConfig)
+		devicemanagerTest, err := ini.Load([]byte(environment.configConfigMap.Data["devicemanager.1.1.1.1"]))
+		require.NoError(t, err, "Error while reading config")
+		assert.Equal(t, "2.2.2.2", devicemanagerTest.Section("DEFAULTS").Key("host_ip").String())
 	})
 }
 

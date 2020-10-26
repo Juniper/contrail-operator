@@ -34,18 +34,32 @@ func (c vrouterClusterInfoFake) DeploymentType() string {
 
 func TestVrouterConfig(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "vrouter1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap",
+		Namespace: "default",
+	}
+	configMapNamespacedName1 := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap-1",
+		Namespace: "default",
+	}
 
 	environment := SetupEnv()
 	cl := *environment.client
 
-	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+	if err := environment.vrouterResource.InstanceConfiguration(request,
 		&environment.vrouterPodList, cl); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName1, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 	if environment.vrouterConfigMap.Data["vrouter.1.1.8.1"] != vrouterConfig {
@@ -56,45 +70,75 @@ func TestVrouterConfig(t *testing.T) {
 
 func TestVrouterDefaultCniConfigValues(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "vrouter1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap",
+		Namespace: "default",
+	}
 
 	environment := SetupEnv()
 	cl := *environment.client
 
-	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+	if err := environment.vrouterResource.InstanceConfiguration(request,
 		&environment.vrouterPodList, cl); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 }
 
 func TestVrouterCustomCniConfigValues(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "vrouter1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap",
+		Namespace: "default",
+	}
 
 	environment := SetupEnv()
 	cl := *environment.client
 
-	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+	if err := environment.vrouterResource.InstanceConfiguration(request,
 		&environment.vrouterPodList, cl); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap", Namespace: "default"}, &environment.vrouterConfigMap); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 }
 
 func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "vrouter1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap-1",
+		Namespace: "default",
+	}
 
 	environment := SetupEnv()
 	cl := *environment.client
 
-	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+	if err := environment.vrouterResource.InstanceConfiguration(request,
 		&environment.vrouterPodList, cl); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 
@@ -107,6 +151,16 @@ func TestVrouterDefaultEnvVariablesConfigMap(t *testing.T) {
 
 func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "vrouter1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "vrouter1-vrouter-configmap-1",
+		Namespace: "default",
+	}
 
 	environment := SetupEnv()
 	cl := *environment.client
@@ -114,11 +168,11 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
 	environment.vrouterResource.Spec.ServiceConfiguration.PhysicalInterface = "eth0"
 
-	if err := environment.vrouterResource.InstanceConfiguration(reconcile.Request{types.NamespacedName{Name: "vrouter1", Namespace: "default"}},
+	if err := environment.vrouterResource.InstanceConfiguration(request,
 		&environment.vrouterPodList, cl); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
-	if err := cl.Get(context.TODO(), types.NamespacedName{Name: "vrouter1-vrouter-configmap-1", Namespace: "default"}, &environment.vrouterConfigMap2); err != nil {
+	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
 		t.Fatalf("get configmap: (%v)", err)
 	}
 

@@ -3,11 +3,16 @@ load("@io_bazel_rules_go//go:def.bzl", "go_test")
 go_test(
     name = "go_default_test",
     srcs = [
+        "config_cassandra_test.go",
         "config_config_test.go",
         "config_control_test.go",
         "config_customized_test.go",
+        "config_kubemanager_test.go",
+        "config_rabbitmq_test.go",
         "config_test.go",
         "config_vrouter_test.go",
+        "config_webui_test.go",
+        "config_zookeeper_test.go",
         "pod_cert_subj_test.go",
     ],
     deps = [
@@ -16,6 +21,7 @@ go_test(
         "//pkg/k8s:go_default_library",
         "@com_github_kylelemons_godebug//diff:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@in_gopkg_ini_v1//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
