@@ -50,9 +50,8 @@ type VrouterStatus struct {
 // VrouterSpec is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterSpec struct {
-	CommonConfiguration       PodConfiguration            `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration      VrouterServiceConfiguration `json:"serviceConfiguration"`
-	EnvVariablesConfiguration map[string]string           `json:"envVariablesConfiguration,omitempty"`
+	CommonConfiguration  PodConfiguration            `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration VrouterServiceConfiguration `json:"serviceConfiguration"`
 }
 
 // VrouterServiceConfiguration defines all vRouter service configuration
@@ -60,22 +59,24 @@ type VrouterSpec struct {
 type VrouterServiceConfiguration struct {
 	VrouterConfiguration      `json:",inline"`
 	VrouterNodesConfiguration `json:",inline"`
+	EnvVariablesConfiguration map[string]string `json:"envVariablesConfiguration,omitempty"`
 }
 
 // VrouterConfiguration is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers          []*Container  `json:"containers,omitempty"`
-	Gateway             string        `json:"gateway,omitempty"`
-	PhysicalInterface   string        `json:"physicalInterface,omitempty"`
-	MetaDataSecret      string        `json:"metaDataSecret,omitempty"`
-	NodeManager         *bool         `json:"nodeManager,omitempty"`
-	Distribution        *Distribution `json:"distribution,omitempty"`
-	ServiceAccount      string        `json:"serviceAccount,omitempty"`
-	ClusterRole         string        `json:"clusterRole,omitempty"`
-	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
-	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
+	Containers          []*Container      `json:"containers,omitempty"`
+	Gateway             string            `json:"gateway,omitempty"`
+	PhysicalInterface   string            `json:"physicalInterface,omitempty"`
+	MetaDataSecret      string            `json:"metaDataSecret,omitempty"`
+	NodeManager         *bool             `json:"nodeManager,omitempty"`
+	Distribution        *Distribution     `json:"distribution,omitempty"`
+	ServiceAccount      string            `json:"serviceAccount,omitempty"`
+	ClusterRole         string            `json:"clusterRole,omitempty"`
+	ClusterRoleBinding  string            `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption   bool              `json:"vrouterEncryption,omitempty"`
+	ContrailStatusImage string            `json:"contrailStatusImage,omitempty"`
+	EnvVariablesConfig  map[string]string `json:"envVariablesConfig,omitempty"`
 }
 
 // VrouterNodesConfiguration is the static configuration for vrouter.
@@ -382,6 +383,7 @@ func (c *Vrouter) ConfigurationParameters() VrouterConfiguration {
 	vrouterConfiguration.PhysicalInterface = physicalInterface
 	vrouterConfiguration.Gateway = gateway
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
+	vrouterConfiguration.EnvVariablesConfig = c.Spec.ServiceConfiguration.EnvVariablesConfiguration
 
 	return vrouterConfiguration
 }
@@ -396,8 +398,8 @@ func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
 	if vrouterConfig.PhysicalInterface != "" {
 		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
 	}
-	if c.Spec.EnvVariablesConfiguration != nil {
-		for key, value := range c.Spec.EnvVariablesConfiguration {
+	if vrouterConfig.EnvVariablesConfig != nil {
+		for key, value := range vrouterConfig.EnvVariablesConfig {
 			envVariables[key] = value
 		}
 	}
