@@ -144,6 +144,29 @@ func TestClusterIP(t *testing.T) {
 	})
 }
 
+func TestNodePortIP(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := core.SchemeBuilder.AddToScheme(scheme)
+	require.NoError(t, err)
+	owner := &core.Pod{ObjectMeta: meta.ObjectMeta{Name: "owner"}}
+
+	t.Run("Get NodePort", func(t *testing.T) {
+		initService := &core.Service{
+			ObjectMeta: meta.ObjectMeta{Name: "test"},
+			Spec: core.ServiceSpec{
+				Ports: []core.ServicePort{
+					{Port: 5555, Name: "service", NodePort: 30050},
+				},
+			},
+		}
+		cl := fake.NewFakeClientWithScheme(scheme, initService)
+		sc := k8s.New(cl, scheme).Service("test", core.ServiceTypeClusterIP, map[int32]string{5555: "service"}, "pod", owner)
+		err := sc.EnsureExists()
+		assert.NoError(t, err)
+		assert.Equal(t, int32(30050), sc.NodePort("service"))
+	})
+}
+
 func TestExternalIP(t *testing.T) {
 	scheme := runtime.NewScheme()
 	err := core.SchemeBuilder.AddToScheme(scheme)

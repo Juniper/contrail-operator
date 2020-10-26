@@ -81,6 +81,16 @@ func (s *Service) ExternalIP() string {
 	return s.svc.Status.LoadBalancer.Ingress[0].IP
 }
 
+// NodePort is used get nodeport associated with service
+func (s *Service) NodePort(name string) int32 {
+	for _, p := range s.svc.Spec.Ports {
+		if p.Name == name {
+			return p.NodePort
+		}
+	}
+	return 0
+}
+
 // WithLabels is used to set labels on Service
 func (s *Service) WithLabels(labels map[string]string) *Service {
 	s.labels = labels

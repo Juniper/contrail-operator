@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sort"
@@ -15,7 +16,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -146,7 +147,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 
 	existingServiceAccount := &corev1.ServiceAccount{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceAccountName, Namespace: namespace}, existingServiceAccount)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		serviceAccount := &corev1.ServiceAccount{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -161,14 +162,14 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 		if err != nil {
 			return err
 		}
-		if err = client.Create(context.TODO(), serviceAccount); err != nil && !errors.IsAlreadyExists(err) {
+		if err = client.Create(context.TODO(), serviceAccount); err != nil && !k8serrors.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
 	existingSecret := &corev1.Secret{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: namespace}, existingSecret)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      secretName,
@@ -190,7 +191,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 
 	existingClusterRole := &rbacv1.ClusterRole{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		clusterRole := &rbacv1.ClusterRole{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "rbac/v1",
@@ -219,7 +220,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 
 	existingClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBindingName}, existingClusterRoleBinding)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "rbac/v1",
@@ -334,14 +335,6 @@ func PodsCertSubjects(podList *corev1.PodList, hostNetwork *bool, podAltIPs PodA
 	return pods
 }
 
-type errorString struct {
-	s string
-}
-
-func (e *errorString) Error() string {
-	return e.s
-}
-
 // CreateConfigMap creates a config map based on the instance type.
 func CreateConfigMap(configMapName string,
 	client client.Client,
@@ -353,7 +346,7 @@ func CreateConfigMap(configMapName string,
 	err := client.Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: request.Namespace}, configMap)
 	// TODO: Bug. If config map exists without labels and references, they won't be updated
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			configMap.SetName(configMapName)
 			configMap.SetNamespace(request.Namespace)
 			configMap.SetLabels(map[string]string{"contrail_manager": instanceType,
@@ -362,7 +355,7 @@ func CreateConfigMap(configMapName string,
 			if err = controllerutil.SetControllerReference(object, configMap, scheme); err != nil {
 				return nil, err
 			}
-			if err = client.Create(context.TODO(), configMap); err != nil && !errors.IsAlreadyExists(err) {
+			if err = client.Create(context.TODO(), configMap); err != nil && !k8serrors.IsAlreadyExists(err) {
 				return nil, err
 			}
 		}
@@ -380,7 +373,7 @@ func CreateSecret(secretName string,
 	secret := &corev1.Secret{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: request.Namespace}, secret)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			secret.SetName(secretName)
 			secret.SetNamespace(request.Namespace)
 			secret.SetLabels(map[string]string{"contrail_manager": instanceType,
@@ -390,7 +383,7 @@ func CreateSecret(secretName string,
 			if err = controllerutil.SetControllerReference(object, secret, scheme); err != nil {
 				return nil, err
 			}
-			if err = client.Create(context.TODO(), secret); err != nil && !errors.IsAlreadyExists(err) {
+			if err = client.Create(context.TODO(), secret); err != nil && !k8serrors.IsAlreadyExists(err) {
 				return nil, err
 			}
 		}
@@ -567,7 +560,7 @@ func CreateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.R
 	foundSTS := &appsv1.StatefulSet{}
 	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-statefulset", Namespace: request.Namespace}, foundSTS)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			sts.Spec.Template.ObjectMeta.Labels["version"] = "1"
 			if err = reconcileClient.Create(context.TODO(), sts); err != nil {
 				return err
@@ -582,7 +575,7 @@ func UpdateSTS(sts *appsv1.StatefulSet, instanceType string, request reconcile.R
 	currentSTS := &appsv1.StatefulSet{}
 	err := reconcileClient.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + instanceType + "-statefulset", Namespace: request.Namespace}, currentSTS)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return nil
 		}
 		return err
@@ -652,6 +645,24 @@ func RandomString(size int) string {
 	return string(b)
 }
 
+func getPodsHostname(c client.Reader, pod *corev1.Pod) (string, error) {
+	if !pod.Spec.HostNetwork {
+		return pod.Spec.Hostname, nil
+	}
+	n := corev1.Node{}
+	if err := c.Get(context.Background(), types.NamespacedName{Name: pod.Spec.NodeName}, &n); err != nil {
+		return "", err
+	}
+
+	for _, a := range n.Status.Addresses {
+		if a.Type == corev1.NodeHostName {
+			return a.Address, nil
+		}
+	}
+
+	return "", errors.New("couldn't get pods hostname")
+}
+
 func getPodInitStatus(reconcileClient client.Client,
 	podList *corev1.PodList,
 	getHostname bool,
@@ -678,11 +689,10 @@ func getPodInitStatus(reconcileClient client.Client,
 								annotationMap = make(map[string]string)
 							}
 							if getHostname {
-								var hostname string
-								if pod.Spec.HostNetwork {
-									hostname = pod.Spec.NodeName
-								} else {
-									hostname = pod.Spec.Hostname
+
+								hostname, err := getPodsHostname(reconcileClient, &pod)
+								if err != nil {
+									return map[string]string{}, err
 								}
 								annotationMap["hostname"] = hostname
 							}

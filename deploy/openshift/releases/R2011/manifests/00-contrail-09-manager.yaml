@@ -6,8 +6,7 @@ metadata:
 spec:
   commonConfiguration:
     hostNetwork: true
-    nodeSelector:
-      node-role.kubernetes.io/master: ""
+    replicas: 3
     keystoneSecretInstance : cluster1-admin-password
     imagePullSecrets:
       - contrail-registry
@@ -18,6 +17,10 @@ spec:
           contrail_cluster: cluster1
         name: cassandra1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: cassandra
@@ -32,6 +35,10 @@ spec:
           contrail_cluster: cluster1
         name: config1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           analyticsDataTTL: 2
@@ -40,19 +47,19 @@ spec:
           analyticsStatisticsTTL: 2
           containers:
             - name: analyticsapi
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-api:2011.31-ubi
             - name: api
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-api:2011.31-ubi
             - name: collector
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-collector:2011.31-ubi
             - name: devicemanager
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-devicemgr:2011.31-ubi
               command:
                 - "/bin/sh"
                 - "-c"
                 - "tail -f /dev/null"
             - name: dnsmasq
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-dnsmasq:2011.31-ubi
               command:
                 - "/bin/sh"
                 - "-c"
@@ -64,13 +71,13 @@ spec:
             - name: redis
               image: redis:4.0.2
             - name: schematransformer
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-schema:2011.31-ubi
             - name: servicemonitor
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-svcmonitor:2011.31-ubi
             - name: queryengine
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-query-engine:2011.31-ubi
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -80,19 +87,23 @@ spec:
           control_role: master
         name: control1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
             - name: control
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-control:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-control:2011.31-ubi
             - name: dns
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-dns:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-dns:2011.31-ubi
             - name: init
               image: python:3.8.2-alpine
             - name: named
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-named:2011.31-ubi
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -101,19 +112,26 @@ spec:
         name: provmanager1
       spec:
         commonConfiguration:
+          create: true
           replicas: 1
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
             image: python:3.8.2-alpine
           - name: provisioner
-            image: <CONTRAIL_REGISTRY>/contrail-operator-provisioner:<CONTRAIL_VERSION>
+            image: hub.juniper.net/contrail/contrail-operator-provisioner:2011.31
     rabbitmq:
       metadata:
         labels:
           contrail_cluster: cluster1
         name: rabbitmq1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -126,6 +144,10 @@ spec:
           contrail_cluster: cluster1
         name: webui1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -134,9 +156,9 @@ spec:
             - name: redis
               image: redis:4.0.2
             - name: webuijob
-              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-job:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-webui-job:2011.31-ubi
             - name: webuiweb
-              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-web:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-controller-webui-web:2011.31-ubi
     zookeepers:
     - metadata:
         labels:
@@ -144,16 +166,12 @@ spec:
         name: zookeeper1
       spec:
         commonConfiguration:
-          tolerations:
-            - effect: NoSchedule
-              operator: Exists
-            - effect: NoExecute
-              operator: Exists
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: init
-              image: python:3.8.2-alpine
-            - name: conf-init
               image: python:3.8.2-alpine
             - name: zookeeper
               image: docker.io/zookeeper:3.5.5
@@ -163,6 +181,10 @@ spec:
           contrail_cluster: cluster1
         name: kubemanager1
       spec:
+        commonConfiguration:
+          create: true
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
@@ -170,9 +192,9 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: kubemanager
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-kube-manager:2011.31-ubi
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -185,26 +207,28 @@ spec:
         name: vroutermasternodes
       spec:
         commonConfiguration:
+          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
+          cassandraInstance: cassandra1
           controlInstance: control1
-          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-ubi
+          contrailStatusImage: hub.juniper.net/contrail/contrail-status:2011.31-ubi
           containers:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-node-init:2011.31-ubi
             - name: vrouteragent
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-agent:2011.31-ubi
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.31-ubi
             - name: vrouterkernelbuildinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-build-init:2011.31-ubi
             - name: vrouterkernelinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-init:2011.31-ubi
             - name: multusconfig
               image: busybox:1.31
     - metadata:
@@ -213,61 +237,27 @@ spec:
         name: vrouterworkernodes
       spec:
         commonConfiguration:
+          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
             node-role.kubernetes.io/worker: ""
         serviceConfiguration:
+          cassandraInstance: cassandra1
           controlInstance: control1
-          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-ubi
+          contrailStatusImage: hub.juniper.net/contrail/contrail-status:2011.31-ubi
           containers:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-node-init:2011.31-ubi
             - name: vrouteragent
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-agent:2011.31-ubi
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.31-ubi
             - name: vrouterkernelbuildinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-build-init:2011.31-ubi
             - name: vrouterkernelinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-ubi
-            - name: multusconfig
-              image: busybox:1.31
-
-    contrailCNIs:
-    - metadata:
-        labels:
-          contrail_cluster: cluster1
-        name: cnimasternodes
-      spec:
-        commonConfiguration:
-          imagePullSecrets:
-            - contrail-registry
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
-        serviceConfiguration:
-          controlInstance: control1
-          containers:
-            - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
-            - name: multusconfig
-              image: busybox:1.31
-    - metadata:
-        labels:
-          contrail_cluster: cluster1
-        name: cniworkernodes
-      spec:
-        commonConfiguration:
-          imagePullSecrets:
-            - contrail-registry
-          nodeSelector:
-            node-role.kubernetes.io/worker: ""
-        serviceConfiguration:
-          controlInstance: control1
-          containers:
-            - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-init:2011.31-ubi
             - name: multusconfig
               image: busybox:1.31

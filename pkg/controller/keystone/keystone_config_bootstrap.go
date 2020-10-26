@@ -8,8 +8,10 @@ import (
 )
 
 type keystoneBootstrapConf struct {
-	ListenAddress    string
-	ListenPort       int
+	InternalAddress  string
+	InternalPort     int
+	PublicAddress    string
+	PublicPort       int32
 	RabbitMQServer   string
 	PostgreSQLServer string
 	MemcacheServer   string
@@ -66,7 +68,7 @@ var keystoneInitBootstrapScript = template.Must(template.New("").Parse(`
 keystone-manage db_sync
 keystone-manage bootstrap --bootstrap-password {{ .AdminPassword }} \
   --bootstrap-region-id {{ .Region }} \
-  --bootstrap-admin-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
-  --bootstrap-internal-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/ \
-  --bootstrap-public-url https://{{ .ListenAddress }}:{{ .ListenPort }}/v3/
+  --bootstrap-admin-url https://{{ .PublicAddress }}:{{ .PublicPort }}/v3/ \
+  --bootstrap-internal-url https://{{ .InternalAddress }}:{{ .InternalPort }}/v3/ \
+  --bootstrap-public-url https://{{ .PublicAddress }}:{{ .PublicPort }}/v3/
 `))

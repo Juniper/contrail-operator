@@ -189,17 +189,14 @@ func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, instanceType strin
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
-func (c *ProvisionManager) getHostnameFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
+func (c *ProvisionManager) getPodsHostname(podName string, namespace string, client client.Client) (string, error) {
 	pod := &corev1.Pod{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
+	err := client.Get(context.Background(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
 	if err != nil {
 		return "", err
 	}
-	hostname, ok := pod.Annotations["hostname"]
-	if !ok {
-		return "", err
-	}
-	return hostname, nil
+
+	return getPodsHostname(client, pod)
 }
 
 func (c *ProvisionManager) getDataIPFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
@@ -369,7 +366,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		nodeList := []*ConfigNode{}
 		for _, configService := range configList.Items {
 			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
 				if err != nil {
 					return err
 				}
@@ -382,6 +379,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 			}
 			apiPort = configService.Status.Ports.APIPort
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -392,7 +390,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		nodeList := []*AnalyticsNode{}
 		for _, configService := range configList.Items {
 			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
 				if err != nil {
 					return err
 				}
@@ -403,6 +401,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -418,7 +417,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		nodeList := []*ControlNode{}
 		for _, controlService := range controlList.Items {
 			for podName, ipAddress := range controlService.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
 				if err != nil {
 					return err
 				}
@@ -444,6 +443,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -459,7 +459,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		nodeList := []*VrouterNode{}
 		for _, vrouterService := range vrouterList.Items {
 			for podName, ipAddress := range vrouterService.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
 				if err != nil {
 					return err
 				}
@@ -470,6 +470,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				nodeList = append(nodeList, n)
 			}
 		}
+		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
 		nodeYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			return err
@@ -502,7 +503,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		databaseNodeList := []DatabaseNode{}
 		for _, db := range cassandras.Items {
 			for podName, ipAddress := range db.Status.Nodes {
-				hostname, err := c.getHostnameFromAnnotations(podName, request.Namespace, client)
+				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
 				if err != nil {
 					return err
 				}
@@ -513,6 +514,7 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				databaseNodeList = append(databaseNodeList, n)
 			}
 		}
+		sort.SliceStable(databaseNodeList, func(i, j int) bool { return databaseNodeList[i].IPAddress < databaseNodeList[j].IPAddress })
 		databaseNodeYaml, err := yaml.Marshal(databaseNodeList)
 		if err != nil {
 			return err
