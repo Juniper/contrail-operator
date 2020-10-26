@@ -59,7 +59,6 @@ type VrouterSpec struct {
 type VrouterServiceConfiguration struct {
 	VrouterConfiguration      `json:",inline"`
 	VrouterNodesConfiguration `json:",inline"`
-	EnvVariablesConfiguration map[string]string `json:"envVariablesConfiguration,omitempty"`
 }
 
 // VrouterConfiguration is the Spec for the vrouter API.
@@ -383,7 +382,7 @@ func (c *Vrouter) ConfigurationParameters() VrouterConfiguration {
 	vrouterConfiguration.PhysicalInterface = physicalInterface
 	vrouterConfiguration.Gateway = gateway
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
-	vrouterConfiguration.EnvVariablesConfig = c.Spec.ServiceConfiguration.EnvVariablesConfiguration
+	vrouterConfiguration.EnvVariablesConfig = c.Spec.ServiceConfiguration.EnvVariablesConfig
 
 	return vrouterConfiguration
 }
@@ -398,7 +397,7 @@ func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
 	if vrouterConfig.PhysicalInterface != "" {
 		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
 	}
-	if vrouterConfig.EnvVariablesConfig != nil {
+	if len(vrouterConfig.EnvVariablesConfig) != 0 {
 		for key, value := range vrouterConfig.EnvVariablesConfig {
 			envVariables[key] = value
 		}
