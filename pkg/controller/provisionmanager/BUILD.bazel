@@ -37,6 +37,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/contrail/v1alpha1:go_default_library",
+        "//pkg/certificates:go_default_library",
         "//pkg/controller/mock:go_default_library",
         "//pkg/controller/utils:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",

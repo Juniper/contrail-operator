@@ -2580,33 +2580,18 @@ spec:
                               clusterRoleBinding:
                                 type: string
                               containers:
-                                allOf:
-                                - items:
-                                    description: Container defines name, image and
-                                      command.
-                                    properties:
-                                      command:
-                                        items:
-                                          type: string
-                                        type: array
-                                      image:
+                                items:
+                                  description: Container defines name, image and command.
+                                  properties:
+                                    command:
+                                      items:
                                         type: string
-                                      name:
-                                        type: string
-                                    type: object
-                                - items:
-                                    description: Container defines name, image and
-                                      command.
-                                    properties:
-                                      command:
-                                        items:
-                                          type: string
-                                        type: array
-                                      image:
-                                        type: string
-                                      name:
-                                        type: string
-                                    type: object
+                                      type: array
+                                    image:
+                                      type: string
+                                    name:
+                                      type: string
+                                  type: object
                                 type: array
                               contrailStatusImage:
                                 type: string
@@ -2614,6 +2599,10 @@ spec:
                                 type: string
                               distribution:
                                 type: string
+                              envVariablesConfig:
+                                additionalProperties:
+                                  type: string
+                                type: object
                               gateway:
                                 type: string
                               metaDataSecret:
