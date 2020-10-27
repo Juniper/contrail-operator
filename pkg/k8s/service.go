@@ -59,8 +59,9 @@ func (s *Service) EnsureExists() error {
 		s.svc.Spec.Ports = servicePortList
 		s.svc.Spec.Selector = labels
 		s.svc.Spec.Type = s.servType
-		if s.svc.Spec.Type == core.ServiceTypeLoadBalancer {
-			// Some of the services in the clusterare not working well with default (Cluster) ExternalTrafficPolicy
+		// This is workaround for LoadBalancer and NodePort issues in some of deployments environments
+		// TODO: removed when fixed
+		if s.svc.Spec.Type == core.ServiceTypeLoadBalancer || s.svc.Spec.Type == core.ServiceTypeNodePort {
 			s.svc.Spec.ExternalTrafficPolicy = core.ServiceExternalTrafficPolicyTypeLocal
 		}
 		return controllerutil.SetControllerReference(s.owner, &s.svc, s.scheme)
