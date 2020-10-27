@@ -171,6 +171,26 @@ func (c Contrail) ForManagerDeletion(name string) error {
 	return err
 }
 
+// ForCommandUpgradeStateChange is used to wait until Command Upgrade State is updated
+func (c Contrail) ForCommandUpgradeStateChange(name string, newState contrail.CommandUpgradeState) error {
+	command := &contrail.Command{}
+	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
+		err = c.Client.Get(context.Background(), types.NamespacedName{
+			Namespace: c.Namespace,
+			Name:      name,
+		}, command)
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		if command.Status.UpgradeState == newState {
+			return true, nil
+		}
+		return false, err
+	})
+	c.dumpPodsOnError(err)
+	return err
+}
+
 func (c Contrail) dumpPodsOnError(err error) {
 	if err != nil {
 		c.Logger.DumpPods()

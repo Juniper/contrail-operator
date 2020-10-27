@@ -620,6 +620,32 @@ func TestCommand(t *testing.T) {
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
+		{
+			name: "when command upgrade between two version fails, there is a rollback",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandUpgrading, ":new"),
+				newCommandService(),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ""),
+				newConfig(true),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newMigrationJobFailed("", ":new"),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Status:         contrail.Status{},
+				UpgradeState:   contrail.CommandNotUpgrading,
+				Endpoint:       "20.20.20.20",
+				ContainerImage: "registry:5000/contrail-command",
+			},
+			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0}, nil, ""),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
 	}
 
 	for _, tt := range tests {
@@ -1345,6 +1371,19 @@ func newMigrationJob(oldTag, newTag string) *batch.Job {
 			},
 		},
 	}
+}
+
+func newMigrationJobFailed(oldTag, newTag string) (job *batch.Job) {
+	job = newMigrationJob(oldTag, newTag)
+	job.Status = batch.JobStatus{
+		Conditions: []batch.JobCondition{
+			{
+				Type:   batch.JobFailed,
+				Status: core.ConditionTrue,
+			},
+		},
+	}
+	return
 }
 
 func newBootstrapJob() *batch.Job {

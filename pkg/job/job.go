@@ -30,3 +30,15 @@ func (s Status) Completed() bool {
 	}
 	return false
 }
+
+func (s Status) Fail() bool {
+	if len(s.Conditions) == 0 {
+		return false
+	}
+	for _, condition := range s.Conditions {
+		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobFailed {
+			return true
+		}
+	}
+	return false
+}
