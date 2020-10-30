@@ -116,7 +116,6 @@ kombu_ssl_ca_certs={{ .CAFilePath }}
 kombu_ssl_version=tlsv1_2
 rabbit_health_check_interval=10
 collectors={{ .CollectorServerList }}
-dm_run_mode={{ .DMRunMode }}
 [SANDESH]
 introspect_ssl_enable=True
 introspect_ssl_insecure=True

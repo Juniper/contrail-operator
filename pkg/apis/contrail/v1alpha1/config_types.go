@@ -150,9 +150,6 @@ func init() {
 	SchemeBuilder.Register(&Config{}, &ConfigList{})
 }
 
-const DMRunModeFull = "Full"
-const DMRunModePartial = "Partial"
-
 func (c *Config) InstanceConfiguration(request reconcile.Request,
 	podList *corev1.PodList,
 	client client.Client) error {
@@ -321,11 +318,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			fabricMgmtIP = c.Spec.ServiceConfiguration.FabricMgmtIP
 		}
 
-		dmRunMode := DMRunModePartial
-		if strings.HasSuffix(pod.Name, "-0") {
-			dmRunMode = DMRunModeFull
-		}
-
 		var configDevicemanagerConfigBuffer bytes.Buffer
 		configtemplates.ConfigDeviceManagerConfig.Execute(&configDevicemanagerConfigBuffer, struct {
 			HostIP                      string
@@ -342,7 +334,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			FabricMgmtIP                string
 			CAFilePath                  string
 			DeviceManagerIntrospectPort string
-			DMRunMode                   string
 		}{
 			HostIP:                      podList.Items[idx].Status.PodIP,
 			ApiServerList:               apiServerList,
@@ -358,7 +349,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			FabricMgmtIP:                fabricMgmtIP,
 			CAFilePath:                  certificates.SignerCAFilepath,
 			DeviceManagerIntrospectPort: strconv.Itoa(*configConfig.DeviceManagerIntrospectPort),
-			DMRunMode:                   dmRunMode,
 		})
 		data["devicemanager."+podList.Items[idx].Status.PodIP] = configDevicemanagerConfigBuffer.String()
 
