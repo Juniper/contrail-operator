@@ -123,6 +123,14 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
 )
+
+container_pull(
+    name = "ubi-minimal",
+    registry = "registry.access.redhat.com",
+    repository = "ubi8/ubi-minimal",
+    digest = "sha256:f19c5b5d417cad1452ced0d174bca363ac41554190406c9147488b58394e2c56",
+)
+
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",

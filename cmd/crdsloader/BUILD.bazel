@@ -2,7 +2,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_image", "cont
 
 container_image(
     name = "contrail-operator-crdsloader-crds-layer",
-    base = "@go_debug_image_base//image:image",
+    base = "@ubi-minimal//image:image",
     directory = "/crds",
     files = [
         "//deploy/crds",
