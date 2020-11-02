@@ -62,7 +62,7 @@ func TestCluster(t *testing.T) {
 		manager := &contrail.Manager{}
 		yamlFile, err := ioutil.ReadFile("test/env/deploy/cluster.yaml")
 		require.NoError(t, err)
-		yamlFile = bytes.ReplaceAll(yamlFile, []byte(":master-latest"), []byte(":"+cemRelease))
+		yamlFile = bytes.ReplaceAll(yamlFile, []byte(":master.1417-ubi"), []byte(":"+cemRelease))
 
 		adminPassWordSecret := &core.Secret{
 			ObjectMeta: meta.ObjectMeta{
