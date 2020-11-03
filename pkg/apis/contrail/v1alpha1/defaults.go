@@ -168,6 +168,7 @@ const (
 	KeystoneAuthCertfile                        string = ""
 	KeystoneAuthKeyfile                         string = ""
 	KeystoneAuthCaCertfile                      string = ""
+	KeystoneExtRetrySec                         int    = 60
 	KubemanagerNodes                            string = ""
 	KubernetesApiNodes                          string = ""
 	KubernetesApiServer                         string = "10.96.0.1"
