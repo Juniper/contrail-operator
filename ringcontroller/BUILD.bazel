@@ -3,6 +3,7 @@ load("@io_bazel_rules_docker//python:image.bzl", "py_layer")
 load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@contrail-operator-ringcontroller//:requirements.bzl", "all_requirements")
+load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
 
 py_layer(
     name = "external_deps",
@@ -29,7 +30,7 @@ py3_image(
     layers = [
         ":external_deps",
     ],
-    base = "@py3_debug_image_base//image:image",
+    base = ":ubi-minimal-python3",
     main = "main.py",
 )
 
@@ -55,7 +56,17 @@ container_push(
     name = "contrail-operator-ringcontroller-push-local",
     image = ":contrail-operator-ringcontroller",
     format = "Docker",
-    registry = "localhost:5000",
+    registry = "{LOCAL_REGISTRY}",
     repository = "contrail-operator/engprod-269421/contrail-operator-ringcontroller",
     tag = "master.latest",
+)
+
+container_run_and_commit(
+    name = "ubi-minimal-python3",
+    image = "@ubi-minimal//image:image",
+    commands = [
+        "microdnf install python3",
+        "pip3 install greenlet==0.4.16 netifaces==0.10.9",
+        "ln -s /usr/bin/python3 /usr/bin/python",
+    ],
 )
