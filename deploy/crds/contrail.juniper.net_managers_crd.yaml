@@ -1328,6 +1328,11 @@ spec:
                                 components will be configured to use this address
                                 as keystone endpoint.
                               type: string
+                            externalAddressRetrySec:
+                              description: Time in seconds after which retry fetch
+                                token from external keystone. Default is 60 sec.
+                              minimum: 1
+                              type: integer
                             keystoneSecretName:
                               type: string
                             listenPort:
