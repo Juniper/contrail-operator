@@ -10,7 +10,7 @@ if [[ -z "$CEM_RELEASE" ]]; then
     if [[ "$BUILD_SCM_BRANCH" =~ ^R2[0-9]{3}$ ]]; then
         export CEM_RELEASE="${BUILD_SCM_BRANCH//R}-latest"
     else
-        export CEM_RELEASE="master.1412"
+        export CEM_RELEASE="master.1417-ubi"
     fi
 fi
 

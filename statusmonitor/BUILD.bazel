@@ -34,7 +34,7 @@ go_image(
     name = "contrail-statusmonitor-image",
     embed = [":go_default_library"],
     goos = "linux",
-    base = "@go_debug_image_base//image:image",
+    base = "@ubi-minimal//image",
     importpath = "github.com/Juniper/contrail-operator/statusmonitor",
 )
 

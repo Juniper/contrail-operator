@@ -30,15 +30,7 @@ go_library(
 
 go_image(
     name = "contrail-operator-image",
-    base = "@go_image_base//image",
-    embed = [":go_default_library"],
-    goos = "linux",
-    importpath = "github.com/Juniper/contrail-operator",
-)
-
-go_image(
-    name = "contrail-operator-image-debug",
-    base = "@go_debug_image_base//image:image",
+    base = "@ubi-minimal//image",
     embed = [":go_default_library"],
     goos = "linux",
     importpath = "github.com/Juniper/contrail-operator",
@@ -63,18 +55,9 @@ container_push(
 )
 
 container_push(
-    name = "contrail-operator-push-debug",
-    format = "Docker",
-    image = ":contrail-operator-image-debug",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator",
-    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}-dev",
-)
-
-container_push(
     name = "contrail-operator-push-local-debug",
     format = "Docker",
-    image = ":contrail-operator-image-debug",
+    image = ":contrail-operator-image",
     registry = "{LOCAL_REGISTRY}",
     repository = "contrail-operator/engprod-269421/contrail-operator",
     tag = "master.latest",

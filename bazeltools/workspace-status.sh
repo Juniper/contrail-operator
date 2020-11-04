@@ -5,14 +5,13 @@ set -eu
 #"${0%.sh}.py"
 
 LOCAL_REGISTRY=${LOCAL_REGISTRY:-"localhost:5000"}
+BRANCH_NAME=${BRANCH_NAME:-"master"}
 
 if [ ! -d ".git" ]; then
     rev=${SHORT_SHA}
-    branch=${BRANCH_NAME}
 else
     rev=`/usr/bin/git rev-parse --short HEAD`
-    branch=`/usr/bin/git rev-parse --abbrev-ref HEAD`
 fi
 echo BUILD_SCM_REVISION ${rev}
-echo BUILD_SCM_BRANCH ${branch}
+echo BUILD_SCM_BRANCH ${BRANCH_NAME}
 echo LOCAL_REGISTRY ${LOCAL_REGISTRY}
