@@ -162,26 +162,76 @@ func TestVrouterCustomEnvVariablesConfigMap(t *testing.T) {
 		Namespace: "default",
 	}
 
-	environment := SetupEnv()
-	cl := *environment.client
+	t.Run("With non-empty map EnvVariablesConfig", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
 
-	environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
-	environment.vrouterResource.Spec.ServiceConfiguration.PhysicalInterface = "eth0"
+		customEnvVariables := map[string]string{
+			"HYPERVISOR_TYPE": "none",
+			"TSN_AGENT_MODE":  "forwarding",
+		}
+		environment.vrouterResource.Spec.ServiceConfiguration.EnvVariablesConfig = customEnvVariables
+		environment.vrouterResource.Spec.ServiceConfiguration.VrouterEncryption = true
+		environment.vrouterResource.Spec.ServiceConfiguration.PhysicalInterface = "eth0"
 
-	if err := environment.vrouterResource.InstanceConfiguration(request,
-		&environment.vrouterPodList, cl); err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
-	if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
-		t.Fatalf("get configmap: (%v)", err)
-	}
+		if err := environment.vrouterResource.InstanceConfiguration(request,
+			&environment.vrouterPodList, cl); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
 
-	expectedVrouterEnvVariables := map[string]string{
-		"PHYSICAL_INTERFACE": "eth0",
-		"CLOUD_ORCHESTRATOR": "kubernetes",
-		"VROUTER_ENCRYPTION": "true",
-	}
-	assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+		expectedVrouterEnvVariables := map[string]string{
+			"PHYSICAL_INTERFACE": "eth0",
+			"CLOUD_ORCHESTRATOR": "kubernetes",
+			"VROUTER_ENCRYPTION": "true",
+			"HYPERVISOR_TYPE":    "none",
+			"TSN_AGENT_MODE":     "forwarding",
+		}
+		assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+	})
+
+	t.Run("With empty map EnvVariablesConfig", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+
+		if err := environment.vrouterResource.InstanceConfiguration(request,
+			&environment.vrouterPodList, cl); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		expectedVrouterEnvVariables := map[string]string{
+			"CLOUD_ORCHESTRATOR": "kubernetes",
+			"VROUTER_ENCRYPTION": "false",
+		}
+		assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+	})
+
+	t.Run("Overwrite existing env variable", func(t *testing.T) {
+		environment := SetupEnv()
+		cl := *environment.client
+		customEnvVariables := map[string]string{
+			"CLOUD_ORCHESTRATOR": "kubernetes2",
+			"VROUTER_ENCRYPTION": "true",
+		}
+		environment.vrouterResource.Spec.ServiceConfiguration.EnvVariablesConfig = customEnvVariables
+		if err := environment.vrouterResource.InstanceConfiguration(request,
+			&environment.vrouterPodList, cl); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		if err := cl.Get(context.TODO(), configMapNamespacedName, &environment.vrouterConfigMap2); err != nil {
+			t.Fatalf("get configmap: (%v)", err)
+		}
+		expectedVrouterEnvVariables := map[string]string{
+			"CLOUD_ORCHESTRATOR": "kubernetes2",
+			"VROUTER_ENCRYPTION": "true",
+		}
+
+		assert.Equal(t, expectedVrouterEnvVariables, environment.vrouterConfigMap2.Data)
+	})
 }
 
 func TestVrouterConfigStaticConfiguration(t *testing.T) {

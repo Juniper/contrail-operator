@@ -64,17 +64,18 @@ type VrouterServiceConfiguration struct {
 // VrouterConfiguration is the Spec for the vrouter API.
 // +k8s:openapi-gen=true
 type VrouterConfiguration struct {
-	Containers          []*Container  `json:"containers,omitempty"`
-	Gateway             string        `json:"gateway,omitempty"`
-	PhysicalInterface   string        `json:"physicalInterface,omitempty"`
-	MetaDataSecret      string        `json:"metaDataSecret,omitempty"`
-	NodeManager         *bool         `json:"nodeManager,omitempty"`
-	Distribution        *Distribution `json:"distribution,omitempty"`
-	ServiceAccount      string        `json:"serviceAccount,omitempty"`
-	ClusterRole         string        `json:"clusterRole,omitempty"`
-	ClusterRoleBinding  string        `json:"clusterRoleBinding,omitempty"`
-	VrouterEncryption   bool          `json:"vrouterEncryption,omitempty"`
-	ContrailStatusImage string        `json:"contrailStatusImage,omitempty"`
+	Containers          []*Container      `json:"containers,omitempty"`
+	Gateway             string            `json:"gateway,omitempty"`
+	PhysicalInterface   string            `json:"physicalInterface,omitempty"`
+	MetaDataSecret      string            `json:"metaDataSecret,omitempty"`
+	NodeManager         *bool             `json:"nodeManager,omitempty"`
+	Distribution        *Distribution     `json:"distribution,omitempty"`
+	ServiceAccount      string            `json:"serviceAccount,omitempty"`
+	ClusterRole         string            `json:"clusterRole,omitempty"`
+	ClusterRoleBinding  string            `json:"clusterRoleBinding,omitempty"`
+	VrouterEncryption   bool              `json:"vrouterEncryption,omitempty"`
+	ContrailStatusImage string            `json:"contrailStatusImage,omitempty"`
+	EnvVariablesConfig  map[string]string `json:"envVariablesConfig,omitempty"`
 }
 
 // VrouterNodesConfiguration is the static configuration for vrouter.
@@ -381,6 +382,7 @@ func (c *Vrouter) ConfigurationParameters() VrouterConfiguration {
 	vrouterConfiguration.PhysicalInterface = physicalInterface
 	vrouterConfiguration.Gateway = gateway
 	vrouterConfiguration.MetaDataSecret = metaDataSecret
+	vrouterConfiguration.EnvVariablesConfig = c.Spec.ServiceConfiguration.EnvVariablesConfig
 
 	return vrouterConfiguration
 }
@@ -394,6 +396,11 @@ func (c *Vrouter) getVrouterEnvironmentData() map[string]string {
 	// override the value from the annotations.
 	if vrouterConfig.PhysicalInterface != "" {
 		envVariables["PHYSICAL_INTERFACE"] = vrouterConfig.PhysicalInterface
+	}
+	if len(vrouterConfig.EnvVariablesConfig) != 0 {
+		for key, value := range vrouterConfig.EnvVariablesConfig {
+			envVariables[key] = value
+		}
 	}
 	return envVariables
 }

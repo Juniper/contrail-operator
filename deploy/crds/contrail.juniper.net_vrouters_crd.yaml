@@ -189,6 +189,10 @@ spec:
                   type: object
                 distribution:
                   type: string
+                envVariablesConfig:
+                  additionalProperties:
+                    type: string
+                  type: object
                 gateway:
                   type: string
                 metaDataSecret:
