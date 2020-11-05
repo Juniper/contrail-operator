@@ -227,16 +227,10 @@ func TestProvisionManagerController(t *testing.T) {
 		require.NoError(t, err)
 		analyticsnodes := `- ipAddress: 1.1.1.1
   hostname: host-a
-  annotations:
-    managed_by: provisionmanager-provisionmanager
 - ipAddress: 1.1.1.2
   hostname: host-a
-  annotations:
-    managed_by: provisionmanager-provisionmanager
 - ipAddress: 1.1.1.3
   hostname: host-a
-  annotations:
-    managed_by: provisionmanager-provisionmanager
 `
 		assert.Equal(t, map[string]string{
 			"analyticsnodes.yaml": analyticsnodes,

@@ -318,10 +318,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	managerAnnotations := map[string]string{
-		"managed_by": request.Name + "-provisionmanager",
-	}
-
 	listOps := &runtimeClient.ListOptions{Namespace: request.Namespace}
 	configList := &ConfigList{}
 	if err = client.List(context.TODO(), configList, listOps); err != nil {
@@ -378,9 +374,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				}
 				n := ConfigNode{
 					Node: Node{
-						IPAddress:   ipAddress,
-						Hostname:    hostname,
-						Annotations: managerAnnotations,
+						IPAddress: ipAddress,
+						Hostname:  hostname,
 					},
 				}
 				nodeList = append(nodeList, &n)
@@ -405,9 +400,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				}
 				n := &AnalyticsNode{
 					Node: Node{
-						IPAddress:   ipAddress,
-						Hostname:    hostname,
-						Annotations: managerAnnotations,
+						IPAddress: ipAddress,
+						Hostname:  hostname,
 					},
 				}
 				nodeList = append(nodeList, n)
@@ -449,9 +443,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				}
 				n := &ControlNode{
 					Node: Node{
-						IPAddress:   address,
-						Hostname:    hostname,
-						Annotations: managerAnnotations,
+						IPAddress: address,
+						Hostname:  hostname,
 					},
 					ASN: asn,
 				}
@@ -480,9 +473,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				}
 				n := &VrouterNode{
 					Node: Node{
-						IPAddress:   ipAddress,
-						Hostname:    hostname,
-						Annotations: managerAnnotations,
+						IPAddress: ipAddress,
+						Hostname:  hostname,
 					},
 				}
 				nodeList = append(nodeList, n)
@@ -505,7 +497,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
 				Insecure: false,
 			},
-			Annotations: managerAnnotations,
 		}
 		apiServerYaml, err := yaml.Marshal(apiServer)
 		if err != nil {
@@ -528,9 +519,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 				}
 				n := DatabaseNode{
 					Node: Node{
-						IPAddress:   ipAddress,
-						Hostname:    hostname,
-						Annotations: managerAnnotations,
+						IPAddress: ipAddress,
+						Hostname:  hostname,
 					},
 				}
 				databaseNodeList = append(databaseNodeList, n)

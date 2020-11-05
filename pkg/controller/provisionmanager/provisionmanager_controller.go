@@ -7,12 +7,14 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
@@ -152,7 +154,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err = c.Watch(srcVrouter, vrouterHandler, predVrouterActiveChange); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -189,6 +190,12 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
 	if !configActive {
 		return reconcile.Result{}, nil
+	}
+
+	requiredAnnotationsVolumeName := request.Name + "-" + instanceType + "-required-annotations-volume"
+	configMapRequiredAnnotations, err := r.ensureAnnotationsConfigMap(request, instanceType, instance)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
 	configMapConfigNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-confignodes", r.Client, r.Scheme, request)
@@ -252,6 +259,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		configMapKeystoneAuthConf.Name:     request.Name + "-" + instanceType + "-keystoneauth-volume",
 		configMapGlobalVrouterConf.Name:    request.Name + "-" + instanceType + "-globalvrouter-volume",
 		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
+		configMapRequiredAnnotations.Name:  requiredAnnotationsVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -267,6 +275,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 					-apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml \
 					-keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml \
 					-globalVrouterConf /etc/provision/globalvrouter/globalvrouter.json \
+					-requiredAnnotations /etc/provision/annotations/requiredannotations.yaml \
 					-mode watch`,
 			}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
@@ -327,6 +336,11 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			volumeMount = corev1.VolumeMount{
 				Name:      csrSignerCaVolumeName,
 				MountPath: certificates.SignerCAMountPath,
+			}
+			volumeMountList = append(volumeMountList, volumeMount)
+			volumeMount = corev1.VolumeMount{
+				Name:      requiredAnnotationsVolumeName,
+				MountPath: "/etc/provision/annotations",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
@@ -396,4 +410,31 @@ func (r *ReconcileProvisionManager) ensureCertificatesExist(provision *v1alpha1.
 	subjects := provision.PodsCertSubjects(pods)
 	crt := certificates.NewCertificate(r.Client, r.Scheme, provision, subjects, instanceType)
 	return crt.EnsureExistsAndIsSigned()
+}
+
+func (r *ReconcileProvisionManager) ensureAnnotationsConfigMap(request reconcile.Request, instanceType string,
+	provisionManager *v1alpha1.ProvisionManager) (*corev1.ConfigMap, error) {
+	configMapName := request.Name + "-" + instanceType + "-configmap-required-annotations"
+	requiredAnnotationsConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: request.Namespace,
+		},
+	}
+	requiredAnnotations := map[string]string{
+		"managed_by": request.Name + "-" + instanceType,
+	}
+	marshaledAnnotations, err := yaml.Marshal(requiredAnnotations)
+	configMapData := map[string]string{
+		"requiredannotations.yaml": string(marshaledAnnotations),
+	}
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.Client, requiredAnnotationsConfigMap, func() error {
+		requiredAnnotationsConfigMap.Data = configMapData
+		return nil
+	})
+	if err != nil {
+		return requiredAnnotationsConfigMap, err
+	}
+	err = controllerutil.SetControllerReference(provisionManager, requiredAnnotationsConfigMap, r.Scheme)
+	return requiredAnnotationsConfigMap, err
 }

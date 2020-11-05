@@ -83,6 +83,12 @@ func check(err error) {
 	}
 }
 
+func unmarshalYamlOrExitOnError(in []byte, out interface{}) {
+	if err := yaml.Unmarshal(in, out); err != nil {
+		log.Fatalf("Error while unmarshalling yaml data: %v", err)
+	}
+}
+
 func runNodeManager(filePath string, nodeType contrailnode.ContrailNodeType, contrailClient contrailclient.ApiClient, requiredAnnotations map[string]string) {
 	requiredNodesData := loadBytesFromFile(filePath)
 	err := retry(MaxRetryAttempts, BackoffTimeSeconds*time.Second, func() (err error) {
@@ -118,12 +124,13 @@ func main() {
 	apiserverPtr := flag.String("apiserver", "/provision.yaml", "path to apiserver yaml file")
 	keystoneAuthConfPtr := flag.String("keystoneAuthConf", "/provision.yaml", "path to keystone authentication configuration file")
 	globalVrouterConfPtr := flag.String("globalVrouterConf", "/provision.yaml", "path to global vrouter configuration file")
+	requiredAnnotationsPtr := flag.String("requiredAnnotations", "/requiredannotations.yaml", "path to yaml file with required annotations")
 	modePtr := flag.String("mode", "watch", "watch/run")
 	flag.Parse()
 
-	requiredAnnotations := map[string]string{
-		"managed_by": "provmanager1-provisionmanager",
-	}
+	requiredAnnotations := map[string]string{}
+	unmarshalYamlOrExitOnError(loadBytesFromFile(*requiredAnnotationsPtr), &requiredAnnotations)
+	log.Printf("Required annotations for all objects managed by contrail-provisioner: %v", requiredAnnotations)
 
 	if *modePtr == "watch" {
 

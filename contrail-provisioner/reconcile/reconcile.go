@@ -103,6 +103,9 @@ func (r *Reconciler) ensureRequiredAnnotationsOnRequiredNodes() {
 
 func ensureRequiredAnnotationsSetOnNode(node contrailnode.ContrailNode, requiredAnnotations map[string]string) {
 	nodeAnnotations := node.GetAnnotations()
+	if nodeAnnotations == nil {
+		nodeAnnotations = map[string]string{}
+	}
 	for key, val := range requiredAnnotations {
 		nodeAnnotations[key] = val
 	}
