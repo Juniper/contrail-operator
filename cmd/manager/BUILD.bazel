@@ -55,7 +55,7 @@ container_push(
 )
 
 container_push(
-    name = "contrail-operator-push-local-debug",
+    name = "contrail-operator-push-local",
     format = "Docker",
     image = ":contrail-operator-image",
     registry = "{LOCAL_REGISTRY}",
