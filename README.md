@@ -8,7 +8,7 @@ This is first check-in to R2005
 [Deployment on Openshift 4 and KVM](deploy/openshift/docs/Openshift-KVM.md)
 
 ## Requirements
-  * Go
+  * Go (minimal 1.14.1)
   * Docker
   * Bazel
   * Kubernetes client
@@ -55,7 +55,7 @@ Verify if it works (Mac OS):
 Verify if it works (Linux):
     
     $ kind version
-    kind v0.9.0 go(...) darwin/amd64
+    kind v0.9.0 go(...) linux/amd64
 
 If command is not found, then reload `~/.zshrc` (on Mac OS) or `~/.bashrc` (on Linux) and verify if `~/go/bin` is in `$PATH`.
 
