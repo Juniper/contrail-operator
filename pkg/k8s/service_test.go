@@ -47,8 +47,7 @@ func TestEnsureServiceExists(t *testing.T) {
 				Ports: []core.ServicePort{{
 					Name: "", Protocol: "TCP", Port: 5555,
 				}},
-				Selector:              map[string]string{"contrail_manager": "pod", "pod": "owner"},
-				ExternalTrafficPolicy: core.ServiceExternalTrafficPolicyTypeLocal,
+				Selector: map[string]string{"contrail_manager": "pod", "pod": "owner"},
 			},
 		},
 		{
@@ -60,8 +59,7 @@ func TestEnsureServiceExists(t *testing.T) {
 				Ports: []core.ServicePort{{
 					Name: "", Protocol: "TCP", Port: 5555, NodePort: 30000,
 				}},
-				Selector:              map[string]string{"contrail_manager": "pod", "pod": "owner"},
-				ExternalTrafficPolicy: core.ServiceExternalTrafficPolicyTypeLocal,
+				Selector: map[string]string{"contrail_manager": "pod", "pod": "owner"},
 			},
 			initDBState: []runtime.Object{
 				&core.Service{
@@ -79,8 +77,7 @@ func TestEnsureServiceExists(t *testing.T) {
 				Ports: []core.ServicePort{{
 					Name: "", Protocol: "TCP", Port: 5500,
 				}},
-				Selector:              map[string]string{"contrail_manager": "pod", "pod": "owner"},
-				ExternalTrafficPolicy: core.ServiceExternalTrafficPolicyTypeLocal,
+				Selector: map[string]string{"contrail_manager": "pod", "pod": "owner"},
 			},
 			initDBState: []runtime.Object{
 				&core.Service{

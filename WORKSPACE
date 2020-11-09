@@ -58,11 +58,11 @@ gazelle_dependencies()
 
 http_archive(
     name = "rules_proto",
-    sha256 = "602e7161d9195e50246177e7c55b2f39950a9cf7366f74ed5f22fd45750cd208",
-    strip_prefix = "rules_proto-97d8af4dc474595af3900dd85cb3a29ad28cc313",
+    sha256 = "8e7d59a5b12b233be5652e3d29f42fba01c7cbab09f6b3a8d0a57ed6d1e9a0da",
+    strip_prefix = "rules_proto-7e4afce6fe62dbff0a4a03450143146f9f2d7488",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_proto/archive/97d8af4dc474595af3900dd85cb3a29ad28cc313.tar.gz",
-        "https://github.com/bazelbuild/rules_proto/archive/97d8af4dc474595af3900dd85cb3a29ad28cc313.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_proto/archive/7e4afce6fe62dbff0a4a03450143146f9f2d7488.tar.gz",
+        "https://github.com/bazelbuild/rules_proto/archive/7e4afce6fe62dbff0a4a03450143146f9f2d7488.tar.gz",
     ],
 )
 
@@ -126,9 +126,9 @@ load(
 
 container_pull(
     name = "ubi-minimal",
+    digest = "sha256:f19c5b5d417cad1452ced0d174bca363ac41554190406c9147488b58394e2c56",
     registry = "registry.access.redhat.com",
     repository = "ubi8/ubi-minimal",
-    digest = "sha256:f19c5b5d417cad1452ced0d174bca363ac41554190406c9147488b58394e2c56",
 )
 
 load(
@@ -183,68 +183,6 @@ load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
 # Use this as is if you are using the rbe_ubuntu16_04 container,
 # otherwise refer to RBE docs.
 rbe_autoconfig(name = "rbe_default")
-
-GOGOBUILD = """
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-filegroup(
-    name = "gogo_proto_fg",
-    srcs = glob([ "gogoproto/gogo.proto" ]),
-    visibility = [ "//visibility:public" ],
-)
-proto_library(
-    name = "gogo_proto",
-    srcs = [
-        "gogoproto/gogo.proto",
-    ],
-    deps = [
-        "@com_google_protobuf//:descriptor_proto",
-    ],
-    visibility = ["//visibility:public"],
-)
-go_proto_library(
-    name = "descriptor_go_proto",
-    importpath = "github.com/golang/protobuf/protoc-gen-go/descriptor",
-    proto = "@com_google_protobuf//:descriptor_proto",
-    visibility = ["//visibility:public"],
-)
-cc_proto_library(
-    name = "gogo_proto_cc",
-    srcs = [
-        "gogoproto/gogo.proto",
-    ],
-    default_runtime = "@com_google_protobuf//:protobuf",
-    protoc = "@com_google_protobuf//:protoc",
-    deps = ["@com_google_protobuf//:cc_wkt_protos"],
-    visibility = ["//visibility:public"],
-)
-go_proto_library(
-    name = "gogo_proto_go",
-    importpath = "gogoproto",
-    proto = ":gogo_proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":descriptor_go_proto",
-    ],
-)
-py_proto_library(
-    name = "gogo_proto_py",
-    srcs = [
-        "gogoproto/gogo.proto",
-    ],
-    default_runtime = "@com_google_protobuf//:protobuf_python",
-    protoc = "@com_google_protobuf//:protoc",
-    visibility = ["//visibility:public"],
-    deps = ["@com_google_protobuf//:protobuf_python"],
-)
-"""
-
-new_git_repository(
-    name = "com_github_gogo_protobuf_repo",
-    branch = "master",
-    build_file_content = GOGOBUILD,
-    remote = "https://github.com/gogo/protobuf.git",
-)
 
 CONTRAIL_BUILD = """
 filegroup(
