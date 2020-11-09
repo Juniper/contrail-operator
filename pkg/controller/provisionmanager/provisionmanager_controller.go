@@ -275,7 +275,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 					-apiserver /etc/provision/apiserver/apiserver-${POD_IP}.yaml \
 					-keystoneAuthConf /etc/provision/keystone/keystone-auth-${POD_IP}.yaml \
 					-globalVrouterConf /etc/provision/globalvrouter/globalvrouter.json \
-					-requiredAnnotations /etc/provision/annotations/requiredannotations.yaml \
 					-mode watch`,
 			}
 			instanceContainer := utils.GetContainerFromList(container.Name, instance.Spec.ServiceConfiguration.Containers)
@@ -340,7 +339,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 			volumeMountList = append(volumeMountList, volumeMount)
 			volumeMount = corev1.VolumeMount{
 				Name:      requiredAnnotationsVolumeName,
-				MountPath: "/etc/provision/annotations",
+				MountPath: "/etc/provision/metadata",
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList

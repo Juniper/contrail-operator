@@ -111,7 +111,6 @@ func setupNodeFileWatcher(filePath string, nodeType contrailnode.ContrailNodeTyp
 	})
 	check(err)
 	return nodeWatcher
-
 }
 
 func main() {
@@ -124,7 +123,7 @@ func main() {
 	apiserverPtr := flag.String("apiserver", "/provision.yaml", "path to apiserver yaml file")
 	keystoneAuthConfPtr := flag.String("keystoneAuthConf", "/provision.yaml", "path to keystone authentication configuration file")
 	globalVrouterConfPtr := flag.String("globalVrouterConf", "/provision.yaml", "path to global vrouter configuration file")
-	requiredAnnotationsPtr := flag.String("requiredAnnotations", "/requiredannotations.yaml", "path to yaml file with required annotations")
+	requiredAnnotationsPtr := flag.String("requiredAnnotations", "/etc/provision/metadata/requiredannotations.yaml", "path to yaml file with required annotations")
 	modePtr := flag.String("mode", "watch", "watch/run")
 	flag.Parse()
 
