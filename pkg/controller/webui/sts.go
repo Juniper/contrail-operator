@@ -52,9 +52,9 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: ANALYTICSDB_ENABLE
-              value: "true"
+              value: "false"
             - name: ANALYTICS_SNMP_ENABLE
-              value: "true"
+              value: "false"
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /var/log/contrail

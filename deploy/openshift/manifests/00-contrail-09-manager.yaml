@@ -39,12 +39,8 @@ spec:
           analyticsFlowTTL: 1
           analyticsStatisticsTTL: 2
           containers:
-            - name: analyticsapi
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-ubi
             - name: api
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>-ubi
-            - name: collector
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-ubi
             - name: devicemanager
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-ubi
               command:
@@ -67,8 +63,6 @@ spec:
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>-ubi
             - name: servicemonitor
               image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-ubi
-            - name: queryengine
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>-ubi
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           logLevel: SYS_DEBUG
