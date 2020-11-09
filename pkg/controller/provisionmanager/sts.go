@@ -46,7 +46,7 @@ spec:
         terminationMessagePolicy: File
         volumeMounts:
         - mountPath: /tmp/podinfo
-          name: status
+          name: metadata
       containers:
       - name: provisioner
         env:
@@ -65,6 +65,8 @@ spec:
           name: provisionmanager-data
         - mountPath: /var/log/provisionmanager
           name: provisionmanager-logs
+        - mountPath: /etc/provision/metadata
+          name: metadata
       volumes:
       - name: provisionmanager-data
         hostPath:
@@ -81,9 +83,9 @@ spec:
             path: pod_labels
           - fieldRef:
               apiVersion: v1
-              fieldPath: metadata.labels
-            path: pod_labelsx
-        name: status`
+              fieldPath: metadata.annotations['managed_by']
+            path: managed_by
+        name: metadata`
 
 func GetSTS() *appsv1.StatefulSet {
 	sts := appsv1.StatefulSet{}

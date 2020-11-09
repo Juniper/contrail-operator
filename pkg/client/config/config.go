@@ -8,23 +8,30 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 )
 
-type ConfigAPIResponse interface {
-	IsValidConfigApiResponse() bool
-}
-
 type ConfigNodeResponse struct {
-	ConfigNodes []struct {
-		Href   string   `json:"href"`
-		FqName []string `json:"fq_name"`
-		UUID   string   `json:"uuid"`
-	} `json:"config-nodes"`
+	Nodes []Node `json:"config-nodes"`
 }
 
-func (c ConfigNodeResponse) IsValidConfigApiResponse() bool {
-	if len(c.ConfigNodes) > 0 {
-		return true
-	}
-	return false
+type VirtualRouterResponse struct {
+	Nodes []Node `json:"virtual-routers"`
+}
+
+type BgpRouterResponse struct {
+	Nodes []Node `json:"bgp-routers"`
+}
+
+type DatabaseNodeResponse struct {
+	Nodes []Node `json:"database-nodes"`
+}
+
+type AnalyticsNodeResponse struct {
+	Nodes []Node `json:"analytics-nodes"`
+}
+
+type Node struct {
+	Href   string   `json:"href"`
+	FqName []string `json:"fq_name"`
+	UUID   string   `json:"uuid"`
 }
 
 func NewClient(client *kubeproxy.Client, token string) (*Client, error) {

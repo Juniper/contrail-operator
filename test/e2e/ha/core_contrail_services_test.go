@@ -2,6 +2,7 @@ package ha
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -19,9 +20,12 @@ import (
 	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
+	"github.com/Juniper/contrail-operator/pkg/client/config"
+	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
@@ -106,6 +110,9 @@ func TestHACoreContrailServices(t *testing.T) {
 			t.Run("then all services are started with replica 1", func(t *testing.T) {
 				assertReplicasReady(t, w, 1)
 			})
+			t.Run("then a single replica of each node type is created in contrail api", func(t *testing.T) {
+				requireNumberOfNodesRegisteredInContrailApi(t, f, 1)
+			})
 		})
 
 		t.Run("when nodes are replicated to 3", func(t *testing.T) {
@@ -126,6 +133,10 @@ func TestHACoreContrailServices(t *testing.T) {
 				for _, pod := range configPods.Items {
 					assertConfigIsHealthy(t, proxy, &pod)
 				}
+			})
+
+			t.Run("then 3 replicas of each node type are created in contrail api", func(t *testing.T) {
+				requireNumberOfNodesRegisteredInContrailApi(t, f, 3)
 			})
 		})
 
@@ -753,4 +764,60 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 
 	err := f.Client.Update(context.TODO(), instance)
 	require.NoError(t, err)
+}
+
+func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, expectedNumberOfNodes int) {
+	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+	require.NoError(t, err)
+	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
+	require.NoError(t, err)
+	tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
+	assert.NoError(t, err)
+	configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
+	assert.NoError(t, err)
+
+	t.Run("then config nodes are created", func(t *testing.T) {
+		var response config.ConfigNodeResponse
+		res, err := configClient.GetResource("/config-nodes")
+		assert.NoError(t, err)
+		err = json.Unmarshal(res, &response)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+	})
+
+	t.Run("then database nodes are created", func(t *testing.T) {
+		var response config.DatabaseNodeResponse
+		res, err := configClient.GetResource("/database-nodes")
+		assert.NoError(t, err)
+		err = json.Unmarshal(res, &response)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+	})
+
+	t.Run("then analytics nodes are created", func(t *testing.T) {
+		var response config.AnalyticsNodeResponse
+		res, err := configClient.GetResource("/analytics-nodes")
+		assert.NoError(t, err)
+		err = json.Unmarshal(res, &response)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+	})
+
+	t.Run("then bgp-routers are created", func(t *testing.T) {
+		var response config.BgpRouterResponse
+		res, err := configClient.GetResource("/bgp-routers")
+		assert.NoError(t, err)
+		err = json.Unmarshal(res, &response)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+	})
+
+	t.Run("then no virtual routers are created", func(t *testing.T) {
+		var response config.VirtualRouterResponse
+		res, err := configClient.GetResource("/virtual-routers")
+		assert.NoError(t, err)
+		err = json.Unmarshal(res, &response)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(response.Nodes))
+	})
 }

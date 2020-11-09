@@ -7,14 +7,12 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 
-	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
@@ -192,12 +190,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, nil
 	}
 
-	requiredAnnotationsVolumeName := request.Name + "-" + instanceType + "-required-annotations-volume"
-	configMapRequiredAnnotations, err := r.ensureAnnotationsConfigMap(request, instanceType, instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
 	configMapConfigNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-confignodes", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -248,6 +240,8 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
+	statefulSet.Spec.Template.Annotations = map[string]string{"managed_by": request.Name + "-" + instanceType}
+
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{
 		configMapConfigNodes.Name:          request.Name + "-" + instanceType + "-confignodes-volume",
@@ -259,7 +253,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		configMapKeystoneAuthConf.Name:     request.Name + "-" + instanceType + "-keystoneauth-volume",
 		configMapGlobalVrouterConf.Name:    request.Name + "-" + instanceType + "-globalvrouter-volume",
 		certificates.SignerCAConfigMapName: csrSignerCaVolumeName,
-		configMapRequiredAnnotations.Name:  requiredAnnotationsVolumeName,
 	})
 	instance.AddSecretVolumesToIntendedSTS(statefulSet, map[string]string{secretCertificates.Name: request.Name + "-secret-certificates"})
 
@@ -337,11 +330,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 				MountPath: certificates.SignerCAMountPath,
 			}
 			volumeMountList = append(volumeMountList, volumeMount)
-			volumeMount = corev1.VolumeMount{
-				Name:      requiredAnnotationsVolumeName,
-				MountPath: "/etc/provision/metadata",
-			}
-			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 		}
@@ -409,31 +397,4 @@ func (r *ReconcileProvisionManager) ensureCertificatesExist(provision *v1alpha1.
 	subjects := provision.PodsCertSubjects(pods)
 	crt := certificates.NewCertificate(r.Client, r.Scheme, provision, subjects, instanceType)
 	return crt.EnsureExistsAndIsSigned()
-}
-
-func (r *ReconcileProvisionManager) ensureAnnotationsConfigMap(request reconcile.Request, instanceType string,
-	provisionManager *v1alpha1.ProvisionManager) (*corev1.ConfigMap, error) {
-	configMapName := request.Name + "-" + instanceType + "-configmap-required-annotations"
-	requiredAnnotationsConfigMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      configMapName,
-			Namespace: request.Namespace,
-		},
-	}
-	requiredAnnotations := map[string]string{
-		"managed_by": request.Name + "-" + instanceType,
-	}
-	marshaledAnnotations, err := yaml.Marshal(requiredAnnotations)
-	configMapData := map[string]string{
-		"requiredannotations.yaml": string(marshaledAnnotations),
-	}
-	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.Client, requiredAnnotationsConfigMap, func() error {
-		requiredAnnotationsConfigMap.Data = configMapData
-		return nil
-	})
-	if err != nil {
-		return requiredAnnotationsConfigMap, err
-	}
-	err = controllerutil.SetControllerReference(provisionManager, requiredAnnotationsConfigMap, r.Scheme)
-	return requiredAnnotationsConfigMap, err
 }
