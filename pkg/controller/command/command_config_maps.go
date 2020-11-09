@@ -1,14 +1,18 @@
 package command
 
 import (
+	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
+
+var NameSpaceCommand = uuid.Must(uuid.Parse("362ad2d9-9460-4f65-a702-2cd99fbb0f64"))
 
 type configMaps struct {
 	cm                      *k8s.ConfigMap
@@ -49,16 +53,31 @@ func (c *configMaps) ensureCommandConfigExist(postgresAddress, ConfigEndpoint st
 }
 
 func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, keystonePort int, webUIAddress, swiftProxyAddress, keystoneAddress, keystoneAuthProtocol, postgresAddress, ConfigEndpoint string, podIP string) error {
+	configAPIURL := fmt.Sprintf("https://%v:%v", ConfigEndpoint, contrail.ConfigApiPort)
+	telemetryURL := fmt.Sprintf("https://%v:%v", ConfigEndpoint, contrail.AnalyticsApiPort)
+	webUIURL := fmt.Sprintf("https://%v:%v", webUIAddress, webUIPort)
+	keystoneURL := fmt.Sprintf("%v://%v:%v", keystoneAuthProtocol, keystoneAddress, keystonePort)
+	swiftProxyURL := fmt.Sprintf("https://%v:%v", swiftProxyAddress, swiftProxyPort)
+
+	ces := []contrail.CommandEndpoint{
+		{Name: "nodejs", PrivateURL: webUIURL, PublicURL: webUIURL},
+		{Name: "telemetry", PrivateURL: telemetryURL, PublicURL: telemetryURL},
+		{Name: "config", PrivateURL: configAPIURL, PublicURL: configAPIURL},
+		{Name: "keystone", PrivateURL: keystoneURL, PublicURL: keystoneURL},
+		{Name: "swift", PrivateURL: swiftProxyURL, PublicURL: swiftProxyURL},
+	}
+	ces = append(ces, c.ccSpec.ServiceConfiguration.Endpoints...)
+	bes := []bootstrapEndpoint{}
+	for _, e := range ces {
+		bes = append(bes, *newBootstrapEndpoint(e))
+	}
 	cc := &commandBootstrapConf{
 		ClusterName:          "default",
 		AdminUsername:        "admin",
 		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
 		SwiftPassword:        string(c.swiftCredentialsSecret.Data["password"]),
-		SwiftProxyAddress:    swiftProxyAddress,
-		SwiftProxyPort:       swiftProxyPort,
-		ConfigAPIURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.ConfigApiPort),
-		TelemetryURL:         "https://" + ConfigEndpoint + ":" + strconv.Itoa(contrail.AnalyticsApiPort),
+		ConfigAPIURL:         configAPIURL,
 		PostgresAddress:      postgresAddress,
 		PostgresUser:         "root",
 		PostgresDBName:       "contrail_test",
@@ -68,8 +87,7 @@ func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, key
 		KeystonePort:         keystonePort,
 		KeystoneAuthProtocol: keystoneAuthProtocol,
 		ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
-		WebUIAddress:         webUIAddress,
-		WebUIPort:            webUIPort,
+		Endpoints:            bes,
 	}
 	if c.ccSpec.ServiceConfiguration.ClusterName != "" {
 		cc.ClusterName = c.ccSpec.ServiceConfiguration.ClusterName

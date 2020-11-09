@@ -1642,11 +1642,11 @@ resources:
     kind: contrail_analytics_database_node
   - data:
       name: nodejs
+      uuid: c9331486-8e77-5c6e-b1ea-3506d939cc4d
       fq_name:
         - default-global-system-config
         - cluster1
         - nodejs
-      uuid: 32dced10-efac-42f0-be7a-353ca163dca9
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
@@ -1654,8 +1654,8 @@ resources:
       public_url: https://30.30.30.30:8143
     kind: endpoint
   - data:
-      uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
       name: telemetry
+      uuid: 70a2f64a-3274-5daa-88ff-4b5ace0f3f85
       fq_name:
         - default-global-system-config
         - cluster1
@@ -1667,8 +1667,8 @@ resources:
       public_url: https://10.10.10.10:8081
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
       name: config
+      uuid: 6f1508fa-e035-5ec2-8722-17b2478db816
       fq_name:
         - default-global-system-config
         - cluster1
@@ -1680,8 +1680,8 @@ resources:
       public_url: https://10.10.10.10:8082
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
       name: keystone
+      uuid: 95f279e0-67be-59a8-873c-65e5e38c7860
       fq_name:
         - default-global-system-config
         - cluster1
@@ -1693,8 +1693,8 @@ resources:
       public_url: https://10.0.2.16:5555
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
+      uuid: 9d28cd53-2174-5c6c-9ef1-b0b68277c2be
       fq_name:
         - default-global-system-config
         - cluster1

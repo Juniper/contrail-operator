@@ -4,30 +4,43 @@ import (
 	"bytes"
 	"text/template"
 
+	"github.com/google/uuid"
 	core "k8s.io/api/core/v1"
+
+	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 )
 
 type commandBootstrapConf struct {
 	ClusterName          string
 	ConfigAPIURL         string
-	TelemetryURL         string
 	AdminUsername        string
 	AdminPassword        string
 	SwiftUsername        string
 	SwiftPassword        string
-	SwiftProxyAddress    string
-	SwiftProxyPort       int
+	KeystoneAddress      string
+	KeystonePort         int
+	KeystoneAuthProtocol string
 	PostgresAddress      string
 	PostgresUser         string
 	PostgresDBName       string
 	HostIP               string
 	PGPassword           string
-	KeystoneAddress      string
-	KeystonePort         int
-	KeystoneAuthProtocol string
 	ContrailVersion      string
 	WebUIAddress         string
 	WebUIPort            int
+	Endpoints            []bootstrapEndpoint
+}
+
+type bootstrapEndpoint struct {
+	contrail.CommandEndpoint
+	UUID string
+}
+
+func newBootstrapEndpoint(e contrail.CommandEndpoint) *bootstrapEndpoint {
+	return &bootstrapEndpoint{
+		CommandEndpoint: e,
+		UUID:            uuid.NewSHA1(NameSpaceCommand, []byte(e.Name)).String(),
+	}
 }
 
 func (c *commandBootstrapConf) FillConfigMap(cm *core.ConfigMap) {
@@ -200,69 +213,18 @@ resources:
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       uuid: 53496300-f40c-11e9-8880-38c986460efe
     kind: contrail_analytics_database_node
-  - data:
-      name: nodejs
+{{ range .Endpoints }}  - data:
+      name: {{ .Name }}
+      uuid: {{ .UUID }}
       fq_name:
         - default-global-system-config
-        - {{ .ClusterName | ToLower }}
-        - nodejs
-      uuid: 32dced10-efac-42f0-be7a-353ca163dca9
+        - {{ $.ClusterName | ToLower }}
+        - {{ .Name }}
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
-      prefix: nodejs
-      private_url: https://{{ .WebUIAddress }}:{{ .WebUIPort }}
-      public_url: https://{{ .WebUIAddress }}:{{ .WebUIPort }}
+      prefix: {{ .Name }}
+      private_url: {{ .PrivateURL }}
+      public_url: {{ .PublicURL }}
     kind: endpoint
-  - data:
-      uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
-      name: telemetry
-      fq_name:
-        - default-global-system-config
-        - {{ .ClusterName | ToLower }}
-        - telemetry
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
-      prefix: telemetry
-      private_url: {{ .TelemetryURL }}
-      public_url: {{ .TelemetryURL }}
-    kind: endpoint
-  - data:
-      uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
-      name: config
-      fq_name:
-        - default-global-system-config
-        - {{ .ClusterName | ToLower }}
-        - config
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
-      prefix: config
-      private_url: {{ .ConfigAPIURL }}
-      public_url: {{ .ConfigAPIURL }}
-    kind: endpoint
-  - data:
-      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
-      name: keystone
-      fq_name:
-        - default-global-system-config
-        - {{ .ClusterName | ToLower }}
-        - keystone
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
-      prefix: keystone
-      private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
-      public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
-    kind: endpoint
-  - data:
-      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
-      name: swift
-      fq_name:
-        - default-global-system-config
-        - {{ .ClusterName | ToLower }}
-        - swift
-      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
-      parent_type: contrail-cluster
-      prefix: swift
-      private_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
-      public_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
-    kind: endpoint
+{{end -}}
 `))
