@@ -58,12 +58,12 @@ func TestCreateContrailNodesActionMap(t *testing.T) {
 			},
 		},
 		{
-			name:             "Noop action for nodes in the Api Server",
+			name:             "Update action for nodes in the Api Server",
 			nodesInApiServer: []contrailnode.ContrailNode{apiServerNodeTwo},
 			requiredNodes:    []contrailnode.ContrailNode{requiredNodeOne, requiredNodeTwo},
 			expectedActionMap: map[string]NodeWithAction{
 				"first-node":  {requiredNodeOne, createAction},
-				"second-node": {requiredNodeTwo, noopAction},
+				"second-node": {requiredNodeTwo, updateAction},
 			},
 		},
 		{
@@ -72,15 +72,15 @@ func TestCreateContrailNodesActionMap(t *testing.T) {
 			requiredNodes:    []contrailnode.ContrailNode{requiredNodeTwo},
 			expectedActionMap: map[string]NodeWithAction{
 				"first-node":  {requiredNodeOne, deleteAction},
-				"second-node": {requiredNodeTwo, noopAction},
+				"second-node": {requiredNodeTwo, updateAction},
 			},
 		},
 		{
-			name:             "Update action for modified node",
+			name:             "Update action for modified node and node in Api Server",
 			nodesInApiServer: []contrailnode.ContrailNode{apiServerNodeTwo, apiServerNodeOne},
 			requiredNodes:    []contrailnode.ContrailNode{requiredNodeOne, modifiedRequiredNodeTwo},
 			expectedActionMap: map[string]NodeWithAction{
-				"first-node":  {requiredNodeOne, noopAction},
+				"first-node":  {requiredNodeOne, updateAction},
 				"second-node": {modifiedRequiredNodeTwo, updateAction},
 			},
 		},
