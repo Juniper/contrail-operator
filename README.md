@@ -8,7 +8,7 @@ This is first check-in to R2005
 [Deployment on Openshift 4 and KVM](deploy/openshift/docs/Openshift-KVM.md)
 
 ## Requirements
-  * Go 1.13
+  * Go (minimal 1.14.1)
   * Docker
   * Bazel
   * Kubernetes client
@@ -18,7 +18,7 @@ This is first check-in to R2005
 
 # Contrail-Operator Development Quick Start
 
-## Install Go 1.13
+## Install Go
 
 * https://golang.org/doc/install#install 
 
@@ -45,17 +45,17 @@ We use Goland and Visual Studio Code. Install your favourite one.
 
 Kind is used as a lightweight Kubernetes cluster for development purposes
 
-    GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
+    GO111MODULE="on" go get sigs.k8s.io/kind@v0.9.0
 
 Verify if it works (Mac OS):
     
     $ kind version
-    kind v0.7.0 go1.13.8 darwin/amd64
+    kind v0.9.0 go(...) darwin/amd64
 
 Verify if it works (Linux):
     
     $ kind version
-    kind v0.7.0 go1.13.8 linux/amd64
+    kind v0.9.0 go(...) linux/amd64
 
 If command is not found, then reload `~/.zshrc` (on Mac OS) or `~/.bashrc` (on Linux) and verify if `~/go/bin` is in `$PATH`.
 
