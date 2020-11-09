@@ -97,7 +97,19 @@ func TestHACoreContrailServices(t *testing.T) {
 		storagePath := "/mnt/storage/" + uuid.New().String()
 		cluster := getHACluster(namespace, nodeLabelKey, storagePath)
 
+		adminPassWordSecret := &core.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "cluster1-admin-password",
+				Namespace: namespace,
+			},
+			StringData: map[string]string{
+				"password": "test123",
+			},
+		}
+
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
+			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+			assert.NoError(t, err)
 			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				return nil
 			})
@@ -110,8 +122,9 @@ func TestHACoreContrailServices(t *testing.T) {
 			t.Run("then all services are started with replica 1", func(t *testing.T) {
 				assertReplicasReady(t, w, 1)
 			})
+			assert.NoError(t, err)
 			t.Run("then a single replica of each node type is created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, 1)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, adminPassWordSecret, namespace, 1)
 			})
 		})
 
@@ -136,7 +149,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then 3 replicas of each node type are created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, 3)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, adminPassWordSecret, namespace, 3)
 			})
 		})
 
@@ -766,8 +779,16 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	require.NoError(t, err)
 }
 
-func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, expectedNumberOfNodes int) {
+func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, adminPassWordSecret *core.Secret, namespace string, expectedNumberOfNodes int) {
+	configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
 	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
+	require.NoError(t, err)
+	keystoneCR := &contrail.Keystone{}
+	err = f.Client.Get(context.TODO(),
+		types.NamespacedName{
+			Namespace: namespace,
+			Name:      "keystone",
+		}, keystoneCR)
 	require.NoError(t, err)
 	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
 	require.NoError(t, err)

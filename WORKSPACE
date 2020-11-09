@@ -1100,13 +1100,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_ghodss_yaml",
-    importpath = "github.com/ghodss/yaml",
-    sum = "h1:Mn26/9ZMNWSw9C9ERFA1PUxfmGpolnw2v0bKOREu5ew=",
-    version = "v1.0.1-0.20190212211648-25d852aebe32",
-)
-
-go_repository(
     name = "com_github_ghodss",
     importpath = "github.com/ghodss/yaml",
     sum = "h1:Mn26/9ZMNWSw9C9ERFA1PUxfmGpolnw2v0bKOREu5ew=",

@@ -226,3 +226,10 @@ func TestCluster(t *testing.T) {
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
 	require.NoError(t, err, "failed to clean up the persistent volumes")
 }
+
+func assertConfigResponseValid(response []byte, t *testing.T) {
+	var configResponse config.ConfigNodeResponse
+	err := json.Unmarshal(response, &configResponse)
+	assert.NoError(t, err)
+	assert.True(t, configResponse.IsValidConfigApiResponse())
+}
