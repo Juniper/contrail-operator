@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const RequiredAnnotationsKey = "managed_by"
+
 var log = logf.Log.WithName("controller_provisionmanager")
 
 func resourceHandler(myclient client.Client) handler.Funcs {
@@ -240,7 +242,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
-	statefulSet.Spec.Template.Annotations = map[string]string{"managed_by": request.Name + "-" + instanceType}
+	statefulSet.Spec.Template.Annotations = map[string]string{RequiredAnnotationsKey: request.Name + "-" + instanceType}
 
 	csrSignerCaVolumeName := request.Name + "-csr-signer-ca"
 	instance.AddVolumesToIntendedSTS(statefulSet, map[string]string{

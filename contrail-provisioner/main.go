@@ -61,6 +61,7 @@ type GlobalVrouterConfiguration struct {
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
 }
 
+const RequiredAnnotationsKey = "managed_by"
 const MaxRetryAttempts = 5
 const BackoffTimeSeconds = 10
 
@@ -122,7 +123,7 @@ func main() {
 	flag.Parse()
 
 	requiredAnnotationValue := string(loadBytesFromFile(*requiredAnnotationsPtr))
-	requiredAnnotations := map[string]string{"managed_by": requiredAnnotationValue}
+	requiredAnnotations := map[string]string{RequiredAnnotationsKey: requiredAnnotationValue}
 
 	log.Printf("Required annotations for all objects managed by contrail-provisioner: %v", requiredAnnotations)
 
