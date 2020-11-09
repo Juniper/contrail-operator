@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 
 	contrailtypes "github.com/Juniper/contrail-operator/contrail-provisioner/contrail-go-types"
 	"github.com/Juniper/contrail-operator/contrail-provisioner/contrailclient"
@@ -71,19 +70,6 @@ func (c *DatabaseNode) GetAnnotations() map[string]string {
 
 func (c *DatabaseNode) SetAnnotations(annotations map[string]string) {
 	c.Annotations = annotations
-}
-
-func (c *DatabaseNode) Equal(otherNode contrailnode.ContrailNode) bool {
-	otherDatabaseNode, ok := otherNode.(*DatabaseNode)
-	if !ok {
-		return false
-	}
-	return otherDatabaseNode.Hostname == c.Hostname && otherDatabaseNode.IPAddress == c.IPAddress &&
-		reflect.DeepEqual(otherDatabaseNode.Annotations, c.Annotations)
-}
-
-func (c *DatabaseNode) EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error {
-	return nil
 }
 
 func GetContrailNodesFromApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {

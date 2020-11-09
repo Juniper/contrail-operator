@@ -22,9 +22,7 @@ type ContrailNode interface {
 	Create(contrailClient contrailclient.ApiClient) error
 	Update(contrailClient contrailclient.ApiClient) error
 	Delete(contrailClient contrailclient.ApiClient) error
-	EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error
 	GetHostname() string
-	Equal(ContrailNode) bool
 	GetAnnotations() map[string]string
 	SetAnnotations(map[string]string)
 }

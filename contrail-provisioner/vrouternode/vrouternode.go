@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 
 	"github.com/Juniper/contrail-go-api"
 
@@ -62,9 +61,8 @@ func (c *VrouterNode) Create(contrailClient contrailclient.ApiClient) error {
 		if err := contrailClient.Create(virtualRouter); err != nil {
 			return err
 		}
-		return nil
 	}
-	return nil
+	return c.ensureVMIVhost0Interface(contrailClient)
 }
 
 // Update updates a VirtualRouter instance
@@ -78,7 +76,10 @@ func (c *VrouterNode) Update(contrailClient contrailclient.ApiClient) error {
 	virtualRouter.SetVirtualRouterIpAddress(c.IPAddress)
 	annotations := contrailclient.ConvertMapToContrailKeyValuePairs(c.Annotations)
 	virtualRouter.SetAnnotations(&annotations)
-	return contrailClient.Update(virtualRouter)
+	if err = contrailClient.Update(virtualRouter); err != nil {
+		return err
+	}
+	return c.ensureVMIVhost0Interface(contrailClient)
 }
 
 // Delete deletes a VirtualRouter instance and it's vhost0 VirtualMachineInterfaces
@@ -110,19 +111,6 @@ func (c *VrouterNode) GetAnnotations() map[string]string {
 
 func (c *VrouterNode) SetAnnotations(annotations map[string]string) {
 	c.Annotations = annotations
-}
-
-func (c *VrouterNode) Equal(otherNode contrailnode.ContrailNode) bool {
-	otherVrouterNode, ok := otherNode.(*VrouterNode)
-	if !ok {
-		return false
-	}
-	return otherVrouterNode.Hostname == c.Hostname && otherVrouterNode.IPAddress == c.IPAddress &&
-		reflect.DeepEqual(otherVrouterNode.Annotations, c.Annotations)
-}
-
-func (c *VrouterNode) EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error {
-	return c.ensureVMIVhost0Interface(contrailClient)
 }
 
 func GetContrailNodesFromApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {

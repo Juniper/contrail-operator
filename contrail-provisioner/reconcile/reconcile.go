@@ -11,7 +11,6 @@ const (
 	updateAction Action = iota
 	createAction
 	deleteAction
-	noopAction
 )
 
 type NodeWithAction struct {
@@ -53,11 +52,6 @@ func (r *Reconciler) executeActionMap(actionMap map[string]NodeWithAction) error
 		if err != nil {
 			return err
 		}
-		if nodeWithAction.action != deleteAction {
-			if err := nodeWithAction.node.EnsureDependenciesExist(r.cl); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
@@ -71,11 +65,8 @@ func (r *Reconciler) createContrailNodesActionMap(nodesInApiServer []contrailnod
 		nodeToActOn := nodeInApiServer
 		requiredAction := deleteAction
 		if requiredNodeWithAction, ok := actionMap[nodeInApiServer.GetHostname()]; ok {
-			requiredAction = noopAction
-			if !nodeInApiServer.Equal(requiredNodeWithAction.node) {
-				requiredAction = updateAction
-				nodeToActOn = requiredNodeWithAction.node
-			}
+			requiredAction = updateAction
+			nodeToActOn = requiredNodeWithAction.node
 		}
 		actionMap[nodeInApiServer.GetHostname()] = NodeWithAction{
 			node:   nodeToActOn,

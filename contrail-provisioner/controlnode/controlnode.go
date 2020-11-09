@@ -220,21 +220,6 @@ func (c *ControlNode) SetAnnotations(annotations map[string]string) {
 	c.Annotations = annotations
 }
 
-func (c *ControlNode) Equal(otherNode contrailnode.ContrailNode) bool {
-	otherControlNode, ok := otherNode.(*ControlNode)
-	if !ok {
-		return false
-	}
-	return otherControlNode.Hostname == c.Hostname &&
-		otherControlNode.IPAddress == c.IPAddress &&
-		otherControlNode.ASN == c.ASN &&
-		reflect.DeepEqual(otherControlNode.Annotations, c.Annotations)
-}
-
-func (c *ControlNode) EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error {
-	return nil
-}
-
 func GetContrailNodesFromApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {
 	nodesInApiServer := []contrailnode.ContrailNode{}
 	listResults, err := contrailClient.List(bgpRouterType)
