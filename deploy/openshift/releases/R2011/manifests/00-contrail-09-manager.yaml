@@ -77,7 +77,7 @@ spec:
             - name: queryengine
               image: hub.juniper.net/contrail/contrail-analytics-query-engine:2011.31-ubi
             - name: statusmonitor
-              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31-ubi
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -103,7 +103,7 @@ spec:
             - name: named
               image: hub.juniper.net/contrail/contrail-controller-control-named:2011.31-ubi
             - name: statusmonitor
-              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31-ubi
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -121,7 +121,7 @@ spec:
           - name: init
             image: python:3.8.2-alpine
           - name: provisioner
-            image: hub.juniper.net/contrail/contrail-operator-provisioner:2011.31
+            image: hub.juniper.net/contrail/contrail-operator-provisioner:2011.31-ubi
     rabbitmq:
       metadata:
         labels:
@@ -194,7 +194,7 @@ spec:
             - name: kubemanager
               image: hub.juniper.net/contrail/contrail-kubernetes-kube-manager:2011.31-ubi
             - name: statusmonitor
-              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.31-ubi
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
