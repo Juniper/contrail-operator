@@ -28,7 +28,7 @@ func TestGetVrouterNodesInApiServerCreatesVrouterNodeObjects(t *testing.T) {
 		&VrouterNode{contrailnode.Node{IPAddress: "1.1.1.1", Hostname: "virtual-router-one", Annotations: map[string]string{}}},
 		&VrouterNode{contrailnode.Node{IPAddress: "1.1.1.1", Hostname: "virtual-router-one", Annotations: map[string]string{}}},
 	}
-	actualContrailNodes, err := GetContrailNodesInApiServer(fakeContrailClient)
+	actualContrailNodes, err := GetContrailNodesFromApiServer(fakeContrailClient)
 
 	assert.NoError(t, err)
 	assert.Len(t, actualContrailNodes, len(expectedContrailNodes))
@@ -49,7 +49,7 @@ func TestGetVrouterNodesInApiServerReturnsEmptyListWhenNoNodesInApiServer(t *tes
 		return &virtualRouterOne, nil
 	}
 
-	actualVirtualRouterNodes, err := GetContrailNodesInApiServer(fakeContrailClient)
+	actualVirtualRouterNodes, err := GetContrailNodesFromApiServer(fakeContrailClient)
 
 	assert.NoError(t, err)
 	assert.Len(t, actualVirtualRouterNodes, 0)

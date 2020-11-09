@@ -121,11 +121,11 @@ func (c *VrouterNode) Equal(otherNode contrailnode.ContrailNode) bool {
 		reflect.DeepEqual(otherVrouterNode.Annotations, c.Annotations)
 }
 
-func (c *VrouterNode) EnsureDependencies(contrailClient contrailclient.ApiClient) error {
+func (c *VrouterNode) EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error {
 	return c.ensureVMIVhost0Interface(contrailClient)
 }
 
-func GetContrailNodesInApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {
+func GetContrailNodesFromApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {
 	nodesInApiServer := []contrailnode.ContrailNode{}
 	listResults, err := contrailClient.List(string(nodeType))
 	if err != nil {

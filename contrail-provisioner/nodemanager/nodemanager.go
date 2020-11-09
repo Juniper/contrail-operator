@@ -70,15 +70,15 @@ func getContrailNodesInApiServer(contrailClient contrailclient.ApiClient, nodeTy
 	var err error
 	switch nodeType {
 	case contrailnode.VrouterNode:
-		contrailNodesInApiServer, err = vrouternode.GetContrailNodesInApiServer(contrailClient)
+		contrailNodesInApiServer, err = vrouternode.GetContrailNodesFromApiServer(contrailClient)
 	case contrailnode.AnalyticsNode:
-		contrailNodesInApiServer, err = analyticsnode.GetContrailNodesInApiServer(contrailClient)
+		contrailNodesInApiServer, err = analyticsnode.GetContrailNodesFromApiServer(contrailClient)
 	case contrailnode.ConfigNode:
-		contrailNodesInApiServer, err = confignode.GetContrailNodesInApiServer(contrailClient)
+		contrailNodesInApiServer, err = confignode.GetContrailNodesFromApiServer(contrailClient)
 	case contrailnode.ControlNode:
-		contrailNodesInApiServer, err = controlnode.GetContrailNodesInApiServer(contrailClient)
+		contrailNodesInApiServer, err = controlnode.GetContrailNodesFromApiServer(contrailClient)
 	case contrailnode.DatabaseNode:
-		contrailNodesInApiServer, err = databasenode.GetContrailNodesInApiServer(contrailClient)
+		contrailNodesInApiServer, err = databasenode.GetContrailNodesFromApiServer(contrailClient)
 	}
 	return contrailNodesInApiServer, err
 }

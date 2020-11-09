@@ -54,7 +54,7 @@ func (r *Reconciler) executeActionMap(actionMap map[string]NodeWithAction) error
 			return err
 		}
 		if nodeWithAction.action != deleteAction {
-			if err := nodeWithAction.node.EnsureDependencies(r.cl); err != nil {
+			if err := nodeWithAction.node.EnsureDependenciesExist(r.cl); err != nil {
 				return err
 			}
 		}

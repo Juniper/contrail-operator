@@ -82,11 +82,11 @@ func (c *DatabaseNode) Equal(otherNode contrailnode.ContrailNode) bool {
 		reflect.DeepEqual(otherDatabaseNode.Annotations, c.Annotations)
 }
 
-func (c *DatabaseNode) EnsureDependencies(contrailClient contrailclient.ApiClient) error {
+func (c *DatabaseNode) EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error {
 	return nil
 }
 
-func GetContrailNodesInApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {
+func GetContrailNodesFromApiServer(contrailClient contrailclient.ApiClient) ([]contrailnode.ContrailNode, error) {
 	nodesInApiServer := []contrailnode.ContrailNode{}
 	listResults, err := contrailClient.List(string(nodeType))
 	if err != nil {

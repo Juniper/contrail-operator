@@ -6,10 +6,10 @@ type ContrailNodeType string
 
 const (
 	VrouterNode   ContrailNodeType = "virtual-router"
-	DatabaseNode                   = "database-node"
-	AnalyticsNode                  = "analytics-node"
-	ControlNode                    = "control-node"
-	ConfigNode                     = "config-node"
+	DatabaseNode  ContrailNodeType = "database-node"
+	AnalyticsNode ContrailNodeType = "analytics-node"
+	ControlNode   ContrailNodeType = "control-node"
+	ConfigNode    ContrailNodeType = "config-node"
 )
 
 type Node struct {
@@ -22,7 +22,7 @@ type ContrailNode interface {
 	Create(contrailClient contrailclient.ApiClient) error
 	Update(contrailClient contrailclient.ApiClient) error
 	Delete(contrailClient contrailclient.ApiClient) error
-	EnsureDependencies(contrailClient contrailclient.ApiClient) error
+	EnsureDependenciesExist(contrailClient contrailclient.ApiClient) error
 	GetHostname() string
 	Equal(ContrailNode) bool
 	GetAnnotations() map[string]string
