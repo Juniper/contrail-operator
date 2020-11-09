@@ -108,43 +108,6 @@ spec:
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
-        - name: analyticsapi
-          image: docker.io/michaelhenkel/contrail-analytics-api:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: ANALYTICSDB_ENABLE
-              value: "true"
-            - name: ANALYTICS_ALARM_ENABLE
-              value: "true"
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: config-logs
-        - name: queryengine
-          image: docker.io/michaelhenkel/contrail-analytics-query-engine:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: config-logs
-        - name: collector
-          image: docker.io/michaelhenkel/contrail-analytics-collector:5.2.0-dev1
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: config-logs
         - name: redis
           image: docker.io/michaelhenkel/contrail-external-redis:5.2.0-dev1
           env:
@@ -165,25 +128,6 @@ spec:
               value: unix://mnt/docker.sock
             - name: NODE_TYPE
               value: config
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /var/log/contrail
-              name: config-logs
-            - mountPath: /mnt
-              name: docker-unix-socket
-            - mountPath: /var/crashes
-              name: crashes
-        - name: nodemanageranalytics
-          image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-          env:
-            - name: DOCKER_HOST
-              value: unix://mnt/docker.sock
-            - name: NODE_TYPE
-              value: analytics
             - name: POD_IP
               valueFrom:
                 fieldRef:
