@@ -49,7 +49,7 @@ var targetVersionMap = map[string]string{
 	"busybox":                       "1.31",
 	"rabbitmq":                      "3.7.16",
 	"contrail-statusmonitor":        "master.latest",
-	"contrail-operator-provisioner": scmBranch + "." + scmRevision, //TODO remove as soon as this branch is merged to master
+	"contrail-operator-provisioner": "master.latest",
 }
 
 func TestHACoreContrailServices(t *testing.T) {
