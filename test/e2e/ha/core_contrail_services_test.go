@@ -20,12 +20,10 @@ import (
 	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	contrail "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/client/config"
-	"github.com/Juniper/contrail-operator/pkg/client/keystone"
 	"github.com/Juniper/contrail-operator/pkg/client/kubeproxy"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
 	"github.com/Juniper/contrail-operator/test/logger"
@@ -97,19 +95,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		storagePath := "/mnt/storage/" + uuid.New().String()
 		cluster := getHACluster(namespace, nodeLabelKey, storagePath)
 
-		adminPassWordSecret := &core.Secret{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "cluster1-admin-password",
-				Namespace: namespace,
-			},
-			StringData: map[string]string{
-				"password": "test123",
-			},
-		}
-
 		t.Run("when manager resource with Config and dependencies are created", func(t *testing.T) {
-			err = f.Client.Create(context.TODO(), adminPassWordSecret, &test.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-			assert.NoError(t, err)
 			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
 				return nil
 			})
@@ -124,7 +110,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			t.Run("then a single replica of each node type is created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, adminPassWordSecret, namespace, 1)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, 1)
 			})
 		})
 
@@ -149,7 +135,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then 3 replicas of each node type are created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, adminPassWordSecret, namespace, 3)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, 3)
 			})
 		})
 
@@ -779,22 +765,9 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	require.NoError(t, err)
 }
 
-func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, adminPassWordSecret *core.Secret, namespace string, expectedNumberOfNodes int) {
+func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, expectedNumberOfNodes int) {
 	configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
-	runtimeClient, err := k8client.New(f.KubeConfig, k8client.Options{Scheme: f.Scheme})
-	require.NoError(t, err)
-	keystoneCR := &contrail.Keystone{}
-	err = f.Client.Get(context.TODO(),
-		types.NamespacedName{
-			Namespace: namespace,
-			Name:      "keystone",
-		}, keystoneCR)
-	require.NoError(t, err)
-	keystoneClient, err := keystone.NewClient(runtimeClient, f.Scheme, f.KubeConfig, keystoneCR)
-	require.NoError(t, err)
-	tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
-	assert.NoError(t, err)
-	configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
+	configClient, err := config.NewClient(configProxy, "")
 	assert.NoError(t, err)
 
 	t.Run("then config nodes are created", func(t *testing.T) {
