@@ -138,12 +138,52 @@ func TestCluster(t *testing.T) {
 			require.NoError(t, err)
 			tokens, err := keystoneClient.PostAuthTokens("admin", string(adminPassWordSecret.Data["password"]), "admin")
 			assert.NoError(t, err)
-			t.Run("then config nodes are created", func(t *testing.T) {
-				configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
-				assert.NoError(t, err)
+			configClient, err := config.NewClient(configProxy, tokens.XAuthTokenHeader)
+			assert.NoError(t, err)
+
+			t.Run("then single config node is created", func(t *testing.T) {
+				var response config.ConfigNodeResponse
 				res, err := configClient.GetResource("/config-nodes")
 				assert.NoError(t, err)
-				assertConfigResponseValid(res, t)
+				err = json.Unmarshal(res, &response)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(response.Nodes))
+			})
+
+			t.Run("then single database node is created", func(t *testing.T) {
+				var response config.DatabaseNodeResponse
+				res, err := configClient.GetResource("/database-nodes")
+				assert.NoError(t, err)
+				err = json.Unmarshal(res, &response)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(response.Nodes))
+			})
+
+			t.Run("then single analytics node is created", func(t *testing.T) {
+				var response config.AnalyticsNodeResponse
+				res, err := configClient.GetResource("/analytics-nodes")
+				assert.NoError(t, err)
+				err = json.Unmarshal(res, &response)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(response.Nodes))
+			})
+
+			t.Run("then single bgp-router is created", func(t *testing.T) {
+				var response config.BgpRouterResponse
+				res, err := configClient.GetResource("/bgp-routers")
+				assert.NoError(t, err)
+				err = json.Unmarshal(res, &response)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(response.Nodes))
+			})
+
+			t.Run("then no virtual routers are created", func(t *testing.T) {
+				var response config.VirtualRouterResponse
+				res, err := configClient.GetResource("/virtual-routers")
+				assert.NoError(t, err)
+				err = json.Unmarshal(res, &response)
+				assert.NoError(t, err)
+				assert.Equal(t, 0, len(response.Nodes))
 			})
 
 			commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-command", 9091, "/proxy/53494ca8-f40c-11e9-83ae-38c986460fd4")
@@ -192,5 +232,4 @@ func assertConfigResponseValid(response []byte, t *testing.T) {
 	err := json.Unmarshal(response, &configResponse)
 	assert.NoError(t, err)
 	assert.True(t, configResponse.IsValidConfigApiResponse())
-
 }

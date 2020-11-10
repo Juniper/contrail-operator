@@ -1,7 +1,0 @@
-encryption:
-  ca: /Users/mhenkel/kca.crt
-  cert: /Users/mhenkel/kcert.crt
-  key: /Users/mhenkel/kkey.pem
-  insecure: false
-apiServerList:
-- 10.87.64.31:8082

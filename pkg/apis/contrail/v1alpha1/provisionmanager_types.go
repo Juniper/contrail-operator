@@ -89,9 +89,10 @@ type ProvisionManagerList struct {
 }
 
 type APIServer struct {
-	APIPort       string     `yaml:"apiPort,omitempty"`
-	APIServerList []string   `yaml:"apiServerList,omitempty"`
-	Encryption    Encryption `yaml:"encryption,omitempty"`
+	APIPort       string            `yaml:"apiPort,omitempty"`
+	APIServerList []string          `yaml:"apiServerList,omitempty"`
+	Encryption    Encryption        `yaml:"encryption,omitempty"`
+	Annotations   map[string]string `yaml:"annotations,omitempty"`
 }
 
 type Encryption struct {
@@ -101,30 +102,31 @@ type Encryption struct {
 	Insecure bool   `yaml:"insecure,omitempty"`
 }
 
+type Node struct {
+	IPAddress   string            `yaml:"ipAddress,omitempty"`
+	Hostname    string            `yaml:"hostname,omitempty"`
+	Annotations map[string]string `yaml:"annotations,omitempty"`
+}
+
 type ControlNode struct {
-	IPAddress string `yaml:"ipAddress,omitempty"`
-	Hostname  string `yaml:"hostname,omitempty"`
-	ASN       int    `yaml:"asn,omitempty"`
+	Node `yaml:",inline"`
+	ASN  int `yaml:"asn,omitempty"`
 }
 
 type ConfigNode struct {
-	IPAddress string `yaml:"ipAddress,omitempty"`
-	Hostname  string `yaml:"hostname,omitempty"`
+	Node `yaml:",inline"`
 }
 
 type AnalyticsNode struct {
-	IPAddress string `yaml:"ipAddress,omitempty"`
-	Hostname  string `yaml:"hostname,omitempty"`
+	Node `yaml:",inline"`
 }
 
 type VrouterNode struct {
-	IPAddress string `yaml:"ipAddress,omitempty"`
-	Hostname  string `yaml:"hostname,omitempty"`
+	Node `yaml:",inline"`
 }
 
 type DatabaseNode struct {
-	IPAddress string `yaml:"ipAddress,omitempty"`
-	Hostname  string `yaml:"hostname,omitempty"`
+	Node `yaml:",inline"`
 }
 
 type KeystoneAuthParameters struct {
@@ -371,8 +373,10 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 					return err
 				}
 				n := ConfigNode{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
+					Node: Node{
+						IPAddress: ipAddress,
+						Hostname:  hostname,
+					},
 				}
 				nodeList = append(nodeList, &n)
 				apiServerList = append(apiServerList, ipAddress)
@@ -395,8 +399,10 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 					return err
 				}
 				n := &AnalyticsNode{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
+					Node: Node{
+						IPAddress: ipAddress,
+						Hostname:  hostname,
+					},
 				}
 				nodeList = append(nodeList, n)
 			}
@@ -436,9 +442,11 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 					return err
 				}
 				n := &ControlNode{
-					IPAddress: address,
-					Hostname:  hostname,
-					ASN:       asn,
+					Node: Node{
+						IPAddress: address,
+						Hostname:  hostname,
+					},
+					ASN: asn,
 				}
 				nodeList = append(nodeList, n)
 			}
@@ -464,8 +472,10 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 					return err
 				}
 				n := &VrouterNode{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
+					Node: Node{
+						IPAddress: ipAddress,
+						Hostname:  hostname,
+					},
 				}
 				nodeList = append(nodeList, n)
 			}
@@ -508,8 +518,10 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 					return err
 				}
 				n := DatabaseNode{
-					IPAddress: ipAddress,
-					Hostname:  hostname,
+					Node: Node{
+						IPAddress: ipAddress,
+						Hostname:  hostname,
+					},
 				}
 				databaseNodeList = append(databaseNodeList, n)
 			}
