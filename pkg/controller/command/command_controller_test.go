@@ -787,6 +787,9 @@ func newCommand() *contrail.Command {
 				SwiftInstance:    "swift",
 				ConfigInstance:   "config",
 				WebUIInstance:    "webUI",
+				Endpoints: []contrail.CommandEndpoint{
+					{Name: "insights", PrivateURL: "https://127.0.0.1:7000", PublicURL: "https://1.1.1.1:7000"},
+				},
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-command"},
 					{Name: "api", Image: "registry:5000/contrail-command"},
@@ -1704,5 +1707,18 @@ resources:
       prefix: swift
       private_url: https://40.40.40.40:5080
       public_url: https://40.40.40.40:5080
+    kind: endpoint
+  - data:
+      name: insights
+      uuid: 08dd8ad3-4e1a-5249-b9a9-58cd7aa026cc
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - insights
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: insights
+      private_url: https://127.0.0.1:7000
+      public_url: https://1.1.1.1:7000
     kind: endpoint
 `
