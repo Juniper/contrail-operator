@@ -110,7 +110,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			t.Run("then a single replica of each node type is created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, 1)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, namespace, 1)
 			})
 		})
 
@@ -135,7 +135,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then 3 replicas of each node type are created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, 3)
+				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, namespace, 3)
 			})
 		})
 
@@ -765,8 +765,8 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	require.NoError(t, err)
 }
 
-func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, expectedNumberOfNodes int) {
-	configProxy := proxy.NewSecureClient("contrail", "config1-config-statefulset-0", 8082)
+func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, namespace string, expectedNumberOfNodes int) {
+	configProxy := proxy.NewSecureClient(namespace, "hatest-config-config-statefulset-0", 8082)
 	configClient, err := config.NewClient(configProxy, "")
 	assert.NoError(t, err)
 
