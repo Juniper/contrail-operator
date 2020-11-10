@@ -40,19 +40,19 @@ spec:
           analyticsStatisticsTTL: 2
           containers:
             - name: analyticsapi
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-api:<CONTRAIL_VERSION>
             - name: api
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-api:<CONTRAIL_VERSION>
             - name: collector
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-collector:<CONTRAIL_VERSION>
             - name: devicemanager
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-devicemgr:<CONTRAIL_VERSION>
               command:
                 - "/bin/sh"
                 - "-c"
                 - "tail -f /dev/null"
             - name: dnsmasq
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-dnsmasq:<CONTRAIL_VERSION>
               command:
                 - "/bin/sh"
                 - "-c"
@@ -64,11 +64,11 @@ spec:
             - name: redis
               image: redis:4.0.2
             - name: schematransformer
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-schema:<CONTRAIL_VERSION>
             - name: servicemonitor
-              image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-config-svcmonitor:<CONTRAIL_VERSION>
             - name: queryengine
-              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           logLevel: SYS_DEBUG
@@ -84,13 +84,13 @@ spec:
           cassandraInstance: cassandra1
           containers:
             - name: control
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-control:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-control:<CONTRAIL_VERSION>
             - name: dns
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-dns:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-dns:<CONTRAIL_VERSION>
             - name: init
               image: python:3.8.2-alpine
             - name: named
-              image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           zookeeperInstance: zookeeper1
@@ -134,9 +134,9 @@ spec:
             - name: redis
               image: redis:4.0.2
             - name: webuijob
-              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-job:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-job:<CONTRAIL_VERSION>
             - name: webuiweb
-              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-web:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-controller-webui-web:<CONTRAIL_VERSION>
     zookeepers:
     - metadata:
         labels:
@@ -170,7 +170,7 @@ spec:
             - name: init
               image: python:3.8.2-alpine
             - name: kubemanager
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>
             - name: statusmonitor
               image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           ipFabricForwarding: false
@@ -191,20 +191,20 @@ spec:
             node-role.kubernetes.io/master: ""
         serviceConfiguration:
           controlInstance: control1
-          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-ubi
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>
           containers:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>
             - name: vrouteragent
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>
             - name: vrouterkernelbuildinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>
             - name: vrouterkernelinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>
             - name: multusconfig
               image: busybox:1.31
     - metadata:
@@ -219,20 +219,20 @@ spec:
             node-role.kubernetes.io/worker: ""
         serviceConfiguration:
           controlInstance: control1
-          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>-ubi
+          contrailStatusImage: <CONTRAIL_REGISTRY>/contrail-status:<CONTRAIL_VERSION>
           containers:
             - name: init
               image: python:3.8.2-alpine
             - name: nodeinit
-              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-node-init:<CONTRAIL_VERSION>
             - name: vrouteragent
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-agent:<CONTRAIL_VERSION>
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>
             - name: vrouterkernelbuildinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-build-init:<CONTRAIL_VERSION>
             - name: vrouterkernelinit
-              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-vrouter-kernel-init:<CONTRAIL_VERSION>
             - name: multusconfig
               image: busybox:1.31
 
@@ -251,7 +251,7 @@ spec:
           controlInstance: control1
           containers:
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>
             - name: multusconfig
               image: busybox:1.31
     - metadata:
@@ -268,6 +268,6 @@ spec:
           controlInstance: control1
           containers:
             - name: vroutercni
-              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-kubernetes-cni-init:<CONTRAIL_VERSION>
             - name: multusconfig
               image: busybox:1.31
