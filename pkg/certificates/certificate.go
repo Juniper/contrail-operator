@@ -53,12 +53,19 @@ func (r *Certificate) FillSecret(secret *core.Secret) error {
 
 	for _, subject := range r.certificateSubjects {
 		if subject.ip == "" {
-			return fmt.Errorf("%s subject IP still no available", subject.name)
+			continue
 		}
 		if err := r.createCertificateForPod(subject, secret); err != nil {
 			return err
 		}
 	}
+
+	for _, subject := range r.certificateSubjects {
+		if subject.ip == "" {
+			return fmt.Errorf("%s subject IP still no available", subject.name)
+		}
+	}
+
 	return nil
 }
 
