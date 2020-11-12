@@ -2662,6 +2662,26 @@ func TestVrouterDependenciesReady(t *testing.T) {
 	}
 }
 
+func TestProvisionManagerDependenciesReady(t *testing.T) {
+	tests := []struct {
+		configActive bool
+		expected     bool
+	}{
+		{configActive: true, expected: true},
+		{configActive: false, expected: false},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	for _, tc := range tests {
+		cl := fake.NewFakeClientWithScheme(scheme,
+			configWithActiveState(tc.configActive))
+		got := provisionManagerDependenciesReady(meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		assert.Equal(t, tc.expected, got)
+	}
+}
+
 func TestFillKubemanagerConfiguration(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
@@ -2689,9 +2709,22 @@ func TestFillVrouterConfiguration(t *testing.T) {
 		controlWithActiveState(true))
 
 	newVrouter := &contrail.Vrouter{}
+	// newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration.APIServerPort = 1234
 	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+}
+
+func TestFillProvisionManagerConfiguration(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true))
+
+	newProvisionManager := &contrail.ProvisionManager{}
+	require.NoError(t, fillProvisionManagerConfiguration(newProvisionManager, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
+	assert.NotNil(t, newProvisionManager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 }
 
 func TestProcessVrouters(t *testing.T) {

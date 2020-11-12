@@ -469,23 +469,33 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 		return nil
 	}
 
-	pm := &v1alpha1.ProvisionManager{}
-	pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
-	pm.ObjectMeta.Namespace = manager.Namespace
-	manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
-		pm.Spec = manager.Spec.Services.ProvisionManager.Spec
-		pm.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, pm.Spec.CommonConfiguration)
-		if pm.Spec.CommonConfiguration.Replicas == nil {
-			pm.Spec.CommonConfiguration.Replicas = &replicas
+	var pmServiceStatus *v1alpha1.ServiceStatus
+	if provisionManagerDependenciesReady(manager.ObjectMeta, r.client) {
+		pm := &v1alpha1.ProvisionManager{}
+		pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
+		pm.ObjectMeta.Namespace = manager.Namespace
+		manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
+			pm.Spec = manager.Spec.Services.ProvisionManager.Spec
+			pm.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, pm.Spec.CommonConfiguration)
+			if err := fillProvisionManagerConfiguration(pm, manager.ObjectMeta, r.client); err != nil {
+				return err
+			}
+			if pm.Spec.CommonConfiguration.Replicas == nil {
+				pm.Spec.CommonConfiguration.Replicas = &replicas
+			}
+			return controllerutil.SetControllerReference(manager, pm, r.scheme)
+		})
+		if err != nil {
+			return err
 		}
-		return controllerutil.SetControllerReference(manager, pm, r.scheme)
-	})
-	status := &v1alpha1.ServiceStatus{}
-	status.Name = &pm.Name
-	status.Active = pm.Status.Active
-	manager.Status.ProvisionManager = status
-	return err
+		status := &v1alpha1.ServiceStatus{}
+		status.Name = &pm.Name
+		status.Active = pm.Status.Active
+		pmServiceStatus = status
+	}
+	manager.Status.ProvisionManager = pmServiceStatus
+	return nil
 }
 
 func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas int32, hostAliases []corev1.HostAlias) error {
@@ -1096,5 +1106,21 @@ func fillVrouterConfiguration(vrouter *v1alpha1.Vrouter, controlName string, man
 		return err
 	}
 	(&vrouter.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
+	return nil
+}
+
+func provisionManagerDependenciesReady(managerMeta v1.ObjectMeta, client client.Client) bool {
+	configInstance := v1alpha1.Config{}
+	configActive := configInstance.IsActive(managerMeta.Name, managerMeta.Namespace, client)
+
+	return configActive
+}
+
+func fillProvisionManagerConfiguration(pm *v1alpha1.ProvisionManager, managerMeta v1.ObjectMeta, client client.Client) error {
+	configConfig, err := v1alpha1.NewConfigClusterConfiguration(managerMeta.Name, managerMeta.Namespace, client)
+	if err != nil {
+		return err
+	}
+	(&pm.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
 	return nil
 }

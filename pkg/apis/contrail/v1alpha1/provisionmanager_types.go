@@ -34,10 +34,11 @@ type ProvisionManagerSpec struct {
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers                 []*Container               `json:"containers,omitempty"`
-	KeystoneSecretName         string                     `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance           string                     `json:"keystoneInstance,omitempty"`
-	GlobalVrouterConfiguration GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
+	Containers                         []*Container               `json:"containers,omitempty"`
+	KeystoneSecretName                 string                     `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance                   string                     `json:"keystoneInstance,omitempty"`
+	GlobalVrouterConfiguration         GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
+	ProvisionManagerNodesConfiguration `json:"provisionManagerNodesConfiguration,inline"`
 }
 
 type EcmpHashingIncludeFields struct {
@@ -53,6 +54,10 @@ type GlobalVrouterConfiguration struct {
 	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
 	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
+}
+
+type ProvisionManagerNodesConfiguration struct {
+	ConfigNodesConfiguration *ConfigClusterConfiguration `json:"configNodesConfiguration,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -312,11 +317,14 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
-		request.Namespace, client)
-	if err != nil {
-		return err
-	}
+	// configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
+	// 	request.Namespace, client)
+	// if err != nil {
+	// 	return err
+	// }
+
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation.FillWithDefaultValues()
 
 	listOps := &runtimeClient.ListOptions{Namespace: request.Namespace}
 	configList := &ConfigList{}

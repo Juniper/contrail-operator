@@ -1020,6 +1020,34 @@ func (c *ConfigClusterConfiguration) FillWithDefaultValues() {
 	}
 }
 
+func (c *ConfigClusterConfiguration) FillWithDynamicValues(name string, namespace string, myclient client.Client) {
+	configDynamic, _ := NewConfigClusterConfiguration(name, namespace, myclient)
+	if c.APIServerPort == 0 {
+		c.APIServerPort = configDynamic.APIServerPort
+	}
+	if c.APIServerIPList == nil {
+		c.APIServerIPList = configDynamic.APIServerIPList
+	}
+	if c.AnalyticsServerPort == 0 {
+		c.AnalyticsServerPort = configDynamic.AnalyticsServerPort
+	}
+	if c.AnalyticsServerIPList == nil {
+		c.AnalyticsServerIPList = configDynamic.AnalyticsServerIPList
+	}
+	if c.CollectorPort == 0 {
+		c.CollectorPort = configDynamic.CollectorPort
+	}
+	if c.CollectorServerIPList == nil {
+		c.CollectorServerIPList = configDynamic.CollectorServerIPList
+	}
+	if c.RedisPort == 0 {
+		c.RedisPort = configDynamic.RedisPort
+	}
+	if c.AuthMode == "" {
+		c.AuthMode = AuthenticationModeNoAuth
+	}
+}
+
 // ControlClusterConfiguration stores all information about services' endpoints
 // under the Contrail Control
 type ControlClusterConfiguration struct {
