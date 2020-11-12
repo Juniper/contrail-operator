@@ -70,6 +70,7 @@ const (
 	ConfigdbNodes                               string = ""
 	ConfigApiPort                               int    = 8082
 	ConfigApiIntrospectPort                     int    = 8084
+	ConfigApiAdminPort                          int    = 8095
 	ConfigdbPort                                int    = 9160
 	ConfigdbCqlPort                             int    = 9042
 	ConfigServers                               string = ""
