@@ -2821,3 +2821,46 @@ func TestProcessKubemanagers(t *testing.T) {
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
 }
+
+func TestProcessProvisionManager(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true))
+	reconciler := ReconcileManager{
+		client:     cl,
+		scheme:     scheme,
+		kubernetes: k8s.New(cl, scheme),
+	}
+	managerCR := &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cluster1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.ManagerSpec{
+			Services: contrail.Services{
+				ProvisionManager: *contrail.ProvisionManager{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "test-provisionmanager",
+						Namespace: "test-ns",
+					},
+					Spec: contrail.ProvisionManagerSpec{},
+					// 	ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					// 		KeystoneInstance:   "keystoneInstance",
+					// 		KeystoneSecretName: "SecretName",
+					// 	},
+					// },
+					// Status: contrail.ProvisionManagerStatus{},
+				},
+			},
+		},
+	}
+	require.NoError(t, reconciler.processProvisionManager(managerCR, 1))
+	createdProvisionManager := &contrail.ProvisionManager{}
+	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{
+		Name:      "test-provisionmanager",
+		Namespace: "test-ns",
+	}, createdProvisionManager))
+	assert.NotNil(t, createdProvisionManager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+}
