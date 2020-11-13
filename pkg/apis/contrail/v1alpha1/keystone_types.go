@@ -34,6 +34,10 @@ type KeystoneConfiguration struct {
 	// If defined no keystone releated resource will be created in cluster and other
 	// components will be configured to use this address as keystone endpoint.
 	ExternalAddress string `json:"externalAddress,omitempty"`
+	// Time in seconds after which retry fetch token from external keystone.
+	// Default is 60 sec.
+	// +kubebuilder:validation:Minimum=1
+	ExternalAddressRetrySec int `json:"externalAddressRetrySec,omitempty"`
 }
 
 // KeystoneStatus defines the observed state of Keystone
@@ -108,6 +112,9 @@ func (k *Keystone) SetDefaultValues() {
 	}
 	if k.Spec.ServiceConfiguration.ProjectDomainID == "" {
 		k.Spec.ServiceConfiguration.ProjectDomainID = KeystoneAuthProjectDomainID
+	}
+	if k.Spec.ServiceConfiguration.ExternalAddressRetrySec == 0 {
+		k.Spec.ServiceConfiguration.ExternalAddressRetrySec = KeystoneExtRetrySec
 	}
 }
 
