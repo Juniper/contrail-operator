@@ -114,6 +114,7 @@ func TestConfigConfig(t *testing.T) {
 var configConfigHa = `[DEFAULTS]
 listen_ip_addr=0.0.0.0
 listen_port=8082
+admin_port=8095
 http_server_port=8084
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-api.log
