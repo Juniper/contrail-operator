@@ -39,7 +39,7 @@ go_library(
     deps = [
         "//pkg/apis/contrail/v1alpha1/templates:go_default_library",
         "//pkg/certificates:go_default_library",
-        "@com_github_go_openapi_spec//:go_default_library",
+        "@com_github_go_openapi//:go_default_library",
         "@in_gopkg_yaml.v2//:go_default_library",
         "@io_k8s_api//apps/v1:go_default_library",
         "@io_k8s_api//batch/v1:go_default_library",

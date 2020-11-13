@@ -273,7 +273,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel            string
 			CAFilePath          string
 			ApiIntrospectPort   string
-			ApiAdminPort        int
 		}{
 			HostIP:              podList.Items[idx].Status.PodIP,
 			ListenPort:          strconv.Itoa(*configConfig.APIPort),
@@ -289,7 +288,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			LogLevel:            configConfig.LogLevel,
 			CAFilePath:          certificates.SignerCAFilepath,
 			ApiIntrospectPort:   strconv.Itoa(*configConfig.ApiIntrospectPort),
-			ApiAdminPort:        ConfigApiAdminPort,
 		})
 		data["api."+podList.Items[idx].Status.PodIP] = configApiConfigBuffer.String()
 

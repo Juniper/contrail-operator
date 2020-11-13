@@ -41,7 +41,6 @@ cafile = {{ .CAFilePath }}
 var ConfigAPIConfig = template.Must(template.New("").Parse(`[DEFAULTS]
 listen_ip_addr=0.0.0.0
 listen_port={{ .ListenPort }}
-admin_port={{ .ApiAdminPort }}
 http_server_port={{ .ApiIntrospectPort}}
 http_server_ip=0.0.0.0
 log_file=/var/log/contrail/contrail-api.log

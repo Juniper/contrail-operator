@@ -3,7 +3,6 @@ package keystone
 import (
 	"context"
 	"fmt"
-	"time"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -146,8 +145,7 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 		if ready {
 			return reconcile.Result{}, r.updateStatusWithExternalKeystone(keystone)
 		}
-		reqLogger.Info(err.Error())
-		return reconcile.Result{RequeueAfter: time.Duration(keystone.Spec.ServiceConfiguration.ExternalAddressRetrySec) * time.Second}, nil
+		return reconcile.Result{}, err
 	}
 
 	fernetKeyManagerName := keystone.Name + "-fernet-key-manager"

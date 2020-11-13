@@ -1198,7 +1198,7 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_go_openapi_spec",
+    name = "com_github_go_openapi",
     importpath = "github.com/go-openapi/spec",
     sum = "h1:ixzUSnHTd6hCemgtAJgluaTSGYpLNpJY4mA2DIkdOAo=",
     version = "v0.19.4",
