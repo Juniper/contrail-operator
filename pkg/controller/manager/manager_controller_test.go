@@ -2842,16 +2842,15 @@ func TestProcessProvisionManager(t *testing.T) {
 			Services: contrail.Services{
 				ProvisionManager: *contrail.ProvisionManager{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      "test-provisionmanager",
-						Namespace: "test-ns",
+						Name: "test-provisionmanager",
 					},
-					Spec: contrail.ProvisionManagerSpec{},
-					// 	ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-					// 		KeystoneInstance:   "keystoneInstance",
-					// 		KeystoneSecretName: "SecretName",
-					// 	},
-					// },
-					// Status: contrail.ProvisionManagerStatus{},
+					Spec: contrail.ProvisionManagerSpec{
+						ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+							KeystoneInstance:   "keystoneInstance",
+							KeystoneSecretName: "SecretName",
+						},
+					},
+					Status: contrail.ProvisionManagerStatus{},
 				},
 			},
 		},
