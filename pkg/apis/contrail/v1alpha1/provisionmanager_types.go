@@ -317,12 +317,6 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	// configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
-	// 	request.Namespace, client)
-	// if err != nil {
-	// 	return err
-	// }
-
 	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
 	configNodesInformation.FillWithDefaultValues()
 

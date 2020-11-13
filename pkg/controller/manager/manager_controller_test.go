@@ -2840,7 +2840,7 @@ func TestProcessProvisionManager(t *testing.T) {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				ProvisionManager: *contrail.ProvisionManager{
+				ProvisionManager: &contrail.ProvisionManager{
 					ObjectMeta: meta.ObjectMeta{
 						Name: "test-provisionmanager",
 					},

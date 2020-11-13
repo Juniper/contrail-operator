@@ -186,12 +186,6 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, nil
 	}
 
-	// configInstance := &v1alpha1.Config{}
-	// configActive := configInstance.IsActive(instance.Labels["contrail_cluster"], request.Namespace, r.Client)
-	// if !configActive {
-	// 	return reconcile.Result{}, nil
-	// }
-
 	configMapConfigNodes, err := instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-confignodes", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err

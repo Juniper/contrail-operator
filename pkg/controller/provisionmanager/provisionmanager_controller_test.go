@@ -39,7 +39,6 @@ func TestProvisionManager(t *testing.T) {
 		testcase1(),
 		testcase2(),
 		testcase3(),
-		// testcase4(),
 	}
 
 	for _, tt := range tests {
@@ -268,6 +267,11 @@ func newProvisionManager() *contrail.ProvisionManager {
 					{Name: "init", Image: "busybox"},
 					{Name: "init2", Image: "provisionmanager"},
 				},
+				ProvisionManagerNodesConfiguration: contrail.ProvisionManagerNodesConfiguration{
+					ConfigNodesConfiguration: &contrail.ConfigClusterConfiguration{
+						APIServerIPList: []string{"1.1.1.1"},
+					},
+				},
 			},
 		},
 		Status: contrail.ProvisionManagerStatus{
@@ -413,20 +417,6 @@ func testcase3() *TestCase {
 			newProvisionManager(),
 		},
 		expectedStatus: contrail.ProvisionManagerStatus{Active: &falseVal},
-	}
-	return tc
-}
-
-func testcase4() *TestCase {
-	trueVal := true
-	pmr := newProvisionManager()
-	tc := &TestCase{
-		name: "Preset provisionmanagerPod Test",
-		initObjs: []runtime.Object{
-			newManager(pmr),
-			pmr,
-		},
-		expectedStatus: contrail.ProvisionManagerStatus{Active: &trueVal},
 	}
 	return tc
 }
