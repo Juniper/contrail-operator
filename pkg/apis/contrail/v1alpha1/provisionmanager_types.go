@@ -27,18 +27,24 @@ import (
 // ProvisionManagerSpec defines the desired state of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerSpec struct {
-	CommonConfiguration  PodConfiguration              `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration                     `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration ProvisionManagerServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// ProvisionManagerServiceConfiguration is the Spec for the provisionmanagers API.
+// +k8s:openapi-gen=true
+type ProvisionManagerServiceConfiguration struct {
+	ProvisionManagerConfiguration      `json:",inline"`
+	ProvisionManagerNodesConfiguration `json:",inline"`
 }
 
 // ProvisionManagerConfiguration defines the provision manager configuration
 // +k8s:openapi-gen=true
 type ProvisionManagerConfiguration struct {
-	Containers                         []*Container               `json:"containers,omitempty"`
-	KeystoneSecretName                 string                     `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance                   string                     `json:"keystoneInstance,omitempty"`
-	GlobalVrouterConfiguration         GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
-	ProvisionManagerNodesConfiguration `json:"provisionManagerNodesConfiguration,inline"`
+	Containers                 []*Container               `json:"containers,omitempty"`
+	KeystoneSecretName         string                     `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance           string                     `json:"keystoneInstance,omitempty"`
+	GlobalVrouterConfiguration GlobalVrouterConfiguration `json:"globalVrouterConfiguration,omitempty"`
 }
 
 type EcmpHashingIncludeFields struct {
@@ -56,6 +62,8 @@ type GlobalVrouterConfiguration struct {
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
 }
 
+// ProvisionManagerNodesConfiguration is the configuration for third party dependencies
+// +k8s:openapi-gen=true
 type ProvisionManagerNodesConfiguration struct {
 	ConfigNodesConfiguration *ConfigClusterConfiguration `json:"configNodesConfiguration,omitempty"`
 }

@@ -117,8 +117,8 @@ spec:
                   type: array
               type: object
             serviceConfiguration:
-              description: ProvisionManagerConfiguration defines the provision manager
-                configuration
+              description: ProvisionManagerServiceConfiguration is the Spec for the
+                provisionmanagers API.
               properties:
                 configNodesConfiguration:
                   description: ConfigClusterConfiguration  stores all information
