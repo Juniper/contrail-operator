@@ -2,6 +2,7 @@ package command
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/google/uuid"
@@ -33,14 +34,8 @@ type commandBootstrapConf struct {
 
 type bootstrapEndpoint struct {
 	contrail.CommandEndpoint
-	UUID string
-}
-
-func newBootstrapEndpoint(e contrail.CommandEndpoint) *bootstrapEndpoint {
-	return &bootstrapEndpoint{
-		CommandEndpoint: e,
-		UUID:            uuid.NewSHA1(NameSpaceCommand, []byte(e.Name)).String(),
-	}
+	FQName []string
+	UUID   string
 }
 
 func (c *commandBootstrapConf) FillConfigMap(cm *core.ConfigMap) {
@@ -55,6 +50,14 @@ func (c *commandBootstrapConf) executeTemplate(t *template.Template) string {
 		panic(err)
 	}
 	return buffer.String()
+}
+
+func makeBootstrapEndpoint(e contrail.CommandEndpoint, fqname []string) bootstrapEndpoint {
+	return bootstrapEndpoint{
+		CommandEndpoint: e,
+		FQName:          fqname,
+		UUID:            uuid.NewSHA1(NameSpaceCommand, []byte(strings.Join(fqname, ":"))).String(),
+	}
 }
 
 var commandInitBootstrapScript = template.Must(template.New("").Parse(`
@@ -217,9 +220,9 @@ resources:
       name: {{ .Name }}
       uuid: {{ .UUID }}
       fq_name:
-        - default-global-system-config
-        - {{ $.ClusterName | ToLower }}
-        - {{ .Name }}
+      {{ range .FQName -}}
+      - {{ . }}
+      {{end -}}
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: {{ .Name }}

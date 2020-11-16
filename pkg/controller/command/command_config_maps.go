@@ -12,6 +12,9 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/k8s"
 )
 
+// NameSpaceCommand is used to generete uuid v5 for objects created in command-app-server.
+// The idea is to have repeatable and verifiable unique IDs of created resources to
+// ensure that operation are idempotent
 var NameSpaceCommand = uuid.Must(uuid.Parse("362ad2d9-9460-4f65-a702-2cd99fbb0f64"))
 
 type configMaps struct {
@@ -58,6 +61,10 @@ func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, key
 	webUIURL := fmt.Sprintf("https://%v:%v", webUIAddress, webUIPort)
 	keystoneURL := fmt.Sprintf("%v://%v:%v", keystoneAuthProtocol, keystoneAddress, keystonePort)
 	swiftProxyURL := fmt.Sprintf("https://%v:%v", swiftProxyAddress, swiftProxyPort)
+	clusterName := "default"
+	if c.ccSpec.ServiceConfiguration.ClusterName != "" {
+		clusterName = c.ccSpec.ServiceConfiguration.ClusterName
+	}
 
 	ces := []contrail.CommandEndpoint{
 		{Name: "nodejs", PrivateURL: webUIURL, PublicURL: webUIURL},
@@ -69,10 +76,11 @@ func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, key
 	ces = append(ces, c.ccSpec.ServiceConfiguration.Endpoints...)
 	bes := []bootstrapEndpoint{}
 	for _, e := range ces {
-		bes = append(bes, *newBootstrapEndpoint(e))
+		fqname := []string{"default-global-system-config", clusterName, e.Name}
+		bes = append(bes, makeBootstrapEndpoint(e, fqname))
 	}
 	cc := &commandBootstrapConf{
-		ClusterName:          "default",
+		ClusterName:          clusterName,
 		AdminUsername:        "admin",
 		AdminPassword:        string(c.keystoneAdminPassSecret.Data["password"]),
 		SwiftUsername:        string(c.swiftCredentialsSecret.Data["user"]),
@@ -88,9 +96,6 @@ func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, key
 		KeystoneAuthProtocol: keystoneAuthProtocol,
 		ContrailVersion:      c.ccSpec.ServiceConfiguration.ContrailVersion,
 		Endpoints:            bes,
-	}
-	if c.ccSpec.ServiceConfiguration.ClusterName != "" {
-		cc.ClusterName = c.ccSpec.ServiceConfiguration.ClusterName
 	}
 	return c.cm.EnsureExists(cc)
 }

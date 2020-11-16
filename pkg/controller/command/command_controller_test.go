@@ -1645,11 +1645,11 @@ resources:
     kind: contrail_analytics_database_node
   - data:
       name: nodejs
-      uuid: c9331486-8e77-5c6e-b1ea-3506d939cc4d
+      uuid: 1c6b6a1c-0424-5b6d-b703-8bec03102d98
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - nodejs
+      - default-global-system-config
+      - cluster1
+      - nodejs
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
@@ -1658,11 +1658,11 @@ resources:
     kind: endpoint
   - data:
       name: telemetry
-      uuid: 70a2f64a-3274-5daa-88ff-4b5ace0f3f85
+      uuid: ff6f9fb0-a13f-5a4e-8f90-e10c5803b5e2
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - telemetry
+      - default-global-system-config
+      - cluster1
+      - telemetry
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
@@ -1671,11 +1671,11 @@ resources:
     kind: endpoint
   - data:
       name: config
-      uuid: 6f1508fa-e035-5ec2-8722-17b2478db816
+      uuid: ae774959-1ffc-5b61-b98c-617d5a580433
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - config
+      - default-global-system-config
+      - cluster1
+      - config
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
@@ -1684,11 +1684,11 @@ resources:
     kind: endpoint
   - data:
       name: keystone
-      uuid: 95f279e0-67be-59a8-873c-65e5e38c7860
+      uuid: 2329ebb9-77a1-5483-b253-966e32d6a7dd
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - keystone
+      - default-global-system-config
+      - cluster1
+      - keystone
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
@@ -1697,11 +1697,11 @@ resources:
     kind: endpoint
   - data:
       name: swift
-      uuid: 9d28cd53-2174-5c6c-9ef1-b0b68277c2be
+      uuid: 8c72eecb-23ef-53ce-b551-1090c3cc4718
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - swift
+      - default-global-system-config
+      - cluster1
+      - swift
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
@@ -1710,11 +1710,11 @@ resources:
     kind: endpoint
   - data:
       name: insights
-      uuid: 08dd8ad3-4e1a-5249-b9a9-58cd7aa026cc
+      uuid: 23253a75-df90-5adb-b6d1-fa22c2b4b01a
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - insights
+      - default-global-system-config
+      - cluster1
+      - insights
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: insights
