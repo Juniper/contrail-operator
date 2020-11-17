@@ -163,8 +163,9 @@ func TestProvisionManagerController(t *testing.T) {
 		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
 		pmr := newProvisionManager()
+		pmrs := newProvisionManagerService()
 		initObjs := []runtime.Object{
-			newManager(pmr),
+			newManager(pmrs),
 			newConfigInst(),
 			pmr,
 		}
@@ -261,11 +262,13 @@ func newProvisionManager() *contrail.ProvisionManager {
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
-			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "provisioner", Image: "provisioner"},
-					{Name: "init", Image: "busybox"},
-					{Name: "init2", Image: "provisionmanager"},
+			ServiceConfiguration: contrail.ProvisionManagerServiceConfiguration{
+				ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisioner", Image: "provisioner"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager"},
+					},
 				},
 				ProvisionManagerNodesConfiguration: contrail.ProvisionManagerNodesConfiguration{
 					ConfigNodesConfiguration: &contrail.ConfigClusterConfiguration{
@@ -280,7 +283,42 @@ func newProvisionManager() *contrail.ProvisionManager {
 	}
 }
 
-func newManager(pmr *contrail.ProvisionManager) *contrail.Manager {
+func newProvisionManagerService() *contrail.ProvisionManagerService {
+	trueVal := true
+	replica := int32(1)
+	return &contrail.ProvisionManagerService{
+		ObjectMeta: meta1.ObjectMeta{
+			Name:      "provisionmanager",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			OwnerReferences: []meta1.OwnerReference{
+				{
+					Name:       "cluster1",
+					Kind:       "Manager",
+					Controller: &trueVal,
+				},
+			},
+		},
+		Spec: contrail.ProvisionManagerServiceSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				HostNetwork:  &trueVal,
+				Replicas:     &replica,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
+				ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisioner", Image: "provisioner"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager"},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newManager(pmr *contrail.ProvisionManagerService) *contrail.Manager {
 	return &contrail.Manager{
 		ObjectMeta: meta1.ObjectMeta{
 			Name:      "cluster1",
@@ -375,11 +413,12 @@ func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.Provi
 }
 
 func testcase1() *TestCase {
-	pmr := newProvisionManager()
+	// pmr := newProvisionManager()
+	pmrs := newProvisionManagerService()
 	tc := &TestCase{
 		name: "create a new statefulset",
 		initObjs: []runtime.Object{
-			newManager(pmr),
+			newManager(pmrs),
 			newProvisionManager(),
 			newConfigInst(),
 		},
@@ -390,12 +429,13 @@ func testcase1() *TestCase {
 
 func testcase2() *TestCase {
 	pmr := newProvisionManager()
+	pmrs := newProvisionManagerService()
 	dt := meta1.Now()
 	pmr.ObjectMeta.DeletionTimestamp = &dt
 	tc := &TestCase{
 		name: "ProvisionManager deletion timestamp set",
 		initObjs: []runtime.Object{
-			newManager(pmr),
+			newManager(pmrs),
 			newProvisionManager(),
 			newConfigInst(),
 		},
@@ -406,13 +446,14 @@ func testcase2() *TestCase {
 
 func testcase3() *TestCase {
 	pmr := newProvisionManager()
+	pmrs := newProvisionManagerService()
 	instanceContainer := utils.GetContainerFromList("provisioner", pmr.Spec.ServiceConfiguration.Containers)
 	instanceContainer.Command = []string{"bash", "/runner/run.sh"}
 
 	tc := &TestCase{
 		name: "Preset provisionmanager command verification",
 		initObjs: []runtime.Object{
-			newManager(pmr),
+			newManager(pmrs),
 			newConfigInst(),
 			newProvisionManager(),
 		},

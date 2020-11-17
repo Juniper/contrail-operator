@@ -82,6 +82,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ProvisionManagerSpec{},
 		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{},
+		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "kubemanager",
@@ -262,7 +270,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Contrailmonitor:  contrailmonitorCR,
 					Controls:         []*contrail.Control{control},
@@ -389,11 +397,31 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
-				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "provisionmanager:3.5"},
+				ServiceConfiguration: contrail.ProvisionManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
+					},
+				},
+			},
+		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{
+				ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
 					},
 				},
 			},
@@ -583,7 +611,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
@@ -719,7 +747,35 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
-			Spec: contrail.ProvisionManagerSpec{},
+			Spec: contrail.ProvisionManagerSpec{
+				ServiceConfiguration: contrail.ProvisionManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
+					},
+				},
+			},
+		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{
+				ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
+					},
+				},
+			},
 		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
@@ -901,7 +957,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
@@ -2840,17 +2896,18 @@ func TestProcessProvisionManager(t *testing.T) {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				ProvisionManager: &contrail.ProvisionManager{
+				ProvisionManager: &contrail.ProvisionManagerService{
 					ObjectMeta: meta.ObjectMeta{
 						Name: "test-provisionmanager",
 					},
-					Spec: contrail.ProvisionManagerSpec{
-						ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-							KeystoneInstance:   "keystoneInstance",
-							KeystoneSecretName: "SecretName",
+					Spec: contrail.ProvisionManagerServiceSpec{
+						ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
+							ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+								KeystoneInstance:   "keystoneInstance",
+								KeystoneSecretName: "SecretName",
+							},
 						},
 					},
-					Status: contrail.ProvisionManagerStatus{},
 				},
 			},
 		},

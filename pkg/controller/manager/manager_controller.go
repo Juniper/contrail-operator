@@ -476,7 +476,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 		pm.ObjectMeta.Namespace = manager.Namespace
 		manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
-			pm.Spec = manager.Spec.Services.ProvisionManager.Spec
+			pm.Spec.ServiceConfiguration.ProvisionManagerConfiguration = manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.ProvisionManagerConfiguration
 			pm.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, pm.Spec.CommonConfiguration)
 			if err := fillProvisionManagerConfiguration(pm, manager.ObjectMeta, r.client); err != nil {
 				return err
