@@ -36,15 +36,24 @@ type CommandSpec struct {
 // CommandConfiguration is the Spec for the Command configuration
 // +k8s:openapi-gen=true
 type CommandConfiguration struct {
-	ClusterName        string       `json:"clusterName,omitempty"`
-	PostgresInstance   string       `json:"postgresInstance,omitempty"`
-	SwiftInstance      string       `json:"swiftInstance,omitempty"`
-	KeystoneInstance   string       `json:"keystoneInstance,omitempty"`
-	ConfigInstance     string       `json:"configInstance,omitempty"`
-	WebUIInstance      string       `json:"webuiInstance,omitempty"`
-	KeystoneSecretName string       `json:"keystoneSecretName,omitempty"`
-	ContrailVersion    string       `json:"contrailVersion,omitempty"`
-	Containers         []*Container `json:"containers,omitempty"`
+	ClusterName        string            `json:"clusterName,omitempty"`
+	PostgresInstance   string            `json:"postgresInstance,omitempty"`
+	SwiftInstance      string            `json:"swiftInstance,omitempty"`
+	KeystoneInstance   string            `json:"keystoneInstance,omitempty"`
+	ConfigInstance     string            `json:"configInstance,omitempty"`
+	WebUIInstance      string            `json:"webuiInstance,omitempty"`
+	KeystoneSecretName string            `json:"keystoneSecretName,omitempty"`
+	ContrailVersion    string            `json:"contrailVersion,omitempty"`
+	Containers         []*Container      `json:"containers,omitempty"`
+	Endpoints          []CommandEndpoint `json:"endpoints,omitempty"`
+}
+
+// CommandEndpoint is used to register extra endpoints in Command
+// +k8s:openapi-gen=true
+type CommandEndpoint struct {
+	Name       string `json:"name,omitempty"`
+	PublicURL  string `json:"publicURL,omitempty"`
+	PrivateURL string `json:"privateURL,omitempty"`
 }
 
 // CommandStatus defines the observed state of Command

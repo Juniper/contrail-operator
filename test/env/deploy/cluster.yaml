@@ -176,6 +176,10 @@ spec:
           keystoneInstance: keystone
           webuiInstance: webui1
           contrailVersion: "master.1417-ubi"
+          endpoints:
+            - name: insights
+              publicURL: https://127.0.0.1:7000
+              privateURL: https://127.0.0.1:7000
           containers:
             - name: api
               image: registry:5000/contrail-nightly/contrail-command:master.1417-ubi
@@ -214,7 +218,7 @@ spec:
           containers:
             - name: init
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
-            - name:  wait-for-ready-conf
+            - name: wait-for-ready-conf
               image: registry:5000/common-docker-third-party/contrail/busybox:1.31
             - name: patroni
               image: registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical

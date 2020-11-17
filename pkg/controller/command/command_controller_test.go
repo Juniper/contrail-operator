@@ -787,6 +787,9 @@ func newCommand() *contrail.Command {
 				SwiftInstance:    "swift",
 				ConfigInstance:   "config",
 				WebUIInstance:    "webUI",
+				Endpoints: []contrail.CommandEndpoint{
+					{Name: "insights", PrivateURL: "https://127.0.0.1:7000", PublicURL: "https://1.1.1.1:7000"},
+				},
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-command"},
 					{Name: "api", Image: "registry:5000/contrail-command"},
@@ -1642,11 +1645,11 @@ resources:
     kind: contrail_analytics_database_node
   - data:
       name: nodejs
+      uuid: 1c6b6a1c-0424-5b6d-b703-8bec03102d98
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - nodejs
-      uuid: 32dced10-efac-42f0-be7a-353ca163dca9
+      - default-global-system-config
+      - cluster1
+      - nodejs
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: nodejs
@@ -1654,12 +1657,12 @@ resources:
       public_url: https://30.30.30.30:8143
     kind: endpoint
   - data:
-      uuid: aabf28e5-2a5a-409d-9dd9-a989732b208f
       name: telemetry
+      uuid: ff6f9fb0-a13f-5a4e-8f90-e10c5803b5e2
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - telemetry
+      - default-global-system-config
+      - cluster1
+      - telemetry
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: telemetry
@@ -1667,12 +1670,12 @@ resources:
       public_url: https://10.10.10.10:8081
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-ae04-f312d2747291
       name: config
+      uuid: ae774959-1ffc-5b61-b98c-617d5a580433
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - config
+      - default-global-system-config
+      - cluster1
+      - config
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: config
@@ -1680,12 +1683,12 @@ resources:
       public_url: https://10.10.10.10:8082
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-eeee-f312d2747291
       name: keystone
+      uuid: 2329ebb9-77a1-5483-b253-966e32d6a7dd
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - keystone
+      - default-global-system-config
+      - cluster1
+      - keystone
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: keystone
@@ -1693,16 +1696,29 @@ resources:
       public_url: https://10.0.2.16:5555
     kind: endpoint
   - data:
-      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
+      uuid: 8c72eecb-23ef-53ce-b551-1090c3cc4718
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - swift
+      - default-global-system-config
+      - cluster1
+      - swift
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift
       private_url: https://40.40.40.40:5080
       public_url: https://40.40.40.40:5080
+    kind: endpoint
+  - data:
+      name: insights
+      uuid: 23253a75-df90-5adb-b6d1-fa22c2b4b01a
+      fq_name:
+      - default-global-system-config
+      - cluster1
+      - insights
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: insights
+      private_url: https://127.0.0.1:7000
+      public_url: https://1.1.1.1:7000
     kind: endpoint
 `
