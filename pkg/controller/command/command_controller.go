@@ -306,15 +306,14 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		},
 	}
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, d, func() error {
-		upgrading := true
-		if command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandShuttingDownBeforeUpgrade {
+		if !command.Upgrading() {
 			r.fillDeploymentSpec(command, d)
-			upgrading = false
 		}
 		if err := r.prepareIntendedDeployment(d, command); err != nil {
 			return err
 		}
-		if upgrading {
+		if command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade ||
+			command.Status.UpgradeState == contrail.CommandUpgrading {
 			d.Spec.Replicas = int32ToPtr(0)
 		}
 		return nil
@@ -322,13 +321,13 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
-	oldImage := getContainerImage(d.Spec.Template.Spec.Containers, "api")
-	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {
+	if err = r.updateStatus(command, d, commandClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	if err = r.updateStatus(command, d, commandClusterIP); err != nil {
+	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
+	oldImage := command.Status.ContainerImage
+	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -560,6 +559,10 @@ func (r *ReconcileCommand) updateStatus(command *contrail.Command, deployment *a
 	} else {
 		command.Status.Active = false
 	}
+	if command.Status.ContainerImage == "" {
+		command.Status.ContainerImage = getImage(command.Spec.ServiceConfiguration.Containers, "api")
+	}
+
 	return r.client.Status().Update(context.Background(), command)
 }
 

@@ -59,13 +59,14 @@ type CommandEndpoint struct {
 // CommandStatus defines the observed state of Command
 // +k8s:openapi-gen=true
 type CommandStatus struct {
-	Status         `json:",inline"`
-	Endpoint       string              `json:"endpoint,omitempty"`
-	UpgradeState   CommandUpgradeState `json:"upgradeState,omitempty"`
-	ContainerImage string              `json:"containerImage,omitempty"`
+	Status               `json:",inline"`
+	Endpoint             string              `json:"endpoint,omitempty"`
+	UpgradeState         CommandUpgradeState `json:"upgradeState,omitempty"`
+	TargetContainerImage string              `json:"targetContainerImage,omitempty"`
+	ContainerImage       string              `json:"containerImage,omitempty"`
 }
 
-// +kubebuilder:validation:Enum={"","upgrading","not upgrading","shutting down before upgrade","starting upgraded deployment"}
+// +kubebuilder:validation:Enum={"","upgrading","not upgrading","shutting down before upgrade","starting upgraded deployment", "upgrade failed"}
 type CommandUpgradeState string
 
 const (
@@ -73,6 +74,7 @@ const (
 	CommandShuttingDownBeforeUpgrade  CommandUpgradeState = "shutting down before upgrade"
 	CommandUpgrading                  CommandUpgradeState = "upgrading"
 	CommandStartingUpgradedDeployment CommandUpgradeState = "starting upgraded deployment"
+	CommandUpgradeFailed              CommandUpgradeState = "upgrade failed"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -88,6 +90,16 @@ type CommandList struct {
 func (c *Command) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
 	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
 	return PodsCertSubjects(podList, c.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
+//Upgrading is used to check if command is in the upgrade process
+func (c *Command) Upgrading() bool {
+	if c.Status.UpgradeState == CommandShuttingDownBeforeUpgrade ||
+		c.Status.UpgradeState == CommandUpgrading ||
+		c.Status.UpgradeState == CommandUpgradeFailed {
+		return true
+	}
+	return false
 }
 
 func init() {
