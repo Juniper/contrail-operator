@@ -311,20 +311,22 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				}},
-				ProvisionManager: &v1alpha1.ProvisionManager{
+				ProvisionManager: &v1alpha1.ProvisionManagerService{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "provmanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
 					},
-					Spec: v1alpha1.ProvisionManagerSpec{
+					Spec: v1alpha1.ProvisionManagerServiceSpec{
 						CommonConfiguration: v1alpha1.PodConfiguration{
 							Replicas: &replicas,
 						},
-						ServiceConfiguration: v1alpha1.ProvisionManagerConfiguration{
-							Containers: []*v1alpha1.Container{
-								{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
-								{Name: "provisioner", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
+						ServiceConfiguration: v1alpha1.ProvisionmanagerManagerServiceConfiguration{
+							ProvisionManagerConfiguration: v1alpha1.ProvisionManagerConfiguration{
+								Containers: []*v1alpha1.Container{
+									{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
+									{Name: "provisioner", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
+								},
 							},
 						},
 					},

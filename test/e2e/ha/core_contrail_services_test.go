@@ -569,20 +569,22 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}
 
-	provisionManager := &contrail.ProvisionManager{
+	provisionManager := &contrail.ProvisionManagerService{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "hatest-provmanager",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
-		Spec: contrail.ProvisionManagerSpec{
+		Spec: contrail.ProvisionManagerServiceSpec{
 			CommonConfiguration: contrail.PodConfiguration{
 				Replicas: &oneVal,
 			},
-			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
-				Containers: []*contrail.Container{
-					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
-					{Name: "provisioner", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
+			ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
+				ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:" + versionMap["python"]},
+						{Name: "provisioner", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + versionMap["contrail-operator-provisioner"]},
+					},
 				},
 			},
 		},
