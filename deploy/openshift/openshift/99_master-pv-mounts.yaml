@@ -7,21 +7,16 @@ metadata:
 spec:
   config:
     ignition:
-      version: 2.2.0
+      version: 3.1.0
     storage:
       directories:
-        - filesystem: "root"
-          path: "/mnt/volumes/1"
+        - path: "/mnt/volumes/1"
           mode: 0755
-        - filesystem: "root"
-          path: "/mnt/volumes/2"
+        - path: "/mnt/volumes/2"
           mode: 0755
-        - filesystem: "root"
-          path: "/mnt/volumes/3"
+        - path: "/mnt/volumes/3"
           mode: 0755
-        - filesystem: "root"
-          path: "/mnt/volumes/4"
+        - path: "/mnt/volumes/4"
           mode: 0755
-        - filesystem: "root"
-          path: "/mnt/volumes/5"
+        - path: "/mnt/volumes/5"
           mode: 0755
