@@ -162,12 +162,11 @@ func TestProvisionManagerController(t *testing.T) {
 		require.NoError(t, err, "Failed to build scheme")
 		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
-		pmr := newProvisionManager()
+		//pmr := newProvisionManager()
 		pmrs := newProvisionManagerService()
 		initObjs := []runtime.Object{
 			newManager(pmrs),
 			newConfigInst(),
-			pmr,
 		}
 		cl := fake.NewFakeClientWithScheme(scheme, initObjs...)
 
@@ -413,7 +412,6 @@ func compareConfigStatus(t *testing.T, expectedStatus, realStatus contrail.Provi
 }
 
 func testcase1() *TestCase {
-	// pmr := newProvisionManager()
 	pmrs := newProvisionManagerService()
 	tc := &TestCase{
 		name: "create a new statefulset",

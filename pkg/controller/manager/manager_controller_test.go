@@ -2765,7 +2765,6 @@ func TestFillVrouterConfiguration(t *testing.T) {
 		controlWithActiveState(true))
 
 	newVrouter := &contrail.Vrouter{}
-	// newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration.APIServerPort = 1234
 	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
