@@ -162,7 +162,6 @@ func TestProvisionManagerController(t *testing.T) {
 		require.NoError(t, err, "Failed to build scheme")
 		require.NoError(t, core.SchemeBuilder.AddToScheme(scheme), "Failed core.SchemeBuilder.AddToScheme()")
 		require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme), "Failed apps.SchemeBuilder.AddToScheme()")
-		//pmr := newProvisionManager()
 		pmrs := newProvisionManagerService()
 		initObjs := []runtime.Object{
 			newManager(pmrs),
