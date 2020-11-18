@@ -7,18 +7,36 @@ metadata:
 spec:
   config:
     ignition:
-      version: 2.2.0
+      version: 3.1.0
     storage:
       directories:
-        - filesystem: "root"
-          path: "/opt/modules"
+        - path: "/opt/modules"
           mode: 0755
-        - filesystem: "root"
-          path: "/opt/modules.wd"
+        - path: "/opt/modules.wd"
           mode: 0755
       files:
-        - filesystem: "root"
-          path: "/etc/fstab"
-          mode: 0644
-          contents:
-            source: "data:,overlay%20/lib/modules%20overlay%20lowerdir=/lib/modules,upperdir=/opt/modules,workdir=/opt/modules.wd%200%200"
+      - path: /etc/contrail/modules_overlay.sh
+        mode: 0755
+        user:
+          name: root
+        contents:
+          # 'data:,' and URL encoded openshift-install/sources/nm_stop.sh
+          source: data:,%23%21%2Fbin%2Fbash%0A%0Amount%20-o%20%22lowerdir%3D%2Flib%2Fmodules%2Cupperdir%3D%2Fopt%2Fmodules%2Cworkdir%3D%2Fopt%2Fmodules.wd%22%20-t%20overlay%20overlay%20%2Flib%2Fmodules
+    systemd:
+      units:
+      - name: lib-modules-mount.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Mount overlay for /lib/modules
+          After=usr-lib-modules.mount
+          AssertPathExists=/etc/contrail/modules_overlay.sh
+
+          [Service]
+          Type=simple
+          ExecStart=/etc/contrail/modules_overlay.sh
+          StandardOutput=syslog
+          StandardError=syslog
+
+          [Install]
+          WantedBy=multi-user.target
