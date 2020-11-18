@@ -17,10 +17,6 @@ import (
 )
 
 func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, deployment *apps.Deployment) error {
-	if isImageChanged(command) && command.Status.UpgradeState != contrail.CommandUpgrading && command.Status.UpgradeState != contrail.CommandStartingUpgradedDeployment {
-		command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
-		command.Status.TargetContainerImage = getImage(command.Spec.ServiceConfiguration.Containers, "api")
-	}
 	switch command.Status.UpgradeState {
 	case contrail.CommandShuttingDownBeforeUpgrade:
 		if deployment.Status.Replicas == 0 {
@@ -62,6 +58,13 @@ func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, dep
 	default: // case contrail.CommandNotUpgrading or UpgradeState is not set
 		command.Status.UpgradeState = contrail.CommandNotUpgrading
 		command.Status.TargetContainerImage = ""
+		if isImageChanged(command) {
+			command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
+			if deployment.Status.Replicas == 0 {
+				command.Status.UpgradeState = contrail.CommandUpgrading
+			}
+			command.Status.TargetContainerImage = getImage(command.Spec.ServiceConfiguration.Containers, "api")
+		}
 	}
 	return nil
 }
