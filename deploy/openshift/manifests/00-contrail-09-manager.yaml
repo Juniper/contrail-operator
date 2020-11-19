@@ -70,7 +70,7 @@ spec:
             - name: queryengine
               image: <CONTRAIL_REGISTRY>/contrail-analytics-query-engine:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -92,7 +92,7 @@ spec:
             - name: named
               image: <CONTRAIL_REGISTRY>/contrail-controller-control-named:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -107,7 +107,7 @@ spec:
           - name: init
             image: python:3.8.2-alpine
           - name: provisioner
-            image: <CONTRAIL_REGISTRY>/contrail-operator-provisioner:<CONTRAIL_VERSION>-ubi
+            image: <CONTRAIL_REGISTRY>/contrail-operator-provisioner:<CONTRAIL_VERSION>
     rabbitmq:
       metadata:
         labels:
@@ -172,7 +172,7 @@ spec:
             - name: kubemanager
               image: <CONTRAIL_REGISTRY>/contrail-kubernetes-kube-manager:<CONTRAIL_VERSION>
             - name: statusmonitor
-              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>-ubi
+              image: <CONTRAIL_REGISTRY>/contrail-statusmonitor:<CONTRAIL_VERSION>
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
