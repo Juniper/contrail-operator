@@ -351,31 +351,37 @@ func getAPIClient(apiServerObj *APIServer, keystoneAuthParameters *KeystoneAuthP
 }
 
 func setupAuthKeystone(client *contrail.Client, keystoneAuthParameters *KeystoneAuthParameters) {
-	// AddEncryption expected http url in older versions of contrail-go-api
-	// https://github.com/Juniper/contrail-go-api/commit/4c876ba038a8ecec211376133375d467b6098202
-	var authUrl string
+	var keystone *contrail.KeepaliveKeystoneClient
 	if strings.HasPrefix(keystoneAuthParameters.AuthUrl, "https") {
-		authUrl = strings.Replace(keystoneAuthParameters.AuthUrl, "https", "http", 1)
+		// AddEncryption expected http url in older versions of contrail-go-api
+		// https://github.com/Juniper/contrail-go-api/commit/4c876ba038a8ecec211376133375d467b6098202
+		keystone = contrail.NewKeepaliveKeystoneClient(
+			strings.Replace(keystoneAuthParameters.AuthUrl, "https", "http", 1),
+			keystoneAuthParameters.TenantName,
+			keystoneAuthParameters.AdminUsername,
+			keystoneAuthParameters.AdminPassword,
+			"",
+		)
+		err := keystone.AddEncryption(
+			keystoneAuthParameters.Encryption.CA,
+			keystoneAuthParameters.Encryption.Key,
+			keystoneAuthParameters.Encryption.Cert,
+			keystoneAuthParameters.Encryption.Insecure)
+
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	} else {
-		authUrl = keystoneAuthParameters.AuthUrl
+		keystone = contrail.NewKeepaliveKeystoneClient(
+			keystoneAuthParameters.AuthUrl,
+			keystoneAuthParameters.TenantName,
+			keystoneAuthParameters.AdminUsername,
+			keystoneAuthParameters.AdminPassword,
+			"",
+		)
 	}
-	keystone := contrail.NewKeepaliveKeystoneClient(
-		authUrl,
-		keystoneAuthParameters.TenantName,
-		keystoneAuthParameters.AdminUsername,
-		keystoneAuthParameters.AdminPassword,
-		"",
-	)
-	err := keystone.AddEncryption(
-		keystoneAuthParameters.Encryption.CA,
-		keystoneAuthParameters.Encryption.Key,
-		keystoneAuthParameters.Encryption.Cert,
-		keystoneAuthParameters.Encryption.Insecure)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	err = keystone.AuthenticateV3()
+	err := keystone.AuthenticateV3()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
