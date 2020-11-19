@@ -2432,8 +2432,8 @@ go_repository(
 go_repository(
     name = "com_github_operator_framework_operator_sdk",
     importpath = "github.com/operator-framework/operator-sdk",
-    sum = "h1:ESV2s2oQsZPQiQ8VfC8S5DzEnO/azXF82Fj++5qpAkw=",
-    version = "v0.17.1",
+    sum = "h1:Aw9MpKOVdUpVEgkP4CcOzcPU/x+6Qe1UZbo7Vx7u6fU=",
+    version = "v0.17.2",
 )
 
 go_repository(
