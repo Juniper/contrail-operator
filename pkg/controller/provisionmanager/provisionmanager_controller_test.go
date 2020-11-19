@@ -303,13 +303,11 @@ func newProvisionManagerService() *contrail.ProvisionManagerService {
 				Replicas:     &replica,
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
-			ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
-				ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
-					Containers: []*contrail.Container{
-						{Name: "provisioner", Image: "provisioner"},
-						{Name: "init", Image: "busybox"},
-						{Name: "init2", Image: "provisionmanager"},
-					},
+			ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+				Containers: []*contrail.Container{
+					{Name: "provisioner", Image: "provisioner"},
+					{Name: "init", Image: "busybox"},
+					{Name: "init2", Image: "provisionmanager"},
 				},
 			},
 		},

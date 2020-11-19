@@ -415,13 +415,11 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerServiceSpec{
-				ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
-					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
-						Containers: []*contrail.Container{
-							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
-							{Name: "init", Image: "busybox"},
-							{Name: "init2", Image: "provisionmanager:3.5"},
-						},
+				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager:3.5"},
 					},
 				},
 			},
@@ -766,13 +764,11 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerServiceSpec{
-				ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
-					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
-						Containers: []*contrail.Container{
-							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
-							{Name: "init", Image: "busybox"},
-							{Name: "init2", Image: "provisionmanager:3.5"},
-						},
+				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager:3.5"},
 					},
 				},
 			},
@@ -2888,6 +2884,8 @@ func TestProcessProvisionManager(t *testing.T) {
 		scheme:     scheme,
 		kubernetes: k8s.New(cl, scheme),
 	}
+	var replicas int32
+	replicas = 1
 	managerCR := &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "cluster1",
@@ -2897,25 +2895,29 @@ func TestProcessProvisionManager(t *testing.T) {
 			Services: contrail.Services{
 				ProvisionManager: &contrail.ProvisionManagerService{
 					ObjectMeta: meta.ObjectMeta{
-						Name: "test-provisionmanager",
+						Name:      "test-provisionmanager",
+						Namespace: "default",
 					},
 					Spec: contrail.ProvisionManagerServiceSpec{
-						ServiceConfiguration: contrail.ProvisionmanagerManagerServiceConfiguration{
-							ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
-								KeystoneInstance:   "keystoneInstance",
-								KeystoneSecretName: "SecretName",
-							},
+						CommonConfiguration: contrail.PodConfiguration{
+							Replicas: &replicas,
 						},
+						ServiceConfiguration: contrail.ProvisionManagerConfiguration{},
 					},
 				},
 			},
 		},
 	}
-	require.NoError(t, reconciler.processProvisionManager(managerCR, 1))
+	require.NoError(t, reconciler.processProvisionManager(managerCR, 3))
 	createdProvisionManager := &contrail.ProvisionManager{}
 	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{
 		Name:      "test-provisionmanager",
 		Namespace: "test-ns",
 	}, createdProvisionManager))
 	assert.NotNil(t, createdProvisionManager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+
+	t.Run("Check if number of replicas is equal to declared in manager", func(t *testing.T) {
+		createdProvisionManager.SetResourceVersion("")
+		assert.Equal(t, &replicas, createdProvisionManager.Spec.CommonConfiguration.Replicas)
+	})
 }

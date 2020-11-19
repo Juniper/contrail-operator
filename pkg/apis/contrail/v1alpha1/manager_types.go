@@ -72,14 +72,8 @@ type ProvisionManagerService struct {
 // ProvisionManagerServiceSpec defines desired spec configuration of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerServiceSpec struct {
-	CommonConfiguration  PodConfiguration                            `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration ProvisionmanagerManagerServiceConfiguration `json:"serviceConfiguration"`
-}
-
-// ProvisionmanagerManagerServiceConfiguration defines service configuration for Provisionmanager
-// +k8s:openapi-gen=true
-type ProvisionmanagerManagerServiceConfiguration struct {
-	ProvisionManagerConfiguration `json:",inline"`
+	CommonConfiguration  PodConfiguration              `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
 }
 
 // KubemanagerService defines desired configuration of Kubemanager

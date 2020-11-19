@@ -1972,8 +1972,8 @@ spec:
                               type: array
                           type: object
                         serviceConfiguration:
-                          description: ProvisionmanagerManagerServiceConfiguration
-                            defines service configuration for Provisionmanager
+                          description: ProvisionManagerConfiguration defines the provision
+                            manager configuration
                           properties:
                             containers:
                               items:
