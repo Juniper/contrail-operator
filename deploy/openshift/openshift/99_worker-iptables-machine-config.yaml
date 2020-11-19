@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: worker
-  name: 10-worker-iptables
+  name: 01-worker-iptables
 spec:
   config:
     ignition:

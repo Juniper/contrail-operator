@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: worker
-  name: 02-worker-modules
+  name: 01-worker-modules
 spec:
   config:
     ignition:
