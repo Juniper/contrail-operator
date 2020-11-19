@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: master
-  name: 10-master-iptables
+  name: 01-master-iptables
 spec:
   config:
     ignition:

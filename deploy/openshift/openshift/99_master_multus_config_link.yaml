@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: master
-  name: 10-master-multus-config-link
+  name: 01-master-multus-config-link
 spec:
   config:
     ignition:

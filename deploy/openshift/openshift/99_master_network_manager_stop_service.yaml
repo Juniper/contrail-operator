@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: master
-  name: 10-master-nm-stop-service
+  name: 01-master-nm-stop-service
 spec:
   config:
     ignition:

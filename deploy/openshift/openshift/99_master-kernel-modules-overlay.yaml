@@ -3,7 +3,7 @@ kind: MachineConfig
 metadata:
   labels:
     machineconfiguration.openshift.io/role: master
-  name: 02-master-modules
+  name: 01-master-modules
 spec:
   config:
     ignition:
