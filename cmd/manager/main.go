@@ -74,7 +74,7 @@ func main() {
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:               namespace,
 		MetricsBindAddress:      "0",
-		LeaderElection:          false,
+		LeaderElection:          true,
 		LeaderElectionID:        "contrail-manager-lock",
 		LeaderElectionNamespace: namespace,
 	})
