@@ -96,7 +96,7 @@ func TestManagerTypeTwo(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -127,7 +127,7 @@ var managerCR = &contrail.Manager{
 			Zookeepers:       []*contrail.Zookeeper{zookeeper},
 			Controls:         []*contrail.Control{control},
 			Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
-			ProvisionManager: provisionmanager,
+			ProvisionManager: provisionmanagerService,
 			Webui:            webui,
 			Config:           config,
 			Command:          command,
@@ -244,13 +244,13 @@ var rabbitmq = &contrail.Rabbitmq{
 	Status: contrail.RabbitmqStatus{Active: &falseVal},
 }
 
-var provisionmanager = &contrail.ProvisionManager{
+var provisionmanagerService = &contrail.ProvisionManagerService{
 	ObjectMeta: meta.ObjectMeta{
 		Name:      "provisionmanager",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
 	},
-	Spec: contrail.ProvisionManagerSpec{
+	Spec: contrail.ProvisionManagerServiceSpec{
 		CommonConfiguration: contrail.PodConfiguration{
 			Replicas: &replicas,
 		},

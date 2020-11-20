@@ -82,6 +82,14 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ProvisionManagerSpec{},
 		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{},
+		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "kubemanager",
@@ -262,7 +270,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Contrailmonitor:  contrailmonitorCR,
 					Controls:         []*contrail.Control{control},
@@ -389,6 +397,24 @@ func TestManagerController(t *testing.T) {
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
 			Spec: contrail.ProvisionManagerSpec{
+				ServiceConfiguration: contrail.ProvisionManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
+					},
+				},
+			},
+		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{
 				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
@@ -583,7 +609,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
@@ -719,7 +745,33 @@ func TestManagerController(t *testing.T) {
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			},
-			Spec: contrail.ProvisionManagerSpec{},
+			Spec: contrail.ProvisionManagerSpec{
+				ServiceConfiguration: contrail.ProvisionManagerServiceConfiguration{
+					ProvisionManagerConfiguration: contrail.ProvisionManagerConfiguration{
+						Containers: []*contrail.Container{
+							{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+							{Name: "init", Image: "busybox"},
+							{Name: "init2", Image: "provisionmanager:3.5"},
+						},
+					},
+				},
+			},
+		}
+		provisionmanagerService := &contrail.ProvisionManagerService{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "provisionmanager",
+				Namespace: "default",
+				Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			},
+			Spec: contrail.ProvisionManagerServiceSpec{
+				ServiceConfiguration: contrail.ProvisionManagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "provisionmanager", Image: "provisionmanager:3.5"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "provisionmanager:3.5"},
+					},
+				},
+			},
 		}
 		kubemanager := &contrail.Kubemanager{
 			ObjectMeta: meta.ObjectMeta{
@@ -901,7 +953,7 @@ func TestManagerController(t *testing.T) {
 					Zookeepers:       []*contrail.Zookeeper{zookeeper},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 					Rabbitmq:         rabbitmq,
-					ProvisionManager: provisionmanager,
+					ProvisionManager: provisionmanagerService,
 					Webui:            webui,
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
@@ -2665,6 +2717,26 @@ func TestVrouterDependenciesReady(t *testing.T) {
 	}
 }
 
+func TestProvisionManagerDependenciesReady(t *testing.T) {
+	tests := []struct {
+		configActive bool
+		expected     bool
+	}{
+		{configActive: true, expected: true},
+		{configActive: false, expected: false},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	for _, tc := range tests {
+		cl := fake.NewFakeClientWithScheme(scheme,
+			configWithActiveState(tc.configActive))
+		got := provisionManagerDependenciesReady(meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		assert.Equal(t, tc.expected, got)
+	}
+}
+
 func TestFillKubemanagerConfiguration(t *testing.T) {
 	scheme, err := contrail.SchemeBuilder.Build()
 	require.NoError(t, err, "Failed to build scheme")
@@ -2695,6 +2767,18 @@ func TestFillVrouterConfiguration(t *testing.T) {
 	require.NoError(t, fillVrouterConfiguration(newVrouter, "control1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newVrouter.Spec.ServiceConfiguration.ControlNodesConfiguration)
+}
+
+func TestFillProvisionManagerConfiguration(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true))
+
+	newProvisionManager := &contrail.ProvisionManager{}
+	require.NoError(t, fillProvisionManagerConfiguration(newProvisionManager, meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
+	assert.NotNil(t, newProvisionManager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 }
 
 func TestProcessVrouters(t *testing.T) {
@@ -2790,4 +2874,53 @@ func TestProcessKubemanagers(t *testing.T) {
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+}
+
+func TestProcessProvisionManager(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+
+	cl := fake.NewFakeClientWithScheme(scheme,
+		configWithActiveState(true))
+	reconciler := ReconcileManager{
+		client:     cl,
+		scheme:     scheme,
+		kubernetes: k8s.New(cl, scheme),
+	}
+	var replicas int32
+	replicas = 1
+	managerCR := &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cluster1",
+			Namespace: "test-ns",
+		},
+		Spec: contrail.ManagerSpec{
+			Services: contrail.Services{
+				ProvisionManager: &contrail.ProvisionManagerService{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "test-provisionmanager",
+						Namespace: "default",
+					},
+					Spec: contrail.ProvisionManagerServiceSpec{
+						CommonConfiguration: contrail.PodConfiguration{
+							Replicas: &replicas,
+						},
+						ServiceConfiguration: contrail.ProvisionManagerConfiguration{},
+					},
+				},
+			},
+		},
+	}
+	require.NoError(t, reconciler.processProvisionManager(managerCR, 3))
+	createdProvisionManager := &contrail.ProvisionManager{}
+	require.NoError(t, cl.Get(context.TODO(), types.NamespacedName{
+		Name:      "test-provisionmanager",
+		Namespace: "test-ns",
+	}, createdProvisionManager))
+	assert.NotNil(t, createdProvisionManager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
+
+	t.Run("Check if number of replicas is equal to declared in manager", func(t *testing.T) {
+		createdProvisionManager.SetResourceVersion("")
+		assert.Equal(t, &replicas, createdProvisionManager.Spec.CommonConfiguration.Replicas)
+	})
 }

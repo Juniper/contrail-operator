@@ -1378,13 +1378,13 @@ spec:
                 kubemanagers:
                   items:
                     description: KubemanagerService defines desired configuration
-                      of vRouter
+                      of Kubemanager
                     properties:
                       metadata:
                         type: object
                       spec:
                         description: KubemanagerServiceSpec defines desired spec configuration
-                          of vRouter
+                          of Kubemanager
                         properties:
                           commonConfiguration:
                             description: PodConfiguration is the common services struct.
@@ -1873,26 +1873,14 @@ spec:
                       type: object
                   type: object
                 provisionManager:
-                  description: ProvisionManager is the Schema for the provisionmanagers
-                    API
+                  description: ProvisionManagerService defines desired configuration
+                    of ProvisionManager
                   properties:
-                    apiVersion:
-                      description: 'APIVersion defines the versioned schema of this
-                        representation of an object. Servers should convert recognized
-                        schemas to the latest internal value, and may reject unrecognized
-                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                      type: string
-                    kind:
-                      description: 'Kind is a string value representing the REST resource
-                        this object represents. Servers may infer this from the endpoint
-                        the client submits requests to. Cannot be updated. In CamelCase.
-                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                      type: string
                     metadata:
                       type: object
                     spec:
-                      description: ProvisionManagerSpec defines the desired state
-                        of ProvisionManager
+                      description: ProvisionManagerServiceSpec defines desired spec
+                        configuration of ProvisionManager
                       properties:
                         commonConfiguration:
                           description: PodConfiguration is the common services struct.
@@ -2035,25 +2023,6 @@ spec:
                           type: object
                       required:
                       - serviceConfiguration
-                      type: object
-                    status:
-                      description: ProvisionManagerStatus defines the observed state
-                        of ProvisionManager
-                      properties:
-                        active:
-                          description: 'INSERT ADDITIONAL STATUS FIELD - define observed
-                            state of cluster Important: Run "operator-sdk generate
-                            k8s" to regenerate code after modifying this file Add
-                            custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
-                          type: boolean
-                        globalConfiguration:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        nodes:
-                          additionalProperties:
-                            type: string
-                          type: object
                       type: object
                   type: object
                 rabbitmq:
@@ -2471,12 +2440,12 @@ spec:
                   type: object
                 vrouters:
                   items:
-                    description: VrouterService defines desired confgiuration of vRouter
+                    description: VrouterService defines desired configuration of vRouter
                     properties:
                       metadata:
                         type: object
                       spec:
-                        description: VrouterServiceSpec defines desired spec confgiuration
+                        description: VrouterServiceSpec defines desired spec configuration
                           of vRouter
                         properties:
                           commonConfiguration:
