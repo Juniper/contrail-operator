@@ -61,7 +61,7 @@ func GetJob(cniDir CniDirs, requestName, instanceType string, replicas *int32) *
 				MountPath: "/var/run/multus",
 			},
 		},
-		imagePullPolicy: "IfNotPresent",
+		ImagePullPolicy: "IfNotPresent",
 	}
 
 	if cniDir.DeploymentType == "openshift" {

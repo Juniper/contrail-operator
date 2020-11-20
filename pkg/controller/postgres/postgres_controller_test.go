@@ -520,7 +520,7 @@ func newSTS(name string) apps.StatefulSet {
 							Name:            "init",
 							Image:           "localhost:5000/busybox:1.31",
 							Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
-							imagePullPolicy: "IfNotPresent",
+							ImagePullPolicy: "IfNotPresent",
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "postgres-storage-init",

@@ -411,7 +411,7 @@ func (r *ReconcilePostgres) initContainers(postgres *contrail.Postgres) []core.C
 			Name:            "init",
 			Image:           getImage(postgres.Spec.ServiceConfiguration.Containers, "init"),
 			Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
-			imagePullPolicy: "IfNotPresent",
+			ImagePullPolicy: "IfNotPresent",
 			VolumeMounts: []core.VolumeMount{
 				{
 					Name:      "postgres-storage-init",
@@ -440,7 +440,7 @@ func (r *ReconcilePostgres) containers(postgres *contrail.Postgres, rootPassSecr
 				TimeoutSeconds:      5,
 			},
 			Env:             r.containerEnv(postgres.Name, rootPassSecretName, replicationPassSecretName),
-			imagePullPolicy: "IfNotPresent",
+			ImagePullPolicy: "IfNotPresent",
 			VolumeMounts: []core.VolumeMount{
 				{
 					Name:      "pgdata",
