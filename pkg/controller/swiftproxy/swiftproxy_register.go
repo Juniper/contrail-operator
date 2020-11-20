@@ -161,7 +161,7 @@ func newBootstrapJob(
 						{
 							Name:            "register",
 							Image:           getImage(containers, "init"),
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Command:         getCommand(containers, "init"),
 							VolumeMounts: []core.VolumeMount{
 								{Name: "register", MountPath: "/var/lib/ansible/register", ReadOnly: true},

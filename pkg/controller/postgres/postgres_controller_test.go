@@ -508,7 +508,7 @@ func newSTS(name string) apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "localhost:5000/busybox:1.31",
 							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 							VolumeMounts: []core.VolumeMount{{
@@ -520,7 +520,7 @@ func newSTS(name string) apps.StatefulSet {
 							Name:            "init",
 							Image:           "localhost:5000/busybox:1.31",
 							Command:         []string{"/bin/sh", "-c", "if [[ -d /mnt/postgres/postgres ]]; then chmod 0750 /mnt/postgres/postgres; fi"},
-							ImagePullPolicy: "Always",
+							imagePullPolicy: "IfNotPresent",
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "postgres-storage-init",
@@ -534,7 +534,7 @@ func newSTS(name string) apps.StatefulSet {
 						{
 							Image:           "localhost:5000/patroni:2.0.0.logical",
 							Name:            "patroni",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Env: []core.EnvVar{
 								nameEnv,
 								scopeEnv,

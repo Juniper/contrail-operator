@@ -20,7 +20,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: kubemanager
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -33,7 +33,7 @@ spec:
         - -c
         - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: init
         volumeMounts:
         - mountPath: /tmp/podinfo

@@ -550,7 +550,7 @@ const expectedCommandImage = `DB_USER=${DB_USER:-root}`
 var InitContainers = []core.Container{
 	{
 		Name:            "wait-for-ready-conf",
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: core.PullIfNotPresent,
 		Image:           "localhost:5000/busybox",
 		Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 		VolumeMounts: []core.VolumeMount{{
@@ -561,7 +561,7 @@ var InitContainers = []core.Container{
 	{
 		Name:            "keystone-db-init",
 		Image:           "localhost:5000/postgresql-client",
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{"/bin/sh"},
 		Args:            []string{"-c", expectedCommandImage},
 		Env: []core.EnvVar{
@@ -578,7 +578,7 @@ var InitContainers = []core.Container{
 	{
 		Name:            "keystone-init",
 		Image:           "localhost:5000/centos-binary-keystone:train",
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: core.PullIfNotPresent,
 		Env: []core.EnvVar{{
 			Name:  "KOLLA_SERVICE_NAME",
 			Value: "keystone",

@@ -52,7 +52,7 @@ func GetDaemonset() *apps.DaemonSet {
 					MountPath: "/tmp/podinfo",
 				},
 			},
-			ImagePullPolicy: "Always",
+			imagePullPolicy: "IfNotPresent",
 		},
 		{
 			Name:  "nodeinit",
@@ -67,7 +67,7 @@ func GetDaemonset() *apps.DaemonSet {
 					MountPath: "/host/usr/bin",
 				},
 			},
-			ImagePullPolicy: "Always",
+			imagePullPolicy: "IfNotPresent",
 			SecurityContext: &core.SecurityContext{
 				Privileged: &trueVal,
 			},
@@ -100,7 +100,7 @@ func GetDaemonset() *apps.DaemonSet {
 					MountPath: "/lib/modules",
 				},
 			},
-			ImagePullPolicy: "Always",
+			imagePullPolicy: "IfNotPresent",
 			SecurityContext: &core.SecurityContext{
 				Privileged: &trueVal,
 			},
@@ -153,7 +153,7 @@ func GetDaemonset() *apps.DaemonSet {
 					MountPath: "/etc/resolv.conf",
 				},
 			},
-			ImagePullPolicy: "Always",
+			imagePullPolicy: "IfNotPresent",
 			SecurityContext: &core.SecurityContext{
 				Privileged: &trueVal,
 			},
@@ -189,7 +189,7 @@ func GetDaemonset() *apps.DaemonSet {
 					MountPath: "/mnt",
 				},
 			},
-			ImagePullPolicy: "Always",
+			imagePullPolicy: "IfNotPresent",
 		},
 	}
 

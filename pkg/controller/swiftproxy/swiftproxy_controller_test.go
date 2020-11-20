@@ -347,7 +347,7 @@ func newExpectedDeployment(status apps.DeploymentStatus) *apps.Deployment {
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "localhost:5000/busybox",
 							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 							VolumeMounts: []core.VolumeMount{{
@@ -500,7 +500,7 @@ func newExpectedDeploymentWithCustomImages() *apps.Deployment {
 	deployment.Spec.Template.Spec.InitContainers = []core.Container{
 		{
 			Name:            "wait-for-ready-conf",
-			ImagePullPolicy: core.PullAlways,
+			ImagePullPolicy: core.PullIfNotPresent,
 			Image:           "image3",
 			Command:         []string{"cmd"},
 			VolumeMounts: []core.VolumeMount{{

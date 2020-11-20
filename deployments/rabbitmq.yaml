@@ -31,7 +31,7 @@ spec:
         - -c
         - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: init
         resources: {}
         securityContext:
@@ -54,7 +54,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         image: docker.io/michaelhenkel/contrail-external-rabbitmq:5.2.0-dev1
-        imagePullPolicy: ""
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /var/lib/rabbitmq
           name: rabbitmq-data

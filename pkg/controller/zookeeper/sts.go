@@ -37,7 +37,7 @@ spec:
         - -c
         - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: init
         resources: {}
         securityContext:
@@ -58,7 +58,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: conf-init
         resources: {}
         securityContext:
@@ -78,7 +78,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         image: docker.io/michaelhenkel/contrail-external-zookeeper:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
             memory: "1Gi"

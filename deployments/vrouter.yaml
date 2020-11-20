@@ -18,7 +18,7 @@ spec:
         - configMapRef:
             name: vrouter
         image: docker.io/michaelhenkel/contrail-vrouter-agent:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         lifecycle:
           preStop:
             exec:
@@ -53,7 +53,7 @@ spec:
         - configMapRef:
             name: vrouter
         image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: nodemanager
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -67,7 +67,7 @@ spec:
         - configMapRef:
             name: vrouter
         image: docker.io/michaelhenkel/contrail-node-init:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: nodeinit
         securityContext:
           privileged: true
@@ -81,7 +81,7 @@ spec:
         - configMapRef:
             name: vrouter
         image: docker.io/michaelhenkel/contrail-vrouter-kernel-init:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: vrouterkernelinit
         securityContext:
           privileged: true
@@ -100,7 +100,7 @@ spec:
         - configMapRef:
             name: vrouter
         image: docker.io/michaelhenkel/contrail-kubernetes-cni-init:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: vroutercni
         securityContext:
           privileged: true

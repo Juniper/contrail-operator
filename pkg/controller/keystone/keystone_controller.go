@@ -380,7 +380,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           getImage(cr, "wait-for-ready-conf"),
 							Command:         getCommand(cr, "wait-for-ready-conf"),
 							VolumeMounts: []core.VolumeMount{{
@@ -393,7 +393,7 @@ func newKeystoneSTS(cr *contrail.Keystone) *apps.StatefulSet {
 						{
 							Name:            "keystone",
 							Image:           getImage(cr, "keystone"),
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Env:             newKollaEnvs("keystone"),
 							Command:         getCommand(cr, "keystone"),
 							VolumeMounts: []core.VolumeMount{
@@ -570,7 +570,7 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 						{
 							Name:            "keystone-db-init",
 							Image:           getImage(cr, "keystoneDbInit"),
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Command:         getCommand(cr, "keystoneDbInit"),
 							Args:            []string{"-c", initDBScript},
 							Env: []core.EnvVar{
@@ -596,7 +596,7 @@ func newBootStrapJob(cr *contrail.Keystone, name types.NamespacedName, kcbName, 
 						{
 							Name:            "keystone-bootstrap",
 							Image:           getImage(cr, "keystoneInit"),
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
 								Value: "keystone",

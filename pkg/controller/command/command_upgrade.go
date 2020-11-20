@@ -158,7 +158,7 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 					InitContainers: []core.Container{
 						{
 							Name:            "db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           oldImage,
 							Command: []string{"bash", "-c",
 								"commandutil convert --intype rdbms --outtype yaml --out /backups/db.yml -c /etc/contrail/command-app-server.yml"},
@@ -166,7 +166,7 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 						},
 						{
 							Name:            "migrate-db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           newImage,
 							Command: []string{"bash", "-c",
 								"commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml"},
@@ -176,7 +176,7 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 					Containers: []core.Container{
 						{
 							Name:            "restore-migrated-db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           newImage,
 							Command: []string{"bash", "-c",
 								"commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/command-app-server.yml"},

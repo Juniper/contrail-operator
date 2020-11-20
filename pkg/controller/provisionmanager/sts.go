@@ -36,7 +36,7 @@ spec:
         - -c
         - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: init
         resources: {}
         securityContext:
@@ -59,7 +59,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         image: docker.io/kaweue/contrail-provisioner:master.1175
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /var/lib/provisionmanager
           name: provisionmanager-data
