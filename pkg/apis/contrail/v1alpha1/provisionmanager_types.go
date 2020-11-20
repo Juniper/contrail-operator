@@ -27,8 +27,15 @@ import (
 // ProvisionManagerSpec defines the desired state of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerSpec struct {
-	CommonConfiguration  PodConfiguration              `json:"commonConfiguration,omitempty"`
-	ServiceConfiguration ProvisionManagerConfiguration `json:"serviceConfiguration"`
+	CommonConfiguration  PodConfiguration                     `json:"commonConfiguration,omitempty"`
+	ServiceConfiguration ProvisionManagerServiceConfiguration `json:"serviceConfiguration"`
+}
+
+// ProvisionManagerServiceConfiguration is the Spec for the provisionmanagers API.
+// +k8s:openapi-gen=true
+type ProvisionManagerServiceConfiguration struct {
+	ProvisionManagerConfiguration      `json:",inline"`
+	ProvisionManagerNodesConfiguration `json:",inline"`
 }
 
 // ProvisionManagerConfiguration defines the provision manager configuration
@@ -53,6 +60,12 @@ type GlobalVrouterConfiguration struct {
 	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
 	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
+}
+
+// ProvisionManagerNodesConfiguration is the configuration for third party dependencies
+// +k8s:openapi-gen=true
+type ProvisionManagerNodesConfiguration struct {
+	ConfigNodesConfiguration *ConfigClusterConfiguration `json:"configNodesConfiguration,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -312,11 +325,8 @@ func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
 		return err
 	}
 
-	configNodesInformation, err := NewConfigClusterConfiguration(c.Labels["contrail_cluster"],
-		request.Namespace, client)
-	if err != nil {
-		return err
-	}
+	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
+	configNodesInformation.FillWithDefaultValues()
 
 	listOps := &runtimeClient.ListOptions{Namespace: request.Namespace}
 	configList := &ConfigList{}
