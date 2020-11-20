@@ -172,7 +172,7 @@ func (c Contrail) ForManagerDeletion(name string) error {
 }
 
 // ForCommandUpgradeStateChange is used to wait until Command Upgrade State is updated
-func (c Contrail) ForCommandUpgradeStateChange(name string, newState contrail.CommandUpgradeState) error {
+func (c Contrail) ForCommandUpgradeState(name string, newState contrail.CommandUpgradeState) error {
 	command := &contrail.Command{}
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
 		err = c.Client.Get(context.Background(), types.NamespacedName{

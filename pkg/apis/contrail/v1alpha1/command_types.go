@@ -95,8 +95,7 @@ func (c *Command) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []
 //Upgrading is used to check if command is in the upgrade process
 func (c *Command) Upgrading() bool {
 	if c.Status.UpgradeState == CommandShuttingDownBeforeUpgrade ||
-		c.Status.UpgradeState == CommandUpgrading ||
-		c.Status.UpgradeState == CommandUpgradeFailed {
+		c.Status.UpgradeState == CommandUpgrading {
 		return true
 	}
 	return false

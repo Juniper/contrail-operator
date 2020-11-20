@@ -381,39 +381,41 @@ func TestCommandServices(t *testing.T) {
 				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
 			})
 
-			t.Run("rollback in case of unsuccessful data migration", func(t *testing.T) {
-				newImage := "registry:5000/common-docker-third-party/contrail/busybox:1.31"
+			t.Run("when upgrade to invalid image is performed", func(t *testing.T) {
+				badImage := "registry:5000/common-docker-third-party/contrail/busybox:1.31"
 				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
 				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
-				oldImage := utils.GetContainerFromList("api", containers).Image
-				utils.GetContainerFromList("api", containers).Image = newImage
+				utils.GetContainerFromList("api", containers).Image = badImage
 				require.NoError(t, f.Client.Update(context.TODO(), cluster))
 
-				t.Run("CommandNotUpgrading state", func(t *testing.T){
+				t.Run("then command reports failed upgrade", func(t *testing.T) {
 					err := wait.Contrail{
 						Namespace:     cluster.Namespace,
 						Timeout:       5 * time.Minute,
 						RetryInterval: retryInterval,
 						Client:        f.Client,
 						Logger:        log,
-					}.ForCommandUpgradeStateChange("commandtest", contrail.CommandNotUpgrading)
+					}.ForCommandUpgradeState("commandtest", contrail.CommandUpgradeFailed)
 					require.NoError(t, err)
 				})
+			})
 
-				t.Run("back to the old image", func(t *testing.T){
+			t.Run("when previous image is restored", func(t *testing.T) {
+				goodImage := "registry:5000/contrail-nightly/contrail-command:" + cemRelease
+				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
+				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
+				utils.GetContainerFromList("api", containers).Image = goodImage
+				require.NoError(t, f.Client.Update(context.TODO(), cluster))
+
+				t.Run("then command reports not upgrading state", func(t *testing.T) {
 					err := wait.Contrail{
 						Namespace:     cluster.Namespace,
 						Timeout:       5 * time.Minute,
 						RetryInterval: retryInterval,
 						Client:        f.Client,
 						Logger:        log,
-					}.ForPodImageChange(f.KubeClient, "command=commandtest", oldImage, "api")
-					assert.NoError(t, err)
-				})
-
-				t.Run("Postgres restored", func(t *testing.T){
-
-
+					}.ForCommandUpgradeState("commandtest", contrail.CommandNotUpgrading)
+					require.NoError(t, err)
 				})
 			})
 

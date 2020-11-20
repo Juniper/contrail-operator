@@ -306,14 +306,14 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		},
 	}
 	if _, err = controllerutil.CreateOrUpdate(context.Background(), r.client, d, func() error {
-		if !command.Upgrading() {
+		if !command.Upgrading() &&
+			command.Status.UpgradeState != contrail.CommandUpgradeFailed {
 			r.fillDeploymentSpec(command, d)
 		}
 		if err := r.prepareIntendedDeployment(d, command); err != nil {
 			return err
 		}
-		if command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade ||
-			command.Status.UpgradeState == contrail.CommandUpgrading {
+		if command.Upgrading() {
 			d.Spec.Replicas = int32ToPtr(0)
 		}
 		return nil

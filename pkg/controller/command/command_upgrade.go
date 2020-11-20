@@ -113,9 +113,14 @@ func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command
 }
 
 func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, oldImage, newImage, configMapName string) error {
-	if command.Status.UpgradeState == contrail.CommandNotUpgrading || command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade {
+	if command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade {
 		return r.deleteMigrationJob(command)
 	}
+
+	if command.Status.UpgradeState == contrail.CommandNotUpgrading {
+		return nil
+	}
+
 	dataMigrationJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-upgrade-job"}
 	err := r.client.Get(context.Background(), jobName, dataMigrationJob)
@@ -182,23 +187,14 @@ func (r *ReconcileCommand) dataMigrationJob(commandCR *contrail.Command, oldImag
 								"commandutil convert --intype rdbms --outtype yaml --out /backups/db.yml -c /etc/contrail/command-app-server.yml"},
 							VolumeMounts: volumeMounts,
 						},
-						{
-							Name:            "migrate-db-dump",
-							ImagePullPolicy: core.PullIfNotPresent,
-							Image:           newImage,
-							Command: []string{"bash", "-c",
-								"commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml"},
-							VolumeMounts: volumeMounts,
-						},
 					},
 					Containers: []core.Container{
 						{
-							Name:            "restore-migrated-db-dump",
+							Name:            "migration",
 							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           newImage,
-							Command: []string{"bash", "-c",
-								"commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/command-app-server.yml"},
-							VolumeMounts: volumeMounts,
+							Command:         []string{"bash", "-c", "/etc/contrail/migration.sh"},
+							VolumeMounts:    volumeMounts,
 						},
 					},
 					DNSPolicy: core.DNSClusterFirst,

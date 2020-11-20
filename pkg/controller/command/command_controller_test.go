@@ -1324,6 +1324,7 @@ func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
 
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
+	assert.Equal(t, expectedMigrationScript, actual.Data["migration.sh"])
 }
 
 func newAdminSecret() *core.Secret {
@@ -1859,3 +1860,28 @@ resources:
       public_url: https://1.1.1.1:7000
     kind: endpoint
 `
+const expectedMigrationScript = `
+#!/usr/bin/env bash
+
+export PGPASSWORD=test123
+
+psql -w -h 10.219.10.10 -U root -d contrail_test <<END_OF_SQL
+DROP DATABASE contrail_test_migrated;
+DROP DATABASE contrail_test_backup;
+END_OF_SQL
+
+set -e
+commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
+
+createdb -w -h 10.219.10.10 -U root contrail_test_migrated
+psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d contrail_test_migrated -f /usr/share/contrail/gen_init_psql.sql
+psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d contrail_test_migrated -f /usr/share/contrail/init_psql.sql
+
+commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
+
+psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d postgres <<END_OF_SQL
+BEGIN;
+ALTER DATABASE contrail_test RENAME TO contrail_test_backup;
+ALTER DATABASE contrail_test_migrated RENAME TO contrail_test;
+COMMIT;
+END_OF_SQL`
