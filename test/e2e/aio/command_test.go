@@ -381,44 +381,6 @@ func TestCommandServices(t *testing.T) {
 				assertCommandSwiftContainerIsCreated(t, proxy, f, namespace, adminPassWordSecret.Data["password"])
 			})
 
-			t.Run("when upgrade to invalid image is performed", func(t *testing.T) {
-				badImage := "registry:5000/common-docker-third-party/contrail/busybox:1.31"
-				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
-				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
-				utils.GetContainerFromList("api", containers).Image = badImage
-				require.NoError(t, f.Client.Update(context.TODO(), cluster))
-
-				t.Run("then command reports failed upgrade", func(t *testing.T) {
-					err := wait.Contrail{
-						Namespace:     cluster.Namespace,
-						Timeout:       5 * time.Minute,
-						RetryInterval: retryInterval,
-						Client:        f.Client,
-						Logger:        log,
-					}.ForCommandUpgradeState("commandtest", contrail.CommandUpgradeFailed)
-					require.NoError(t, err)
-				})
-			})
-
-			t.Run("when previous image is restored", func(t *testing.T) {
-				goodImage := "registry:5000/contrail-nightly/contrail-command:" + cemRelease
-				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
-				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
-				utils.GetContainerFromList("api", containers).Image = goodImage
-				require.NoError(t, f.Client.Update(context.TODO(), cluster))
-
-				t.Run("then command reports not upgrading state", func(t *testing.T) {
-					err := wait.Contrail{
-						Namespace:     cluster.Namespace,
-						Timeout:       5 * time.Minute,
-						RetryInterval: retryInterval,
-						Client:        f.Client,
-						Logger:        log,
-					}.ForCommandUpgradeState("commandtest", contrail.CommandNotUpgrading)
-					require.NoError(t, err)
-				})
-			})
-
 			t.Run("when command image is upgraded", func(t *testing.T) {
 				newImage := "registry:5000/contrail-nightly/contrail-command:2011.55-ubi"
 				require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cluster1"}, cluster))
