@@ -18,14 +18,6 @@ import (
 
 const debug = false
 
-// GetClientConfig first tries to get a config object which uses the service account kubernetes gives to pods,
-// if it is called from a process running in a kubernetes environment.
-// Otherwise, it tries to build config from a default kubeconfig filepath if it fails, it fallback to the default config.
-// Once it get the config, it returns the same.
-func GetClientConfig() (*rest.Config, error) {
-	return config.GetConfig()
-}
-
 // GetClientsetFromConfig takes REST config and Create a clientset based on that and return that clientset.
 func GetClientsetFromConfig(config *rest.Config) (*kubernetes.Clientset, error) {
 	clientset, err := kubernetes.NewForConfig(config)
@@ -35,19 +27,6 @@ func GetClientsetFromConfig(config *rest.Config) (*kubernetes.Clientset, error) 
 	}
 
 	return clientset, nil
-}
-
-// GetClientset first tries to get a config object which uses the service account kubernetes gives to pods,
-// if it is called from a process running in a kubernetes environment.
-// Otherwise, it tries to build config from a default kubeconfig filepath if it fails, it fallback to the default config.
-// Once it get the config, it creates a new Clientset for the given config and returns the clientset.
-func GetClientset() (*kubernetes.Clientset, error) {
-	config, err := GetClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return GetClientsetFromConfig(config)
 }
 
 // GetDynamicClientFromConfig takes REST config and Create a dynamic client based on that return that client.
@@ -64,7 +43,7 @@ func GetDynamicClientFromConfig(config *rest.Config) (dynamic.Interface, error) 
 // Otherwise, it tries to build config from a default kubeconfig filepath if it fails, it fallback to the default config.
 // Once it get the config, it creates a new Dynamic Client for the given config and returns the client.
 func GetDynamicClient() (dynamic.Interface, error) {
-	config, err := GetClientConfig()
+	config, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +56,7 @@ func GetDynamicClient() (dynamic.Interface, error) {
 // Otherwise, it tries to build config from a default kubeconfig filepath if it fails, it fallback to the default config.
 // Once it get the config, it
 func GetRESTClient() (*rest.RESTClient, error) {
-	config, err := GetClientConfig()
+	config, err := config.GetConfig()
 	if err != nil {
 		return &rest.RESTClient{}, err
 	}
@@ -94,7 +73,7 @@ func GetRESTClient() (*rest.RESTClient, error) {
 //          string: Errors. (STDERR)
 //           error: If any error has occurred otherwise `nil`
 func ExecToPodThroughAPI(command []string, containerName, podName, namespace string, stdin io.Reader) (string, string, error) {
-	config, err := GetClientConfig()
+	config, err := config.GetConfig()
 	if err != nil {
 		return "", "", err
 	}

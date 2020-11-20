@@ -74,7 +74,7 @@ func main() {
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:               namespace,
 		MetricsBindAddress:      "0",
-		LeaderElection:          true,
+		LeaderElection:          false,
 		LeaderElectionID:        "contrail-manager-lock",
 		LeaderElectionNamespace: namespace,
 	})
@@ -91,7 +91,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clientset, err := v1alpha1.GetClientset()
+	clientset, err := v1alpha1.GetClientsetFromConfig(cfg)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
