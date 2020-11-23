@@ -251,22 +251,27 @@ log_level: debug`))
 var migrationScriptConfig = template.Must(template.New("").Parse(`
 #!/usr/bin/env bash
 
+set -e
 export PGPASSWORD={{ .PGPassword }}
 
+# Try to drop old databases the may or may not exists.
 psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} <<END_OF_SQL
 DROP DATABASE {{ .PostgresDBName }}_migrated;
 DROP DATABASE {{ .PostgresDBName }}_backup;
 END_OF_SQL
 
-set -e
+# Migrate old database dump to new one.
 commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
 
+# Create a database for migrated data, initialize it with a new schema.
 createdb -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} {{ .PostgresDBName }}_migrated
 psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/gen_init_psql.sql
 psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/init_psql.sql
 
+# Upload migrated data to the new database.
 commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
 
+# Replace original database with the migrated one and store original one as backup.
 psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d postgres <<END_OF_SQL
 BEGIN;
 ALTER DATABASE {{ .PostgresDBName }} RENAME TO {{ .PostgresDBName }}_backup;

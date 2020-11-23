@@ -19,7 +19,7 @@ func (s Status) Pending() bool {
 	return true
 }
 
-func (s Status) Completed() bool {
+func (s Status) JobComplete() bool {
 	if len(s.Conditions) == 0 {
 		return false
 	}
@@ -31,7 +31,7 @@ func (s Status) Completed() bool {
 	return false
 }
 
-func (s Status) Fail() bool {
+func (s Status) JobFailed() bool {
 	if len(s.Conditions) == 0 {
 		return false
 	}

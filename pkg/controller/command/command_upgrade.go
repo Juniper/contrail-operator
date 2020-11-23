@@ -98,10 +98,10 @@ func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command
 	err = r.client.Get(context.Background(), jobName, dataMigrationJob)
 	exists := err == nil
 	if exists {
-		if job.Status(dataMigrationJob.Status).Completed() {
+		if job.Status(dataMigrationJob.Status).JobComplete() {
 			return true, false, nil
 		}
-		if job.Status(dataMigrationJob.Status).Fail() {
+		if job.Status(dataMigrationJob.Status).JobFailed() {
 			return false, true, nil
 		}
 	}
@@ -112,7 +112,7 @@ func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command
 	return false, false, nil
 }
 
-func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, oldImage, newImage, configMapName string) error {
+func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, configMapName string) error {
 	if command.Status.UpgradeState == contrail.CommandShuttingDownBeforeUpgrade {
 		return r.deleteMigrationJob(command)
 	}
@@ -121,6 +121,8 @@ func (r *ReconcileCommand) reconcileDataMigrationJob(command *contrail.Command, 
 		return nil
 	}
 
+	newImage := command.Status.TargetContainerImage
+	oldImage := command.Status.ContainerImage
 	dataMigrationJob := &batch.Job{}
 	jobName := types.NamespacedName{Namespace: command.Namespace, Name: command.Name + "-upgrade-job"}
 	err := r.client.Get(context.Background(), jobName, dataMigrationJob)

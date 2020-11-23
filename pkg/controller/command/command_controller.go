@@ -310,13 +310,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 			command.Status.UpgradeState != contrail.CommandUpgradeFailed {
 			r.fillDeploymentSpec(command, d)
 		}
-		if err := r.prepareIntendedDeployment(d, command); err != nil {
-			return err
-		}
-		if command.Upgrading() {
-			d.Spec.Replicas = int32ToPtr(0)
-		}
-		return nil
+		return r.prepareIntendedDeployment(d, command)
 	}); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -325,9 +319,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	newImage := getImage(command.Spec.ServiceConfiguration.Containers, "api")
-	oldImage := command.Status.ContainerImage
-	if err := r.reconcileDataMigrationJob(command, oldImage, newImage, commandBootStrapConfigName); err != nil {
+	if err := r.reconcileDataMigrationJob(command, commandBootStrapConfigName); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -611,7 +603,12 @@ func (r *ReconcileCommand) listCommandsPods(commandName string) (*core.PodList, 
 
 func (r *ReconcileCommand) prepareIntendedDeployment(instanceDeployment *apps.Deployment, commandCR *contrail.Command) error {
 	instanceDeploymentName := commandCR.Name + "-command-deployment"
-	intendedDeployment := contrail.SetDeploymentCommonConfiguration(instanceDeployment, &commandCR.Spec.CommonConfiguration)
+	podConfiguration := commandCR.Spec.CommonConfiguration
+	if commandCR.Upgrading() {
+		podConfiguration.Replicas = int32ToPtr(0)
+	}
+
+	intendedDeployment := contrail.SetDeploymentCommonConfiguration(instanceDeployment, &podConfiguration)
 	intendedDeployment.SetName(instanceDeploymentName)
 	intendedDeployment.SetNamespace(commandCR.Namespace)
 	intendedDeployment.SetLabels(map[string]string{"contrail_manager": "command", "command": commandCR.Name})
