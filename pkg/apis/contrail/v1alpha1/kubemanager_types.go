@@ -82,6 +82,8 @@ type KubemanagerConfiguration struct {
 	RabbitmqUser          string       `json:"rabbitmqUser,omitempty"`
 	RabbitmqPassword      string       `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost         string       `json:"rabbitmqVhost,omitempty"`
+	KeystoneSecretName    string       `json:"keystoneSecretName,omitempty"`
+	KeystoneInstance      string       `json:"keystoneInstance,omitempty"`
 }
 
 // KubemanagerNodesConfiguration is the configuration for third party dependencies

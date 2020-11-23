@@ -2861,6 +2861,7 @@ func TestProcessKubemanagers(t *testing.T) {
 					},
 				},
 			},
+			KeystoneSecretName: "SecretName",
 		},
 	}
 
