@@ -435,6 +435,19 @@ spec:
                               type: array
                             contrailVersion:
                               type: string
+                            endpoints:
+                              items:
+                                description: CommandEndpoint is used to register extra
+                                  endpoints in Command
+                                properties:
+                                  name:
+                                    type: string
+                                  privateURL:
+                                    type: string
+                                  publicURL:
+                                    type: string
+                                type: object
+                              type: array
                             keystoneInstance:
                               type: string
                             keystoneSecretName:
@@ -2376,6 +2389,14 @@ spec:
                                 swiftServiceName:
                                   description: Service name registered in Keystone,
                                     default "swift"
+                                  type: string
+                                swiftServiceType:
+                                  enum:
+                                  - ""
+                                  - ClusterIP
+                                  - NodePort
+                                  - LoadBalancer
+                                  - ExternalName
                                   type: string
                               type: object
                             swiftStorageConfiguration:

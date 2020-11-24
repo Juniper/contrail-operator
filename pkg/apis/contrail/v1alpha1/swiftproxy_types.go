@@ -14,6 +14,9 @@ type SwiftProxySpec struct {
 	ServiceConfiguration SwiftProxyConfiguration `json:"serviceConfiguration"`
 }
 
+// +kubebuilder:validation:Enum={"","ClusterIP","NodePort","LoadBalancer","ExternalName"}
+type serviceType string
+
 // SwiftProxyConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftProxyConfiguration struct {
@@ -25,8 +28,16 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName   string       `json:"swiftConfSecretName,omitempty"`
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
+	SwiftServiceType      serviceType  `json:"swiftServiceType,omitempty"`
 	// Service name registered in Keystone, default "swift"
 	SwiftServiceName string `json:"swiftServiceName,omitempty"`
+}
+
+func (configuration SwiftProxyConfiguration) GetServiceType() corev1.ServiceType {
+	if configuration.SwiftServiceType == "" {
+		return corev1.ServiceTypeLoadBalancer
+	}
+	return corev1.ServiceType(configuration.SwiftServiceType)
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy
