@@ -196,12 +196,12 @@ spec:
         - name: init
           # Replace this with the built image name
           image: registry:5000/contrail-operator/engprod-269421/contrail-operator-crdsloader:master.latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
       containers:
         - name: contrail-operator
           # Replace this with the built image name
           image: registry:5000/contrail-operator/engprod-269421/contrail-operator:master.latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:

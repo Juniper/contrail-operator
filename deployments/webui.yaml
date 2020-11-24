@@ -24,7 +24,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: webuiweb
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -39,7 +39,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: webuijob
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -50,7 +50,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: redis
         volumeMounts:
         - mountPath: /var/log/contrail

@@ -286,7 +286,7 @@ func newExpectedDeployment() *apps.Deployment {
 					Containers: []core.Container{{
 						Name:            "memcached",
 						Image:           "localhost:5000/centos-binary-memcached:train",
-						ImagePullPolicy: core.PullAlways,
+						ImagePullPolicy: core.PullIfNotPresent,
 						ReadinessProbe: &core.Probe{
 							InitialDelaySeconds: 5,
 							TimeoutSeconds:      1,

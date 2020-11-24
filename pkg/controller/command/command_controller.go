@@ -461,7 +461,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 					},
 					Containers: []core.Container{{
 						Name:            "api",
-						ImagePullPolicy: core.PullAlways,
+						ImagePullPolicy: core.PullIfNotPresent,
 						Image:           getImage(containers, "api"),
 						Command:         getCommand(containers, "api"),
 						WorkingDir:      "/home/contrail/",
@@ -502,7 +502,7 @@ func newDeployment(name, namespace, configVolumeName string, csrSignerCaVolumeNa
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           getImage(containers, "wait-for-ready-conf"),
 							Command:         getCommand(containers, "wait-for-ready-conf"),
 							VolumeMounts: []core.VolumeMount{{
@@ -694,7 +694,7 @@ func newBootStrapJob(cr *contrail.Command, name types.NamespacedName, commandBoo
 					Containers: []core.Container{
 						{
 							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           getImage(cr.Spec.ServiceConfiguration.Containers, "init"),
 							Command:         getCommand(cr.Spec.ServiceConfiguration.Containers, "init"),
 							VolumeMounts: []core.VolumeMount{{

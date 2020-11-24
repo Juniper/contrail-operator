@@ -29,7 +29,7 @@ spec:
             - sh
             - -c
             - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /tmp/podinfo
               name: status
@@ -39,7 +39,7 @@ spec:
             - sh
             - -c
             - until grep true /tmp/podinfo/peers_ready > /dev/null 2>&1; do sleep 1; done
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /tmp/podinfo
               name: status
@@ -51,7 +51,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -67,7 +67,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail/config-device-manager
               name: config-device-manager-logs
@@ -82,7 +82,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -93,7 +93,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -104,7 +104,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -119,7 +119,7 @@ spec:
               value: "true"
             - name: ANALYTICS_ALARM_ENABLE
               value: "true"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -130,7 +130,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -141,7 +141,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -152,7 +152,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -169,7 +169,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -188,7 +188,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
@@ -203,7 +203,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: config-logs
