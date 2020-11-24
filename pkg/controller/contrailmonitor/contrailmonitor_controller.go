@@ -393,9 +393,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(config); err != nil {
 		return reconcile.Result{}, err
 	}
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 
 	clist, _ := r.getConfiglist()
 	var dataSeven string
@@ -475,9 +472,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, nil
 	}
 	if err = r.kubernetes.Owner(instance).EnsureOwns(control); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err != nil {
 		return reconcile.Result{}, err
 	}
 
