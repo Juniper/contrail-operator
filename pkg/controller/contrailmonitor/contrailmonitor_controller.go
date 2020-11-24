@@ -177,9 +177,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		if err = r.kubernetes.Owner(instance).EnsureOwns(psql); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 
 		psqllist, _ := r.getPsqllist()
 		serInslist := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: psqllist.Items[0].Name, Namespace: "contrail"}}
@@ -204,9 +201,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		if err = r.kubernetes.Owner(instance).EnsureOwns(memcached); err != nil {
 			return reconcile.Result{}, err
 		}
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 
 		memlist, _ := r.getMemlist()
 		sermemlist := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: memlist.Items[0].Name, Namespace: "contrail"}}
@@ -229,9 +223,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 			return reconcile.Result{}, err
 		}
 		if err = r.kubernetes.Owner(instance).EnsureOwns(keystone); err != nil {
-			return reconcile.Result{}, err
-		}
-		if err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -261,9 +252,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if err = r.kubernetes.Owner(instance).EnsureOwns(rabbitmq); err != nil {
 		return reconcile.Result{}, err
 	}
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 
 	rablist, _ := r.getRabbitlist()
 	serInsrabbitmq := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: rablist.Items[0].Name, Namespace: "contrail"}}
@@ -287,9 +275,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 	if err = r.kubernetes.Owner(instance).EnsureOwns(zookeeper); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -317,9 +302,6 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, err
 	}
 	if err = r.kubernetes.Owner(instance).EnsureOwns(cassandra); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err != nil {
 		return reconcile.Result{}, err
 	}
 
