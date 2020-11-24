@@ -29,7 +29,7 @@ spec:
             - sh
             - -c
             - until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           resources: {}
           securityContext:
             privileged: false
@@ -55,7 +55,7 @@ spec:
               value: "true"
             - name: ANALYTICS_SNMP_ENABLE
               value: "true"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: webui-logs
@@ -70,7 +70,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: webui-logs
@@ -81,7 +81,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /var/log/contrail
               name: webui-logs

@@ -578,7 +578,7 @@ func newExpectedSTS() *apps.StatefulSet {
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "localhost:5000/busybox",
 							Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 							VolumeMounts: []core.VolumeMount{{
@@ -591,7 +591,7 @@ func newExpectedSTS() *apps.StatefulSet {
 						{
 							Image:           "localhost:5000/centos-binary-keystone:train",
 							Name:            "keystone",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Env: []core.EnvVar{
 								{
 									Name:  "KOLLA_SERVICE_NAME",
@@ -856,7 +856,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 	sts.Spec.Template.Spec.InitContainers = []core.Container{
 		{
 			Name:            "wait-for-ready-conf",
-			ImagePullPolicy: core.PullAlways,
+			ImagePullPolicy: core.PullIfNotPresent,
 			Image:           "localhost:5000/busybox",
 			Command:         []string{"sh", "-c", expectedCommandWaitForReadyContainer},
 			VolumeMounts: []core.VolumeMount{{
@@ -870,7 +870,7 @@ func newExpectedSTSWithCustomImages() *apps.StatefulSet {
 		{
 			Image:           "image3",
 			Name:            "keystone",
-			ImagePullPolicy: core.PullAlways,
+			ImagePullPolicy: core.PullIfNotPresent,
 			Env: []core.EnvVar{
 				{
 					Name:  "KOLLA_SERVICE_NAME",
@@ -976,7 +976,7 @@ func newExpectedBootstrapJob() *batch.Job {
 						{
 							Name:            "keystone-db-init",
 							Image:           "localhost:5000/postgresql-client",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Command:         []string{"/bin/sh"},
 							Args:            []string{"-c", expectedCommandImage},
 							Env: []core.EnvVar{
@@ -1002,7 +1002,7 @@ func newExpectedBootstrapJob() *batch.Job {
 						{
 							Name:            "keystone-bootstrap",
 							Image:           "localhost:5000/centos-binary-keystone:train",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Env: []core.EnvVar{{
 								Name:  "KOLLA_SERVICE_NAME",
 								Value: "keystone",

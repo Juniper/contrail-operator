@@ -5091,7 +5091,7 @@ spec:
         - name: contrail-operator
           # Replace this with the built image name
           image: svl-artifactory.juniper.net/contrail-operator/engprod-269421/contrail-operator:change_image_format.latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:

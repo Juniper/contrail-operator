@@ -188,7 +188,7 @@ func memcachedContainer(memcachedCR *contrail.Memcached) core.Container {
 	return core.Container{
 		Name:            "memcached",
 		Image:           instanceContainer.Image,
-		ImagePullPolicy: core.PullAlways,
+		ImagePullPolicy: core.PullIfNotPresent,
 		ReadinessProbe: &core.Probe{
 			InitialDelaySeconds: 5,
 			TimeoutSeconds:      1,

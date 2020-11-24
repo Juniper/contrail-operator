@@ -103,7 +103,7 @@ func (r *Ring) BuildJob(name types.NamespacedName, nodeSelector map[string]strin
 						{
 							Name:            "contrail-operator-ringcontroller",
 							Image:           "localhost:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:master.latest",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Args:            r.args(),
 						},
 					},

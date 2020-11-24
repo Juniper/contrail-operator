@@ -21,7 +21,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: control
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -32,7 +32,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: dns
         volumeMounts:
         - mountPath: /var/log/contrail
@@ -47,7 +47,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: named
         securityContext:
           privileged: true
@@ -69,7 +69,7 @@ spec:
             fieldRef:
               fieldPath: status.podIP
         image: docker.io/michaelhenkel/contrail-nodemgr:5.2.0-dev1
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: nodemanager
         lifecycle:
           preStop:
@@ -94,7 +94,7 @@ spec:
             fieldRef:
               fieldPath: status.podIP
         image: busybox
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: init
         volumeMounts:
         - mountPath: /tmp/podinfo

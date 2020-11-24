@@ -1036,7 +1036,7 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 						{
 							Image:           "registry:5000/contrail-command" + fakeImageTag,
 							Name:            "api",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							ReadinessProbe: &core.Probe{
 								Handler: core.Handler{
 									HTTPGet: &core.HTTPGetAction{Scheme: core.URISchemeHTTPS, Path: "/", Port: intstr.IntOrString{IntVal: 9091}},
@@ -1073,7 +1073,7 @@ func newDeploymentWithReplicasAndImages(s apps.DeploymentStatus, replicas *int32
 					InitContainers: []core.Container{
 						{
 							Name:            "wait-for-ready-conf",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "registry:5000/busybox",
 							Command:         []string{"sh", "-c", "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"},
 							VolumeMounts: []core.VolumeMount{{
@@ -1303,7 +1303,7 @@ func newMigrationJob(oldTag, newTag string) *batch.Job {
 					InitContainers: []core.Container{
 						{
 							Name:            "db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "registry:5000/contrail-command" + oldTag,
 							Command: []string{"bash", "-c",
 								"commandutil convert --intype rdbms --outtype yaml --out /backups/db.yml -c /etc/contrail/command-app-server.yml"},
@@ -1311,7 +1311,7 @@ func newMigrationJob(oldTag, newTag string) *batch.Job {
 						},
 						{
 							Name:            "migrate-db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "registry:5000/contrail-command" + newTag,
 							Command: []string{"bash", "-c",
 								"commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml"},
@@ -1321,7 +1321,7 @@ func newMigrationJob(oldTag, newTag string) *batch.Job {
 					Containers: []core.Container{
 						{
 							Name:            "restore-migrated-db-dump",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "registry:5000/contrail-command" + newTag,
 							Command: []string{"bash", "-c",
 								"commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/command-app-server.yml"},
@@ -1386,7 +1386,7 @@ func newBootstrapJob() *batch.Job {
 					Containers: []core.Container{
 						{
 							Name:            "command-init",
-							ImagePullPolicy: core.PullAlways,
+							ImagePullPolicy: core.PullIfNotPresent,
 							Image:           "registry:5000/contrail-command",
 							Command:         []string{"bash", "-c", "/etc/contrail/bootstrap.sh"},
 							VolumeMounts: []core.VolumeMount{{

@@ -338,7 +338,7 @@ func updatePodTemplate(
 	pod.InitContainers = []core.Container{
 		{
 			Name:            "wait-for-ready-conf",
-			ImagePullPolicy: core.PullAlways,
+			ImagePullPolicy: core.PullIfNotPresent,
 			Image:           getImage(containers, "wait-for-ready-conf"),
 			Command:         getCommand(containers, "wait-for-ready-conf"),
 			VolumeMounts: []core.VolumeMount{{

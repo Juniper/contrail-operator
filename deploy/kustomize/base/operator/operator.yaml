@@ -195,13 +195,13 @@ spec:
       initContainers:
       - name: init
         image: crdsloader:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
 
       containers:
         - name: contrail-operator
           # Replace this with the built image name
           image: contrail-operator:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:

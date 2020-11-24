@@ -38,7 +38,7 @@ spec:
         - name: contrail-operator
           # Replace this with the built image name
           image: hub.juniper.net/contrail-nightly/contrail-operator:<CONTRAIL_VERSION>
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
