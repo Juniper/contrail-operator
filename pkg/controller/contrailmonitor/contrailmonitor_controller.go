@@ -658,8 +658,6 @@ func (r *ReconcileContrailmonitor) getControllist() (*contrailv1alpha1.ControlLi
 	return conlist, err
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 func (r *ReconcileContrailmonitor) getPsqllist() (*contrailv1alpha1.PostgresList, error) {
 	listOps := &client.ListOptions{Namespace: "contrail"}
 	psqllist := &contrailv1alpha1.PostgresList{}
