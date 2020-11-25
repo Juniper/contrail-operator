@@ -18,17 +18,6 @@ import (
 
 const debug = false
 
-// GetClientsetFromConfig takes REST config and Create a clientset based on that and return that clientset.
-func GetClientsetFromConfig(config *rest.Config) (*kubernetes.Clientset, error) {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		err = fmt.Errorf("failed creating clientset. Error: %+v", err)
-		return nil, err
-	}
-
-	return clientset, nil
-}
-
 // GetDynamicClientFromConfig takes REST config and Create a dynamic client based on that return that client.
 func GetDynamicClientFromConfig(config *rest.Config) (dynamic.Interface, error) {
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -78,7 +67,7 @@ func ExecToPodThroughAPI(command []string, containerName, podName, namespace str
 		return "", "", err
 	}
 
-	clientset, err := GetClientsetFromConfig(config)
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", "", err
 	}
