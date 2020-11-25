@@ -76,7 +76,7 @@ func TestStatus_Pending(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// when
-			pending := job.Status(test.jobStatus).Pending()
+			pending := job.Status(test.jobStatus).JobPending()
 			// then
 			assert.Equal(t, test.expectedPending, pending)
 		})

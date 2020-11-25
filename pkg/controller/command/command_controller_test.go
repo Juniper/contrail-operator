@@ -1865,12 +1865,12 @@ const expectedMigrationScript = `
 
 set -e
 export PGPASSWORD=test123
+export PGHOST=10.219.10.10
+export PGUSER=root
 
 # Try to drop old databases the may or may not exists.
-psql -w -h 10.219.10.10 -U root -d contrail_test <<END_OF_SQL
-DROP DATABASE contrail_test_migrated;
-DROP DATABASE contrail_test_backup;
-END_OF_SQL
+dropdb -w --if-exists contrail_test_migrated
+dropdb -w --if-exists contrail_test_backup
 
 # Migrate old database dump to new one.
 commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml

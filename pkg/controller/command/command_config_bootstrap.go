@@ -253,12 +253,12 @@ var migrationScriptConfig = template.Must(template.New("").Parse(`
 
 set -e
 export PGPASSWORD={{ .PGPassword }}
+export PGHOST={{ .PostgresAddress }}
+export PGUSER={{ .PostgresUser }}
 
 # Try to drop old databases the may or may not exists.
-psql -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }} <<END_OF_SQL
-DROP DATABASE {{ .PostgresDBName }}_migrated;
-DROP DATABASE {{ .PostgresDBName }}_backup;
-END_OF_SQL
+dropdb -w --if-exists {{ .PostgresDBName }}_migrated
+dropdb -w --if-exists {{ .PostgresDBName }}_backup
 
 # Migrate old database dump to new one.
 commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml

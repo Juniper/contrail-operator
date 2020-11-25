@@ -7,7 +7,7 @@ import (
 
 type Status batch.JobStatus
 
-func (s Status) Pending() bool {
+func (s Status) JobPending() bool {
 	if len(s.Conditions) == 0 {
 		return true
 	}
