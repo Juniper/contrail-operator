@@ -187,11 +187,16 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 		}
 		kubemanagerConfig.ServiceSubnets = serviceSubnets
 	}
-
+	keystoneAuth := &KubemanagerAuthParameters{}
+	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
+		err := c.AuthParameters(keystoneAuth, client)
+		if err != nil {
+			return err
+		}
+	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = map[string]string{}
 	for idx := range podList.Items {
-		keystoneAuth, err := c.AuthParameters(client)
 		hostname := podList.Items[idx].Annotations["hostname"]
 		configAnalyticsEndpoints := configtemplates.EndpointList(configNodesInformation.AnalyticsServerIPList, configNodesInformation.AnalyticsServerPort)
 		statusMonitorConfig, err := StatusMonitorConfig(hostname, configAnalyticsEndpoints, podList.Items[idx].Status.PodIP,
@@ -298,41 +303,32 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 }
 
 type KubemanagerAuthParameters struct {
-	AdminUsername  string
-	AdminPassword  string
 	Address        string
 	Port           int
 	AuthProtocol   string
 	UserDomainName string
 }
 
-func (c *Kubemanager) AuthParameters(client client.Client) (*KubemanagerAuthParameters, error) {
-	w := &KubemanagerAuthParameters{
-		AdminUsername: "admin",
-	}
+func (c *Kubemanager) AuthParameters(w *KubemanagerAuthParameters, client client.Client) error {
 	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
 	adminPasswordSecret := &corev1.Secret{}
 	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
-		return nil, err
+		return err
 	}
-	w.AdminPassword = string(adminPasswordSecret.Data["password"])
-
-	if c.Spec.ServiceConfiguration.ConfigNodesConfiguration.AuthMode == AuthenticationModeKeystone {
-		keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
-		keystone := &Keystone{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
-			return nil, err
-		}
-		if keystone.Status.Endpoint == "" {
-			return nil, fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
-		}
-		w.Port = keystone.Spec.ServiceConfiguration.ListenPort
-		w.AuthProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
-		w.UserDomainName = keystone.Spec.ServiceConfiguration.UserDomainName
-		w.Address = keystone.Status.Endpoint
+	keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
+	keystone := &Keystone{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
+		return err
 	}
+	if keystone.Status.Endpoint == "" {
+		return fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
+	}
+	w.Port = keystone.Spec.ServiceConfiguration.ListenPort
+	w.AuthProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
+	w.UserDomainName = keystone.Spec.ServiceConfiguration.UserDomainName
+	w.Address = keystone.Status.Endpoint
 
-	return w, nil
+	return nil
 }
 
 func (c *Kubemanager) CreateConfigMap(configMapName string, client client.Client, scheme *runtime.Scheme, request reconcile.Request) (*corev1.ConfigMap, error) {

@@ -2925,3 +2925,209 @@ func TestProcessProvisionManager(t *testing.T) {
 		assert.Equal(t, &replicas, createdProvisionManager.Spec.CommonConfiguration.Replicas)
 	})
 }
+
+func TestKubemanagerWithAuth(t *testing.T) {
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err)
+	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
+	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
+	trueVal1 := true
+	cassandra := &contrail.Cassandra{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "cassandra",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+		},
+		Spec:   contrail.CassandraSpec{},
+		Status: contrail.CassandraStatus{Active: &trueVal},
+	}
+	zookeeper := &contrail.Zookeeper{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "zookeeper",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+		},
+		Spec:   contrail.ZookeeperSpec{},
+		Status: contrail.ZookeeperStatus{Active: &trueVal},
+	}
+	rabbitmq := &contrail.Rabbitmq{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "rabbitmq-instance",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "test-manager"},
+		},
+		Spec: contrail.RabbitmqSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				HostNetwork:  &trueVal1,
+				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			ServiceConfiguration: contrail.RabbitmqConfiguration{},
+		},
+		Status: contrail.RabbitmqStatus{Active: &trueVal},
+	}
+	config := &contrail.Config{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "config",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "test-manager"},
+		},
+		Spec: contrail.ConfigSpec{
+			ServiceConfiguration: contrail.ConfigConfiguration{
+				KeystoneSecretName: "keystone-adminpass-secret",
+				AuthMode:           contrail.AuthenticationModeKeystone,
+			},
+		},
+		Status: contrail.ConfigStatus{Active: &trueVal},
+	}
+	kubemanager := &contrail.Kubemanager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "kubemanager",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+		},
+		Spec: contrail.KubemanagerSpec{
+			ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+				KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
+					},
+				},
+			},
+		},
+	}
+	kubemanagerService := &contrail.KubemanagerService{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "kubemanager",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+		},
+		Spec: contrail.KubemanagerServiceSpec{
+			ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
+				CassandraInstance: "cassandra",
+				ZookeeperInstance: "zookeeper",
+				KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
+					},
+				},
+			},
+		},
+	}
+	managerCR := &contrail.Manager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "test-manager",
+			Namespace: "default",
+			UID:       "manager-uid-1",
+		},
+		Spec: contrail.ManagerSpec{
+			Services: contrail.Services{
+				Cassandras:   []*contrail.Cassandra{cassandra},
+				Zookeepers:   []*contrail.Zookeeper{zookeeper},
+				Kubemanagers: []*contrail.KubemanagerService{kubemanagerService},
+				Rabbitmq:     rabbitmq,
+				Config:       config,
+			},
+			KeystoneSecretName: "keystone-adminpass-secret",
+		},
+		Status: contrail.ManagerStatus{},
+	}
+	initObjs := []runtime.Object{
+		managerCR,
+		newAdminSecret(),
+		cassandra,
+		zookeeper,
+		rabbitmq,
+		kubemanager,
+		config,
+		newNode(1),
+	}
+	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
+	reconciler := ReconcileManager{
+		client:     fakeClient,
+		scheme:     scheme,
+		kubernetes: k8s.New(fakeClient, scheme),
+	}
+	// when
+	result, err := reconciler.Reconcile(reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "test-manager",
+			Namespace: "default",
+		},
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Requeue)
+	var replicas int32
+	replicas = 1
+	expectedKube := contrail.Kubemanager{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "kubemanager",
+			Namespace: "default",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
+			OwnerReferences: []meta.OwnerReference{
+				{
+					APIVersion:         "contrail.juniper.net/v1alpha1",
+					Kind:               "Manager",
+					Name:               "test-manager",
+					UID:                "manager-uid-1",
+					Controller:         &trueVal,
+					BlockOwnerDeletion: &trueVal,
+				},
+			},
+		},
+		TypeMeta: meta.TypeMeta{Kind: "Kubemanager", APIVersion: "contrail.juniper.net/v1alpha1"},
+
+		Spec: contrail.KubemanagerSpec{
+			CommonConfiguration: contrail.PodConfiguration{
+				Replicas: &replicas,
+			},
+			ServiceConfiguration: contrail.KubemanagerServiceConfiguration{
+				KubemanagerConfiguration: contrail.KubemanagerConfiguration{
+					Containers: []*contrail.Container{
+						{Name: "kubemanager", Image: "kubemanager"},
+						{Name: "init", Image: "busybox"},
+						{Name: "init2", Image: "kubemanager"},
+					},
+					KeystoneSecretName: "keystone-adminpass-secret",
+				},
+				KubemanagerNodesConfiguration: contrail.KubemanagerNodesConfiguration{
+					ConfigNodesConfiguration: &contrail.ConfigClusterConfiguration{
+						APIServerPort:       8082,
+						AnalyticsServerPort: 8081,
+						CollectorPort:       8086,
+						RedisPort:           6379,
+						AuthMode:            contrail.AuthenticationModeKeystone,
+					},
+					RabbbitmqNodesConfiguration: &contrail.RabbitmqClusterConfiguration{
+						Port:    5673,
+						SSLPort: 15673,
+					},
+					CassandraNodesConfiguration: &contrail.CassandraClusterConfiguration{
+						Port:     9160,
+						CQLPort:  9042,
+						Endpoint: ":9160",
+						JMXPort:  7200,
+					},
+					ZookeeperNodesConfiguration: &contrail.ZookeeperClusterConfiguration{
+						ClientPort: 2181,
+					},
+				},
+			},
+		},
+	}
+	assertKubemanager(t, expectedKube, fakeClient)
+}
+
+func assertKubemanager(t *testing.T, expected contrail.Kubemanager, fakeClient client.Client) {
+	kube := contrail.Kubemanager{}
+	err := fakeClient.Get(context.Background(), types.NamespacedName{
+		Name:      expected.Name,
+		Namespace: expected.Namespace,
+	}, &kube)
+	assert.NoError(t, err)
+	kube.SetResourceVersion("")
+	assert.Equal(t, expected, kube)
+}
