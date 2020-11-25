@@ -272,16 +272,17 @@ spec:
             - name: multusconfig
               image: busybox:1.31
     contrailmonitor:
-    - metadata:
+      metadata:
         labels:
           contrail_cluster: cluster1
         name: contrailmonitor
       spec:
         serviceConfiguration:
-          cassandraInstance: "cassandra1"
-          rabbitmqInstance: "rabbitmq1"
-          zookeeperInstance: "zookeeper1"
-          webuiInstance: "webui1"
-          configInstance: "config1"
-          controlInstance: "control1"
-          provisionmanagerInstance: "provmanager1"
+          cassandraInstance: cassandra1
+          rabbitmqInstance: rabbitmq1
+          zookeeperInstance: zookeeper1
+          webuiInstance: webui1
+          configInstance: config1
+          controlInstance: control1
+          provisionmanagerInstance: provmanager1
+
