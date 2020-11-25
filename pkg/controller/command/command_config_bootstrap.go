@@ -264,15 +264,15 @@ dropdb -w --if-exists {{ .PostgresDBName }}_backup
 commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
 
 # Create a database for migrated data, initialize it with a new schema.
-createdb -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} {{ .PostgresDBName }}_migrated
-psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/gen_init_psql.sql
-psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/init_psql.sql
+createdb -w {{ .PostgresDBName }}_migrated
+psql -v ON_ERROR_STOP=ON -w -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/gen_init_psql.sql
+psql -v ON_ERROR_STOP=ON -w -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/init_psql.sql
 
 # Upload migrated data to the new database.
 commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
 
 # Replace original database with the migrated one and store original one as backup.
-psql -v ON_ERROR_STOP=ON -w -h {{ .PostgresAddress }} -U {{ .PostgresUser }} -d postgres <<END_OF_SQL
+psql -v ON_ERROR_STOP=ON -w -d postgres <<END_OF_SQL
 BEGIN;
 ALTER DATABASE {{ .PostgresDBName }} RENAME TO {{ .PostgresDBName }}_backup;
 ALTER DATABASE {{ .PostgresDBName }}_migrated RENAME TO {{ .PostgresDBName }};

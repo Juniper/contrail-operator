@@ -1876,15 +1876,15 @@ dropdb -w --if-exists contrail_test_backup
 commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
 
 # Create a database for migrated data, initialize it with a new schema.
-createdb -w -h 10.219.10.10 -U root contrail_test_migrated
-psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d contrail_test_migrated -f /usr/share/contrail/gen_init_psql.sql
-psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d contrail_test_migrated -f /usr/share/contrail/init_psql.sql
+createdb -w contrail_test_migrated
+psql -v ON_ERROR_STOP=ON -w -d contrail_test_migrated -f /usr/share/contrail/gen_init_psql.sql
+psql -v ON_ERROR_STOP=ON -w -d contrail_test_migrated -f /usr/share/contrail/init_psql.sql
 
 # Upload migrated data to the new database.
 commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
 
 # Replace original database with the migrated one and store original one as backup.
-psql -v ON_ERROR_STOP=ON -w -h 10.219.10.10 -U root -d postgres <<END_OF_SQL
+psql -v ON_ERROR_STOP=ON -w -d postgres <<END_OF_SQL
 BEGIN;
 ALTER DATABASE contrail_test RENAME TO contrail_test_backup;
 ALTER DATABASE contrail_test_migrated RENAME TO contrail_test;
