@@ -261,3 +261,17 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2011.85-ubi
             - name: multusconfig
               image: busybox:1.31
+    contrailmonitor:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: contrailmonitor
+      spec:
+        serviceConfiguration:
+          cassandraInstance: "cassandra1"
+          rabbitmqInstance: "rabbitmq1"
+          zookeeperInstance: "zookeeper1"
+          webuiInstance: "webui1"
+          configInstance: "config1"
+          controlInstance: "control1"
+          provisionmanagerInstance: "provmanager1"
