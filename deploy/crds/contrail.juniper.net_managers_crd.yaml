@@ -2393,6 +2393,14 @@ spec:
                                   description: Service name registered in Keystone,
                                     default "swift"
                                   type: string
+                                swiftServiceType:
+                                  enum:
+                                  - ""
+                                  - ClusterIP
+                                  - NodePort
+                                  - LoadBalancer
+                                  - ExternalName
+                                  type: string
                               type: object
                             swiftStorageConfiguration:
                               description: SwiftStorageConfiguration is the Spec for
