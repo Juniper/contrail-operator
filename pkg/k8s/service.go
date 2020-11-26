@@ -66,6 +66,11 @@ func (s *Service) EnsureExists() error {
 	return err
 }
 
+// ServiceType is used to read servType of service
+func (s *Service) ServiceType() core.ServiceType {
+	return s.servType
+}
+
 // ClusterIP is used to read clusterIP of service
 func (s *Service) ClusterIP() string {
 	return s.svc.Spec.ClusterIP
