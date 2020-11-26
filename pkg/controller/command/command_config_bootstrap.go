@@ -42,6 +42,8 @@ func (c *commandBootstrapConf) FillConfigMap(cm *core.ConfigMap) {
 	cm.Data["bootstrap.sh"] = c.executeTemplate(commandInitBootstrapScript)
 	cm.Data["init_cluster.yml"] = c.executeTemplate(commandInitCluster)
 	cm.Data["command-app-server.yml"] = c.executeTemplate(commandConfig)
+	cm.Data["migration.yml"] = c.executeTemplate(migrationConfig)
+	cm.Data["migration.sh"] = c.executeTemplate(migrationScriptConfig)
 }
 
 func (c *commandBootstrapConf) executeTemplate(t *template.Template) string {
@@ -231,3 +233,48 @@ resources:
     kind: endpoint
 {{end -}}
 `))
+
+var migrationConfig = template.Must(template.New("").Parse(`
+database:
+  host: {{ .PostgresAddress }}
+  user: {{ .PostgresUser }}
+  password: {{ .PGPassword }}
+  name: {{ .PostgresDBName }}_migrated
+  max_open_conn: 100
+  connection_retries: 10
+  retry_period: 3s
+  replication_status_timeout: 10s
+  debug: false
+
+log_level: debug`))
+
+var migrationScriptConfig = template.Must(template.New("").Parse(`
+#!/usr/bin/env bash
+
+set -e
+export PGPASSWORD={{ .PGPassword }}
+export PGHOST={{ .PostgresAddress }}
+export PGUSER={{ .PostgresUser }}
+
+# Try to drop old databases the may or may not exists.
+dropdb -w --if-exists {{ .PostgresDBName }}_migrated
+dropdb -w --if-exists {{ .PostgresDBName }}_backup
+
+# Migrate old database dump to new one.
+commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
+
+# Create a database for migrated data, initialize it with a new schema.
+createdb -w {{ .PostgresDBName }}_migrated
+psql -v ON_ERROR_STOP=ON -w -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/gen_init_psql.sql
+psql -v ON_ERROR_STOP=ON -w -d {{ .PostgresDBName }}_migrated -f /usr/share/contrail/init_psql.sql
+
+# Upload migrated data to the new database.
+commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
+
+# Replace original database with the migrated one and store original one as backup.
+psql -v ON_ERROR_STOP=ON -w -d postgres <<END_OF_SQL
+BEGIN;
+ALTER DATABASE {{ .PostgresDBName }} RENAME TO {{ .PostgresDBName }}_backup;
+ALTER DATABASE {{ .PostgresDBName }}_migrated RENAME TO {{ .PostgresDBName }};
+COMMIT;
+END_OF_SQL`))

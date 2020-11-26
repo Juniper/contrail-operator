@@ -7,7 +7,7 @@ import (
 
 type Status batch.JobStatus
 
-func (s Status) Pending() bool {
+func (s Status) JobPending() bool {
 	if len(s.Conditions) == 0 {
 		return true
 	}
@@ -19,12 +19,24 @@ func (s Status) Pending() bool {
 	return true
 }
 
-func (s Status) Completed() bool {
+func (s Status) JobComplete() bool {
 	if len(s.Conditions) == 0 {
 		return false
 	}
 	for _, condition := range s.Conditions {
 		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobComplete {
+			return true
+		}
+	}
+	return false
+}
+
+func (s Status) JobFailed() bool {
+	if len(s.Conditions) == 0 {
+		return false
+	}
+	for _, condition := range s.Conditions {
+		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobFailed {
 			return true
 		}
 	}

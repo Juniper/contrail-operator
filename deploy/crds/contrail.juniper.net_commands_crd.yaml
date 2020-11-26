@@ -197,6 +197,8 @@ spec:
             replicas:
               format: int32
               type: integer
+            targetContainerImage:
+              type: string
             upgradeState:
               enum:
               - ""
@@ -204,6 +206,7 @@ spec:
               - not upgrading
               - shutting down before upgrade
               - starting upgraded deployment
+              - upgrade failed
               type: string
           type: object
       type: object
