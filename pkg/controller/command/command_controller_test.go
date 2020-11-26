@@ -330,7 +330,7 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newWebUI(true),
 			},
-			expectedStatus:       contrail.CommandStatus{Endpoint: "20.20.20.20", UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus:       contrail.CommandStatus{Endpoint: "20.20.20.20", UpgradeState: contrail.CommandNotUpgrading, ContainerImage: "registry:5000/contrail-command"},
 			expectedDeployment:   newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:     newPostgresWithOwner(true),
 			expectedSwift:        newSwiftWithOwner(true),
@@ -350,7 +350,11 @@ func TestCommand(t *testing.T) {
 				newPodList(),
 				newWebUI(true),
 			},
-			expectedStatus:     contrail.CommandStatus{Endpoint: "20.20.20.20", UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus: contrail.CommandStatus{
+				Endpoint:       "20.20.20.20",
+				UpgradeState:   contrail.CommandNotUpgrading,
+				ContainerImage: "registry:5000/contrail-command",
+			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(true),
@@ -369,7 +373,11 @@ func TestCommand(t *testing.T) {
 				newPodList(),
 				newWebUI(true),
 			},
-			expectedStatus:     contrail.CommandStatus{Endpoint: "20.20.20.20", UpgradeState: contrail.CommandNotUpgrading},
+			expectedStatus: contrail.CommandStatus{
+				Endpoint:       "20.20.20.20",
+				UpgradeState:   contrail.CommandNotUpgrading,
+				ContainerImage: "registry:5000/contrail-command",
+			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 			expectedSwift:      newSwiftWithOwner(true),
@@ -439,7 +447,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when images are changed in 1-replica deployment, deployment is shut down before the upgrade",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, "", "", ":new"),
 				newCommandService(),
 				newDeployment(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}),
 				newConfig(true),
@@ -451,10 +459,11 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandShuttingDownBeforeUpgrade,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandShuttingDownBeforeUpgrade,
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
@@ -465,7 +474,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when images are changed in 0-replica deployment, upgrade is started immediately",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandNotUpgrading, "", ":new", ":new"),
 				newCommandService(),
 				newDeployment(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}),
 				newConfig(true),
@@ -477,10 +486,11 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandUpgrading,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandUpgrading,
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -491,7 +501,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when command is shutting down before upgrade and deployment is not scaled down yet, nothing changes",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, "", ":new", ":new"),
 				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, int32ToPtr(0), ""),
 				newConfig(true),
@@ -503,10 +513,11 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandShuttingDownBeforeUpgrade,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandShuttingDownBeforeUpgrade,
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 1,
@@ -517,7 +528,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when command is shutting down before upgrade and deployment is scaled down to 0 replicas, upgrade is started",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandShuttingDownBeforeUpgrade, "", ":new", ":new"),
 				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ""),
 				newConfig(true),
@@ -529,10 +540,11 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandUpgrading,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandUpgrading,
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -543,7 +555,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when command is starting upgraded deployment and it is not scaled up yet, nothing changes",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new", ":new", ":new"),
 				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":new"),
 				newConfig(true),
@@ -555,10 +567,11 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandStartingUpgradedDeployment,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command:new",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandStartingUpgradedDeployment,
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command:new",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 0, ReadyReplicas: 0,
@@ -569,7 +582,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when command is starting upgraded deployment and it is scaled up, upgrade ends with success",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new", ":new", ":new"),
 				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 1}, nil, ":new"),
 				newConfig(true),
@@ -596,7 +609,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "when command is starting upgraded deployment and images change again, deployment starts to shut down",
 			initObjs: []runtime.Object{
-				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new2"),
+				newCommandWithUpdatedImages(contrail.CommandStartingUpgradedDeployment, ":new", ":new", ":new2"),
 				newCommandService(),
 				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 1, ReadyReplicas: 0}, int32ToPtr(0), ":new"),
 				newConfig(true),
@@ -609,14 +622,123 @@ func TestCommand(t *testing.T) {
 				newWebUI(true),
 			},
 			expectedStatus: contrail.CommandStatus{
-				Status:         contrail.Status{Active: false},
-				UpgradeState:   contrail.CommandShuttingDownBeforeUpgrade,
-				Endpoint:       "20.20.20.20",
-				ContainerImage: "registry:5000/contrail-command:new",
+				Status:               contrail.Status{Active: false},
+				UpgradeState:         contrail.CommandShuttingDownBeforeUpgrade,
+				TargetContainerImage: "registry:5000/contrail-command:new2",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command:new",
 			},
 			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
 				Replicas: 1, ReadyReplicas: 0,
 			}, int32ToPtr(0), ":new"),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command upgrade between two version fails, there is a rollback",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandUpgrading, ":old", ":new", ":new"),
+				newCommandService(),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+				newConfig(true),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newMigrationJobFailed(":old", ":new"),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Status:               contrail.Status{},
+				UpgradeState:         contrail.CommandUpgradeFailed,
+				Endpoint:             "20.20.20.20",
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				ContainerImage:       "registry:5000/contrail-command:old",
+			},
+			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command upgrade is in failed state it stays in this state",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandUpgradeFailed, ":old", ":new", ":new"),
+				newCommandService(),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+				newConfig(true),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newMigrationJobFailed(":old", ":new"),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Status:               contrail.Status{},
+				UpgradeState:         contrail.CommandUpgradeFailed,
+				Endpoint:             "20.20.20.20",
+				TargetContainerImage: "registry:5000/contrail-command:new",
+				ContainerImage:       "registry:5000/contrail-command:old",
+			},
+			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command failed, user can go back to previous version",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandUpgradeFailed, ":old", ":new", ":old"),
+				newCommandService(),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+				newConfig(true),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newMigrationJobFailed(":old", ":new"),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Status:               contrail.Status{},
+				UpgradeState:         contrail.CommandNotUpgrading,
+				TargetContainerImage: "",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command:old",
+			},
+			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+			expectedPostgres: newPostgresWithOwner(true),
+			expectedSwift:    newSwiftWithOwner(true),
+		},
+		{
+			name: "when command failed, it can be upgraded to another version",
+			initObjs: []runtime.Object{
+				newCommandWithUpdatedImages(contrail.CommandUpgradeFailed, ":old", ":new", ":new2"),
+				newCommandService(),
+				newDeploymentWithReplicasAndImages(apps.DeploymentStatus{Replicas: 0, ReadyReplicas: 0}, nil, ":old"),
+				newConfig(true),
+				newPostgres(true),
+				newSwift(true),
+				newAdminSecret(),
+				newSwiftSecret(),
+				newMigrationJobFailed(":old", ":new"),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newWebUI(true),
+			},
+			expectedStatus: contrail.CommandStatus{
+				Status:               contrail.Status{},
+				UpgradeState:         contrail.CommandShuttingDownBeforeUpgrade,
+				TargetContainerImage: "registry:5000/contrail-command:new2",
+				Endpoint:             "20.20.20.20",
+				ContainerImage:       "registry:5000/contrail-command:old",
+			},
+			expectedDeployment: newDeploymentWithReplicasAndImages(apps.DeploymentStatus{
+				Replicas: 0, ReadyReplicas: 0}, int32ToPtr(0), ":old"),
 			expectedPostgres: newPostgresWithOwner(true),
 			expectedSwift:    newSwiftWithOwner(true),
 		},
@@ -963,14 +1085,16 @@ func newCommandWithEmptyToleration() *contrail.Command {
 	return cc
 }
 
-func newCommandWithUpdatedImages(upgradeState contrail.CommandUpgradeState, fakeImageTag string) *contrail.Command {
+func newCommandWithUpdatedImages(upgradeState contrail.CommandUpgradeState, currentTag, targetTag, requestedTag string) *contrail.Command {
 	cc := newCommand()
 	cc.Spec.ServiceConfiguration.Containers = []*contrail.Container{
-		{Name: "init", Image: "registry:5000/contrail-command" + fakeImageTag},
-		{Name: "api", Image: "registry:5000/contrail-command" + fakeImageTag},
+		{Name: "init", Image: "registry:5000/contrail-command" + requestedTag},
+		{Name: "api", Image: "registry:5000/contrail-command" + requestedTag},
 		{Name: "wait-for-ready-conf", Image: "registry:5000/busybox"},
 	}
 	cc.Status.UpgradeState = upgradeState
+	cc.Status.TargetContainerImage = "registry:5000/contrail-command" + targetTag
+	cc.Status.ContainerImage = "registry:5000/contrail-command" + currentTag
 	return cc
 }
 
@@ -1200,6 +1324,7 @@ func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
 
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
+	assert.Equal(t, expectedMigrationScript, actual.Data["migration.sh"])
 }
 
 func newAdminSecret() *core.Secret {
@@ -1345,6 +1470,19 @@ func newMigrationJob(oldTag, newTag string) *batch.Job {
 			},
 		},
 	}
+}
+
+func newMigrationJobFailed(oldTag, newTag string) (job *batch.Job) {
+	job = newMigrationJob(oldTag, newTag)
+	job.Status = batch.JobStatus{
+		Conditions: []batch.JobCondition{
+			{
+				Type:   batch.JobFailed,
+				Status: core.ConditionTrue,
+			},
+		},
+	}
+	return
 }
 
 func newBootstrapJob() *batch.Job {
@@ -1722,3 +1860,33 @@ resources:
       public_url: https://1.1.1.1:7000
     kind: endpoint
 `
+const expectedMigrationScript = `
+#!/usr/bin/env bash
+
+set -e
+export PGPASSWORD=test123
+export PGHOST=10.219.10.10
+export PGUSER=root
+
+# Try to drop old databases the may or may not exists.
+dropdb -w --if-exists contrail_test_migrated
+dropdb -w --if-exists contrail_test_backup
+
+# Migrate old database dump to new one.
+commandutil migrate --in /backups/db.yml --out /backups/db_migrated.yml
+
+# Create a database for migrated data, initialize it with a new schema.
+createdb -w contrail_test_migrated
+psql -v ON_ERROR_STOP=ON -w -d contrail_test_migrated -f /usr/share/contrail/gen_init_psql.sql
+psql -v ON_ERROR_STOP=ON -w -d contrail_test_migrated -f /usr/share/contrail/init_psql.sql
+
+# Upload migrated data to the new database.
+commandutil convert --intype yaml --in /backups/db_migrated.yml --outtype rdbms -c /etc/contrail/migration.yml
+
+# Replace original database with the migrated one and store original one as backup.
+psql -v ON_ERROR_STOP=ON -w -d postgres <<END_OF_SQL
+BEGIN;
+ALTER DATABASE contrail_test RENAME TO contrail_test_backup;
+ALTER DATABASE contrail_test_migrated RENAME TO contrail_test;
+COMMIT;
+END_OF_SQL`
