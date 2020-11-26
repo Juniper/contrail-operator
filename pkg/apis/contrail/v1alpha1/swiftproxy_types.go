@@ -29,15 +29,10 @@ type SwiftProxyConfiguration struct {
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
 	SwiftServiceType      serviceType  `json:"swiftServiceType,omitempty"`
+	// MetalLB pool name that should be used by Service
+	IPPoolName string `json:"ipPoolName,omitempty"`
 	// Service name registered in Keystone, default "swift"
 	SwiftServiceName string `json:"swiftServiceName,omitempty"`
-}
-
-func (configuration SwiftProxyConfiguration) GetServiceType() corev1.ServiceType {
-	if configuration.SwiftServiceType == "" {
-		return corev1.ServiceTypeLoadBalancer
-	}
-	return corev1.ServiceType(configuration.SwiftServiceType)
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy
@@ -78,10 +73,30 @@ type SwiftProxyList struct {
 // SwiftProxyInstanceType is type unique name used for labels
 const SwiftProxyInstanceType = "SwiftProxy"
 
-//PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
+// PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
 func (s *SwiftProxy) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
 	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
 	return PodsCertSubjects(podList, s.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
+// GetServiceType returns chosen Service type for Swift Proxy, default is LoadBalancer
+func (s *SwiftProxy) GetServiceType() corev1.ServiceType {
+	if s.Spec.ServiceConfiguration.SwiftServiceType == "" {
+		return corev1.ServiceTypeLoadBalancer
+	}
+	return corev1.ServiceType(s.Spec.ServiceConfiguration.SwiftServiceType)
+}
+
+// GetServiceAnnotations prepares annotations for LoadBalancer Service
+func (s *SwiftProxy) GetServiceAnnotations() map[string]string {
+	if s.GetServiceType() == corev1.ServiceTypeLoadBalancer {
+		return map[string]string{}
+	}
+	poolName := "mgmt"
+	if s.Spec.ServiceConfiguration.IPPoolName != "" {
+		poolName = s.Spec.ServiceConfiguration.IPPoolName
+	}
+	return map[string]string{"metallb.universe.tf/address-pool": poolName}
 }
 
 func init() {

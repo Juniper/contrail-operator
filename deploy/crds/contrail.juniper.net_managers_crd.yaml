@@ -2377,6 +2377,10 @@ spec:
                                   type: array
                                 credentialsSecretName:
                                   type: string
+                                ipPoolName:
+                                  description: MetalLB pool name that should be used
+                                    by Service
+                                  type: string
                                 keystoneInstance:
                                   type: string
                                 keystoneSecretName:
