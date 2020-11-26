@@ -11,6 +11,7 @@ import (
 	_ "github.com/operator-framework/operator-sdk/pkg/metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -91,7 +92,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clientset, err := v1alpha1.GetClientset()
+	clientset, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
