@@ -23,6 +23,7 @@ go_library(
         "provisionmanager_types.go",
         "rabbitmq_types.go",
         "register.go",
+        "service.go",
         "status.go",
         "storage.go",
         "swift_types.go",

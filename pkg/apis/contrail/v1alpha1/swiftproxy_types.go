@@ -14,9 +14,6 @@ type SwiftProxySpec struct {
 	ServiceConfiguration SwiftProxyConfiguration `json:"serviceConfiguration"`
 }
 
-// +kubebuilder:validation:Enum={"","ClusterIP","NodePort","LoadBalancer","ExternalName"}
-type serviceType string
-
 // SwiftProxyConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftProxyConfiguration struct {
@@ -28,9 +25,7 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName   string       `json:"swiftConfSecretName,omitempty"`
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
-	SwiftServiceType      serviceType  `json:"swiftServiceType,omitempty"`
-	// MetalLB pool name that should be used by Service
-	IPPoolName string `json:"ipPoolName,omitempty"`
+	Service               Service      `json:"service,omitempty"`
 	// Service name registered in Keystone, default "swift"
 	SwiftServiceName string `json:"swiftServiceName,omitempty"`
 }
@@ -81,22 +76,21 @@ func (s *SwiftProxy) PodsCertSubjects(podList *corev1.PodList, serviceIP string)
 
 // GetServiceType returns chosen Service type for Swift Proxy, default is LoadBalancer
 func (s *SwiftProxy) GetServiceType() corev1.ServiceType {
-	if s.Spec.ServiceConfiguration.SwiftServiceType == "" {
+	st := s.Spec.ServiceConfiguration.Service.GetServiceType()
+	if st == "" {
 		return corev1.ServiceTypeLoadBalancer
 	}
-	return corev1.ServiceType(s.Spec.ServiceConfiguration.SwiftServiceType)
+	return corev1.ServiceType(st)
 }
 
-// GetServiceAnnotations prepares annotations for LoadBalancer Service
+// GetServiceAnnotations returns annotations for Swift Proxy Service
 func (s *SwiftProxy) GetServiceAnnotations() map[string]string {
-	if s.GetServiceType() == corev1.ServiceTypeLoadBalancer {
-		return map[string]string{}
+	annotations := s.Spec.ServiceConfiguration.Service.GetAnnotations()
+	if len(annotations) == 0 {
+		// TODO remove after adding Annotations in manager structure in CaVA
+		return map[string]string{"metallb.universe.tf/address-pool": "mgmt"}
 	}
-	poolName := "mgmt"
-	if s.Spec.ServiceConfiguration.IPPoolName != "" {
-		poolName = s.Spec.ServiceConfiguration.IPPoolName
-	}
-	return map[string]string{"metallb.universe.tf/address-pool": poolName}
+	return annotations
 }
 
 func init() {
