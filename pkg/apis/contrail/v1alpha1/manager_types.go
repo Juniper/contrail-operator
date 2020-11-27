@@ -95,6 +95,7 @@ type KubemanagerServiceSpec struct {
 type KubemanagerManagerServiceConfiguration struct {
 	CassandraInstance        string `json:"cassandraInstance,omitempty"`
 	ZookeeperInstance        string `json:"zookeeperInstance,omitempty"`
+	KeystoneInstance         string `json:"keystoneInstance,omitempty"`
 	KubemanagerConfiguration `json:",inline"`
 }
 

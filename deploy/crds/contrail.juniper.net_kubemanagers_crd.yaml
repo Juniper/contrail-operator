@@ -120,6 +120,11 @@ spec:
               description: KubemanagerServiceConfiguration is the Spec for the kubemanagers
                 API.
               properties:
+                authMode:
+                  enum:
+                  - noauth
+                  - keystone
+                  type: string
                 cassandraNodesConfiguration:
                   description: CassandraClusterConfiguration stores all information
                     about Cassandra's endpoints.
@@ -195,6 +200,19 @@ spec:
                   type: boolean
                 ipFabricSubnets:
                   type: string
+                keystoneNodesConfiguration:
+                  description: KeystoneClusterConfiguration defines all information
+                    about Keystone's endpoints.
+                  properties:
+                    authProtocol:
+                      type: string
+                    endpoint:
+                      type: string
+                    port:
+                      type: integer
+                    userDomainName:
+                      type: string
+                  type: object
                 kubernetesAPIPort:
                   type: integer
                 kubernetesAPISSLPort:
