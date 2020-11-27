@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,10 +15,10 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/job"
 )
 
-func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, deployment *apps.Deployment) error {
+func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, replicas int) error {
 	switch command.Status.UpgradeState {
 	case contrail.CommandShuttingDownBeforeUpgrade:
-		if deployment.Status.Replicas == 0 {
+		if replicas == 0 {
 			command.Status.UpgradeState = contrail.CommandUpgrading
 		}
 	case contrail.CommandUpgrading:
@@ -40,7 +39,7 @@ func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, dep
 			command.Status.TargetContainerImage = getImage(command.Spec.ServiceConfiguration.Containers, "api")
 		}
 		expectedReplicas := ptrToInt32(command.Spec.CommonConfiguration.Replicas, 1)
-		if deployment.Status.ReadyReplicas == expectedReplicas {
+		if int32(replicas) == expectedReplicas {
 			command.Status.UpgradeState = contrail.CommandNotUpgrading
 			command.Status.TargetContainerImage = ""
 		}
@@ -59,7 +58,7 @@ func (r *ReconcileCommand) performUpgradeIfNeeded(command *contrail.Command, dep
 		command.Status.TargetContainerImage = ""
 		if isImageChanged(command) {
 			command.Status.UpgradeState = contrail.CommandShuttingDownBeforeUpgrade
-			if deployment.Status.Replicas == 0 {
+			if replicas == 0 {
 				command.Status.UpgradeState = contrail.CommandUpgrading
 			}
 			command.Status.TargetContainerImage = getImage(command.Spec.ServiceConfiguration.Containers, "api")
