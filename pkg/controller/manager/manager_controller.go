@@ -578,6 +578,8 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			kubemanager.Spec.ServiceConfiguration.KubemanagerConfiguration = kubemanagerService.Spec.ServiceConfiguration.KubemanagerConfiguration
 			if kubemanagerService.Spec.ServiceConfiguration.KeystoneInstance != "" {
 				kubemanager.Spec.ServiceConfiguration.AuthMode = v1alpha1.AuthenticationModeKeystone
+			} else {
+				kubemanager.Spec.ServiceConfiguration.AuthMode = v1alpha1.AuthenticationModeNoAuth
 			}
 			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, kubemanagerService.Spec.ServiceConfiguration.KeystoneInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
