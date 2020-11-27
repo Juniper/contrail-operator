@@ -15,15 +15,16 @@ import (
 
 // Service is used to create and manage kubernetes services
 type Service struct {
-	name      string
-	servType  core.ServiceType
-	ports     map[int32]string
-	ownerType string
-	labels    map[string]string
-	owner     v1.Object
-	scheme    *runtime.Scheme
-	client    client.Client
-	svc       core.Service
+	name        string
+	servType    core.ServiceType
+	ports       map[int32]string
+	ownerType   string
+	labels      map[string]string
+	annotations map[string]string
+	owner       v1.Object
+	scheme      *runtime.Scheme
+	client      client.Client
+	svc         core.Service
 }
 
 // EnsureExists is used to make sure that kubernetes service exists and is correctly configured
@@ -34,9 +35,10 @@ func (s *Service) EnsureExists() error {
 	}
 	s.svc = core.Service{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      s.name,
-			Namespace: s.owner.GetNamespace(),
-			Labels:    labels,
+			Name:        s.name,
+			Namespace:   s.owner.GetNamespace(),
+			Labels:      labels,
+			Annotations: s.annotations,
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(context.Background(), s.client, &s.svc, func() error {
@@ -90,5 +92,11 @@ func (s *Service) NodePort(name string) int32 {
 // WithLabels is used to set labels on Service
 func (s *Service) WithLabels(labels map[string]string) *Service {
 	s.labels = labels
+	return s
+}
+
+// WithAnnotations is used to set annotations on Service
+func (s *Service) WithAnnotations(annotations map[string]string) *Service {
+	s.annotations = annotations
 	return s
 }

@@ -133,8 +133,9 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	annotations := swiftProxy.GetServiceAnnotations()
 	servicePortsMap := map[int32]string{int32(swiftProxy.Spec.ServiceConfiguration.ListenPort): ""}
-	svc := r.kubernetes.Service(request.Name+"-swiftproxy", swiftProxy.Spec.ServiceConfiguration.GetServiceType(), servicePortsMap, contrail.SwiftProxyInstanceType, swiftProxy)
+	svc := r.kubernetes.Service(request.Name+"-swiftproxy", swiftProxy.GetServiceType(), servicePortsMap, contrail.SwiftProxyInstanceType, swiftProxy).WithAnnotations(annotations)
 	if err := svc.EnsureExists(); err != nil {
 		return reconcile.Result{}, err
 	}

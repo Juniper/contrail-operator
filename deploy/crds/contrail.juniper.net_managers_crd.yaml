@@ -2387,19 +2387,28 @@ spec:
                                   type: string
                                 ringConfigMapName:
                                   type: string
+                                service:
+                                  description: Service is the configuration of the
+                                    service that exposes a workload
+                                  properties:
+                                    annotations:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                    serviceType:
+                                      enum:
+                                      - ""
+                                      - ClusterIP
+                                      - NodePort
+                                      - LoadBalancer
+                                      - ExternalName
+                                      type: string
+                                  type: object
                                 swiftConfSecretName:
                                   type: string
                                 swiftServiceName:
                                   description: Service name registered in Keystone,
                                     default "swift"
-                                  type: string
-                                swiftServiceType:
-                                  enum:
-                                  - ""
-                                  - ClusterIP
-                                  - NodePort
-                                  - LoadBalancer
-                                  - ExternalName
                                   type: string
                               type: object
                             swiftStorageConfiguration:

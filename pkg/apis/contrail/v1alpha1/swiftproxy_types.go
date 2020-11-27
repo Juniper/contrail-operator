@@ -14,9 +14,6 @@ type SwiftProxySpec struct {
 	ServiceConfiguration SwiftProxyConfiguration `json:"serviceConfiguration"`
 }
 
-// +kubebuilder:validation:Enum={"","ClusterIP","NodePort","LoadBalancer","ExternalName"}
-type serviceType string
-
 // SwiftProxyConfiguration is the Spec for the keystone API.
 // +k8s:openapi-gen=true
 type SwiftProxyConfiguration struct {
@@ -28,16 +25,9 @@ type SwiftProxyConfiguration struct {
 	SwiftConfSecretName   string       `json:"swiftConfSecretName,omitempty"`
 	RingConfigMapName     string       `json:"ringConfigMapName,omitempty"`
 	Containers            []*Container `json:"containers,omitempty"`
-	SwiftServiceType      serviceType  `json:"swiftServiceType,omitempty"`
+	Service               Service      `json:"service,omitempty"`
 	// Service name registered in Keystone, default "swift"
 	SwiftServiceName string `json:"swiftServiceName,omitempty"`
-}
-
-func (configuration SwiftProxyConfiguration) GetServiceType() corev1.ServiceType {
-	if configuration.SwiftServiceType == "" {
-		return corev1.ServiceTypeLoadBalancer
-	}
-	return corev1.ServiceType(configuration.SwiftServiceType)
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy
@@ -78,10 +68,29 @@ type SwiftProxyList struct {
 // SwiftProxyInstanceType is type unique name used for labels
 const SwiftProxyInstanceType = "SwiftProxy"
 
-//PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
+// PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
 func (s *SwiftProxy) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
 	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
 	return PodsCertSubjects(podList, s.Spec.CommonConfiguration.HostNetwork, altIPs)
+}
+
+// GetServiceType returns chosen Service type for Swift Proxy, default is LoadBalancer
+func (s *SwiftProxy) GetServiceType() corev1.ServiceType {
+	st := s.Spec.ServiceConfiguration.Service.GetServiceType()
+	if st == "" {
+		return corev1.ServiceTypeLoadBalancer
+	}
+	return corev1.ServiceType(st)
+}
+
+// GetServiceAnnotations returns annotations for Swift Proxy Service
+func (s *SwiftProxy) GetServiceAnnotations() map[string]string {
+	annotations := s.Spec.ServiceConfiguration.Service.GetAnnotations()
+	if len(annotations) == 0 {
+		// TODO remove after adding Annotations in manager structure in CaVA
+		return map[string]string{"metallb.universe.tf/address-pool": "mgmt"}
+	}
+	return annotations
 }
 
 func init() {
