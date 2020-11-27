@@ -568,16 +568,18 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 
 	var kubemanagerServiceStatus []*v1alpha1.ServiceStatus
 	for _, kubemanagerService := range manager.Spec.Services.Kubemanagers {
-		if !kubemanagerDependenciesReady(kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, manager.ObjectMeta, r.client) {
+		if !kubemanagerDependenciesReady(kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, kubemanagerService.Spec.ServiceConfiguration.KeystoneInstance, manager.ObjectMeta, r.client) {
 			continue
 		}
 		kubemanager := &v1alpha1.Kubemanager{}
 		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
 		kubemanager.ObjectMeta.Namespace = manager.Namespace
-		kubemanagerService.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
 			kubemanager.Spec.ServiceConfiguration.KubemanagerConfiguration = kubemanagerService.Spec.ServiceConfiguration.KubemanagerConfiguration
-			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, manager.ObjectMeta, r.client); err != nil {
+			if kubemanagerService.Spec.ServiceConfiguration.KeystoneInstance != "" {
+				kubemanager.Spec.ServiceConfiguration.AuthMode = v1alpha1.AuthenticationModeKeystone
+			}
+			if err := fillKubemanagerConfiguration(kubemanager, kubemanagerService.Spec.ServiceConfiguration.CassandraInstance, kubemanagerService.Spec.ServiceConfiguration.ZookeeperInstance, kubemanagerService.Spec.ServiceConfiguration.KeystoneInstance, manager.ObjectMeta, r.client); err != nil {
 				return err
 			}
 			kubemanager.Spec.CommonConfiguration = utils.MergeCommonConfiguration(manager.Spec.CommonConfiguration, kubemanagerService.Spec.CommonConfiguration)
@@ -1048,11 +1050,12 @@ func modifyContrailCNI(ContrailCNI, ContrailCNIService *v1alpha1.ContrailCNI, ma
 	}
 }
 
-func kubemanagerDependenciesReady(cassandraName, zookeeperName string, managerMeta v1.ObjectMeta, client client.Client) bool {
+func kubemanagerDependenciesReady(cassandraName, zookeeperName, keystoneName string, managerMeta v1.ObjectMeta, client client.Client) bool {
 	cassandraInstance := v1alpha1.Cassandra{}
 	zookeeperInstance := v1alpha1.Zookeeper{}
 	rabbitmqInstance := v1alpha1.Rabbitmq{}
 	configInstance := v1alpha1.Config{}
+	keystoneInstance := v1alpha1.Keystone{}
 
 	cassandraActive := cassandraInstance.IsActive(cassandraName, managerMeta.Namespace, client)
 	zookeeperActive := zookeeperInstance.IsActive(zookeeperName, managerMeta.Namespace, client)
@@ -1061,10 +1064,12 @@ func kubemanagerDependenciesReady(cassandraName, zookeeperName string, managerMe
 	configActive := configInstance.IsActive(managerMeta.Name,
 		managerMeta.Namespace, client)
 
-	return cassandraActive && zookeeperActive && rabbitmqActive && configActive
+	keystoneActive := keystoneName == "" || keystoneInstance.IsActive(keystoneName, managerMeta.Namespace, client)
+
+	return cassandraActive && zookeeperActive && rabbitmqActive && configActive && keystoneActive
 }
 
-func fillKubemanagerConfiguration(kubemanager *v1alpha1.Kubemanager, cassandraName, zookeeperName string, managerMeta v1.ObjectMeta, client client.Client) error {
+func fillKubemanagerConfiguration(kubemanager *v1alpha1.Kubemanager, cassandraName, zookeeperName, keystoneName string, managerMeta v1.ObjectMeta, client client.Client) error {
 	cassandraConfig, err := v1alpha1.NewCassandraClusterConfiguration(cassandraName, managerMeta.Namespace, client)
 	if err != nil {
 		return err
@@ -1085,6 +1090,11 @@ func fillKubemanagerConfiguration(kubemanager *v1alpha1.Kubemanager, cassandraNa
 		return err
 	}
 	(&kubemanager.Spec.ServiceConfiguration).ConfigNodesConfiguration = &configConfig
+	keystoneConfig, err := v1alpha1.NewKeystoneClusterConfiguration(keystoneName, managerMeta.Namespace, client)
+	if err != nil {
+		return err
+	}
+	(&kubemanager.Spec.ServiceConfiguration).KeystoneNodesConfiguration = &keystoneConfig
 	return nil
 }
 

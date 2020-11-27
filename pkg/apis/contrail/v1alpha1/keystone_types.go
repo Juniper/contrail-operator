@@ -1,8 +1,12 @@
 package v1alpha1
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/Juniper/contrail-operator/pkg/certificates"
 )
@@ -120,4 +124,60 @@ func (k *Keystone) SetDefaultValues() {
 
 func init() {
 	SchemeBuilder.Register(&Keystone{}, &KeystoneList{})
+}
+
+// IsActive returns true if instance is active.
+func (k *Keystone) IsActive(name string, namespace string, client client.Client) bool {
+	instance := &Keystone{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, instance)
+	if err != nil {
+		return false
+	}
+	return instance.Status.Active
+}
+
+// ConfigurationParameters sets the default for the configuration parameters.
+func (k *Keystone) ConfigurationParameters() KeystoneConfiguration {
+	keystoneConfiguration := KeystoneConfiguration{}
+	if k.Spec.ServiceConfiguration.ListenPort == 0 {
+		keystoneConfiguration.ListenPort = KeystoneAuthPublicPort
+	} else {
+		keystoneConfiguration.ListenPort = k.Spec.ServiceConfiguration.ListenPort
+	}
+	if k.Spec.ServiceConfiguration.Region == "" {
+		keystoneConfiguration.Region = KeystoneAuthRegionName
+	} else {
+		keystoneConfiguration.Region = k.Spec.ServiceConfiguration.Region
+	}
+	if k.Spec.ServiceConfiguration.AuthProtocol == "" {
+		keystoneConfiguration.AuthProtocol = KeystoneAuthProto
+	} else {
+		keystoneConfiguration.AuthProtocol = k.Spec.ServiceConfiguration.AuthProtocol
+	}
+	if k.Spec.ServiceConfiguration.UserDomainName == "" {
+		keystoneConfiguration.UserDomainName = KeystoneAuthUserDomainName
+	} else {
+		keystoneConfiguration.UserDomainName = k.Spec.ServiceConfiguration.UserDomainName
+	}
+	if k.Spec.ServiceConfiguration.UserDomainID == "" {
+		keystoneConfiguration.UserDomainID = KeystoneAuthUserDomainID
+	} else {
+		keystoneConfiguration.UserDomainID = k.Spec.ServiceConfiguration.UserDomainID
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainName == "" {
+		keystoneConfiguration.ProjectDomainName = KeystoneAuthProjectDomainName
+	} else {
+		keystoneConfiguration.ProjectDomainName = k.Spec.ServiceConfiguration.ProjectDomainName
+	}
+	if k.Spec.ServiceConfiguration.ProjectDomainID == "" {
+		keystoneConfiguration.ProjectDomainID = KeystoneAuthProjectDomainID
+	} else {
+		keystoneConfiguration.ProjectDomainID = k.Spec.ServiceConfiguration.ProjectDomainID
+	}
+	if k.Spec.ServiceConfiguration.ExternalAddressRetrySec == 0 {
+		keystoneConfiguration.ExternalAddressRetrySec = KeystoneExtRetrySec
+	} else {
+		keystoneConfiguration.ExternalAddressRetrySec = k.Spec.ServiceConfiguration.ExternalAddressRetrySec
+	}
+	return keystoneConfiguration
 }

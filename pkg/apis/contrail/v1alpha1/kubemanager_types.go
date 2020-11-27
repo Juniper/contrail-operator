@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -63,28 +62,27 @@ type KubemanagerServiceConfiguration struct {
 // KubemanagerConfiguration is the configuration for the kubemanagers API.
 // +k8s:openapi-gen=true
 type KubemanagerConfiguration struct {
-	Containers            []*Container `json:"containers,omitempty"`
-	UseKubeadmConfig      *bool        `json:"useKubeadmConfig,omitempty"`
-	ServiceAccount        string       `json:"serviceAccount,omitempty"`
-	ClusterRole           string       `json:"clusterRole,omitempty"`
-	ClusterRoleBinding    string       `json:"clusterRoleBinding,omitempty"`
-	CloudOrchestrator     string       `json:"cloudOrchestrator,omitempty"`
-	KubernetesAPIServer   string       `json:"kubernetesAPIServer,omitempty"`
-	KubernetesAPIPort     *int         `json:"kubernetesAPIPort,omitempty"`
-	KubernetesAPISSLPort  *int         `json:"kubernetesAPISSLPort,omitempty"`
-	PodSubnets            string       `json:"podSubnets,omitempty"`
-	ServiceSubnets        string       `json:"serviceSubnets,omitempty"`
-	KubernetesClusterName string       `json:"kubernetesClusterName,omitempty"`
-	IPFabricSubnets       string       `json:"ipFabricSubnets,omitempty"`
-	IPFabricForwarding    *bool        `json:"ipFabricForwarding,omitempty"`
-	IPFabricSnat          *bool        `json:"ipFabricSnat,omitempty"`
-	KubernetesTokenFile   string       `json:"kubernetesTokenFile,omitempty"`
-	HostNetworkService    *bool        `json:"hostNetworkService,omitempty"`
-	RabbitmqUser          string       `json:"rabbitmqUser,omitempty"`
-	RabbitmqPassword      string       `json:"rabbitmqPassword,omitempty"`
-	RabbitmqVhost         string       `json:"rabbitmqVhost,omitempty"`
-	KeystoneSecretName    string       `json:"keystoneSecretName,omitempty"`
-	KeystoneInstance      string       `json:"keystoneInstance,omitempty"`
+	Containers            []*Container       `json:"containers,omitempty"`
+	UseKubeadmConfig      *bool              `json:"useKubeadmConfig,omitempty"`
+	ServiceAccount        string             `json:"serviceAccount,omitempty"`
+	ClusterRole           string             `json:"clusterRole,omitempty"`
+	ClusterRoleBinding    string             `json:"clusterRoleBinding,omitempty"`
+	CloudOrchestrator     string             `json:"cloudOrchestrator,omitempty"`
+	KubernetesAPIServer   string             `json:"kubernetesAPIServer,omitempty"`
+	KubernetesAPIPort     *int               `json:"kubernetesAPIPort,omitempty"`
+	KubernetesAPISSLPort  *int               `json:"kubernetesAPISSLPort,omitempty"`
+	PodSubnets            string             `json:"podSubnets,omitempty"`
+	ServiceSubnets        string             `json:"serviceSubnets,omitempty"`
+	KubernetesClusterName string             `json:"kubernetesClusterName,omitempty"`
+	IPFabricSubnets       string             `json:"ipFabricSubnets,omitempty"`
+	IPFabricForwarding    *bool              `json:"ipFabricForwarding,omitempty"`
+	IPFabricSnat          *bool              `json:"ipFabricSnat,omitempty"`
+	KubernetesTokenFile   string             `json:"kubernetesTokenFile,omitempty"`
+	HostNetworkService    *bool              `json:"hostNetworkService,omitempty"`
+	RabbitmqUser          string             `json:"rabbitmqUser,omitempty"`
+	RabbitmqPassword      string             `json:"rabbitmqPassword,omitempty"`
+	RabbitmqVhost         string             `json:"rabbitmqVhost,omitempty"`
+	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
 }
 
 // KubemanagerNodesConfiguration is the configuration for third party dependencies
@@ -94,6 +92,7 @@ type KubemanagerNodesConfiguration struct {
 	RabbbitmqNodesConfiguration *RabbitmqClusterConfiguration  `json:"rabbitmqNodesConfiguration,omitempty"`
 	CassandraNodesConfiguration *CassandraClusterConfiguration `json:"cassandraNodesConfiguration,omitempty"`
 	ZookeeperNodesConfiguration *ZookeeperClusterConfiguration `json:"zookeeperNodesConfiguration,omitempty"`
+	KeystoneNodesConfiguration  *KeystoneClusterConfiguration  `json:"keystoneNodesConfiguration,omitempty"`
 }
 
 // KubemanagerList contains a list of Kubemanager.
@@ -129,6 +128,8 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	rabbitmqNodesInformation.FillWithDefaultValues()
 	zookeeperNodesInformation := c.Spec.ServiceConfiguration.ZookeeperNodesConfiguration
 	zookeeperNodesInformation.FillWithDefaultValues()
+	keystoneNodesInformation := c.Spec.ServiceConfiguration.KeystoneNodesConfiguration
+	keystoneNodesInformation.FillWithDefaultValues()
 
 	var rabbitmqSecretUser string
 	var rabbitmqSecretPassword string
@@ -186,13 +187,6 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			return err
 		}
 		kubemanagerConfig.ServiceSubnets = serviceSubnets
-	}
-	keystoneAuth := &KubemanagerAuthParameters{}
-	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
-		err := c.AuthParameters(keystoneAuth, client)
-		if err != nil {
-			return err
-		}
 	}
 	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
 	var data = map[string]string{}
@@ -287,11 +281,11 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 			ListenAddress:          podList.Items[idx].Status.PodIP,
 			ListenPort:             strconv.Itoa(configNodesInformation.APIServerPort),
 			CAFilePath:             certificates.SignerCAFilepath,
-			AuthMode:               c.Spec.ServiceConfiguration.ConfigNodesConfiguration.AuthMode,
-			KeystoneAuthProtocol:   keystoneAuth.AuthProtocol,
-			KeystoneAddress:        keystoneAuth.Address,
-			KeystonePort:           keystoneAuth.Port,
-			KeystoneUserDomainName: keystoneAuth.UserDomainName,
+			AuthMode:               c.Spec.ServiceConfiguration.AuthMode,
+			KeystoneAuthProtocol:   keystoneNodesInformation.AuthProtocol,
+			KeystoneAddress:        keystoneNodesInformation.Endpoint,
+			KeystonePort:           keystoneNodesInformation.Port,
+			KeystoneUserDomainName: keystoneNodesInformation.UserDomainName,
 		})
 		data["vnc."+podList.Items[idx].Status.PodIP] = vncApiConfigBuffer.String()
 	}
@@ -299,35 +293,6 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	if err := client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	return nil
-}
-
-type KubemanagerAuthParameters struct {
-	Address        string
-	Port           int
-	AuthProtocol   string
-	UserDomainName string
-}
-
-func (c *Kubemanager) AuthParameters(w *KubemanagerAuthParameters, client client.Client) error {
-	adminPasswordSecretName := c.Spec.ServiceConfiguration.KeystoneSecretName
-	adminPasswordSecret := &corev1.Secret{}
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: adminPasswordSecretName, Namespace: c.Namespace}, adminPasswordSecret); err != nil {
-		return err
-	}
-	keystoneInstanceName := c.Spec.ServiceConfiguration.KeystoneInstance
-	keystone := &Keystone{}
-	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: c.Namespace, Name: keystoneInstanceName}, keystone); err != nil {
-		return err
-	}
-	if keystone.Status.Endpoint == "" {
-		return fmt.Errorf("%q Status.Endpoint empty", keystoneInstanceName)
-	}
-	w.Port = keystone.Spec.ServiceConfiguration.ListenPort
-	w.AuthProtocol = keystone.Spec.ServiceConfiguration.AuthProtocol
-	w.UserDomainName = keystone.Spec.ServiceConfiguration.UserDomainName
-	w.Address = keystone.Status.Endpoint
-
 	return nil
 }
 
@@ -500,6 +465,10 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 		ipFabricSnat = *c.Spec.ServiceConfiguration.IPFabricSnat
 	} else {
 		ipFabricSnat = KubernetesIPFabricSnat
+	}
+
+	if c.Spec.ServiceConfiguration.AuthMode != AuthenticationModeNoAuth && c.Spec.ServiceConfiguration.AuthMode != AuthenticationModeKeystone {
+		c.Spec.ServiceConfiguration.AuthMode = AuthenticationModeNoAuth
 	}
 
 	kubemanagerConfiguration.CloudOrchestrator = cloudOrchestrator

@@ -978,6 +978,29 @@ func NewConfigClusterConfiguration(name string, namespace string, myclient clien
 	return configCluster, nil
 }
 
+// NewKeystoneClusterConfiguration gets a struct containing various representations of Keystone nodes string.
+func NewKeystoneClusterConfiguration(name string, namespace string, client client.Client) (KeystoneClusterConfiguration, error) {
+	var keystoneCluster KeystoneClusterConfiguration
+	keystoneInstance := &Keystone{}
+	if name == "" {
+		return keystoneCluster, nil
+	}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, keystoneInstance)
+	if err != nil {
+		return keystoneCluster, err
+	}
+
+	keystoneConfig := keystoneInstance.ConfigurationParameters()
+	endpoint := keystoneInstance.Status.Endpoint + ":" + strconv.Itoa(keystoneConfig.ListenPort)
+	keystoneCluster = KeystoneClusterConfiguration{
+		Endpoint:       endpoint,
+		Port:           keystoneConfig.ListenPort,
+		AuthProtocol:   keystoneConfig.AuthProtocol,
+		UserDomainName: keystoneConfig.UserDomainName,
+	}
+	return keystoneCluster, nil
+}
+
 // WebUIClusterConfiguration defines all configuration knobs used to write the config file.
 type WebUIClusterConfiguration struct {
 	AdminUsername string
@@ -1116,4 +1139,27 @@ type VrouterClusterConfiguration struct {
 	PhysicalInterface string
 	Gateway           string
 	MetaDataSecret    string
+}
+
+// KeystoneClusterConfiguration defines all information about Keystone's endpoints.
+type KeystoneClusterConfiguration struct {
+	AuthMode       AuthenticationMode `json:"authMode,omitempty"`
+	Endpoint       string             `json:"address,omitempty"`
+	Port           int                `json:"port,omitempty"`
+	AuthProtocol   string             `json:"authProtocol,omitempty"`
+	UserDomainName string             `json:"userDomainName,omitempty"`
+}
+
+// FillWithDefaultValues fills Keystone config with default values.
+func (c *KeystoneClusterConfiguration) FillWithDefaultValues() {
+	if c.Port == 0 {
+		c.Port = KeystoneAuthPublicPort
+	}
+	if c.AuthProtocol != "http" && c.AuthProtocol != "https" {
+		c.AuthProtocol = KeystoneAuthProto
+	}
+	if c.UserDomainName == "" {
+		c.UserDomainName = KeystoneAuthUserDomainName
+	}
+
 }

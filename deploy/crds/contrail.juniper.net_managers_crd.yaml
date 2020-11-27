@@ -1503,6 +1503,11 @@ spec:
                             description: KubemanagerManagerServiceConfiguration defines
                               service configuration of Kubemanager
                             properties:
+                              authMode:
+                                enum:
+                                - noauth
+                                - keystone
+                                type: string
                               cassandraInstance:
                                 type: string
                               cloudOrchestrator:
@@ -1534,8 +1539,6 @@ spec:
                               ipFabricSubnets:
                                 type: string
                               keystoneInstance:
-                                type: string
-                              keystoneSecretName:
                                 type: string
                               kubernetesAPIPort:
                                 type: integer

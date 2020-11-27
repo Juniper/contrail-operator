@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -2605,6 +2606,18 @@ func cassandraWithActiveState(state bool) *contrail.Cassandra {
 	}
 }
 
+func keystoneWithActiveState(state bool) *contrail.Keystone {
+	return &contrail.Keystone{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone1",
+			Namespace: "test-ns",
+		},
+		Status: contrail.KeystoneStatus{
+			Active: state,
+		},
+	}
+}
+
 func zookeeperWithActiveState(state bool) *contrail.Zookeeper {
 	return &contrail.Zookeeper{
 		ObjectMeta: meta.ObjectMeta{
@@ -2687,7 +2700,45 @@ func TestKubemanagerDependenciesReady(t *testing.T) {
 			configWithActiveState(tc.configActive),
 			rabbitmqWithActiveState(tc.rabbitmqActive),
 			zookeeperWithActiveState(tc.zookeeperActive))
-		got := kubemanagerDependenciesReady("cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		got := kubemanagerDependenciesReady("cassandra1", "zookeeper1", "", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
+		assert.Equal(t, tc.expected, got)
+	}
+}
+
+func TestKubemanagerDependenciesReadyWithKeystone(t *testing.T) {
+
+	tests := []struct {
+		cassandraActive bool
+		zookeeperActive bool
+		rabbitmqActive  bool
+		configActive    bool
+		keystoneActive  bool
+		expected        bool
+	}{
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: true, keystoneActive: true, expected: true},
+		{cassandraActive: false, zookeeperActive: false, rabbitmqActive: false, configActive: false, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: false, configActive: false, keystoneActive: false, expected: false},
+		{cassandraActive: false, zookeeperActive: false, rabbitmqActive: true, configActive: true, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: false, rabbitmqActive: true, configActive: false, keystoneActive: false, expected: false},
+		{cassandraActive: false, zookeeperActive: true, rabbitmqActive: false, configActive: true, keystoneActive: false, expected: false},
+		{cassandraActive: false, zookeeperActive: true, rabbitmqActive: true, configActive: true, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: false, rabbitmqActive: true, configActive: true, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: false, configActive: true, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: false, keystoneActive: false, expected: false},
+		{cassandraActive: true, zookeeperActive: true, rabbitmqActive: true, configActive: true, keystoneActive: false, expected: false},
+	}
+
+	scheme, err := contrail.SchemeBuilder.Build()
+	require.NoError(t, err, "Failed to build scheme")
+
+	for _, tc := range tests {
+		cl := fake.NewFakeClientWithScheme(scheme,
+			cassandraWithActiveState(tc.cassandraActive),
+			configWithActiveState(tc.configActive),
+			rabbitmqWithActiveState(tc.rabbitmqActive),
+			zookeeperWithActiveState(tc.zookeeperActive),
+			keystoneWithActiveState(tc.keystoneActive))
+		got := kubemanagerDependenciesReady("cassandra1", "zookeeper1", "keystone1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl)
 		assert.Equal(t, tc.expected, got)
 	}
 }
@@ -2745,14 +2796,16 @@ func TestFillKubemanagerConfiguration(t *testing.T) {
 		cassandraWithActiveState(true),
 		configWithActiveState(true),
 		rabbitmqWithActiveState(true),
-		zookeeperWithActiveState(true))
+		zookeeperWithActiveState(true),
+		keystoneWithActiveState(true))
 
 	newKubemanager := &contrail.Kubemanager{}
-	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, "cassandra1", "zookeeper1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
+	require.NoError(t, fillKubemanagerConfiguration(newKubemanager, "cassandra1", "zookeeper1", "keystone1", meta.ObjectMeta{Name: "cluster1", Namespace: "test-ns"}, cl))
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ConfigNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
 	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, newKubemanager.Spec.ServiceConfiguration.KeystoneNodesConfiguration)
 }
 
 func TestFillVrouterConfiguration(t *testing.T) {
@@ -2834,7 +2887,8 @@ func TestProcessKubemanagers(t *testing.T) {
 		cassandraWithActiveState(true),
 		configWithActiveState(true),
 		rabbitmqWithActiveState(true),
-		zookeeperWithActiveState(true))
+		zookeeperWithActiveState(true),
+		keystoneWithActiveState(true))
 	reconciler := ReconcileManager{
 		client:     cl,
 		scheme:     scheme,
@@ -2856,6 +2910,7 @@ func TestProcessKubemanagers(t *testing.T) {
 							ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
 								CassandraInstance: "cassandra1",
 								ZookeeperInstance: "zookeeper1",
+								KeystoneInstance:  "keystone1",
 							},
 						},
 					},
@@ -2875,6 +2930,7 @@ func TestProcessKubemanagers(t *testing.T) {
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.ZookeeperNodesConfiguration)
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.CassandraNodesConfiguration)
 	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.RabbbitmqNodesConfiguration)
+	assert.NotNil(t, createdKubemanager.Spec.ServiceConfiguration.KeystoneNodesConfiguration)
 }
 
 func TestProcessProvisionManager(t *testing.T) {
@@ -2979,6 +3035,24 @@ func TestKubemanagerWithAuth(t *testing.T) {
 		},
 		Status: contrail.ConfigStatus{Active: &trueVal},
 	}
+	keystone := &contrail.Keystone{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "keystone",
+			Namespace: "default",
+		},
+		Spec: contrail.KeystoneSpec{
+			ServiceConfiguration: contrail.KeystoneConfiguration{
+				PostgresInstance:   "psql",
+				ListenPort:         5555,
+				KeystoneSecretName: "keystone-adminpass-secret",
+				AuthProtocol:       "https",
+			},
+		},
+		Status: contrail.KeystoneStatus{
+			Active:   trueVal,
+			Endpoint: "10.11.12.13",
+		},
+	}
 	kubemanager := &contrail.Kubemanager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "kubemanager",
@@ -3007,6 +3081,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 			ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
 				CassandraInstance: "cassandra",
 				ZookeeperInstance: "zookeeper",
+				KeystoneInstance:  "keystone",
 				KubemanagerConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
 						{Name: "kubemanager", Image: "kubemanager"},
@@ -3035,6 +3110,10 @@ func TestKubemanagerWithAuth(t *testing.T) {
 		},
 		Status: contrail.ManagerStatus{},
 	}
+	var configMap = &corev1.ConfigMap{}
+	kubemanagerConfigMap := *configMap
+	kubemanagerConfigMap.Name = "kubemanager1-kubemanager-configmap"
+	kubemanagerConfigMap.Namespace = "default"
 	initObjs := []runtime.Object{
 		managerCR,
 		newAdminSecret(),
@@ -3043,7 +3122,9 @@ func TestKubemanagerWithAuth(t *testing.T) {
 		rabbitmq,
 		kubemanager,
 		config,
+		keystone,
 		newNode(1),
+		&kubemanagerConfigMap,
 	}
 	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 	reconciler := ReconcileManager{
@@ -3091,7 +3172,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 						{Name: "init", Image: "busybox"},
 						{Name: "init2", Image: "kubemanager"},
 					},
-					KeystoneSecretName: "keystone-adminpass-secret",
+					AuthMode: "keystone",
 				},
 				KubemanagerNodesConfiguration: contrail.KubemanagerNodesConfiguration{
 					ConfigNodesConfiguration: &contrail.ConfigClusterConfiguration{
@@ -3113,6 +3194,12 @@ func TestKubemanagerWithAuth(t *testing.T) {
 					},
 					ZookeeperNodesConfiguration: &contrail.ZookeeperClusterConfiguration{
 						ClientPort: 2181,
+					},
+					KeystoneNodesConfiguration: &contrail.KeystoneClusterConfiguration{
+						Port:           5555,
+						Endpoint:       "10.11.12.13:5555",
+						AuthProtocol:   "https",
+						UserDomainName: "Default",
 					},
 				},
 			},
