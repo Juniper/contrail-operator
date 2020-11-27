@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -2987,45 +2986,12 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, apps.SchemeBuilder.AddToScheme(scheme))
 	require.NoError(t, core.SchemeBuilder.AddToScheme(scheme))
-	trueVal1 := true
-	cassandra := &contrail.Cassandra{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "cassandra",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "cluster1"},
-		},
-		Spec:   contrail.CassandraSpec{},
-		Status: contrail.CassandraStatus{Active: &trueVal},
-	}
-	zookeeper := &contrail.Zookeeper{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "zookeeper",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "cluster1"},
-		},
-		Spec:   contrail.ZookeeperSpec{},
-		Status: contrail.ZookeeperStatus{Active: &trueVal},
-	}
-	rabbitmq := &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
-			Name:      "rabbitmq-instance",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "test-manager"},
-		},
-		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: contrail.PodConfiguration{
-				HostNetwork:  &trueVal1,
-				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
-			},
-			ServiceConfiguration: contrail.RabbitmqConfiguration{},
-		},
-		Status: contrail.RabbitmqStatus{Active: &trueVal},
-	}
+	trueVal := true
 	config := &contrail.Config{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config",
-			Namespace: "default",
-			Labels:    map[string]string{"contrail_cluster": "test-manager"},
+			Namespace: "test-ns",
+			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.ConfigSpec{
 			ServiceConfiguration: contrail.ConfigConfiguration{
@@ -3038,13 +3004,13 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	keystone := &contrail.Keystone{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "keystone",
-			Namespace: "default",
+			Namespace: "test-ns",
 		},
 		Spec: contrail.KeystoneSpec{
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				PostgresInstance:   "psql",
 				ListenPort:         5555,
-				KeystoneSecretName: "keystone-adminpass-secret",
+				KeystoneSecretName: "keystone-adminpass-secre",
 				AuthProtocol:       "https",
 			},
 		},
@@ -3056,7 +3022,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	kubemanager := &contrail.Kubemanager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "kubemanager",
-			Namespace: "default",
+			Namespace: "test-ns",
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.KubemanagerSpec{
@@ -3074,13 +3040,13 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	kubemanagerService := &contrail.KubemanagerService{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "kubemanager",
-			Namespace: "default",
+			Namespace: "test-ns",
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 		},
 		Spec: contrail.KubemanagerServiceSpec{
 			ServiceConfiguration: contrail.KubemanagerManagerServiceConfiguration{
-				CassandraInstance: "cassandra",
-				ZookeeperInstance: "zookeeper",
+				CassandraInstance: "cassandra1",
+				ZookeeperInstance: "zookeeper1",
 				KeystoneInstance:  "keystone",
 				KubemanagerConfiguration: contrail.KubemanagerConfiguration{
 					Containers: []*contrail.Container{
@@ -3094,37 +3060,30 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	}
 	managerCR := &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
-			Name:      "test-manager",
-			Namespace: "default",
+			Name:      "cluster1",
+			Namespace: "test-ns",
 			UID:       "manager-uid-1",
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Cassandras:   []*contrail.Cassandra{cassandra},
-				Zookeepers:   []*contrail.Zookeeper{zookeeper},
 				Kubemanagers: []*contrail.KubemanagerService{kubemanagerService},
-				Rabbitmq:     rabbitmq,
+				Keystone:     keystone,
 				Config:       config,
 			},
 			KeystoneSecretName: "keystone-adminpass-secret",
 		},
 		Status: contrail.ManagerStatus{},
 	}
-	var configMap = &corev1.ConfigMap{}
-	kubemanagerConfigMap := *configMap
-	kubemanagerConfigMap.Name = "kubemanager1-kubemanager-configmap"
-	kubemanagerConfigMap.Namespace = "default"
 	initObjs := []runtime.Object{
 		managerCR,
 		newAdminSecret(),
-		cassandra,
-		zookeeper,
-		rabbitmq,
+		cassandraWithActiveState(true),
+		rabbitmqWithActiveState(true),
+		zookeeperWithActiveState(true),
 		kubemanager,
 		config,
 		keystone,
 		newNode(1),
-		&kubemanagerConfigMap,
 	}
 	fakeClient := fake.NewFakeClientWithScheme(scheme, initObjs...)
 	reconciler := ReconcileManager{
@@ -3135,8 +3094,8 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	// when
 	result, err := reconciler.Reconcile(reconcile.Request{
 		NamespacedName: types.NamespacedName{
-			Name:      "test-manager",
-			Namespace: "default",
+			Name:      "cluster1",
+			Namespace: "test-ns",
 		},
 	})
 	assert.NoError(t, err)
@@ -3146,13 +3105,13 @@ func TestKubemanagerWithAuth(t *testing.T) {
 	expectedKube := contrail.Kubemanager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "kubemanager",
-			Namespace: "default",
+			Namespace: "test-ns",
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
 			OwnerReferences: []meta.OwnerReference{
 				{
 					APIVersion:         "contrail.juniper.net/v1alpha1",
 					Kind:               "Manager",
-					Name:               "test-manager",
+					Name:               "cluster1",
 					UID:                "manager-uid-1",
 					Controller:         &trueVal,
 					BlockOwnerDeletion: &trueVal,
@@ -3197,7 +3156,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 					},
 					KeystoneNodesConfiguration: &contrail.KeystoneClusterConfiguration{
 						Port:           5555,
-						Endpoint:       "10.11.12.13:5555",
+						Endpoint:       "10.11.12.13",
 						AuthProtocol:   "https",
 						UserDomainName: "Default",
 					},

@@ -99,7 +99,7 @@ var kubemanager = &v1alpha1.Kubemanager{
 				},
 				KeystoneNodesConfiguration: &v1alpha1.KeystoneClusterConfiguration{
 					Port:     5555,
-					Endpoint: "10.11.12.13:5555",
+					Endpoint: "10.11.12.13",
 				},
 			},
 		},

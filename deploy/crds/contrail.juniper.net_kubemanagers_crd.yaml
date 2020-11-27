@@ -204,14 +204,9 @@ spec:
                   description: KeystoneClusterConfiguration defines all information
                     about Keystone's endpoints.
                   properties:
-                    address:
-                      type: string
-                    authMode:
-                      enum:
-                      - noauth
-                      - keystone
-                      type: string
                     authProtocol:
+                      type: string
+                    endpoint:
                       type: string
                     port:
                       type: integer

@@ -55,7 +55,7 @@ func TestKubemanagerConfig(t *testing.T) {
 		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", kubemanagerApiIni.Section("global").Key("cafile").String())
 		assert.Equal(t, "keystone", kubemanagerApiIni.Section("auth").Key("AUTHN_TYPE").String())
 		assert.Equal(t, "https", kubemanagerApiIni.Section("auth").Key("AUTHN_PROTOCOL").String())
-		assert.Equal(t, "10.11.12.13:5555", kubemanagerApiIni.Section("auth").Key("AUTHN_SERVER").String())
+		assert.Equal(t, "10.11.12.13", kubemanagerApiIni.Section("auth").Key("AUTHN_SERVER").String())
 		assert.Equal(t, "5555", kubemanagerApiIni.Section("auth").Key("AUTHN_PORT").String())
 		assert.Equal(t, "Default", kubemanagerApiIni.Section("auth").Key("AUTHN_DOMAIN").String())
 		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", kubemanagerApiIni.Section("auth").Key("cafile").String())

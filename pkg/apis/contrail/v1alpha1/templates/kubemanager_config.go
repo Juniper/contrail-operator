@@ -68,5 +68,4 @@ AUTHN_PORT = {{ .KeystonePort }}
 AUTHN_DOMAIN = {{ .KeystoneUserDomainName }}
 cafile = {{ .CAFilePath }}
 AUTHN_URL = /v3/auth/tokens
-;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
 `))

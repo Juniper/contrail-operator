@@ -467,7 +467,7 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 		ipFabricSnat = KubernetesIPFabricSnat
 	}
 
-	if c.Spec.ServiceConfiguration.AuthMode != AuthenticationModeNoAuth && c.Spec.ServiceConfiguration.AuthMode != AuthenticationModeKeystone {
+	if c.Spec.ServiceConfiguration.AuthMode == "" {
 		c.Spec.ServiceConfiguration.AuthMode = AuthenticationModeNoAuth
 	}
 

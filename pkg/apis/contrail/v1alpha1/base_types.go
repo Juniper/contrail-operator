@@ -991,7 +991,7 @@ func NewKeystoneClusterConfiguration(name string, namespace string, client clien
 	}
 
 	keystoneConfig := keystoneInstance.ConfigurationParameters()
-	endpoint := keystoneInstance.Status.Endpoint + ":" + strconv.Itoa(keystoneConfig.ListenPort)
+	endpoint := keystoneInstance.Status.Endpoint
 	keystoneCluster = KeystoneClusterConfiguration{
 		Endpoint:       endpoint,
 		Port:           keystoneConfig.ListenPort,
@@ -1143,11 +1143,10 @@ type VrouterClusterConfiguration struct {
 
 // KeystoneClusterConfiguration defines all information about Keystone's endpoints.
 type KeystoneClusterConfiguration struct {
-	AuthMode       AuthenticationMode `json:"authMode,omitempty"`
-	Endpoint       string             `json:"address,omitempty"`
-	Port           int                `json:"port,omitempty"`
-	AuthProtocol   string             `json:"authProtocol,omitempty"`
-	UserDomainName string             `json:"userDomainName,omitempty"`
+	Endpoint       string `json:"endpoint,omitempty"`
+	Port           int    `json:"port,omitempty"`
+	AuthProtocol   string `json:"authProtocol,omitempty"`
+	UserDomainName string `json:"userDomainName,omitempty"`
 }
 
 // FillWithDefaultValues fills Keystone config with default values.
