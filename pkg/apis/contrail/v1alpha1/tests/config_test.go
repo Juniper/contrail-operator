@@ -73,6 +73,9 @@ var kubemanager = &v1alpha1.Kubemanager{
 	},
 	Spec: v1alpha1.KubemanagerSpec{
 		ServiceConfiguration: v1alpha1.KubemanagerServiceConfiguration{
+			KubemanagerConfiguration: v1alpha1.KubemanagerConfiguration{
+				AuthMode: "keystone",
+			},
 			KubemanagerNodesConfiguration: v1alpha1.KubemanagerNodesConfiguration{
 				CassandraNodesConfiguration: &v1alpha1.CassandraClusterConfiguration{
 					Port:         9160,
@@ -92,6 +95,11 @@ var kubemanager = &v1alpha1.Kubemanager{
 					CollectorPort:         8086,
 					APIServerIPList:       []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
 					CollectorServerIPList: []string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+					AuthMode:              v1alpha1.AuthenticationModeKeystone,
+				},
+				KeystoneNodesConfiguration: &v1alpha1.KeystoneClusterConfiguration{
+					Port:     5555,
+					Endpoint: "10.11.12.13",
 				},
 			},
 		},

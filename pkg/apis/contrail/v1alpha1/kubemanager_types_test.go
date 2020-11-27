@@ -164,6 +164,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 						ServerIPList: []string{"7.7.7.7", "8.8.8.8"},
 						ClientPort:   4444,
 					},
+					KeystoneNodesConfiguration: &KeystoneClusterConfiguration{},
 				},
 			},
 		},

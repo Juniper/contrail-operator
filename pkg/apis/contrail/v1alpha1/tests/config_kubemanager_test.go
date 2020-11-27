@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/ini.v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -45,6 +47,19 @@ func TestKubemanagerConfig(t *testing.T) {
 		diff := diff.Diff(environment.kubemanagerConfigMap.Data["kubemanager.1.1.6.1"], kubemanagerConfig)
 		t.Fatalf("get kubemanager config: \n%v\n", diff)
 	}
+	t.Run("Assert correct Kubemanager Keystone config", func(t *testing.T) {
+		kubemanagerApiIni, err := ini.Load([]byte(environment.kubemanagerConfigMap.Data["vnc.1.1.6.1"]))
+		require.NoError(t, err, "Error while reading config")
+		assert.Equal(t, "1.1.6.1", kubemanagerApiIni.Section("global").Key("WEB_SERVER").String())
+		assert.Equal(t, "8082", kubemanagerApiIni.Section("global").Key("WEB_PORT").String())
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", kubemanagerApiIni.Section("global").Key("cafile").String())
+		assert.Equal(t, "keystone", kubemanagerApiIni.Section("auth").Key("AUTHN_TYPE").String())
+		assert.Equal(t, "https", kubemanagerApiIni.Section("auth").Key("AUTHN_PROTOCOL").String())
+		assert.Equal(t, "10.11.12.13", kubemanagerApiIni.Section("auth").Key("AUTHN_SERVER").String())
+		assert.Equal(t, "5555", kubemanagerApiIni.Section("auth").Key("AUTHN_PORT").String())
+		assert.Equal(t, "Default", kubemanagerApiIni.Section("auth").Key("AUTHN_DOMAIN").String())
+		assert.Equal(t, "/etc/ssl/certs/kubernetes/ca-bundle.crt", kubemanagerApiIni.Section("auth").Key("cafile").String())
+	})
 }
 
 var kubemanagerConfig = `[DEFAULTS]

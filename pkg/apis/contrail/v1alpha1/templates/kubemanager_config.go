@@ -61,11 +61,11 @@ use_ssl = True
 cafile = {{ .CAFilePath }}
 ; Authentication settings (optional)
 [auth]
-AUTHN_TYPE = noauth
-;AUTHN_TYPE = keystone
-;AUTHN_PROTOCOL = http
-;AUTHN_SERVER = 127.0.0.1
-;AUTHN_PORT = 35357
-;AUTHN_URL = /v2.0/tokens
-;AUTHN_TOKEN_URL = http://127.0.0.1:35357/v2.0/tokens
+AUTHN_TYPE = {{ .AuthMode }}
+AUTHN_PROTOCOL = {{ .KeystoneAuthProtocol }}
+AUTHN_SERVER = {{ .KeystoneAddress }}
+AUTHN_PORT = {{ .KeystonePort }}
+AUTHN_DOMAIN = {{ .KeystoneUserDomainName }}
+cafile = {{ .CAFilePath }}
+AUTHN_URL = /v3/auth/tokens
 `))
