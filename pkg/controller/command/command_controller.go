@@ -117,6 +117,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &contrail.Command{},
 	})
+
+	err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Command{},
+	})
+
 	return err
 }
 
@@ -168,6 +173,11 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 	commandPods, err := r.listCommandsPods(command.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
+	}
+	for _, pod := range commandPods.Items {
+		if err = r.kubernetes.Owner(command).EnsureOwns(&pod); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 	commandClusterIP := commandService.ClusterIP()
 	if err := r.ensureCertificatesExist(command, commandPods, instanceType, commandClusterIP); err != nil {
@@ -295,7 +305,7 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if err := r.performUpgradeIfNeeded(command, d); err != nil {
+	if err := r.performUpgradeIfNeeded(command, len(commandPods.Items)); err != nil {
 		return reconcile.Result{}, err
 	}
 
