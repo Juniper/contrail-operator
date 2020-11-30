@@ -49,10 +49,26 @@ type EcmpHashingIncludeFields struct {
 	DestinationPort   bool `json:"destinationPort,omitempty"`
 }
 
+// LinkLocalServiceEntryType struct defines link local service
+type LinkLocalServiceEntryType struct {
+	LinkLocalServiceName   string   `json:"linkLocalServiceName,omitempty"`
+	LinkLocalServiceIP     string   `json:"linkLocalServiceIP,omitempty"`
+	LinkLocalServicePort   int      `json:"linkLocalServicePort,omitempty"`
+	IPFabricDNSServiceName string   `json:"ipFabricDNSServiceName,omitempty"`
+	IPFabricServicePort    int      `json:"ipFabricServicePort,omitempty"`
+	IPFabricServiceIP      []string `json:"ipFabricServiceIP,omitempty"`
+}
+
+// LinkLocalServicesTypes struct contains list of link local services definitions
+type LinkLocalServicesTypes struct {
+	LinkLocalServicesEntries []LinkLocalServiceEntryType `json:"linkLocalServicesEntries,omitempty"`
+}
+
 type GlobalVrouterConfiguration struct {
 	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
 	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
+	LinkLocalServices          LinkLocalServicesTypes   `json:"linkLocalServices,omitempty"`
 }
 
 // ProvisionManagerStatus defines the observed state of ProvisionManager
@@ -216,6 +232,7 @@ func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration
 	g.EncapsulationPriorities = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EncapsulationPriorities
 	g.VxlanNetworkIdentifierMode = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.VxlanNetworkIdentifierMode
 	g.EcmpHashingIncludeFields = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EcmpHashingIncludeFields
+	g.LinkLocalServices = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.LinkLocalServices
 	if g.EncapsulationPriorities == "" {
 		g.EncapsulationPriorities = "VXLAN,MPLSoGRE,MPLSoUDP"
 	}
