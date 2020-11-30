@@ -1,10 +1,10 @@
 # Prerequisities
-Deployment depends strongly on Openshift installation which is described in this [documentation](https://docs.openshift.com/container-platform/4.1/installing/installing_aws/installing-aws-customizations.html)
+Deployment depends strongly on Openshift installation which is described in this [documentation](https://docs.openshift.com/container-platform/4.5/installing/installing_aws/installing-aws-customizations.html)
 
 Prerequisities that have to be fulfilled in order to dpeloy Contrail with operator on Openshift:
 * openshift-install binary (>=4.4.8) ([download](https://cloud.redhat.com/openshift/install))
 * Openshift pull secrets ([download](https://cloud.redhat.com/openshift/install/pull-secret))
-* Configured AWS account with proper permissions and resolvable base domain configured in Route53 ([documentation](https://docs.openshift.com/container-platform/4.3/installing/installing_aws/installing-aws-account.html#installing-aws-account))
+* Configured AWS account with proper permissions and resolvable base domain configured in Route53 ([documentation](https://docs.openshift.com/container-platform/4.5/installing/installing_aws/installing-aws-account.html#installing-aws-account))
 * Any SSH key generated on local machine to provide during installation
 * (Optional) `oc` command line tool downloaded ([download](https://cloud.redhat.com/openshift/install))
 
@@ -31,14 +31,14 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 
 Change directory to openshift install directory and download additional Contrail manifests and configs and add them to the generated manifests directory:
 ```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-01-namespace.yaml -o manifests/00-contrail-01-namespace.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-admin-password.yaml -o manifests/00-contrail-02-admin-password.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-rbac-auth.yaml -o manifests/00-contrail-02-rbac-auth.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-registry-secret.yaml -o manifests/00-contrail-02-registry-secret.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-03-cluster-role.yaml -o manifests/00-contrail-03-cluster-role.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-04-serviceaccount.yaml -o manifests/00-contrail-04-serviceaccount.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-05-rolebinding.yaml -o manifests/00-contrail-05-rolebinding.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-06-clusterrolebinding.yaml -o manifests/00-contrail-06-clusterrolebinding.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-01-namespace.yaml -o manifests/00-contrail-01-namespace.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-admin-password.yaml -o manifests/00-contrail-02-admin-password.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-rbac-auth.yaml -o manifests/00-contrail-02-rbac-auth.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-registry-secret.yaml -o manifests/00-contrail-02-registry-secret.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-03-cluster-role.yaml -o manifests/00-contrail-03-cluster-role.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-04-serviceaccount.yaml -o manifests/00-contrail-04-serviceaccount.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-05-rolebinding.yaml -o manifests/00-contrail-05-rolebinding.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-06-clusterrolebinding.yaml -o manifests/00-contrail-06-clusterrolebinding.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_cassandras_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_cassandras_crd.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_commands_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_commands_crd.yaml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_configs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_configs_crd.yaml
@@ -75,7 +75,7 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/op
 Modify `manifests/00-contrail-02-registry-secret.yaml` file providing proper configuration with credentials to *hub.juniper.net* registry.
 
 **NOTE:** You may create base64 encoded value for config with script provided in [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate) directory.
-Copy output of the script and paste into contrail registry secret manifest.
+Copy output of the script and paste into contrail registry secret manifest (replace <DOCKER_CONFIG> with the base64 string you generated).
 
 4. Modify manifests if neccessary:
 
