@@ -1,10 +1,10 @@
 # Prerequisities
-Deployment depends strongly on Openshift installation which is described in this [documentation](https://docs.openshift.com/container-platform/4.1/installing/installing_aws/installing-aws-customizations.html)
+Deployment depends strongly on Openshift installation which is described in this [documentation](https://docs.openshift.com/container-platform/4.5/installing/installing_aws/installing-aws-customizations.html)
 
 Prerequisities that have to be fulfilled in order to dpeloy Contrail with operator on Openshift:
 * openshift-install binary (>=4.4.8) ([download](https://cloud.redhat.com/openshift/install))
 * Openshift pull secrets ([download](https://cloud.redhat.com/openshift/install/pull-secret))
-* Configured AWS account with proper permissions and resolvable base domain configured in Route53 ([documentation](https://docs.openshift.com/container-platform/4.3/installing/installing_aws/installing-aws-account.html#installing-aws-account))
+* Configured AWS account with proper permissions and resolvable base domain configured in Route53 ([documentation](https://docs.openshift.com/container-platform/4.5/installing/installing_aws/installing-aws-account.html#installing-aws-account))
 * Any SSH key generated on local machine to provide during installation
 * (Optional) `oc` command line tool downloaded ([download](https://cloud.redhat.com/openshift/install))
 
@@ -29,53 +29,55 @@ For example, If you run cluster on AWS, use e.g. *m5.2xlarge*.
 
 3. Install Contrail manifests and configs
 
-Change directory to openshift install directory and download additional Contrail manifests and configs and add them to the generated manifests directory:
+Change directory to openshift install directory and download additional Contrail manifests and configs and add them to the generated manifests directory be executing this multiline command:
 ```
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-01-namespace.yaml -o manifests/00-contrail-01-namespace.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-admin-password.yaml -o manifests/00-contrail-02-admin-password.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-rbac-auth.yaml -o manifests/00-contrail-02-rbac-auth.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-02-registry-secret.yaml -o manifests/00-contrail-02-registry-secret.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-03-cluster-role.yaml -o manifests/00-contrail-03-cluster-role.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-04-serviceaccount.yaml -o manifests/00-contrail-04-serviceaccount.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-05-rolebinding.yaml -o manifests/00-contrail-05-rolebinding.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/0000000-contrail-06-clusterrolebinding.yaml -o manifests/00-contrail-06-clusterrolebinding.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_cassandras_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_cassandras_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_commands_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_commands_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_configs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_configs_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailmonitors_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailstatusmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailstatusmonitors_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_controls_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_controls_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_keystones_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_keystones_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_kubemanagers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_kubemanagers_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_managers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_managers_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_memcacheds_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_memcacheds_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_postgres_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_postgres_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_provisionmanagers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_provisionmanagers_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_rabbitmqs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_rabbitmqs_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swiftproxies_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swiftproxies_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swifts_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swifts_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swiftstorages_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swiftstorages_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_vrouters_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_vrouters_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_webuis_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_webuis_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_zookeepers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_zookeepers_crd.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml
+bash <<EOF
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-01-namespace.yaml -o manifests/00-contrail-01-namespace.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-admin-password.yaml -o manifests/00-contrail-02-admin-password.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-rbac-auth.yaml -o manifests/00-contrail-02-rbac-auth.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-02-registry-secret.yaml -o manifests/00-contrail-02-registry-secret.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-03-cluster-role.yaml -o manifests/00-contrail-03-cluster-role.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-04-serviceaccount.yaml -o manifests/00-contrail-04-serviceaccount.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-05-rolebinding.yaml -o manifests/00-contrail-05-rolebinding.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/00-contrail-06-clusterrolebinding.yaml -o manifests/00-contrail-06-clusterrolebinding.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_cassandras_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_cassandras_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_commands_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_commands_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_configs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_configs_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailmonitors_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailstatusmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailstatusmonitors_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_controls_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_controls_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_keystones_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_keystones_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_kubemanagers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_kubemanagers_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_managers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_managers_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_memcacheds_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_memcacheds_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_postgres_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_postgres_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_provisionmanagers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_provisionmanagers_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_rabbitmqs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_rabbitmqs_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swiftproxies_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swiftproxies_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swifts_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swifts_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_swiftstorages_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_swiftstorages_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_vrouters_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_vrouters_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_webuis_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_webuis_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_zookeepers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_zookeepers_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/cluster-network-02-config.yml -o manifests/cluster-network-02-config.yml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-iptables-machine-config.yaml -o openshift/99_master-iptables-machine-config.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-kernel-modules-overlay.yaml -o openshift/99_master-kernel-modules-overlay.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master_network_functions.yaml -o openshift/99_master_network_functions.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master_network_manager_stop_service.yaml -o openshift/99_master_network_manager_stop_service.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-pv-mounts.yaml -o openshift/99_master-pv-mounts.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker-iptables-machine-config.yaml -o openshift/99_worker-iptables-machine-config.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker-kernel-modules-overlay.yaml -o openshift/99_worker-kernel-modules-overlay.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker_network_functions.yaml -o openshift/99_worker_network_functions.yaml
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker_network_manager_stop_service.yaml -o openshift/99_worker_network_manager_stop_service.yaml
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-iptables-machine-config.yaml -o openshift/99_master-iptables-machine-config.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-kernel-modules-overlay.yaml -o openshift/99_master-kernel-modules-overlay.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master_network_functions.yaml -o openshift/99_master_network_functions.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master_network_manager_stop_service.yaml -o openshift/99_master_network_manager_stop_service.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-pv-mounts.yaml -o openshift/99_master-pv-mounts.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker-iptables-machine-config.yaml -o openshift/99_worker-iptables-machine-config.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker-kernel-modules-overlay.yaml -o openshift/99_worker-kernel-modules-overlay.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker_network_functions.yaml -o openshift/99_worker_network_functions.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_worker_network_manager_stop_service.yaml -o openshift/99_worker_network_manager_stop_service.yaml;
+EOF
 ```
 
 Modify `manifests/00-contrail-02-registry-secret.yaml` file providing proper configuration with credentials to *hub.juniper.net* registry.
 
 **NOTE:** You may create base64 encoded value for config with script provided in [here](https://github.com/Juniper/contrail-operator/tree/master/deploy/openshift/tools/docker-config-generate) directory.
-Copy output of the script and paste into contrail registry secret manifest.
+Copy output of the script and paste into contrail registry secret manifest (replace <DOCKER_CONFIG> with the base64 string you generated).
 
 4. Modify manifests if neccessary:
 
