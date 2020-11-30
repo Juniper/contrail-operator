@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strconv"
 
-	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	configtemplates "github.com/Juniper/contrail-operator/pkg/configuration"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
