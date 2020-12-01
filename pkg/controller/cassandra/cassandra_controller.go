@@ -505,7 +505,7 @@ func (r *ReconcileCassandra) Reconcile(request reconcile.Request) (reconcile.Res
 	if err = instance.UpdateSTS(statefulSet, instanceType, request, r.Client, "rolling"); err != nil {
 		return reconcile.Result{}, err
 	}
-	podIPList, podIPMap, err := utils.PodIPListAndIPMapFromInstance("cassandra", &instance.Spec.CommonConfiguration, request, r.Client, true, true, false, false, false, false)
+	podIPList, podIPMap, err := utils.PodIPListAndIPMapFromInstance("cassandra", &instance.Spec.CommonConfiguration, request, r.Client, false, true, false, false, false, false)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
