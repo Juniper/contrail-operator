@@ -407,11 +407,6 @@ func (c *Control) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, reques
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
-// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
-func (c *Control) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
-}
-
 func retrieveDataIPs(pod corev1.Pod) []string {
 	var altIPs []string
 	if dataIP, isSet := pod.Annotations["dataSubnetIP"]; isSet {

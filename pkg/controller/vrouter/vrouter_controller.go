@@ -506,7 +506,8 @@ func (r *ReconcileVrouter) Reconcile(request reconcile.Request) (reconcile.Resul
 	if instance.Spec.ServiceConfiguration.Gateway == "" {
 		getGateway = true
 	}
-	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(instanceType, request, r.Client, getPhysicalInterface, true, true, getGateway)
+
+	podIPList, podIPMap, err := utils.PodIPListAndIPMapFromInstance(instanceType, &instance.Spec.CommonConfiguration, request, r.Client, false, true, getPhysicalInterface, true, true, getGateway)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

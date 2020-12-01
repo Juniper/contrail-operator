@@ -320,7 +320,7 @@ func (r *ReconcileRabbitmq) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	podIPList, podIPMap, err := instance.PodIPListAndIPMapFromInstance(instanceType, request, r.Client)
+	podIPList, podIPMap, err := utils.PodIPListAndIPMapFromInstance(instanceType, &instance.Spec.CommonConfiguration, request, r.Client, true, false, false, false, false, false)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

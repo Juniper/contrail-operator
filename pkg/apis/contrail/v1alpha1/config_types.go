@@ -494,13 +494,6 @@ func (c *Config) InstanceConfiguration(request reconcile.Request,
 			AnalyticsApiIntrospectPort: strconv.Itoa(*configConfig.AnalyticsApiIntrospectPort),
 		})
 		data["analyticsapi."+podList.Items[idx].Status.PodIP] = configAnalyticsapiConfigBuffer.String()
-		/*
-			command := []string{"/bin/sh", "-c", "hostname"}
-			hostname, _, err := ExecToPodThroughAPI(command, "init", podList.Items[idx].Name, podList.Items[idx].Namespace, nil)
-			if err != nil {
-				return err
-			}
-		*/
 		var configCollectorConfigBuffer bytes.Buffer
 		configtemplates.ConfigCollectorConfig.Execute(&configCollectorConfigBuffer, struct {
 			Hostname                string
@@ -724,11 +717,6 @@ func (c *Config) SetInstanceActive(client client.Client, activeStatus *bool, sts
 		return err
 	}
 	return nil
-}
-
-// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
-func (c *Config) PodIPListAndIPMapFromInstance(request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance("config", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
 //PodsCertSubjects gets list of Config pods certificate subjets which can be passed to the certificate API
