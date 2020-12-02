@@ -27,6 +27,8 @@ type SwiftProxyConfiguration struct {
 	Containers            []*Container `json:"containers,omitempty"`
 	// Service name registered in Keystone, default "swift"
 	SwiftServiceName string `json:"swiftServiceName,omitempty"`
+	// Service type registered in Keystone, default "object-store"
+	SwiftServiceType string `json:"swiftServiceType,omitempty"`
 }
 
 // SwiftProxyStatus defines the observed state of SwiftProxy

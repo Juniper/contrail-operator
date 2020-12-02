@@ -2540,6 +2540,10 @@ spec:
                                   description: Service name registered in Keystone,
                                     default "swift"
                                   type: string
+                                swiftServiceType:
+                                  description: Service type registered in Keystone,
+                                    default "object-store"
+                                  type: string
                               type: object
                             swiftStorageConfiguration:
                               description: SwiftStorageConfiguration is the Spec for

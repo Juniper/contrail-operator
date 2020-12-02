@@ -56,6 +56,9 @@ func (s *Swift) SetDefaultValues() {
 	if s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName == "" {
 		s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName = SwiftServiceName
 	}
+	if s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceType == "" {
+		s.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceType = SwiftServiceType
+	}
 }
 
 func init() {
