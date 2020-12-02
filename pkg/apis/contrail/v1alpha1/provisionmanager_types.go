@@ -2,12 +2,8 @@ package v1alpha1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"sort"
-	"strconv"
 
-	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/Juniper/contrail-operator/pkg/certificates"
-	configtemplates "github.com/Juniper/contrail-operator/pkg/configuration"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -204,17 +199,7 @@ func (c *ProvisionManager) UpdateSTS(sts *appsv1.StatefulSet, instanceType strin
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
-func (c *ProvisionManager) getPodsHostname(podName string, namespace string, client client.Client) (string, error) {
-	pod := &corev1.Pod{}
-	err := client.Get(context.Background(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
-	if err != nil {
-		return "", err
-	}
-
-	return getPodsHostname(client, pod)
-}
-
-func (c *ProvisionManager) getDataIPFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
+func (c *ProvisionManager) GetDataIPFromAnnotations(podName string, namespace string, client client.Client) (string, error) {
 	pod := &corev1.Pod{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: podName, Namespace: namespace}, pod)
 	if err != nil {
@@ -226,7 +211,7 @@ func (c *ProvisionManager) getDataIPFromAnnotations(podName string, namespace st
 	return "", nil
 }
 
-func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration, error) {
+func (c *ProvisionManager) GetGlobalVrouterConfig() (*GlobalVrouterConfiguration, error) {
 	g := &GlobalVrouterConfiguration{}
 	g.EncapsulationPriorities = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.EncapsulationPriorities
 	g.VxlanNetworkIdentifierMode = c.Spec.ServiceConfiguration.GlobalVrouterConfiguration.VxlanNetworkIdentifierMode
@@ -243,7 +228,7 @@ func (c *ProvisionManager) getGlobalVrouterConfig() (*GlobalVrouterConfiguration
 	return g, nil
 }
 
-func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string) (*KeystoneAuthParameters, error) {
+func (c *ProvisionManager) GetAuthParameters(client client.Client, podIP string) (*KeystoneAuthParameters, error) {
 	k := &KeystoneAuthParameters{
 		AdminUsername: "admin",
 		TenantName:    "admin",
@@ -272,332 +257,6 @@ func (c *ProvisionManager) getAuthParameters(client client.Client, podIP string)
 	k.AuthUrl = fmt.Sprintf("%s://%s:%d/v3/auth", keystone.Spec.ServiceConfiguration.AuthProtocol, keystone.Status.Endpoint, keystone.Spec.ServiceConfiguration.ListenPort)
 
 	return k, nil
-}
-
-func (c *ProvisionManager) InstanceConfiguration(request reconcile.Request,
-	podList *corev1.PodList,
-	client client.Client) error {
-	configMapConfigNodes := &corev1.ConfigMap{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-confignodes", Namespace: request.Namespace}, configMapConfigNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapControlNodes := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-controlnodes", Namespace: request.Namespace}, configMapControlNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapVrouterNodes := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-vrouternodes", Namespace: request.Namespace}, configMapVrouterNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapAnalyticsNodes := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-analyticsnodes", Namespace: request.Namespace}, configMapAnalyticsNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapDatabaseNodes := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-databasenodes", Namespace: request.Namespace}, configMapDatabaseNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapAPIServer := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-apiserver", Namespace: request.Namespace}, configMapAPIServer)
-	if err != nil {
-		return err
-	}
-
-	configMapKeystoneAuthConf := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-keystoneauth", Namespace: request.Namespace}, configMapKeystoneAuthConf)
-	if err != nil {
-		return err
-	}
-
-	configMapGlobalVrouter := &corev1.ConfigMap{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: request.Name + "-" + "provisionmanager" + "-configmap-globalvrouter", Namespace: request.Namespace}, configMapGlobalVrouter)
-	if err != nil {
-		return err
-	}
-
-	configNodesInformation := c.Spec.ServiceConfiguration.ConfigNodesConfiguration
-	configNodesInformation.FillWithDefaultValues()
-
-	listOps := &runtimeClient.ListOptions{Namespace: request.Namespace}
-	configList := &ConfigList{}
-	if err = client.List(context.TODO(), configList, listOps); err != nil {
-		return err
-	}
-	var podIPList []string
-	for _, pod := range podList.Items {
-		podIPList = append(podIPList, pod.Status.PodIP)
-	}
-	sort.SliceStable(podList.Items, func(i, j int) bool { return podList.Items[i].Status.PodIP < podList.Items[j].Status.PodIP })
-	sort.SliceStable(podIPList, func(i, j int) bool { return podIPList[i] < podIPList[j] })
-	var apiServerList []string
-	var apiPort string
-	var configNodeData = make(map[string]string)
-	var controlNodeData = make(map[string]string)
-	var analyticsNodeData = make(map[string]string)
-	var vrouterNodeData = make(map[string]string)
-	var databaseNodeData = make(map[string]string)
-	var apiServerData = make(map[string]string)
-	var keystoneAuthData = make(map[string]string)
-	var globalVrouterData = make(map[string]string)
-
-	globalVrouter, err := c.getGlobalVrouterConfig()
-	if err != nil {
-		return err
-	}
-	globalVrouterJson, err := json.Marshal(globalVrouter)
-	if err != nil {
-		return err
-	}
-	globalVrouterData["globalvrouter.json"] = string(globalVrouterJson)
-
-	if configNodesInformation.AuthMode == AuthenticationModeKeystone {
-		for _, pod := range podList.Items {
-			keystoneAuth, err := c.getAuthParameters(client, pod.Status.PodIP)
-			if err != nil {
-				return err
-			}
-			keystoneAuthYaml, err := yaml.Marshal(keystoneAuth)
-			if err != nil {
-				return err
-			}
-			keystoneAuthData["keystone-auth-"+pod.Status.PodIP+".yaml"] = string(keystoneAuthYaml)
-		}
-	}
-
-	if len(configList.Items) > 0 {
-		nodeList := []*ConfigNode{}
-		for _, configService := range configList.Items {
-			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				n := ConfigNode{
-					Node: Node{
-						IPAddress: ipAddress,
-						Hostname:  hostname,
-					},
-				}
-				nodeList = append(nodeList, &n)
-				apiServerList = append(apiServerList, ipAddress)
-			}
-			apiPort = configService.Status.Ports.APIPort
-		}
-		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
-		nodeYaml, err := yaml.Marshal(nodeList)
-		if err != nil {
-			return err
-		}
-		configNodeData["confignodes.yaml"] = string(nodeYaml)
-	}
-	if len(configList.Items) > 0 {
-		nodeList := []*AnalyticsNode{}
-		for _, configService := range configList.Items {
-			for podName, ipAddress := range configService.Status.Nodes {
-				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				n := &AnalyticsNode{
-					Node: Node{
-						IPAddress: ipAddress,
-						Hostname:  hostname,
-					},
-				}
-				nodeList = append(nodeList, n)
-			}
-		}
-		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
-		nodeYaml, err := yaml.Marshal(nodeList)
-		if err != nil {
-			return err
-		}
-		analyticsNodeData["analyticsnodes.yaml"] = string(nodeYaml)
-	}
-
-	controlList := &ControlList{}
-	if err = client.List(context.TODO(), controlList, listOps); err != nil {
-		return err
-	}
-	if len(controlList.Items) > 0 {
-		nodeList := []*ControlNode{}
-		for _, controlService := range controlList.Items {
-			for podName, ipAddress := range controlService.Status.Nodes {
-				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				dataIP, err := c.getDataIPFromAnnotations(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				var address string
-				if dataIP != "" {
-					address = dataIP
-				} else {
-					address = ipAddress
-				}
-				asn, err := strconv.Atoi(controlService.Status.Ports.ASNNumber)
-				if err != nil {
-					return err
-				}
-				n := &ControlNode{
-					Node: Node{
-						IPAddress: address,
-						Hostname:  hostname,
-					},
-					ASN: asn,
-				}
-				nodeList = append(nodeList, n)
-			}
-		}
-		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
-		nodeYaml, err := yaml.Marshal(nodeList)
-		if err != nil {
-			return err
-		}
-		controlNodeData["controlnodes.yaml"] = string(nodeYaml)
-	}
-
-	vrouterList := &VrouterList{}
-	if err = client.List(context.TODO(), vrouterList, listOps); err != nil {
-		return err
-	}
-	if len(vrouterList.Items) > 0 {
-		nodeList := []*VrouterNode{}
-		for _, vrouterService := range vrouterList.Items {
-			for podName, ipAddress := range vrouterService.Status.Nodes {
-				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				n := &VrouterNode{
-					Node: Node{
-						IPAddress: ipAddress,
-						Hostname:  hostname,
-					},
-				}
-				nodeList = append(nodeList, n)
-			}
-		}
-		sort.SliceStable(nodeList, func(i, j int) bool { return nodeList[i].IPAddress < nodeList[j].IPAddress })
-		nodeYaml, err := yaml.Marshal(nodeList)
-		if err != nil {
-			return err
-		}
-		vrouterNodeData["vrouternodes.yaml"] = string(nodeYaml)
-	}
-	for _, pod := range podList.Items {
-		apiServer := &APIServer{
-			APIServerList: configtemplates.EndpointList(configNodesInformation.APIServerIPList, configNodesInformation.APIServerPort),
-			APIPort:       apiPort,
-			Encryption: Encryption{
-				CA:       certificates.SignerCAFilepath,
-				Key:      "/etc/certificates/server-key-" + pod.Status.PodIP + ".pem",
-				Cert:     "/etc/certificates/server-" + pod.Status.PodIP + ".crt",
-				Insecure: false,
-			},
-		}
-		apiServerYaml, err := yaml.Marshal(apiServer)
-		if err != nil {
-			return err
-		}
-		apiServerData["apiserver-"+pod.Status.PodIP+".yaml"] = string(apiServerYaml)
-	}
-
-	cassandras := &CassandraList{}
-	if err = client.List(context.TODO(), cassandras, listOps); err != nil {
-		return err
-	}
-	if len(cassandras.Items) > 0 {
-		databaseNodeList := []DatabaseNode{}
-		for _, db := range cassandras.Items {
-			for podName, ipAddress := range db.Status.Nodes {
-				hostname, err := c.getPodsHostname(podName, request.Namespace, client)
-				if err != nil {
-					return err
-				}
-				n := DatabaseNode{
-					Node: Node{
-						IPAddress: ipAddress,
-						Hostname:  hostname,
-					},
-				}
-				databaseNodeList = append(databaseNodeList, n)
-			}
-		}
-		sort.SliceStable(databaseNodeList, func(i, j int) bool { return databaseNodeList[i].IPAddress < databaseNodeList[j].IPAddress })
-		databaseNodeYaml, err := yaml.Marshal(databaseNodeList)
-		if err != nil {
-			return err
-		}
-		databaseNodeData["databasenodes.yaml"] = string(databaseNodeYaml)
-	}
-
-	configMapConfigNodes.Data = configNodeData
-	err = client.Update(context.TODO(), configMapConfigNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapControlNodes.Data = controlNodeData
-	err = client.Update(context.TODO(), configMapControlNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapAnalyticsNodes.Data = analyticsNodeData
-	err = client.Update(context.TODO(), configMapAnalyticsNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapVrouterNodes.Data = vrouterNodeData
-	err = client.Update(context.TODO(), configMapVrouterNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapDatabaseNodes.Data = databaseNodeData
-	err = client.Update(context.TODO(), configMapDatabaseNodes)
-	if err != nil {
-		return err
-	}
-
-	configMapAPIServer.Data = apiServerData
-	err = client.Update(context.TODO(), configMapAPIServer)
-	if err != nil {
-		return err
-	}
-
-	configMapKeystoneAuthConf.Data = keystoneAuthData
-	err = client.Update(context.TODO(), configMapKeystoneAuthConf)
-	if err != nil {
-		return err
-	}
-
-	configMapGlobalVrouter.Data = globalVrouterData
-	err = client.Update(context.TODO(), configMapGlobalVrouter)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
-func (c *ProvisionManager) PodIPListAndIPMapFromInstance(request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance("provisionmanager", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
 //PodsCertSubjects gets list of ProvisionManager pods certificate subjets which can be passed to the certificate API

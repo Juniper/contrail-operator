@@ -20,6 +20,7 @@ go_library(
         "@com_github_operator_framework_operator_sdk//pkg/metrics:go_default_library",
         "@com_github_operator_framework_operator_sdk//version:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
+        "@io_k8s_client_go//dynamic:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
         "@io_k8s_sigs_controller_runtime//pkg/client/config:go_default_library",

@@ -36,6 +36,7 @@ import (
 	"github.com/Juniper/contrail-operator/pkg/apis"
 	"github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
 	"github.com/Juniper/contrail-operator/pkg/controller/utils"
+	"github.com/Juniper/contrail-operator/pkg/k8s"
 	"github.com/Juniper/contrail-operator/test/logger"
 	contrailwait "github.com/Juniper/contrail-operator/test/wait"
 )
@@ -408,7 +409,7 @@ func zookeeperVersion(t *testing.T, f *test.Framework, ctx *test.TestCtx, namesp
 	for _, pod := range podList.Items {
 		command := []string{"bash", "-c", "echo stats|nc " + pod.Status.PodIP + " " + instance.Status.Ports.ClientPort + "|grep 'Zookeeper version:' |sed -e 's/.*Zookeeper version: *\\(.*\\)-[^-]*,.*/\\1/'"}
 		//command = "echo bla > /bla"
-		output, stderr, err := v1alpha1.ExecToPodThroughAPI(command, "zookeeper", pod.Name, namespace, nil)
+		output, stderr, err := k8s.ExecToPodThroughAPI(command, "zookeeper", pod.Name, namespace, nil)
 		if len(stderr) != 0 {
 			fmt.Println("STDERR:", stderr)
 		}

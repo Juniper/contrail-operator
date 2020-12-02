@@ -359,11 +359,6 @@ func (c *Kubemanager) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, re
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
-// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
-func (c *Kubemanager) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, true, false, false, false, false, false)
-}
-
 //PodsCertSubjects gets list of Kubemanager pods certificate subjets which can be passed to the certificate API
 func (c *Kubemanager) PodsCertSubjects(podList *corev1.PodList) []certificates.CertificateSubject {
 	var altIPs PodAlternativeIPs

@@ -198,11 +198,6 @@ func (c *Zookeeper) UpdateSTS(sts *appsv1.StatefulSet, instanceType string, requ
 	return UpdateSTS(sts, instanceType, request, reconcileClient, strategy)
 }
 
-// PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
-func (c *Zookeeper) PodIPListAndIPMapFromInstance(instanceType string, request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance(instanceType, &c.Spec.CommonConfiguration, request, reconcileClient, false, false, false, false, false, false)
-}
-
 // SetInstanceActive sets the Cassandra instance to active.
 func (c *Zookeeper) SetInstanceActive(client client.Client, activeStatus *bool, sts *appsv1.StatefulSet, request reconcile.Request) error {
 	return SetInstanceActive(client, activeStatus, sts, request, c)

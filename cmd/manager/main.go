@@ -11,6 +11,7 @@ import (
 	_ "github.com/operator-framework/operator-sdk/pkg/metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -101,11 +102,12 @@ func main() {
 	var kubemanagerClusterInfo v1alpha1.KubemanagerClusterInfo
 	var cniClusterInfo v1alpha1.CNIClusterInfo
 	if os.Getenv("CLUSTER_TYPE") == "Openshift" {
-		dynamicClient, err := v1alpha1.GetDynamicClient()
+		dynamicClient, err := dynamic.NewForConfig(cfg)
 		if err != nil {
 			log.Error(err, "Dynamic client could not be gathered")
 			os.Exit(1)
 		}
+
 		config := openshift.ClusterConfig{
 			Client:        clientset.CoreV1(),
 			DynamicClient: dynamicClient,

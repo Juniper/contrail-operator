@@ -677,8 +677,7 @@ func (r *ReconcileConfig) Reconcile(request reconcile.Request) (reconcile.Result
 	if err = config.UpdateSTS(statefulSet, instanceType, request, r.Client, strategy); err != nil {
 		return reconcile.Result{}, err
 	}
-
-	podIPList, podIPMap, err := config.PodIPListAndIPMapFromInstance(request, r.Client)
+	podIPList, podIPMap, err := utils.PodIPListAndIPMapFromInstance("config", &config.Spec.CommonConfiguration, request, r.Client, true, true, false, false, false, false)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
