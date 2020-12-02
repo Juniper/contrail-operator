@@ -660,8 +660,8 @@ go_repository(
 go_repository(
     name = "com_github_containerd_continuity",
     importpath = "github.com/containerd/continuity",
-    sum = "h1:8ahmSVELW1wghbjerVAyuEYD5+Dio66RYvSS0iGfL1M=",
-    version = "v0.0.0-20200228182428-0f16d7a0959c",
+    sum = "h1:nXPkFq8X1a9ycY3GYQpFNxHh3j2JgY7zDZfq2EXMIzk=",
+    version = "v0.0.0-20200413184840-d3ef23f19fbb",
 )
 
 go_repository(
@@ -688,15 +688,15 @@ go_repository(
 go_repository(
     name = "com_github_coreos_bbolt",
     importpath = "github.com/coreos/bbolt",
-    sum = "h1:n6AiVyVRKQFNb6mJlwESEvvLoDyiTzXX7ORAUlkeBdY=",
-    version = "v1.3.3",
+    sum = "h1:wZwiHHUieZCquLkDL0B8UhzreNWsPHooDAG3q34zk0s=",
+    version = "v1.3.2",
 )
 
 go_repository(
     name = "com_github_coreos_etcd",
     importpath = "github.com/coreos/etcd",
-    sum = "h1:f/Z3EoDSx1yjaIjLQGo1diYUlQYSBrrAQ5vP8NjwXwo=",
-    version = "v3.3.17+incompatible",
+    sum = "h1:+9RjdC18gMxNQVvSiXvObLu29mOFmkgdsB4cRTlV+EE=",
+    version = "v3.3.15+incompatible",
 )
 
 go_repository(
@@ -2130,8 +2130,8 @@ go_repository(
 go_repository(
     name = "com_github_microsoft_hcsshim",
     importpath = "github.com/Microsoft/hcsshim",
-    sum = "h1:ptnOoufxGSzauVTsdE+wMYnCWA301PdoN4xg5oRdZpg=",
-    version = "v0.8.7",
+    sum = "h1:VrfodqvztU8YSOvygU+DN1BGaSGxmrNfqOv5oOuX2Bk=",
+    version = "v0.8.9",
 )
 
 go_repository(
@@ -2179,8 +2179,8 @@ go_repository(
 go_repository(
     name = "com_github_mitchellh_hashstructure",
     importpath = "github.com/mitchellh/hashstructure",
-    sum = "h1:ZkRJX1CyOoTkar7p/mLS5TZU4nJ1Rn/F8u9dGS02Q3Y=",
-    version = "v1.0.0",
+    sum = "h1:hOY53G+kBFhbYFpRVxHl5eS7laP6B1+Cq+Z9Dry1iMU=",
+    version = "v0.0.0-20170609045927-2bca23e0e452",
 )
 
 go_repository(
@@ -2410,8 +2410,8 @@ go_repository(
 go_repository(
     name = "com_github_operator_framework_api",
     importpath = "github.com/operator-framework/api",
-    sum = "h1:fbpQelcJmwRofhaRrMOUynmBcT6SBhOZOjSlgaXVyyk=",
-    version = "v0.3.7-0.20200528122852-759ca0d84007",
+    sum = "h1:tJykTCmwGKZBsPVTCfxbwz6nTF6dzmKydWJtC40erc8=",
+    version = "v0.3.8",
 )
 
 go_repository(
@@ -2424,36 +2424,36 @@ go_repository(
 go_repository(
     name = "com_github_operator_framework_operator_registry",
     importpath = "github.com/operator-framework/operator-registry",
-    sum = "h1:NbrRtPEXqYYhOkuW5SWjR7AY6yemxkwNS62Lx4nQE1E=",
-    version = "v1.12.4",
+    sum = "h1:F3zzxoBJJANdKMxmSOi5z/HWiVT+gwOdhROkEwDWD2M=",
+    version = "v1.12.6-0.20200611222234-275301b779f8",
 )
 
 go_repository(
     name = "com_github_operator_framework_operator_sdk",
     importpath = "github.com/operator-framework/operator-sdk",
-    sum = "h1:YdtgXvjHu+f0hE/Nzvw9JIU3XvOZyp2Kd2cOLW486rU=",
-    version = "v0.18.0",
+    sum = "h1:Ts5ckGcJ/Jf+2IXeagsEk87o83bEeA+Z7DwNkyWEBPs=",
+    version = "v0.18.2",
 )
 
 go_repository(
     name = "com_github_otiai10_copy",
     importpath = "github.com/otiai10/copy",
-    sum = "h1:DDNipYy6RkIkjMwy+AWzgKiNTyj2RUI9yEMeETEpVyc=",
-    version = "v1.0.2",
+    sum = "h1:HvG945u96iNadPoG2/Ja2+AUJeW5YuFQMixq9yirC+k=",
+    version = "v1.2.0",
 )
 
 go_repository(
     name = "com_github_otiai10_curr",
     importpath = "github.com/otiai10/curr",
-    sum = "h1:o59bHXu8Ejas8Kq6pjoVJQ9/neN66SM8AKh6wI42BBs=",
-    version = "v0.0.0-20190513014714-f5a3d24e5776",
+    sum = "h1:TJIWdbX0B+kpNagQrjgq8bCMrbhiuX73M2XwgtDMoOI=",
+    version = "v1.0.0",
 )
 
 go_repository(
     name = "com_github_otiai10_mint",
     importpath = "github.com/otiai10/mint",
-    sum = "h1:Ady6MKVezQwHBkGzLFbrsywyp09Ah7rkmfjV3Bcr5uc=",
-    version = "v1.3.0",
+    sum = "h1:BCmzIS3n71sGfHB5NMNDB3lHYPz8fWSkCAErHed//qc=",
+    version = "v1.3.1",
 )
 
 go_repository(
@@ -3355,8 +3355,8 @@ go_repository(
 go_repository(
     name = "io_k8s_sigs_structured_merge_diff",
     importpath = "sigs.k8s.io/structured-merge-diff",
-    sum = "h1:WiMoyniAVAYm03w+ImfF9IE2G23GLR/SwDnQyaNZvPk=",
-    version = "v1.0.2",
+    sum = "h1:zD2IemQ4LmOcAumeiyDWXKUI2SO0NYDe3H6QGvPOVgU=",
+    version = "v1.0.1-0.20191108220359-b1b620dd3f06",
 )
 
 go_repository(
@@ -3960,8 +3960,8 @@ go_repository(
 go_repository(
     name = "com_github_containerd_ttrpc",
     importpath = "github.com/containerd/ttrpc",
-    sum = "h1:dlfGmNcE3jDAecLqwKPMNX6nk2qh1c1Vg1/YTzpOOF4=",
-    version = "v0.0.0-20190828154514-0e0f228740de",
+    sum = "h1:IfVOxKbjyBn9maoye2JN95pgGYOmPkQVqxtOu7rtNIc=",
+    version = "v1.0.1",
 )
 
 go_repository(

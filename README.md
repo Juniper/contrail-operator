@@ -107,26 +107,26 @@ Operator-SDK is a set of tools for developing Kubernates Operators. It is needed
 
 ### Operator-sdk installation on Mac OS
 
-    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.1/operator-sdk-v0.17.1-x86_64-apple-darwin
-    $ chmod u+x ./operator-sdk-v0.17.1-x86_64-apple-darwin
-    $ sudo mv ./operator-sdk-v0.17.1-x86_64-apple-darwin /usr/local/bin/operator-sdk
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.18.2/operator-sdk-v0.18.2-x86_64-apple-darwin
+    $ chmod u+x ./operator-sdk-v0.18.2-x86_64-apple-darwin
+    $ sudo mv ./operator-sdk-v0.18.2-x86_64-apple-darwin /usr/local/bin/operator-sdk
 
 Verify if it works:
 
     $ operator-sdk version
-    operator-sdk version: "v0.17.1", (...)
+    operator-sdk version: "v0.18.2", (...)
 
 ### Operator-sdk installation on Linux
 
-    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.17.1/operator-sdk-v0.17.1-x86_64-linux-gnu
-    $ chmod u+x ./operator-sdk-v0.17.1-x86_64-linux-gnu  
-    $ sudo mv ./operator-sdk-v0.17.1-x86_64-linux-gnu /usr/local/bin/operator-sdk
+    $ curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v0.18.2/operator-sdk-v0.18.2-x86_64-linux-gnu
+    $ chmod u+x ./operator-sdk-v0.18.2-x86_64-linux-gnu  
+    $ sudo mv ./operator-sdk-v0.18.2-x86_64-linux-gnu /usr/local/bin/operator-sdk
 
 
 Verify if it works:
 
     $ operator-sdk version
-    operator-sdk version: "v0.17.1", (...)
+    operator-sdk version: "v0.18.2", (...)
 
 ## Install bazel
 
