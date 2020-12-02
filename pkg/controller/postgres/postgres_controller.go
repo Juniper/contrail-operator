@@ -136,7 +136,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err = contrail.CreateAccount("postgres", request.Namespace, r.client, r.scheme, postgres); err != nil {
+	if err = contrail.CreatePatroniAccount("postgres", request.Namespace, r.client, r.scheme, postgres); err != nil {
 		return reconcile.Result{}, err
 	}
 

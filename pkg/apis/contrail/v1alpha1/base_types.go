@@ -134,6 +134,145 @@ func (ss *ServiceStatus) ready() bool {
 
 }
 
+func CreatePatroniAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
+	serviceAccountName := "serviceaccount-" + accountName
+	clusterRoleName := "clusterrole-" + accountName
+	clusterRoleBindingName := "clusterrolebinding-" + accountName
+	secretName := "secret-" + accountName
+
+	existingServiceAccount := &corev1.ServiceAccount{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceAccountName, Namespace: namespace}, existingServiceAccount)
+	if err != nil && k8serrors.IsNotFound(err) {
+		serviceAccount := &corev1.ServiceAccount{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "ServiceAccount",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			},
+		}
+		err = controllerutil.SetControllerReference(owner, serviceAccount, scheme)
+		if err != nil {
+			return err
+		}
+		if err = client.Create(context.TODO(), serviceAccount); err != nil && !k8serrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+
+	existingSecret := &corev1.Secret{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: namespace}, existingSecret)
+	if err != nil && k8serrors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: namespace,
+				Annotations: map[string]string{
+					"kubernetes.io/service-account.name": serviceAccountName,
+				},
+			},
+			Type: corev1.SecretType("kubernetes.io/service-account-token"),
+		}
+		err = controllerutil.SetControllerReference(owner, secret, scheme)
+		if err != nil {
+			return err
+		}
+		if err = client.Create(context.TODO(), secret); err != nil {
+			return err
+		}
+	}
+
+	existingClusterRole := &rbacv1.ClusterRole{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
+	if err != nil && k8serrors.IsNotFound(err) {
+		clusterRole := &rbacv1.ClusterRole{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRole",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterRoleName,
+				Namespace: namespace,
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"create",
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"configmaps"},
+				},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"patch",
+						"update",
+						"create",
+						"list",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"endpoints"},
+				},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+					},
+					Resources: []string{"pods"},
+				},
+			},
+		}
+		if err = client.Create(context.TODO(), clusterRole); err != nil {
+			return err
+		}
+	}
+
+	existingClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBindingName}, existingClusterRoleBinding)
+	if err != nil && k8serrors.IsNotFound(err) {
+		clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRoleBinding",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterRoleBindingName,
+				Namespace: namespace,
+			},
+			Subjects: []rbacv1.Subject{{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			}},
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+				Name:     clusterRoleName,
+			},
+		}
+		if err = client.Create(context.TODO(), clusterRoleBinding); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CreateAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
 
 	serviceAccountName := "serviceaccount-" + accountName
