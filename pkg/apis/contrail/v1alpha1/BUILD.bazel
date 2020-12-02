@@ -12,6 +12,7 @@ go_library(
         "contrailstatusmonitor_types.go",
         "control_types.go",
         "defaults.go",
+        "devicemanager_types.go",
         "doc.go",
         "exec_to_pod.go",
         "fernetkeymanager_types.go",

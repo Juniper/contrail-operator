@@ -14,8 +14,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	configtemplates "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1/templates"
 	"github.com/Juniper/contrail-operator/pkg/certificates"
+	configtemplates "github.com/Juniper/contrail-operator/pkg/configuration"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -503,7 +503,7 @@ func (c *Devicemanager) SetInstanceActive(client client.Client, activeStatus *bo
 
 // PodIPListAndIPMapFromInstance gets a list with POD IPs and a map of POD names and IPs.
 func (c *Devicemanager) PodIPListAndIPMapFromInstance(request reconcile.Request, reconcileClient client.Client) (*corev1.PodList, map[string]string, error) {
-	return PodIPListAndIPMapFromInstance("config", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
+	return PodIPListAndIPMapFromInstance("devicemanager", &c.Spec.CommonConfiguration, request, reconcileClient, true, true, false, false, false, false)
 }
 
 //PodsCertSubjects gets list of Devicemanager pods certificate subjets which can be passed to the certificate API
@@ -517,7 +517,7 @@ func (c *Devicemanager) SetPodsToReady(podIPList *corev1.PodList, client client.
 }
 
 func (c *Devicemanager) WaitForPeerPods(request reconcile.Request, reconcileClient client.Client) error {
-	labelSelector := labels.SelectorFromSet(map[string]string{"config": request.Name})
+	labelSelector := labels.SelectorFromSet(map[string]string{"devicemanager": request.Name})
 	listOps := &client.ListOptions{Namespace: request.Namespace, LabelSelector: labelSelector}
 	list := &corev1.PodList{}
 	err := reconcileClient.List(context.TODO(), list, listOps)
