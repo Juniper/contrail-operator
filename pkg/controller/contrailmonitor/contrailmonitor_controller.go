@@ -3,6 +3,8 @@ package contrailmonitor
 import (
 	"context"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
 	contrailv1alpha1 "github.com/Juniper/contrail-operator/pkg/apis/contrail/v1alpha1"
@@ -324,6 +326,50 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		return reconcile.Result{}, nil
 	}
 
+	config, err := r.getConfig(instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err = r.kubernetes.Owner(instance).EnsureOwns(config); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	clist, _ := r.getConfiglist()
+	var dataSeven string
+	var configName string
+	ccount := len(clist.Items)
+	if ccount > 0 {
+		for k := 0; k < ccount; k++ {
+			if clist.Items[k].Status.Active != nil {
+				mapvalues := clist.Items[k].Status.ServiceStatus
+				if mapvalues != nil {
+					keyValues := make([]string, 0, len(mapvalues))
+					for k := range mapvalues {
+						keyValues = append(keyValues, k)
+					}
+					sort.Strings(keyValues)
+					for i, m := range keyValues {
+						if data, ok := mapvalues[m]; ok {
+							for _, j := range data {
+								configName = j.ModuleName + "-" + strconv.Itoa(i+1)
+								serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: configName, Namespace: "contrail"}}
+								dataSeven = j.ModuleState
+								_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
+									serIns7.Status = dataSeven
+									return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
+								})
+								if err != nil {
+									return reconcile.Result{}, err
+								}
+
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	webui, err := r.getWebui(instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -341,108 +387,26 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	wcount := len(wklist.Items)
 	if wcount > 0 {
 		for i := 0; i < wcount; i++ {
-			if data, ok := wklist.Items[i].Status.ServiceStatus["kind-control-plane"]; ok {
-				for _, j := range data {
-					webName = j.ModuleName + "-" + "one"
-					serInsWeb := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: webName, Namespace: "contrail"}}
-					dataWeb = j.ModuleState
-					_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInsWeb, func() error {
-						serInsWeb.Status = dataWeb
-						return controllerutil.SetControllerReference(instance, serInsWeb, r.scheme)
-					})
-					if err != nil {
-						return reconcile.Result{}, err
-					}
+			dataValues := wklist.Items[i].Status.ServiceStatus
+			if dataValues != nil {
+				webkeyValues := make([]string, 0, len(dataValues))
+				for k := range dataValues {
+					webkeyValues = append(webkeyValues, k)
 				}
-			}
-			if data1, ok := wklist.Items[i].Status.ServiceStatus["kind-worker"]; ok {
-				for _, j := range data1 {
-					webName = j.ModuleName + "-" + "two"
-					serInsWeb := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: webName, Namespace: "contrail"}}
-					dataWeb = j.ModuleState
-					_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInsWeb, func() error {
-						serInsWeb.Status = dataWeb
-						return controllerutil.SetControllerReference(instance, serInsWeb, r.scheme)
-					})
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-			if data2, ok := wklist.Items[i].Status.ServiceStatus["kind-worker"]; ok {
-				for _, j := range data2 {
-					webName = j.ModuleName + "-" + "three"
-					serInsWeb := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: webName, Namespace: "contrail"}}
-					dataWeb = j.ModuleState
-					_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInsWeb, func() error {
-						serInsWeb.Status = dataWeb
-						return controllerutil.SetControllerReference(instance, serInsWeb, r.scheme)
-					})
-					if err != nil {
-						return reconcile.Result{}, err
-					}
-				}
-			}
-		}
-	}
-
-	config, err := r.getConfig(instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if err = r.kubernetes.Owner(instance).EnsureOwns(config); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	clist, _ := r.getConfiglist()
-	var dataSeven string
-	var configName string
-	ccount := len(clist.Items)
-	if ccount > 0 {
-		for k := 0; k < ccount; k++ {
-			if clist.Items[k].Status.Active != nil {
-				mapvalues := clist.Items[k].Status.ServiceStatus
-				if data, ok := mapvalues["kind-control-plane"]; ok {
-					for _, j := range data {
-						configName = j.ModuleName + "-" + "one"
-						serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: configName, Namespace: "contrail"}}
-						dataSeven = j.ModuleState
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
-							serIns7.Status = dataSeven
-							return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
-						}
-
-					}
-				}
-				if data, ok := mapvalues["kind-worker"]; ok {
-					for _, j := range data {
-						configName = j.ModuleName + "-" + "two"
-						serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: configName, Namespace: "contrail"}}
-						dataSeven = j.ModuleState
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
-							serIns7.Status = dataSeven
-							return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
-						}
-
-					}
-				}
-				if data, ok := mapvalues["kind-worker2"]; ok {
-					for _, j := range data {
-						configName = j.ModuleName + "-" + "three"
-						serIns7 := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: configName, Namespace: "contrail"}}
-						dataSeven = j.ModuleState
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serIns7, func() error {
-							serIns7.Status = dataSeven
-							return controllerutil.SetControllerReference(instance, serIns7, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
+				sort.Strings(webkeyValues)
+				for i, m := range webkeyValues {
+					if data, ok := wklist.Items[i].Status.ServiceStatus[m]; ok {
+						for _, j := range data {
+							webName = j.ModuleName + "-" + strconv.Itoa(i+1)
+							serInsWeb := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: webName, Namespace: "contrail"}}
+							dataWeb = j.ModuleState
+							_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInsWeb, func() error {
+								serInsWeb.Status = dataWeb
+								return controllerutil.SetControllerReference(instance, serInsWeb, r.scheme)
+							})
+							if err != nil {
+								return reconcile.Result{}, err
+							}
 						}
 					}
 				}
@@ -484,58 +448,31 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if conCount > 0 {
 		for j := 0; j < conCount; j++ {
 			if conlist.Items[j].Status.Active != nil {
-				kindvalues := conlist.Items[j].Status.ServiceStatus
-				if data, ok := kindvalues["kind-control-plane"]; ok {
-					for m := 0; m < len(data.Connections); m++ {
-						if data.Connections[m].Name == "" {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + "one")
-						} else {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + data.Connections[m].Name + "-" + "one")
-						}
-						serInscontrol := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: tempNameVal, Namespace: "contrail"}}
-						datacontrol = data.Connections[m].Status
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInscontrol, func() error {
-							serInscontrol.Status = datacontrol
-							return controllerutil.SetControllerReference(instance, serInscontrol, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
-						}
+				cntrlvalues := conlist.Items[j].Status.ServiceStatus
+				if cntrlvalues != nil {
+					cntrlkeyValues := make([]string, 0, len(cntrlvalues))
+					for k := range cntrlvalues {
+						cntrlkeyValues = append(cntrlkeyValues, k)
 					}
-				}
-				if data, ok := kindvalues["kind-worker"]; ok {
-					for m := 0; m < len(data.Connections); m++ {
-						if data.Connections[m].Name == "" {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + "one")
-						} else {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + data.Connections[m].Name + "-" + "one")
-						}
-						serInscontrol := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: tempNameVal, Namespace: "contrail"}}
-						datacontrol = data.Connections[m].Status
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInscontrol, func() error {
-							serInscontrol.Status = datacontrol
-							return controllerutil.SetControllerReference(instance, serInscontrol, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
-						}
-					}
-				}
-				if data, ok := kindvalues["kind-worker2"]; ok {
-					for m := 0; m < len(data.Connections); m++ {
-						if data.Connections[m].Name == "" {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + "one")
-						} else {
-							tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + data.Connections[m].Name + "-" + "one")
-						}
-						serInscontrol := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: tempNameVal, Namespace: "contrail"}}
-						datacontrol = data.Connections[m].Status
-						_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInscontrol, func() error {
-							serInscontrol.Status = datacontrol
-							return controllerutil.SetControllerReference(instance, serInscontrol, r.scheme)
-						})
-						if err != nil {
-							return reconcile.Result{}, err
+					sort.Strings(cntrlkeyValues)
+					for i, cntrlData := range cntrlkeyValues {
+						if data, ok := cntrlvalues[cntrlData]; ok {
+							for m := 0; m < len(data.Connections); m++ {
+								if data.Connections[m].Name == "" {
+									tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + strconv.Itoa(i+1))
+								} else {
+									tempNameVal = strings.ToLower("control" + "-" + data.Connections[m].Type + "-" + data.Connections[m].Name + "-" + strconv.Itoa(i+1))
+								}
+								serInscontrol := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: tempNameVal, Namespace: "contrail"}}
+								datacontrol = data.Connections[m].Status
+								_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInscontrol, func() error {
+									serInscontrol.Status = datacontrol
+									return controllerutil.SetControllerReference(instance, serInscontrol, r.scheme)
+								})
+								if err != nil {
+									return reconcile.Result{}, err
+								}
+							}
 						}
 					}
 				}
