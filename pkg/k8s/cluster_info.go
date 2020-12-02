@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"net"
 	"strconv"
 
@@ -18,7 +19,7 @@ type ClusterConfig struct {
 // KubernetesAPISSLPort gathers SSL Port from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	kcm, err := kubeadmConfigMapClient.Get(context.Background(), "kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -43,7 +44,7 @@ func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
 // KubernetesAPIServer gathers API Server from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	kcm, err := kubeadmConfigMapClient.Get(context.Background(), "kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +65,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 // KubernetesClusterName gathers cluster name from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) KubernetesClusterName() (string, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	kcm, err := kubeadmConfigMapClient.Get(context.Background(), "kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +82,7 @@ func (c ClusterConfig) KubernetesClusterName() (string, error) {
 // PodSubnets gathers pods' subnet from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) PodSubnets() (string, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	kcm, err := kubeadmConfigMapClient.Get(context.Background(), "kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +99,7 @@ func (c ClusterConfig) PodSubnets() (string, error) {
 // ServiceSubnets gathers service subnet from Kubernetes Cluster via kubeadm-config ConfigMap
 func (c ClusterConfig) ServiceSubnets() (string, error) {
 	kubeadmConfigMapClient := c.Client.ConfigMaps("kube-system")
-	kcm, err := kubeadmConfigMapClient.Get("kubeadm-config", metav1.GetOptions{})
+	kcm, err := kubeadmConfigMapClient.Get(context.Background(), "kubeadm-config", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

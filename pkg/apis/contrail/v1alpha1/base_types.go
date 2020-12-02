@@ -284,8 +284,8 @@ func SetPodsToReady(podList *corev1.PodList, client client.Client) error {
 		if err := client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, podObject); err != nil {
 			return err
 		}
-		pod.ObjectMeta.Labels["status"] = "ready"
-		if err := client.Update(context.TODO(), &pod); err != nil {
+		podObject.ObjectMeta.Labels["status"] = "ready"
+		if err := client.Update(context.TODO(), podObject); err != nil {
 			return err
 		}
 	}

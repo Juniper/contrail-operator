@@ -870,10 +870,15 @@ func (m mockRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func newCommandPod(podHash string, ip string) *core.Pod {
 	return &core.Pod{
-		ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "command-command-deployment" + podHash, Labels: map[string]string{
-			"contrail_manager": "command",
-			"command":          "command",
-		}},
+		ObjectMeta: meta.ObjectMeta{
+			Namespace: "default",
+			Name:      "command-command-deployment" + podHash,
+			Labels: map[string]string{
+				"contrail_manager": "command",
+				"command":          "command",
+			},
+			ResourceVersion: "1",
+		},
 		Status: core.PodStatus{
 			PodIP: ip,
 		},

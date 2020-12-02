@@ -1,6 +1,7 @@
 package command
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -136,6 +137,14 @@ func (m *mockManager) GetAPIReader() client.Reader {
 }
 
 func (m *mockManager) GetWebhookServer() *webhook.Server {
+	return nil
+}
+
+func (m *mockManager) AddMetricsExtraHandler(path string, handler http.Handler) error {
+	return nil
+}
+
+func (m *mockManager) Elected() <-chan struct{} {
 	return nil
 }
 

@@ -148,7 +148,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
+			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 				LabelSelector: nodeLabelKey,
 			})
 			assert.NoError(t, err)
@@ -159,7 +159,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				Effect: core.TaintEffectNoExecute,
 			})
 
-			_, err = f.KubeClient.CoreV1().Nodes().Update(&node)
+			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{

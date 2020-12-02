@@ -1,12 +1,14 @@
 package ha
 
 import (
+	"context"
+
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 func deleteAllPVs(kubeClient kubernetes.Interface, storageClass string) error {
-	pvs, err := kubeClient.CoreV1().PersistentVolumes().List(meta.ListOptions{})
+	pvs, err := kubeClient.CoreV1().PersistentVolumes().List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -15,7 +17,7 @@ func deleteAllPVs(kubeClient kubernetes.Interface, storageClass string) error {
 		if pv.Spec.StorageClassName != storageClass {
 			continue
 		}
-		if err = kubeClient.CoreV1().PersistentVolumes().Delete(pv.GetName(), &meta.DeleteOptions{}); err != nil {
+		if err = kubeClient.CoreV1().PersistentVolumes().Delete(context.Background(), pv.GetName(), meta.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

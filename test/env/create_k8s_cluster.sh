@@ -25,6 +25,8 @@ containerdConfigPatches:
     endpoint = ["http://registry:5000"]
 networking:
   disableDefaultCNI: true
+  apiServerAddress: 0.0.0.0
+  apiServerPort: 6443
 nodes:
 - role: control-plane
 EOF

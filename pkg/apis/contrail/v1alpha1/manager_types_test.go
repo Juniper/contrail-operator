@@ -67,7 +67,11 @@ func TestManagerTypeTwo(t *testing.T) {
 	})
 
 	t.Run("Testing Update in manager_types.", func(t *testing.T) {
-		status := managerCR.Update(cl)
+		status := managerCR.Get(cl, req)
+		if status != nil {
+			t.Fatalf("Testing Update in manager_types.: (%v)", status)
+		}
+		status = managerCR.Update(cl)
 		if status != nil {
 			t.Fatalf("Testing Update in manager_types.: (%v)", status)
 		}
@@ -117,9 +121,10 @@ var (
 
 var managerCR = &contrail.Manager{
 	ObjectMeta: meta.ObjectMeta{
-		Name:      "test-manager",
-		Namespace: "default",
-		UID:       "manager-uid-1",
+		Name:            "test-manager",
+		Namespace:       "default",
+		UID:             "manager-uid-1",
+		ResourceVersion: "1",
 	},
 	Spec: contrail.ManagerSpec{
 		Services: contrail.Services{

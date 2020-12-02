@@ -116,7 +116,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 			})
 
 			labelSelector := labels.SelectorFromSet(map[string]string{"contrail_manager": "postgres", "postgres": psql.Name})
-			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+			psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 				LabelSelector: labelSelector.String(),
 			})
 			assert.NoError(t, err)
@@ -145,11 +145,11 @@ func TestPostgresDataPersistence(t *testing.T) {
 
 			t.Run("and when Postgres pod is deleted", func(t *testing.T) {
 				podName := psql.Name + "-statefulset-0"
-				pod, err := f.KubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
+				pod, err := f.KubeClient.CoreV1().Pods("contrail").Get(context.Background(), podName, meta.GetOptions{})
 				require.NoError(t, err)
 				uid := pod.UID
 
-				err = f.KubeClient.CoreV1().Pods("contrail").Delete(podName, &meta.DeleteOptions{})
+				err = f.KubeClient.CoreV1().Pods("contrail").Delete(context.Background(), podName, meta.DeleteOptions{})
 				assert.NoError(t, err)
 
 				t.Run("then Postgres pod is replaced", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestPostgresDataPersistence(t *testing.T) {
 					}.ForPostgresActive(psql.Name)
 					require.NoError(t, err)
 				})
-				psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				psqlPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: labelSelector.String(),
 				})
 				assert.NoError(t, err)

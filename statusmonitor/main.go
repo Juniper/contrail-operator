@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/xml"
@@ -256,7 +257,7 @@ func homeDir() string {
 
 func getPods(config Config, clientSet kubernetes.Interface) ([]string, error) {
 	var podHostnames []string
-	podList, err := clientSet.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: string(config.NodeType) + "=" + config.NodeName})
+	podList, err := clientSet.CoreV1().Pods(config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: string(config.NodeType) + "=" + config.NodeName})
 	if err != nil {
 		return podHostnames, fmt.Errorf("get pods failed: %v", err)
 	}
@@ -340,7 +341,7 @@ func (c *controlClient) Get(name string, opts metav1.GetOptions) (*contrailOpera
 		Resource("controls").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err
@@ -355,7 +356,7 @@ func (c *controlClient) UpdateStatus(name string, object *contrailOperatorTypes.
 		Name(name).
 		SubResource("status").
 		Body(object).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err
@@ -369,7 +370,7 @@ func (c *vrouterClient) Get(name string, opts metav1.GetOptions) (*contrailOpera
 		Resource("vrouters").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err
@@ -384,7 +385,7 @@ func (c *vrouterClient) UpdateStatus(name string, object *contrailOperatorTypes.
 		Name(name).
 		SubResource("status").
 		Body(object).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err

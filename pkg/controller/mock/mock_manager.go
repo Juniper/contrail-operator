@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"net/http"
+
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -84,6 +86,14 @@ func (m *MockManager) GetAPIReader() client.Reader {
 }
 
 func (m *MockManager) GetWebhookServer() *webhook.Server {
+	return nil
+}
+
+func (m *MockManager) AddMetricsExtraHandler(path string, handler http.Handler) error {
+	return nil
+}
+
+func (m *MockManager) Elected() <-chan struct{} {
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -54,7 +55,7 @@ func isBackupImplementedService(fullServiceName string) bool {
 }
 
 func getConfigStatus(client http.Client, clientset *kubernetes.Clientset, restClient *rest.RESTClient, config Config) error {
-	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(config.PodName, metav1.GetOptions{})
+	pod, err := clientset.CoreV1().Pods(config.Namespace).Get(context.Background(), config.PodName, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Getting pod failed: %s", err)
 		return err
@@ -170,7 +171,7 @@ func (c *configClient) Get(name string, opts metav1.GetOptions) (*contrailOperat
 		Resource("configs").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err
@@ -185,7 +186,7 @@ func (c *configClient) UpdateStatus(name string, object *contrailOperatorTypes.C
 		Name(name).
 		SubResource("status").
 		Body(object).
-		Do().
+		Do(context.Background()).
 		Into(&result)
 
 	return &result, err
