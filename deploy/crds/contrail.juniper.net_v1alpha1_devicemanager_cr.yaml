@@ -1,0 +1,31 @@
+apiVersion: contrail.juniper.net/v1alpha1
+kind: Devicemanager
+metadata:
+  labels:
+    contrail_cluster: cluster1
+  name: devicemanager1
+  namespace: contrail
+spec:
+  commonConfiguration:
+    replicas: 1
+    hostNetwork: true
+    nodeSelector:
+      node-role.juniper.net/contrail: ""
+  serviceConfiguration:
+    cassandraInstance: cassandra1
+    keystoneInstance: keystone
+    containers:
+      - name: devicemanager
+        image: registry:5000/contrail-nightly/contrail-controller-config-devicemgr:master.1417-ubi
+      - name: dnsmasq
+        image: registry:5000/contrail-nightly/contrail-controller-config-dnsmasq:master.1417-ubi
+      - name: init
+        image: registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine
+      - name: init2
+        image: registry:5000/common-docker-third-party/contrail/busybox:1.31
+      - name: statusmonitor
+        image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
+    logLevel: SYS_DEBUG
+    zookeeperInstance: zookeeper1
+    authMode: keystone
+    keystoneSecretName: cluster1-admin-password
