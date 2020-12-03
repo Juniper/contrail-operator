@@ -135,11 +135,9 @@ func (ss *ServiceStatus) ready() bool {
 }
 
 func CreateAccount(accountName string, namespace string, client client.Client, scheme *runtime.Scheme, owner v1.Object) error {
-
 	serviceAccountName := "serviceaccount-" + accountName
 	clusterRoleName := "clusterrole-" + accountName
 	clusterRoleBindingName := "clusterrolebinding-" + accountName
-	secretName := "secret-" + accountName
 
 	existingServiceAccount := &corev1.ServiceAccount{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceAccountName, Namespace: namespace}, existingServiceAccount)
@@ -163,28 +161,6 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 		}
 	}
 
-	existingSecret := &corev1.Secret{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: namespace}, existingSecret)
-	if err != nil && k8serrors.IsNotFound(err) {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: namespace,
-				Annotations: map[string]string{
-					"kubernetes.io/service-account.name": serviceAccountName,
-				},
-			},
-			Type: corev1.SecretType("kubernetes.io/service-account-token"),
-		}
-		err = controllerutil.SetControllerReference(owner, secret, scheme)
-		if err != nil {
-			return err
-		}
-		if err = client.Create(context.TODO(), secret); err != nil {
-			return err
-		}
-	}
-
 	existingClusterRole := &rbacv1.ClusterRole{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
 	if err != nil && k8serrors.IsNotFound(err) {
@@ -194,8 +170,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Kind:       "ClusterRole",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterRoleName,
-				Namespace: namespace,
+				Name: clusterRoleName,
 			},
 			Rules: []rbacv1.PolicyRule{{
 				Verbs: []string{
@@ -223,8 +198,7 @@ func CreateAccount(accountName string, namespace string, client client.Client, s
 				Kind:       "ClusterRoleBinding",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterRoleBindingName,
-				Namespace: namespace,
+				Name: clusterRoleBindingName,
 			},
 			Subjects: []rbacv1.Subject{{
 				Kind:      "ServiceAccount",
