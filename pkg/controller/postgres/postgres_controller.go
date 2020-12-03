@@ -12,6 +12,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -137,7 +138,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err = r.EnsureServiceAccountAndRoleExist("postgres", request.Namespace, postgres); err != nil {
+	if err = r.ensureServiceAccountAndRoleExist("postgres", request.Namespace, postgres); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -273,7 +274,7 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 	return leaderIP, replicaSvc.EnsureExists()
 }
 
-func (r *ReconcilePostgres) EnsureServiceAccountAndRoleExist(accountName string, namespace string, postgres *contrail.Postgres) error {
+func (r *ReconcilePostgres) ensureServiceAccountAndRoleExist(accountName string, namespace string, postgres *contrail.Postgres) error {
 	serviceAccountName := "serviceaccount-" + accountName
 	clusterRoleName := "clusterrole-" + accountName
 	clusterRoleBindingName := "clusterrolebinding-" + accountName
@@ -295,88 +296,96 @@ func (r *ReconcilePostgres) EnsureServiceAccountAndRoleExist(accountName string,
 		return err
 	}
 
-	clusterRole := &rbac.ClusterRole{
-		TypeMeta: meta.TypeMeta{
-			APIVersion: "rbac/v1",
-			Kind:       "ClusterRole",
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      clusterRoleName,
-			Namespace: namespace,
-		},
-		Rules: []rbac.PolicyRule{
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"create",
-					"get",
-					"list",
-					"patch",
-					"update",
-					"watch",
-					"delete",
-					"deletecollection",
-				},
-				Resources: []string{"configmaps"},
+	existingClusterRole := &rbac.ClusterRole{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
+	if errors.IsNotFound(err) {
+		clusterRole := &rbac.ClusterRole{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRole",
 			},
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"get",
-					"patch",
-					"update",
-					"create",
-					"list",
-					"watch",
-					"delete",
-					"deletecollection",
-				},
-				Resources: []string{"endpoints"},
+			ObjectMeta: meta.ObjectMeta{
+				Name: clusterRoleName,
+				Namespace: namespace,
 			},
-			{
-				APIGroups: []string{""},
-				Verbs: []string{
-					"get",
-					"list",
-					"patch",
-					"update",
-					"watch",
+			Rules: []rbac.PolicyRule{
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"create",
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"configmaps"},
 				},
-				Resources: []string{"pods"},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"patch",
+						"update",
+						"create",
+						"list",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"endpoints"},
+				},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+					},
+					Resources: []string{"pods"},
+				},
 			},
-		},
+		}
+		if err = r.client.Create(context.TODO(), clusterRole); err != nil {
+			return err
+		}
 	}
-
-	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, clusterRole, func() error {
-		return nil
-	}); err != nil {
+	if err != nil {
 		return err
 	}
 
-	clusterRoleBinding := &rbac.ClusterRoleBinding{
-		TypeMeta: meta.TypeMeta{
-			APIVersion: "rbac/v1",
-			Kind:       "ClusterRoleBinding",
-		},
-		ObjectMeta: meta.ObjectMeta{
-			Name:      clusterRoleBindingName,
-			Namespace: namespace,
-		},
-		Subjects: []rbac.Subject{{
-			Kind:      "ServiceAccount",
-			Name:      serviceAccountName,
-			Namespace: namespace,
-		}},
-		RoleRef: rbac.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     clusterRoleName,
-		},
+	existingClusterRoleBinding := &rbac.ClusterRoleBinding{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBindingName}, existingClusterRoleBinding)
+	if errors.IsNotFound(err) {
+		clusterRoleBinding := &rbac.ClusterRoleBinding{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRoleBinding",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      clusterRoleBindingName,
+				Namespace: namespace,
+			},
+			Subjects: []rbac.Subject{{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			}},
+			RoleRef: rbac.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+				Name:     clusterRoleName,
+			},
+		}
+		if err = r.client.Create(context.TODO(), clusterRoleBinding); err != nil {
+			return err
+		}
 	}
 
-	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, clusterRoleBinding, func() error {
-		return nil
-	})
 	return err
 }
 
