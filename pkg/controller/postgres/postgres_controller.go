@@ -306,7 +306,6 @@ func (r *ReconcilePostgres) ensureServiceAccountAndRoleExist(accountName string,
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name: clusterRoleName,
-				Namespace: namespace,
 			},
 			Rules: []rbac.PolicyRule{
 				{
@@ -367,8 +366,7 @@ func (r *ReconcilePostgres) ensureServiceAccountAndRoleExist(accountName string,
 				Kind:       "ClusterRoleBinding",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      clusterRoleBindingName,
-				Namespace: namespace,
+				Name: clusterRoleBindingName,
 			},
 			Subjects: []rbac.Subject{{
 				Kind:      "ServiceAccount",

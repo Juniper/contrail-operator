@@ -195,13 +195,11 @@ func TestPostgresController(t *testing.T) {
 
 		t.Run("clusterRole and clusterRole binding should be created", func(t *testing.T) {
 			roleName := types.NamespacedName{
-				Name:      "clusterrole-" + namespacedName.Name,
-				Namespace: namespacedName.Namespace,
+				Name: "clusterrole-" + namespacedName.Name,
 			}
 
 			roleBindingName := types.NamespacedName{
-				Name:      "clusterrolebinding-" + namespacedName.Name,
-				Namespace: namespacedName.Namespace,
+				Name: "clusterrolebinding-" + namespacedName.Name,
 			}
 
 			role := rbac.ClusterRole{}
