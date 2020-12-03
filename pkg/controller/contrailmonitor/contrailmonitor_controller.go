@@ -2,6 +2,7 @@ package contrailmonitor
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -342,6 +343,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 		for k := 0; k < ccount; k++ {
 			if clist.Items[k].Status.Active != nil {
 				mapvalues := clist.Items[k].Status.ServiceStatus
+				fmt.Println(mapvalues)
 				if mapvalues != nil {
 					keyValues := make([]string, 0, len(mapvalues))
 					for k := range mapvalues {
@@ -349,6 +351,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 					}
 					sort.Strings(keyValues)
 					for i, m := range keyValues {
+						fmt.Println(i, mapvalues[m])
 						if data, ok := mapvalues[m]; ok {
 							for _, j := range data {
 								configName = j.ModuleName + "-" + strconv.Itoa(i+1)
@@ -388,6 +391,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 	if wcount > 0 {
 		for i := 0; i < wcount; i++ {
 			dataValues := wklist.Items[i].Status.ServiceStatus
+			fmt.Println(dataValues)
 			if dataValues != nil {
 				webkeyValues := make([]string, 0, len(dataValues))
 				for k := range dataValues {
@@ -395,6 +399,7 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 				}
 				sort.Strings(webkeyValues)
 				for i, m := range webkeyValues {
+					fmt.Println(i, dataValues[m])
 					if data, ok := wklist.Items[i].Status.ServiceStatus[m]; ok {
 						for _, j := range data {
 							webName = j.ModuleName + "-" + strconv.Itoa(i+1)
