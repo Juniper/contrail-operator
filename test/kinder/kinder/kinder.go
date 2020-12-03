@@ -1,6 +1,7 @@
 package kinder
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -108,7 +109,7 @@ func (k *KindCluster) WaitForReady() {
 	var nodes *corev1.NodeList
 	log.Printf("Waiting for %d master nodes\n", *k.Nodes)
 	err = retry(200, 10*time.Second, func() (err error) {
-		nodes, _ = clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodes, _ = clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if len(nodes.Items) != *k.Nodes {
 			log.Printf("Expecting %d nodes, have %d nodes", *k.Nodes, len(nodes.Items))
 			err = fmt.Errorf("not enough nodes")
@@ -123,7 +124,7 @@ func (k *KindCluster) WaitForReady() {
 	log.Println("Waiting for master nodes to be \"Ready\"")
 	err = retry(200, 10*time.Second, func() (err error) {
 		conditionMap := make(map[string]corev1.NodeConditionType)
-		nodes, _ = clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodes, _ = clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		for _, node := range nodes.Items {
 			conditionMap[node.GetName()] = "NotReady"
 			conditions := node.Status.Conditions

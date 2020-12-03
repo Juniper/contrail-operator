@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"context"
 	"time"
 
 	"github.com/Juniper/contrail-operator/test/logger"
@@ -23,7 +24,7 @@ type Wait struct {
 // ForReadyStatefulSet is used to wait until StatefulSet is ready
 func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
-		statefulSet, err := w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(name, meta.GetOptions{})
+		statefulSet, err := w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(context.Background(), name, meta.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
@@ -43,7 +44,7 @@ func (w Wait) ForReadyStatefulSet(name string, expectedReplicas int32) error {
 // ForReadyDeployment is used to wait until Deployment is ready
 func (w Wait) ForReadyDeployment(name string, expectedReplicas int32) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
-		deployment, err := w.KubeClient.AppsV1().Deployments(w.Namespace).Get(name, meta.GetOptions{})
+		deployment, err := w.KubeClient.AppsV1().Deployments(w.Namespace).Get(context.Background(), name, meta.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
@@ -64,7 +65,7 @@ func (w Wait) ForReadyDeployment(name string, expectedReplicas int32) error {
 // ForStatefulSet is used to wait until StatefulSet is created
 func (w Wait) ForStatefulSet(name string) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
-		_, err = w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(name, meta.GetOptions{})
+		_, err = w.KubeClient.AppsV1().StatefulSets(w.Namespace).Get(context.Background(), name, meta.GetOptions{})
 		if err == nil {
 			return true, nil
 		}
@@ -81,7 +82,7 @@ func (w Wait) ForStatefulSet(name string) error {
 // ForDeployment is used to wait until Deployment is created
 func (w Wait) ForDeployment(name string) error {
 	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
-		_, err = w.KubeClient.AppsV1().Deployments(w.Namespace).Get(name, meta.GetOptions{})
+		_, err = w.KubeClient.AppsV1().Deployments(w.Namespace).Get(context.Background(), name, meta.GetOptions{})
 		if err == nil {
 			return true, nil
 		}

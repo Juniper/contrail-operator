@@ -116,7 +116,7 @@ func (c Contrail) ForPostgresActive(name string) error {
 // ForPodImageChange is used to wait until Image is updated
 func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, labelSelector string, newImage string, container string) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, err error) {
-		podList, err := kubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+		podList, err := kubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 			LabelSelector: labelSelector,
 		})
 		if err != nil {
@@ -142,7 +142,7 @@ func (c Contrail) ForPodImageChange(kubeClient kubernetes.Interface, labelSelect
 // ForPodUidChange is used to wait until pod has a new Uid
 func (c Contrail) ForPodUidChange(kubeClient kubernetes.Interface, podName string, oldUid types.UID) error {
 	err := wait.Poll(c.RetryInterval, c.Timeout, func() (done bool, getErr error) {
-		pod, getErr := kubeClient.CoreV1().Pods("contrail").Get(podName, meta.GetOptions{})
+		pod, getErr := kubeClient.CoreV1().Pods("contrail").Get(context.Background(), podName, meta.GetOptions{})
 		if getErr != nil {
 			return false, nil
 		}

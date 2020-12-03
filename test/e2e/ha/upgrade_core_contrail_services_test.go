@@ -181,7 +181,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then Config pod can process requests", func(t *testing.T) {
-				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
 				assert.NoError(t, err)

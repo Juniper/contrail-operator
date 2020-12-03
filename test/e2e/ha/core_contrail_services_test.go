@@ -123,7 +123,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then all Config pods can process requests", func(t *testing.T) {
-				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
 				assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then Config pod can process requests", func(t *testing.T) {
-				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
 				assert.NoError(t, err)
@@ -169,7 +169,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(meta.ListOptions{
+			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 				LabelSelector: labelKeyToSelector(nodeLabelKey),
 			})
 			assert.NoError(t, err)
@@ -180,7 +180,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				Effect: core.TaintEffectNoExecute,
 			})
 
-			_, err = f.KubeClient.CoreV1().Nodes().Update(&node)
+			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
@@ -198,7 +198,7 @@ func TestHACoreContrailServices(t *testing.T) {
 				// backed server. It looks like kubernetes api server is dropping them.
 				// It requires further debugging.
 				t.Skip()
-				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
 				assert.NoError(t, err)
@@ -232,7 +232,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then all Config pods can process requests", func(t *testing.T) {
-				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(meta.ListOptions{
+				configPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 					LabelSelector: "config=hatest-config",
 				})
 				assert.NoError(t, err)
@@ -275,7 +275,7 @@ func TestHACoreContrailServices(t *testing.T) {
 }
 
 func labelOneNode(k kubernetes.Interface, labelKey string) error {
-	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 		LabelSelector: "node-role.juniper.net/contrail=",
 	})
 	if err != nil {
@@ -286,13 +286,13 @@ func labelOneNode(k kubernetes.Interface, labelKey string) error {
 	}
 	node := nodes.Items[0]
 	node.Labels[labelKey] = ""
-	_, err = k.CoreV1().Nodes().Update(&node)
+	_, err = k.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
 
 	return err
 }
 
 func labelAllNodes(k kubernetes.Interface, labelKey string) error {
-	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 		LabelSelector: "node-role.juniper.net/contrail=",
 	})
 	if err != nil {
@@ -300,7 +300,7 @@ func labelAllNodes(k kubernetes.Interface, labelKey string) error {
 	}
 	for _, n := range nodes.Items {
 		n.Labels[labelKey] = ""
-		_, err = k.CoreV1().Nodes().Update(&n)
+		_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -310,7 +310,7 @@ func labelAllNodes(k kubernetes.Interface, labelKey string) error {
 }
 
 func removeLabel(k kubernetes.Interface, labelKey string) error {
-	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 		LabelSelector: labelKeyToSelector(labelKey),
 	})
 
@@ -320,7 +320,7 @@ func removeLabel(k kubernetes.Interface, labelKey string) error {
 
 	for _, n := range nodes.Items {
 		delete(n.Labels, labelKey)
-		_, err = k.CoreV1().Nodes().Update(&n)
+		_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -329,7 +329,7 @@ func removeLabel(k kubernetes.Interface, labelKey string) error {
 }
 
 func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
-	nodes, err := k.CoreV1().Nodes().List(meta.ListOptions{
+	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
 		LabelSelector: nodeLabelSelector,
 	})
 
@@ -345,7 +345,7 @@ func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
 			s := n.Spec.Taints
 			s[len(s)-1], s[i] = s[i], s[len(s)-1]
 			n.Spec.Taints = s[:len(s)-1]
-			_, err = k.CoreV1().Nodes().Update(&n)
+			_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
 			if err != nil {
 				return err
 			}

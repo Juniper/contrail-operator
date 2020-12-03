@@ -23,7 +23,7 @@ Replace Memcached with the new resource name.
 After custom resource specification (in `pkg/apis/contrail/v1alpha1/*_types.go`) is changed, code needs to be re-generated.
 
     operator-sdk generate k8s
-    operator-sdk generate crds
+    operator-sdk generate crds --crd-version=v1beta1
     cd deploy
     ./create_manifest.sh
 

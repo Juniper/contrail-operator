@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"context"
 	"errors"
 
 	yaml "gopkg.in/yaml.v2"
@@ -24,7 +25,7 @@ type ClusterConfig struct {
 
 // KubernetesAPISSLPort gathers SSL Port from Openshift Cluster via console-config ConfigMap
 func (c ClusterConfig) KubernetesAPISSLPort() (int, error) {
-	kubernetesEndpoint, err := c.Client.Endpoints("default").Get("kubernetes", metav1.GetOptions{})
+	kubernetesEndpoint, err := c.Client.Endpoints("default").Get(context.Background(), "kubernetes", metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +47,7 @@ func (c ClusterConfig) KubernetesAPIServer() (string, error) {
 			Group:    "config.openshift.io",
 			Version:  "v1",
 			Resource: "dnses",
-		}).Get("cluster", metav1.GetOptions{})
+		}).Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -109,7 +110,7 @@ func (c ClusterConfig) DeploymentType() string {
 
 func getInstallConfig(client typedCorev1.CoreV1Interface) (installConfig, error) {
 	kubeadmConfigMapClient := client.ConfigMaps("kube-system")
-	ccm, err := kubeadmConfigMapClient.Get("cluster-config-v1", metav1.GetOptions{})
+	ccm, err := kubeadmConfigMapClient.Get(context.Background(), "cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
 		return installConfig{}, err
 	}

@@ -3,6 +3,7 @@ package swiftstorage_test
 import (
 	"context"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -375,9 +376,9 @@ func TestSwiftStorageController(t *testing.T) {
 				reconciler := swiftstorage.NewReconciler(fakeClient, scheme, k8s.New(fakeClient, scheme), volumes)
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 				// when
-				for _, ip := range test.podIPs {
+				for i, ip := range test.podIPs {
 					stsLabels := label.New(contrail.SwiftStorageInstanceType, name.Name)
-					deployPod(t, fakeClient, ip, stsLabels)
+					deployPod(t, strconv.Itoa(i), fakeClient, ip, stsLabels)
 				}
 				_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: name})
 				// then
@@ -390,10 +391,13 @@ func TestSwiftStorageController(t *testing.T) {
 
 }
 
-func deployPod(t *testing.T, fakeClient client.Client, podIP string, labels map[string]string) {
+func deployPod(t *testing.T, name string, fakeClient client.Client, podIP string, labels map[string]string) {
 	pod := &core.Pod{
-		ObjectMeta: meta.ObjectMeta{Labels: labels},
-		Spec:       core.PodSpec{},
+		ObjectMeta: meta.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: core.PodSpec{},
 		Status: core.PodStatus{
 			PodIP: podIP,
 		},

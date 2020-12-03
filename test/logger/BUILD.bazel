@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["logger.go"],
     importpath = "github.com/Juniper/contrail-operator/test/logger",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_operator_framework_operator_sdk//pkg/test:go_default_library",
