@@ -188,7 +188,7 @@ var control = &contrail.Control{
 }
 
 var kubemanagerService = &contrail.KubemanagerService{
-	ObjectMeta: meta.ObjectMeta{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "kubemanager",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -250,7 +250,7 @@ var rabbitmq = &contrail.Rabbitmq{
 }
 
 var provisionmanagerService = &contrail.ProvisionManagerService{
-	ObjectMeta: meta.ObjectMeta{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "provisionmanager",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},

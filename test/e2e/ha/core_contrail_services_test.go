@@ -570,7 +570,7 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	}
 
 	provisionManager := &contrail.ProvisionManagerService{
-		ObjectMeta: meta.ObjectMeta{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-provmanager",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},

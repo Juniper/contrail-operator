@@ -472,7 +472,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 	var pmServiceStatus *v1alpha1.ServiceStatus
 	if provisionManagerDependenciesReady(manager.ObjectMeta, r.client) {
 		pm := &v1alpha1.ProvisionManager{}
-		pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
+		pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta.ToMeta()
 		pm.ObjectMeta.Namespace = manager.Namespace
 		manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
@@ -572,7 +572,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			continue
 		}
 		kubemanager := &v1alpha1.Kubemanager{}
-		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
+		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta.ToMeta()
 		kubemanager.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
 			kubemanager.Spec.ServiceConfiguration.KubemanagerConfiguration = kubemanagerService.Spec.ServiceConfiguration.KubemanagerConfiguration
@@ -722,7 +722,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 			continue
 		}
 		vRouter := &v1alpha1.Vrouter{}
-		vRouter.ObjectMeta = vRouterService.ObjectMeta
+		vRouter.ObjectMeta = vRouterService.ObjectMeta.ToMeta()
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
 			vRouter.Spec.ServiceConfiguration.VrouterConfiguration = vRouterService.Spec.ServiceConfiguration.VrouterConfiguration

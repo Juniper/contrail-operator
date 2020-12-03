@@ -313,7 +313,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 				}},
 				ProvisionManager: &v1alpha1.ProvisionManagerService{
-					ObjectMeta: metav1.ObjectMeta{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "provmanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -331,7 +331,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 				},
 				Kubemanagers: []*v1alpha1.KubemanagerService{{
-					ObjectMeta: metav1.ObjectMeta{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "kubemanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},

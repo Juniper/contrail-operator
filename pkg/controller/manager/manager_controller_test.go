@@ -83,7 +83,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ProvisionManagerSpec{},
 		}
 		provisionmanagerService := &contrail.ProvisionManagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "provisionmanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -109,7 +109,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		kubemanagerService := &contrail.KubemanagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "kubemanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -194,7 +194,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		vrouterService := &contrail.VrouterService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "vrouter",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -409,7 +409,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		provisionmanagerService := &contrail.ProvisionManagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "provisionmanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -443,7 +443,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		kubemanagerService := &contrail.KubemanagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "kubemanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -533,7 +533,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		vrouterService := &contrail.VrouterService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "vrouter",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -758,7 +758,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		provisionmanagerService := &contrail.ProvisionManagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "provisionmanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -792,7 +792,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		kubemanagerService := &contrail.KubemanagerService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "kubemanager",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -877,7 +877,7 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 		vrouterService := &contrail.VrouterService{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "vrouter",
 				Namespace: "default",
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -2854,7 +2854,7 @@ func TestProcessVrouters(t *testing.T) {
 			Services: contrail.Services{
 				Vrouters: []*contrail.VrouterService{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: contrail.ObjectMeta{
 							Name: "test-vrouter",
 						},
 						Spec: contrail.VrouterServiceSpec{
@@ -2902,7 +2902,7 @@ func TestProcessKubemanagers(t *testing.T) {
 			Services: contrail.Services{
 				Kubemanagers: []*contrail.KubemanagerService{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: contrail.ObjectMeta{
 							Name: "test-kubemanager",
 						},
 						Spec: contrail.KubemanagerServiceSpec{
@@ -2953,7 +2953,7 @@ func TestProcessProvisionManager(t *testing.T) {
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
 				ProvisionManager: &contrail.ProvisionManagerService{
-					ObjectMeta: meta.ObjectMeta{
+					ObjectMeta: contrail.ObjectMeta{
 						Name:      "test-provisionmanager",
 						Namespace: "default",
 					},
@@ -3038,7 +3038,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 		},
 	}
 	kubemanagerService := &contrail.KubemanagerService{
-		ObjectMeta: meta.ObjectMeta{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "kubemanager",
 			Namespace: "test-ns",
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},

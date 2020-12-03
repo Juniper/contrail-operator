@@ -285,17 +285,10 @@ func newProvisionManagerService() *contrail.ProvisionManagerService {
 	trueVal := true
 	replica := int32(1)
 	return &contrail.ProvisionManagerService{
-		ObjectMeta: meta1.ObjectMeta{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "provisionmanager",
 			Namespace: "default",
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
-			OwnerReferences: []meta1.OwnerReference{
-				{
-					Name:       "cluster1",
-					Kind:       "Manager",
-					Controller: &trueVal,
-				},
-			},
 		},
 		Spec: contrail.ProvisionManagerServiceSpec{
 			CommonConfiguration: contrail.PodConfiguration{

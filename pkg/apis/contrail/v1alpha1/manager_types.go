@@ -44,8 +44,8 @@ type Services struct {
 // VrouterService defines desired configuration of vRouter
 // +k8s:openapi-gen=true
 type VrouterService struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              VrouterServiceSpec `json:"spec,omitempty"`
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       VrouterServiceSpec `json:"spec,omitempty"`
 }
 
 // VrouterServiceSpec defines desired spec configuration of vRouter
@@ -65,8 +65,8 @@ type VrouterManagerServiceConfiguration struct {
 // ProvisionManagerService defines desired configuration of ProvisionManager
 // +k8s:openapi-gen=true
 type ProvisionManagerService struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ProvisionManagerServiceSpec `json:"spec,omitempty"`
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ProvisionManagerServiceSpec `json:"spec,omitempty"`
 }
 
 // ProvisionManagerServiceSpec defines desired spec configuration of ProvisionManager
@@ -79,8 +79,8 @@ type ProvisionManagerServiceSpec struct {
 // KubemanagerService defines desired configuration of Kubemanager
 // +k8s:openapi-gen=true
 type KubemanagerService struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              KubemanagerServiceSpec `json:"spec,omitempty"`
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       KubemanagerServiceSpec `json:"spec,omitempty"`
 }
 
 // KubemanagerServiceSpec defines desired spec configuration of Kubemanager
@@ -206,6 +206,22 @@ type ManagerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Manager `json:"items"`
+}
+
+// ObjectMeta is wrapper on metav1.ObjectMeta
+// +k8s:openapi-gen=true
+type ObjectMeta struct {
+	Name      string            `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Namespace string            `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	Labels    map[string]string `json:"labels,omitempty" protobuf:"bytes,11,rep,name=labels"`
+}
+
+func (o ObjectMeta) ToMeta() metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      o.Name,
+		Namespace: o.Namespace,
+		Labels:    o.Labels,
+	}
 }
 
 func (m *Manager) Get(client client.Client, request reconcile.Request) error {
