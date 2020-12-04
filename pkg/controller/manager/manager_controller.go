@@ -520,7 +520,7 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas int
 	}
 
 	config := &v1alpha1.Config{}
-	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta
+	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta.ToMeta()
 	config.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Config.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, config, func() error {

@@ -217,8 +217,8 @@ var webui = &contrail.Webui{
 	},
 }
 
-var config = &contrail.Config{
-	ObjectMeta: meta.ObjectMeta{
+var config = &contrail.ConfigService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "config",
 		Namespace: "default",
 		Labels: map[string]string{

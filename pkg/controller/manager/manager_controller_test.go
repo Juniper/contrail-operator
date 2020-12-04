@@ -159,6 +159,16 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
+		configService := &contrail.ConfigService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      config.Name,
+				Namespace: config.Namespace,
+				Labels:    config.Labels,
+			},
+			Spec: config.Spec,
+		}
+
 		control := &contrail.Control{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "control",
@@ -276,7 +286,7 @@ func TestManagerController(t *testing.T) {
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
-					Config:           config,
+					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -498,6 +508,15 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		configService := &contrail.ConfigService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      config.Name,
+				Namespace: config.Namespace,
+				Labels:    config.Labels,
+			},
+			Spec: config.Spec,
+		}
+
 		control := &contrail.Control{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "control",
@@ -614,7 +633,7 @@ func TestManagerController(t *testing.T) {
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
-					Config:           config,
+					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -842,6 +861,14 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		configService := &contrail.ConfigService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      config.Name,
+				Namespace: config.Namespace,
+				Labels:    config.Labels,
+			},
+			Spec: config.Spec,
+		}
 		control := &contrail.Control{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "control",
@@ -895,6 +922,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "contrailcni",
@@ -958,7 +986,7 @@ func TestManagerController(t *testing.T) {
 					Controls:         []*contrail.Control{control},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
 					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
-					Config:           config,
+					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -3068,7 +3096,14 @@ func TestKubemanagerWithAuth(t *testing.T) {
 			Services: contrail.Services{
 				Kubemanagers: []*contrail.KubemanagerService{kubemanagerService},
 				Keystone:     keystone,
-				Config:       config,
+				Config: &contrail.ConfigService{
+					ObjectMeta: contrail.ObjectMeta{
+						Name:      config.Name,
+						Namespace: config.Namespace,
+						Labels:    config.Labels,
+					},
+					Spec: config.Spec,
+				},
 			},
 			KeystoneSecretName: "keystone-adminpass-secret",
 		},

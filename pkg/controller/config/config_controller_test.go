@@ -236,6 +236,15 @@ func newRabbitmq() *contrail.Rabbitmq {
 }
 
 func newManager(cfg *contrail.Config) *contrail.Manager {
+	configService := &contrail.ConfigService{
+		ObjectMeta: contrail.ObjectMeta{
+			Name:      cfg.Name,
+			Namespace: cfg.Namespace,
+			Labels:    cfg.Labels,
+		},
+		Spec: cfg.Spec,
+	}
+
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -244,7 +253,7 @@ func newManager(cfg *contrail.Config) *contrail.Manager {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Config: cfg,
+				Config: configService,
 			},
 		},
 		Status: contrail.ManagerStatus{},

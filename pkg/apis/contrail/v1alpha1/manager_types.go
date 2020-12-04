@@ -23,7 +23,7 @@ type ManagerSpec struct {
 // Services defines the desired state of Services.
 // +k8s:openapi-gen=true
 type Services struct {
-	Config           *Config                  `json:"config,omitempty"`
+	Config           *ConfigService           `json:"config,omitempty"`
 	Controls         []*Control               `json:"controls,omitempty"`
 	Kubemanagers     []*KubemanagerService    `json:"kubemanagers,omitempty"`
 	Webui            *Webui                   `json:"webui,omitempty"`
@@ -39,6 +39,13 @@ type Services struct {
 	Memcached        *Memcached               `json:"memcached,omitempty"`
 	Contrailmonitor  *Contrailmonitor         `json:"contrailmonitor,omitempty"`
 	ContrailCNIs     []*ContrailCNI           `json:"contrailCNIs,omitempty"`
+}
+
+// ConfigService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type ConfigService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ConfigSpec `json:"spec,omitempty"`
 }
 
 // VrouterService defines desired configuration of vRouter
