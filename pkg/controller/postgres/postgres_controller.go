@@ -6,11 +6,13 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -136,7 +138,7 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	if err = contrail.CreateAccount("postgres", request.Namespace, r.client, r.scheme, postgres); err != nil {
+	if err = r.ensureServiceAccountAndRoleExist("postgres", request.Namespace, postgres); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -270,6 +272,119 @@ func (r *ReconcilePostgres) ensureServicesExist(postgres *contrail.Postgres) (le
 		map[int32]string{int32(postgres.Spec.ServiceConfiguration.ListenPort): ""}, contrail.PostgresInstanceType, postgres).WithLabels(labels)
 
 	return leaderIP, replicaSvc.EnsureExists()
+}
+
+func (r *ReconcilePostgres) ensureServiceAccountAndRoleExist(accountName string, namespace string, postgres *contrail.Postgres) error {
+	serviceAccountName := "serviceaccount-" + accountName
+	clusterRoleName := "clusterrole-" + accountName
+	clusterRoleBindingName := "clusterrolebinding-" + accountName
+
+	serviceAccount := &core.ServiceAccount{
+		TypeMeta: meta.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: meta.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serviceAccount, func() error {
+		return controllerutil.SetControllerReference(postgres, serviceAccount, r.scheme)
+	}); err != nil {
+		return err
+	}
+
+	existingClusterRole := &rbac.ClusterRole{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, existingClusterRole)
+	if errors.IsNotFound(err) {
+		clusterRole := &rbac.ClusterRole{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRole",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name: clusterRoleName,
+			},
+			Rules: []rbac.PolicyRule{
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"create",
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"configmaps"},
+				},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"patch",
+						"update",
+						"create",
+						"list",
+						"watch",
+						"delete",
+						"deletecollection",
+					},
+					Resources: []string{"endpoints"},
+				},
+				{
+					APIGroups: []string{""},
+					Verbs: []string{
+						"get",
+						"list",
+						"patch",
+						"update",
+						"watch",
+					},
+					Resources: []string{"pods"},
+				},
+			},
+		}
+		if err = r.client.Create(context.TODO(), clusterRole); err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	existingClusterRoleBinding := &rbac.ClusterRoleBinding{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBindingName}, existingClusterRoleBinding)
+	if errors.IsNotFound(err) {
+		clusterRoleBinding := &rbac.ClusterRoleBinding{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "rbac/v1",
+				Kind:       "ClusterRoleBinding",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name: clusterRoleBindingName,
+			},
+			Subjects: []rbac.Subject{{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			}},
+			RoleRef: rbac.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "ClusterRole",
+				Name:     clusterRoleName,
+			},
+		}
+		if err = r.client.Create(context.TODO(), clusterRoleBinding); err != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func (r *ReconcilePostgres) createOrUpdateSts(postgres *contrail.Postgres, replicationPassSecretName,
