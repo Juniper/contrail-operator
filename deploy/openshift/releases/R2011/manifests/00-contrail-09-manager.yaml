@@ -6,7 +6,8 @@ metadata:
 spec:
   commonConfiguration:
     hostNetwork: true
-    replicas: 3
+    nodeSelector:
+      node-role.kubernetes.io/master: ""
     keystoneSecretInstance : cluster1-admin-password
     imagePullSecrets:
       - contrail-registry
@@ -17,10 +18,6 @@ spec:
           contrail_cluster: cluster1
         name: cassandra1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
             - name: cassandra
@@ -35,10 +32,6 @@ spec:
           contrail_cluster: cluster1
         name: config1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           analyticsDataTTL: 2
@@ -87,10 +80,6 @@ spec:
           control_role: master
         name: control1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -112,10 +101,7 @@ spec:
         name: provmanager1
       spec:
         commonConfiguration:
-          create: true
           replicas: 1
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
@@ -128,26 +114,18 @@ spec:
           contrail_cluster: cluster1
         name: rabbitmq1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           containers:
           - name: init
             image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: rabbitmq
-            image: rabbitmq:3.7
+            image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/rabbitmq:3.7
     webui:
       metadata:
         labels:
           contrail_cluster: cluster1
         name: webui1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           containers:
@@ -166,12 +144,16 @@ spec:
         name: zookeeper1
       spec:
         commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+            - effect: NoExecute
+              operator: Exists
         serviceConfiguration:
           containers:
             - name: init
+              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+            - name: conf-init
               image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: zookeeper
               image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/zookeeper:3.5.5
@@ -181,10 +163,6 @@ spec:
           contrail_cluster: cluster1
         name: kubemanager1
       spec:
-        commonConfiguration:
-          create: true
-          nodeSelector:
-            node-role.kubernetes.io/master: ""
         serviceConfiguration:
           cassandraInstance: cassandra1
           zookeeperInstance: zookeeper1
@@ -207,7 +185,6 @@ spec:
         name: vroutermasternodes
       spec:
         commonConfiguration:
-          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
@@ -237,7 +214,6 @@ spec:
         name: vrouterworkernodes
       spec:
         commonConfiguration:
-          create: true
           imagePullSecrets:
             - contrail-registry
           nodeSelector:
@@ -259,6 +235,41 @@ spec:
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:2011.112-ubi
             - name: vrouterkernelinit
               image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2011.112-ubi
+            - name: multusconfig
+              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+    contrailCNIs:
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cnimasternodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+        serviceConfiguration:
+          controlInstance: control1
+          containers:
+            - name: vroutercni
+              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.112-ubi
+            - name: multusconfig
+              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+    - metadata:
+        labels:
+          contrail_cluster: cluster1
+        name: cniworkernodes
+      spec:
+        commonConfiguration:
+          imagePullSecrets:
+            - contrail-registry
+          nodeSelector:
+            node-role.kubernetes.io/worker: ""
+        serviceConfiguration:
+          controlInstance: control1
+          containers:
+            - name: vroutercni
+              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.112-ubi
             - name: multusconfig
               image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
     contrailmonitor:
