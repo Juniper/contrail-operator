@@ -235,7 +235,7 @@ func TestSwiftController(t *testing.T) {
 			err = fakeClient.List(context.Background(), secrets)
 
 			assert.NoError(t, err)
-			require.Len(t, secrets.Items, 3)
+			require.Len(t, secrets.Items, 2)
 			assert.Contains(t, secrets.Items, confSecret)
 			assert.Contains(t, secrets.Items, credentialsSecret)
 		})
