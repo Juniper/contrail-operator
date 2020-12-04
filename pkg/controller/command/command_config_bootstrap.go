@@ -252,6 +252,7 @@ resources:
       private_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
       public_url: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}
     kind: endpoint
+  {{- if and .SwiftProxyAddress .SwiftProxyPort }}
   - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
@@ -265,4 +266,5 @@ resources:
       private_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
       public_url: https://{{ .SwiftProxyAddress }}:{{ .SwiftProxyPort }}
     kind: endpoint
+{{- end }}
 `))

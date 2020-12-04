@@ -179,37 +179,44 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	swiftService, err := r.getSwift(command)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if err = r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	swiftSecretName := swiftService.Status.CredentialsSecretName
-	if swiftSecretName == "" {
-		return reconcile.Result{}, nil
-	}
-
+	swiftService := &contrail.Swift{}
 	swiftSecret := &core.Secret{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret); err != nil {
-		return reconcile.Result{}, err
-	}
+	var swiftProxyPort int
+	var swiftProxyAddress string
 
-	swiftProxyService, err := r.getSwiftProxy(command)
-	if err != nil {
-		return reconcile.Result{}, err
+	if command.Spec.ServiceConfiguration.SwiftInstance != "" {
+		swiftService, err = r.getSwift(command)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if err = r.kubernetes.Owner(command).EnsureOwns(swiftService); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		swiftSecretName := swiftService.Status.CredentialsSecretName
+		if swiftSecretName == "" {
+			return reconcile.Result{}, nil
+		}
+
+		if err = r.client.Get(context.TODO(), types.NamespacedName{Name: swiftSecretName, Namespace: command.Namespace}, swiftSecret); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		swiftProxyService, err := r.getSwiftProxy(command)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if err = r.kubernetes.Owner(command).EnsureOwns(swiftProxyService); err != nil {
+			return reconcile.Result{}, err
+		}
+		if swiftProxyService.Status.ClusterIP == "" {
+			return reconcile.Result{}, nil
+		}
+		swiftProxyAddress = swiftProxyService.Status.ClusterIP
+		swiftProxyPort = swiftProxyService.Spec.ServiceConfiguration.ListenPort
+
 	}
-	if err = r.kubernetes.Owner(command).EnsureOwns(swiftProxyService); err != nil {
-		return reconcile.Result{}, err
-	}
-	if swiftProxyService.Status.ClusterIP == "" {
-		return reconcile.Result{}, nil
-	}
-	swiftProxyAddress := swiftProxyService.Status.ClusterIP
-	swiftProxyPort := swiftProxyService.Spec.ServiceConfiguration.ListenPort
 
 	keystone, err := r.getKeystone(command)
 	if err != nil {
@@ -373,14 +380,16 @@ func (r *ReconcileCommand) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, nil
 	}
 
-	if !swiftService.Status.Active {
-		return reconcile.Result{}, nil
-	}
+	if command.Spec.ServiceConfiguration.SwiftInstance != "" {
+		if !swiftService.Status.Active {
+			return reconcile.Result{}, nil
+		}
 
-	sPort := swiftService.Status.SwiftProxyPort
-	swiftServiceName := swiftService.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName
-	if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret, swiftServiceName); err != nil {
-		return reconcile.Result{}, err
+		sPort := swiftService.Status.SwiftProxyPort
+		swiftServiceName := swiftService.Spec.ServiceConfiguration.SwiftProxyConfiguration.SwiftServiceName
+		if err := r.ensureContrailSwiftContainerExists(command, keystone, sPort, adminPasswordSecret, swiftServiceName); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	reqLogger.Info("Command - done")
