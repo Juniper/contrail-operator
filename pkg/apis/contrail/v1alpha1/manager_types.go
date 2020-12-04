@@ -24,21 +24,105 @@ type ManagerSpec struct {
 // +k8s:openapi-gen=true
 type Services struct {
 	Config           *ConfigService           `json:"config,omitempty"`
-	Controls         []*Control               `json:"controls,omitempty"`
+	Controls         []*ControlService        `json:"controls,omitempty"`
 	Kubemanagers     []*KubemanagerService    `json:"kubemanagers,omitempty"`
-	Webui            *Webui                   `json:"webui,omitempty"`
+	Webui            *WebuiService            `json:"webui,omitempty"`
 	Vrouters         []*VrouterService        `json:"vrouters,omitempty"`
-	Cassandras       []*Cassandra             `json:"cassandras,omitempty"`
-	Zookeepers       []*Zookeeper             `json:"zookeepers,omitempty"`
-	Rabbitmq         *Rabbitmq                `json:"rabbitmq,omitempty"`
+	Cassandras       []*CassandraService      `json:"cassandras,omitempty"`
+	Zookeepers       []*ZookeeperService      `json:"zookeepers,omitempty"`
+	Rabbitmq         *RabbitmqService         `json:"rabbitmq,omitempty"`
 	ProvisionManager *ProvisionManagerService `json:"provisionManager,omitempty"`
-	Command          *Command                 `json:"command,omitempty"`
-	Postgres         *Postgres                `json:"postgres,omitempty"`
-	Keystone         *Keystone                `json:"keystone,omitempty"`
-	Swift            *Swift                   `json:"swift,omitempty"`
-	Memcached        *Memcached               `json:"memcached,omitempty"`
-	Contrailmonitor  *Contrailmonitor         `json:"contrailmonitor,omitempty"`
-	ContrailCNIs     []*ContrailCNI           `json:"contrailCNIs,omitempty"`
+	Command          *CommandService          `json:"command,omitempty"`
+	Postgres         *PostgresService         `json:"postgres,omitempty"`
+	Keystone         *KeystoneService         `json:"keystone,omitempty"`
+	Swift            *SwiftService            `json:"swift,omitempty"`
+	Memcached        *MemcachedService        `json:"memcached,omitempty"`
+	Contrailmonitor  *ContrailmonitorService  `json:"contrailmonitor,omitempty"`
+	ContrailCNIs     []*ContrailCNIService    `json:"contrailCNIs,omitempty"`
+}
+
+// ContrailCNIService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type ContrailCNIService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ContrailCNISpec `json:"spec,omitempty"`
+}
+
+// ContrailmonitorService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type ContrailmonitorService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ContrailmonitorSpec `json:"spec,omitempty"`
+}
+
+// MemcachedService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type MemcachedService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       MemcachedSpec `json:"spec,omitempty"`
+}
+
+// SwiftService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type SwiftService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       SwiftSpec `json:"spec,omitempty"`
+}
+
+// KeystoneService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type KeystoneService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       KeystoneSpec `json:"spec,omitempty"`
+}
+
+// PostgresService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type PostgresService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       PostgresSpec `json:"spec,omitempty"`
+}
+
+// CommandService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type CommandService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       CommandSpec `json:"spec,omitempty"`
+}
+
+// RabbitmqService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type RabbitmqService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       RabbitmqSpec `json:"spec,omitempty"`
+}
+
+// ZookeeperService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type ZookeeperService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ZookeeperSpec `json:"spec,omitempty"`
+}
+
+// CassandraService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type CassandraService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       CassandraSpec `json:"spec,omitempty"`
+}
+
+// WebuiService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type WebuiService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       WebuiSpec `json:"spec,omitempty"`
+}
+
+// ControlService defines desired configuration of Config
+// +k8s:openapi-gen=true
+type ControlService struct {
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ControlSpec `json:"spec,omitempty"`
 }
 
 // ConfigService defines desired configuration of Config

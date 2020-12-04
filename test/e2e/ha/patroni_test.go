@@ -199,8 +199,8 @@ func getPatroniCluster(namespace, nodeLabel string) *contrail.Manager {
 	trueVal := true
 
 	pgName := "postgres-test"
-	postgres := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
+	postgres := &contrail.PostgresService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      pgName,
 			Namespace: namespace,
 			Labels:    contrailLabel.New("postgres", pgName),

@@ -58,8 +58,8 @@ func TestCommandServices(t *testing.T) {
 
 		trueVal := true
 
-		psql := &contrail.Postgres{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
+		psql := &contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "commandtest-psql"},
 			Spec: contrail.PostgresSpec{
 				ServiceConfiguration: contrail.PostgresConfiguration{
 					Storage: contrail.Storage{
@@ -73,8 +73,8 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
-		rabbitmq := &contrail.Rabbitmq{
-			ObjectMeta: meta.ObjectMeta{
+		rabbitmq := &contrail.RabbitmqService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "commandtest-rabbitmq",
 				Namespace: namespace,
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -88,8 +88,8 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
-		webui := &contrail.Webui{
-			ObjectMeta: meta.ObjectMeta{
+		webui := &contrail.WebuiService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "commandtest-webui",
 				Namespace: namespace,
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -110,8 +110,8 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}
-		zookeeper := []*contrail.Zookeeper{{
-			ObjectMeta: meta.ObjectMeta{
+		zookeeper := []*contrail.ZookeeperService{{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "commandtest-zookeeper",
 				Namespace: namespace,
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -126,8 +126,8 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}}
-		cassandra := []*contrail.Cassandra{{
-			ObjectMeta: meta.ObjectMeta{
+		cassandra := []*contrail.CassandraService{{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "commandtest-cassandra",
 				Namespace: namespace,
 				Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -142,8 +142,8 @@ func TestCommandServices(t *testing.T) {
 				},
 			},
 		}}
-		config := &contrail.Config{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-config", Labels: map[string]string{"contrail_cluster": "cluster1"}},
+		config := &contrail.ConfigService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "commandtest-config", Labels: map[string]string{"contrail_cluster": "cluster1"}},
 			Spec: contrail.ConfigSpec{
 				CommonConfiguration: contrail.PodConfiguration{
 					HostNetwork: &trueVal,
@@ -170,8 +170,8 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
-		controls := []*contrail.Control{{
-			ObjectMeta: meta.ObjectMeta{
+		controls := []*contrail.ControlService{{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "commandtest-control",
 				Namespace: namespace,
 				Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
@@ -193,8 +193,8 @@ func TestCommandServices(t *testing.T) {
 			},
 		}}
 
-		memcached := &contrail.Memcached{
-			ObjectMeta: meta.ObjectMeta{
+		memcached := &contrail.MemcachedService{
+			ObjectMeta: contrail.ObjectMeta{
 				Namespace: namespace,
 				Name:      "commandtest-memcached",
 			},
@@ -205,8 +205,8 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
-		keystoneResource := &contrail.Keystone{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "commandtest-keystone"},
+		keystoneResource := &contrail.KeystoneService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "commandtest-keystone"},
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.PodConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
@@ -223,8 +223,8 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
-		swiftInstance := &contrail.Swift{
-			ObjectMeta: meta.ObjectMeta{
+		swiftInstance := &contrail.SwiftService{
+			ObjectMeta: contrail.ObjectMeta{
 				Namespace: namespace,
 				Name:      "commandtest-swift",
 			},
@@ -271,8 +271,8 @@ func TestCommandServices(t *testing.T) {
 			},
 		}
 
-		command := &contrail.Command{
-			ObjectMeta: meta.ObjectMeta{
+		command := &contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name: "commandtest",
 			},
 			Spec: contrail.CommandSpec{
@@ -532,7 +532,7 @@ func assertCommandSwiftContainerIsCreated(t *testing.T, proxy *kubeproxy.HTTPPro
 	})
 }
 
-func assertCommandDepenciesReady(t *testing.T, f *test.Framework, namespace string, cr *contrail.Command, log logger.Logger, w wait.Wait) {
+func assertCommandDepenciesReady(t *testing.T, f *test.Framework, namespace string, cr *contrail.CommandService, log logger.Logger, w wait.Wait) {
 
 	t.Run("then a ready Keystone StatefulSet should be created", func(t *testing.T) {
 		assert.NoError(t, w.ForReadyStatefulSet("commandtest-keystone-keystone-statefulset", 1))

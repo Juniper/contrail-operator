@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,8 +54,8 @@ func TestOpenstackServices(t *testing.T) {
 		assert.NoError(t, err)
 		trueVal := true
 
-		psql := &contrail.Postgres{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
+		psql := &contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "openstacktest-psql"},
 			Spec: contrail.PostgresSpec{
 				ServiceConfiguration: contrail.PostgresConfiguration{
 					Storage: contrail.Storage{
@@ -71,8 +70,8 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
-		memcached := &contrail.Memcached{
-			ObjectMeta: v1.ObjectMeta{
+		memcached := &contrail.MemcachedService{
+			ObjectMeta: contrail.ObjectMeta{
 				Namespace: namespace,
 				Name:      "openstacktest-memcached",
 			},
@@ -83,8 +82,8 @@ func TestOpenstackServices(t *testing.T) {
 			},
 		}
 
-		keystoneResource := &contrail.Keystone{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
+		keystoneResource := &contrail.KeystoneService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "openstacktest-keystone"},
 			Spec: contrail.KeystoneSpec{
 				CommonConfiguration: contrail.PodConfiguration{HostNetwork: &trueVal},
 				ServiceConfiguration: contrail.KeystoneConfiguration{
@@ -191,8 +190,8 @@ func TestOpenstackServices(t *testing.T) {
 				Logger:        log,
 			}
 
-			cluster.Spec.Services.Swift = &contrail.Swift{
-				ObjectMeta: v1.ObjectMeta{
+			cluster.Spec.Services.Swift = &contrail.SwiftService{
+				ObjectMeta: contrail.ObjectMeta{
 					Namespace: namespace,
 					Name:      "openstacktest-swift",
 				},

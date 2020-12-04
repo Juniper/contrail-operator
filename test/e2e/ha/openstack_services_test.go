@@ -429,8 +429,8 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 	trueVal := true
 
-	memcached := &contrail.Memcached{
-		ObjectMeta: meta.ObjectMeta{
+	memcached := &contrail.MemcachedService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "memcached",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
@@ -444,8 +444,8 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 	}
 
-	postgres := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
+	postgres := &contrail.PostgresService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "postgres",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_manager": "openstack", "postgres": "postgres"},
@@ -463,8 +463,8 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 			},
 		},
 	}
-	keystone := &contrail.Keystone{
-		ObjectMeta: meta.ObjectMeta{
+	keystone := &contrail.KeystoneService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "keystone",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "openstack"},
@@ -483,8 +483,8 @@ func getHAOpenStackCluster(namespace, nodeLabel string) *contrail.Manager {
 		},
 	}
 
-	swift := &contrail.Swift{
-		ObjectMeta: meta.ObjectMeta{
+	swift := &contrail.SwiftService{
+		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
 			Name:      "swift",
 		},

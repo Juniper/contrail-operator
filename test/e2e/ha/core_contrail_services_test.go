@@ -424,8 +424,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	trueVal := true
 	oneVal := int32(1)
 
-	cassandras := []*contrail.Cassandra{{
-		ObjectMeta: meta.ObjectMeta{
+	cassandras := []*contrail.CassandraService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-cassandra",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -447,8 +447,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}}
 
-	zookeepers := []*contrail.Zookeeper{{
-		ObjectMeta: meta.ObjectMeta{
+	zookeepers := []*contrail.ZookeeperService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-zookeeper",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -476,8 +476,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}}
 
-	rabbitmq := &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
+	rabbitmq := &contrail.RabbitmqService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-rabbitmq",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -492,8 +492,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}
 
-	config := &contrail.Config{
-		ObjectMeta: meta.ObjectMeta{
+	config := &contrail.ConfigService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-config",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -524,8 +524,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}
 
-	controls := []*contrail.Control{{
-		ObjectMeta: meta.ObjectMeta{
+	controls := []*contrail.ControlService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-control",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1", "control_role": "master"},
@@ -547,8 +547,8 @@ func getHACluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 		},
 	}}
 
-	webui := &contrail.Webui{
-		ObjectMeta: meta.ObjectMeta{
+	webui := &contrail.WebuiService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "hatest-webui",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "cluster1"},

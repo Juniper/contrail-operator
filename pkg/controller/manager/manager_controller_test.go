@@ -40,6 +40,7 @@ func TestManagerController(t *testing.T) {
 				Namespace: "other",
 			},
 		}
+
 		falseVal1 := false
 		trueVal1 := true
 		cassandra := &contrail.Cassandra{
@@ -58,6 +59,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		zookeeper := &contrail.Zookeeper{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "zookeeper",
@@ -74,6 +76,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		provisionmanager := &contrail.ProvisionManager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "provisionmanager",
@@ -144,6 +147,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		config := &contrail.Config{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "config",
@@ -158,15 +162,6 @@ func TestManagerController(t *testing.T) {
 					AuthMode:           contrail.AuthenticationModeKeystone,
 				},
 			},
-		}
-
-		configService := &contrail.ConfigService{
-			ObjectMeta: contrail.ObjectMeta{
-				Name:      config.Name,
-				Namespace: config.Namespace,
-				Labels:    config.Labels,
-			},
-			Spec: config.Spec,
 		}
 
 		control := &contrail.Control{
@@ -185,6 +180,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		vrouter := &contrail.Vrouter{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "vrouter",
@@ -222,6 +218,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		contrailcni := &contrail.ContrailCNI{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "contrailcni",
@@ -236,6 +233,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		rabbitmq := &contrail.Rabbitmq{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "rabbitmq-instance",
@@ -267,6 +265,75 @@ func TestManagerController(t *testing.T) {
 			},
 			Status: contrail.RabbitmqStatus{Active: &falseVal1},
 		}
+
+		zookeeperService := &contrail.ZookeeperService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      zookeeper.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: zookeeper.Spec,
+		}
+
+		contrailcniService := &contrail.ContrailCNIService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: contrailcni.Spec,
+		}
+
+		rabbitmqService := &contrail.RabbitmqService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: rabbitmq.Spec,
+		}
+
+		controlService := &contrail.ControlService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: control.Spec,
+		}
+
+		configService := &contrail.ConfigService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      config.Name,
+				Namespace: config.Namespace,
+				Labels:    config.Labels,
+			},
+			Spec: config.Spec,
+		}
+
+		webuiService := &contrail.WebuiService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      webui.Name,
+				Namespace: webui.Namespace,
+			},
+			Spec: webui.Spec,
+		}
+
+		cassandraService := &contrail.CassandraService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      cassandra.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: cassandra.Spec,
+		}
+
+		commandService := &contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      command.Name,
+				Namespace: command.Namespace,
+			},
+			Spec: command.Spec,
+		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -275,17 +342,17 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:          command,
-					Cassandras:       []*contrail.Cassandra{cassandra},
-					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Command:          commandService,
+					Cassandras:       []*contrail.CassandraService{cassandraService},
+					Zookeepers:       []*contrail.ZookeeperService{zookeeperService},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
-					Rabbitmq:         rabbitmq,
+					Rabbitmq:         rabbitmqService,
 					ProvisionManager: provisionmanagerService,
-					Webui:            webui,
-					Contrailmonitor:  contrailmonitorCR,
-					Controls:         []*contrail.Control{control},
+					Webui:            webuiService,
+					Contrailmonitor:  contrailmonitorCRService,
+					Controls:         []*contrail.ControlService{controlService},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
-					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
+					ContrailCNIs:     []*contrail.ContrailCNIService{contrailcniService},
 					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -615,6 +682,66 @@ func TestManagerController(t *testing.T) {
 			},
 			Status: contrail.RabbitmqStatus{Active: &falseVal1},
 		}
+
+		zookeeperService := &contrail.ZookeeperService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      zookeeper.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: zookeeper.Spec,
+		}
+
+		contrailcniService := &contrail.ContrailCNIService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: contrailcni.Spec,
+		}
+
+		rabbitmqService := &contrail.RabbitmqService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: rabbitmq.Spec,
+		}
+
+		controlService := &contrail.ControlService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: control.Spec,
+		}
+
+		webuiService := &contrail.WebuiService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      webui.Name,
+				Namespace: webui.Namespace,
+			},
+			Spec: webui.Spec,
+		}
+
+		cassandraService := &contrail.CassandraService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      cassandra.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: cassandra.Spec,
+		}
+
+		commandService := &contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      command.Name,
+				Namespace: command.Namespace,
+			},
+			Spec: command.Spec,
+		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -623,16 +750,16 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:          command,
-					Cassandras:       []*contrail.Cassandra{cassandra},
-					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Command:          commandService,
+					Cassandras:       []*contrail.CassandraService{cassandraService},
+					Zookeepers:       []*contrail.ZookeeperService{zookeeperService},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
-					Rabbitmq:         rabbitmq,
+					Rabbitmq:         rabbitmqService,
 					ProvisionManager: provisionmanagerService,
-					Webui:            webui,
-					Controls:         []*contrail.Control{control},
+					Webui:            webuiService,
+					Controls:         []*contrail.ControlService{controlService},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
-					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
+					ContrailCNIs:     []*contrail.ContrailCNIService{contrailcniService},
 					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -968,6 +1095,66 @@ func TestManagerController(t *testing.T) {
 			},
 			Status: contrail.RabbitmqStatus{Active: &falseVal1},
 		}
+
+		zookeeperService := &contrail.ZookeeperService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      zookeeper.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: zookeeper.Spec,
+		}
+
+		contrailcniService := &contrail.ContrailCNIService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: contrailcni.Spec,
+		}
+
+		rabbitmqService := &contrail.RabbitmqService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: rabbitmq.Spec,
+		}
+
+		controlService := &contrail.ControlService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      control.Name,
+				Namespace: control.Namespace,
+				Labels:    control.Labels,
+			},
+			Spec: control.Spec,
+		}
+
+		webuiService := &contrail.WebuiService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      webui.Name,
+				Namespace: webui.Namespace,
+			},
+			Spec: webui.Spec,
+		}
+
+		cassandraService := &contrail.CassandraService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      cassandra.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: cassandra.Spec,
+		}
+
+		commandService := &contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      command.Name,
+				Namespace: command.Namespace,
+			},
+			Spec: command.Spec,
+		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -976,16 +1163,16 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:          command,
-					Cassandras:       []*contrail.Cassandra{cassandra},
-					Zookeepers:       []*contrail.Zookeeper{zookeeper},
+					Command:          commandService,
+					Cassandras:       []*contrail.CassandraService{cassandraService},
+					Zookeepers:       []*contrail.ZookeeperService{zookeeperService},
 					Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
-					Rabbitmq:         rabbitmq,
+					Rabbitmq:         rabbitmqService,
 					ProvisionManager: provisionmanagerService,
-					Webui:            webui,
-					Controls:         []*contrail.Control{control},
+					Webui:            webuiService,
+					Controls:         []*contrail.ControlService{controlService},
 					Vrouters:         []*contrail.VrouterService{vrouterService},
-					ContrailCNIs:     []*contrail.ContrailCNI{contrailcni},
+					ContrailCNIs:     []*contrail.ContrailCNIService{contrailcniService},
 					Config:           configService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
@@ -1068,13 +1255,13 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should create contrail command CR when manager is reconciled and command CR does not exist", func(t *testing.T) {
 		// given
-		command := &contrail.Command{
-			TypeMeta: meta.TypeMeta{},
-			ObjectMeta: meta.ObjectMeta{
+		command := &contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "command",
 				Namespace: "other",
 			},
 		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1160,8 +1347,8 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 
-		commandUpdate := contrail.Command{
-			ObjectMeta: meta.ObjectMeta{
+		commandUpdate := contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "command",
 				Namespace: "default",
 			},
@@ -1172,6 +1359,7 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1241,13 +1429,13 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should create postgres CR when manager is reconciled and postgres CR does not exist", func(t *testing.T) {
 		// given
-		psql := contrail.Postgres{
-			TypeMeta: meta.TypeMeta{},
-			ObjectMeta: meta.ObjectMeta{
+		psql := contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "psql",
 				Namespace: "default",
 			},
 		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1317,17 +1505,15 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should create postgres and command CR when manager is reconciled and postgres and command CR do not exist", func(t *testing.T) {
 		// given
-		psql := contrail.Postgres{
-			TypeMeta: meta.TypeMeta{},
-			ObjectMeta: meta.ObjectMeta{
+		psql := contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "psql",
 				Namespace: "default",
 			},
 		}
 		// given
-		command := contrail.Command{
-			TypeMeta: meta.TypeMeta{},
-			ObjectMeta: meta.ObjectMeta{
+		command := contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "command",
 				Namespace: "other",
 			},
@@ -1438,16 +1624,14 @@ func TestManagerController(t *testing.T) {
 
 	t.Run("should create postgres and keystone CR with default configuration when manager is reconciled and postgres and keystone CR do not exist", func(t *testing.T) {
 		// given
-		psql := contrail.Postgres{
-			TypeMeta: meta.TypeMeta{},
-			ObjectMeta: meta.ObjectMeta{
+		psql := contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{
 				Name:      "psql",
 				Namespace: "default",
 			},
 		}
 		// given
 		keystoneDefaults := contrail.Keystone{
-			TypeMeta: meta.TypeMeta{},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "keystone",
 				Namespace: "other",
@@ -1459,6 +1643,14 @@ func TestManagerController(t *testing.T) {
 			},
 		}
 
+		keystoneService := contrail.KeystoneService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      keystoneDefaults.Name,
+				Namespace: keystoneDefaults.Namespace,
+			},
+			Spec: keystoneDefaults.Spec,
+		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1468,7 +1660,7 @@ func TestManagerController(t *testing.T) {
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
 					Postgres: &psql,
-					Keystone: &keystoneDefaults,
+					Keystone: &keystoneService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1587,6 +1779,13 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+		keystoneService := contrail.KeystoneService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      keystoneCustom.Name,
+				Namespace: keystoneCustom.Namespace,
+			},
+			Spec: keystoneCustom.Spec,
+		}
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1595,7 +1794,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Keystone: &keystoneCustom,
+					Keystone: &keystoneService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1747,6 +1946,30 @@ func TestManagerController(t *testing.T) {
 				Namespace: "other",
 			},
 		}
+		commandService := contrail.CommandService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      command.Name,
+				Namespace: command.Namespace,
+			},
+			Spec: command.Spec,
+		}
+
+		swiftService := contrail.SwiftService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      swift.Name,
+				Namespace: swift.Namespace,
+			},
+			Spec: swift.Spec,
+		}
+
+		memcachedService := contrail.MemcachedService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      memcached.Name,
+				Namespace: memcached.Namespace,
+			},
+			Spec: memcached.Spec,
+		}
+
 		managerCR := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1755,9 +1978,9 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Command:   command,
-					Swift:     swift,
-					Memcached: memcached,
+					Command:   &commandService,
+					Swift:     &swiftService,
+					Memcached: &memcachedService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -1882,6 +2105,15 @@ func TestManagerController(t *testing.T) {
 				},
 			},
 		}
+
+		memcachedService := contrail.MemcachedService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      testMemcached.Name,
+				Namespace: testMemcached.Namespace,
+			},
+			Spec: testMemcached.Spec,
+		}
+
 		manager := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -1889,7 +2121,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Memcached: testMemcached,
+					Memcached: &memcachedService,
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -2019,6 +2251,15 @@ func TestManagerController(t *testing.T) {
 				Name:      "test-cassandra",
 			},
 		}
+
+		cassandraService := &contrail.CassandraService{
+			ObjectMeta: contrail.ObjectMeta{
+				Name:      cassandra.Name,
+				Namespace: cassandra.Namespace,
+			},
+			Spec: cassandra.Spec,
+		}
+
 		manager := &contrail.Manager{
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "test-manager",
@@ -2026,7 +2267,7 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Cassandras: []*contrail.Cassandra{cassandra},
+					Cassandras: []*contrail.CassandraService{cassandraService},
 				},
 				KeystoneSecretName: "keystone-adminpass-secret",
 			},
@@ -2104,9 +2345,9 @@ func TestManagerController(t *testing.T) {
 			},
 			Spec: contrail.ManagerSpec{
 				Services: contrail.Services{
-					Cassandras: []*contrail.Cassandra{
+					Cassandras: []*contrail.CassandraService{
 						{
-							ObjectMeta: meta.ObjectMeta{
+							ObjectMeta: contrail.ObjectMeta{
 								Namespace: "default",
 								Name:      "test-cassandra",
 							},
@@ -2345,6 +2586,20 @@ func assertKeystone(t *testing.T, expected contrail.Keystone, fakeClient client.
 	assert.Equal(t, expected, keystone)
 }
 
+func newKeystoneService() *contrail.KeystoneService {
+	k := newKeystone()
+
+	return &contrail.KeystoneService{
+		ObjectMeta: contrail.ObjectMeta{
+			Name:      k.Name,
+			Namespace: k.Namespace,
+			Labels:    k.Labels,
+		},
+		Spec: k.Spec,
+	}
+
+}
+
 func newKeystone() *contrail.Keystone {
 	trueVal := true
 	return &contrail.Keystone{
@@ -2515,11 +2770,10 @@ func newManager() *contrail.Manager {
 				NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
 			},
 			Services: contrail.Services{
-				Postgres: &contrail.Postgres{
-					ObjectMeta: meta.ObjectMeta{Namespace: "default", Name: "psql"},
-					Status:     contrail.PostgresStatus{Status: contrail.Status{Active: true}, Endpoint: "10.0.2.15:5432"},
+				Postgres: &contrail.PostgresService{
+					ObjectMeta: contrail.ObjectMeta{Namespace: "default", Name: "psql"},
 				},
-				Keystone: newKeystone(),
+				Keystone: newKeystoneService(),
 			},
 		},
 	}
@@ -2619,6 +2873,15 @@ var contrailmonitorCR = &contrail.Contrailmonitor{
 	Status: contrail.ContrailmonitorStatus{
 		Active: trueVal,
 	},
+}
+
+var contrailmonitorCRService = &contrail.ContrailmonitorService{
+	ObjectMeta: contrail.ObjectMeta{
+		Namespace: contrailmonitorCR.Namespace,
+		Name:      contrailmonitorCR.Name,
+		Labels:    contrailmonitorCR.Labels,
+	},
+	Spec: contrailmonitorCR.Spec,
 }
 
 func cassandraWithActiveState(state bool) *contrail.Cassandra {
@@ -3047,6 +3310,15 @@ func TestKubemanagerWithAuth(t *testing.T) {
 			Endpoint: "10.11.12.13",
 		},
 	}
+
+	keystoneService := &contrail.KeystoneService{
+		ObjectMeta: contrail.ObjectMeta{
+			Name:      keystone.Name,
+			Namespace: keystone.Namespace,
+		},
+		Spec: keystone.Spec,
+	}
+
 	kubemanager := &contrail.Kubemanager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "kubemanager",
@@ -3095,7 +3367,7 @@ func TestKubemanagerWithAuth(t *testing.T) {
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
 				Kubemanagers: []*contrail.KubemanagerService{kubemanagerService},
-				Keystone:     keystone,
+				Keystone:     keystoneService,
 				Config: &contrail.ConfigService{
 					ObjectMeta: contrail.ObjectMeta{
 						Name:      config.Name,
