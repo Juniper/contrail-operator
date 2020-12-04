@@ -393,7 +393,6 @@ func TestCommand(t *testing.T) {
 				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
 				newPodList(),
 				newWebUI(true),
-				newSwiftProxy(true),
 			},
 			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
