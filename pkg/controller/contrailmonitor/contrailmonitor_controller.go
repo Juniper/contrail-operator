@@ -394,10 +394,10 @@ func (r *ReconcileContrailmonitor) Reconcile(request reconcile.Request) (reconci
 					webkeyValues = append(webkeyValues, k)
 				}
 				sort.Strings(webkeyValues)
-				for i, m := range webkeyValues {
+				for n, m := range webkeyValues {
 					if data, ok := wklist.Items[i].Status.ServiceStatus[m]; ok {
 						for _, j := range data {
-							webName = j.ModuleName + "-" + strconv.Itoa(i+1)
+							webName = j.ModuleName + "-" + strconv.Itoa(n+1)
 							serInsWeb := &contrailv1alpha1.Contrailstatusmonitor{ObjectMeta: metav1.ObjectMeta{Name: webName, Namespace: "contrail"}}
 							dataWeb = j.ModuleState
 							_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, serInsWeb, func() error {
