@@ -20,7 +20,6 @@ type registerServiceConfig struct {
 	SwiftPassword           string
 	SwiftUser               string
 	SwiftServiceName        string
-	SwiftServiceType        string
 	CAFilePath              string
 }
 
@@ -43,7 +42,7 @@ const registerPlaybook = `
     - name: create swift service
       os_keystone_service:
         name: "{{ service_name }}"
-        service_type: "{{ service_type }}"
+        service_type: "object-store"
         description: "object store service"
         interface: "admin"
         auth: "{{ openstack_auth }}"
@@ -113,7 +112,6 @@ swift_public_endpoint: "{{ .SwiftPublicEndpoint }}"
 swift_password: "{{ .SwiftPassword }}"
 swift_user: "{{ .SwiftUser }}"
 service_name: "{{ .SwiftServiceName }}"
-service_type: "{{ .SwiftServiceType }}"
 
 ca_cert_filepath: "{{ .CAFilePath }}"
 `))

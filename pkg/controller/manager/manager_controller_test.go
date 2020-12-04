@@ -1640,8 +1640,6 @@ func TestManagerController(t *testing.T) {
 						Device: "dev",
 					},
 					SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-						// SwiftServiceType not set explicitly, should comes from defaults.
-						SwiftServiceType: "object-store",
 						// SwiftServiceName not set explicitly, should comes from defaults.
 						SwiftServiceName:      "swift",
 						ListenPort:            5070,
