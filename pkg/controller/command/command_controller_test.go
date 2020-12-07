@@ -379,6 +379,22 @@ func TestCommand(t *testing.T) {
 			expectedSwift:      newSwiftWithOwner(false),
 		},
 		{
+			name: "create a new deployment with no Swift",
+			initObjs: []runtime.Object{
+				newCommandWithoutSwift(),
+				newCommandService(),
+				newConfig(true),
+				newPostgres(true),
+				newAdminSecret(),
+				newKeystone(contrail.KeystoneStatus{Active: true, Endpoint: "10.0.2.16"}, nil),
+				newPodList(),
+				newWebUI(true),
+			},
+			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
+			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
+			expectedPostgres:   newPostgresWithOwner(true),
+		},
+		{
 			name: "remove tolerations from deployment",
 			initObjs: []runtime.Object{
 				newCommandWithEmptyToleration(),
@@ -674,6 +690,7 @@ func TestCommand(t *testing.T) {
 			}, cc)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, cc.Status)
+			swiftInstance := cc.Spec.ServiceConfiguration.SwiftInstance
 
 			// Check and verify command deployment
 			dep := &apps.Deployment{}
@@ -694,7 +711,7 @@ func TestCommand(t *testing.T) {
 			}, configMap)
 			assert.NoError(t, err)
 			configMap.SetResourceVersion("")
-			assertConfigMap(t, configMap)
+			assertConfigMap(t, configMap, swiftInstance)
 
 			bootstrapconfigMap := &core.ConfigMap{}
 			err = cl.Get(context.Background(), types.NamespacedName{
@@ -703,7 +720,7 @@ func TestCommand(t *testing.T) {
 			}, bootstrapconfigMap)
 			assert.NoError(t, err)
 			bootstrapconfigMap.SetResourceVersion("")
-			assertBootstrapConfigMap(t, bootstrapconfigMap)
+			assertBootstrapConfigMap(t, bootstrapconfigMap, swiftInstance)
 
 			if tt.expectedBootstrapJob != nil {
 				bJob := &batch.Job{}
@@ -726,14 +743,16 @@ func TestCommand(t *testing.T) {
 			psql.SetResourceVersion("")
 			assert.Equal(t, tt.expectedPostgres, psql)
 			// Check if Swift has been updated
-			swift := &contrail.Swift{}
-			err = cl.Get(context.Background(), types.NamespacedName{
-				Name:      tt.expectedSwift.GetName(),
-				Namespace: tt.expectedSwift.GetNamespace(),
-			}, swift)
-			assert.NoError(t, err)
-			swift.SetResourceVersion("")
-			assert.Equal(t, tt.expectedSwift, swift)
+			if swiftInstance != "" {
+				swift := &contrail.Swift{}
+				err = cl.Get(context.Background(), types.NamespacedName{
+					Name:      tt.expectedSwift.GetName(),
+					Namespace: tt.expectedSwift.GetNamespace(),
+				}, swift)
+				assert.NoError(t, err)
+				swift.SetResourceVersion("")
+				assert.Equal(t, tt.expectedSwift, swift)
+			}
 		})
 	}
 }
@@ -773,7 +792,19 @@ func newCertSecret(ips []string) *core.Secret {
 }
 
 func newCommand() *contrail.Command {
+	return createCommand(true)
+}
+
+func newCommandWithoutSwift() *contrail.Command {
+	return createCommand(false)
+}
+
+func createCommand(withSwift bool) *contrail.Command {
 	trueVal := true
+	swiftInstance := ""
+	if withSwift {
+		swiftInstance = "swift"
+	}
 	return &contrail.Command{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "command",
@@ -788,7 +819,7 @@ func newCommand() *contrail.Command {
 				ClusterName:      "cluster1",
 				PostgresInstance: "command-db",
 				KeystoneInstance: "keystone",
-				SwiftInstance:    "swift",
+				SwiftInstance:    swiftInstance,
 				ConfigInstance:   "config",
 				WebUIInstance:    "webUI",
 				Containers: []*contrail.Container{
@@ -1182,7 +1213,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 	}
 }
 
-func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
+func assertConfigMap(t *testing.T, actual *core.ConfigMap, swift string) {
 	trueVal := true
 	assert.Equal(t, meta.ObjectMeta{
 		Name:      "command-command-configmap",
@@ -1200,10 +1231,15 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap) {
 		},
 	}, actual.ObjectMeta)
 
-	assert.Equal(t, expectedCommandConfig, actual.Data["command-app-server0.0.0.0.yml"])
+	expectedConfig := expectedCommandConfig
+	if swift == "" {
+		expectedConfig = strings.ReplaceAll(expectedCommandConfig, swiftUserConfiguration, "")
+	}
+
+	assert.Equal(t, expectedConfig, actual.Data["command-app-server0.0.0.0.yml"])
 }
 
-func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
+func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap, swift string) {
 	trueVal := true
 	assert.Equal(t, meta.ObjectMeta{
 		Name:      "command-bootstrap-configmap",
@@ -1222,7 +1258,11 @@ func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap) {
 	}, actual.ObjectMeta)
 
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
-	assert.Equal(t, expectedCommandInitCluster, actual.Data["init_cluster.yml"])
+	expectedInit := expectedCommandInitCluster
+	if swift == "" {
+		expectedInit = strings.ReplaceAll(expectedCommandInitCluster, swiftEndpoint, "")
+	}
+	assert.Equal(t, expectedInit, actual.Data["init_cluster.yml"])
 }
 
 func newAdminSecret() *core.Secret {
@@ -1414,6 +1454,13 @@ replication:
   amqp:
     enabled: false
 `
+
+const swiftUserConfiguration = `
+  service_user:
+    id: username
+    password: password123
+    project_name: service
+    domain_id: default`
 
 const expectedBootstrapScript = `
 #!/bin/bash
@@ -1624,6 +1671,20 @@ resources:
       public_url: https://10.0.2.16:5555
     kind: endpoint
   - data:
+      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
+      name: swift
+      fq_name:
+        - default-global-system-config
+        - cluster1
+        - swift
+      parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
+      parent_type: contrail-cluster
+      prefix: swift
+      private_url: https://40.40.40.40:5080
+      public_url: https://40.40.40.40:5080
+    kind: endpoint
+`
+const swiftEndpoint = `  - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
       fq_name:
