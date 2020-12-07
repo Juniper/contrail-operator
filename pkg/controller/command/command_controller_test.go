@@ -43,7 +43,7 @@ func TestCommand(t *testing.T) {
 		},
 		"Swift secret name is empty": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
@@ -77,7 +77,7 @@ func TestCommand(t *testing.T) {
 	}{
 		"no Postgres": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -88,7 +88,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no Swift": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
@@ -99,7 +99,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no Keystone": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
@@ -110,7 +110,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no Swift secret": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
@@ -121,7 +121,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no admin secret": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newSwiftSecret(),
@@ -132,7 +132,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no Swift container exists": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newConfig(true),
 				newPostgres(true),
 				newAdminSecret(),
@@ -144,7 +144,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no Config container exists": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newPostgres(true),
 				newAdminSecret(),
 				newSwiftSecret(),
@@ -155,7 +155,7 @@ func TestCommand(t *testing.T) {
 		},
 		"no WebUI": {
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newPostgres(true),
 				newConfig(true),
 				newAdminSecret(),
@@ -185,7 +185,7 @@ func TestCommand(t *testing.T) {
 
 	t.Run("Swift secret name is empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
-			newCommand(true),
+			newCommand(),
 			newConfig(true),
 			newPostgres(true),
 			newAdminSecret(),
@@ -211,7 +211,7 @@ func TestCommand(t *testing.T) {
 
 	t.Run("Config Endpoints should not be empty", func(t *testing.T) {
 		initObjs := []runtime.Object{
-			newCommand(true),
+			newCommand(),
 			newConfigWithoutEndpoint(true),
 			newPostgres(true),
 			newAdminSecret(),
@@ -245,7 +245,7 @@ func TestCommand(t *testing.T) {
 	t.Run("correct configmap is created according to available pods", func(t *testing.T) {
 
 		initObjs := []runtime.Object{
-			newCommand(true),
+			newCommand(),
 			newCommandService(),
 			newCommandPod("abc", "1.1.1.1"),
 			newCommandPod("def", "2.2.2.2"),
@@ -320,7 +320,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "create a new deployment",
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newCommandService(),
 				newConfig(true),
 				newPostgres(true),
@@ -339,7 +339,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "create a new deployment and check swift containers existence",
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newCommandService(),
 				newConfig(true),
 				newPostgres(true),
@@ -362,7 +362,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "create a new deployment with inactive Keystone",
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newCommandService(),
 				newConfig(true),
 				newPostgres(true),
@@ -385,7 +385,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "create a new deployment with no Swift",
 			initObjs: []runtime.Object{
-				newCommand(false),
+				newCommandWithoutSwift(),
 				newCommandService(),
 				newConfig(true),
 				newPostgres(true),
@@ -420,7 +420,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "update command status to false",
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newCommandService(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 0}),
 				newConfig(true),
@@ -439,7 +439,7 @@ func TestCommand(t *testing.T) {
 		{
 			name: "update command status to active",
 			initObjs: []runtime.Object{
-				newCommand(true),
+				newCommand(),
 				newCommandService(),
 				newDeployment(apps.DeploymentStatus{ReadyReplicas: 1}),
 				newConfig(true),
@@ -835,7 +835,7 @@ func TestCommand(t *testing.T) {
 			}, configMap)
 			assert.NoError(t, err)
 			configMap.SetResourceVersion("")
-			assertConfigMap(t, configMap, &swiftInstance)
+			assertConfigMap(t, configMap, swiftInstance)
 
 			bootstrapconfigMap := &core.ConfigMap{}
 			err = cl.Get(context.Background(), types.NamespacedName{
@@ -844,7 +844,7 @@ func TestCommand(t *testing.T) {
 			}, bootstrapconfigMap)
 			assert.NoError(t, err)
 			bootstrapconfigMap.SetResourceVersion("")
-			assertBootstrapConfigMap(t, bootstrapconfigMap, &swiftInstance)
+			assertBootstrapConfigMap(t, bootstrapconfigMap, swiftInstance)
 
 			if tt.expectedBootstrapJob != nil {
 				bJob := &batch.Job{}
@@ -920,7 +920,15 @@ func newCertSecret(ips []string) *core.Secret {
 	}
 }
 
-func newCommand(withSwift bool) *contrail.Command {
+func newCommand() *contrail.Command {
+	return createCommand(true)
+}
+
+func newCommandWithoutSwift() *contrail.Command {
+	return createCommand(false)
+}
+
+func createCommand(withSwift bool) *contrail.Command {
 	trueVal := true
 	swiftInstance := ""
 	if withSwift {
@@ -1114,7 +1122,7 @@ func newSwiftWithOwner(active bool) *contrail.Swift {
 }
 
 func newCommandWithEmptyToleration() *contrail.Command {
-	cc := newCommand(true)
+	cc := newCommand()
 	cc.Spec.CommonConfiguration.Tolerations = []core.Toleration{{}}
 	return cc
 }
@@ -1317,7 +1325,7 @@ func newKeystone(status contrail.KeystoneStatus, ownersReferences []meta.OwnerRe
 	}
 }
 
-func assertConfigMap(t *testing.T, actual *core.ConfigMap, swift *string) {
+func assertConfigMap(t *testing.T, actual *core.ConfigMap, swift string) {
 	trueVal := true
 	assert.Equal(t, meta.ObjectMeta{
 		Name:      "command-command-configmap",
@@ -1336,14 +1344,14 @@ func assertConfigMap(t *testing.T, actual *core.ConfigMap, swift *string) {
 	}, actual.ObjectMeta)
 
 	expectedConfig := expectedCommandConfig
-	if *swift == "" {
-		expectedConfig = strings.ReplaceAll(expectedCommandConfig, absentCommandWithNoSwift, "")
+	if swift == "" {
+		expectedConfig = strings.ReplaceAll(expectedCommandConfig, swiftUserConfiguration, "")
 	}
 
 	assert.Equal(t, expectedConfig, actual.Data["command-app-server0.0.0.0.yml"])
 }
 
-func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap, swift *string) {
+func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap, swift string) {
 	trueVal := true
 	assert.Equal(t, meta.ObjectMeta{
 		Name:      "command-bootstrap-configmap",
@@ -1364,8 +1372,8 @@ func assertBootstrapConfigMap(t *testing.T, actual *core.ConfigMap, swift *strin
 	assert.Equal(t, expectedBootstrapScript, actual.Data["bootstrap.sh"])
 	assert.Equal(t, expectedMigrationScript, actual.Data["migration.sh"])
 	expectedInit := expectedCommandInitCluster
-	if *swift == "" {
-		expectedInit = strings.ReplaceAll(expectedCommandInitCluster, absentInitWithNoSwift, "")
+	if swift == "" {
+		expectedInit = strings.ReplaceAll(expectedCommandInitCluster, swiftEndpoint, "")
 	}
 	assert.Equal(t, expectedInit, actual.Data["init_cluster.yml"])
 }
@@ -1668,7 +1676,7 @@ replication:
     enabled: false
 `
 
-const absentCommandWithNoSwift = `
+const swiftUserConfiguration = `
   service_user:
     id: username
     password: password123
@@ -1941,7 +1949,7 @@ ALTER DATABASE contrail_test_migrated RENAME TO contrail_test;
 COMMIT;
 END_OF_SQL`
 
-const absentInitWithNoSwift = `  - data:
+const swiftEndpoint = `  - data:
       uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
       fq_name:
