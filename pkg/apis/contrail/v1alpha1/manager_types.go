@@ -41,84 +41,84 @@ type Services struct {
 	ContrailCNIs     []*ContrailCNIService    `json:"contrailCNIs,omitempty"`
 }
 
-// ContrailCNIService defines desired configuration of Config
+// ContrailCNIService defines desired configuration of ContrailCNI
 // +k8s:openapi-gen=true
 type ContrailCNIService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       ContrailCNISpec `json:"spec,omitempty"`
 }
 
-// ContrailmonitorService defines desired configuration of Config
+// ContrailmonitorService defines desired configuration of ContrailMonitor
 // +k8s:openapi-gen=true
 type ContrailmonitorService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       ContrailmonitorSpec `json:"spec,omitempty"`
 }
 
-// MemcachedService defines desired configuration of Config
+// MemcachedService defines desired configuration of Memcached
 // +k8s:openapi-gen=true
 type MemcachedService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       MemcachedSpec `json:"spec,omitempty"`
 }
 
-// SwiftService defines desired configuration of Config
+// SwiftService defines desired configuration of Swift
 // +k8s:openapi-gen=true
 type SwiftService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       SwiftSpec `json:"spec,omitempty"`
 }
 
-// KeystoneService defines desired configuration of Config
+// KeystoneService defines desired configuration of Keystone
 // +k8s:openapi-gen=true
 type KeystoneService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       KeystoneSpec `json:"spec,omitempty"`
 }
 
-// PostgresService defines desired configuration of Config
+// PostgresService defines desired configuration of Postgres
 // +k8s:openapi-gen=true
 type PostgresService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       PostgresSpec `json:"spec,omitempty"`
 }
 
-// CommandService defines desired configuration of Config
+// CommandService defines desired configuration of Command
 // +k8s:openapi-gen=true
 type CommandService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       CommandSpec `json:"spec,omitempty"`
 }
 
-// RabbitmqService defines desired configuration of Config
+// RabbitmqService defines desired configuration of Rabbitmq
 // +k8s:openapi-gen=true
 type RabbitmqService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       RabbitmqSpec `json:"spec,omitempty"`
 }
 
-// ZookeeperService defines desired configuration of Config
+// ZookeeperService defines desired configuration of Zookeeper
 // +k8s:openapi-gen=true
 type ZookeeperService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       ZookeeperSpec `json:"spec,omitempty"`
 }
 
-// CassandraService defines desired configuration of Config
+// CassandraService defines desired configuration of Cassandra
 // +k8s:openapi-gen=true
 type CassandraService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       CassandraSpec `json:"spec,omitempty"`
 }
 
-// WebuiService defines desired configuration of Config
+// WebuiService defines desired configuration of Webui
 // +k8s:openapi-gen=true
 type WebuiService struct {
 	ObjectMeta `json:"metadata,omitempty"`
 	Spec       WebuiSpec `json:"spec,omitempty"`
 }
 
-// ControlService defines desired configuration of Config
+// ControlService defines desired configuration of Control
 // +k8s:openapi-gen=true
 type ControlService struct {
 	ObjectMeta `json:"metadata,omitempty"`

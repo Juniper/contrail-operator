@@ -107,7 +107,7 @@ spec:
                   cassandras:
                     items:
                       description: CassandraService defines desired configuration
-                        of Config
+                        of Cassandra
                       properties:
                         metadata:
                           description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -279,7 +279,7 @@ spec:
                       type: object
                     type: array
                   command:
-                    description: CommandService defines desired configuration of Config
+                    description: CommandService defines desired configuration of Command
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -662,7 +662,7 @@ spec:
                   contrailCNIs:
                     items:
                       description: ContrailCNIService defines desired configuration
-                        of Config
+                        of ContrailCNI
                       properties:
                         metadata:
                           description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -800,7 +800,7 @@ spec:
                     type: array
                   contrailmonitor:
                     description: ContrailmonitorService defines desired configuration
-                      of Config
+                      of ContrailMonitor
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -854,7 +854,7 @@ spec:
                   controls:
                     items:
                       description: ControlService defines desired configuration of
-                        Config
+                        Control
                       properties:
                         metadata:
                           description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -1026,7 +1026,7 @@ spec:
                     type: array
                   keystone:
                     description: KeystoneService defines desired configuration of
-                      Config
+                      Keystone
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -1397,7 +1397,7 @@ spec:
                     type: array
                   memcached:
                     description: MemcachedService defines desired configuration of
-                      Config
+                      Memcached
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -1545,7 +1545,7 @@ spec:
                     type: object
                   postgres:
                     description: PostgresService defines desired configuration of
-                      Config
+                      Postgres
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -1862,7 +1862,7 @@ spec:
                     type: object
                   rabbitmq:
                     description: RabbitmqService defines desired configuration of
-                      Config
+                      Rabbitmq
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -2014,7 +2014,7 @@ spec:
                         type: object
                     type: object
                   swift:
-                    description: SwiftService defines desired configuration of Config
+                    description: SwiftService defines desired configuration of Swift
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -2432,7 +2432,7 @@ spec:
                       type: object
                     type: array
                   webui:
-                    description: WebuiService defines desired configuration of Config
+                    description: WebuiService defines desired configuration of Webui
                     properties:
                       metadata:
                         description: ObjectMeta is wrapper on metav1.ObjectMeta
@@ -2584,7 +2584,7 @@ spec:
                   zookeepers:
                     items:
                       description: ZookeeperService defines desired configuration
-                        of Config
+                        of Zookeeper
                       properties:
                         metadata:
                           description: ObjectMeta is wrapper on metav1.ObjectMeta
