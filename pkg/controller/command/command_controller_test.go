@@ -394,7 +394,11 @@ func TestCommand(t *testing.T) {
 				newPodList(),
 				newWebUI(true),
 			},
-			expectedStatus:     contrail.CommandStatus{UpgradeState: contrail.CommandNotUpgrading, Endpoint: "20.20.20.20"},
+			expectedStatus: contrail.CommandStatus{
+				Endpoint:       "20.20.20.20",
+				UpgradeState:   contrail.CommandNotUpgrading,
+				ContainerImage: "registry:5000/contrail-command",
+			},
 			expectedDeployment: newDeployment(apps.DeploymentStatus{}),
 			expectedPostgres:   newPostgresWithOwner(true),
 		},
@@ -1950,12 +1954,12 @@ COMMIT;
 END_OF_SQL`
 
 const swiftEndpoint = `  - data:
-      uuid: b62a2f34-c6f7-4a25-efef-f312d2747291
       name: swift
+      uuid: 8c72eecb-23ef-53ce-b551-1090c3cc4718
       fq_name:
-        - default-global-system-config
-        - cluster1
-        - swift
+      - default-global-system-config
+      - cluster1
+      - swift
       parent_uuid: 53494ca8-f40c-11e9-83ae-38c986460fd4
       parent_type: contrail-cluster
       prefix: swift

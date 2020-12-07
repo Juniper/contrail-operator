@@ -180,9 +180,9 @@ func main() {
 		encapPriority := strings.Split(globalVrouterConfiguration.EncapsulationPriorities, ",")
 		encapPriorityObj := &contrailtypes.EncapsulationPrioritiesType{Encapsulation: encapPriority}
 		ecmpObj := globalVrouterConfiguration.EcmpHashingIncludeFields
-		ecmpHashingIncludeFieldsObj := &contrailTypes.EcmpHashingIncludeFields{ecmpObj.HashingConfigured, ecmpObj.SourceIp, ecmpObj.DestinationIp, ecmpObj.IpProtocol, ecmpObj.SourcePort, ecmpObj.DestinationPort}
+		ecmpHashingIncludeFieldsObj := &contrailtypes.EcmpHashingIncludeFields{ecmpObj.HashingConfigured, ecmpObj.SourceIp, ecmpObj.DestinationIp, ecmpObj.IpProtocol, ecmpObj.SourcePort, ecmpObj.DestinationPort}
 		linkLocalServicesTypesObj := operatorLinkLocalToContrailType(globalVrouterConfiguration.LinkLocalServices.LinkLocalServicesEntries)
-		GlobalVrouterConfig := &contrailTypes.GlobalVrouterConfig{}
+		GlobalVrouterConfig := &contrailtypes.GlobalVrouterConfig{}
 		GlobalVrouterConfig.SetFQName("", globalVrouterConfFQName)
 		GlobalVrouterConfig.SetEncapsulationPriorities(encapPriorityObj)
 		GlobalVrouterConfig.SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
@@ -196,10 +196,10 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			obj.(*contrailTypes.GlobalVrouterConfig).SetEncapsulationPriorities(encapPriorityObj)
-			obj.(*contrailTypes.GlobalVrouterConfig).SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
-			obj.(*contrailTypes.GlobalVrouterConfig).SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
-			obj.(*contrailTypes.GlobalVrouterConfig).SetLinklocalServices(&linkLocalServicesTypesObj)
+			obj.(*contrailtypes.GlobalVrouterConfig).SetEncapsulationPriorities(encapPriorityObj)
+			obj.(*contrailtypes.GlobalVrouterConfig).SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
+			obj.(*contrailtypes.GlobalVrouterConfig).SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
+			obj.(*contrailtypes.GlobalVrouterConfig).SetLinklocalServices(&linkLocalServicesTypesObj)
 			if err = contrailClient.Update(obj); err != nil {
 				panic(err)
 			}
@@ -433,16 +433,16 @@ func getGlobalVrouterConfigFromFile(globalVrouterFilePath string) *GlobalVrouter
 	return globalVrouterConfig
 }
 
-func operatorLinkLocalToContrailType(links []LinkLocalServiceEntryType) contrailTypes.LinklocalServicesTypes {
-	var entries []contrailTypes.LinklocalServiceEntryType
+func operatorLinkLocalToContrailType(links []LinkLocalServiceEntryType) contrailtypes.LinklocalServicesTypes {
+	var entries []contrailtypes.LinklocalServiceEntryType
 	for _, entry := range links {
 		entries = append(entries,
-			contrailTypes.LinklocalServiceEntryType{entry.LinkLocalServiceName,
+			contrailtypes.LinklocalServiceEntryType{entry.LinkLocalServiceName,
 				entry.LinkLocalServiceIP,
 				entry.LinkLocalServicePort,
 				entry.IPFabricDNSServiceName,
 				entry.IPFabricServicePort,
 				entry.IPFabricServiceIP})
 	}
-	return contrailTypes.LinklocalServicesTypes{entries}
+	return contrailtypes.LinklocalServicesTypes{entries}
 }
