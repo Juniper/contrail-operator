@@ -37,8 +37,8 @@ func (j Job) JobFailed() bool {
 			return true
 		}
 	}
-	// This is a workaround for k8s bug that Status of Job maybe updated with a delay
-	// and number of pods run can exceed BackOffLimit specified in Job.Spec
+	// This is a workaround for k8s bug that Status of Job may be updated with a delay
+	// and number of pods ran can exceed BackOffLimit specified in Job.Spec
 	if j.Spec.BackoffLimit != nil && *j.Spec.BackoffLimit <= j.Status.Failed {
 		return true
 	}
