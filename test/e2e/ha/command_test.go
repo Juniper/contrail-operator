@@ -314,8 +314,8 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	trueVal := true
 
-	memcached := &contrail.Memcached{
-		ObjectMeta: meta.ObjectMeta{
+	memcached := &contrail.MemcachedService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "memcached",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -329,8 +329,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}
 
-	webui := &contrail.Webui{
-		ObjectMeta: meta.ObjectMeta{
+	webui := &contrail.WebuiService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "webui",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -352,8 +352,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}
 
-	controls := []*contrail.Control{{
-		ObjectMeta: meta.ObjectMeta{
+	controls := []*contrail.ControlService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "control",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha", "control_role": "master"},
@@ -375,8 +375,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}}
 
-	postgres := &contrail.Postgres{
-		ObjectMeta: meta.ObjectMeta{
+	postgres := &contrail.PostgresService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "postgres",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha", "postgres": "postgres"},
@@ -394,8 +394,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}
-	keystone := &contrail.Keystone{
-		ObjectMeta: meta.ObjectMeta{
+	keystone := &contrail.KeystoneService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "keystone",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -414,8 +414,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}
 
-	swift := &contrail.Swift{
-		ObjectMeta: meta.ObjectMeta{
+	swift := &contrail.SwiftService{
+		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
 			Name:      "swift",
 		},
@@ -463,8 +463,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}
 
-	rabbitmq := &contrail.Rabbitmq{
-		ObjectMeta: meta.ObjectMeta{
+	rabbitmq := &contrail.RabbitmqService{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "rabbitmq",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -478,8 +478,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}
-	zookeeper := []*contrail.Zookeeper{{
-		ObjectMeta: meta.ObjectMeta{
+	zookeeper := []*contrail.ZookeeperService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "zookeeper",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -497,8 +497,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}}
-	cassandra := []*contrail.Cassandra{{
-		ObjectMeta: meta.ObjectMeta{
+	cassandra := []*contrail.CassandraService{{
+		ObjectMeta: contrail.ObjectMeta{
 			Name:      "cassandra",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
@@ -516,8 +516,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			},
 		},
 	}}
-	config := &contrail.Config{
-		ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
+	config := &contrail.ConfigService{
+		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
 		Spec: contrail.ConfigSpec{
 			CommonConfiguration: contrail.PodConfiguration{
 				HostNetwork: &trueVal,
@@ -543,8 +543,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}
 
-	command := &contrail.Command{
-		ObjectMeta: meta.ObjectMeta{
+	command := &contrail.CommandService{
+		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
 			Name:      "command",
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},

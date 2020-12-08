@@ -218,6 +218,14 @@ func newConfigInst() *contrail.Config {
 }
 
 func newManager(rbt *contrail.Rabbitmq) *contrail.Manager {
+	rbtService := &contrail.RabbitmqService{
+		ObjectMeta: contrail.ObjectMeta{
+			Name:      rbt.Name,
+			Namespace: rbt.Namespace,
+		},
+		Spec: rbt.Spec,
+	}
+
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -226,7 +234,7 @@ func newManager(rbt *contrail.Rabbitmq) *contrail.Manager {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Rabbitmq: rbt,
+				Rabbitmq: rbtService,
 			},
 		},
 		Status: contrail.ManagerStatus{},

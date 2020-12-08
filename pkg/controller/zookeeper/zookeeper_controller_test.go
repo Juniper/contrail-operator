@@ -151,6 +151,15 @@ func TestZookeeper(t *testing.T) {
 }
 
 func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
+
+	zooService := &contrail.ZookeeperService{
+		ObjectMeta: contrail.ObjectMeta{
+			Name:      zoo.Name,
+			Namespace: zoo.Namespace,
+		},
+		Spec: zoo.Spec,
+	}
+
 	return &contrail.Manager{
 		ObjectMeta: meta.ObjectMeta{
 			Name:      "config1",
@@ -159,7 +168,7 @@ func newManager(zoo *contrail.Zookeeper) *contrail.Manager {
 		},
 		Spec: contrail.ManagerSpec{
 			Services: contrail.Services{
-				Zookeepers: []*contrail.Zookeeper{zoo},
+				Zookeepers: []*contrail.ZookeeperService{zooService},
 			},
 		},
 		Status: contrail.ManagerStatus{},

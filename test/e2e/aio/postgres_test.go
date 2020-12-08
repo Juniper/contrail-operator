@@ -59,8 +59,8 @@ func TestPostgresDataPersistence(t *testing.T) {
 			},
 		}
 
-		psql := &contrail.Postgres{
-			ObjectMeta: meta.ObjectMeta{Namespace: namespace, Name: "postgrestest-psql"},
+		psql := &contrail.PostgresService{
+			ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "postgrestest-psql"},
 			Spec: contrail.PostgresSpec{
 				ServiceConfiguration: contrail.PostgresConfiguration{
 					RootPassSecretName: rootPassSecretName,

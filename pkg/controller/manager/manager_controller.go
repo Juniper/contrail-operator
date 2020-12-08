@@ -330,7 +330,7 @@ func (r *ReconcileManager) processZookeepers(manager *v1alpha1.Manager, replicas
 	var zookeeperServiceStatus []*v1alpha1.ServiceStatus
 	for _, zookeeperService := range manager.Spec.Services.Zookeepers {
 		zookeeper := &v1alpha1.Zookeeper{}
-		zookeeper.ObjectMeta = zookeeperService.ObjectMeta
+		zookeeper.ObjectMeta = zookeeperService.ObjectMeta.ToMeta()
 		zookeeper.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, zookeeper, func() error {
 			zookeeper.Spec = zookeeperService.Spec
@@ -381,7 +381,7 @@ func (r *ReconcileManager) processCassandras(manager *v1alpha1.Manager, replicas
 	var cassandraStatusList []*v1alpha1.ServiceStatus
 	for _, cassandraService := range manager.Spec.Services.Cassandras {
 		cassandra := &v1alpha1.Cassandra{}
-		cassandra.ObjectMeta = cassandraService.ObjectMeta
+		cassandra.ObjectMeta = cassandraService.ObjectMeta.ToMeta()
 		cassandra.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, cassandra, func() error {
 			cassandra.Spec = cassandraService.Spec
@@ -431,7 +431,7 @@ func (r *ReconcileManager) processWebui(manager *v1alpha1.Manager, replicas int3
 	}
 
 	webui := &v1alpha1.Webui{}
-	webui.ObjectMeta = manager.Spec.Services.Webui.ObjectMeta
+	webui.ObjectMeta = manager.Spec.Services.Webui.ObjectMeta.ToMeta()
 	webui.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Webui.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, webui, func() error {
@@ -472,7 +472,7 @@ func (r *ReconcileManager) processProvisionManager(manager *v1alpha1.Manager, re
 	var pmServiceStatus *v1alpha1.ServiceStatus
 	if provisionManagerDependenciesReady(manager.ObjectMeta, r.client) {
 		pm := &v1alpha1.ProvisionManager{}
-		pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta
+		pm.ObjectMeta = manager.Spec.Services.ProvisionManager.ObjectMeta.ToMeta()
 		pm.ObjectMeta.Namespace = manager.Namespace
 		manager.Spec.Services.ProvisionManager.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, pm, func() error {
@@ -520,7 +520,7 @@ func (r *ReconcileManager) processConfig(manager *v1alpha1.Manager, replicas int
 	}
 
 	config := &v1alpha1.Config{}
-	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta
+	config.ObjectMeta = manager.Spec.Services.Config.ObjectMeta.ToMeta()
 	config.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Config.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, config, func() error {
@@ -572,7 +572,7 @@ func (r *ReconcileManager) processKubemanagers(manager *v1alpha1.Manager, replic
 			continue
 		}
 		kubemanager := &v1alpha1.Kubemanager{}
-		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta
+		kubemanager.ObjectMeta = kubemanagerService.ObjectMeta.ToMeta()
 		kubemanager.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, kubemanager, func() error {
 			kubemanager.Spec.ServiceConfiguration.KubemanagerConfiguration = kubemanagerService.Spec.ServiceConfiguration.KubemanagerConfiguration
@@ -631,7 +631,7 @@ func (r *ReconcileManager) processControls(manager *v1alpha1.Manager, replicas i
 	var controlServiceStatus []*v1alpha1.ServiceStatus
 	for _, controlService := range manager.Spec.Services.Controls {
 		control := &v1alpha1.Control{}
-		control.ObjectMeta = controlService.ObjectMeta
+		control.ObjectMeta = controlService.ObjectMeta.ToMeta()
 		control.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, control, func() error {
 			control.Spec = controlService.Spec
@@ -674,7 +674,7 @@ func (r *ReconcileManager) processRabbitMQ(manager *v1alpha1.Manager, replicas i
 		return nil
 	}
 	rabbitMQ := &v1alpha1.Rabbitmq{}
-	rabbitMQ.ObjectMeta = manager.Spec.Services.Rabbitmq.ObjectMeta
+	rabbitMQ.ObjectMeta = manager.Spec.Services.Rabbitmq.ObjectMeta.ToMeta()
 	rabbitMQ.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, rabbitMQ, func() error {
 		rabbitMQ.Spec = manager.Spec.Services.Rabbitmq.Spec
@@ -722,7 +722,7 @@ func (r *ReconcileManager) processVRouters(manager *v1alpha1.Manager, replicas i
 			continue
 		}
 		vRouter := &v1alpha1.Vrouter{}
-		vRouter.ObjectMeta = vRouterService.ObjectMeta
+		vRouter.ObjectMeta = vRouterService.ObjectMeta.ToMeta()
 		vRouter.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, vRouter, func() error {
 			vRouter.Spec.ServiceConfiguration.VrouterConfiguration = vRouterService.Spec.ServiceConfiguration.VrouterConfiguration
@@ -776,7 +776,7 @@ func (r *ReconcileManager) processContrailCNIs(manager *v1alpha1.Manager) error 
 	var ContrailCNIServiceStatus []*v1alpha1.ServiceStatus
 	for _, ContrailCNIService := range manager.Spec.Services.ContrailCNIs {
 		ContrailCNI := &v1alpha1.ContrailCNI{}
-		ContrailCNI.ObjectMeta = ContrailCNIService.ObjectMeta
+		ContrailCNI.ObjectMeta = ContrailCNIService.ObjectMeta.ToMeta()
 		ContrailCNI.ObjectMeta.Namespace = manager.Namespace
 		_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, ContrailCNI, func() error {
 			modifyContrailCNI(ContrailCNI, ContrailCNIService, manager)
@@ -816,7 +816,7 @@ func (r *ReconcileManager) processCommand(manager *v1alpha1.Manager, replicas in
 	}
 
 	command := &v1alpha1.Command{}
-	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta
+	command.ObjectMeta = manager.Spec.Services.Command.ObjectMeta.ToMeta()
 	command.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Command.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, command, func() error {
@@ -858,7 +858,7 @@ func (r *ReconcileManager) processKeystone(manager *v1alpha1.Manager, replicas i
 	}
 
 	keystone := &v1alpha1.Keystone{}
-	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta
+	keystone.ObjectMeta = manager.Spec.Services.Keystone.ObjectMeta.ToMeta()
 	keystone.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Keystone.Spec.ServiceConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, keystone, func() error {
@@ -898,7 +898,7 @@ func (r *ReconcileManager) processPostgres(manager *v1alpha1.Manager, replicas i
 	}
 
 	psql := &v1alpha1.Postgres{}
-	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta
+	psql.ObjectMeta = manager.Spec.Services.Postgres.ObjectMeta.ToMeta()
 	psql.ObjectMeta.Namespace = manager.Namespace
 	manager.Spec.Services.Postgres.Spec.ServiceConfiguration.RootPassSecretName = manager.Spec.KeystoneSecretName
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, psql, func() error {
@@ -940,7 +940,7 @@ func (r *ReconcileManager) processSwift(manager *v1alpha1.Manager, replicas int3
 	}
 
 	swift := &v1alpha1.Swift{}
-	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta
+	swift.ObjectMeta = manager.Spec.Services.Swift.ObjectMeta.ToMeta()
 	manager.Spec.Services.Swift.Spec.ServiceConfiguration.SwiftProxyConfiguration.KeystoneSecretName = manager.Spec.KeystoneSecretName
 	swift.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, swift, func() error {
@@ -980,7 +980,7 @@ func (r *ReconcileManager) processMemcached(manager *v1alpha1.Manager, replicas 
 	}
 
 	memcached := &v1alpha1.Memcached{}
-	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta
+	memcached.ObjectMeta = manager.Spec.Services.Memcached.ObjectMeta.ToMeta()
 	memcached.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, memcached, func() error {
 		memcached.Spec = manager.Spec.Services.Memcached.Spec
@@ -1024,7 +1024,7 @@ func (r *ReconcileManager) processContrailmonitor(manager *v1alpha1.Manager) err
 		return nil
 	}
 	cms := &v1alpha1.Contrailmonitor{}
-	cms.ObjectMeta = manager.Spec.Services.Contrailmonitor.ObjectMeta
+	cms.ObjectMeta = manager.Spec.Services.Contrailmonitor.ObjectMeta.ToMeta()
 	cms.ObjectMeta.Namespace = manager.Namespace
 	_, err := controllerutil.CreateOrUpdate(context.Background(), r.client, cms, func() error {
 		cms.Spec = manager.Spec.Services.Contrailmonitor.Spec
@@ -1036,7 +1036,7 @@ func (r *ReconcileManager) processContrailmonitor(manager *v1alpha1.Manager) err
 	return err
 }
 
-func modifyContrailCNI(ContrailCNI, ContrailCNIService *v1alpha1.ContrailCNI, manager *v1alpha1.Manager) {
+func modifyContrailCNI(ContrailCNI *v1alpha1.ContrailCNI, ContrailCNIService *v1alpha1.ContrailCNIService, manager *v1alpha1.Manager) {
 	ContrailCNI.Spec = ContrailCNIService.Spec
 	if len(ContrailCNI.Spec.CommonConfiguration.NodeSelector) == 0 && len(manager.Spec.CommonConfiguration.NodeSelector) > 0 {
 		(&ContrailCNI.Spec.CommonConfiguration).NodeSelector = manager.Spec.CommonConfiguration.NodeSelector

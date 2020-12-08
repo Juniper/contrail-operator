@@ -116,7 +116,6 @@ func TestManagerTypeTwo(t *testing.T) {
 
 var (
 	replicas int32 = 3
-	falseVal       = false
 )
 
 var managerCR = &contrail.Manager{
@@ -128,9 +127,9 @@ var managerCR = &contrail.Manager{
 	},
 	Spec: contrail.ManagerSpec{
 		Services: contrail.Services{
-			Cassandras:       []*contrail.Cassandra{cassandra},
-			Zookeepers:       []*contrail.Zookeeper{zookeeper},
-			Controls:         []*contrail.Control{control},
+			Cassandras:       []*contrail.CassandraService{cassandra},
+			Zookeepers:       []*contrail.ZookeeperService{zookeeper},
+			Controls:         []*contrail.ControlService{control},
 			Kubemanagers:     []*contrail.KubemanagerService{kubemanagerService},
 			ProvisionManager: provisionmanagerService,
 			Webui:            webui,
@@ -148,8 +147,8 @@ var managerCR = &contrail.Manager{
 	},
 }
 
-var zookeeper = &contrail.Zookeeper{
-	ObjectMeta: meta.ObjectMeta{
+var zookeeper = &contrail.ZookeeperService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "zookeeper",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -161,8 +160,8 @@ var zookeeper = &contrail.Zookeeper{
 	},
 }
 
-var cassandra = &contrail.Cassandra{
-	ObjectMeta: meta.ObjectMeta{
+var cassandra = &contrail.CassandraService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "cassandra",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -174,8 +173,8 @@ var cassandra = &contrail.Cassandra{
 	},
 }
 
-var control = &contrail.Control{
-	ObjectMeta: meta.ObjectMeta{
+var control = &contrail.ControlService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "control",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -188,7 +187,7 @@ var control = &contrail.Control{
 }
 
 var kubemanagerService = &contrail.KubemanagerService{
-	ObjectMeta: meta.ObjectMeta{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "kubemanager",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -204,8 +203,8 @@ var kubemanagerService = &contrail.KubemanagerService{
 	},
 }
 
-var webui = &contrail.Webui{
-	ObjectMeta: meta.ObjectMeta{
+var webui = &contrail.WebuiService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "webui",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -217,8 +216,8 @@ var webui = &contrail.Webui{
 	},
 }
 
-var config = &contrail.Config{
-	ObjectMeta: meta.ObjectMeta{
+var config = &contrail.ConfigService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "config",
 		Namespace: "default",
 		Labels: map[string]string{
@@ -236,8 +235,8 @@ var config = &contrail.Config{
 	},
 }
 
-var rabbitmq = &contrail.Rabbitmq{
-	ObjectMeta: meta.ObjectMeta{
+var rabbitmq = &contrail.RabbitmqService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "rabbitmq-instance",
 		Namespace: "default",
 	},
@@ -246,11 +245,10 @@ var rabbitmq = &contrail.Rabbitmq{
 			Replicas: &replicas,
 		},
 	},
-	Status: contrail.RabbitmqStatus{Active: &falseVal},
 }
 
 var provisionmanagerService = &contrail.ProvisionManagerService{
-	ObjectMeta: meta.ObjectMeta{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "provisionmanager",
 		Namespace: "default",
 		Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -262,8 +260,8 @@ var provisionmanagerService = &contrail.ProvisionManagerService{
 	},
 }
 
-var command = &contrail.Command{
-	ObjectMeta: meta.ObjectMeta{
+var command = &contrail.CommandService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "command",
 		Namespace: "default",
 	},
@@ -275,9 +273,8 @@ var command = &contrail.Command{
 	},
 }
 
-var postgres = &contrail.Postgres{
-	TypeMeta: meta.TypeMeta{},
-	ObjectMeta: meta.ObjectMeta{
+var postgres = &contrail.PostgresService{
+	ObjectMeta: contrail.ObjectMeta{
 		Name:      "psql",
 		Namespace: "default",
 	},

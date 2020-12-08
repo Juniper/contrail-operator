@@ -215,8 +215,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 				NodeSelector:     map[string]string{"node-role.juniper.net/contrail": ""},
 			},
 			Services: v1alpha1.Services{
-				Rabbitmq: &v1alpha1.Rabbitmq{
-					ObjectMeta: metav1.ObjectMeta{
+				Rabbitmq: &v1alpha1.RabbitmqService{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "rabbitmq1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -230,8 +230,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				},
-				Zookeepers: []*v1alpha1.Zookeeper{{
-					ObjectMeta: metav1.ObjectMeta{
+				Zookeepers: []*v1alpha1.ZookeeperService{{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "zookeeper1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -246,8 +246,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				}},
-				Cassandras: []*v1alpha1.Cassandra{{
-					ObjectMeta: metav1.ObjectMeta{
+				Cassandras: []*v1alpha1.CassandraService{{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "cassandra1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -262,8 +262,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				}},
-				Config: &v1alpha1.Config{
-					ObjectMeta: metav1.ObjectMeta{
+				Config: &v1alpha1.ConfigService{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "config1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -290,8 +290,8 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 						},
 					},
 				},
-				Controls: []*v1alpha1.Control{{
-					ObjectMeta: metav1.ObjectMeta{
+				Controls: []*v1alpha1.ControlService{{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "control1",
 						Namespace: namespace,
 						Labels: map[string]string{
@@ -313,7 +313,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 				}},
 				ProvisionManager: &v1alpha1.ProvisionManagerService{
-					ObjectMeta: metav1.ObjectMeta{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "provmanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
@@ -331,7 +331,7 @@ func getManager(namespace string, replicas int32, hostNetwork bool, versionMap m
 					},
 				},
 				Kubemanagers: []*v1alpha1.KubemanagerService{{
-					ObjectMeta: metav1.ObjectMeta{
+					ObjectMeta: v1alpha1.ObjectMeta{
 						Name:      "kubemanager1",
 						Namespace: namespace,
 						Labels:    map[string]string{"contrail_cluster": "cluster1"},
