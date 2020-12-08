@@ -68,9 +68,9 @@ type SwiftProxyList struct {
 // SwiftProxyInstanceType is type unique name used for labels
 const SwiftProxyInstanceType = "SwiftProxy"
 
-// PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
-func (s *SwiftProxy) PodsCertSubjects(podList *corev1.PodList, serviceIP string) []certificates.CertificateSubject {
-	altIPs := PodAlternativeIPs{ServiceIP: serviceIP}
+//PodsCertSubjects gets list of SwiftProxy pods certificate subjets which can be passed to the certificate API
+func (s *SwiftProxy) PodsCertSubjects(podList *corev1.PodList, serviceIP string, alternativeIP ...string) []certificates.CertificateSubject {
+	altIPs := PodAlternativeIPs{ServiceIP: serviceIP, Retriever: func(pod corev1.Pod) []string { return alternativeIP }}
 	return PodsCertSubjects(podList, s.Spec.CommonConfiguration.HostNetwork, altIPs)
 }
 

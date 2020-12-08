@@ -266,6 +266,7 @@ func TestCommandServices(t *testing.T) {
 							{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-kolla-toolbox:train-2005"},
 							{Name: "api", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train-2005"},
 						},
+						Service: contrail.Service{ServiceType: "ClusterIP"},
 					},
 				},
 			},
