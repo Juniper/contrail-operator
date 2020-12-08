@@ -96,10 +96,10 @@ func (r *ReconcileCommand) checkDataMigrationCompleted(command *contrail.Command
 	err = r.client.Get(context.Background(), jobName, dataMigrationJob)
 	exists := err == nil
 	if exists {
-		if job.Status(dataMigrationJob.Status).JobComplete() {
+		if job.Job(*dataMigrationJob).JobCompleted() {
 			return true, true, nil
 		}
-		if job.Status(dataMigrationJob.Status).JobFailed() {
+		if job.Job(*dataMigrationJob).JobFailed() {
 			return true, false, nil
 		}
 	}

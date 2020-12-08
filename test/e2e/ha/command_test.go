@@ -181,10 +181,12 @@ func TestHACommand(t *testing.T) {
 
 		t.Run("when upgrade to invalid image is performed", func(t *testing.T) {
 			badImage := "registry:5000/common-docker-third-party/contrail/busybox:1.31"
-			require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "command-ha"}, cluster))
-			containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
-			utils.GetContainerFromList("api", containers).Image = badImage
-			require.NoError(t, f.Client.Update(context.TODO(), cluster))
+			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
+				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
+				utils.GetContainerFromList("api", containers).Image = badImage
+				return nil
+			})
+			require.NoError(t, err)
 
 			t.Run("then command reports failed upgrade", func(t *testing.T) {
 				err := wait.Contrail{
@@ -200,10 +202,12 @@ func TestHACommand(t *testing.T) {
 
 		t.Run("when previous image is restored", func(t *testing.T) {
 			goodImage := "registry:5000/contrail-nightly/contrail-command:" + cemRelease
-			require.NoError(t, f.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "command-ha"}, cluster))
-			containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
-			utils.GetContainerFromList("api", containers).Image = goodImage
-			require.NoError(t, f.Client.Update(context.TODO(), cluster))
+			_, err = controllerutil.CreateOrUpdate(context.Background(), f.Client.Client, cluster, func() error {
+				containers := cluster.Spec.Services.Command.Spec.ServiceConfiguration.Containers
+				utils.GetContainerFromList("api", containers).Image = goodImage
+				return nil
+			})
+			require.NoError(t, err)
 
 			t.Run("then command reports not upgrading state", func(t *testing.T) {
 				err := wait.Contrail{

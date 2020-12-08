@@ -5,13 +5,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type Status batch.JobStatus
+type Job batch.Job
 
-func (s Status) JobPending() bool {
-	if len(s.Conditions) == 0 {
+func (j Job) JobPending() bool {
+	if len(j.Status.Conditions) == 0 {
 		return true
 	}
-	for _, condition := range s.Conditions {
+	for _, condition := range j.Status.Conditions {
 		if condition.Status == v1.ConditionTrue && (condition.Type == batch.JobComplete || condition.Type == batch.JobFailed) {
 			return false
 		}
@@ -19,11 +19,11 @@ func (s Status) JobPending() bool {
 	return true
 }
 
-func (s Status) JobComplete() bool {
-	if len(s.Conditions) == 0 {
+func (j Job) JobCompleted() bool {
+	if len(j.Status.Conditions) == 0 {
 		return false
 	}
-	for _, condition := range s.Conditions {
+	for _, condition := range j.Status.Conditions {
 		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobComplete {
 			return true
 		}
@@ -31,14 +31,16 @@ func (s Status) JobComplete() bool {
 	return false
 }
 
-func (s Status) JobFailed() bool {
-	if len(s.Conditions) == 0 {
-		return false
-	}
-	for _, condition := range s.Conditions {
+func (j Job) JobFailed() bool {
+	for _, condition := range j.Status.Conditions {
 		if condition.Status == v1.ConditionTrue && condition.Type == batch.JobFailed {
 			return true
 		}
+	}
+	// This is a workaround for k8s bug that Status of Job may be updated with a delay
+	// and number of pods ran can exceed BackOffLimit specified in Job.Spec
+	if j.Spec.BackoffLimit != nil && *j.Spec.BackoffLimit <= j.Status.Failed {
+		return true
 	}
 	return false
 }

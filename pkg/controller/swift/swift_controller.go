@@ -312,7 +312,7 @@ func (r *ReconcileSwift) removeRingReconcilingJobs(swiftName types.NamespacedNam
 		err := r.client.Get(context.Background(), jobName, ringJob)
 		existingJob := err == nil
 		if existingJob {
-			if job.Status(ringJob.Status).JobPending() {
+			if job.Job(*ringJob).JobPending() {
 				// Wait until job finish executing to avoid breaking the ongoing ring reconciliation
 				return reconcile.Result{
 					Requeue:      true,
