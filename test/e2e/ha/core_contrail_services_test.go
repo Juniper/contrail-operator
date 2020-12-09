@@ -55,6 +55,7 @@ var targetVersionMap = map[string]string{
 }
 
 func TestHACoreContrailServices(t *testing.T) {
+	t.SkipNow()
 	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 

@@ -138,7 +138,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				assertPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
-			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
+			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				assertServicesReplicasReady(t, w, 3)
 			})
 
@@ -153,7 +153,17 @@ func TestHAOpenStackServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			require.NotEmpty(t, nodes.Items)
-			node := nodes.Items[0]
+			var node core.Node
+			for _, node := range nodes.Items {
+				if _, ok := node.Labels["node-role.kubernetes.io/master"]; !ok {
+					node.Spec.Taints = append(node.Spec.Taints, core.Taint{
+						Key:    "e2e.test/failure",
+						Effect: core.TaintEffectNoExecute,
+					})
+					break
+				}
+			}
+
 			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
 				Key:    "e2e.test/failure",
 				Effect: core.TaintEffectNoExecute,
@@ -365,7 +375,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		mmContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       waitTimeout,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -378,7 +388,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		keystoneContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       waitTimeout,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -391,7 +401,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		swiftProxyContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       waitTimeout,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -404,7 +414,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		swiftStorageContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       waitTimeout,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -417,7 +427,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		postgresContainerImage := "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       waitTimeout,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,

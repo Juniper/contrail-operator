@@ -24,7 +24,7 @@ cat deploy/1-create-operator.yaml | \
     kubectl apply -f -
 
 if [[ "$LONG_TEST" == "yes" ]]; then
-    TEST_CONFIGURATION="-timeout=90m"
+    TEST_CONFIGURATION="-timeout=120m"
 else
     TEST_CONFIGURATION="-timeout=45m -test.short"
 fi
