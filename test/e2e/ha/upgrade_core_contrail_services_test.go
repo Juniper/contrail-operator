@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
@@ -89,7 +88,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then Zookeeper resource has updated image", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -113,7 +112,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then Rabbitmq resource has updated image", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -168,7 +167,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then Config resource has updated image", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -211,7 +210,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then Webui resource has updated image", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -235,7 +234,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then ProvisionManager resource has updated image", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -258,7 +257,7 @@ func TestUpgradeCoreContrailServices(t *testing.T) {
 			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/test"
@@ -146,7 +145,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 10,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -165,7 +164,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 10,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -191,7 +190,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then command reports failed upgrade", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     cluster.Namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -212,7 +211,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then command reports not upgrading state", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     cluster.Namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
@@ -235,7 +234,7 @@ func TestHACommand(t *testing.T) {
 			t.Run("then cluster is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 10,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
