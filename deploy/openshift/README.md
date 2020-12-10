@@ -43,6 +43,8 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/op
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_cassandras_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_cassandras_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_commands_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_commands_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_configs_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_configs_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailcnis_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailcnis_crd.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_fernetkeymanagers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_fernetkeymanagers_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailmonitors_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_contrailstatusmonitors_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_contrailstatusmonitors_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_controls_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_controls_crd.yaml;\
@@ -59,8 +61,8 @@ curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/cr
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_vrouters_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_vrouters_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_webuis_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_webuis_crd.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/crds/contrail.juniper.net_zookeepers_crd.yaml -o manifests/00-contrail-07-contrail.juniper.net_zookeepers_crd.yaml;\
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml;\
-curl https://raw.githubusercontent.com/Juniper/contrail-operator/master/deploy/openshift/releases/R2011/manifests/00-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/releases/R2011/manifests/00-contrail-08-operator.yaml -o manifests/00-contrail-08-operator.yaml;\
+curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/releases/R2011/manifests/00-contrail-09-manager.yaml -o manifests/00-contrail-09-manager.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/manifests/cluster-network-02-config.yml -o manifests/cluster-network-02-config.yml
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-iptables-machine-config.yaml -o openshift/99_master-iptables-machine-config.yaml;\
 curl https://raw.githubusercontent.com/Juniper/contrail-operator/R2011/deploy/openshift/openshift/99_master-kernel-modules-overlay.yaml -o openshift/99_master-kernel-modules-overlay.yaml;\
