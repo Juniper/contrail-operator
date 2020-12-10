@@ -1,5 +1,5 @@
 ---
-- name: creates directory
+- name: create docker proxy config directory
   file:
     path: /etc/docker/registry/
     state: directory

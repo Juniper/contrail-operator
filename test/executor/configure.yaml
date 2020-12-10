@@ -1,7 +1,7 @@
 - hosts: executor
 
   pre_tasks:
-    - name: creates directory
+    - name: create working directory
       file:
         path: /var/lib/jenkins
         state: directory
