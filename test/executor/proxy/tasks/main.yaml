@@ -1,0 +1,27 @@
+---
+- name: creates directory
+  file:
+    path: /etc/docker/registry/
+    state: directory
+    recurse: yes
+
+- name: plant docker proxy config file
+  template:
+    src: config.yaml.j2
+    dest: /etc/docker/registry/config.yml
+
+- name: create kind network
+  docker_network:
+    name: kind
+
+- name: create docker proxy
+  docker_container:
+    name: kind-registry
+    image: registry:2
+    restart_policy: always
+    networks:
+      - name: kind
+    ports:
+      - "5000:5000"
+    volumes:
+      - /etc/docker/registry/config.yml:/etc/docker/registry/config.yml

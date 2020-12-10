@@ -1,0 +1,25 @@
+- hosts: executor
+
+  pre_tasks:
+    - name: creates directory
+      file:
+        path: /var/lib/jenkins
+        state: directory
+        recurse: yes
+
+    - name: install deps
+      package:
+        name: "{{ item }}"
+        state: present
+      register: result
+      retries: 3
+      delay: 10
+      until: result is success
+      with_items:
+        - python-docker
+        - java
+        - git
+
+  roles:
+    - geerlingguy.docker
+    - proxy

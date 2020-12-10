@@ -1,0 +1,3 @@
+[executor]
+192.168.0.1  ansible_user=user ansible_password=password proxy_remoteurl="https://registry"
+

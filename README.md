@@ -2,7 +2,8 @@
 This is first check-in to R2005
 
 ## References
-[E2E test guide](test/env/README.md)  
+[E2E test guide](test/env/README.md)
+[E2E test executor](test/executor/README.md)
 [Detailed development guide](DEVELOPMENT.md)  
 [Deployment on Openshift 4 and AWS](deploy/openshift/README.md)  
 [Deployment on Openshift 4 and KVM](deploy/openshift/docs/Openshift-KVM.md)
