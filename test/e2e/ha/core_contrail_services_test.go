@@ -55,7 +55,6 @@ var targetVersionMap = map[string]string{
 }
 
 func TestHACoreContrailServices(t *testing.T) {
-	t.SkipNow()
 	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
@@ -170,18 +169,7 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-				LabelSelector: labelKeyToSelector(nodeLabelKey),
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, nodes.Items)
-			node := nodes.Items[0]
-			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-				Key:    "e2e.test/failure",
-				Effect: core.TaintEffectNoExecute,
-			})
-
-			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
+			err := taintWorker(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
@@ -324,33 +312,6 @@ func removeLabel(k kubernetes.Interface, labelKey string) error {
 		_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
 		if err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
-	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-		LabelSelector: nodeLabelSelector,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	for _, n := range nodes.Items {
-		for i, tn := range n.Spec.Taints {
-			if tn.Key != "e2e.test/failure" {
-				continue
-			}
-			s := n.Spec.Taints
-			s[len(s)-1], s[i] = s[i], s[len(s)-1]
-			n.Spec.Taints = s[:len(s)-1]
-			_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-			break
 		}
 	}
 	return nil

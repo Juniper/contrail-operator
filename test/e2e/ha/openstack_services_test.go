@@ -148,28 +148,7 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-				LabelSelector: nodeLabelKey,
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, nodes.Items)
-			var node core.Node
-			for _, node := range nodes.Items {
-				if _, ok := node.Labels["node-role.kubernetes.io/master"]; !ok {
-					node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-						Key:    "e2e.test/failure",
-						Effect: core.TaintEffectNoExecute,
-					})
-					break
-				}
-			}
-
-			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-				Key:    "e2e.test/failure",
-				Effect: core.TaintEffectNoExecute,
-			})
-
-			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
+			err := taintWorker(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{

@@ -129,18 +129,7 @@ func TestHACommand(t *testing.T) {
 			})
 		})
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-				LabelSelector: nodeLabelKey,
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, nodes.Items)
-			node := nodes.Items[0]
-			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-				Key:    "e2e.test/failure",
-				Effect: core.TaintEffectNoExecute,
-			})
-
-			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
+			err := taintWorker(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then command and psql services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
