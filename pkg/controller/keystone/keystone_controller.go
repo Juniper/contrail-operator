@@ -86,6 +86,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	if err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Keystone{},
+	}); err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &contrail.Memcached{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Keystone{},
 	})
@@ -163,6 +169,10 @@ func (r *ReconcileKeystone) Reconcile(request reconcile.Request) (reconcile.Resu
 	keystonePods, err := r.listKeystonePods(keystone.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list command pods: %v", err)
+	}
+
+	if err = r.ensurePodsOwnershipExists(keystone, keystonePods); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to ensure ownership on pods: %v", err)
 	}
 
 	if err := r.ensureCertificatesExist(keystone, keystonePods, svc.ClusterIP()); err != nil {
@@ -291,6 +301,15 @@ func (r *ReconcileKeystone) ensureStatefulSetExists(keystone *contrail.Keystone,
 		return contrail.PrepareSTS(sts, &keystone.Spec.CommonConfiguration, "keystone", req, r.scheme, keystone, r.client, true)
 	})
 	return sts, err
+}
+
+func (r *ReconcileKeystone) ensurePodsOwnershipExists(p *contrail.Keystone, pods *core.PodList) error {
+	for _, pod := range pods.Items {
+		if err := r.kubernetes.Owner(p).EnsureOwns(&pod); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *ReconcileKeystone) updateStatus(

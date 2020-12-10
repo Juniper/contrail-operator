@@ -89,6 +89,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		OwnerType: &contrail.SwiftProxy{},
 	})
 
+	if err != nil {
+		return err
+	}
+
+	if err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftProxy{},
+	}); err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &batch.Job{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.SwiftProxy{},
 	})
@@ -151,6 +161,10 @@ func (r *ReconcileSwiftProxy) Reconcile(request reconcile.Request) (reconcile.Re
 	swiftProxyPods, err := r.listSwiftProxyPods(swiftProxy.Name)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to list swift proxy pods: %v", err)
+	}
+
+	if err = r.ensurePodsOwnershipExists(swiftProxy, swiftProxyPods); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to ensure ownership on pods: %v", err)
 	}
 
 	var alternativeIP []string
@@ -291,6 +305,15 @@ func (r *ReconcileSwiftProxy) ensureLabelExists(sp *contrail.SwiftProxy) error {
 
 	sp.Labels = label.New(contrail.SwiftProxyInstanceType, sp.Name)
 	return r.client.Update(context.Background(), sp)
+}
+
+func (r *ReconcileSwiftProxy) ensurePodsOwnershipExists(sp *contrail.SwiftProxy, pods *core.PodList) error {
+	for _, pod := range pods.Items {
+		if err := r.kubernetes.Owner(sp).EnsureOwns(&pod); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *ReconcileSwiftProxy) listSwiftProxyPods(swiftProxyName string) (*core.PodList, error) {

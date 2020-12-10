@@ -72,6 +72,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	if err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.SwiftStorage{},
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -142,6 +148,11 @@ func (r *ReconcileSwiftStorage) Reconcile(request reconcile.Request) (reconcile.
 	if err = r.client.List(context.Background(), &pods, labels); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	if err = r.ensurePodsOwnershipExists(swiftStorage, &pods); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to ensure ownership on pods: %v", err)
+	}
+
 	swiftStorage.Status.IPs = []string{}
 	for _, pod := range pods.Items {
 		if pod.Status.PodIP != "" {
@@ -437,6 +448,15 @@ func (cg *containerGenerator) getCommand(name string) []string {
 	}
 
 	return defaultCommands[name]
+}
+
+func (r *ReconcileSwiftStorage) ensurePodsOwnershipExists(ss *contrail.SwiftStorage, pods *core.PodList) error {
+	for _, pod := range pods.Items {
+		if err := r.kubernetes.Owner(ss).EnsureOwns(&pod); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *ReconcileSwiftStorage) ensureSwiftAccountServicesConfigMapsExist(swiftStorage *contrail.SwiftStorage) error {

@@ -74,6 +74,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	if err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
+		OwnerType: &contrail.Postgres{},
+	}); err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &contrail.Postgres{},
@@ -147,6 +153,10 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, fmt.Errorf("failed to list Postgres pods: %v", err)
 	}
 
+	if err = r.ensurePodsOwnershipExists(postgres, postgresPods); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to ensure ownership on pods: %v", err)
+	}
+
 	if err := r.ensureCertificatesExist(postgres, postgresPods, leaderClusterIP); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -194,6 +204,15 @@ func (r *ReconcilePostgres) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	return reconcile.Result{}, r.client.Status().Update(context.Background(), postgres)
+}
+
+func (r *ReconcilePostgres) ensurePodsOwnershipExists(p *contrail.Postgres, pods *core.PodList) error {
+	for _, pod := range pods.Items {
+		if err := r.kubernetes.Owner(p).EnsureOwns(&pod); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *ReconcilePostgres) ensureLabelExists(p *contrail.Postgres) error {

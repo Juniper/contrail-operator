@@ -18,6 +18,7 @@ func TestUtils(t *testing.T) {
 	podTemplate1.Spec.NodeName = "node1"
 	podTemplate1.Spec.Hostname = "host1"
 	podTemplate1.Status.PodIP = "1.5.5.5"
+	podTemplate1.Status.Phase = corev1.PodRunning
 	podItems = append(podItems, podTemplate1)
 
 	podTemplate2 := corev1.Pod{}
@@ -26,6 +27,7 @@ func TestUtils(t *testing.T) {
 	podTemplate2.Spec.NodeName = "node2"
 	podTemplate2.Spec.Hostname = "host2"
 	podTemplate2.Status.PodIP = "1.5.5.6"
+	podTemplate2.Status.Phase = corev1.PodRunning
 	podTemplate2.Annotations = map[string]string{"dataSubnetIP": "172.17.90.2"}
 	podItems = append(podItems, podTemplate2)
 

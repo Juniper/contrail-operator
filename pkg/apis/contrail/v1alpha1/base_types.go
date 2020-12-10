@@ -284,7 +284,7 @@ func PodsCertSubjects(podList *corev1.PodList, hostNetwork *bool, podAltIPs PodA
 		useNodeName = *hostNetwork
 	}
 	for _, pod := range podList.Items {
-		if pod.Status.Phase == corev1.PodFailed {
+		if pod.Status.Phase != corev1.PodRunning {
 			continue
 		}
 		var hostname string

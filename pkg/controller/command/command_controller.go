@@ -118,6 +118,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		OwnerType:    &contrail.Command{},
 	})
 
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &core.Pod{}}, &handler.EnqueueRequestForOwner{
 		OwnerType: &contrail.Command{},
 	})
