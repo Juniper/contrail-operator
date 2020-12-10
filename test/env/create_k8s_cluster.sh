@@ -41,10 +41,11 @@ done
 # create a cluster with the local registry enabled in containerd
 echo "$kindConfig" | kind create cluster --name "${kind_cluster_name}" --config=-
 
-# add the registry to /etc/hosts on each node
+# add the registry to /etc/hosts on each node and restart containerd to load configuration
 cmd="echo ${insecure_registry_address} registry >> /etc/hosts"
 for node in $(kind get nodes --name "${kind_cluster_name}"); do
   docker exec "${node}" sh -c "${cmd}"
+  docker exec "${node}" sh -c "systemctl restart containerd"
 done
 
 # remove default storage class
