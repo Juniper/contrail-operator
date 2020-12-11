@@ -101,6 +101,19 @@ func (w Wait) Poll(repeatable func() (done bool, err error)) error {
 	return wait.Poll(w.RetryInterval, w.Timeout, repeatable)
 }
 
+// RetryRequest is used to retry requests until it doesn't return error
+func (w Wait) RetryRequest(f func() error) error {
+	err := wait.Poll(w.RetryInterval, w.Timeout, func() (done bool, err error) {
+		if err = f(); err != nil {
+			w.Logger.Logf("request failed: %v", err)
+			return false, nil
+		}
+		return true, nil
+	})
+
+	return err
+}
+
 func (w Wait) dumpPodsOnError(err error) {
 	if err != nil {
 		w.Logger.DumpPods()

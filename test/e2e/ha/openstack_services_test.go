@@ -138,7 +138,7 @@ func TestHAOpenStackServices(t *testing.T) {
 				assertPodsHaveUpdatedImages(t, f, cluster, log)
 			})
 
-			t.Run("then all services should have 1 ready replicas", func(t *testing.T) {
+			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				assertServicesReplicasReady(t, w, 3)
 			})
 
@@ -148,23 +148,12 @@ func TestHAOpenStackServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-				LabelSelector: nodeLabelKey,
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, nodes.Items)
-			node := nodes.Items[0]
-			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-				Key:    "e2e.test/failure",
-				Effect: core.TaintEffectNoExecute,
-			})
-
-			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
+			err := taintWorker(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -183,7 +172,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -206,7 +195,7 @@ func TestHAOpenStackServices(t *testing.T) {
 			t.Run("then cluster is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
@@ -254,7 +243,7 @@ func assertServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *te
 
 	t.Run("when swift file is uploaded", func(t *testing.T) {
 		tokens := keystone.AuthTokens{}
-		err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+		err := k8swait.Poll(retryInterval, time.Minute*5, func() (done bool, err error) {
 			if tokens, err = keystoneClient.PostAuthTokens("swift", "swiftPass", "service"); err != nil {
 				t.Logf("Request to keystone failed: %v", err)
 				return false, nil
@@ -348,7 +337,7 @@ func updateOpenStackManagerImages(f *test.Framework, manager *contrail.Manager) 
 }
 
 func retryRequest(t *testing.T, f func() error) error {
-	err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+	err := k8swait.Poll(retryInterval, time.Minute*5, func() (done bool, err error) {
 		if err = f(); err != nil {
 			t.Logf("request failed: %v", err)
 			return false, nil
@@ -365,7 +354,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		mmContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -378,7 +367,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		keystoneContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-keystone:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       6 * time.Minute,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -391,7 +380,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		swiftProxyContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-swift-proxy-server:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       10 * time.Minute,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -404,7 +393,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		swiftStorageContainerImage := "registry:5000/common-docker-third-party/contrail/centos-binary-swift-object:train"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,
@@ -417,7 +406,7 @@ func assertPodsHaveUpdatedImages(t *testing.T, f *test.Framework, manager *contr
 		postgresContainerImage := "registry:5000/common-docker-third-party/contrail/patroni:2.0.0.logical"
 		err := wait.Contrail{
 			Namespace:     manager.Namespace,
-			Timeout:       5 * time.Minute,
+			Timeout:       time.Minute * 30,
 			RetryInterval: retryInterval,
 			Client:        f.Client,
 			Logger:        log,

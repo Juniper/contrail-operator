@@ -169,23 +169,12 @@ func TestHACoreContrailServices(t *testing.T) {
 		})
 
 		t.Run("when one of the nodes fails", func(t *testing.T) {
-			nodes, err := f.KubeClient.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-				LabelSelector: labelKeyToSelector(nodeLabelKey),
-			})
-			assert.NoError(t, err)
-			require.NotEmpty(t, nodes.Items)
-			node := nodes.Items[0]
-			node.Spec.Taints = append(node.Spec.Taints, core.Taint{
-				Key:    "e2e.test/failure",
-				Effect: core.TaintEffectNoExecute,
-			})
-
-			_, err = f.KubeClient.CoreV1().Nodes().Update(context.Background(), &node, meta.UpdateOptions{})
+			err := taintWorker(f.KubeClient, labelKeyToSelector(nodeLabelKey))
 			assert.NoError(t, err)
 			t.Run("then all services should have 2 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       waitTimeout,
 					RetryInterval: time.Second * 15,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -223,7 +212,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			t.Run("then all services should have 3 ready replicas", func(t *testing.T) {
 				w := wait.Wait{
 					Namespace:     namespace,
-					Timeout:       time.Minute * 5,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					KubeClient:    f.KubeClient,
 					Logger:        log,
@@ -254,7 +243,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			t.Run("then manager is cleared in less then 5 minutes", func(t *testing.T) {
 				err := wait.Contrail{
 					Namespace:     namespace,
-					Timeout:       5 * time.Minute,
+					Timeout:       waitTimeout,
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 				}.ForManagerDeletion(cluster.Name)
@@ -328,33 +317,6 @@ func removeLabel(k kubernetes.Interface, labelKey string) error {
 	return nil
 }
 
-func untaintNodes(k kubernetes.Interface, nodeLabelSelector string) error {
-	nodes, err := k.CoreV1().Nodes().List(context.Background(), meta.ListOptions{
-		LabelSelector: nodeLabelSelector,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	for _, n := range nodes.Items {
-		for i, tn := range n.Spec.Taints {
-			if tn.Key != "e2e.test/failure" {
-				continue
-			}
-			s := n.Spec.Taints
-			s[len(s)-1], s[i] = s[i], s[len(s)-1]
-			n.Spec.Taints = s[:len(s)-1]
-			_, err = k.CoreV1().Nodes().Update(context.Background(), &n, meta.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-	return nil
-}
-
 func assertReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Zookeeper StatefulSet has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
@@ -397,7 +359,7 @@ func assertConfigIsHealthy(t *testing.T, proxy *kubeproxy.HTTPProxy, p *core.Pod
 	configProxy := proxy.NewSecureClient("contrail", p.Name, 8082)
 	var res *http.Response
 
-	err := k8swait.Poll(retryInterval, time.Minute*2, func() (done bool, err error) {
+	err := k8swait.Poll(retryInterval, time.Minute*5, func() (done bool, err error) {
 		req, err := configProxy.NewRequest(http.MethodGet, "/projects", nil)
 		if err != nil {
 			t.Log(err)
@@ -628,7 +590,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			zkContainerImage := "registry:5000/common-docker-third-party/contrail/zookeeper:" + targetVersionMap["zookeeper"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -641,7 +603,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			rmqContainerImage := "registry:5000/common-docker-third-party/contrail/rabbitmq:" + targetVersionMap["rabbitmq"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -654,7 +616,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			csContainerImage := "registry:5000/common-docker-third-party/contrail/cassandra:" + targetVersionMap["cassandra"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -668,7 +630,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			controlContainerImage := "registry:5000/contrail-nightly/contrail-controller-control-control:" + targetVersionMap["cemVersion"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -681,7 +643,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			apiContainerImage := "registry:5000/contrail-nightly/contrail-controller-config-api:" + targetVersionMap["cemVersion"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -694,7 +656,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			webuijobContainerImage := "registry:5000/contrail-nightly/contrail-controller-webui-job:" + targetVersionMap["cemVersion"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
@@ -707,7 +669,7 @@ func requirePodsHaveUpdatedImages(t *testing.T, f *test.Framework, namespace str
 			pmContainerImage := "registry:5000/contrail-operator/engprod-269421/contrail-operator-provisioner:" + targetVersionMap["contrail-operator-provisioner"]
 			err := wait.Contrail{
 				Namespace:     namespace,
-				Timeout:       5 * time.Minute,
+				Timeout:       waitTimeout,
 				RetryInterval: retryInterval,
 				Client:        f.Client,
 				Logger:        log,
