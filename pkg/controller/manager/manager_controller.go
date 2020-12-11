@@ -156,14 +156,15 @@ func (r *ReconcileManager) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	if instance.Spec.KeystoneSecretName == "" {
 		instance.Spec.KeystoneSecretName = instance.Name + "-admin-password"
+		if err = r.client.Update(context.TODO(), instance); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 	adminPasswordSecretName := instance.Spec.KeystoneSecretName
 	if err = r.secret(adminPasswordSecretName, "manager", instance).ensureAdminPassSecretExist(); err != nil {
 		return reconcile.Result{}, err
 	}
-	if err = r.client.Update(context.TODO(), instance); err != nil {
-		return reconcile.Result{}, err
-	}
+
 	nodes, err := r.getNodes(labels.SelectorFromSet(instance.Spec.CommonConfiguration.NodeSelector))
 	if err != nil {
 		return reconcile.Result{}, err
