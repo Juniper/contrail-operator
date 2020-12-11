@@ -128,6 +128,11 @@ Verify if it works:
     $ operator-sdk version
     operator-sdk version: "v0.18.2", (...)
 
+## Install python3 and patch tool
+
+    yum install python3
+    yum install patch
+
 ## Install bazel
 
 ### Bazel on linux
