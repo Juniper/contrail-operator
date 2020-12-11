@@ -3,13 +3,14 @@ package provisionmanager
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sort"
 	"strconv"
 
 	"gopkg.in/yaml.v2"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -181,7 +182,7 @@ func (r *ReconcileProvisionManager) Reconcile(request reconcile.Request) (reconc
 	instance := &v1alpha1.ProvisionManager{}
 	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
@@ -509,6 +510,11 @@ func instanceConfiguration(
 				if err != nil {
 					return err
 				}
+
+				if hostname == "" {
+					continue
+				}
+
 				n := v1alpha1.ConfigNode{
 					Node: v1alpha1.Node{
 						IPAddress: ipAddress,
@@ -535,6 +541,11 @@ func instanceConfiguration(
 				if err != nil {
 					return err
 				}
+
+				if hostname == "" {
+					continue
+				}
+
 				n := &v1alpha1.AnalyticsNode{
 					Node: v1alpha1.Node{
 						IPAddress: ipAddress,
@@ -564,6 +575,11 @@ func instanceConfiguration(
 				if err != nil {
 					return err
 				}
+
+				if hostname == "" {
+					continue
+				}
+
 				dataIP, err := c.GetDataIPFromAnnotations(podName, request.Namespace, cl)
 				if err != nil {
 					return err
@@ -608,6 +624,11 @@ func instanceConfiguration(
 				if err != nil {
 					return err
 				}
+
+				if hostname == "" {
+					continue
+				}
+
 				n := &v1alpha1.VrouterNode{
 					Node: v1alpha1.Node{
 						IPAddress: ipAddress,
@@ -654,6 +675,11 @@ func instanceConfiguration(
 				if err != nil {
 					return err
 				}
+
+				if hostname == "" {
+					continue
+				}
+
 				n := v1alpha1.DatabaseNode{
 					Node: v1alpha1.Node{
 						IPAddress: ipAddress,
@@ -729,5 +755,24 @@ func getPodsHostname(podName string, namespace string, client client.Client) (st
 		return "", err
 	}
 
-	return utils.GetPodsHostname(client, pod)
+	if !pod.Spec.HostNetwork {
+		return pod.Spec.Hostname, nil
+	}
+
+	if pod.Spec.NodeName == "" {
+		return "", nil
+	}
+
+	n := corev1.Node{}
+	if err := client.Get(context.Background(), types.NamespacedName{Name: pod.Spec.NodeName}, &n); err != nil {
+		return "", err
+	}
+
+	for _, a := range n.Status.Addresses {
+		if a.Type == corev1.NodeHostName {
+			return a.Address, nil
+		}
+	}
+
+	return "", errors.New("couldn't get pods hostname")
 }
