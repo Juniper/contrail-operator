@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	scmRevision := getEnv("BUILD_SCM_REVISION", "latest")
 	scmBranch := getEnv("BUILD_SCM_BRANCH", "master")
 	buildTag = scmBranch + "." + scmRevision
-	cemRelease = getEnv("CEM_RELEASE", "master.1417-ubi")
+	cemRelease = getEnv("CEM_RELEASE", "master.1456-ubi")
 	f.MainEntry(m)
 }
 
