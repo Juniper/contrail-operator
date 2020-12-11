@@ -172,7 +172,10 @@ func TestOpenstackServices(t *testing.T) {
 			t.Run("then the keystone service should handle request for a token", func(t *testing.T) {
 				keystoneClient, err := getKeystoneClient(f, namespace, "openstacktest-keystone")
 				assert.NoError(t, err)
-				_, err = keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+				err = wait.RetryRequest(func() error {
+					_, err := keystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+					return err
+				})
 				assert.NoError(t, err)
 			})
 		})
