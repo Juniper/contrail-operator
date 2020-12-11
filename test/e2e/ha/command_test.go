@@ -306,7 +306,7 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Manager {
 	trueVal := true
 	one := int32(1)
-	commanConfig := contrail.PodConfiguration{
+	commonConfig := contrail.PodConfiguration{
 		Replicas: &one,
 		Tolerations: []core.Toleration{
 			{
@@ -327,7 +327,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.MemcachedSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.MemcachedConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "memcached", Image: "registry:5000/common-docker-third-party/contrail/centos-binary-memcached:train-2005"},
@@ -343,7 +343,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.WebuiSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.WebuiConfiguration{
 				CassandraInstance: "cassandra",
 				KeystoneInstance:  "keystone",
@@ -364,7 +364,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha", "control_role": "master"},
 		},
 		Spec: contrail.ControlSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ControlConfiguration{
 				CassandraInstance: "cassandra",
 				Containers: []*contrail.Container{
@@ -404,7 +404,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.KeystoneSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.KeystoneConfiguration{
 				MemcachedInstance: "memcached",
 				PostgresInstance:  "postgres",
@@ -424,7 +424,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Name:      "swift",
 		},
 		Spec: contrail.SwiftSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.SwiftConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "contrail-operator-ringcontroller", Image: "registry:5000/contrail-operator/engprod-269421/contrail-operator-ringcontroller:" + scmBranch + "." + scmRevision},
@@ -476,7 +476,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.RabbitmqSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.RabbitmqConfiguration{
 				Containers: []*contrail.Container{
 					{Name: "rabbitmq", Image: "registry:5000/common-docker-third-party/contrail/rabbitmq:3.7.16"},
@@ -492,7 +492,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.ZookeeperSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ZookeeperConfiguration{
 				Storage: contrail.Storage{
 					Path: storagePath + "zookeeper",
@@ -512,7 +512,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.CassandraSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.CassandraConfiguration{
 				Storage: contrail.Storage{
 					Path: storagePath + "cassandra",
@@ -528,7 +528,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	config := &contrail.ConfigService{
 		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
 		Spec: contrail.ConfigSpec{
-			CommonConfiguration: commanConfig,
+			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ConfigConfiguration{
 				CassandraInstance: "cassandra",
 				ZookeeperInstance: "zookeeper",
