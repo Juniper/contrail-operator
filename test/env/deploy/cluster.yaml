@@ -9,7 +9,6 @@ spec:
     hostNetwork: true
     nodeSelector:
       node-role.juniper.net/contrail: ""
-  keystoneSecretInstance: cluster1-admin-password
   services:
     cassandras:
       - metadata:
@@ -82,7 +81,6 @@ spec:
                 image: registry:5000/contrail-nightly/contrail-controller-control-named:master.1456-ubi
               - name: statusmonitor
                 image: registry:5000/contrail-operator/engprod-269421/contrail-statusmonitor:master.latest
-            zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
         labels:
@@ -172,7 +170,6 @@ spec:
           configInstance: config1
           postgresInstance: postgres
           swiftInstance: swift
-          swiftProxyPort: 5080
           keystoneInstance: keystone
           webuiInstance: webui1
           contrailVersion: "master.1456-ubi"
