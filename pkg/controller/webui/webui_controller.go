@@ -379,7 +379,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 						Port:   intstr.IntOrString{IntVal: int32(v1alpha1.WebuiHttpsListenPort)},
 					},
 				},
-				InitialDelaySeconds: 15,
+				InitialDelaySeconds: 10,
 				TimeoutSeconds:      3,
 			}
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &readinessProbe
@@ -391,8 +391,9 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 						Port:   intstr.IntOrString{IntVal: int32(v1alpha1.WebuiHttpsListenPort)},
 					},
 				},
-				InitialDelaySeconds: 90,
+				InitialDelaySeconds: 60,
 				TimeoutSeconds:      3,
+				PeriodSeconds:       30,
 			}
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).LivenessProbe = &livenessProbe
 		}
