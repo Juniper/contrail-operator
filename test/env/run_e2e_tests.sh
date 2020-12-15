@@ -29,6 +29,8 @@ else
     TEST_CONFIGURATION="-timeout=45m -test.short"
 fi
 
+kubectl wait pod --for=condition=Ready --timeout=60s -n contrail -l name=contrail-operator
+
 ## Operator-sdk e2e test framework requires namespacedMan and globalMan to be defined, however in our case
 ## all resources and crds are registered before and automatically. That is way empty.yaml files are provided here
 ## This is equivalent to "operator-sdk test local --no-setup"

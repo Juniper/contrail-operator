@@ -371,7 +371,7 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
-			probe := corev1.Probe{
+			readinessProbe := corev1.Probe{
 				Handler: corev1.Handler{
 					HTTPGet: &corev1.HTTPGetAction{
 						Scheme: corev1.URISchemeHTTPS,
@@ -379,8 +379,23 @@ func (r *ReconcileWebui) Reconcile(request reconcile.Request) (reconcile.Result,
 						Port:   intstr.IntOrString{IntVal: int32(v1alpha1.WebuiHttpsListenPort)},
 					},
 				},
+				InitialDelaySeconds: 10,
+				TimeoutSeconds:      3,
 			}
-			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &probe
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).ReadinessProbe = &readinessProbe
+			livenessProbe := corev1.Probe{
+				Handler: corev1.Handler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Scheme: corev1.URISchemeHTTPS,
+						Path:   "/",
+						Port:   intstr.IntOrString{IntVal: int32(v1alpha1.WebuiHttpsListenPort)},
+					},
+				},
+				InitialDelaySeconds: 60,
+				TimeoutSeconds:      3,
+				PeriodSeconds:       30,
+			}
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).LivenessProbe = &livenessProbe
 		}
 		if container.Name == "webuijob" {
 			command := []string{"bash", "-c",
