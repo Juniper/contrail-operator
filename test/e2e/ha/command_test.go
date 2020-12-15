@@ -184,7 +184,7 @@ func TestHACommand(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
-				}.ForCommandUpgradeState("command-ha", contrail.CommandUpgradeFailed)
+				}.ForCommandUpgradeState("command-ha-command", contrail.CommandUpgradeFailed)
 				require.NoError(t, err)
 			})
 		})
@@ -205,7 +205,7 @@ func TestHACommand(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
-				}.ForCommandUpgradeState("command-ha", contrail.CommandNotUpgrading)
+				}.ForCommandUpgradeState("command-ha-command", contrail.CommandNotUpgrading)
 				require.NoError(t, err)
 			})
 
@@ -255,7 +255,7 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 		}, keystoneCR)
 	require.NoError(t, err)
 
-	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-ha-command", 9091, "/keystone")
+	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-ha-command-command", 9091, "/keystone")
 	proxiedKeystoneClient := &keystone.Client{
 		Connector:    commandProxy,
 		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
@@ -277,7 +277,7 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Command deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyDeployment("command-ha-command-deployment", r))
+		assert.NoError(t, w.ForReadyDeployment("command-ha-command-command-deployment", r))
 	})
 	t.Run("then a Keystone StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
@@ -285,7 +285,7 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 	})
 	t.Run("then a Config StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("command-ha-config-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-config-config-statefulset", 1))
 	})
 	t.Run("then a Swift Storage StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
@@ -301,7 +301,7 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 	})
 	t.Run("then a WebUI StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("command-ha-webui-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-webui-webui-statefulset", 1))
 	})
 }
 
@@ -340,7 +340,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	webui := &contrail.WebuiService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "command-ha",
+			Name:      "command-ha-webui",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -361,7 +361,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	controls := []*contrail.ControlService{{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "command-ha",
+			Name:      "command-ha-control",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha", "control_role": "master"},
 		},
@@ -473,7 +473,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	rabbitmq := &contrail.RabbitmqService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "command-ha",
+			Name:      "command-ha-rabbit",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -528,7 +528,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}}
 	config := &contrail.ConfigService{
-		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "command-ha", Labels: map[string]string{"contrail_cluster": "command-ha"}},
+		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "command-ha-config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
 		Spec: contrail.ConfigSpec{
 			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ConfigConfiguration{
@@ -555,7 +555,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	command := &contrail.CommandService{
 		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
-			Name:      "command-ha",
+			Name:      "command-ha-command",
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.CommandSpec{
@@ -564,8 +564,8 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 				KeystoneSecretName: "keystone-adminpass-secret",
 				KeystoneInstance:   "command-ha-keystone",
 				SwiftInstance:      "command-ha-swift",
-				ConfigInstance:     "command-ha",
-				WebUIInstance:      "command-ha",
+				ConfigInstance:     "command-ha-config",
+				WebUIInstance:      "command-ha-webui",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
 					{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
