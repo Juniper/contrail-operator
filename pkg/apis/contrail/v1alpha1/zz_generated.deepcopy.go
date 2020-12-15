@@ -2005,6 +2005,13 @@ func (in *KubemanagerConfiguration) DeepCopyInto(out *KubemanagerConfiguration) 
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnvVariablesConfig != nil {
+		in, out := &in.EnvVariablesConfig, &out.EnvVariablesConfig
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
