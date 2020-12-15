@@ -42,11 +42,13 @@ go_library(
     name = "go_default_library",
     srcs = [
         "settings.go",
+        "taint.go",
         "volumes.go",
     ],
     importpath = "github.com/Juniper/contrail-operator/test/e2e/ha",
     visibility = ["//visibility:public"],
     deps = [
+        "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
     ],
