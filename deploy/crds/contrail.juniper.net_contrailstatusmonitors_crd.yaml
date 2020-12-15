@@ -1,8 +1,17 @@
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: contrailstatusmonitors.contrail.juniper.net
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status
+    description: Number of instances in group
+    name: Status
+    type: string
+  - JSONPath: .errornotes
+    description: Number of instances in group
+    name: Errornotes
+    type: string
   group: contrail.juniper.net
   names:
     kind: Contrailstatusmonitor
@@ -10,39 +19,31 @@ spec:
     plural: contrailstatusmonitors
     singular: contrailstatusmonitor
   scope: Namespaced
+  subresources: {}
+  validation:
+    openAPIV3Schema:
+      description: Contrailstatusmonitor is the Schema for the contrailstatusmonitors
+        API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        errornotes:
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        status:
+          type: string
+      type: object
+  version: v1alpha1
   versions:
-  - additionalPrinterColumns:
-    - description: Number of instances in group
-      jsonPath: .status
-      name: Status
-      type: string
-    - description: Number of instances in group
-      jsonPath: .errornotes
-      name: Errornotes
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Contrailstatusmonitor is the Schema for the contrailstatusmonitors
-          API
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          errornotes:
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          status:
-            type: string
-        type: object
+  - name: v1alpha1
     served: true
     storage: true
-    subresources: {}
