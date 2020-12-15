@@ -220,6 +220,11 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
+	_, err = instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-envs", r.Client, r.Scheme, request)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	secretCertificates, err := instance.CreateSecret(request.Name+"-secret-certificates", r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -425,6 +430,13 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			volumeMountList = append(volumeMountList, volumeMount)
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).VolumeMounts = volumeMountList
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
+			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: request.Name + "-" + instanceType + "-configmap-envs",
+					},
+				},
+			}}
 		}
 		if container.Name == "statusmonitor" {
 			command := []string{"sh", "-c",
