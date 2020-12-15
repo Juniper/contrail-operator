@@ -62,6 +62,46 @@ func TestKubemanagerConfig(t *testing.T) {
 	})
 }
 
+func TestKubemanagerEnvConfig(t *testing.T) {
+	logf.SetLogger(logf.ZapLogger(true))
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      "kubemanager1",
+			Namespace: "default",
+		},
+	}
+	configMapNamespacedName := types.NamespacedName{
+		Name:      "kubemanager1-kubemanager-configmap-envs",
+		Namespace: "default",
+	}
+	secretNamespacedName := types.NamespacedName{
+		Name:      "kubemanagersecret",
+		Namespace: "default",
+	}
+	environment := SetupEnv()
+	cl := *environment.client
+	clientset := kubernetes.Clientset{}
+	customEnvVariables := map[string]string{
+		"KUBERNETES_API_PORT":       "8081",
+		"KUBERNETES_IP_FABRIC_SNAT": "true",
+	}
+	environment.kubemanagerResource.Spec.ServiceConfiguration.EnvVariablesConfig = customEnvVariables
+	require.NoError(t, environment.kubemanagerResource.InstanceConfiguration(
+		request, &environment.kubemanbagerPodList, cl, k8s.ClusterConfig{Client: clientset.CoreV1()}),
+		"Error while configuring instance")
+	require.NoError(t, cl.Get(context.TODO(), secretNamespacedName, &environment.kubemanagerSecret),
+		"Error while gathering kubemanager secret")
+	require.NoError(t, cl.Get(context.TODO(), configMapNamespacedName, &environment.kubemanagerConfigMapEnvs),
+		"Error while gathering kubemanager configmap")
+
+	expectedEnvVariables := map[string]string{
+		"KUBERNETES_API_PORT":       "8081",
+		"KUBERNETES_IP_FABRIC_SNAT": "true",
+	}
+	assert.Equal(t, expectedEnvVariables, environment.kubemanagerConfigMapEnvs.Data)
+
+}
+
 var kubemanagerConfig = `[DEFAULTS]
 host_ip=1.1.6.1
 orchestrator=kubernetes
