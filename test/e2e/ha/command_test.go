@@ -42,6 +42,8 @@ func TestHACommand(t *testing.T) {
 
 	log := logger.New(t, namespace, f.Client)
 
+	nodeLabelKey := "test-command-ha"
+
 	if err := test.AddToFrameworkScheme(contrail.SchemeBuilder.AddToScheme, &contrail.ManagerList{}); err != nil {
 		t.Fatalf("Failed to add framework scheme: %v", err)
 	}
@@ -69,7 +71,6 @@ func TestHACommand(t *testing.T) {
 			Logger:        log,
 		}
 
-		nodeLabelKey := "test-command-ha"
 		storagePath := "/mnt/storage/" + uuid.New().String()
 		cluster := getHACommandCluster(namespace, nodeLabelKey, storagePath)
 
@@ -183,7 +184,7 @@ func TestHACommand(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
-				}.ForCommandUpgradeState("command", contrail.CommandUpgradeFailed)
+				}.ForCommandUpgradeState("command-ha-command", contrail.CommandUpgradeFailed)
 				require.NoError(t, err)
 			})
 		})
@@ -204,7 +205,7 @@ func TestHACommand(t *testing.T) {
 					RetryInterval: retryInterval,
 					Client:        f.Client,
 					Logger:        log,
-				}.ForCommandUpgradeState("command", contrail.CommandNotUpgrading)
+				}.ForCommandUpgradeState("command-ha-command", contrail.CommandNotUpgrading)
 				require.NoError(t, err)
 			})
 
@@ -233,14 +234,15 @@ func TestHACommand(t *testing.T) {
 	})
 
 	err = f.Client.DeleteAllOf(context.TODO(), &core.PersistentVolume{})
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
+
+	err = removeLabel(f.KubeClient, nodeLabelKey)
+	require.NoError(t, err)
 }
 
 func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	commandPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
-		LabelSelector: "command=command",
+		LabelSelector: "command=command-ha-command",
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, commandPods.Items)
@@ -249,11 +251,11 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 	err = f.Client.Get(context.TODO(),
 		types.NamespacedName{
 			Namespace: namespace,
-			Name:      "keystone",
+			Name:      "command-ha-keystone",
 		}, keystoneCR)
 	require.NoError(t, err)
 
-	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-command", 9091, "/keystone")
+	commandProxy := proxy.NewSecureClientForServiceWithPath("contrail", "command-ha-command-command", 9091, "/keystone")
 	proxiedKeystoneClient := &keystone.Client{
 		Connector:    commandProxy,
 		KeystoneConf: &keystoneCR.Spec.ServiceConfiguration,
@@ -275,31 +277,31 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int32) {
 	t.Run(fmt.Sprintf("then a Command deployment has %d ready replicas", r), func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyDeployment("command-command-deployment", r))
+		assert.NoError(t, w.ForReadyDeployment("command-ha-command-command-deployment", r))
 	})
 	t.Run("then a Keystone StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("keystone-keystone-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-keystone-keystone-statefulset", 1))
 	})
 	t.Run("then a Config StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("config-config-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-config-config-statefulset", 1))
 	})
 	t.Run("then a Swift Storage StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("swift-storage-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-swift-storage-statefulset", 1))
 	})
 	t.Run("then a Swift Proxy deployment has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyDeployment("swift-proxy-deployment", 1))
+		assert.NoError(t, w.ForReadyDeployment("command-ha-swift-proxy-deployment", 1))
 	})
 	t.Run("then a Memcached deployment has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyDeployment("memcached-deployment", 1))
+		assert.NoError(t, w.ForReadyDeployment("command-ha-memcached-deployment", 1))
 	})
 	t.Run("then a WebUI StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
-		assert.NoError(t, w.ForReadyStatefulSet("webui-webui-statefulset", 1))
+		assert.NoError(t, w.ForReadyStatefulSet("command-ha-webui-webui-statefulset", 1))
 	})
 }
 
@@ -322,7 +324,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	memcached := &contrail.MemcachedService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "memcached",
+			Name:      "command-ha-memcached",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -338,15 +340,15 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	webui := &contrail.WebuiService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "webui",
+			Name:      "command-ha-webui",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.WebuiSpec{
 			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.WebuiConfiguration{
-				CassandraInstance: "cassandra",
-				KeystoneInstance:  "keystone",
+				CassandraInstance: "command-ha-cassandra",
+				KeystoneInstance:  "command-ha-keystone",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/common-docker-third-party/contrail/python:3.8.2-alpine"},
 					{Name: "redis", Image: "registry:5000/common-docker-third-party/contrail/redis:4.0.2"},
@@ -359,14 +361,14 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	controls := []*contrail.ControlService{{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "control",
+			Name:      "command-ha-control",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha", "control_role": "master"},
 		},
 		Spec: contrail.ControlSpec{
 			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ControlConfiguration{
-				CassandraInstance: "cassandra",
+				CassandraInstance: "command-ha-cassandra",
 				Containers: []*contrail.Container{
 					{Name: "control", Image: "registry:5000/contrail-nightly/contrail-controller-control-control:" + cemRelease},
 					{Name: "dns", Image: "registry:5000/contrail-nightly/contrail-controller-control-dns:" + cemRelease},
@@ -380,9 +382,9 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	postgres := &contrail.PostgresService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "postgres",
+			Name:      "command-ha-psql",
 			Namespace: namespace,
-			Labels:    map[string]string{"contrail_cluster": "command-ha", "postgres": "postgres"},
+			Labels:    map[string]string{"contrail_cluster": "command-ha", "postgres": "command-ha-psql"},
 		},
 		Spec: contrail.PostgresSpec{
 			ServiceConfiguration: contrail.PostgresConfiguration{
@@ -399,15 +401,15 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	}
 	keystone := &contrail.KeystoneService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "keystone",
+			Name:      "command-ha-keystone",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.KeystoneSpec{
 			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.KeystoneConfiguration{
-				MemcachedInstance: "memcached",
-				PostgresInstance:  "postgres",
+				MemcachedInstance: "command-ha-memcached",
+				PostgresInstance:  "command-ha-psql",
 				Containers: []*contrail.Container{
 					{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
 					{Name: "keystoneDbInit", Image: "registry:5000/common-docker-third-party/contrail/postgresql-client:1.0"},
@@ -421,7 +423,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	swift := &contrail.SwiftService{
 		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
-			Name:      "swift",
+			Name:      "command-ha-swift",
 		},
 		Spec: contrail.SwiftSpec{
 			CommonConfiguration: commonConfig,
@@ -454,9 +456,9 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 					},
 				},
 				SwiftProxyConfiguration: contrail.SwiftProxyConfiguration{
-					MemcachedInstance:  "memcached",
+					MemcachedInstance:  "command-ha-memcached",
 					ListenPort:         5070,
-					KeystoneInstance:   "keystone",
+					KeystoneInstance:   "command-ha-keystone",
 					KeystoneSecretName: "keystone-adminpass-secret",
 					Containers: []*contrail.Container{
 						{Name: "wait-for-ready-conf", Image: "registry:5000/common-docker-third-party/contrail/busybox:1.31"},
@@ -471,7 +473,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 
 	rabbitmq := &contrail.RabbitmqService{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "rabbitmq",
+			Name:      "command-ha-rabbit",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -487,7 +489,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	}
 	zookeeper := []*contrail.ZookeeperService{{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "zookeeper",
+			Name:      "command-ha-zookeeper",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -507,7 +509,7 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	}}
 	cassandra := []*contrail.CassandraService{{
 		ObjectMeta: contrail.ObjectMeta{
-			Name:      "cassandra",
+			Name:      "command-ha-cassandra",
 			Namespace: namespace,
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
@@ -526,12 +528,12 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 		},
 	}}
 	config := &contrail.ConfigService{
-		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
+		ObjectMeta: contrail.ObjectMeta{Namespace: namespace, Name: "command-ha-config", Labels: map[string]string{"contrail_cluster": "command-ha"}},
 		Spec: contrail.ConfigSpec{
 			CommonConfiguration: commonConfig,
 			ServiceConfiguration: contrail.ConfigConfiguration{
-				CassandraInstance: "cassandra",
-				ZookeeperInstance: "zookeeper",
+				CassandraInstance: "command-ha-cassandra",
+				ZookeeperInstance: "command-ha-zookeeper",
 				Containers: []*contrail.Container{
 					{Name: "api", Image: "registry:5000/contrail-nightly/contrail-controller-config-api:" + cemRelease},
 					{Name: "devicemanager", Image: "registry:5000/contrail-nightly/contrail-controller-config-devicemgr:" + cemRelease},
@@ -553,17 +555,17 @@ func getHACommandCluster(namespace, nodeLabel, storagePath string) *contrail.Man
 	command := &contrail.CommandService{
 		ObjectMeta: contrail.ObjectMeta{
 			Namespace: namespace,
-			Name:      "command",
+			Name:      "command-ha-command",
 			Labels:    map[string]string{"contrail_cluster": "command-ha"},
 		},
 		Spec: contrail.CommandSpec{
 			ServiceConfiguration: contrail.CommandConfiguration{
-				PostgresInstance:   "postgres",
+				PostgresInstance:   "command-ha-psql",
 				KeystoneSecretName: "keystone-adminpass-secret",
-				KeystoneInstance:   "keystone",
-				SwiftInstance:      "swift",
-				ConfigInstance:     "config",
-				WebUIInstance:      "webui",
+				KeystoneInstance:   "command-ha-keystone",
+				SwiftInstance:      "command-ha-swift",
+				ConfigInstance:     "command-ha-config",
+				WebUIInstance:      "command-ha-webui",
 				Containers: []*contrail.Container{
 					{Name: "init", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
 					{Name: "api", Image: "registry:5000/contrail-nightly/contrail-command:" + cemRelease},
