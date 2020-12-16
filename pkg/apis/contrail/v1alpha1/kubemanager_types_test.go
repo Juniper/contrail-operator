@@ -54,6 +54,13 @@ var kubemanagerCM = &corev1.ConfigMap{
 	},
 }
 
+var kubemanagerCMEnvs = &corev1.ConfigMap{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "kubemanager1-kubemanager-configmap-envs",
+		Namespace: "test-ns",
+	},
+}
+
 var rabbitSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "rabbit-secret",
@@ -138,7 +145,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret)
 
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{

@@ -216,35 +216,36 @@ var configMap = &corev1.ConfigMap{}
 var secret = &corev1.Secret{}
 
 type Environment struct {
-	client               *client.Client
-	configPodList        corev1.PodList
-	rabbitmqPodList      corev1.PodList
-	zookeeperPodList     corev1.PodList
-	cassandraPodList     corev1.PodList
-	controlPodList       corev1.PodList
-	kubemanbagerPodList  corev1.PodList
-	webuiPodList         corev1.PodList
-	vrouterPodList       corev1.PodList
-	configResource       v1alpha1.Config
-	controlResource      v1alpha1.Control
-	cassandraResource    v1alpha1.Cassandra
-	zookeeperResource    v1alpha1.Zookeeper
-	rabbitmqResource     v1alpha1.Rabbitmq
-	kubemanagerResource  v1alpha1.Kubemanager
-	webuiResource        v1alpha1.Webui
-	vrouterResource      v1alpha1.Vrouter
-	configConfigMap      corev1.ConfigMap
-	controlConfigMap     corev1.ConfigMap
-	cassandraConfigMap   corev1.ConfigMap
-	zookeeperConfigMap   corev1.ConfigMap
-	zookeeperConfigMap2  corev1.ConfigMap
-	rabbitmqConfigMap    corev1.ConfigMap
-	rabbitmqConfigMap2   corev1.ConfigMap
-	kubemanagerConfigMap corev1.ConfigMap
-	kubemanagerSecret    corev1.Secret
-	webuiConfigMap       corev1.ConfigMap
-	vrouterConfigMap     corev1.ConfigMap
-	vrouterConfigMap2    corev1.ConfigMap
+	client                   *client.Client
+	configPodList            corev1.PodList
+	rabbitmqPodList          corev1.PodList
+	zookeeperPodList         corev1.PodList
+	cassandraPodList         corev1.PodList
+	controlPodList           corev1.PodList
+	kubemanbagerPodList      corev1.PodList
+	webuiPodList             corev1.PodList
+	vrouterPodList           corev1.PodList
+	configResource           v1alpha1.Config
+	controlResource          v1alpha1.Control
+	cassandraResource        v1alpha1.Cassandra
+	zookeeperResource        v1alpha1.Zookeeper
+	rabbitmqResource         v1alpha1.Rabbitmq
+	kubemanagerResource      v1alpha1.Kubemanager
+	webuiResource            v1alpha1.Webui
+	vrouterResource          v1alpha1.Vrouter
+	configConfigMap          corev1.ConfigMap
+	controlConfigMap         corev1.ConfigMap
+	cassandraConfigMap       corev1.ConfigMap
+	zookeeperConfigMap       corev1.ConfigMap
+	zookeeperConfigMap2      corev1.ConfigMap
+	rabbitmqConfigMap        corev1.ConfigMap
+	rabbitmqConfigMap2       corev1.ConfigMap
+	kubemanagerConfigMap     corev1.ConfigMap
+	kubemanagerConfigMapEnvs corev1.ConfigMap
+	kubemanagerSecret        corev1.Secret
+	webuiConfigMap           corev1.ConfigMap
+	vrouterConfigMap         corev1.ConfigMap
+	vrouterConfigMap2        corev1.ConfigMap
 }
 
 func SetupEnv() Environment {
@@ -256,6 +257,7 @@ func SetupEnv() Environment {
 	zookeeperConfigMap := *configMap
 	controlConfigMap := *configMap
 	kubemanagerConfigMap := *configMap
+	kubemanagerConfigMapEnvs := *configMap
 	webuiConfigMap := *configMap
 	vrouterConfigMap := *configMap
 	vrouterConfigMap2 := *configMap
@@ -314,6 +316,9 @@ func SetupEnv() Environment {
 	kubemanagerConfigMap.Name = "kubemanager1-kubemanager-configmap"
 	kubemanagerConfigMap.Namespace = "default"
 
+	kubemanagerConfigMapEnvs.Name = "kubemanager1-kubemanager-configmap-envs"
+	kubemanagerConfigMapEnvs.Namespace = "default"
+
 	webuiConfigMap.Name = "webui1-webui-configmap"
 	webuiConfigMap.Namespace = "default"
 
@@ -366,6 +371,7 @@ func SetupEnv() Environment {
 		&rabbitmqConfigMap,
 		&rabbitmqConfigMap2,
 		&kubemanagerConfigMap,
+		&kubemanagerConfigMapEnvs,
 		&webuiConfigMap,
 		&vrouterConfigMap,
 		&vrouterConfigMap2,
@@ -526,33 +532,34 @@ func SetupEnv() Environment {
 	vrouterResource.ManageNodeStatus(podMap.vrouterPods, cl)
 
 	environment := Environment{
-		client:               &cl,
-		configPodList:        configPodList,
-		cassandraPodList:     cassandraPodList,
-		zookeeperPodList:     zookeeperPodList,
-		rabbitmqPodList:      rabbitmqPodList,
-		controlPodList:       controlPodList,
-		kubemanbagerPodList:  kubemanagerPodList,
-		webuiPodList:         webuiPodList,
-		vrouterPodList:       vrouterPodList,
-		configResource:       *configResource,
-		controlResource:      *controlResource,
-		cassandraResource:    *cassandraResource,
-		zookeeperResource:    *zookeeperResource,
-		rabbitmqResource:     *rabbitmqResource,
-		kubemanagerResource:  *kubemanagerResource,
-		webuiResource:        *webuiResource,
-		vrouterResource:      *vrouterResource,
-		configConfigMap:      configConfigMap,
-		controlConfigMap:     controlConfigMap,
-		cassandraConfigMap:   cassandraConfigMap,
-		zookeeperConfigMap:   zookeeperConfigMap,
-		rabbitmqConfigMap:    rabbitmqConfigMap,
-		rabbitmqConfigMap2:   rabbitmqConfigMap2,
-		kubemanagerConfigMap: kubemanagerConfigMap,
-		webuiConfigMap:       webuiConfigMap,
-		vrouterConfigMap:     vrouterConfigMap,
-		vrouterConfigMap2:    vrouterConfigMap2,
+		client:                   &cl,
+		configPodList:            configPodList,
+		cassandraPodList:         cassandraPodList,
+		zookeeperPodList:         zookeeperPodList,
+		rabbitmqPodList:          rabbitmqPodList,
+		controlPodList:           controlPodList,
+		kubemanbagerPodList:      kubemanagerPodList,
+		webuiPodList:             webuiPodList,
+		vrouterPodList:           vrouterPodList,
+		configResource:           *configResource,
+		controlResource:          *controlResource,
+		cassandraResource:        *cassandraResource,
+		zookeeperResource:        *zookeeperResource,
+		rabbitmqResource:         *rabbitmqResource,
+		kubemanagerResource:      *kubemanagerResource,
+		webuiResource:            *webuiResource,
+		vrouterResource:          *vrouterResource,
+		configConfigMap:          configConfigMap,
+		controlConfigMap:         controlConfigMap,
+		cassandraConfigMap:       cassandraConfigMap,
+		zookeeperConfigMap:       zookeeperConfigMap,
+		rabbitmqConfigMap:        rabbitmqConfigMap,
+		rabbitmqConfigMap2:       rabbitmqConfigMap2,
+		kubemanagerConfigMap:     kubemanagerConfigMap,
+		kubemanagerConfigMapEnvs: kubemanagerConfigMapEnvs,
+		webuiConfigMap:           webuiConfigMap,
+		vrouterConfigMap:         vrouterConfigMap,
+		vrouterConfigMap2:        vrouterConfigMap2,
 	}
 	return environment
 }

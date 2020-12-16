@@ -1353,6 +1353,10 @@ spec:
                                         type: string
                                     type: object
                                   type: array
+                                envVariablesConfig:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
                                 hostNetworkService:
                                   type: boolean
                                 ipFabricForwarding:

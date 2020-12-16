@@ -83,6 +83,7 @@ type KubemanagerConfiguration struct {
 	RabbitmqPassword      string             `json:"rabbitmqPassword,omitempty"`
 	RabbitmqVhost         string             `json:"rabbitmqVhost,omitempty"`
 	AuthMode              AuthenticationMode `json:"authMode,omitempty"`
+	EnvVariablesConfig    map[string]string  `json:"envVariablesConfig,omitempty"`
 }
 
 // KubemanagerNodesConfiguration is the configuration for third party dependencies
@@ -293,7 +294,13 @@ func (c *Kubemanager) InstanceConfiguration(request reconcile.Request,
 	if err := client.Update(context.TODO(), configMapInstanceDynamicConfig); err != nil {
 		return err
 	}
-	return nil
+	envVariablesConfigMapName := request.Name + "-" + "kubemanager" + "-configmap-envs"
+	envVariablesConfigMap := &corev1.ConfigMap{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: envVariablesConfigMapName, Namespace: request.Namespace}, envVariablesConfigMap); err != nil {
+		return err
+	}
+	envVariablesConfigMap.Data = c.getKubemanagerEnvironmentData()
+	return client.Update(context.TODO(), envVariablesConfigMap)
 }
 
 func (c *Kubemanager) CreateConfigMap(configMapName string, client client.Client, scheme *runtime.Scheme, request reconcile.Request) (*corev1.ConfigMap, error) {
@@ -478,8 +485,20 @@ func (c *Kubemanager) ConfigurationParameters() KubemanagerConfiguration {
 	kubemanagerConfiguration.HostNetworkService = &hostNetworkService
 	kubemanagerConfiguration.UseKubeadmConfig = &useKubeadmConfig
 	kubemanagerConfiguration.IPFabricSnat = &ipFabricSnat
+	kubemanagerConfiguration.EnvVariablesConfig = c.Spec.ServiceConfiguration.EnvVariablesConfig
 
 	return kubemanagerConfiguration
+}
+
+func (c *Kubemanager) getKubemanagerEnvironmentData() map[string]string {
+	kubemanagerConfig := c.ConfigurationParameters()
+	envVariables := make(map[string]string)
+	if len(kubemanagerConfig.EnvVariablesConfig) != 0 {
+		for key, value := range kubemanagerConfig.EnvVariablesConfig {
+			envVariables[key] = value
+		}
+	}
+	return envVariables
 }
 
 //KubemanagerClusterInfo is interface for gathering information about cluster
