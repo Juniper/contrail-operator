@@ -220,7 +220,8 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	_, err = instance.CreateConfigMap(request.Name+"-"+instanceType+"-configmap-envs", r.Client, r.Scheme, request)
+	envVariablesConfigMap := request.Name + "-" + instanceType + "-configmap-envs"
+	_, err = instance.CreateConfigMap(envVariablesConfigMap, r.Client, r.Scheme, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -432,9 +433,7 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: request.Name + "-" + instanceType + "-configmap-envs",
-					},
+					LocalObjectReference: corev1.LocalObjectReference{envVariablesConfigMap},
 				},
 			}}
 		}
