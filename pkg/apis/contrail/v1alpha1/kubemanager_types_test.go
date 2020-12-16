@@ -114,6 +114,13 @@ var kubemanagerCM = &corev1.ConfigMap{
 	},
 }
 
+var kubemanagerCMEnvs = &corev1.ConfigMap{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "kubemanager1-kubemanager-configmap-envs",
+		Namespace: "test-ns",
+	},
+}
+
 var rabbitSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "rabbit-secret",
@@ -394,7 +401,7 @@ func TestInstanceConfigurationWithStaticConfiguration(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret)
 
 	kubemanager := Kubemanager{
 		Spec: KubemanagerSpec{
@@ -466,7 +473,7 @@ func TestInstanceConfigurationWithDynamicConfiguration(t *testing.T) {
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret, cassandraCR, zookeeperCR, configCR, rabbitmqCR)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret, cassandraCR, zookeeperCR, configCR, rabbitmqCR)
 
 	kubemanager := Kubemanager{
 		ObjectMeta: metav1.ObjectMeta{
@@ -523,7 +530,7 @@ func TestInstanceConfigurationWithDynamicCassandraZookeeperConfiguration(t *test
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret, cassandraCR, zookeeperCR)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret, cassandraCR, zookeeperCR)
 
 	kubemanager := Kubemanager{
 		ObjectMeta: metav1.ObjectMeta{
@@ -593,7 +600,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqConfigConfiguration(t *testing.
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret, configCR, rabbitmqCR)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret, configCR, rabbitmqCR)
 
 	kubemanager := Kubemanager{
 		ObjectMeta: metav1.ObjectMeta{
@@ -659,7 +666,7 @@ func TestInstanceConfigurationWithDynamicConfigZookeeperConfiguration(t *testing
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret, configCR, zookeeperCR)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret, configCR, zookeeperCR)
 
 	kubemanager := Kubemanager{
 		ObjectMeta: metav1.ObjectMeta{
@@ -727,7 +734,7 @@ func TestInstanceConfigurationWithDynamicRabbitmqCassandraConfiguration(t *testi
 	require.NoError(t, err, "Failed to build scheme")
 	require.NoError(t, corev1.SchemeBuilder.AddToScheme(scheme), "Failed to add CoreV1 into scheme")
 
-	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, rabbitSecret, kubemanagerSecret, cassandraCR, rabbitmqCR)
+	cl := fake.NewFakeClientWithScheme(scheme, kubemanagerCM, kubemanagerCMEnvs, rabbitSecret, kubemanagerSecret, cassandraCR, rabbitmqCR)
 
 	kubemanager := Kubemanager{
 		ObjectMeta: metav1.ObjectMeta{
