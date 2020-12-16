@@ -16,7 +16,7 @@
 
 - name: create docker proxy
   docker_container:
-    name: kind-registry
+    name: proxy_registry
     image: registry:2
     restart_policy: always
     networks:
