@@ -734,7 +734,7 @@ func getPodInitStatus(reconcileClient client.Client,
 
 							if cidr, ok := pod.Annotations["dataSubnet"]; ok {
 								if cidr != "" {
-									command := []string{"/bin/sh", "-c", "ip r | grep " + cidr + " | awk -F' ' '{print $NF}'"}
+									command := []string{"/bin/sh", "-c", "ip r s " + cidr + " | awk -F'src' '{print $2}' | awk '{print $1}'"}
 									addr, _, err := ExecToPodThroughAPI(command, "init", pod.Name, pod.Namespace, nil)
 									if err != nil {
 										return map[string]string{}, fmt.Errorf("failed getting ip address from data subnet")
