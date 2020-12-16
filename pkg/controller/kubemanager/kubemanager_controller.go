@@ -433,7 +433,9 @@ func (r *ReconcileKubemanager) Reconcile(request reconcile.Request) (reconcile.R
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).Image = instanceContainer.Image
 			(&statefulSet.Spec.Template.Spec.Containers[idx]).EnvFrom = []corev1.EnvFromSource{{
 				ConfigMapRef: &corev1.ConfigMapEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{envVariablesConfigMap},
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: envVariablesConfigMap,
+					},
 				},
 			}}
 		}
