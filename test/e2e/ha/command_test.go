@@ -113,7 +113,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f, namespace)
+				assertCommandServiceIsResponding(t, w, proxy, f, namespace)
 			})
 		})
 
@@ -126,7 +126,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f, namespace)
+				assertCommandServiceIsResponding(t, w, proxy, f, namespace)
 			})
 		})
 		t.Run("when one of the nodes fails", func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f, namespace)
+				assertCommandServiceIsResponding(t, w, proxy, f, namespace)
 			})
 		})
 
@@ -163,7 +163,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f, namespace)
+				assertCommandServiceIsResponding(t, w, proxy, f, namespace)
 			})
 
 		})
@@ -210,7 +210,7 @@ func TestHACommand(t *testing.T) {
 			})
 
 			t.Run("then Command services is correctly responding", func(t *testing.T) {
-				assertCommandServiceIsResponding(t, proxy, f, namespace)
+				assertCommandServiceIsResponding(t, w, proxy, f, namespace)
 			})
 		})
 
@@ -240,7 +240,7 @@ func TestHACommand(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
+func assertCommandServiceIsResponding(t *testing.T, w wait.Wait, proxy *kubeproxy.HTTPProxy, f *test.Framework, namespace string) {
 	commandPods, err := f.KubeClient.CoreV1().Pods("contrail").List(context.Background(), meta.ListOptions{
 		LabelSelector: "command=command-ha-command",
 	})
@@ -262,14 +262,20 @@ func assertCommandServiceIsResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, 
 	}
 
 	t.Run("then the local keystone service should handle request for a token", func(t *testing.T) {
-		_, err := proxiedKeystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+		err = w.RetryRequest(func() error {
+			_, err := proxiedKeystoneClient.PostAuthTokens("admin", "contrail123", "admin")
+			return err
+		})
 		assert.NoError(t, err)
 	})
 
 	t.Run("then the proxied keystone service should handle request for a token", func(t *testing.T) {
 		headers := http.Header{}
 		headers.Set("X-Cluster-ID", "53494ca8-f40c-11e9-83ae-38c986460fd4")
-		_, err = proxiedKeystoneClient.PostAuthTokensWithHeaders("admin", "contrail123", "admin", headers)
+		err = w.RetryRequest(func() error {
+			_, err = proxiedKeystoneClient.PostAuthTokensWithHeaders("admin", "contrail123", "admin", headers)
+			return err
+		})
 		assert.NoError(t, err)
 	})
 }
@@ -294,10 +300,6 @@ func assertCommandAndDependenciesReplicasReady(t *testing.T, w wait.Wait, r int3
 	t.Run("then a Swift Proxy deployment has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()
 		assert.NoError(t, w.ForReadyDeployment("command-ha-swift-proxy-deployment", 1))
-	})
-	t.Run("then a Memcached deployment has 1 ready replicas", func(t *testing.T) {
-		t.Parallel()
-		assert.NoError(t, w.ForReadyDeployment("command-ha-memcached-deployment", 1))
 	})
 	t.Run("then a WebUI StatefulSet has 1 ready replicas", func(t *testing.T) {
 		t.Parallel()

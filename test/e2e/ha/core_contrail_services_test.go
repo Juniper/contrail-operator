@@ -110,7 +110,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			t.Run("then a single replica of each node type is created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, namespace, 1)
+				requireNumberOfNodesRegisteredInContrailApi(t, w, f, proxy, namespace, 1)
 			})
 		})
 
@@ -135,7 +135,7 @@ func TestHACoreContrailServices(t *testing.T) {
 			})
 
 			t.Run("then 3 replicas of each node type are created in contrail api", func(t *testing.T) {
-				requireNumberOfNodesRegisteredInContrailApi(t, f, proxy, namespace, 3)
+				requireNumberOfNodesRegisteredInContrailApi(t, w, f, proxy, namespace, 3)
 			})
 		})
 
@@ -727,53 +727,53 @@ func updateManagerImages(t *testing.T, f *test.Framework, instance *contrail.Man
 	require.NoError(t, err)
 }
 
-func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, f *test.Framework, proxy *kubeproxy.HTTPProxy, namespace string, expectedNumberOfNodes int) {
+func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, w wait.Wait, f *test.Framework, proxy *kubeproxy.HTTPProxy, namespace string, expectedNumberOfNodes int) {
 	configProxy := proxy.NewSecureClient(namespace, "hatest-config-config-statefulset-0", 8082)
 	configClient, err := config.NewClient(configProxy, "")
 	assert.NoError(t, err)
 
-	t.Run("then config nodes are created", func(t *testing.T) {
+	requireNodes := func(path string, getNodesCnt func(res []byte) int) {
+		t.Run("then "+path+" are created", func(t *testing.T) {
+			err := w.Poll(func() (done bool, err error) {
+				res, err := configClient.GetResource("/" + path)
+				if err != nil {
+					t.Logf("Get request failed: %v", err)
+					return false, nil
+				}
+				actualNubmerOfNodes := getNodesCnt(res)
+				if expectedNumberOfNodes != getNodesCnt(res) {
+					t.Logf("Number of %v diffrent then expected: expected %v but is %v", path, expectedNumberOfNodes, actualNubmerOfNodes)
+					return false, nil
+				}
+				return true, nil
+			})
+			require.NoError(t, err)
+		})
+	}
+
+	requireNodes("config-nodes", func(res []byte) int {
 		var response config.ConfigNodeResponse
-		res, err := configClient.GetResource("/config-nodes")
-		assert.NoError(t, err)
-		err = json.Unmarshal(res, &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+		require.NoError(t, json.Unmarshal(res, &response))
+		return len(response.Nodes)
 	})
-
-	t.Run("then database nodes are created", func(t *testing.T) {
+	requireNodes("database-nodes", func(res []byte) int {
 		var response config.DatabaseNodeResponse
-		res, err := configClient.GetResource("/database-nodes")
-		assert.NoError(t, err)
-		err = json.Unmarshal(res, &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+		require.NoError(t, json.Unmarshal(res, &response))
+		return len(response.Nodes)
 	})
-
-	t.Run("then analytics nodes are created", func(t *testing.T) {
+	requireNodes("analytics-nodes", func(res []byte) int {
 		var response config.AnalyticsNodeResponse
-		res, err := configClient.GetResource("/analytics-nodes")
-		assert.NoError(t, err)
-		err = json.Unmarshal(res, &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+		require.NoError(t, json.Unmarshal(res, &response))
+		return len(response.Nodes)
 	})
-
-	t.Run("then bgp-routers are created", func(t *testing.T) {
+	requireNodes("bgp-routers", func(res []byte) int {
 		var response config.BgpRouterResponse
-		res, err := configClient.GetResource("/bgp-routers")
-		assert.NoError(t, err)
-		err = json.Unmarshal(res, &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedNumberOfNodes, len(response.Nodes))
+		require.NoError(t, json.Unmarshal(res, &response))
+		return len(response.Nodes)
 	})
-
-	t.Run("then no virtual routers are created", func(t *testing.T) {
+	requireNodes("virtual-routers", func(res []byte) int {
 		var response config.VirtualRouterResponse
-		res, err := configClient.GetResource("/virtual-routers")
-		assert.NoError(t, err)
-		err = json.Unmarshal(res, &response)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(response.Nodes))
+		require.NoError(t, json.Unmarshal(res, &response))
+		return len(response.Nodes)
 	})
 }
