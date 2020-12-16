@@ -10,7 +10,7 @@ node('contrail-operator-node') {
 
             try {
                 sh "kind delete cluster --name=${testEnvPrefix}${ghprbPullId} || true"
-                sh "./test/env/create_k8s_cluster.sh ${testEnvPrefix}${ghprbPullId} ${registry} ${numberOfNodes}"
+                sh 'KIND_CLUSTER_NAME=${testEnvPrefix}${ghprbPullId} NODES=${numberOfNodes} LOCAL_REGISTRY_NAME=proxy_registry ./test/env/create_testenv.sh'
                 sh "kubectl create namespace contrail"
                 waitForUpstreamJob()
                 sh 'BUILD_SCM_REVISION=`echo "${ghprbActualCommit}" | head -c 7` BUILD_SCM_BRANCH=${GIT_BRANCH} E2E_TEST_SUITE=${e2eTestSuite} ./test/env/run_e2e_tests.sh'
