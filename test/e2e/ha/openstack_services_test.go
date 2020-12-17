@@ -266,7 +266,14 @@ func assertServicesAreResponding(t *testing.T, proxy *kubeproxy.HTTPProxy, f *te
 		require.NoError(t, err)
 
 		t.Run("then downloaded file has proper payload", func(t *testing.T) {
-			contents, err := swiftClient.GetFile("test-container", "test-file")
+			var contents []byte
+			err := k8swait.Poll(retryInterval, time.Minute*5, func() (done bool, err error) {
+				if contents, err = swiftClient.GetFile("test-container", "test-file"); err != nil {
+					t.Logf("Request to swift failed: %v", err)
+					return false, nil
+				}
+				return true, err
+			})
 			require.NoError(t, err)
 			assert.Equal(t, "payload", string(contents))
 		})
