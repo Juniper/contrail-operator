@@ -732,7 +732,7 @@ func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, w wait.Wait, f *t
 	configClient, err := config.NewClient(configProxy, "")
 	assert.NoError(t, err)
 
-	requireNodes := func(path string, getNodesCnt func(res []byte) int) {
+	requireNodes := func(path string, expected int, getNodesCnt func(res []byte) int) {
 		t.Run("then "+path+" are created", func(t *testing.T) {
 			err := w.Poll(func() (done bool, err error) {
 				res, err := configClient.GetResource("/" + path)
@@ -741,8 +741,8 @@ func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, w wait.Wait, f *t
 					return false, nil
 				}
 				actualNubmerOfNodes := getNodesCnt(res)
-				if expectedNumberOfNodes != getNodesCnt(res) {
-					t.Logf("Number of %v diffrent then expected: expected %v but is %v", path, expectedNumberOfNodes, actualNubmerOfNodes)
+				if expected != getNodesCnt(res) {
+					t.Logf("Number of %v diffrent then expected: expected %v but is %v", path, expected, actualNubmerOfNodes)
 					return false, nil
 				}
 				return true, nil
@@ -751,27 +751,27 @@ func requireNumberOfNodesRegisteredInContrailApi(t *testing.T, w wait.Wait, f *t
 		})
 	}
 
-	requireNodes("config-nodes", func(res []byte) int {
+	requireNodes("config-nodes", expectedNumberOfNodes, func(res []byte) int {
 		var response config.ConfigNodeResponse
 		require.NoError(t, json.Unmarshal(res, &response))
 		return len(response.Nodes)
 	})
-	requireNodes("database-nodes", func(res []byte) int {
+	requireNodes("database-nodes", expectedNumberOfNodes, func(res []byte) int {
 		var response config.DatabaseNodeResponse
 		require.NoError(t, json.Unmarshal(res, &response))
 		return len(response.Nodes)
 	})
-	requireNodes("analytics-nodes", func(res []byte) int {
+	requireNodes("analytics-nodes", expectedNumberOfNodes, func(res []byte) int {
 		var response config.AnalyticsNodeResponse
 		require.NoError(t, json.Unmarshal(res, &response))
 		return len(response.Nodes)
 	})
-	requireNodes("bgp-routers", func(res []byte) int {
+	requireNodes("bgp-routers", expectedNumberOfNodes, func(res []byte) int {
 		var response config.BgpRouterResponse
 		require.NoError(t, json.Unmarshal(res, &response))
 		return len(response.Nodes)
 	})
-	requireNodes("virtual-routers", func(res []byte) int {
+	requireNodes("virtual-routers", 0, func(res []byte) int {
 		var response config.VirtualRouterResponse
 		require.NoError(t, json.Unmarshal(res, &response))
 		return len(response.Nodes)
