@@ -26,7 +26,7 @@ cat deploy/1-create-operator.yaml | \
 if [[ "$LONG_TEST" == "yes" ]]; then
     TEST_CONFIGURATION="-timeout=120m"
 else
-    TEST_CONFIGURATION="-timeout=45m -test.short"
+    TEST_CONFIGURATION="-timeout=90m -test.short"
 fi
 
 kubectl wait deployment --for=condition=available --timeout=240s -n contrail contrail-operator
