@@ -6,12 +6,13 @@ set -o errexit
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 INTERNAL_INSECURE_REGISTRY_PORT="${INTERNAL_INSECURE_REGISTRY_PORT:-5000}"
 NODES="${NODES:-1}"
+LOCAL_REGISTRY_NAME="${LOCAL_REGISTRY_NAME:-kind-registry}"
 
 #create kind network it is used by kind
 docker network inspect kind >/dev/null 2>&1 || \
     docker network create --driver bridge kind
 # create registry container unless it already exists
-reg_name='kind-registry'
+reg_name=${LOCAL_REGISTRY_NAME}
 reg_port=${INTERNAL_INSECURE_REGISTRY_PORT}
 running="$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)"
 if [ "${running}" != 'true' ]; then
