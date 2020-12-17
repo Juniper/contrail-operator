@@ -5,7 +5,7 @@ node('contrail-operator-node') {
                     doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'PreBuildMerge', 
                     options: [mergeRemote: 'origin', mergeTarget: "${ghprbTargetBranch}"]]], 
                     submoduleCfg: [], 
-                    userRemoteConfigs: [[credentialsId: 'acitalkey', 
+                    userRemoteConfigs: [[credentialsId: 'github-deploy-key',
                     url: 'git@github.com:Juniper/contrail-operator.git']]])
 
             try {
