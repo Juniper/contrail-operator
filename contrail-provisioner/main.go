@@ -55,10 +55,26 @@ type EcmpHashingIncludeFields struct {
 	DestinationPort   bool `json:"destinationPort,omitempty"`
 }
 
+// LinkLocalServiceEntryType struct defines link local service
+type LinkLocalServiceEntryType struct {
+	LinkLocalServiceName   string   `json:"linkLocalServiceName,omitempty"`
+	LinkLocalServiceIP     string   `json:"linkLocalServiceIP,omitempty"`
+	LinkLocalServicePort   int      `json:"linkLocalServicePort,omitempty"`
+	IPFabricDNSServiceName string   `json:"ipFabricDNSServiceName,omitempty"`
+	IPFabricServicePort    int      `json:"ipFabricServicePort,omitempty"`
+	IPFabricServiceIP      []string `json:"ipFabricServiceIP,omitempty"`
+}
+
+// LinkLocalServicesTypes struct contains list of link local services definitions
+type LinkLocalServicesTypes struct {
+	LinkLocalServicesEntries []LinkLocalServiceEntryType `json:"linkLocalServicesEntries,omitempty"`
+}
+
 type GlobalVrouterConfiguration struct {
 	EcmpHashingIncludeFields   EcmpHashingIncludeFields `json:"ecmpHashingIncludeFields,omitempty"`
 	EncapsulationPriorities    string                   `json:"encapPriority,omitempty"`
 	VxlanNetworkIdentifierMode string                   `json:"vxlanNetworkIdentifierMode,omitempty"`
+	LinkLocalServices          LinkLocalServicesTypes   `json:"linkLocalServices,omitempty"`
 }
 
 const RequiredAnnotationsKey = "managed_by"
@@ -166,10 +182,12 @@ func main() {
 		ecmpObj := globalVrouterConfiguration.EcmpHashingIncludeFields
 		ecmpHashingIncludeFieldsObj := &contrailtypes.EcmpHashingIncludeFields{ecmpObj.HashingConfigured, ecmpObj.SourceIp, ecmpObj.DestinationIp, ecmpObj.IpProtocol, ecmpObj.SourcePort, ecmpObj.DestinationPort}
 		GlobalVrouterConfig := &contrailtypes.GlobalVrouterConfig{}
+		linkLocalServicesTypesObj := operatorLinkLocalToContrailType(globalVrouterConfiguration.LinkLocalServices.LinkLocalServicesEntries)
 		GlobalVrouterConfig.SetFQName("", globalVrouterConfFQName)
 		GlobalVrouterConfig.SetEncapsulationPriorities(encapPriorityObj)
 		GlobalVrouterConfig.SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
 		GlobalVrouterConfig.SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
+		GlobalVrouterConfig.SetLinklocalServices(&linkLocalServicesTypesObj)
 		if err = contrailClient.Create(GlobalVrouterConfig); err != nil {
 			if !strings.Contains(err.Error(), "409 Conflict") {
 				panic(err)
@@ -181,6 +199,7 @@ func main() {
 			obj.(*contrailtypes.GlobalVrouterConfig).SetEncapsulationPriorities(encapPriorityObj)
 			obj.(*contrailtypes.GlobalVrouterConfig).SetEcmpHashingIncludeFields(ecmpHashingIncludeFieldsObj)
 			obj.(*contrailtypes.GlobalVrouterConfig).SetVxlanNetworkIdentifierMode(globalVrouterConfiguration.VxlanNetworkIdentifierMode)
+			obj.(*contrailtypes.GlobalVrouterConfig).SetLinklocalServices(&linkLocalServicesTypesObj)
 			if err = contrailClient.Update(obj); err != nil {
 				panic(err)
 			}
@@ -412,4 +431,18 @@ func getGlobalVrouterConfigFromFile(globalVrouterFilePath string) *GlobalVrouter
 		panic(err)
 	}
 	return globalVrouterConfig
+}
+
+func operatorLinkLocalToContrailType(links []LinkLocalServiceEntryType) contrailtypes.LinklocalServicesTypes {
+	var entries []contrailtypes.LinklocalServiceEntryType
+	for _, entry := range links {
+		entries = append(entries,
+			contrailtypes.LinklocalServiceEntryType{entry.LinkLocalServiceName,
+				entry.LinkLocalServiceIP,
+				entry.LinkLocalServicePort,
+				entry.IPFabricDNSServiceName,
+				entry.IPFabricServicePort,
+				entry.IPFabricServiceIP})
+	}
+	return contrailtypes.LinklocalServicesTypes{entries}
 }

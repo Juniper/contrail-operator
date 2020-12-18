@@ -152,11 +152,13 @@ keystone:
   local: false
   insecure: true
   authurl: {{ .KeystoneAuthProtocol }}://{{ .KeystoneAddress }}:{{ .KeystonePort }}/v3
+{{- if and .SwiftUsername .SwiftPassword }}
   service_user:
     id: {{ .SwiftUsername }}
     password: {{ .SwiftPassword }}
     project_name: service
     domain_id: default
+{{- end }}
 
 sync:
   enabled: false

@@ -71,7 +71,9 @@ func (c *configMaps) ensureCommandInitConfigExist(webUIPort, swiftProxyPort, key
 		{Name: "telemetry", PrivateURL: telemetryURL, PublicURL: telemetryURL},
 		{Name: "config", PrivateURL: configAPIURL, PublicURL: configAPIURL},
 		{Name: "keystone", PrivateURL: keystoneURL, PublicURL: keystoneURL},
-		{Name: "swift", PrivateURL: swiftProxyURL, PublicURL: swiftProxyURL},
+	}
+	if swiftProxyPort > 0 && swiftProxyAddress != "" {
+		ces = append(ces, contrail.CommandEndpoint{Name: "swift", PrivateURL: swiftProxyURL, PublicURL: swiftProxyURL})
 	}
 	ces = append(ces, c.ccSpec.ServiceConfiguration.Endpoints...)
 	bes := []bootstrapEndpoint{}
