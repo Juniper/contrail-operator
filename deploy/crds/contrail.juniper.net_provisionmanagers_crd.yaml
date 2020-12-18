@@ -185,6 +185,32 @@ spec:
                         type: object
                       encapPriority:
                         type: string
+                      linkLocalServices:
+                        description: LinkLocalServicesTypes struct contains list of
+                          link local services definitions
+                        properties:
+                          linkLocalServicesEntries:
+                            items:
+                              description: LinkLocalServiceEntryType struct defines
+                                link local service
+                              properties:
+                                ipFabricDNSServiceName:
+                                  type: string
+                                ipFabricServiceIP:
+                                  items:
+                                    type: string
+                                  type: array
+                                ipFabricServicePort:
+                                  type: integer
+                                linkLocalServiceIP:
+                                  type: string
+                                linkLocalServiceName:
+                                  type: string
+                                linkLocalServicePort:
+                                  type: integer
+                              type: object
+                            type: array
+                        type: object
                       vxlanNetworkIdentifierMode:
                         type: string
                     type: object
