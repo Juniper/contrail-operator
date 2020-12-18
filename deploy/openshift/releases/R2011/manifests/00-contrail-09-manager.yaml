@@ -21,11 +21,11 @@ spec:
         serviceConfiguration:
           containers:
             - name: cassandra
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/cassandra:3.11.4
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/cassandra:3.11.4
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/cassandra:3.11.4
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/cassandra:3.11.4
     config:
       metadata:
         labels:
@@ -40,37 +40,37 @@ spec:
           analyticsStatisticsTTL: 2
           containers:
             - name: analyticsapi
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-api:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-api:2011.138
             - name: api
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-api:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-api:2011.138
             - name: collector
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-collector:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-collector:2011.138
             - name: devicemanager
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-devicemgr:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-devicemgr:2011.138
               command:
                 - "/bin/sh"
                 - "-c"
                 - "tail -f /dev/null"
             - name: dnsmasq
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-dnsmasq:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-dnsmasq:2011.138
               command:
                 - "/bin/sh"
                 - "-c"
                 - "tail -f /dev/null"
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: init2
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/busybox:1.31
             - name: redis
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/redis:4.0.2
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/redis:4.0.2
             - name: schematransformer
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-schema:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-schema:2011.138
             - name: servicemonitor
-              image: hub.juniper.net/contrail-nightly/contrail-controller-config-svcmonitor:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-config-svcmonitor:2011.138
             - name: queryengine
-              image: hub.juniper.net/contrail-nightly/contrail-analytics-query-engine:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-analytics-query-engine:2011.138
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.138
           logLevel: SYS_DEBUG
           zookeeperInstance: zookeeper1
     controls:
@@ -84,15 +84,15 @@ spec:
           cassandraInstance: cassandra1
           containers:
             - name: control
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-control:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-control:2011.138
             - name: dns
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-dns:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-dns:2011.138
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: named
-              image: hub.juniper.net/contrail-nightly/contrail-controller-control-named:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-control-named:2011.138
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.138
           zookeeperInstance: zookeeper1
     provisionManager:
       metadata:
@@ -105,9 +105,9 @@ spec:
         serviceConfiguration:
           containers:
           - name: init
-            image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+            image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: provisioner
-            image: hub.juniper.net/contrail-nightly/contrail-operator-provisioner:2011.126-ubi
+            image: hub.juniper.net/contrail/contrail-operator-provisioner:2011.138
     rabbitmq:
       metadata:
         labels:
@@ -117,9 +117,9 @@ spec:
         serviceConfiguration:
           containers:
           - name: init
-            image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+            image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
           - name: rabbitmq
-            image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/rabbitmq:3.7
+            image: hub.juniper.net/contrail/common-docker-third-party/contrail/rabbitmq:3.7
     webui:
       metadata:
         labels:
@@ -130,13 +130,13 @@ spec:
           cassandraInstance: cassandra1
           containers:
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: redis
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/redis:4.0.2
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/redis:4.0.2
             - name: webuijob
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-job:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-webui-job:2011.138
             - name: webuiweb
-              image: hub.juniper.net/contrail-nightly/contrail-controller-webui-web:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-controller-webui-web:2011.138
     zookeepers:
     - metadata:
         labels:
@@ -152,11 +152,11 @@ spec:
         serviceConfiguration:
           containers:
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: conf-init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: zookeeper
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/zookeeper:3.5.5
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/zookeeper:3.5.5
     kubemanagers:
     - metadata:
         labels:
@@ -168,11 +168,11 @@ spec:
           zookeeperInstance: zookeeper1
           containers:
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: kubemanager
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-kube-manager:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-kube-manager:2011.138
             - name: statusmonitor
-              image: hub.juniper.net/contrail-nightly/contrail-statusmonitor:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-statusmonitor:2011.138
           ipFabricForwarding: false
           ipFabricSnat: true
           kubernetesTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -192,22 +192,22 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
-          contrailStatusImage: hub.juniper.net/contrail-nightly/contrail-status:2011.126-ubi
+          contrailStatusImage: hub.juniper.net/contrail/contrail-status:2011.138
           containers:
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-node-init:2011.138
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-agent:2011.138
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.138
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-build-init:2011.138
             - name: vrouterkernelinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-init:2011.138
             - name: multusconfig
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/busybox:1.31
     - metadata:
         labels:
           contrail_cluster: cluster1
@@ -221,22 +221,22 @@ spec:
         serviceConfiguration:
           cassandraInstance: cassandra1
           controlInstance: control1
-          contrailStatusImage: hub.juniper.net/contrail-nightly/contrail-status:2011.126-ubi
+          contrailStatusImage: hub.juniper.net/contrail/contrail-status:2011.138
           containers:
             - name: init
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/python:3.8.2-alpine
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/python:3.8.2-alpine
             - name: nodeinit
-              image: hub.juniper.net/contrail-nightly/contrail-node-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-node-init:2011.138
             - name: vrouteragent
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-agent:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-agent:2011.138
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.138
             - name: vrouterkernelbuildinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-build-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-build-init:2011.138
             - name: vrouterkernelinit
-              image: hub.juniper.net/contrail-nightly/contrail-vrouter-kernel-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-vrouter-kernel-init:2011.138
             - name: multusconfig
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/busybox:1.31
     contrailCNIs:
     - metadata:
         labels:
@@ -252,9 +252,9 @@ spec:
           controlInstance: control1
           containers:
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.138
             - name: multusconfig
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/busybox:1.31
     - metadata:
         labels:
           contrail_cluster: cluster1
@@ -269,9 +269,9 @@ spec:
           controlInstance: control1
           containers:
             - name: vroutercni
-              image: hub.juniper.net/contrail-nightly/contrail-kubernetes-cni-init:2011.126-ubi
+              image: hub.juniper.net/contrail/contrail-kubernetes-cni-init:2011.138
             - name: multusconfig
-              image: hub.juniper.net/contrail-nightly/common-docker-third-party/contrail/busybox:1.31
+              image: hub.juniper.net/contrail/common-docker-third-party/contrail/busybox:1.31
     contrailmonitor:
       metadata:
         labels:
