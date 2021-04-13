@@ -871,5 +871,4 @@ service_name: "swift"
 
 ca_cert_filepath: "/etc/ssl/certs/kubernetes/ca-bundle.crt"
 `
-
 const expectedCommandWaitForReadyContainer = "until grep ready /tmp/podinfo/pod_labels > /dev/null 2>&1; do sleep 1; done"
