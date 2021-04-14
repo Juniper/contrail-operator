@@ -18,4 +18,4 @@ if [ "${running}" != 'true' ]; then
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-${DIR}/create_k8s_cluster.sh $KIND_CLUSTER_NAME $(docker inspect -f "{{.NetworkSettings.IPAddress}}" "${reg_name}") $NODES
+# ${DIR}/create_k8s_cluster.sh $KIND_CLUSTER_NAME $(docker inspect -f "{{.NetworkSettings.IPAddress}}" "${reg_name}") $NODES
