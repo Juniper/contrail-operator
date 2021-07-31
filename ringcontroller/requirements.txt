@@ -2,7 +2,7 @@ cachetools==4.1.1
 certifi==2020.6.20
 cffi==1.14.0
 chardet==3.0.4
-cryptography==3.2
+cryptography==3.3.2
 dnspython==1.16.0
 eventlet==0.25.2
 google-auth==1.19.0
