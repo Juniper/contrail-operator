@@ -9,7 +9,7 @@ google-auth==1.19.0
 greenlet==0.4.16
 idna==2.10
 kubernetes==11.0.0
-lxml==4.5.2
+lxml==4.9.1
 monotonic==1.5
 netifaces==0.10.9
 oauthlib==3.1.0
